@@ -6,35 +6,44 @@ public class Lambda {
 
     static final int EOF = -1;
 
-    enum ObjType {
-        Atom,
-        List,
-        Primitive
-        ;
+    private abstract static class List {
+        List car() { throw new RuntimeException("not a pair"); }
+        List cdr() { return null; }
+
+        String atom() { throw new RuntimeException("not an atom"); }
+        UnaryOperator<List> prim() { throw new RuntimeException("not a primary function"); }
     }
 
-    private static class Value {
-        String atom;
-        List list;
+    private static class Atom extends List {
+        String str;
+        List cdr;
+        Atom(String str, List cdr) { this.str = str; this.cdr = cdr; }
+
+        @Override
+        String atom() { return str; }
+        @Override
+        List cdr() { return cdr; }
+    }
+
+    private static class LList extends List {
+        List car;
+        List cdr;
+
+        LList(List car, List cdr) { this.car = car; this.cdr = cdr; }
+
+        @Override
+        List car() { return car; }
+        @Override
+        List cdr() { return cdr; }
+    }
+
+    private static class Prim extends List {
         UnaryOperator<List> prim;
 
-        Value(String s) { atom = s; }
-        Value(List l) { list = l; }
-        Value(UnaryOperator<List> p) { prim = p; }
+        Prim(UnaryOperator<List> prim) { this.prim = prim; }
+        @Override
+        UnaryOperator<List> prim() { return prim; }
     }
-
-    private static class List {
-        ObjType objType;
-
-        Value car;
-        List next;
-
-        List(String car, List cdr)              { objType = ObjType.Atom;      this.car = new Value(car); next = cdr; }
-        List(List car, List cdr)                { objType = ObjType.List;      this.car = new Value(car); next = cdr; }
-        List(UnaryOperator<List> car, List cdr) { objType = ObjType.Primitive; this.car = new Value(car); next = cdr; }
-    }
-
-
 
     static List symbols = null;
 
@@ -59,23 +68,23 @@ public class Lambda {
         token[index] = '\0';
     }
 
-    static boolean is_pair(List x) { return x.objType == ObjType.List; }
-    static boolean is_atom(List x) { return x.objType == ObjType.Atom; }
-    static List car(List x) { return x.car; }
-    static List cdr(List x) { return x.next; }
+    static boolean is_pair(List x) { return x instanceof LList; }
+    static boolean is_atom(List x) { return x instanceof Atom; }
+    static List car(List x) { return x.car(); }
+    static List cdr(List x) { return x.cdr(); }
     static List e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
     static List e_false() { return null; }
 
     static List cons(String _car, List _cdr) {
-        return new List(_car, _cdr);
+        return new Atom(_car, _cdr);
     }
 
     static List cons(List _car, List _cdr) {
-        return new List(_car, _cdr);
+        return new LList(_car, _cdr);
     }
 
     static List cons(UnaryOperator<List> _car, List _cdr) {
-        return new List(_car, _cdr);
+        return new Prim(_car);
     }
 
     static String toChars(int[] s) {
@@ -93,12 +102,12 @@ public class Lambda {
     static List intern(String sym) {
         List _pair = symbols;
         for ( ; _pair != null ; _pair = cdr(_pair)) {
-            if (sym.equalsIgnoreCase(car(_pair).car.atom)) {
-                return car(_pair).car.atom;
+            if (sym.equalsIgnoreCase(car(_pair).atom())) {
+                return car(_pair);
             }
         }
         symbols = cons(sym, symbols);
-        return car(symbols).car.atom;
+        return car(symbols);
     }
 
     static List getobj() {
@@ -115,10 +124,10 @@ public class Lambda {
 
     static void print_obj(List ob, boolean head_of_list) {
         if (!is_pair(ob) ) {
-            System.out.print(ob != null ? ob.car.atom : "null" );
+            System.out.print(ob != null ? car(ob).atom() : "null" );
         } else {
             if (head_of_list) System.out.print('(');
-            print_obj(ob.car.list, true);
+            print_obj(car(ob), true);
             if (cdr(ob) != null) {
                 System.out.print(' ');
                 print_obj(cdr(ob), false);
@@ -146,7 +155,7 @@ public class Lambda {
                 insertPos = head;
             }
             else {
-                insertPos.next = currentArg;
+                ((LList)insertPos).cdr = currentArg;
                 insertPos = currentArg;
             }
         }
@@ -175,13 +184,13 @@ public class Lambda {
             } else if (car(exp) == intern("apply")) { /* apply function to list */
                 List args = evlist (cdr(cdr(exp)), env);
                 args = car(args); /* assumes one argument and that it is a list */
-                return apply_primitive( eval(car(cdr(exp)), env).car.prim, args);
+                return apply_primitive( eval(car(cdr(exp)), env).prim(), args);
             } else { /* function call */
                 List primop = eval (car(exp), env);
                 if (is_pair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
                     return eval( cons(primop, cdr(exp)), env );
                 } else if (primop != null) { /* built-in primitive */
-                    return apply_primitive(primop.car.prim, evlist(cdr(exp), env));
+                    return apply_primitive(primop.prim(), evlist(cdr(exp), env));
                 }
             }
         } else if (car(car(exp)) == intern("lambda")) { /* should be a lambda, bind names into env and eval body */
