@@ -1,10 +1,17 @@
 package com.robertmayer.lambda;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.function.UnaryOperator;
 
 public class Lambda {
 
     static final int EOF = -1;
+    static final int SYMBOL_MAX = 32;
+
+    private InputStream in;
+    private PrintStream out;
 
     private abstract static class List {
         List car() { throw new RuntimeException("not a pair"); }
@@ -45,17 +52,16 @@ public class Lambda {
         UnaryOperator<List> prim() { return prim; }
     }
 
-    static List symbols = null;
+    private List symbols = null;
 
-    static int look; /* look ahead character */
+    private int look; /* look ahead character */
 
-    static final int SYMBOL_MAX = 32;
-    static int token[] = new int[SYMBOL_MAX]; /* token */
-    static boolean is_space(int x)  { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    static boolean is_parens(int x) { return x == '(' || x == ')'; }
+    private int token[] = new int[SYMBOL_MAX]; /* token */
+    private boolean is_space(int x)  { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
+    private boolean is_parens(int x) { return x == '(' || x == ')'; }
 
-    static int getchar() { try {return System.in.read();} catch (Exception e) { throw new RuntimeException("I/O error reading"); } }
-    static void gettoken() {
+    private int getchar() { try {return in.read();} catch (Exception e) { throw new RuntimeException("I/O error reading"); } }
+    private void gettoken() {
         int index = 0;
         while(is_space(look)) { look = getchar(); }
         if (is_parens(look)) {
@@ -68,26 +74,26 @@ public class Lambda {
         token[index] = '\0';
     }
 
-    static boolean is_pair(List x) { return x instanceof LList; }
-    static boolean is_atom(List x) { return x instanceof Atom; }
-    static List car(List x) { return x.car(); }
-    static List cdr(List x) { return x.cdr(); }
-    static List e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
-    static List e_false() { return null; }
+    private boolean is_pair(List x) { return x instanceof LList; }
+    private boolean is_atom(List x) { return x instanceof Atom; }
+    private List car(List x) { return x.car(); }
+    private List cdr(List x) { return x.cdr(); }
+    private List e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
+    private List e_false() { return null; }
 
-    static List cons(String _car, List _cdr) {
+    private List cons(String _car, List _cdr) {
         return new Atom(_car, _cdr);
     }
 
-    static List cons(List _car, List _cdr) {
+    private List cons(List _car, List _cdr) {
         return new LList(_car, _cdr);
     }
 
-    static List cons(UnaryOperator<List> _car, List _cdr) {
+    private List cons(UnaryOperator<List> _car, List _cdr) {
         return new Prim(_car);
     }
 
-    static String toChars(int[] s) {
+    private String toChars(int[] s) {
         StringBuffer ret = new StringBuffer(32);
         for (int c: s) {
             ret.append((char)c);
@@ -95,11 +101,11 @@ public class Lambda {
         return ret.toString();
     }
 
-    static List intern(int[] sym) {
+    private List intern(int[] sym) {
         return intern(toChars(sym));
     }
 
-    static List intern(String sym) {
+    private List intern(String sym) {
         List _pair = symbols;
         for ( ; _pair != null ; _pair = cdr(_pair)) {
             if (sym.equalsIgnoreCase(car(_pair).atom())) {
@@ -110,42 +116,42 @@ public class Lambda {
         return car(symbols);
     }
 
-    static List getobj() {
+    private List getobj() {
         if (token[0] == '(') return getlist();
         return intern(token);
     }
 
-    static List getlist() {
+    private List getlist() {
         gettoken();
         if (token[0] == ')') return null;
         List tmp = getobj();
         return cons(tmp, getlist());
     }
 
-    static void print_obj(List ob, boolean head_of_list) {
+    private void print_obj(List ob, boolean head_of_list) {
         if (!is_pair(ob) ) {
-            System.out.print(ob != null ? car(ob).atom() : "null" );
+            out.print(ob != null ? car(ob).atom() : "null" );
         } else {
-            if (head_of_list) System.out.print('(');
+            if (head_of_list) out.print('(');
             print_obj(car(ob), true);
             if (cdr(ob) != null) {
-                System.out.print(' ');
+                out.print(' ');
                 print_obj(cdr(ob), false);
-            } else System.out.print(')');
+            } else out.print(')');
         }
     }
 
-    static UnaryOperator<List> fcons =     (List a) -> {  return cons(car(a), car(cdr(a)));  };
-    static UnaryOperator<List> fcar =      (List a) -> {  return car(car(a));  };
-    static UnaryOperator<List> fcdr =      (List a) -> {  return cdr(car(a));  };
-    static UnaryOperator<List> feq =       (List a) -> {  return car(a) == car(cdr(a)) ? e_true() : e_false();  };
-    static UnaryOperator<List> fpair =     (List a) -> {  return is_pair(car(a))       ? e_true() : e_false();  };
-    static UnaryOperator<List> fatom =     (List a) -> {  return is_atom(car(a))       ? e_true() : e_false();  };
-    static UnaryOperator<List> fnull =     (List a) -> {  return car(a) == null        ? e_true() : e_false(); };
-    static UnaryOperator<List> freadobj =  (List a) -> {  look = getchar(); gettoken(); return getobj();  };
-    static UnaryOperator<List> fwriteobj = (List a) -> {  print_obj(car(a), true); System.out.println(""); return e_true();  };
+    private UnaryOperator<List> fcons =     (List a) -> {  return cons(car(a), car(cdr(a)));  };
+    private UnaryOperator<List> fcar =      (List a) -> {  return car(car(a));  };
+    private UnaryOperator<List> fcdr =      (List a) -> {  return cdr(car(a));  };
+    private UnaryOperator<List> feq =       (List a) -> {  return car(a) == car(cdr(a)) ? e_true() : e_false();  };
+    private UnaryOperator<List> fpair =     (List a) -> {  return is_pair(car(a))       ? e_true() : e_false();  };
+    private UnaryOperator<List> fatom =     (List a) -> {  return is_atom(car(a))       ? e_true() : e_false();  };
+    private UnaryOperator<List> fnull =     (List a) -> {  return car(a) == null        ? e_true() : e_false(); };
+    private UnaryOperator<List> freadobj =  (List a) -> {  look = getchar(); gettoken(); return getobj();  };
+    private UnaryOperator<List> fwriteobj = (List a) -> {  print_obj(car(a), true); out.println(""); return e_true();  };
 
-    static List evlist(List list, List env) {
+    private List evlist(List list, List env) {
         /* http://cslibrary.stanford.edu/105/LinkedListProblems.pdf */
         List head = null, insertPos = null;
         for ( ; list != null ; list = cdr(list) ) {
@@ -162,11 +168,11 @@ public class Lambda {
         return head;
     }
 
-    static List apply_primitive(UnaryOperator<List> primfn, List args) {
+    private List apply_primitive(UnaryOperator<List> primfn, List args) {
         return primfn.apply(args);
     }
 
-    static List eval(List exp, List env) {
+    private List eval(List exp, List env) {
         if (is_atom(exp) ) {
             for ( ; env != null; env = cdr(env) )
                 if (exp == car(car(env)))  return car(cdr(car(env)));
@@ -199,24 +205,31 @@ public class Lambda {
                 extenv = cons (cons(car(names),  cons(eval (car(vars), env), null)), extenv);
             return eval (car(cdr(cdr(car(exp)))), extenv);
         }
-        System.out.println("cannot evaluate expression");
+        out.println("cannot evaluate expression");
         return null;
     }
 
-    static void main(String argv[]) {
-        List env = cons (cons(intern("car"),     cons(fcar, null)),
-                   cons (cons(intern("cdr"),     cons(fcdr, null)),
-                   cons (cons(intern("cons"),    cons(fcons, null)),
-                   cons (cons(intern("eq?"),     cons(feq, null)),
-                   cons (cons(intern("pair?"),   cons(fpair, null)),
-                   cons (cons(intern("symbol?"), cons(fatom, null)),
-                   cons (cons(intern("null?"),   cons(fnull, null)),
-                   cons (cons(intern("read"),    cons(freadobj, null)),
-                   cons (cons(intern("write"),   cons(fwriteobj, null)),
-                   cons (cons(intern("null"),    cons((String)null,null)), null))))))))));
+    private void run(InputStream in, PrintStream out) {
+        this.in = in;
+        this.out = out;
+        List env = cons (cons(intern("car").atom(),     cons(fcar, null)),
+                   cons (cons(intern("cdr").atom(),     cons(fcdr, null)),
+                   cons (cons(intern("cons").atom(),    cons(fcons, null)),
+                   cons (cons(intern("eq?").atom(),     cons(feq, null)),
+                   cons (cons(intern("pair?").atom(),   cons(fpair, null)),
+                   cons (cons(intern("symbol?").atom(), cons(fatom, null)),
+                   cons (cons(intern("null?").atom(),   cons(fnull, null)),
+                   cons (cons(intern("read").atom(),    cons(freadobj, null)),
+                   cons (cons(intern("write").atom(),   cons(fwriteobj, null)),
+                   cons (cons(intern("null").atom(),    cons((String)null,null)), null))))))))));
         look = getchar();
         gettoken();
         print_obj( eval(getobj(), env), true );
+    }
+
+    public static void main(String argv[]) {
+        Lambda interpreter = new Lambda();
+        interpreter.run(System.in, System.out);
         System.out.println();
     }
 }
