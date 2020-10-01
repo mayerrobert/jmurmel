@@ -2,6 +2,7 @@ package com.robertmayer.lambda;
 
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.function.UnaryOperator;
 
 public class Lambda {
@@ -48,7 +49,7 @@ public class Lambda {
     private Pair e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
     private Pair e_false() { return null; }
 
-    private boolean is_atom(Object x) { return x instanceof String; }
+    private boolean is_atom(Object x) { return x == null || x instanceof String; }
     private boolean is_prim(Object x) { return x instanceof UnaryOperator<?>; }
     private boolean is_pair(Object x) { return x instanceof Pair; }
     private Object car(Pair x) { return x.car; }
@@ -101,7 +102,9 @@ public class Lambda {
     }
 
     private String print_obj(Object ob, boolean head_of_list) {
-        if (is_pair(ob) ) {
+        if (ob == null) {
+            return "null";
+        } else if (is_pair(ob) ) {
             StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
             sb.append(print_obj(car((Pair) ob), true));
@@ -113,21 +116,17 @@ public class Lambda {
             return ob.toString();
         } else if (is_prim(ob)) {
             return "<primitive>";
-        } else if (ob == null) {
-            return "null";
         } else {
-            return "<unknown>";
+            return "<internal error>";
         }
     }
 
-    private Object eval(Object exp, Pair env) {
+    private Object eval(Object exp, Pair env, int level) {
         if (debug >= DEVAL) {
-            System.err.println();
-            System.err.println("*** eval ***");
-            System.err.print("env: "); System.err.println(print_obj(env, true));
-            System.err.println();
-            System.err.print("exp: "); System.err.println(print_obj(exp, true));
-            System.err.println();
+            char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
+            System.err.println(pfx + "*** eval (" + level + ") ********");
+            System.err.print(pfx + "env: "); System.err.println(print_obj(env, true));
+            System.err.print(pfx + "exp: "); System.err.println(print_obj(exp, true));
         }
 
         try {
@@ -142,47 +141,53 @@ public class Lambda {
                 return car(cdr((Pair) exp));
 
             } else if (car((Pair) exp) == intern("if")) {
-                if (eval (car(cdr((Pair) exp)), env) != null)
-                    return eval (car(cdr(cdr((Pair) exp))), env);
+                if (eval (car(cdr((Pair) exp)), env, level + 1) != null)
+                    return eval (car(cdr(cdr((Pair) exp))), env, level + 1);
                 else
-                    return eval (car(cdr(cdr(cdr((Pair) exp)))), env);
+                    return eval (car(cdr(cdr(cdr((Pair) exp)))), env, level + 1);
 
             } else if (car((Pair) exp) == intern("lambda")) {
                 return exp; /* todo: create a closure and capture free vars */
 
             } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
-                Pair args = evlist (cdr(cdr((Pair) exp)), env);
+                Pair args = evlist (cdr(cdr((Pair) exp)), env, level);
                 args = (Pair)car(args); /* assumes one argument and that it is a list */
-                return apply_primitive( (UnaryOperator<Pair>) eval(car(cdr((Pair) exp)), env), args);
+                return apply_primitive( (UnaryOperator<Pair>) eval(car(cdr((Pair) exp)), env, level + 1), args, level);
 
             } else { /* function call */
-                Object primop = eval (car((Pair) exp), env);
+                Object primop = eval (car((Pair) exp), env, level + 1);
                 if (is_pair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
-                    return eval( cons(primop, cdr((Pair) exp)), env );
+                    return eval( cons(primop, cdr((Pair) exp)), env, level + 1 );
                 } else if (primop != null) { /* built-in primitive */
-                    return apply_primitive((UnaryOperator<Pair>) primop, evlist(cdr((Pair) exp), env));
+                    return apply_primitive((UnaryOperator<Pair>) primop, evlist(cdr((Pair) exp), env, level), level);
                 }
             }
 
         } else if (car((Pair) car((Pair) exp)) == intern("lambda")) { /* should be a lambda, bind names into env and eval body */
             Pair extenv = env, names = (Pair) car(cdr((Pair) car((Pair) exp))), vars = cdr((Pair) exp);
             for (  ; names != null; names = cdr(names), vars = cdr(vars) )
-                extenv = cons (cons((String) car(names),  cons(eval (car(vars), env), null)), extenv);
-            return eval (car(cdr(cdr((Pair) car((Pair) exp)))), extenv);
+                extenv = cons (cons((String) car(names),  cons(eval (car(vars), env, level + 1), null)), extenv);
+            return eval (car(cdr(cdr((Pair) car((Pair) exp)))), extenv, level);
 
         }
         out.println("cannot evaluate expression:" + print_obj(exp, true));
         return null;
 
         } catch (Exception e) {
-            throw e; // convenient breakpoint
+            throw e; // convenient breakpoint for errors
+        } finally {
+            if (debug >= DEVAL) {
+                char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
+                System.err.println(pfx + "*** eval (" + level + ") done ***");
+                System.err.println();
+            }
         }
     }
 
-    private Pair evlist(Pair list, Pair env) {
+    private Pair evlist(Pair list, Pair env, int level) {
         Pair head = null, insertPos = null;
         for ( ; list != null ; list = cdr(list) ) {
-            Pair currentArg = cons(eval(car(list), env), null);
+            Pair currentArg = cons(eval(car(list), env, level + 1), null);
             if (head == null) {
                 head = currentArg;
                 insertPos = head;
@@ -205,8 +210,11 @@ public class Lambda {
     private UnaryOperator<Pair> freadobj =  (Pair a) -> {  look = getchar(); gettoken(); return (Pair) getobj();  };
     private UnaryOperator<Pair> fwriteobj = (Pair a) -> {  out.print(print_obj(car(a), true)); out.println(""); return e_true();  };
 
-    private Pair apply_primitive(UnaryOperator<Pair> primfn, Pair args) {
-        if (debug >= DPRIM) System.err.println("(<primitive> " + print_obj(args, true) + ')');
+    private Pair apply_primitive(UnaryOperator<Pair> primfn, Pair args, int level) {
+        if (debug >= DPRIM) {
+            char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
+            System.err.println(pfx + "(<primitive> " + print_obj(args, true) + ')');
+        }
         return primfn.apply(args);
     }
 
@@ -219,13 +227,13 @@ public class Lambda {
                    cons (cons(intern("eq?"),     cons(feq, null)),
                    cons (cons(intern("pair?"),   cons(fpair, null)),
                    cons (cons(intern("symbol?"), cons(fatom, null)),
-                   cons (cons(intern("nil?"),    cons(fnull, null)),
+                   cons (cons(intern("null?"),   cons(fnull, null)),
                    cons (cons(intern("read"),    cons(freadobj, null)),
                    cons (cons(intern("write"),   cons(fwriteobj, null)),
                    cons (cons(intern("nil"),     cons((String)null,null)), null))))))))));
         look = getchar();
         gettoken();
-        return print_obj( eval(getobj(), env), true );
+        return print_obj( eval(getobj(), env, 0), true );
     }
 
     public static void main(String argv[]) {
