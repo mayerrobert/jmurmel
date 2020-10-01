@@ -106,22 +106,23 @@ public class Lambda {
         else return cons((Pair)tmp, (Pair) getlist());
     }
 
-    private void print_obj(Object ob, boolean head_of_list) {
+    private String print_obj(Object ob, boolean head_of_list) {
         if (is_pair(ob) ) {
-            if (head_of_list) out.print('(');
-            print_obj(car((Pair) ob), true);
+            StringBuffer sb = new StringBuffer(200);
+            if (head_of_list) sb.append('(');
+            sb.append(print_obj(car((Pair) ob), true));
             if (cdr((Pair) ob) != null) {
-                out.print(' ');
-                print_obj(cdr((Pair) ob), false);
-            } else out.print(')');
+                sb.append(' ').append(print_obj(cdr((Pair) ob), false));
+            } else sb.append(')');
+            return sb.toString();
         } else if (is_atom(ob)) {
-            out.print(ob.toString());
+            return ob.toString();
         } else if (is_prim(ob)) {
-            out.print("<primitive>");
+            return "<primitive>";
         } else if (ob == null) {
-            out.print("null");
+            return "null";
         } else {
-            out.print("<unknown>");
+            return "<unknown>";
         }
     }
 
@@ -133,7 +134,7 @@ public class Lambda {
     private UnaryOperator<Pair> fatom =     (Pair a) -> {  return is_atom(car(a))       ? e_true() : e_false();  };
     private UnaryOperator<Pair> fnull =     (Pair a) -> {  return car(a) == null        ? e_true() : e_false(); };
     private UnaryOperator<Pair> freadobj =  (Pair a) -> {  look = getchar(); gettoken(); return (Pair) getobj();  };
-    private UnaryOperator<Pair> fwriteobj = (Pair a) -> {  print_obj(car(a), true); out.println(""); return e_true();  };
+    private UnaryOperator<Pair> fwriteobj = (Pair a) -> {  out.print(print_obj(car(a), true)); out.println(""); return e_true();  };
 
     private Pair evlist(Pair list, Pair env) {
         /* http://cslibrary.stanford.edu/105/LinkedListProblems.pdf */
@@ -198,11 +199,11 @@ public class Lambda {
                 extenv = cons (cons((String) car(names),  cons(eval (car(vars), env), null)), extenv);
             return eval (car(cdr(cdr((Pair) car((Pair) exp)))), extenv);
         }
-        out.println("cannot evaluate expression");
+        out.println("cannot evaluate expression:"); print_obj(exp, true); out.println();
         return null;
     }
 
-    private void run(InputStream in, PrintStream out) {
+    private String interpret(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
         Pair env = cons (cons(intern("car"),     cons(fcar, null)),
@@ -217,12 +218,11 @@ public class Lambda {
                    cons (cons(intern("null"),    cons((String)null,null)), null))))))))));
         look = getchar();
         gettoken();
-        print_obj( eval(getobj(), env), true );
+        return print_obj( eval(getobj(), env), true );
     }
 
     public static void main(String argv[]) {
         Lambda interpreter = new Lambda();
-        interpreter.run(System.in, System.out);
-        System.out.println();
+        System.out.println(interpreter.interpret(System.in, System.out));
     }
 }
