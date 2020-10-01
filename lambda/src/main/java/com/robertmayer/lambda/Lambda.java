@@ -1,7 +1,6 @@
 package com.robertmayer.lambda;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.function.UnaryOperator;
 
@@ -13,21 +12,13 @@ public class Lambda {
     private InputStream in;
     private PrintStream out;
 
-    private enum ObjType {
-        Atom,
-        Prim,
-        List,
-        ;
-    }
-
     private static class Pair {
-        ObjType objType;
         Object car;
         Pair cdr;
 
-        Pair(String str, Pair cdr)               { this.car = str; this.cdr = cdr; objType = ObjType.Atom; }
-        Pair(UnaryOperator<Pair> prim, Pair cdr) { this.car = prim; objType = ObjType.Prim; }
-        Pair(Pair car, Pair cdr)                 { this.car = car; this.cdr = cdr; objType = ObjType.List; }
+        Pair(String str, Pair cdr)               { this.car = str; this.cdr = cdr; }
+        Pair(UnaryOperator<Pair> prim, Pair cdr) { this.car = prim; }
+        Pair(Pair car, Pair cdr)                 { this.car = car; this.cdr = cdr; }
     }
 
     private Pair symbols = null;
@@ -46,14 +37,16 @@ public class Lambda {
             token[index++] = look;  look = getchar();
         } else {
             while(index < SYMBOL_MAX - 1 && look != EOF && !is_space(look) && !is_parens(look)) {
-                token[index++] = look;  look = getchar();
+                if (index < SYMBOL_MAX - 1) token[index++] = look;
+                look = getchar();
             }
         }
         token[index] = '\0';
     }
 
-    private boolean is_pair(Object x) { return x instanceof Pair; }
     private boolean is_atom(Object x) { return x instanceof String; }
+    private boolean is_prim(Object x) { return x instanceof UnaryOperator<?>; }
+    private boolean is_pair(Object x) { return x instanceof Pair; }
     private Object car(Pair x) { return x.car; }
     private Pair cdr(Pair x) { return x.cdr; }
     private Pair e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
@@ -114,15 +107,21 @@ public class Lambda {
     }
 
     private void print_obj(Object ob, boolean head_of_list) {
-        if (!is_pair(ob) ) {
-            out.print(ob != null ? ob.toString() : "null" );
-        } else {
+        if (is_pair(ob) ) {
             if (head_of_list) out.print('(');
             print_obj(car((Pair) ob), true);
             if (cdr((Pair) ob) != null) {
                 out.print(' ');
                 print_obj(cdr((Pair) ob), false);
             } else out.print(')');
+        } else if (is_atom(ob)) {
+            out.print(ob.toString());
+        } else if (is_prim(ob)) {
+            out.print("<primitive>");
+        } else if (ob == null) {
+            out.print("null");
+        } else {
+            out.print("<unknown>");
         }
     }
 
@@ -158,9 +157,13 @@ public class Lambda {
     }
 
     private Object eval(Object exp, Pair env) {
-        //out.print("exp: "); print_obj(exp, true); out.println();
-        //out.print("env: "); print_obj(env, true); out.println();
-        //out.flush();
+        out.println();
+        out.println("*** eval ***");
+        out.print("env: "); print_obj(env, true); out.println();
+        out.println();
+        out.print("exp: "); print_obj(exp, true); out.println();
+        out.println();
+        out.flush();
 
         if (is_atom(exp) ) {
             for ( ; env != null; env = cdr(env) )
