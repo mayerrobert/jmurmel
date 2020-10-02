@@ -7,11 +7,13 @@ import java.util.function.UnaryOperator;
 
 public class Lambda {
 
+    /// infrastructure
     public static final int EOF = -1;
     public static final int SYMBOL_MAX = 32;
-    public static final int DNONE = 0, DLEX = 1, DEVAL = 2, DPRIM = 3;
 
+    public static final int DNONE = 0, DLEX = 1, DEVAL = 2, DPRIM = 3;
     public int debug = DNONE;
+
     private InputStream in;
     private PrintStream out;
 
@@ -21,17 +23,9 @@ public class Lambda {
         }
     }
 
-    private static class Pair {
-        Object car;
-        Object cdr;
 
-        Pair(String str, Object cdr)               { this.car = str; this.cdr = cdr; }
-        Pair(UnaryOperator<Pair> prim, Object cdr) { this.car = prim; }
-        Pair(Pair car, Object cdr)                 { this.car = car; this.cdr = cdr; }
-    }
 
-    private Pair symbols = null;
-
+    /// scanner
     private boolean escape;
     private int look;
     private int token[] = new int[SYMBOL_MAX];
@@ -73,7 +67,153 @@ public class Lambda {
             System.err.println("*** token |" + tokenToString(token) + '|');
     }
 
-    private Pair e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
+    private String tokenToString(int[] s) {
+        StringBuffer ret = new StringBuffer(32);
+        for (int c: s) {
+            if (c == '\0') break;
+            ret.append((char)c);
+        }
+        return ret.toString();
+    }
+
+
+
+    /// symbol table
+    private Pair symbols = null;
+
+    private String intern(int[] sym) {
+        return intern(tokenToString(sym));
+    }
+
+    private String intern(String sym) {
+        Pair pair = symbols;
+        for ( ; pair != null; pair = (Pair)cdr(pair)) {
+            if (sym.equalsIgnoreCase((String)car(pair))) {
+                return (String) car(pair);
+            }
+        }
+        symbols = cons(sym, symbols);
+        return (String) car(symbols);
+    }
+
+
+
+    /// parser
+    private Object getobj() {
+        if (token[0] == '(') return getlist();
+        return intern(token);
+    }
+
+    private Object getlist() {
+        gettoken();
+        if (token[0] == ')') return null;
+        Object tmp = getobj();
+        if (is_atom(tmp)) return cons((String)tmp, (Pair) getlist());
+        else return cons((Pair)tmp, (Pair) getlist());
+    }
+
+
+
+    /// eval - interpreter
+    private Object eval(Object exp, Pair env, int level) {
+        dbgEvalStart(exp, env, level);
+        try {
+            if (is_atom(exp)) {
+                if (exp == null) return null;
+                Pair envEntry = assoc(exp, env);
+                if (envEntry != null) return car((Pair)cdr(envEntry));
+                throw new Error("'" + exp + "' is undefined");
+
+            } else if (is_atom(car ((Pair) exp))) { /* special forms */
+                if (car((Pair) exp) == intern("quote")) {
+                    return car((Pair)cdr((Pair) exp));
+
+                } else if (car((Pair) exp) == intern("if")) {
+                    if (eval (car((Pair)cdr((Pair) exp)), env, level + 1) != null)
+                        return eval (car((Pair)cdr((Pair)cdr((Pair) exp))), env, level + 1);
+                    else
+                        return eval (car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
+
+                } else if (car((Pair) exp) == intern("lambda")) {
+                    return exp; /* todo: create a closure and capture free vars */
+
+                } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
+                    Pair args = evlist((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
+                    args = (Pair)car(args); /* assumes one argument and that it is a list */
+                    return apply_primitive((UnaryOperator<Pair>) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
+
+                } else { /* function call */
+                    Object primop = eval (car((Pair) exp), env, level + 1);
+                    if (is_pair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
+                        return eval(cons(primop, cdr((Pair) exp)), env, level + 1);
+                    } else if (primop != null) { /* built-in primitive */
+                        return apply_primitive((UnaryOperator<Pair>) primop, evlist((Pair) cdr((Pair) exp), env, level), level);
+                    }
+                }
+
+            } else if (car((Pair) car((Pair) exp)) == intern("lambda")) { /* should be a lambda, bind names into env and eval body */
+                Pair extenv = env, names = (Pair) car((Pair) cdr((Pair) car((Pair) exp))), vars = (Pair) cdr((Pair) exp);
+                for ( ; names != null; names = (Pair) cdr(names), vars = (Pair) cdr(vars))
+                    extenv = cons(cons((String) car(names),  cons(eval (car(vars), env, level + 1), null)), extenv);
+                return eval (car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
+
+            }
+
+            throw new Error("cannot evaluate expression '" + print_obj(exp, true) + '\'');
+
+        } catch (Exception e) {
+            throw e; // convenient breakpoint for errors
+        } finally {
+            dbgEvalDone(level);
+        }
+    }
+
+    private Pair evlist(Pair list, Pair env, int level) {
+        Pair head = null, insertPos = null;
+        for ( ; list != null; list = (Pair) cdr(list)) {
+            Pair currentArg = cons(eval(car(list), env, level + 1), null);
+            if (head == null) {
+                head = currentArg;
+                insertPos = head;
+            }
+            else {
+                insertPos.cdr = currentArg;
+                insertPos = currentArg;
+            }
+        }
+        return head;
+    }
+
+    private void dbgEvalStart(Object exp, Pair env, int level) {
+        if (debug >= DEVAL) {
+            char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
+            System.err.println(pfx + "*** eval (" + level + ") ********");
+            System.err.print(pfx + "env: "); System.err.println(print_obj(env, true));
+            System.err.print(pfx + "exp: "); System.err.println(print_obj(exp, true));
+        }
+    }
+    private void dbgEvalDone(int level) {
+        if (debug >= DEVAL) {
+            char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
+            System.err.println(pfx + "*** eval (" + level + ") done ***");
+        }
+    }
+
+
+
+    /// data type used by interpreter program as well as interpreted programs
+    private static class Pair {
+        Object car, cdr;
+
+        Pair(String str, Object cdr)               { this.car = str; this.cdr = cdr; }
+        Pair(UnaryOperator<Pair> prim, Object cdr) { this.car = prim; }
+        Pair(Pair car, Object cdr)                 { this.car = car; this.cdr = cdr; }
+    }
+
+
+
+    /// functions used by interpreter program, a subset is used by interpreted programs as well
+    private Pair e_true() { return cons(intern("quote"), cons(intern("t"), null)); }
     private Pair e_false() { return null; }
 
     private boolean is_atom(Object x) { return x == null || x instanceof String; }
@@ -92,138 +232,11 @@ public class Lambda {
 
     private Pair assoc(Object exp, Pair env) {
         if (exp == null) return null;
-        for ( ; env != null; env = (Pair)cdr(env) )
+        for ( ; env != null; env = (Pair)cdr(env))
             if (exp == car((Pair) car(env)))
                 return (Pair) car(env);
         return null;
     }
-
-    private String tokenToString(int[] s) {
-        StringBuffer ret = new StringBuffer(32);
-        for (int c: s) {
-            if (c == '\0') break;
-            ret.append((char)c);
-        }
-        return ret.toString();
-    }
-
-    private String intern(int[] sym) {
-        return intern(tokenToString(sym));
-    }
-
-    private String intern(String sym) {
-        Pair pair = symbols;
-        for ( ; pair != null ; pair = (Pair)cdr(pair)) {
-            if (sym.equalsIgnoreCase((String)car(pair))) {
-                return (String) car(pair);
-            }
-        }
-        symbols = cons(sym, symbols);
-        return (String) car(symbols);
-    }
-
-    private Object getobj() {
-        if (token[0] == '(') return getlist();
-        return intern(token);
-    }
-
-    private Object getlist() {
-        gettoken();
-        if (token[0] == ')') return null;
-        Object tmp = getobj();
-        if (is_atom(tmp)) return cons((String)tmp, (Pair) getlist());
-        else return cons((Pair)tmp, (Pair) getlist());
-    }
-
-    private Object eval(Object exp, Pair env, int level) {
-        if (debug >= DEVAL) {
-            char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            System.err.println(pfx + "*** eval (" + level + ") ********");
-            System.err.print(pfx + "env: "); System.err.println(print_obj(env, true));
-            System.err.print(pfx + "exp: "); System.err.println(print_obj(exp, true));
-        }
-
-        try {
-            if (is_atom(exp) ) {
-                if (exp == null) return null;
-                Pair envEntry = assoc(exp, env);
-                if (envEntry != null) return car((Pair)cdr(envEntry));
-                throw new Error("'" + exp + "' is undefined");
-
-            } else if (is_atom( car ((Pair) exp))) { /* special forms */
-                if (car((Pair) exp) == intern("quote")) {
-                    return car((Pair)cdr((Pair) exp));
-
-                } else if (car((Pair) exp) == intern("if")) {
-                    if (eval (car((Pair)cdr((Pair) exp)), env, level + 1) != null)
-                        return eval (car((Pair)cdr((Pair)cdr((Pair) exp))), env, level + 1);
-                    else
-                        return eval (car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
-
-                } else if (car((Pair) exp) == intern("lambda")) {
-                    return exp; /* todo: create a closure and capture free vars */
-
-                } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
-                    Pair args = evlist((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
-                    args = (Pair)car(args); /* assumes one argument and that it is a list */
-                    return apply_primitive( (UnaryOperator<Pair>) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
-
-                } else { /* function call */
-                    Object primop = eval (car((Pair) exp), env, level + 1);
-                    if (is_pair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
-                        return eval( cons(primop, cdr((Pair) exp)), env, level + 1 );
-                    } else if (primop != null) { /* built-in primitive */
-                        return apply_primitive((UnaryOperator<Pair>) primop, evlist((Pair) cdr((Pair) exp), env, level), level);
-                    }
-                }
-
-            } else if (car((Pair) car((Pair) exp)) == intern("lambda")) { /* should be a lambda, bind names into env and eval body */
-                Pair extenv = env, names = (Pair) car((Pair) cdr((Pair) car((Pair) exp))), vars = (Pair) cdr((Pair) exp);
-                for (  ; names != null; names = (Pair) cdr(names), vars = (Pair) cdr(vars) )
-                    extenv = cons (cons((String) car(names),  cons(eval (car(vars), env, level + 1), null)), extenv);
-                return eval (car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
-
-            }
-
-            throw new Error("cannot evaluate expression '" + print_obj(exp, true) + '\'');
-
-        } catch (Exception e) {
-            throw e; // convenient breakpoint for errors
-        } finally {
-            if (debug >= DEVAL) {
-                char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-                System.err.println(pfx + "*** eval (" + level + ") done ***");
-            }
-        }
-    }
-
-    private Pair evlist(Pair list, Pair env, int level) {
-        Pair head = null, insertPos = null;
-        for ( ; list != null ; list = (Pair) cdr(list) ) {
-            Pair currentArg = cons(eval(car(list), env, level + 1), null);
-            if (head == null) {
-                head = currentArg;
-                insertPos = head;
-            }
-            else {
-                insertPos.cdr = currentArg;
-                insertPos = currentArg;
-            }
-        }
-        return head;
-    }
-
-    private UnaryOperator<Pair> fcar =      (Pair a) -> {  return (Pair) car((Pair) car(a));  };
-    private UnaryOperator<Pair> fcdr =      (Pair a) -> {  return (Pair) cdr((Pair) car(a));  };
-    private UnaryOperator<Pair> fcons =     (Pair a) -> {  return cons(car(a), car((Pair) cdr(a)));  };
-    private UnaryOperator<Pair> fassoc =    (Pair a) -> {  return assoc(car(a), (Pair) car((Pair) cdr(a)));  };
-
-    private UnaryOperator<Pair> feq =       (Pair a) -> {  return car(a) == car((Pair) cdr(a)) ? e_true() : e_false();  };
-    private UnaryOperator<Pair> fpair =     (Pair a) -> {  return is_pair(car(a))       ? e_true() : e_false();  };
-    private UnaryOperator<Pair> fatom =     (Pair a) -> {  return is_atom(car(a))       ? e_true() : e_false();  };
-    private UnaryOperator<Pair> fnull =     (Pair a) -> {  return car(a) == null        ? e_true() : e_false(); };
-    private UnaryOperator<Pair> freadobj =  (Pair a) -> {  look = getchar(); gettoken(); return (Pair) getobj();  };
-    private UnaryOperator<Pair> fwriteobj = (Pair a) -> {  out.print(print_obj(car(a), true)); return e_true();  };
 
     private Pair apply_primitive(UnaryOperator<Pair> primfn, Pair args, int level) {
         if (debug >= DPRIM) {
@@ -236,7 +249,7 @@ public class Lambda {
     private String print_obj(Object ob, boolean head_of_list) {
         if (ob == null) {
             return "null";
-        } else if (is_pair(ob) ) {
+        } else if (is_pair(ob)) {
             StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
             sb.append(print_obj(car((Pair) ob), true));
@@ -254,23 +267,45 @@ public class Lambda {
         }
     }
 
+
+
+    /// runtime for Lisp programs
+    private UnaryOperator<Pair> fcar =      (Pair a) -> { return (Pair) car((Pair) car(a)); };
+    private UnaryOperator<Pair> fcdr =      (Pair a) -> { return (Pair) cdr((Pair) car(a)); };
+    private UnaryOperator<Pair> fcons =     (Pair a) -> { return cons(car(a), car((Pair) cdr(a))); };
+    private UnaryOperator<Pair> fassoc =    (Pair a) -> { return assoc(car(a), (Pair) car((Pair) cdr(a))); };
+    private UnaryOperator<Pair> feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? e_true() : e_false(); };
+    private UnaryOperator<Pair> fpair =     (Pair a) -> { return is_pair(car(a))       ? e_true() : e_false(); };
+    private UnaryOperator<Pair> fatom =     (Pair a) -> { return is_atom(car(a))       ? e_true() : e_false(); };
+    private UnaryOperator<Pair> fnull =     (Pair a) -> { return car(a) == null        ? e_true() : e_false(); };
+    private UnaryOperator<Pair> freadobj =  (Pair a) -> { look = getchar(); gettoken(); return (Pair) getobj(); };
+    private UnaryOperator<Pair> fwriteobj = (Pair a) -> { out.print(print_obj(car(a), true)); return e_true(); };
+
+    private Pair environment() {
+        return cons(cons(intern("car"),     cons(fcar, null)),
+               cons(cons(intern("cdr"),     cons(fcdr, null)),
+               cons(cons(intern("cons"),    cons(fcons, null)),
+               cons(cons(intern("assoc"),   cons(fassoc, null)),
+               cons(cons(intern("eq?"),     cons(feq, null)),
+               cons(cons(intern("pair?"),   cons(fpair, null)),
+               cons(cons(intern("symbol?"), cons(fatom, null)),
+               cons(cons(intern("null?"),   cons(fnull, null)),
+               cons(cons(intern("read"),    cons(freadobj, null)),
+               cons(cons(intern("write"),   cons(fwriteobj, null)),
+               cons(cons(intern("nil"),     cons((String)null, null)),
+               null)))))))))));
+    }
+
+
+
+    /// build environment, read an S-expression and invoke eval()
     public String interpret(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
-        Pair env = cons(cons(intern("car"),     cons(fcar, null)),
-                   cons(cons(intern("cdr"),     cons(fcdr, null)),
-                   cons(cons(intern("cons"),    cons(fcons, null)),
-                   cons(cons(intern("assoc"),   cons(fassoc, null)),
-                   cons(cons(intern("eq?"),     cons(feq, null)),
-                   cons(cons(intern("pair?"),   cons(fpair, null)),
-                   cons(cons(intern("symbol?"), cons(fatom, null)),
-                   cons(cons(intern("null?"),   cons(fnull, null)),
-                   cons(cons(intern("read"),    cons(freadobj, null)),
-                   cons(cons(intern("write"),   cons(fwriteobj, null)),
-                   cons(cons(intern("nil"),     cons((String)null, null)), null)))))))))));
+        Pair env = environment();
         look = getchar();
         gettoken();
-        return print_obj( eval(getobj(), env, 0), true );
+        return print_obj(eval(getobj(), env, 0), true);
     }
 
     public static void main(String argv[]) {
