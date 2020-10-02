@@ -15,29 +15,30 @@ public class LambdaTest {
         // application of builtins
         /*  0 */ { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
         /*  1 */ { "(write (quote HELLO))", "(quote t)", "HELLO" },
+        /*  2 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
 
         // comments
-        /*  2 */ { "; comment\n(write (quote HELLO))", "(quote t)", "HELLO" },
-        /*  3 */ { "; comment\n(write (quote HELLO)) ; comment", "(quote t)", "HELLO" },
+        /*  3 */ { "; comment\n(write (quote HELLO))", "(quote t)", "HELLO" },
+        /*  4 */ { "; comment\n(write (quote HELLO)) ; comment", "(quote t)", "HELLO" },
 
         // quoted chars
-        /*  4 */ { "(write (quote HELLO\\ ))", "(quote t)", "HELLO " },
-        /*  5 */ { "(write (quote HELLO\\\\))", "(quote t)", "HELLO\\" },
-        /*  6 */ { "(write (quote HELLO\\)))", "(quote t)", "HELLO)" },
-        /*  7 */ { "(write (quote HELLO\\;))", "(quote t)", "HELLO;" },
+        /*  5 */ { "(write (quote HELLO\\ ))", "(quote t)", "HELLO " },
+        /*  6 */ { "(write (quote HELLO\\\\))", "(quote t)", "HELLO\\" },
+        /*  7 */ { "(write (quote HELLO\\)))", "(quote t)", "HELLO)" },
+        /*  8 */ { "(write (quote HELLO\\;))", "(quote t)", "HELLO;" },
 
-        /*  8 */ { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
-        /*  9 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
-        /* 10 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
+        /*  9 */ { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
+        /* 10 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
+        /* 11 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
+        /* 12 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(quote t)", "(HELLO . HELLO)" },
 
-        /* 11 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
+        /* 13 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
 
-        // geht nicht weil cons(string,string) den zweiten string auf pair casten will { "(apply (quote write) (cons (cons (quote HELLO) (quote HELLO)) nil))", "(QUOTE T)", "HELLOHELLO" },
     };
 
     //@Test
     public void runTest() {
-        runTest(3);
+        runTest(2);
     }
 
     @Test
@@ -58,7 +59,7 @@ public class LambdaTest {
         PrintStream out = new PrintStream(actualOutput);
 
         Lambda interpreter = new Lambda();
-        //interpreter.debug = 0;
+        interpreter.debug = 0;
 
         System.out.println("***** running program:");
         System.out.println("-------------------------------------------------------");
