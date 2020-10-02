@@ -38,13 +38,13 @@ public class LambdaTest {
     }
 
     private String[][] tests = {
-        { "(write (quote (Hello, world!)))", "(QUOTE T)", "(HELLO, WORLD!)" },
-        { "(write (quote HELLO))", "(QUOTE T)", "HELLO" },
-        { "(apply write (cons (quote HELLO) nil))", "(QUOTE T)", "HELLO" },
-        { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(QUOTE T)", "(HELLO HELLO)" },
-        { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(QUOTE T)", "(HELLO HELLO)" },
+        { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
+        { "(write (quote HELLO))", "(quote t)", "HELLO" },
+        { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
+        { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
+        { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
 
-        { "((lambda (x) (write x)) (quote hello))", "(QUOTE T)", "HELLO" },
+        { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
         // geht nicht weil cons(string,string) den zweiten string auf pair casten will { "(apply (quote write) (cons (cons (quote HELLO) (quote HELLO)) nil))", "(QUOTE T)", "HELLOHELLO" },
     };
 }

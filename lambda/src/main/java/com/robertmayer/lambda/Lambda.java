@@ -77,10 +77,9 @@ public class Lambda {
     }
 
     private String intern(String sym) {
-        sym = sym.toUpperCase();
         Pair _pair = symbols;
         for ( ; _pair != null ; _pair = cdr(_pair)) {
-            if (sym.equals(car(_pair))) {
+            if (sym.equalsIgnoreCase((String)car(_pair))) {
                 return (String) car(_pair);
             }
         }
