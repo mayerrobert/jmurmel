@@ -120,29 +120,6 @@ public class Lambda {
         else return cons((Pair)tmp, (Pair) getlist());
     }
 
-    private String print_obj(Object ob, boolean head_of_list) {
-        if (ob == null) {
-            return "null";
-        } else if (is_pair(ob) ) {
-            StringBuffer sb = new StringBuffer(200);
-            if (head_of_list) sb.append('(');
-            sb.append(print_obj(car((Pair) ob), true));
-            if (cdr((Pair) ob) != null) {
-                if (is_pair(cdr((Pair) ob)))
-                    sb.append(' ').append(print_obj(cdr((Pair) ob), false));
-                else
-                    sb.append(" . ").append(print_obj(cdr((Pair) ob), false)).append(')');
-            } else sb.append(')');
-            return sb.toString();
-        } else if (is_atom(ob)) {
-            return ob.toString();
-        } else if (is_prim(ob)) {
-            return "<primitive>";
-        } else {
-            return "<internal error>";
-        }
-    }
-
     private Object eval(Object exp, Pair env, int level) {
         if (debug >= DEVAL) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
@@ -237,6 +214,29 @@ public class Lambda {
             System.err.println(pfx + "(<primitive> " + print_obj(args, true) + ')');
         }
         return primfn.apply(args);
+    }
+
+    private String print_obj(Object ob, boolean head_of_list) {
+        if (ob == null) {
+            return "null";
+        } else if (is_pair(ob) ) {
+            StringBuffer sb = new StringBuffer(200);
+            if (head_of_list) sb.append('(');
+            sb.append(print_obj(car((Pair) ob), true));
+            if (cdr((Pair) ob) != null) {
+                if (is_pair(cdr((Pair) ob)))
+                    sb.append(' ').append(print_obj(cdr((Pair) ob), false));
+                else
+                    sb.append(" . ").append(print_obj(cdr((Pair) ob), false)).append(')');
+            } else sb.append(')');
+            return sb.toString();
+        } else if (is_atom(ob)) {
+            return ob.toString();
+        } else if (is_prim(ob)) {
+            return "<primitive>";
+        } else {
+            return "<internal error>";
+        }
     }
 
     public String interpret(InputStream in, PrintStream out) {
