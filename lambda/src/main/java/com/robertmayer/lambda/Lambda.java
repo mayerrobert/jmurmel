@@ -30,8 +30,8 @@ public class Lambda {
     private int look;
     private int token[] = new int[SYMBOL_MAX];
 
-    private boolean is_space(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
-    private boolean is_parens(int x) { return !escape && (x == '(' || x == ')'); }
+    private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
+    private boolean isParens(int x) { return !escape && (x == '(' || x == ')'); }
 
     private int getchar() {
         try {
@@ -50,13 +50,13 @@ public class Lambda {
         }
     }
 
-    private void gettoken() {
+    private void readToken() {
         int index = 0;
-        while(is_space(look)) { look = getchar(); }
-        if (is_parens(look)) {
+        while(isSpace(look)) { look = getchar(); }
+        if (isParens(look)) {
             token[index++] = look;  look = getchar();
         } else {
-            while(index < SYMBOL_MAX - 1 && look != EOF && !is_space(look) && !is_parens(look)) {
+            while(index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
                 if (index < SYMBOL_MAX - 1) token[index++] = look;
                 look = getchar();
             }
@@ -99,17 +99,17 @@ public class Lambda {
 
 
     /// parser
-    private Object getobj() {
-        if (token[0] == '(') return getlist();
+    private Object readObj() {
+        if (token[0] == '(') return readList();
         return intern(token);
     }
 
-    private Object getlist() {
-        gettoken();
+    private Object readList() {
+        readToken();
         if (token[0] == ')') return null;
-        Object tmp = getobj();
-        if (is_atom(tmp)) return cons((String)tmp, (Pair) getlist());
-        else return cons((Pair)tmp, (Pair) getlist());
+        Object tmp = readObj();
+        if (isAtom(tmp)) return cons((String)tmp, (Pair) readList());
+        else return cons((Pair)tmp, (Pair) readList());
     }
 
 
@@ -118,13 +118,13 @@ public class Lambda {
     private Object eval(Object exp, Pair env, int level) {
         dbgEvalStart(exp, env, level);
         try {
-            if (is_atom(exp)) {
+            if (isAtom(exp)) {
                 if (exp == null) return null;
                 Pair envEntry = assoc(exp, env);
                 if (envEntry != null) return car((Pair)cdr(envEntry));
                 throw new Error("'" + exp + "' is undefined");
 
-            } else if (is_atom(car ((Pair) exp))) { /* special forms */
+            } else if (isAtom(car ((Pair) exp))) { /* special forms */
                 if (car((Pair) exp) == intern("quote")) {
                     return car((Pair)cdr((Pair) exp));
 
@@ -140,14 +140,14 @@ public class Lambda {
                 } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
                     Pair args = evlist((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
                     args = (Pair)car(args); /* assumes one argument and that it is a list */
-                    return apply_primitive((UnaryOperator<Pair>) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
+                    return applyPrimitive((UnaryOperator<Pair>) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
 
                 } else { /* function call */
                     Object primop = eval (car((Pair) exp), env, level + 1);
-                    if (is_pair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
+                    if (isPair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
                         return eval(cons(primop, cdr((Pair) exp)), env, level + 1);
                     } else if (primop != null) { /* built-in primitive */
-                        return apply_primitive((UnaryOperator<Pair>) primop, evlist((Pair) cdr((Pair) exp), env, level), level);
+                        return applyPrimitive((UnaryOperator<Pair>) primop, evlist((Pair) cdr((Pair) exp), env, level), level);
                     }
                 }
 
@@ -159,7 +159,7 @@ public class Lambda {
 
             }
 
-            throw new Error("cannot evaluate expression '" + print_obj(exp, true) + '\'');
+            throw new Error("cannot evaluate expression '" + printObj(exp, true) + '\'');
 
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
@@ -188,8 +188,8 @@ public class Lambda {
         if (debug >= DEVAL) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "*** eval (" + level + ") ********");
-            System.err.print(pfx + "env: "); System.err.println(print_obj(env, true));
-            System.err.print(pfx + "exp: "); System.err.println(print_obj(exp, true));
+            System.err.print(pfx + "env: "); System.err.println(printObj(env, true));
+            System.err.print(pfx + "exp: "); System.err.println(printObj(exp, true));
         }
     }
     private void dbgEvalDone(int level) {
@@ -213,54 +213,54 @@ public class Lambda {
 
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
-    private Pair e_true() { return cons(intern("quote"), cons(intern("t"), null)); }
-    private Pair e_false() { return null; }
+    private Pair expTrue() { return cons(intern("quote"), cons(intern("t"), null)); }
+    private Pair expFalse() { return null; }
 
-    private boolean is_atom(Object x) { return x == null || x instanceof String; }
-    private boolean is_prim(Object x) { return x instanceof UnaryOperator<?>; }
-    private boolean is_pair(Object x) { return x instanceof Pair; }
+    private boolean isAtom(Object x) { return x == null || x instanceof String; }
+    private boolean isPrim(Object x) { return x instanceof UnaryOperator<?>; }
+    private boolean isPair(Object x) { return x instanceof Pair; }
     private Object car(Pair x) { return x.car; }
     private Object cdr(Pair x) { return x.cdr; }
-    private Pair cons(String _car, Object _cdr) { return new Pair(_car, _cdr); }
-    private Pair cons(Pair _car, Object _cdr) { return new Pair(_car, _cdr); }
-    private Pair cons(UnaryOperator<Pair> _car, Object _cdr) { return new Pair(_car, _cdr); }
+    private Pair cons(String car, Object cdr) { return new Pair(car, cdr); }
+    private Pair cons(Pair car, Object cdr) { return new Pair(car, cdr); }
+    private Pair cons(UnaryOperator<Pair> car, Object cdr) { return new Pair(car, cdr); }
 
-    private Pair cons(Object _car, Object _cdr) {
-        if (is_atom(_car)) return new Pair((String)_car, _cdr);
-        return new Pair((Pair)_car, _cdr);
+    private Pair cons(Object car, Object cdr) {
+        if (isAtom(car)) return new Pair((String)car, cdr);
+        return new Pair((Pair)car, cdr);
     }
 
-    private Pair assoc(Object exp, Pair env) {
-        if (exp == null) return null;
+    private Pair assoc(Object atom, Pair env) {
+        if (atom == null) return null;
         for ( ; env != null; env = (Pair)cdr(env))
-            if (exp == car((Pair) car(env)))
+            if (atom == car((Pair) car(env)))
                 return (Pair) car(env);
         return null;
     }
 
-    private Pair apply_primitive(UnaryOperator<Pair> primfn, Pair args, int level) {
+    private Pair applyPrimitive(UnaryOperator<Pair> primfn, Pair args, int level) {
         if (debug >= DPRIM) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            System.err.println(pfx + "(<primitive> " + print_obj(args, true) + ')');
+            System.err.println(pfx + "(<primitive> " + printObj(args, true) + ')');
         }
         return primfn.apply(args);
     }
 
-    private String print_obj(Object ob, boolean head_of_list) {
+    private String printObj(Object ob, boolean head_of_list) {
         if (ob == null) {
             return "null";
-        } else if (is_pair(ob)) {
+        } else if (isPair(ob)) {
             StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
-            sb.append(print_obj(car((Pair) ob), true));
+            sb.append(printObj(car((Pair) ob), true));
             if (cdr((Pair) ob) != null) {
-                if (is_pair(cdr((Pair) ob))) sb.append(' ').append(print_obj(cdr((Pair) ob), false));
-                else sb.append(" . ").append(print_obj(cdr((Pair) ob), false)).append(')');
+                if (isPair(cdr((Pair) ob))) sb.append(' ').append(printObj(cdr((Pair) ob), false));
+                else sb.append(" . ").append(printObj(cdr((Pair) ob), false)).append(')');
             } else sb.append(')');
             return sb.toString();
-        } else if (is_atom(ob)) {
+        } else if (isAtom(ob)) {
             return ob.toString();
-        } else if (is_prim(ob)) {
+        } else if (isPrim(ob)) {
             return "#<primitive>";
         } else {
             return "<internal error>";
@@ -274,12 +274,12 @@ public class Lambda {
     private UnaryOperator<Pair> fcdr =      (Pair a) -> { return (Pair) cdr((Pair) car(a)); };
     private UnaryOperator<Pair> fcons =     (Pair a) -> { return cons(car(a), car((Pair) cdr(a))); };
     private UnaryOperator<Pair> fassoc =    (Pair a) -> { return assoc(car(a), (Pair) car((Pair) cdr(a))); };
-    private UnaryOperator<Pair> feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? e_true() : e_false(); };
-    private UnaryOperator<Pair> fpair =     (Pair a) -> { return is_pair(car(a))       ? e_true() : e_false(); };
-    private UnaryOperator<Pair> fatom =     (Pair a) -> { return is_atom(car(a))       ? e_true() : e_false(); };
-    private UnaryOperator<Pair> fnull =     (Pair a) -> { return car(a) == null        ? e_true() : e_false(); };
-    private UnaryOperator<Pair> freadobj =  (Pair a) -> { look = getchar(); gettoken(); return (Pair) getobj(); };
-    private UnaryOperator<Pair> fwriteobj = (Pair a) -> { out.print(print_obj(car(a), true)); return e_true(); };
+    private UnaryOperator<Pair> feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? expTrue() : expFalse(); };
+    private UnaryOperator<Pair> fpair =     (Pair a) -> { return isPair(car(a))       ? expTrue() : expFalse(); };
+    private UnaryOperator<Pair> fatom =     (Pair a) -> { return isAtom(car(a))       ? expTrue() : expFalse(); };
+    private UnaryOperator<Pair> fnull =     (Pair a) -> { return car(a) == null        ? expTrue() : expFalse(); };
+    private UnaryOperator<Pair> freadobj =  (Pair a) -> { look = getchar(); readToken(); return (Pair) readObj(); };
+    private UnaryOperator<Pair> fwriteobj = (Pair a) -> { out.print(printObj(car(a), true)); return expTrue(); };
 
     private Pair environment() {
         return cons(cons(intern("car"),     cons(fcar, null)),
@@ -304,8 +304,8 @@ public class Lambda {
         this.out = out;
         Pair env = environment();
         look = getchar();
-        gettoken();
-        return print_obj(eval(getobj(), env, 0), true);
+        readToken();
+        return printObj(eval(readObj(), env, 0), true);
     }
 
     public static void main(String argv[]) {
