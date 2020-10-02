@@ -12,31 +12,33 @@ import org.junit.Test;
 public class LambdaTest {
 
     private String[][] tests = {
-            { "write", "#<primitive>", null },
+        /*  0 */ { "write", "#<primitive>", null },
 
         // application of builtins
-        /*  0 */ { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
-        /*  1 */ { "(write (quote HELLO))", "(quote t)", "HELLO" },
-        /*  2 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
+        /*  1 */ { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
+        /*  2 */ { "(write (quote HELLO))", "(quote t)", "HELLO" },
+        /*  3 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
+        /*  4 */ { "(assoc (quote write) ())", "null", null },
+        /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote 1)) (cons (cons (quote b) (quote 2)) (cons (cons (quote c) (quote 3)) ()))))", "(b . 2)", null },
 
         // comments
-        /*  3 */ { "; comment\n(write (quote HELLO))", "(quote t)", "HELLO" },
-        /*  4 */ { "; comment\n(write (quote HELLO)) ; comment", "(quote t)", "HELLO" },
+        /*  6 */ { "; comment\n(write (quote HELLO))", "(quote t)", "HELLO" },
+        /*  7 */ { "; comment\n(write (quote HELLO)) ; comment", "(quote t)", "HELLO" },
 
         // quoted chars
-        /*  5 */ { "(write (quote HELLO\\ ))", "(quote t)", "HELLO " },
-        /*  6 */ { "(write (quote HELLO\\\\))", "(quote t)", "HELLO\\" },
-        /*  7 */ { "(write (quote HELLO\\)))", "(quote t)", "HELLO)" },
-        /*  8 */ { "(write (quote HELLO\\;))", "(quote t)", "HELLO;" },
+        /*  8 */ { "(write (quote HELLO\\ ))", "(quote t)", "HELLO " },
+        /*  9 */ { "(write (quote HELLO\\\\))", "(quote t)", "HELLO\\" },
+        /* 10 */ { "(write (quote HELLO\\)))", "(quote t)", "HELLO)" },
+        /* 11 */ { "(write (quote HELLO\\;))", "(quote t)", "HELLO;" },
 
         // apply
-        /*  9 */ { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
-        /* 10 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
-        /* 11 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
-        /* 12 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(quote t)", "(HELLO . HELLO)" },
+        /* 12 */ { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
+        /* 13 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
+        /* 14 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
+        /* 15 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(quote t)", "(HELLO . HELLO)" },
 
         // lambda
-        /* 13 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
+        /* 16 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
 
     };
 
@@ -63,7 +65,7 @@ public class LambdaTest {
         PrintStream out = new PrintStream(actualOutput);
 
         Lambda interpreter = new Lambda();
-        interpreter.debug = 0;
+        interpreter.debug = Lambda.DPRIM;
 
         System.out.println("***** running program:");
         System.out.println("-------------------------------------------------------");
@@ -76,9 +78,10 @@ public class LambdaTest {
 
         assertEquals("program " + prog + " produced unexpected result", expected, actual);
 
-        if (expectedOutput != null) {
-            assertEquals("program " + prog + " produced unexpected output",
-                         expectedOutput, actualOutput.toString());
+        if (expectedOutput == null) {
+            assertEquals("program " + prog + " produced unexpected output", 0, actualOutput.size());
+        } else {
+            assertEquals("program " + prog + " produced unexpected output", expectedOutput, actualOutput.toString());
         }
     }
 }
