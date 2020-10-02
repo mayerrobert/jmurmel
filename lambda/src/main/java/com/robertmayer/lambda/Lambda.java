@@ -9,7 +9,7 @@ public class Lambda {
 
     public static final int EOF = -1;
     public static final int SYMBOL_MAX = 32;
-    public static final int DEVAL = 1, DPRIM = 2;
+    public static final int DLEX = 1, DEVAL = 2, DPRIM = 3;
 
     public int debug = DPRIM;
     private InputStream in;
@@ -26,12 +26,30 @@ public class Lambda {
 
     private Pair symbols = null;
 
+    private boolean escape;
     private int look;
     private int token[] = new int[SYMBOL_MAX];
 
-    private boolean is_space(int x)  { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private boolean is_parens(int x) { return x == '(' || x == ')'; }
-    private int getchar() { try {return in.read(); } catch (Exception e) { throw new RuntimeException("I/O error reading"); } }
+    private boolean is_space(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
+    private boolean is_parens(int x) { return !escape && (x == '(' || x == ')'); }
+
+    private int getchar() {
+        try {
+            escape = false;
+            int c = in.read();
+            if (c == '\\') {
+                escape = true;
+                return in.read();
+            }
+            if (c == ';') {
+                while ((c = in.read()) != '\n' && c != EOF);
+            }
+            return c;
+        } catch (Exception e) {
+            throw new RuntimeException("I/O error reading");
+        }
+    }
+
     private void gettoken() {
         int index = 0;
         while(is_space(look)) { look = getchar(); }
@@ -44,6 +62,8 @@ public class Lambda {
             }
         }
         token[index] = '\0';
+        if (debug >= DLEX)
+            System.err.println("*** token " + tokenToString(token));
     }
 
     private Pair e_true() { return cons( intern("quote"), cons( intern("t"), null)); }
@@ -178,7 +198,6 @@ public class Lambda {
             if (debug >= DEVAL) {
                 char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
                 System.err.println(pfx + "*** eval (" + level + ") done ***");
-                System.err.println();
             }
         }
     }
@@ -207,7 +226,7 @@ public class Lambda {
     private UnaryOperator<Pair> fatom =     (Pair a) -> {  return is_atom(car(a))       ? e_true() : e_false();  };
     private UnaryOperator<Pair> fnull =     (Pair a) -> {  return car(a) == null        ? e_true() : e_false(); };
     private UnaryOperator<Pair> freadobj =  (Pair a) -> {  look = getchar(); gettoken(); return (Pair) getobj();  };
-    private UnaryOperator<Pair> fwriteobj = (Pair a) -> {  out.print(print_obj(car(a), true)); out.println(""); return e_true();  };
+    private UnaryOperator<Pair> fwriteobj = (Pair a) -> {  out.print(print_obj(car(a), true)); return e_true();  };
 
     private Pair apply_primitive(UnaryOperator<Pair> primfn, Pair args, int level) {
         if (debug >= DPRIM) {

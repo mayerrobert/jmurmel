@@ -11,40 +11,69 @@ import org.junit.Test;
 
 public class LambdaTest {
 
+    private String[][] tests = {
+        // application of builtins
+        /*  0 */ { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
+        /*  1 */ { "(write (quote HELLO))", "(quote t)", "HELLO" },
+
+        // comments
+        /*  2 */ { "; comment\n(write (quote HELLO))", "(quote t)", "HELLO" },
+        /*  3 */ { "; comment\n(write (quote HELLO)) ; comment", "(quote t)", "HELLO" },
+
+        // quoted chars
+        /*  4 */ { "(write (quote HELLO\\ ))", "(quote t)", "HELLO " },
+        /*  5 */ { "(write (quote HELLO\\\\))", "(quote t)", "HELLO\\" },
+        /*  6 */ { "(write (quote HELLO\\)))", "(quote t)", "HELLO)" },
+        /*  7 */ { "(write (quote HELLO\\;))", "(quote t)", "HELLO;" },
+
+        /*  8 */ { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
+        /*  9 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
+        /* 10 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
+
+        /* 11 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
+
+        // geht nicht weil cons(string,string) den zweiten string auf pair casten will { "(apply (quote write) (cons (cons (quote HELLO) (quote HELLO)) nil))", "(QUOTE T)", "HELLOHELLO" },
+    };
+
+    //@Test
+    public void runTest() {
+        runTest(3);
+    }
+
     @Test
-    public void runTests() {
-        for (String[] test: tests) {
-            String prog = test[0];
-            String expected = test[1];
-            String expectedOutput = test[2];
-
-            InputStream in = new ByteArrayInputStream(prog.getBytes());
-            ByteArrayOutputStream actualOutput = new ByteArrayOutputStream();
-            PrintStream out = new PrintStream(actualOutput);
-
-            Lambda interpreter = new Lambda();
-            //interpreter.debug = 0;
-
-            String actual = interpreter.interpret(in, out);
-            out.flush();
-
-            assertEquals("program " + prog + " produced unexpected result", expected, actual);
-
-            if (expectedOutput != null) {
-                assertEquals("program " + prog + " produced unexpected output",
-                             expectedOutput, actualOutput.toString().trim());
-            }
+    public void allTests() {
+        for (int n = 0; n < tests.length; n++) {
+            runTest(n);
         }
     }
 
-    private String[][] tests = {
-        { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
-        { "(write (quote HELLO))", "(quote t)", "HELLO" },
-        { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
-        { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
-        { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
+    private void runTest(int n) {
+        String[] test = tests[n];
+        String prog = test[0];
+        String expected = test[1];
+        String expectedOutput = test[2];
 
-        { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
-        // geht nicht weil cons(string,string) den zweiten string auf pair casten will { "(apply (quote write) (cons (cons (quote HELLO) (quote HELLO)) nil))", "(QUOTE T)", "HELLOHELLO" },
-    };
+        InputStream in = new ByteArrayInputStream(prog.getBytes());
+        ByteArrayOutputStream actualOutput = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream(actualOutput);
+
+        Lambda interpreter = new Lambda();
+        //interpreter.debug = 0;
+
+        System.out.println("***** running program:");
+        System.out.println("-------------------------------------------------------");
+        System.out.println(prog);
+        System.out.println("-------------------------------------------------------");
+        String actual = interpreter.interpret(in, out);
+        out.flush();
+        System.out.println("***** done program, result: " + actual);
+        System.out.println();
+
+        assertEquals("program " + prog + " produced unexpected result", expected, actual);
+
+        if (expectedOutput != null) {
+            assertEquals("program " + prog + " produced unexpected output",
+                         expectedOutput, actualOutput.toString());
+        }
+    }
 }
