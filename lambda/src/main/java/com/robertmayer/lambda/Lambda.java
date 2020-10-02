@@ -15,6 +15,12 @@ public class Lambda {
     private InputStream in;
     private PrintStream out;
 
+    public static class Error extends RuntimeException {
+        Error(String msg) {
+            super(msg, null, false, false);
+        }
+    }
+
     private static class Pair {
         Object car;
         Object cdr;
@@ -74,9 +80,9 @@ public class Lambda {
     private boolean is_pair(Object x) { return x instanceof Pair; }
     private Object car(Pair x) { return x.car; }
     private Object cdr(Pair x) { return x.cdr; }
-    private Pair cons(String _car, Pair _cdr) { return new Pair(_car, _cdr); }
-    private Pair cons(Pair _car, Pair _cdr) { return new Pair(_car, _cdr); }
-    private Pair cons(UnaryOperator<Pair> _car, Pair _cdr) { return new Pair(_car, _cdr); }
+    private Pair cons(String _car, Object _cdr) { return new Pair(_car, _cdr); }
+    private Pair cons(Pair _car, Object _cdr) { return new Pair(_car, _cdr); }
+    private Pair cons(UnaryOperator<Pair> _car, Object _cdr) { return new Pair(_car, _cdr); }
 
     private Pair cons(Object _car, Object _cdr) {
         if (is_atom(_car)) return new Pair((String)_car, _cdr);
@@ -130,10 +136,11 @@ public class Lambda {
 
         try {
         if (is_atom(exp) ) {
+            if (exp == null) return null;
             for ( ; env != null; env = (Pair)cdr(env) )
                 if (exp == car((Pair) car(env)))
                     return car((Pair)cdr((Pair) car(env)));
-            return null;
+            throw new Error("'" + exp + "' is undefined");
 
         } else if (is_atom( car ((Pair) exp))) { /* special forms */
             if (car((Pair) exp) == intern("quote")) {
@@ -169,8 +176,7 @@ public class Lambda {
             return eval (car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
 
         }
-        out.println("cannot evaluate expression:" + print_obj(exp, true));
-        return null;
+        throw new Error("cannot evaluate expression:" + print_obj(exp, true));
 
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
