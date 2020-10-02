@@ -27,11 +27,13 @@ public class LambdaTest {
         /*  7 */ { "(write (quote HELLO\\)))", "(quote t)", "HELLO)" },
         /*  8 */ { "(write (quote HELLO\\;))", "(quote t)", "HELLO;" },
 
+        // apply
         /*  9 */ { "(apply write (cons (quote HELLO) nil))", "(quote t)", "HELLO" },
         /* 10 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(quote t)", "(HELLO HELLO)" },
         /* 11 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(quote t)", "(HELLO HELLO)" },
         /* 12 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(quote t)", "(HELLO . HELLO)" },
 
+        // lambda
         /* 13 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
 
     };
