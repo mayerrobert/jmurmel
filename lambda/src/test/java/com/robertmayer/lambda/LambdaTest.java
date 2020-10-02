@@ -12,6 +12,8 @@ import org.junit.Test;
 public class LambdaTest {
 
     private String[][] tests = {
+            { "write", "#<primitive>", null },
+
         // application of builtins
         /*  0 */ { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
         /*  1 */ { "(write (quote HELLO))", "(quote t)", "HELLO" },

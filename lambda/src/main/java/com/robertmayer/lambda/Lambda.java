@@ -67,6 +67,7 @@ public class Lambda {
                 look = getchar();
             }
         }
+        if (index == 0) throw new Error("cannot read list. missing ')'?");
         token[index] = '\0';
         if (debug >= DLEX)
             System.err.println("*** token |" + tokenToString(token) + '|');
@@ -176,7 +177,7 @@ public class Lambda {
             return eval (car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
 
         }
-        throw new Error("cannot evaluate expression:" + print_obj(exp, true));
+        throw new Error("cannot evaluate expression '" + print_obj(exp, true) + '\'');
 
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
@@ -239,7 +240,7 @@ public class Lambda {
         } else if (is_atom(ob)) {
             return ob.toString();
         } else if (is_prim(ob)) {
-            return "<primitive>";
+            return "#<primitive>";
         } else {
             return "<internal error>";
         }
