@@ -129,33 +129,33 @@ public class Lambda {
                     return car((Pair)cdr((Pair) exp));
 
                 } else if (car((Pair) exp) == intern("if")) {
-                    if (eval (car((Pair)cdr((Pair) exp)), env, level + 1) != null)
-                        return eval (car((Pair)cdr((Pair)cdr((Pair) exp))), env, level + 1);
+                    if (eval(car((Pair)cdr((Pair) exp)), env, level + 1) != null)
+                        return eval(car((Pair)cdr((Pair)cdr((Pair) exp))), env, level + 1);
                     else
-                        return eval (car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
+                        return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
 
                 } else if (car((Pair) exp) == intern("lambda")) {
                     return exp; /* todo: create a closure and capture free vars */
 
                 } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
-                    Pair args = evlist((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
+                    Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
                     args = (Pair)car(args); /* assumes one argument and that it is a list */
                     return applyPrimitive((UnaryOperator<Pair>) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
 
                 } else { /* function call */
-                    Object primop = eval (car((Pair) exp), env, level + 1);
+                    Object primop = eval(car((Pair) exp), env, level + 1);
                     if (isPair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
                         return eval(cons(primop, cdr((Pair) exp)), env, level + 1);
                     } else if (primop != null) { /* built-in primitive */
-                        return applyPrimitive((UnaryOperator<Pair>) primop, evlist((Pair) cdr((Pair) exp), env, level), level);
+                        return applyPrimitive((UnaryOperator<Pair>) primop, evlis((Pair) cdr((Pair) exp), env, level), level);
                     }
                 }
 
             } else if (car((Pair) car((Pair) exp)) == intern("lambda")) { /* should be a lambda, bind names into env and eval body */
                 Pair extenv = env, names = (Pair) car((Pair) cdr((Pair) car((Pair) exp))), vars = (Pair) cdr((Pair) exp);
                 for ( ; names != null; names = (Pair) cdr(names), vars = (Pair) cdr(vars))
-                    extenv = cons(cons((String) car(names),  cons(eval (car(vars), env, level + 1), null)), extenv);
-                return eval (car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
+                    extenv = cons(cons((String) car(names),  cons(eval(car(vars), env, level + 1), null)), extenv);
+                return eval(car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
 
             }
 
@@ -168,7 +168,7 @@ public class Lambda {
         }
     }
 
-    private Pair evlist(Pair list, Pair env, int level) {
+    private Pair evlis(Pair list, Pair env, int level) {
         Pair head = null, insertPos = null;
         for ( ; list != null; list = (Pair) cdr(list)) {
             Pair currentArg = cons(eval(car(list), env, level + 1), null);

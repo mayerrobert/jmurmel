@@ -40,6 +40,8 @@ public class LambdaTest {
         // lambda
         /* 16 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
 
+        // labels todo
+        ///* 17 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "(1 . 3)(2 . 4)", null },
     };
 
     //@Test
