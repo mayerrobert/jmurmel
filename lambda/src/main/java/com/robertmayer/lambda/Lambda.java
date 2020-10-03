@@ -136,6 +136,14 @@ public class Lambda {
                     else
                         return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
 
+                } else if (car((Pair) exp) == intern("lambda")) {
+                    return exp;
+
+                } else if (car((Pair) exp) == intern("labels")) { // labels bindings body -> object
+                    Pair bindings = (Pair) car((Pair) cdr((Pair) exp));
+                    Pair body =     (Pair) cdr((Pair) cdr((Pair) exp));
+                    return evlabels(bindings, body, env, level);
+
                 } else if (car((Pair) exp) == intern("cond")) {
                     return evcon((Pair) cdr((Pair) exp), env, level);
 
@@ -158,6 +166,11 @@ public class Lambda {
                 for ( ; names != null; names = (Pair) cdr(names), vars = (Pair) cdr(vars))
                     extenv = cons(cons((String) car(names),  cons(eval(car(vars), env, level + 1), null)), extenv);
                 return eval(car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
+
+            /*} else if (car((Pair) car((Pair) exp)) == intern("labels")) {
+                Pair bindings = (Pair) car((Pair) cdr((Pair) car((Pair) exp)));
+                Pair body = (Pair) cdr((Pair) cdr((Pair) car((Pair) exp)));
+                return evlabels(bindings, body, env, level);*/
 
             }
 
@@ -199,6 +212,13 @@ public class Lambda {
             }
         }
         return head;
+    }
+
+    private Object evlabels(Pair bindings, Pair body, Pair env, int level) {
+        Pair extenv = env;
+        // TODO bindings verarbeiten und in extenv reinstecken
+        Object bodyResults = evlis(body, extenv, level);
+        return null;
     }
 
     private void dbgEvalStart(Object exp, Pair env, int level) {
