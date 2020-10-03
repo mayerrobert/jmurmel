@@ -135,6 +135,9 @@ public class Lambda {
                     else
                         return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
 
+                } else if (car((Pair) exp) == intern("cond")) {
+                    return evcon((Pair) cdr((Pair) exp), env, level);
+
                 } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
                     Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
                     args = (Pair)car(args); /* assumes one argument and that it is a list */
@@ -164,6 +167,21 @@ public class Lambda {
         } finally {
             dbgEvalDone(level);
         }
+    }
+
+    /*
+   (evcon (c e)
+     (cond ((eval (caar c) e)
+             (eval (cadar c) e))
+           (t
+             (evcon (cdr c) e))))
+    */
+    private Object evcon(Pair c, Pair e, int level) {
+        for ( ; c != null; c = (Pair) cdr(c)) {
+            Object condResult = eval(car((Pair) car(c)), e, level + 1);
+            if (condResult != null) return eval(car((Pair) cdr((Pair) car(c))), e, level + 1);
+        }
+        return null;
     }
 
     private Pair evlis(Pair list, Pair env, int level) {
