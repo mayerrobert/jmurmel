@@ -76,7 +76,7 @@ public class LambdaTest {
         PrintStream out = new PrintStream(actualOutput);
 
         Lambda interpreter = new Lambda();
-        interpreter.debug = Lambda.DPRIM;
+        interpreter.trace = Lambda.TRC_PRIM;
 
         System.out.println("***** running program:");
         System.out.println("-------------------------------------------------------");

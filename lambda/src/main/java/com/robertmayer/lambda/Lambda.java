@@ -11,13 +11,14 @@ public class Lambda {
     public static final int EOF = -1;
     public static final int SYMBOL_MAX = 32;
 
-    public static final int DNONE = 0, DLEX = 1, DEVAL = 2, DPRIM = 3;
-    public int debug = DNONE;
+    public static final int TRC_NONE = 0, TRC_LEX = 1, TRC_EVAL = 2, TRC_PRIM = 3;
+    public int trace = TRC_NONE;
 
     private InputStream in;
     private PrintStream out;
 
     public static class Error extends RuntimeException {
+        public static final long serialVersionUID = 1;
         Error(String msg) {
             super(msg, null, false, false);
         }
@@ -63,7 +64,7 @@ public class Lambda {
         }
         if (index == 0) throw new Error("cannot read list. missing ')'?");
         token[index] = '\0';
-        if (debug >= DLEX)
+        if (trace >= TRC_LEX)
             System.err.println("*** token |" + tokenToString(token) + '|');
     }
 
@@ -182,7 +183,7 @@ public class Lambda {
     }
 
     private void dbgEvalStart(Object exp, Pair env, int level) {
-        if (debug >= DEVAL) {
+        if (trace >= TRC_EVAL) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "*** eval (" + level + ") ********");
             System.err.print(pfx + "env: "); System.err.println(printObj(env, true));
@@ -190,7 +191,7 @@ public class Lambda {
         }
     }
     private void dbgEvalDone(int level) {
-        if (debug >= DEVAL) {
+        if (trace >= TRC_EVAL) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "*** eval (" + level + ") done ***");
         }
@@ -236,7 +237,7 @@ public class Lambda {
     }
 
     private Pair applyPrimitive(UnaryOperator<Pair> primfn, Pair args, int level) {
-        if (debug >= DPRIM) {
+        if (trace >= TRC_PRIM) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "(<primitive> " + printObj(args, true) + ')');
         }
