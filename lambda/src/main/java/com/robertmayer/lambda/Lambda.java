@@ -24,6 +24,10 @@ public class Lambda {
         }
     }
 
+    @FunctionalInterface
+    public static interface Builtin {
+        Pair apply(Pair x);
+    }
 
 
     /// scanner
@@ -171,11 +175,6 @@ public class Lambda {
                     result = eval(car(body), extenv, level);
                 return result;
 
-            /*} else if (car((Pair) car((Pair) exp)) == intern("labels")) {
-                Pair bindings = (Pair) car((Pair) cdr((Pair) car((Pair) exp)));
-                Pair body = (Pair) cdr((Pair) cdr((Pair) car((Pair) exp)));
-                return evlabels(bindings, body, env, level);*/
-
             }
 
             throw new Error("cannot eval expression '" + printObj(exp, true) + '\'');
@@ -257,9 +256,6 @@ public class Lambda {
 
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
-    private Pair expTrue() { return cons(intern("quote"), cons(intern("t"), null)); }
-    private Pair expFalse() { return null; }
-
     private boolean isAtom(Object x) { return x == null || x instanceof String; }
     private boolean isPrim(Object x) { return x instanceof UnaryOperator<?>; }
     private boolean isPair(Object x) { return x instanceof Pair; }
@@ -292,7 +288,7 @@ public class Lambda {
 
     private String printObj(Object ob, boolean head_of_list) {
         if (ob == null) {
-            return "null";
+            return "nil";
         } else if (isPair(ob)) {
             StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
@@ -314,14 +310,16 @@ public class Lambda {
 
 
     /// runtime for Lisp programs
+    private Pair expTrue() { return cons(intern("quote"), cons(intern("t"), null)); }
+
     private UnaryOperator<Pair> fcar =      (Pair a) -> { return (Pair) car((Pair) car(a)); };
     private UnaryOperator<Pair> fcdr =      (Pair a) -> { return (Pair) cdr((Pair) car(a)); };
     private UnaryOperator<Pair> fcons =     (Pair a) -> { return cons(car(a), car((Pair) cdr(a))); };
     private UnaryOperator<Pair> fassoc =    (Pair a) -> { return assoc(car(a), (Pair) car((Pair) cdr(a))); };
-    private UnaryOperator<Pair> feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? expTrue() : expFalse(); };
-    private UnaryOperator<Pair> fpair =     (Pair a) -> { return isPair(car(a))       ? expTrue() : expFalse(); };
-    private UnaryOperator<Pair> fatom =     (Pair a) -> { return isAtom(car(a))       ? expTrue() : expFalse(); };
-    private UnaryOperator<Pair> fnull =     (Pair a) -> { return car(a) == null        ? expTrue() : expFalse(); };
+    private UnaryOperator<Pair> feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
+    private UnaryOperator<Pair> fpair =     (Pair a) -> { return isPair(car(a))               ? expTrue() : null; };
+    private UnaryOperator<Pair> fatom =     (Pair a) -> { return isAtom(car(a))               ? expTrue() : null; };
+    private UnaryOperator<Pair> fnull =     (Pair a) -> { return car(a) == null               ? expTrue() : null; };
     private UnaryOperator<Pair> freadobj =  (Pair a) -> { look = getchar(); readToken(); return (Pair) readObj(); };
     private UnaryOperator<Pair> fwriteobj = (Pair a) -> { out.print(printObj(car(a), true)); return expTrue(); };
 

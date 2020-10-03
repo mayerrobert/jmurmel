@@ -18,7 +18,7 @@ public class LambdaTest {
         /*  1 */ { "(write (quote (Hello, world!)))", "(quote t)", "(Hello, world!)" },
         /*  2 */ { "(write (quote HELLO))", "(quote t)", "HELLO" },
         /*  3 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
-        /*  4 */ { "(assoc (quote write) ())", "null", null },
+        /*  4 */ { "(assoc (quote write) ())", "nil", null },
         /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote 1)) (cons (cons (quote b) (quote 2)) (cons (cons (quote c) (quote 3)) ()))))", "(b . 2)", null },
 
         // comments
@@ -46,12 +46,12 @@ public class LambdaTest {
         /* 21 */ { "(write ((lambda () (write (quote 1)) (write (quote 2)))))", "(quote t)", "12(quote t)" },
 
         // eq
-        /* 22 */ { "(write ((lambda () (eq (quote 1) (quote 2)))))", "(quote t)", "null" },
+        /* 22 */ { "(write ((lambda () (eq (quote 1) (quote 2)))))", "(quote t)", "nil" },
         /* 23 */ { "(write ((lambda () (eq (quote 1) (quote 1)))))", "(quote t)", "(quote t)" },
 
         // cond
         /* 24 */ { "((lambda (x) (cond ((eq x (quote 1)) (write (quote 1))) ((eq x (quote 2)) (write (quote 2))) ((eq x (quote 3)) (write (quote 3))))) (quote 3))", "(quote t)", "3" },
-        /* 25 */ { "((lambda (x) (cond ((eq x (quote 1)) (write (quote 1))) ((eq x (quote 2)) (write (quote 2))) ((eq x (quote 3)) (write (quote 3))))) (quote 4))", "null", null },
+        /* 25 */ { "((lambda (x) (cond ((eq x (quote 1)) (write (quote 1))) ((eq x (quote 2)) (write (quote 2))) ((eq x (quote 3)) (write (quote 3))))) (quote 4))", "nil", null },
 
         // labels
         /* 26 */ { "(labels () (write (quote 1)) (write (quote 2)))", "(quote t)", "12" },
