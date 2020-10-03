@@ -38,8 +38,8 @@ public class LambdaTest {
         /* 15 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(quote t)", "(HELLO . HELLO)" },
 
         // lambda
-        /* 16 */ { "(lambda () (write (quote noparam)))", "#<function>", null },
-        /* 17 */ { "(write (lambda () (write (quote noparam))))", "(quote t)", "#<function>" },
+        /* 16 */ { "(lambda () (write (quote noparam)))", "(lambda nil (write (quote noparam)))", null },
+        /* 17 */ { "(write (lambda () (write (quote noparam))))", "(quote t)", "(lambda nil (write (quote noparam)))" },
         /* 18 */ { "((lambda () (write (quote noparam))))", "(quote t)", "noparam" },
         /* 19 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
         /* 20 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "(quote t)", "(p1 . p2)" },
