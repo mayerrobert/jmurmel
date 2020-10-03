@@ -1,7 +1,9 @@
+Lambda -> LambdaJ
+
 flag ob die identifier auf UC umgestellt werden sollen
 
 builtin write-line
--> common lisp hat das
+-> common lisp hat das, parameter muss aber ein string sein
 
 eq vergleicht identität, was macht Lisp? https://stackoverflow.com/questions/547436/whats-the-difference-between-eq-eql-equal-and-equalp-in-common-lisp
 -> checken ob das passt, z.b. (eq (cons (quote 1) (quote 2)) (cons (quote 1) (quote 2))) ist nicht identisch aber gleich (?)

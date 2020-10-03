@@ -3,7 +3,6 @@ package com.robertmayer.lambda;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.function.UnaryOperator;
 
 public class Lambda {
 
@@ -120,7 +119,6 @@ public class Lambda {
 
 
     /// eval - interpreter
-    @SuppressWarnings("unchecked")
     private Object eval(Object exp, Pair env, int level) {
         dbgEvalStart(exp, env, level);
         try {
@@ -154,14 +152,14 @@ public class Lambda {
                 } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
                     Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
                     args = (Pair)car(args); /* assumes one argument and that it is a list */
-                    return applyPrimitive((UnaryOperator<Pair>) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
+                    return applyPrimitive((Builtin) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
 
                 } else { /* function call */
                     Object primop = eval(car((Pair) exp), env, level + 1);
                     if (isPair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
                         return eval(cons(primop, cdr((Pair) exp)), env, level + 1);
                     } else if (primop != null) { /* built-in primitive */
-                        return applyPrimitive((UnaryOperator<Pair>) primop, evlis((Pair) cdr((Pair) exp), env, level), level);
+                        return applyPrimitive((Builtin) primop, evlis((Pair) cdr((Pair) exp), env, level), level);
                     }
                 }
 
@@ -248,22 +246,22 @@ public class Lambda {
     private static class Pair {
         Object car, cdr;
 
-        Pair(String str, Object cdr)               { this.car = str; this.cdr = cdr; }
-        Pair(UnaryOperator<Pair> prim, Object cdr) { this.car = prim; }
-        Pair(Pair car, Object cdr)                 { this.car = car; this.cdr = cdr; }
+        Pair(String str, Object cdr)   { this.car = str; this.cdr = cdr; }
+        Pair(Builtin prim, Object cdr) { this.car = prim; }
+        Pair(Pair car, Object cdr)     { this.car = car; this.cdr = cdr; }
     }
 
 
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
-    private boolean isAtom(Object x) { return x == null || x instanceof String; }
-    private boolean isPrim(Object x) { return x instanceof UnaryOperator<?>; }
-    private boolean isPair(Object x) { return x instanceof Pair; }
-    private Object car(Pair x) { return x.car; }
-    private Object cdr(Pair x) { return x.cdr; }
-    private Pair cons(String car, Object cdr) { return new Pair(car, cdr); }
-    private Pair cons(Pair car, Object cdr) { return new Pair(car, cdr); }
-    private Pair cons(UnaryOperator<Pair> car, Object cdr) { return new Pair(car, cdr); }
+    private boolean isAtom(Object x)           { return x == null || x instanceof String; }
+    private boolean isPrim(Object x)           { return x instanceof Builtin; }
+    private boolean isPair(Object x)           { return x instanceof Pair; }
+    private Object car(Pair x)                 { return x.car; }
+    private Object cdr(Pair x)                 { return x.cdr; }
+    private Pair cons(String car, Object cdr)  { return new Pair(car, cdr); }
+    private Pair cons(Pair car, Object cdr)    { return new Pair(car, cdr); }
+    private Pair cons(Builtin car, Object cdr) { return new Pair(car, cdr); }
 
     private Pair cons(Object car, Object cdr) {
         if (isAtom(car)) return new Pair((String)car, cdr);
@@ -278,7 +276,7 @@ public class Lambda {
         return null;
     }
 
-    private Pair applyPrimitive(UnaryOperator<Pair> primfn, Pair args, int level) {
+    private Pair applyPrimitive(Builtin primfn, Pair args, int level) {
         if (trace >= TRC_PRIM) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "(<primitive> " + printObj(args, true) + ')');
@@ -312,16 +310,16 @@ public class Lambda {
     /// runtime for Lisp programs
     private Pair expTrue() { return cons(intern("quote"), cons(intern("t"), null)); }
 
-    private UnaryOperator<Pair> fcar =      (Pair a) -> { return (Pair) car((Pair) car(a)); };
-    private UnaryOperator<Pair> fcdr =      (Pair a) -> { return (Pair) cdr((Pair) car(a)); };
-    private UnaryOperator<Pair> fcons =     (Pair a) -> { return cons(car(a), car((Pair) cdr(a))); };
-    private UnaryOperator<Pair> fassoc =    (Pair a) -> { return assoc(car(a), (Pair) car((Pair) cdr(a))); };
-    private UnaryOperator<Pair> feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
-    private UnaryOperator<Pair> fpair =     (Pair a) -> { return isPair(car(a))               ? expTrue() : null; };
-    private UnaryOperator<Pair> fatom =     (Pair a) -> { return isAtom(car(a))               ? expTrue() : null; };
-    private UnaryOperator<Pair> fnull =     (Pair a) -> { return car(a) == null               ? expTrue() : null; };
-    private UnaryOperator<Pair> freadobj =  (Pair a) -> { look = getchar(); readToken(); return (Pair) readObj(); };
-    private UnaryOperator<Pair> fwriteobj = (Pair a) -> { out.print(printObj(car(a), true)); return expTrue(); };
+    private Builtin fcar =      (Pair a) -> { return (Pair) car((Pair) car(a)); };
+    private Builtin fcdr =      (Pair a) -> { return (Pair) cdr((Pair) car(a)); };
+    private Builtin fcons =     (Pair a) -> { return cons(car(a), car((Pair) cdr(a))); };
+    private Builtin fassoc =    (Pair a) -> { return assoc(car(a), (Pair) car((Pair) cdr(a))); };
+    private Builtin feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
+    private Builtin fpair =     (Pair a) -> { return isPair(car(a))               ? expTrue() : null; };
+    private Builtin fatom =     (Pair a) -> { return isAtom(car(a))               ? expTrue() : null; };
+    private Builtin fnull =     (Pair a) -> { return car(a) == null               ? expTrue() : null; };
+    private Builtin freadobj =  (Pair a) -> { look = getchar(); readToken(); return (Pair) readObj(); };
+    private Builtin fwriteobj = (Pair a) -> { out.print(printObj(car(a), true)); return expTrue(); };
 
     private Pair environment() {
         return cons(cons(intern("car"),     cons(fcar, null)),
