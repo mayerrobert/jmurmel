@@ -1,3 +1,7 @@
+readObj umbauen dass (a . b) eingelesen werden kann?
+
+Datentypen Strings, double, int unterstützen
+
 Lambda -> LambdaJ
 
 flag ob die identifier auf UC umgestellt werden sollen

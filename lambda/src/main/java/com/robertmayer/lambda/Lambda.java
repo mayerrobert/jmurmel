@@ -28,6 +28,12 @@ public class Lambda {
         Pair apply(Pair x);
     }
 
+    public static class Function {
+        final Object exp;
+        Function(Object exp) { this.exp = exp; }
+    }
+
+
 
     /// scanner
     private boolean escape;
@@ -139,7 +145,7 @@ public class Lambda {
                         return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
 
                 } else if (car((Pair) exp) == intern("lambda")) {
-                    return exp;
+                    return new Function(exp);
 
                 } else if (car((Pair) exp) == intern("labels")) { // labels bindings body -> object
                     Pair bindings = (Pair) car((Pair) cdr((Pair) exp));
@@ -246,9 +252,10 @@ public class Lambda {
     private static class Pair {
         Object car, cdr;
 
-        Pair(String str, Object cdr)   { this.car = str; this.cdr = cdr; }
-        Pair(Builtin prim, Object cdr) { this.car = prim; }
-        Pair(Pair car, Object cdr)     { this.car = car; this.cdr = cdr; }
+        Pair(String str, Object cdr)    { this.car = str; this.cdr = cdr; }
+        Pair(Builtin prim, Object cdr)  { this.car = prim; }
+        Pair(Function func, Object cdr) { this.car = func; }
+        Pair(Pair car, Object cdr)      { this.car = car; this.cdr = cdr; }
     }
 
 
@@ -256,6 +263,7 @@ public class Lambda {
     /// functions used by interpreter program, a subset is used by interpreted programs as well
     private boolean isAtom(Object x)           { return x == null || x instanceof String; }
     private boolean isPrim(Object x)           { return x instanceof Builtin; }
+    private boolean isFunc(Object x)           { return x instanceof Function; }
     private boolean isPair(Object x)           { return x instanceof Pair; }
     private Object car(Pair x)                 { return x.car; }
     private Object cdr(Pair x)                 { return x.cdr; }
@@ -265,6 +273,7 @@ public class Lambda {
 
     private Pair cons(Object car, Object cdr) {
         if (isAtom(car)) return new Pair((String)car, cdr);
+        if (isFunc(car)) return new Pair((Function)car, cdr);
         return new Pair((Pair)car, cdr);
     }
 
@@ -300,6 +309,8 @@ public class Lambda {
             return ob.toString();
         } else if (isPrim(ob)) {
             return "#<primitive>";
+        } else if (isFunc(ob)) {
+            return "#<function>";
         } else {
             return "<internal error>";
         }

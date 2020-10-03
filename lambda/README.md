@@ -25,9 +25,8 @@ or
 or pass a `new ByteArrayInputStream()` or something,
 see e.g. `LambdaTest.java` for an embedded use example.
 
-The only data types currently supported are symbols and pairs (i.e. lists).
-
-The environment contains
+## Features
+The environment contains `nil` and the functions
 
 * quote
 * apply
@@ -45,7 +44,10 @@ The environment contains
 * read
 * write
 
-Lambdas are dynamic, i.e. no lexical closures.
+The only data types currently supported are symbols and pairs (i.e. lists).
 
+Lambdas are dynamic, i.e. no lexical closures (yet?).
+
+No tail recursion optimization (yet?), sorry.
 
 Based on [micro-lisp](https://github.com/carld/micro-lisp).
