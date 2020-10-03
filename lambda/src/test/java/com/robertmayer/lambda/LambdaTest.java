@@ -55,12 +55,12 @@ public class LambdaTest {
 
         // labels
         /* 26 */ { "(labels () (write (quote 1)) (write (quote 2)))", "(quote t)", "12" },
-        //* 27 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "(1 . 3)(2 . 4)", null }, // todo
+        /* 27 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "(quote t)", "(1 . 3)(2 . 4)" }, // todo
     };
 
     //@Test
     public void runTest() {
-        runTest(21);
+        runTest(27);
     }
 
     @Test

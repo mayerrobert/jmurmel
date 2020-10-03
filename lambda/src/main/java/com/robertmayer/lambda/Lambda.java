@@ -30,7 +30,7 @@ public class Lambda {
 
     public static class Function {
         final Object exp;
-        Function(Object exp) { this.exp = exp; }
+        Function(Pair exp) { this.exp = exp; }
     }
 
 
@@ -145,7 +145,7 @@ public class Lambda {
                         return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
 
                 } else if (car((Pair) exp) == intern("lambda")) {
-                    return new Function(exp);
+                    return new Function((Pair)exp);
 
                 } else if (car((Pair) exp) == intern("labels")) { // labels bindings body -> object
                     Pair bindings = (Pair) car((Pair) cdr((Pair) exp));
@@ -155,7 +155,7 @@ public class Lambda {
                 } else if (car((Pair) exp) == intern("cond")) {
                     return evcon((Pair) cdr((Pair) exp), env, level);
 
-                } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
+                } else if (car((Pair) exp) == intern("apply")) { // apply function to list
                     Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
                     args = (Pair)car(args); /* assumes one argument and that it is a list */
                     return applyPrimitive((Builtin) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
@@ -164,16 +164,18 @@ public class Lambda {
                     Object primop = eval(car((Pair) exp), env, level + 1);
                     if (isPair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
                         return eval(cons(primop, cdr((Pair) exp)), env, level + 1);
-                    } else if (primop != null) { /* built-in primitive */
+                    } else if (primop != null) { /* built-in primitive */ // todo umbauen auf isPrim und ein "else error"
                         return applyPrimitive((Builtin) primop, evlis((Pair) cdr((Pair) exp), env, level), level);
                     }
                 }
 
-            } else if (car((Pair) car((Pair) exp)) == intern("lambda")) { /* should be a lambda, bind names into env and eval body */
-                Pair extenv = env, names = (Pair) car((Pair) cdr((Pair) car((Pair) exp))), vars = (Pair) cdr((Pair) exp);
-                for ( ; names != null; names = (Pair) cdr(names), vars = (Pair) cdr(vars))
-                    extenv = cons(cons((String) car(names),  cons(eval(car(vars), env, level + 1), null)), extenv);
-                Pair body = (Pair) cdr((Pair) cdr((Pair) car((Pair) exp)));
+            } else if (car((Pair) car((Pair) exp)) == intern("lambda")) {
+                /* should be a lambda, bind args as "names" into env and eval body-list */
+                final Pair lambda = (Pair) cdr((Pair) car((Pair) exp));
+                Pair extenv = env, params = (Pair) car(lambda), args = (Pair) cdr((Pair) exp);
+                for ( ; params != null; params = (Pair) cdr(params), args = (Pair) cdr(args))
+                    extenv = cons(cons((String) car(params),  cons(eval(car(args), env, level + 1), null)), extenv);
+                Pair body = (Pair) cdr(lambda);
                 Object result = null;
                 for (; body != null; body = (Pair) cdr(body))
                     result = eval(car(body), extenv, level);
@@ -223,7 +225,13 @@ public class Lambda {
 
     private Object evlabels(Pair bindings, Pair body, Pair env, int level) {
         Pair extenv = env;
-        // TODO bindings verarbeiten und in extenv reinstecken
+        for (; bindings != null; bindings = (Pair)cdr(bindings)) {
+            final Pair currentFunc = (Pair)car(bindings);
+            final String currentName = (String)car(currentFunc);
+            final Pair currentBody = (Pair)cdr(currentFunc);
+            final Pair lambda = cons(cons(intern("lambda"), currentBody), null);
+            extenv = cons(cons(intern(currentName), lambda), extenv);
+        }
 
         Object result = null;
         for (; body != null; body = (Pair) cdr(body))
@@ -270,6 +278,7 @@ public class Lambda {
     private Pair cons(String car, Object cdr)  { return new Pair(car, cdr); }
     private Pair cons(Pair car, Object cdr)    { return new Pair(car, cdr); }
     private Pair cons(Builtin car, Object cdr) { return new Pair(car, cdr); }
+    private Pair cons(Function car, Object cdr) { return new Pair(car, cdr); }
 
     private Pair cons(Object car, Object cdr) {
         if (isAtom(car)) return new Pair((String)car, cdr);
@@ -310,7 +319,7 @@ public class Lambda {
         } else if (isPrim(ob)) {
             return "#<primitive>";
         } else if (isFunc(ob)) {
-            return "#<function>";
+            return "#<function>"; // todo car(ob) sollten die formalen parameter sein?!
         } else {
             return "<internal error>";
         }

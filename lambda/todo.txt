@@ -1,3 +1,5 @@
+verschiedene konstruktoren für Pair und überladene cons brauchts wahrscheinlich nicht, cons(Object,Object) müsste reichen
+
 readObj umbauen dass (a . b) eingelesen werden kann?
 
 Datentypen Strings, double, int unterstützen
