@@ -165,7 +165,11 @@ public class Lambda {
                 Pair extenv = env, names = (Pair) car((Pair) cdr((Pair) car((Pair) exp))), vars = (Pair) cdr((Pair) exp);
                 for ( ; names != null; names = (Pair) cdr(names), vars = (Pair) cdr(vars))
                     extenv = cons(cons((String) car(names),  cons(eval(car(vars), env, level + 1), null)), extenv);
-                return eval(car((Pair) cdr((Pair) cdr((Pair) car((Pair) exp)))), extenv, level);
+                Pair body = (Pair) cdr((Pair) cdr((Pair) car((Pair) exp)));
+                Object result = null;
+                for (; body != null; body = (Pair) cdr(body))
+                    result = eval(car(body), extenv, level);
+                return result;
 
             /*} else if (car((Pair) car((Pair) exp)) == intern("labels")) {
                 Pair bindings = (Pair) car((Pair) cdr((Pair) car((Pair) exp)));

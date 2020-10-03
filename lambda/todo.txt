@@ -6,7 +6,11 @@ welches ergebnis liefert lambda mit einer liste als body?
 
 eval ins environment einhängen?
 
-printObj auf loop umbauen
+printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
 Klasse Atom extends String, Function extends String. car ist dann entweder UnaryOperator oder Atom oder Function.
 Das wär für Integer und Double erweiterbar.
+
+Vielleicht in printObj umlenken:
+(quote t) -> "t"
+null -> "nil"
