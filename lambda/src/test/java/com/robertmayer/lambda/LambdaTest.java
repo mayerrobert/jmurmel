@@ -60,7 +60,7 @@ public class LambdaTest {
 
     @Test
     public void runTest() {
-        runTest(25);
+        runTest(26);
     }
 
     //@Test

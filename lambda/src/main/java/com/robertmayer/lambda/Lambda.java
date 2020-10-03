@@ -217,8 +217,11 @@ public class Lambda {
     private Object evlabels(Pair bindings, Pair body, Pair env, int level) {
         Pair extenv = env;
         // TODO bindings verarbeiten und in extenv reinstecken
-        Object bodyResults = evlis(body, extenv, level);
-        return null;
+
+        Object result = null;
+        for (; body != null; body = (Pair) cdr(body))
+            result = eval(car(body), extenv, level);
+        return result;
     }
 
     private void dbgEvalStart(Object exp, Pair env, int level) {
