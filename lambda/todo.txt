@@ -2,7 +2,7 @@ lisp write liefert als ergebnis den parameter
 -> ich liefere (quote t)
 
 welches ergebnis liefert lambda mit einer liste als body?
--> sollte ergebnis der letzten form sein, labels detto
+-> sollte ergebnis der letzten form sein
 
 eval ins environment einhängen?
 
