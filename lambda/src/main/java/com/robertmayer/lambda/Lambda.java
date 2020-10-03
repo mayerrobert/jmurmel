@@ -53,11 +53,11 @@ public class Lambda {
 
     private void readToken() {
         int index = 0;
-        while(isSpace(look)) { look = getchar(); }
+        while (isSpace(look)) { look = getchar(); }
         if (isParens(look)) {
             token[index++] = look;  look = getchar();
         } else {
-            while(index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
+            while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
                 if (index < SYMBOL_MAX - 1) token[index++] = look;
                 look = getchar();
             }
@@ -116,6 +116,7 @@ public class Lambda {
 
 
     /// eval - interpreter
+    @SuppressWarnings("unchecked")
     private Object eval(Object exp, Pair env, int level) {
         dbgEvalStart(exp, env, level);
         try {
@@ -160,7 +161,7 @@ public class Lambda {
 
             }
 
-            throw new Error("cannot evaluate expression '" + printObj(exp, true) + '\'');
+            throw new Error("cannot eval expression '" + printObj(exp, true) + '\'');
 
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
