@@ -38,10 +38,19 @@ public class LambdaTest {
         /* 15 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(quote t)", "(HELLO . HELLO)" },
 
         // lambda
-        /* 16 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
+        /* 16 */ { "((lambda () (write (quote noparam))))", "(quote t)", "noparam" },
+        /* 17 */ { "((lambda (x) (write x)) (quote hello))", "(quote t)", "hello" },
+        /* 18 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "(quote t)", "(p1 . p2)" },
+
+        // eq
+        /* 20 */ { "(write ((lambda () (eq (quote 1) (quote 2)))))", "(quote t)", "null" },
+        /* 21 */ { "(write ((lambda () (eq (quote 1) (quote 1)))))", "(quote t)", "(quote t)" },
+
+        // cond todo
+        ///* 22 */ { "((lambda (x) (cond ((eq x (quote 1)) (write (quote 1))) ((eq x (quote 2)) (write (quote 2))) ((eq x (quote 3)) (write (quote 3))))) (quote 3))", "3", null },
 
         // labels todo
-        ///* 17 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "(1 . 3)(2 . 4)", null },
+        ///* 23 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "(1 . 3)(2 . 4)", null },
     };
 
     //@Test

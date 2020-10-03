@@ -134,9 +134,6 @@ public class Lambda {
                     else
                         return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
 
-                } else if (car((Pair) exp) == intern("lambda")) {
-                    return exp; /* todo: create a closure and capture free vars */
-
                 } else if (car((Pair) exp) == intern("apply")) { /* apply function to list */
                     Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
                     args = (Pair)car(args); /* assumes one argument and that it is a list */
@@ -286,7 +283,7 @@ public class Lambda {
                cons(cons(intern("cdr"),     cons(fcdr, null)),
                cons(cons(intern("cons"),    cons(fcons, null)),
                cons(cons(intern("assoc"),   cons(fassoc, null)),
-               cons(cons(intern("eq?"),     cons(feq, null)),
+               cons(cons(intern("eq"),      cons(feq, null)),
                cons(cons(intern("pair?"),   cons(fpair, null)),
                cons(cons(intern("symbol?"), cons(fatom, null)),
                cons(cons(intern("null?"),   cons(fnull, null)),
