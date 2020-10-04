@@ -1,5 +1,5 @@
 (write
-  (quote hello))
+  (quote Hello,\ World!))
 
-; output: hello
+; output: Hello, World!
 ; result: (quote t)
