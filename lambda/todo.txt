@@ -1,4 +1,4 @@
-Endrekusion erkennen: es wird eine Funktion aufgerufen, die im environment 1 höher ist (?)
+Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 höher ist (?)
 oder wenigstens loop einbauen
 
 eval hat einige endrekursive aufrufe. könnte man eliminieren.
@@ -19,7 +19,16 @@ Lambda -> LambdaJ
 
 beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
 
+printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
+
+LambdaJError extends RuntimeException
+Syntaxerror extends LambdaJError
+RuntimeError extends LambdaJError
+ExtFuncError extends RuntimeError
+
 verschiedene konstruktoren für Pair und überladene cons brauchts wahrscheinlich nicht, cons(Object,Object) müsste reichen
+
+
 
 readObj umbauen dass (a . b) eingelesen werden kann?
 
@@ -39,8 +48,6 @@ eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
 zweite map für FFI funktionen s.u.?
 eval ins environment einhängen?
 
-printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
-
 Datentypen Strings, double, int unterstützen
 
 Klasse Atom extends String, Function extends String. car ist dann entweder UnaryOperator oder Atom oder Function.
@@ -53,11 +60,6 @@ von dieser klasse werden alle public methoden mit der Signatur UnaryOperator<Pai
 Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode die liefert eine Map Funktionsname->UnaryOperator<Pair>
 
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
-
-LambdaJError extends RuntimeException
-Syntaxerror extends LambdaJError
-RuntimeError extends LambdaJError
-ExtFuncError extends RuntimeError
 
 lexikalische closures
 
