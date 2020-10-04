@@ -1,5 +1,6 @@
 package com.robertmayer.lambdaj;
 
+import java.io.Console;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -20,6 +21,11 @@ public class LambdaJ {
         public static final long serialVersionUID = 1;
         Error(String msg) {
             super(msg, null, false, false);
+        }
+
+        @Override
+        public String toString() {
+            return "Error: " + getMessage();
         }
     }
 
@@ -359,6 +365,22 @@ public class LambdaJ {
 
     public static void main(String argv[]) {
         LambdaJ interpreter = new LambdaJ();
-        System.out.println(interpreter.interpret(System.in, System.out));
+        final boolean istty = null != System.console();
+        if (istty) {
+            System.out.println("Enter a Lisp expression:");
+            System.out.print("LambdaJ> ");
+            System.out.flush();
+        }
+        try {
+            final String result = interpreter.interpret(System.in, System.out);
+            if (istty) {
+                System.out.println();
+                System.out.println();
+                System.out.println("result: " + result);
+            }
+        } catch (Error e) {
+            System.out.println();
+            System.out.println(e.toString());
+        }
     }
 }

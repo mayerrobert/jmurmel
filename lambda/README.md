@@ -5,25 +5,31 @@ standalone as well as embedded.
 
 **Standalone use:**
 
-    java -jar lambda-1.0-SNAPSHOT.jar
+    $ java -jar lambdaj-1.0-SNAPSHOT.jar
+    Enter a Lisp expression:
+    LambdaJ>
 
-The above will wait for an expression which then will be interpreted and it's result will be printed.
+The command above will wait for you to enter an expression which then will be interpreted and it's result will be printed.
 
-    C:\> echo (write (quote hello))| java -jar lambda-1.0-SNAPSHOT.jar
-    hello(quote t)
-
+    C:\> echo (write (quote hello))| java -jar lambdaj-1.0-SNAPSHOT.jar
+    hello
+    C:\>
+    
 or
 
-    $ echo "(write (quote hello))" | java -jar lambda-1.0-SNAPSHOT.jar
-    hello(quote t)
+    $ echo "(write (quote hello))" | java -jar lambdaj-1.0-SNAPSHOT.jar
+    hello
+    $
+
+The commands above will read the expression from stdin and interpret it.
 
 **Embedded use:**
 
-    Lambda interpreter = new Lambda();
+    LambdaJ interpreter = new LambdaJ();
     String result = interpreter.interpret(System.in, System.out);
 
 or pass a `new ByteArrayInputStream()` or something,
-see e.g. `LambdaTest.java` for an embedded use example.
+see e.g. `LambdaJTest.java` for an embedded use example.
 
 ## Features
 The environment contains `nil` and the functions
