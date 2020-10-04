@@ -9,16 +9,16 @@ standalone as well as embedded.
     Enter a Lisp expression:
     LambdaJ>
 
-The command above will wait for you to enter an expression which then will be interpreted and it's result will be printed.
+The command above will wait for you to enter an expression, interpret it and print it's result.
 
-    C:\> echo (write (quote hello))| java -jar lambdaj-1.0-SNAPSHOT.jar
-    hello
+    C:\> echo (write (quote Hello,\ World!))| java -jar lambdaj-1.0-SNAPSHOT.jar
+    Hello, World!
     C:\>
     
 or
 
-    $ echo "(write (quote hello))" | java -jar lambdaj-1.0-SNAPSHOT.jar
-    hello
+    $ echo "(write (quote Hello,\ World!))" | java -jar lambdaj-1.0-SNAPSHOT.jar
+    Hello, World!
     $
 
 The commands above will read the expression from stdin and interpret it.

@@ -282,8 +282,11 @@ public class LambdaJ {
         return new Pair((Pair)car, cdr);
     }
 
-    private Pair assoc(Object atom, Pair env) {
+    private Pair assoc(Object atom, Object maybePair) {
         if (atom == null) return null;
+        if (maybePair == null) return null;
+        if (!isPair(maybePair)) throw new Error("assoc: expected second argument to be a Pair but got " + printObj(maybePair, true));
+        Pair env = (Pair) maybePair;
         for ( ; env != null; env = (Pair)cdr(env))
             if (atom == car((Pair) car(env)))
                 return (Pair) car(env);
@@ -324,21 +327,34 @@ public class LambdaJ {
     /// runtime for Lisp programs
     private Pair expTrue() { return cons(intern("quote"), cons(intern("t"), null)); }
 
-    private Builtin fcar =      (Pair a) -> { return (Pair) car((Pair) car(a)); };
-    private Builtin fcdr =      (Pair a) -> { return (Pair) cdr((Pair) car(a)); };
-    private Builtin fcons =     (Pair a) -> { return cons(car(a), car((Pair) cdr(a))); };
-    private Builtin fassoc =    (Pair a) -> { return assoc(car(a), (Pair) car((Pair) cdr(a))); };
-    private Builtin feq =       (Pair a) -> { return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
-    private Builtin fpair =     (Pair a) -> { return isPair(car(a))               ? expTrue() : null; };
-    private Builtin fatom =     (Pair a) -> { return isAtom(car(a))               ? expTrue() : null; };
-    private Builtin fnull =     (Pair a) -> { return car(a) == null               ? expTrue() : null; };
-    private Builtin freadobj =  (Pair a) -> { look = getchar(); readToken(); return (Pair) readObj(); };
+    private void noArgs(String func, Pair a) {
+        if (a != null) throw new Error(func + ": expected no arguments but got " + printObj(a, true));
+    }
 
-    private Builtin fwriteobj = (Pair a) -> {
-        if (a == null) throw new Error("write: one argument expected but none given");
-        out.print(printObj(car(a), true));
-        return expTrue();
-    };
+    private void oneArg(String func, Pair a) {
+        if (a == null) throw new Error(func + ": expected one argument but no arument was given");
+    }
+
+    private void twoArgs(String func, Pair a) {
+        if (a == null) throw new Error(func + ": expected two arguments but no arument was given");
+        if (cdr(a) == null) throw new Error(func + ": expected two arguments but only one arument was given");
+    }
+
+    private void onePair(String func, Pair a) {
+        if (a == null) throw new Error(func + ": expected one nonnull Pair argument but no argument was given");
+        if (!isPair(car(a))) throw new Error(func + ": expected one nonnull Pair argument but got " + printObj(a, true));
+    }
+
+    private Builtin fcar =      (Pair a) -> { oneArg("car", a);     if (car(a) == null) return null; return (Pair) car((Pair) car(a)); };
+    private Builtin fcdr =      (Pair a) -> { oneArg("cdr", a);     if (car(a) == null) return null; return (Pair) cdr((Pair) car(a)); };
+    private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
+    private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car((Pair) cdr(a))); };
+    private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
+    private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))               ? expTrue() : null; };
+    private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))               ? expTrue() : null; };
+    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null               ? expTrue() : null; };
+    private Builtin freadobj =  (Pair a) -> { noArgs("read", a);    look = getchar(); readToken(); return (Pair) readObj(); };
+    private Builtin fwriteobj = (Pair a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
 
     private Builtin fwriteln = (Pair a) -> {
         if (a == null) {
@@ -388,7 +404,6 @@ public class LambdaJ {
         try {
             final String result = interpreter.interpret(System.in, System.out);
             if (istty) {
-                System.out.println();
                 System.out.println();
                 System.out.println("result: " + result);
             }
