@@ -32,7 +32,7 @@ or pass a `new ByteArrayInputStream()` or something,
 see e.g. `LambdaJTest.java` for an embedded use example.
 
 ## Features
-The environment contains `nil` and the functions
+The environment contains the symbol `nil` and the functions
 
 * quote
 * apply
@@ -49,6 +49,9 @@ The environment contains `nil` and the functions
 * null?
 * read
 * write
+* writeln
+
+Variables and functions share one namespace.
 
 The only data types currently supported are symbols and pairs (i.e. lists).
 

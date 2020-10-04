@@ -1,6 +1,5 @@
 package com.robertmayer.lambdaj;
 
-import java.io.Console;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -334,7 +333,21 @@ public class LambdaJ {
     private Builtin fatom =     (Pair a) -> { return isAtom(car(a))               ? expTrue() : null; };
     private Builtin fnull =     (Pair a) -> { return car(a) == null               ? expTrue() : null; };
     private Builtin freadobj =  (Pair a) -> { look = getchar(); readToken(); return (Pair) readObj(); };
-    private Builtin fwriteobj = (Pair a) -> { out.print(printObj(car(a), true)); return expTrue(); };
+
+    private Builtin fwriteobj = (Pair a) -> {
+        if (a == null) throw new Error("write: one argument expected but none given");
+        out.print(printObj(car(a), true));
+        return expTrue();
+    };
+
+    private Builtin fwriteln = (Pair a) -> {
+        if (a == null) {
+            out.println();
+            return expTrue();
+        }
+        out.println(printObj(car(a), true));
+        return expTrue();
+    };
 
     private Pair environment() {
         return cons(cons(intern("car"),     cons(fcar, null)),
@@ -347,8 +360,9 @@ public class LambdaJ {
                cons(cons(intern("null?"),   cons(fnull, null)),
                cons(cons(intern("read"),    cons(freadobj, null)),
                cons(cons(intern("write"),   cons(fwriteobj, null)),
+               cons(cons(intern("writeln"), cons(fwriteln, null)),
                cons(cons(intern("nil"),     cons((String)null, null)),
-               null)))))))))));
+               null))))))))))));
     }
 
 
