@@ -6,7 +6,9 @@ vielleicht noch einen zweiten levelzähler einführen, dann kann man den level f
 
 eigentlich passiert die rekursion ja in eval:
 evlis, evcon & co inline expandieren, und das letzte listenelement nicht mit rekursion aufrufen sondern
-manuell tail recursion elimination machen. PROBLEM: rekursive calls haben ein geändertes environment extenv
+manuell tail recursion elimination machen.
+
+PROBLEM: rekursive calls haben ein geändertes environment extenv
 
 dann werden nicht nur tail rekursionen wegoptimiert, sondern alle tail calls. es ruft zwar die eine Lisp funktion
 eine andere auf, aber in wirklichkeit läuft nur der code der einzigen Java-methode eval. 
@@ -14,6 +16,8 @@ eine andere auf, aber in wirklichkeit läuft nur der code der einzigen Java-meth
 
 
 
+
+verschiedene konstruktoren für Pair und überladene cons brauchts wahrscheinlich nicht, cons(Object,Object) müsste reichen
 
 beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
 
@@ -23,8 +27,6 @@ LambdaJError extends RuntimeException
 Syntaxerror extends LambdaJError
 RuntimeError extends LambdaJError
 ExtFuncError extends RuntimeError
-
-verschiedene konstruktoren für Pair und überladene cons brauchts wahrscheinlich nicht, cons(Object,Object) müsste reichen
 
 
 
@@ -44,6 +46,7 @@ null -> "nil"
 
 eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
 zweite map für FFI funktionen s.u.?
+
 eval ins environment einhängen?
 
 Datentypen Strings, double, int unterstützen

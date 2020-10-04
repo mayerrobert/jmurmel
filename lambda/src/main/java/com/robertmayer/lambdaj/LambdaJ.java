@@ -356,12 +356,12 @@ public class LambdaJ {
     }
 
     private void onePair(String func, Pair a) {
-        if (a == null) throw new Error(func + ": expected one nonnull Pair argument but no argument was given");
-        if (!isPair(car(a))) throw new Error(func + ": expected one nonnull Pair argument but got " + printObj(a, true));
+        if (a == null) throw new Error(func + ": expected one Pair argument but no argument was given");
+        if (!isPair(car(a))) throw new Error(func + ": expected one Pair argument but got " + printObj(a, true));
     }
 
-    private Builtin fcar =      (Pair a) -> { oneArg("car", a);     if (car(a) == null) return null; return (Pair) car((Pair) car(a)); };
-    private Builtin fcdr =      (Pair a) -> { oneArg("cdr", a);     if (car(a) == null) return null; return (Pair) cdr((Pair) car(a)); };
+    private Builtin fcar =      (Pair a) -> { onePair("car", a);     if (car(a) == null) return null; return (Pair) car((Pair) car(a)); };
+    private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);     if (car(a) == null) return null; return (Pair) cdr((Pair) car(a)); };
     private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
     private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car((Pair) cdr(a))); };
     private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
