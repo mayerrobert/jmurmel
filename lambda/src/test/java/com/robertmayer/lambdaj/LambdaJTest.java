@@ -65,6 +65,11 @@ public class LambdaJTest {
         /* 27 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "(quote t)", "(1 . 3)(2 . 4)" }, // todo
     };
 
+    @Test
+    public void runSpace() {
+        runTest("blank", " ", null, null);
+    }
+
     //@Test
     public void runTest() {
         runTest(27);
@@ -150,7 +155,13 @@ public class LambdaJTest {
         System.out.println("-------------------------------------------------------");
         System.out.println(prog);
         System.out.println("-------------------------------------------------------");
-        String actualResult = interpreter.interpretExpression(in, out);
+
+        String actualResult;
+        if (fileName.endsWith(".lisp")) {
+            actualResult = interpreter.interpretExpressions(in, out);
+        } else {
+            actualResult = interpreter.interpretExpression(in, out);
+        }
         out.flush();
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();

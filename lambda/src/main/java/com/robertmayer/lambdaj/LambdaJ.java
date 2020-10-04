@@ -63,15 +63,17 @@ public class LambdaJ {
     private void readToken() {
         int index = 0;
         while (isSpace(look)) { look = getchar(); }
-        if (isParens(look)) {
-            token[index++] = look;  look = getchar();
-        } else {
-            while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
-                if (index < SYMBOL_MAX - 1) token[index++] = look;
-                look = getchar();
+        if (look != EOF) {
+            if (isParens(look)) {
+                token[index++] = look;  look = getchar();
+            } else {
+                while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
+                    if (index < SYMBOL_MAX - 1) token[index++] = look;
+                    look = getchar();
+                }
             }
+            if (index == 0) throw new Error("cannot read list. missing ')'?");
         }
-        if (index == 0) throw new Error("cannot read list. missing ')'?");
         token[index] = '\0';
         if (trace >= TRC_LEX)
             System.err.println("*** token |" + tokenToString(token) + '|');
@@ -110,6 +112,11 @@ public class LambdaJ {
 
     /// parser
     private Object readObj() {
+        if (token[0] == '\0') {
+            if (trace >= TRC_PARSE)
+                System.err.println("*** list  ()");
+            return null;
+        }
         if (token[0] == '(') {
             Object list = readList();
             if (trace >= TRC_PARSE)
@@ -398,11 +405,34 @@ public class LambdaJ {
         Pair env = environment();
         look = getchar();
         readToken();
-        final String result = printObj(eval(readObj(), env, 0), true);
+        final Object exp = readObj();
+        if (exp == null) return null;
+        final String result = printObj(eval(exp, env, 0), true);
         if (trace >= TRC_EVAL) {
             System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
         }
         return result;
+    }
+
+    /// build environment, read S-expression and invoke eval() until EOF
+    public String interpretExpressions(InputStream in, PrintStream out) {
+        this.in = in;
+        this.out = out;
+        Pair env = environment();
+        look = getchar();
+        readToken();
+        Object exp = readObj();
+        if (exp == null) return null;
+        while (true) {
+            final String result = printObj(eval(exp, env, 0), true);
+            if (trace >= TRC_EVAL) {
+                System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
+            }
+            look = getchar();
+            readToken();
+            exp = readObj();
+            if (exp == null) return result;
+        }
     }
 
     public static void main(String argv[]) {
