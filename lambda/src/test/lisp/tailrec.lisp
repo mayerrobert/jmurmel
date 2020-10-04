@@ -1,3 +1,5 @@
+; A very inefficient tail recursive list-reverse function
+;
 ; output: ((1) (2) (3) (4) (5))((5) (4) (3) (2) (1))
 ; result: (quote t)
 
