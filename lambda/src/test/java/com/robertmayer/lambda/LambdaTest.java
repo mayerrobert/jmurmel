@@ -6,6 +6,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.Test;
 
@@ -78,6 +83,53 @@ public class LambdaTest {
 
         runTest(prog, expectedResult, expectedOutput);
     }
+
+
+
+    @Test
+    public void runAllFiles() throws Exception {
+        Path cwd = Paths.get(".").toRealPath();
+        System.out.println("cwd: " + cwd.toString());
+        Path lispDir = Paths.get("src", "test", "lisp");
+        Files.walk(lispDir).filter(path -> path.toString()
+                .endsWith(".lisp")).forEach(path -> runTest(path));
+    }
+
+    private Pattern outputPattern = Pattern.compile("[^;]*; output: (.*)");
+    private Pattern resultPattern = Pattern.compile("[^;]*; result: (.*)");
+    private Pattern errorPattern = Pattern.compile("[^;]*; error: (.*)");
+
+    private void runTest(Path fileName) {
+        try {
+            final String contents = new String(Files.readAllBytes(fileName));
+
+            final String expectedOutput = findMatch(outputPattern, contents);
+            final String expectedResult = findMatch(resultPattern, contents);
+            final String expectedError = findMatch(errorPattern, contents);
+
+            if (expectedOutput != null && expectedResult != null || expectedError != null) {
+                runTest(contents, expectedResult, expectedOutput);
+            }
+            else {
+                System.out.println("***** skipping " + fileName.toString());
+            }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String findMatch(Pattern pattern, String contents) {
+        final Matcher outputMatcher = pattern.matcher(contents);
+        if (outputMatcher.find()) {
+            return outputMatcher.group(1);
+        }
+        else {
+            return null;
+        }
+    }
+
+
 
     private void runTest(String prog, String expectedResult, String expectedOutput) {
         InputStream in = new ByteArrayInputStream(prog.getBytes());
