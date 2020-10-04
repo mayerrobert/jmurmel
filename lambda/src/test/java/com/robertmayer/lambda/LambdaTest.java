@@ -73,10 +73,15 @@ public class LambdaTest {
     private void runTest(int n) {
         String[] test = tests[n];
         String prog = test[0];
-        String expected = test[1];
+        String expectedResult = test[1];
         String expectedOutput = test[2];
 
+        runTest(prog, expectedResult, expectedOutput);
+    }
+
+    private void runTest(String prog, String expectedResult, String expectedOutput) {
         InputStream in = new ByteArrayInputStream(prog.getBytes());
+
         ByteArrayOutputStream actualOutput = new ByteArrayOutputStream();
         PrintStream out = new PrintStream(actualOutput);
 
@@ -87,12 +92,12 @@ public class LambdaTest {
         System.out.println("-------------------------------------------------------");
         System.out.println(prog);
         System.out.println("-------------------------------------------------------");
-        String actual = interpreter.interpret(in, out);
+        String actualResult = interpreter.interpret(in, out);
         out.flush();
-        System.out.println("***** done program, result: " + actual);
+        System.out.println("***** done program, result: " + actualResult);
         System.out.println();
 
-        assertEquals("program " + prog + " produced unexpected result", expected, actual);
+        assertEquals("program " + prog + " produced unexpected result", expectedResult, actualResult);
 
         if (expectedOutput == null) {
             assertEquals("program " + prog + " produced unexpected output", 0, actualOutput.size());
