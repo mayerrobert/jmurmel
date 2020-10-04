@@ -10,7 +10,7 @@
 	</parent>
 	
     <groupId>com.robertmayer.platform</groupId>
-    <artifactId>lambda</artifactId>
+    <artifactId>lambdaj</artifactId>
     <packaging>jar</packaging>
 
 	<properties>
@@ -42,7 +42,7 @@
 				<archive>
 					<manifest>
 						<!-- <addClasspath>true</addClasspath> -->
-						<mainClass>com.robertmayer.lambda.Lambda</mainClass>
+						<mainClass>com.robertmayer.lambdaj.LambdaJ</mainClass>
 					</manifest>
 				</archive>
 			</configuration>

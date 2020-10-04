@@ -15,8 +15,6 @@ eine andere auf, aber in wirklichkeit läuft nur der code der einzigen Java-meth
 
 
 
-Lambda -> LambdaJ
-
 beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
 
 printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
@@ -89,3 +87,5 @@ oder
 ; error-prefix: SyntaxError in line 12:
 und ggf.
 ; output: Hallo Welt
+
+Lambda -> LambdaJ
