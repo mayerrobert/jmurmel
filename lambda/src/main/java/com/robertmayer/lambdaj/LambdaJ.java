@@ -239,8 +239,11 @@ public class LambdaJ {
         return result;
     }
 
+    private int maxEvalDepth;
+
     private void dbgEvalStart(Object exp, Pair env, int level) {
         if (trace >= TRC_EVAL) {
+            if (maxEvalDepth < level) maxEvalDepth = level;
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "*** eval (" + level + ") ********");
             System.err.print(pfx + "env: "); System.err.println(printObj(env, true));
@@ -390,7 +393,11 @@ public class LambdaJ {
         Pair env = environment();
         look = getchar();
         readToken();
-        return printObj(eval(readObj(), env, 0), true);
+        final String result = printObj(eval(readObj(), env, 0), true);
+        if (trace >= TRC_EVAL) {
+            System.err.println(" *** max eval depth: " + maxEvalDepth + " ***");
+        }
+        return result;
     }
 
     public static void main(String argv[]) {

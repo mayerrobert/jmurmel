@@ -88,6 +88,11 @@ public class LambdaJTest {
 
 
 
+    //@Test
+    public void runFile() throws Exception {
+        runTest(Paths.get("src", "test", "lisp", "tailrec.lisp"));
+    }
+
     @Test
     public void runAllFiles() throws Exception {
         Path cwd = Paths.get(".").toRealPath();
