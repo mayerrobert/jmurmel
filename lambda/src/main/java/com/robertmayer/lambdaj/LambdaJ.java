@@ -10,7 +10,7 @@ public class LambdaJ {
     public static final int EOF = -1;
     public static final int SYMBOL_MAX = 32;
 
-    public static final int TRC_NONE = 0, TRC_LEX = 1, TRC_EVAL = 2, TRC_PRIM = 3;
+    public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_LEX = 4;
     public int trace = TRC_NONE;
 
     private InputStream in;
@@ -110,7 +110,12 @@ public class LambdaJ {
 
     /// parser
     private Object readObj() {
-        if (token[0] == '(') return readList();
+        if (token[0] == '(') {
+            Object list = readList();
+            if (trace >= TRC_PARSE)
+                System.err.println("*** list  " + printObj(list, true));
+            return list;
+        }
         return intern(token);
     }
 
@@ -387,7 +392,7 @@ public class LambdaJ {
 
 
     /// build environment, read an S-expression and invoke eval()
-    public String interpret(InputStream in, PrintStream out) {
+    public String interpretExpression(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
         Pair env = environment();
@@ -395,7 +400,7 @@ public class LambdaJ {
         readToken();
         final String result = printObj(eval(readObj(), env, 0), true);
         if (trace >= TRC_EVAL) {
-            System.err.println(" *** max eval depth: " + maxEvalDepth + " ***");
+            System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
         }
         return result;
     }
@@ -409,7 +414,7 @@ public class LambdaJ {
             System.out.flush();
         }
         try {
-            final String result = interpreter.interpret(System.in, System.out);
+            final String result = interpreter.interpretExpression(System.in, System.out);
             if (istty) {
                 System.out.println();
                 System.out.println("result: " + result);

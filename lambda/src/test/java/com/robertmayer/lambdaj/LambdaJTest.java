@@ -144,13 +144,13 @@ public class LambdaJTest {
         PrintStream out = new PrintStream(actualOutput);
 
         LambdaJ interpreter = new LambdaJ();
-        interpreter.trace = LambdaJ.TRC_PRIM;
+        interpreter.trace = LambdaJ.TRC_LEX;
 
         System.out.println("***** running program:");
         System.out.println("-------------------------------------------------------");
         System.out.println(prog);
         System.out.println("-------------------------------------------------------");
-        String actualResult = interpreter.interpret(in, out);
+        String actualResult = interpreter.interpretExpression(in, out);
         out.flush();
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
