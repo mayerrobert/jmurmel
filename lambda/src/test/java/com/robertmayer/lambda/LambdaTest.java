@@ -81,7 +81,7 @@ public class LambdaTest {
         String expectedResult = test[1];
         String expectedOutput = test[2];
 
-        runTest(prog, expectedResult, expectedOutput);
+        runTest(getClass().getSimpleName() + ".tests[" + n + "]", prog, expectedResult, expectedOutput);
     }
 
 
@@ -101,20 +101,19 @@ public class LambdaTest {
 
     private void runTest(Path fileName) {
         try {
-            final String contents = new String(Files.readAllBytes(fileName));
+        final String contents = new String(Files.readAllBytes(fileName));
 
-            final String expectedOutput = findMatch(outputPattern, contents);
-            final String expectedResult = findMatch(resultPattern, contents);
-            final String expectedError = findMatch(errorPattern, contents);
+        final String expectedOutput = findMatch(outputPattern, contents);
+        final String expectedResult = findMatch(resultPattern, contents);
+        final String expectedError = findMatch(errorPattern, contents);
 
-            if (expectedOutput != null && expectedResult != null || expectedError != null) {
-                runTest(contents, expectedResult, expectedOutput);
-            }
-            else {
-                System.out.println("***** skipping " + fileName.toString());
-            }
+        if (expectedOutput != null && expectedResult != null || expectedError != null) {
+            runTest(fileName.toString(), contents, expectedResult, expectedOutput);
         }
-        catch (Exception e) {
+        else {
+            System.out.println("***** skipping " + fileName.toString());
+        }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -131,7 +130,7 @@ public class LambdaTest {
 
 
 
-    private void runTest(String prog, String expectedResult, String expectedOutput) {
+    private void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
         InputStream in = new ByteArrayInputStream(prog.getBytes());
 
         ByteArrayOutputStream actualOutput = new ByteArrayOutputStream();
@@ -149,12 +148,12 @@ public class LambdaTest {
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
 
-        assertEquals("program " + prog + " produced unexpected result", expectedResult, actualResult);
+        assertEquals("program " + fileName + " produced unexpected result", expectedResult, actualResult);
 
         if (expectedOutput == null) {
-            assertEquals("program " + prog + " produced unexpected output", 0, actualOutput.size());
+            assertEquals("program " + fileName + " produced unexpected output", 0, actualOutput.size());
         } else {
-            assertEquals("program " + prog + " produced unexpected output", expectedOutput, actualOutput.toString());
+            assertEquals("program " + fileName + " produced unexpected output", expectedOutput, actualOutput.toString());
         }
     }
 }
