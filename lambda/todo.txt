@@ -4,6 +4,7 @@
 
 Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 höher ist (?)
 oder wenigstens loop einbauen
+-> einfache ists alle tailcalls zu optimieren
 
 eval hat einige endrekursive aufrufe. koennte man eliminieren.
 vielleicht noch einen zweiten levelzaehler einfuehren, dann kann man den level für eval und (kleinere) rekursionstiefe anzeigen
@@ -12,7 +13,9 @@ eigentlich passiert die rekursion ja in eval:
 evlis, evcon & co inline expandieren, und das letzte listenelement nicht mit rekursion aufrufen sondern
 manuell tail recursion elimination machen.
 
-PROBLEM: rekursive calls haben ein geändertes environment extenv
+PROBLEM: function calls haben ein geändertes environment extenv
+-> einen stack aus extenvs aufbauen: ein int "stackarray" in dem merkt man sich, wieviele elemente vorne
+drangepickt wurden und nach verarbeiten des calls entfernt werden müssen 
 
 dann werden nicht nur tail rekursionen wegoptimiert, sondern alle tail calls. es ruft zwar die eine Lisp funktion
 eine andere auf, aber in wirklichkeit läuft nur der code der einzigen Java-methode eval. 
