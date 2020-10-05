@@ -1,3 +1,6 @@
+apply fuer lambdas, siehe apply.lisp
+(write (((lambda () (lambda () (quote (1 2 3))))))) ; geht nur in scheme
+
 Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 höher ist (?)
 oder wenigstens loop einbauen
 
