@@ -23,6 +23,12 @@
 	        <groupId>org.apache.maven.plugins</groupId>
 	        <artifactId>maven-surefire-plugin</artifactId>
 
+            <configuration>
+                <excludes>
+                    <exclude>**/*ManualTest.java</exclude>
+                </excludes>
+            </configuration>
+
 			<!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an jnuit tests.
 			     damit wird der junit runner aktiviert -->
 	        <dependencies>

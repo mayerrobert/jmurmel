@@ -320,6 +320,7 @@ public class LambdaJ {
         if (ob == null) {
             return "nil";
         } else if (isPair(ob)) {
+            if (car((Pair) ob) == intern("quote") && car((Pair) cdr((Pair) ob)) == intern("t")) return "t";
             final StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
             sb.append(printObj(car((Pair) ob), true));

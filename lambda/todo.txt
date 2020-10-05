@@ -40,10 +40,6 @@ builtin write-line
 lisp write liefert als ergebnis den parameter
 -> ich liefere (quote t)
 
-Vielleicht in printObj umlenken:
-(quote t) -> "t"
-null -> "nil"
-
 eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
 zweite map für FFI funktionen s.u.?
 
@@ -62,13 +58,13 @@ Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode di
 
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
 
-lexikalische closures
-
 JDBC vielleicht objectorientiert anbinden?
 funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mit (parameternameatom . wertexpression) tupeln
 
 nativeinsert könnte für batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
 mit ints liefern (ein int für jede insert-tupel-liste)
+
+lexikalische closures
 
 
 
@@ -92,3 +88,7 @@ und ggf.
 ; output: Hallo Welt
 
 Lambda -> LambdaJ
+
+Vielleicht in printObj umlenken:
+(quote t) -> "t"
+null -> "nil"
