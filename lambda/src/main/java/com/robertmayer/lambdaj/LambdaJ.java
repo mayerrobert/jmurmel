@@ -320,7 +320,7 @@ public class LambdaJ {
         if (ob == null) {
             return "nil";
         } else if (isPair(ob)) {
-            StringBuffer sb = new StringBuffer(200);
+            final StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
             sb.append(printObj(car((Pair) ob), true));
             if (cdr((Pair) ob) != null) {
@@ -340,7 +340,7 @@ public class LambdaJ {
 
 
     /// runtime for Lisp programs
-    private Pair expTrue() { return cons(intern("quote"), cons(intern("t"), null)); }
+    private final Pair expTrue = cons(intern("quote"), cons(intern("t"), null));
 
     private void noArgs(String func, Pair a) {
         if (a != null) throw new Error(func + ": expected no arguments but got " + printObj(a, true));
@@ -364,20 +364,20 @@ public class LambdaJ {
     private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);     if (car(a) == null) return null; return (Pair) cdr((Pair) car(a)); };
     private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
     private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car((Pair) cdr(a))); };
-    private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car((Pair) cdr(a)) ? expTrue() : null; };
-    private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))               ? expTrue() : null; };
-    private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))               ? expTrue() : null; };
-    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null               ? expTrue() : null; };
+    private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car((Pair) cdr(a)) ? expTrue : null; };
+    private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))               ? expTrue : null; };
+    private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))               ? expTrue : null; };
+    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null               ? expTrue : null; };
     private Builtin freadobj =  (Pair a) -> { noArgs("read", a);    look = getchar(); readToken(); return (Pair) readObj(); };
-    private Builtin fwriteobj = (Pair a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
+    private Builtin fwriteobj = (Pair a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue; };
 
     private Builtin fwriteln = (Pair a) -> {
         if (a == null) {
             out.println();
-            return expTrue();
+            return expTrue;
         }
         out.println(printObj(car(a), true));
-        return expTrue();
+        return expTrue;
     };
 
     private Pair environment() {
