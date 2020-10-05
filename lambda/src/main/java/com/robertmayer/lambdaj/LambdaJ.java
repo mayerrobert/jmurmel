@@ -31,7 +31,7 @@ public class LambdaJ {
 
     @FunctionalInterface
     public static interface Builtin {
-        Pair apply(Pair x);
+        Object apply(Pair x);
     }
 
 
@@ -320,7 +320,7 @@ public class LambdaJ {
         return null;
     }
 
-    private Pair applyPrimitive(Builtin primfn, Pair args, int level) {
+    private Object applyPrimitive(Builtin primfn, Pair args, int level) {
         if (trace >= TRC_PRIM) {
             char[] cpfx = new char[level*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "(<primitive> " + printObj(args, true) + ')');
@@ -373,15 +373,15 @@ public class LambdaJ {
         if (!isPair(car(a))) throw new Error(func + ": expected one Pair argument but got " + printObj(a, true));
     }
 
-    private Builtin fcar =      (Pair a) -> { onePair("car", a);     if (car(a) == null) return null; return (Pair) car((Pair) car(a)); };
-    private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);     if (car(a) == null) return null; return (Pair) cdr((Pair) car(a)); };
+    private Builtin fcar =      (Pair a) -> { onePair("car", a);    if (car(a) == null) return null; return car((Pair) car(a)); };
+    private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr((Pair) car(a)); };
     private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
     private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car((Pair) cdr(a))); };
     private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car((Pair) cdr(a)) ? expTrue : null; };
     private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))               ? expTrue : null; };
     private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))               ? expTrue : null; };
     private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null               ? expTrue : null; };
-    private Builtin freadobj =  (Pair a) -> { noArgs("read", a);    look = getchar(); readToken(); return (Pair) readObj(); };
+    private Builtin freadobj =  (Pair a) -> { noArgs("read", a);    look = getchar(); readToken(); return readObj(); };
     private Builtin fwriteobj = (Pair a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue; };
 
     private Builtin fwriteln = (Pair a) -> {

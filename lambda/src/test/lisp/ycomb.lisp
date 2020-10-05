@@ -1,8 +1,16 @@
+; from https://github.com/carld/micro-lisp/blob/master/examples/reverse.lisp
+
+; GNU CLISP v2.49+ (Common Lisp) gives an error, Gauche v0.9.3.3 (Scheme) runs it fine (after replacing eq -> eq?)
+ 
+; LambdaJ gives an error: cannot eval expression
+; outputt: (1 2 3)
+; result: t
+
 (((lambda (fn)
-   ((lambda (h) (h h))
-    (lambda (g)
-      (fn (lambda (x)
-            ((g g) x))))))
+          ((lambda (h) (h h))
+           (lambda (g)
+                   (fn (lambda (x)
+                               ((g g) x))))))
 
  (lambda (f)
    (lambda (lst)

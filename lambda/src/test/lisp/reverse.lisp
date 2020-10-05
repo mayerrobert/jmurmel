@@ -1,7 +1,6 @@
 ; from https://github.com/carld/micro-lisp/blob/master/examples/reverse.lisp
 
-; stuerzt mit CCE ab
-; outputt: t
+; output: (empty)
 ; result: (9 8 7 6 5 4 3 2 1)
 
 ((lambda (reverse)
