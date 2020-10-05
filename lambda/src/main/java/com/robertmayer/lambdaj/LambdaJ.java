@@ -180,17 +180,23 @@ public class LambdaJ {
                     return evcon((Pair) cdr((Pair) exp), env, level);
 
                 } else if (car((Pair) exp) == intern("apply")) { // apply function to list
+                    /* assumes one argument and that it is a list */
+                    oneArg("apply", (Pair) cdr((Pair) cdr((Pair) exp)));
                     Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
-                    args = (Pair)car(args); /* assumes one argument and that it is a list */
-                    return applyPrimitive((Builtin) eval(car((Pair)cdr((Pair) exp)), env, level + 1), args, level);
+                    args = (Pair)car(args);
+                    final Object func = eval(car((Pair)cdr((Pair) exp)), env, level + 1);
+                    if (isPair(func)) return eval(cons(func, args), env, level + 1);
+                    else if (isPrim(func)) return applyPrimitive((Builtin) func, args, level);
+                    else throw new Error("apply: not a function: " + printObj(func, true));
 
                 } else { /* function call */
-                    Object primop = eval(car((Pair) exp), env, level + 1);
-                    if (isPair(primop)) { /* user defined lambda, arg list eval happens in binding  below */
-                        return eval(cons(primop, cdr((Pair) exp)), env, level + 1);
-                    } else if (primop != null) { /* built-in primitive */ // todo umbauen auf isPrim und ein "else error"
-                        return applyPrimitive((Builtin) primop, evlis((Pair) cdr((Pair) exp), env, level), level);
+                    Object func = eval(car((Pair) exp), env, level + 1);
+                    if (isPair(func)) { /* user defined lambda, arg list eval happens in binding  below */
+                        return eval(cons(func, cdr((Pair) exp)), env, level + 1);
+                    } else if (isPrim(func)) { /* built-in primitive */ // todo umbauen auf isPrim und ein "else error"
+                        return applyPrimitive((Builtin) func, evlis((Pair) cdr((Pair) exp), env, level), level);
                     }
+                    else throw new Error("not a function: " + printObj(func, true));
                 }
 
             } else if (car((Pair) car((Pair) exp)) == intern("lambda")) {
@@ -360,12 +366,12 @@ public class LambdaJ {
     }
 
     private void oneArg(String func, Pair a) {
-        if (a == null) throw new Error(func + ": expected one argument but no arument was given");
+        if (a == null) throw new Error(func + ": expected one argument but no argument was given");
     }
 
     private void twoArgs(String func, Pair a) {
-        if (a == null) throw new Error(func + ": expected two arguments but no arument was given");
-        if (cdr(a) == null) throw new Error(func + ": expected two arguments but only one arument was given");
+        if (a == null) throw new Error(func + ": expected two arguments but no argument was given");
+        if (cdr(a) == null) throw new Error(func + ": expected two arguments but only one argument was given");
     }
 
     private void onePair(String func, Pair a) {

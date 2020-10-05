@@ -1,3 +1,6 @@
+; output: (1 2 3)
+; result: t
+
 ;(write (lambda () (lambda () (quote (1 2 3))))) ; geht
 
 ;(write ((lambda () (lambda () (quote (1 2 3)))))) ; geht
@@ -6,5 +9,5 @@
 
 
 
-; mit apply gehts in lisp und scheme, aber nicht in LambdaJ, weil das kann apply nur fuer builtins
+; mit apply gehts in lisp und scheme
 (write (apply ((lambda () (lambda () (quote (1 2 3))))) ()))
