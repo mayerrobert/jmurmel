@@ -103,11 +103,13 @@ public class LambdaJTest {
         try {
         final String contents = new String(Files.readAllBytes(fileName));
 
-        final String expectedOutput = findMatch(outputPattern, contents);
-        final String expectedResult = findMatch(resultPattern, contents);
+        String expectedOutput = findMatch(outputPattern, contents);
+        String expectedResult = findMatch(resultPattern, contents);
         final String expectedError = findMatch(errorPattern, contents);
 
         if (expectedOutput != null && expectedResult != null || expectedError != null) {
+            expectedOutput = tx(expectedOutput);
+            expectedResult = tx(expectedResult);
             runTest(fileName.toString(), contents, expectedResult, expectedOutput);
         }
         else {
@@ -128,7 +130,12 @@ public class LambdaJTest {
         }
     }
 
-
+    private static String tx(String s) {
+        if (s == null) return null;
+        if ("nil".equals(s)) return null;
+        if ("(empty)".equals(s)) return "";
+        return s;
+    }
 
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
         InputStream in = new ByteArrayInputStream(prog.getBytes());

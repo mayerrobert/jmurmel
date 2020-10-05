@@ -1,0 +1,2 @@
+; output: (empty)
+; result: nil

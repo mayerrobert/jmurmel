@@ -1,5 +1,6 @@
 package com.robertmayer.lambdaj;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ public class LambdaJ {
 
 
     /// scanner
+    private int lineNo = 1, charNo;
     private boolean escape;
     private int look;
     private int token[] = new int[SYMBOL_MAX];
@@ -46,18 +48,27 @@ public class LambdaJ {
     private int getchar() {
         try {
             escape = false;
-            int c = in.read();
+            int c = readchar();
             if (c == '\\') {
                 escape = true;
-                return in.read();
+                return readchar();
             }
             if (c == ';') {
-                while ((c = in.read()) != '\n' && c != EOF);
+                while ((c = readchar()) != '\n' && c != EOF);
             }
             return c;
         } catch (Exception e) {
             throw new RuntimeException("I/O error reading");
         }
+    }
+
+    private int readchar() throws IOException {
+        int c = in.read();
+        if (c == '\n') {
+            lineNo++;
+            charNo = 0;
+        } else charNo++;
+        return c;
     }
 
     private void readToken() {
@@ -72,7 +83,6 @@ public class LambdaJ {
                     look = getchar();
                 }
             }
-            if (index == 0) throw new Error("cannot read list. missing ')'?");
         }
         token[index] = '\0';
         if (trace >= TRC_LEX)
@@ -128,6 +138,8 @@ public class LambdaJ {
 
     private Object readList() {
         readToken();
+        if (token[0] == '\0')
+            throw new Error("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
         if (token[0] == ')') return null;
         Object tmp = readObj();
         if (isAtom(tmp)) return cons((String)tmp, (Pair) readList());
@@ -437,7 +449,8 @@ public class LambdaJ {
     }
 
     public static void main(String argv[]) {
-        LambdaJ interpreter = new LambdaJ();
+        final LambdaJ interpreter = new LambdaJ();
+        interpreter.trace = TRC_LEX;
         final boolean istty = null != System.console();
         if (istty) {
             System.out.println("Enter a Lisp expression:");
