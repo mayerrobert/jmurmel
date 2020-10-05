@@ -16,7 +16,7 @@ import org.junit.Test;
 
 public class LambdaJTest {
 
-    public static final String[][] tests = {
+    private static final String[][] tests = {
         /*  0 */ { "write", "#<primitive>", null },
 
         // application of builtins
@@ -25,6 +25,7 @@ public class LambdaJTest {
         /*  3 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
         /*  4 */ { "(assoc (quote write) ())", "nil", null },
         /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote 1)) (cons (cons (quote b) (quote 2)) (cons (cons (quote c) (quote 3)) ()))))", "(b . 2)", null },
+        //*  6 */ { "(write (car (quote (1 2))))", "t", "1" }, // todo
 
         // comments
         /*  6 */ { "; comment\n(write (quote HELLO))", "t", "HELLO" },
@@ -63,11 +64,6 @@ public class LambdaJTest {
         /* 27 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "t", "(1 . 3)(2 . 4)" }, // todo
     };
 
-    //@Test
-    public void runTest() {
-        runTest(27);
-    }
-
     @Test
     public void allTests() {
         for (int n = 0; n < tests.length; n++) {
@@ -75,13 +71,13 @@ public class LambdaJTest {
         }
     }
 
-    private void runTest(int n) {
+    public static void runTest(int n) {
         String[] test = tests[n];
         String prog = test[0];
         String expectedResult = test[1];
         String expectedOutput = test[2];
 
-        runTest(getClass().getSimpleName() + ".tests[" + n + "]", prog, expectedResult, expectedOutput);
+        runTest("LambdaJTest.tests[" + n + "]", prog, expectedResult, expectedOutput);
     }
 
 
