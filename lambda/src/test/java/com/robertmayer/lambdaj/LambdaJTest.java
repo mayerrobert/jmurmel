@@ -108,8 +108,8 @@ public class LambdaJTest {
             final String expectedError = findMatch(errorPattern, contents);
 
             if (expectedOutput != null && expectedResult != null || expectedError != null) {
-                expectedOutput = tx(expectedOutput);
-                expectedResult = tx(expectedResult);
+                expectedOutput = transform(expectedOutput);
+                expectedResult = transform(expectedResult);
                 try {
                     runTest(fileName.toString(), contents, expectedResult, expectedOutput);
                 }
@@ -141,7 +141,7 @@ public class LambdaJTest {
         }
     }
 
-    private static String tx(String s) {
+    private static String transform(String s) {
         if (s == null) return null;
         if ("nil".equals(s)) return null;
         if ("(empty)".equals(s)) return "";

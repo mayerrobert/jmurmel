@@ -19,8 +19,6 @@ eine andere auf, aber in wirklichkeit läuft nur der code der einzigen Java-meth
 
 verschiedene konstruktoren für Pair und überladene cons brauchts wahrscheinlich nicht, cons(Object,Object) müsste reichen
 
-beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
-
 printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
 LambdaJError extends RuntimeException
@@ -92,3 +90,5 @@ Lambda -> LambdaJ
 Vielleicht in printObj umlenken:
 (quote t) -> "t"
 null -> "nil"
+
+beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
