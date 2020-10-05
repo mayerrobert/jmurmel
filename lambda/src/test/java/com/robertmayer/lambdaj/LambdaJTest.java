@@ -101,20 +101,31 @@ public class LambdaJTest {
 
     static void runTest(Path fileName) {
         try {
-        final String contents = new String(Files.readAllBytes(fileName));
+            final String contents = new String(Files.readAllBytes(fileName));
 
-        String expectedOutput = findMatch(outputPattern, contents);
-        String expectedResult = findMatch(resultPattern, contents);
-        final String expectedError = findMatch(errorPattern, contents);
+            String expectedOutput = findMatch(outputPattern, contents);
+            String expectedResult = findMatch(resultPattern, contents);
+            final String expectedError = findMatch(errorPattern, contents);
 
-        if (expectedOutput != null && expectedResult != null || expectedError != null) {
-            expectedOutput = tx(expectedOutput);
-            expectedResult = tx(expectedResult);
-            runTest(fileName.toString(), contents, expectedResult, expectedOutput);
+            if (expectedOutput != null && expectedResult != null || expectedError != null) {
+                expectedOutput = tx(expectedOutput);
+                expectedResult = tx(expectedResult);
+                try {
+                    runTest(fileName.toString(), contents, expectedResult, expectedOutput);
+                }
+                catch (LambdaJ.Error e) {
+                    if (expectedError != null && e.getMessage().contains(expectedError)) {
+                        // thats fine
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+            else {
+                System.out.println("***** skipping " + fileName.toString());
         }
-        else {
-            System.out.println("***** skipping " + fileName.toString());
-        }
+        } catch (LambdaJ.Error e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
