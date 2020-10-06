@@ -535,7 +535,6 @@ public class LambdaJ {
         look = getchar();
         readToken();
         final Object exp = readObj();
-        if (exp == null) return null;
         final String result = printObj(eval(exp, env, 0), true);
         if (trace >= TRC_EVAL) {
             System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
@@ -551,7 +550,6 @@ public class LambdaJ {
         look = getchar();
         readToken();
         Object exp = readObj();
-        if (exp == null) return null;
         while (true) {
             final String result = printObj(eval(exp, env, 0), true);
             if (trace >= TRC_EVAL) {

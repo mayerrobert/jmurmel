@@ -107,6 +107,7 @@ public class LambdaJTest {
         /* 58 */ { "(mod 12 5)", "2.0", null },
 
         /*
+selber mit clisp ausprobiert:
 ;(atom 1)              ; t
 ;(atom (quote x))      ; t
 ;(atom ())             ; t
@@ -117,6 +118,7 @@ public class LambdaJTest {
 ;(symbolp ())             ; t
 ;(symbolp (quote (a)))    ; nil
 
+; CL consp ist dasselbe wie Scheme pair?. consp(nil) == nil, listp(nil) == true
 ;(consp 1)              ; nil
 ;(consp (quote x))      ; nil
 ;(consp ())             ; nil
@@ -126,6 +128,45 @@ public class LambdaJTest {
 ;(numberp (quote x))   ; nil
 ;(numberp ())          ; nil
 (numberp (quote (a))) ; nil
+
+
+https://graham.main.nc.us/~bhammel/graham/lisp.html
+
+It is a convention, and perhaps a logically infelicitous one, of most LISP interpreters to equate the empty list with a selfevaluating atom called "nil". Thus,
+
+       (cdr (cdr (cdr (quote (a (b c) (d (e f))))))) -> nil
+       () -> nil
+       (quote ()) -> nil
+       nil -> nil
+
+The values that atom returns sets the stage for the two internally defined selfevaluating boolean values "nil" and "t".
+
+   Examples:
+
+        -> nil
+           nil
+
+        -> t
+           t
+
+        -> (atom ())
+           t
+
+        -> (atom ())
+           t
+
+        -> (atom nil)
+           t
+
+        -> (atom t)
+           t
+
+        -> (atom (quote a))
+           t
+
+        -> (atom (quote (a b)))
+           nil
+
 
          */
     };
@@ -215,7 +256,7 @@ public class LambdaJTest {
 
     private static String transform(String s) {
         if (s == null) return null;
-        if ("nil".equals(s)) return null;
+        //if ("nil".equals(s)) return null;
         if ("(empty)".equals(s)) return "";
         return s;
     }

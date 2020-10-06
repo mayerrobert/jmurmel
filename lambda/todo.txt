@@ -1,4 +1,8 @@
-test fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+numberp, ggf. atom korrigieren
+symbol? vs atom vs numberp
+test fuer eval nil und t
+
+error tests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
 
 Vielleicht car, cdr, cons, Pair in eine Basisklasse LambdaJRuntime rausziehen?
 LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
@@ -15,9 +19,6 @@ eval, evlis, evcon vielleicht in haendischem CPS?!?
 
 
 tests und fehlertests fuer number und operatoren
-
-numberp, ggf. atom korrigieren
-symbol? vs atom vs numberp
 
 <, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
