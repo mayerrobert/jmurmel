@@ -142,8 +142,8 @@ public class LambdaJ {
             throw new Error("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
         if (token[0] == ')') return null;
         Object tmp = readObj();
-        if (isAtom(tmp)) return cons((String)tmp, (Pair) readList());
-        else return cons((Pair)tmp, (Pair) readList());
+        if (isAtom(tmp)) return cons(tmp, readList());
+        else return cons(tmp, readList());
     }
 
 
@@ -204,7 +204,7 @@ public class LambdaJ {
                 final Pair lambda = (Pair) cdr((Pair) car((Pair) exp));
                 Pair extenv = env, params = (Pair) car(lambda), args = (Pair) cdr((Pair) exp);
                 for ( ; params != null; params = (Pair) cdr(params), args = (Pair) cdr(args))
-                    extenv = cons(cons((String) car(params),  cons(eval(car(args), env, level + 1), null)), extenv);
+                    extenv = cons(cons(car(params),  cons(eval(car(args), env, level + 1), null)), extenv);
                 Pair body = (Pair) cdr(lambda);
                 Object result = null;
                 for (; body != null; body = (Pair) cdr(body))
@@ -292,10 +292,7 @@ public class LambdaJ {
     /// data type used by interpreter program as well as interpreted programs
     private static class Pair {
         Object car, cdr;
-
-        Pair(String str, Object cdr)    { this.car = str; this.cdr = cdr; }
-        Pair(Builtin prim, Object cdr)  { this.car = prim; }
-        Pair(Pair car, Object cdr)      { this.car = car; this.cdr = cdr; }
+        Pair(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
     }
 
 
@@ -306,14 +303,7 @@ public class LambdaJ {
     private boolean isPair(Object x)           { return x instanceof Pair; }
     private Object car(Pair x)                 { return x.car; }
     private Object cdr(Pair x)                 { return x.cdr; }
-    private Pair cons(String car, Object cdr)  { return new Pair(car, cdr); }
-    private Pair cons(Pair car, Object cdr)    { return new Pair(car, cdr); }
-    private Pair cons(Builtin car, Object cdr) { return new Pair(car, cdr); }
-
-    private Pair cons(Object car, Object cdr) {
-        if (isAtom(car)) return new Pair((String)car, cdr);
-        return new Pair((Pair)car, cdr);
-    }
+    private Pair cons(Object car, Object cdr)  { return new Pair(car, cdr); }
 
     private Pair assoc(Object atom, Object maybePair) {
         if (atom == null) return null;
@@ -421,7 +411,7 @@ public class LambdaJ {
     public String interpretExpression(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
-        Pair env = environment();
+        final Pair env = environment();
         look = getchar();
         readToken();
         final Object exp = readObj();
@@ -437,7 +427,7 @@ public class LambdaJ {
     public String interpretExpressions(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
-        Pair env = environment();
+        final Pair env = environment();
         look = getchar();
         readToken();
         Object exp = readObj();
