@@ -1,4 +1,13 @@
-(write (((lambda () (lambda () (quote (1 2 3))))))) ; geht nur in scheme siehe apply.lisp
+numberp, ggf. atom korrigieren
+symbol? vs atom vs numberp
+eq fuer number korrigieren, achtung beim vergleichen von double!
+-> oder eq lassen und = einfuehren
+
++ - * / %, factorial beispiel
+
+
+
+printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
 
 
@@ -22,7 +31,6 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 
 
-
 (loop for thing in list
    do (if (numberp thing)
           (format nil “I’m a number: ~a~%” thing)
@@ -30,17 +38,13 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 
 
+(write (((lambda () (lambda () (quote (1 2 3))))))) ; geht nur in scheme siehe apply.lisp
 
 
-eq fuer number korrigieren, achtung beim vergleichen von double!
-numberp, ggf. atom korrigieren
-symbol? vs atom vs numberp
 
-+ - * / %, factorial beispiel
+
 
 error vs. warn?!?
-
-printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
 LambdaJError extends RuntimeException
 Syntaxerror extends LambdaJError
@@ -118,4 +122,4 @@ verschiedene konstruktoren fuer Pair und ueberladene cons brauchts wahrscheinlic
 builtin write-line
 -> common lisp hat das, parameter muss aber ein string sein
 
-Datentyp double, (int nicht) unterstuetzen
+Datentyp double, (nicht int) unterstuetzen
