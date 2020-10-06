@@ -134,30 +134,25 @@ public class LambdaJ {
     /// parser
     private Object readObj() {
         if (tok == null) {
-            if (trace >= TRC_PARSE)
-                System.err.println("*** list   ()");
+            if (trace >= TRC_PARSE) System.err.println("*** list   ()");
             return null;
         }
         if ("(".equals(tok)) {
             Object list = readList();
-            if (trace >= TRC_PARSE)
-                System.err.println("*** list   " + printObj(list, true));
+            if (trace >= TRC_PARSE) System.err.println("*** list   " + printObj(list, true));
             return list;
         }
         if (tok instanceof Number) {
-            if (trace >= TRC_TOK)
-                System.err.println("*** number " + tok.toString());
+            if (trace >= TRC_TOK) System.err.println("*** number " + tok.toString());
             return tok;
         }
-        if (trace >= TRC_TOK)
-            System.err.println("*** symbol " + (String)tok);
+        if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
         return intern((String)tok);
     }
 
     private Object readList() {
         readToken();
-        if (tok == null)
-            throw new Error("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
+        if (tok == null) throw new Error("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
         if (")".equals(tok)) return null;
         Object tmp = readObj();
         if (isAtom(tmp)) return cons(tmp, readList());
@@ -333,8 +328,7 @@ public class LambdaJ {
         if (!isPair(maybePair)) throw new Error("assoc: expected second argument to be a Pair but got " + printObj(maybePair, true));
         Pair env = (Pair) maybePair;
         for ( ; env != null; env = (Pair)cdr(env))
-            if (atom == car((Pair) car(env)))
-                return (Pair) car(env);
+            if (atom == car((Pair) car(env))) return (Pair) car(env);
         return null;
     }
 
@@ -396,12 +390,10 @@ public class LambdaJ {
 
     private void optNumbers(String func, Pair a) {
         if (a == null) return;
-        for (; a != null; a = (Pair) cdr(a)) {
-            if (!isNumber(car(a))) {
-                throw new Error(func + ": expected only number arguments but got " + printObj(a, true));
-            }
-        }
+        for (; a != null; a = (Pair) cdr(a))
+            if (!isNumber(car(a))) throw new Error(func + ": expected only number arguments but got " + printObj(a, true));
     }
+
     private Builtin fcar =      (Pair a) -> { onePair("car", a);    if (car(a) == null) return null; return car((Pair) car(a)); };
     private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr((Pair) car(a)); };
     private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
@@ -455,10 +447,8 @@ public class LambdaJ {
     private Builtin fadd = (Pair args) -> {
         optNumbers("+", args);
         Double result = 0.0;
-        for (; args != null; args = (Pair) cdr(args)) {
-            Double x = (Double)car(args);
-            result += x;
-        }
+        for (; args != null; args = (Pair) cdr(args))
+            result += (Double)car(args);
         return result;
     };
 
@@ -466,20 +456,16 @@ public class LambdaJ {
         oneArg("-", args);
         optNumbers("-", args);
         Double result = (Double)car(args);
-        for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args)) {
-            Double x = (Double)car(args);
-            result -= x;
-        }
+        for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args))
+            result -= (Double)car(args);
         return result;
     };
 
     private Builtin fmul = (Pair args) -> {
         optNumbers("*", args);
         Double result = 1.0;
-        for (; args != null; args = (Pair) cdr(args)) {
-            Double x = (Double)car(args);
-            result *= x;
-        }
+        for (; args != null; args = (Pair) cdr(args))
+            result *= (Double)car(args);
         return result;
     };
 
@@ -487,10 +473,8 @@ public class LambdaJ {
         oneArg("-", args);
         optNumbers("/", args);
         Double result = (Double)car(args);
-        for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args)) {
-            Double x = (Double)car(args);
-            result *= x;
-        }
+        for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args))
+            result *= (Double)car(args);
         return result;
     };
 

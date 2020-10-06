@@ -4,6 +4,7 @@ die parameterchecks ignorieren zuviele argumente
 
 numberp, ggf. atom korrigieren
 symbol? vs atom vs numberp
+
 eq fuer number korrigieren
 -> oder eq lassen und = einfuehren, achtung beim vergleichen von double!
 -> vielleicht = mit optionalem drittem double parameter fuzz fuer die genauigkeit
