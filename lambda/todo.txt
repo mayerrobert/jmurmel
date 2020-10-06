@@ -1,17 +1,11 @@
-die parameterchecks ignorieren zuviele argumente
-
-<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
-
 numberp, ggf. atom korrigieren
 symbol? vs atom vs numberp
 
-eq fuer number korrigieren
--> oder eq lassen und = einfuehren, achtung beim vergleichen von double!
--> vielleicht = mit optionalem drittem double parameter fuzz fuer die genauigkeit
+die parameterchecks ignorieren zuviele argumente
 
-+ - * / %, factorial beispiel
+tests und fehlertests fuer number und operatoren
 
-fehlertests fuer number
+<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
 
 
@@ -46,13 +40,17 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 
 
+eval ins environment einhaengen?
+
+Datentyp Strings, char unterstuetzen
+
+
+
 (write (((lambda () (lambda () (quote (1 2 3))))))) ; geht nur in scheme siehe apply.lisp
 
 
 
 
-
-error vs. warn?!?
 
 LambdaJError extends RuntimeException
 Syntaxerror extends LambdaJError
@@ -71,12 +69,7 @@ lisp write liefert als ergebnis den parameter
 eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
 zweite map fuer FFI funktionen s.u.?
 
-eval ins environment einhaengen?
 
-Datentyp Strings, char unterstuetzen
-
-Klasse Atom extends String, Function extends String. car ist dann entweder UnaryOperator oder Atom oder Function.
-Das wär für Integer und Double erweiterbar.
 
 FFI: eine special form "extlabels". funktioniert aehnlich wie labels,
 aber statt funktionsdefinitionen gibt man einen Klassennamen an (und vielleicht ein zusaetzliches optionales namenspraefix,
@@ -131,3 +124,9 @@ builtin write-line
 -> common lisp hat das, parameter muss aber ein string sein
 
 Datentyp double, (nicht int) unterstuetzen
+
+eq fuer number korrigieren
+-> oder eq lassen und = einfuehren, achtung beim vergleichen von double!
+-> vielleicht = mit optionalem drittem double parameter fuzz fuer die genauigkeit
+
++ - * / %, factorial beispiel
