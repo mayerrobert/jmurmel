@@ -1,3 +1,4 @@
+test fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
 
 Vielleicht car, cdr, cons, Pair in eine Basisklasse LambdaJRuntime rausziehen?
 LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
@@ -17,8 +18,6 @@ tests und fehlertests fuer number und operatoren
 
 numberp, ggf. atom korrigieren
 symbol? vs atom vs numberp
-
-die parameterchecks ignorieren zuviele argumente
 
 <, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
@@ -154,3 +153,5 @@ car, cdr umstellen dass sie Object uebernehmen
 
 vielleicht "Object car(Object)" und "Pair pcar(Object)"?
 -> Eruebrigt sich ggf. durch Umstellen von car(Pair) nach car(Object) 
+
+die parameterchecks ignorieren zuviele argumente

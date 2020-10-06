@@ -375,19 +375,26 @@ public class LambdaJ {
 
     private void oneArg(String func, Pair a) {
         if (a == null) throw new Error(func + ": expected one argument but no argument was given");
+        if (cdr(a) != null) throw new Error(func + ": expected one argument but got extra arg(s) " + printObj(cdr(a), true));
     }
 
-    /** two args or more */
+    private void oneOrMoreArgs(String func, Pair a) {
+        if (a == null) throw new Error(func + ": expected at least one argument but no argument was given");
+    }
+
     private void twoArgs(String func, Pair a) {
         if (a == null) throw new Error(func + ": expected two arguments but no argument was given");
         if (cdr(a) == null) throw new Error(func + ": expected two arguments but only one argument was given");
+        if (cdr(cdr(a)) != null) throw new Error(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true));
     }
 
     private void onePair(String func, Pair a) {
         if (a == null) throw new Error(func + ": expected one Pair argument but no argument was given");
         if (!isPair(car(a))) throw new Error(func + ": expected one Pair argument but got " + printObj(a, true));
+        if (cdr(a) != null) throw new Error(func + ": expected one Pair argument but got extra arg(s) " + printObj(cdr(a), true));
     }
 
+    /** arguments if any must be only numbers */
     private void optNumbers(String func, Pair a) {
         if (a == null) return;
         for (; a != null; a = (Pair) cdr(a))
@@ -453,7 +460,7 @@ public class LambdaJ {
     };
 
     private Builtin fsub = (Pair args) -> {
-        oneArg("-", args);
+        oneOrMoreArgs("-", args);
         optNumbers("-", args);
         Double result = (Double)car(args);
         if (cdr(args) == null) return -result;
@@ -471,7 +478,7 @@ public class LambdaJ {
     };
 
     private Builtin fquot = (Pair args) -> {
-        oneArg("-", args);
+        oneOrMoreArgs("-", args);
         optNumbers("/", args);
         Double result = (Double)car(args);
         if (cdr(args) == null) return 1 / result;
