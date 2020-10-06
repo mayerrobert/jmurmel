@@ -38,6 +38,9 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
           (format nil “I’m a number: ~a~%” thing)
           (format nil “Not a number!~%”)
 
+(defun factorial(x)
+  (reduce '* (loop for a from x downto 1 collect a)))
+
 
 
 eval ins environment einhaengen?
