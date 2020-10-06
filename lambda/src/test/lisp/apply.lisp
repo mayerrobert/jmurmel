@@ -1,13 +1,13 @@
-; output: (1 2 3)
+; output: (a b c)
 ; result: t
 
-;(write (lambda () (lambda () (quote (1 2 3))))) ; geht
+;(write (lambda () (lambda () (quote (a b c))))) ; geht
 
-;(write ((lambda () (lambda () (quote (1 2 3)))))) ; geht
+;(write ((lambda () (lambda () (quote (a b c)))))) ; geht
 
-;(write (((lambda () (lambda () (quote (1 2 3))))))) ; geht nur in scheme
+;(write (((lambda () (lambda () (quote (a b c))))))) ; geht nur in scheme
 
 
 
 ; mit apply gehts in lisp und scheme
-(write (apply ((lambda () (lambda () (quote (1 2 3))))) ()))
+(write (apply ((lambda () (lambda () (quote (a b c))))) ()))

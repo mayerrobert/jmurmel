@@ -4,7 +4,7 @@
 
 Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 hoeher ist (?)
 oder wenigstens loop einbauen
--> einfache ists alle tailcalls zu optimieren
+-> einfacher ists alle tailcalls zu optimieren
 
 eval hat einige endrekursive aufrufe. koennte man eliminieren.
 vielleicht noch einen zweiten levelzaehler einfuehren, dann kann man den level fuer eval und (kleinere) rekursionstiefe anzeigen
@@ -23,6 +23,22 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 
 
+(loop for thing in list
+   do (if (numberp thing)
+          (format nil “I’m a number: ~a~%” thing)
+          (format nil “Not a number!~%”)
+
+
+
+
+
+eq fuer number korrigieren, achtung beim vergleichen von double!
+numberp, ggf. atom korrigieren
+symbol? vs atom vs numberp
+
++ - * / %, factorial beispiel
+
+error vs. warn?!?
 
 printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
@@ -45,7 +61,7 @@ zweite map fuer FFI funktionen s.u.?
 
 eval ins environment einhaengen?
 
-Datentypen Strings, double, int unterstuetzen
+Datentyp Strings, char unterstuetzen
 
 Klasse Atom extends String, Function extends String. car ist dann entweder UnaryOperator oder Atom oder Function.
 Das wär für Integer und Double erweiterbar.
@@ -101,3 +117,5 @@ verschiedene konstruktoren fuer Pair und ueberladene cons brauchts wahrscheinlic
 
 builtin write-line
 -> common lisp hat das, parameter muss aber ein string sein
+
+Datentyp double, (int nicht) unterstuetzen

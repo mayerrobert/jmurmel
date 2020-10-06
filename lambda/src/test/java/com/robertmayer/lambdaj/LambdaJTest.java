@@ -25,11 +25,11 @@ public class LambdaJTest {
         /*  2 */ { "(write (quote HELLO))", "t", "HELLO" },
         /*  3 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
         /*  4 */ { "(assoc (quote write) ())", "nil", null },
-        /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote 1)) (cons (cons (quote b) (quote 2)) (cons (cons (quote c) (quote 3)) ()))))", "(b . 2)", null },
-        /*  6 */ { "(write (car (quote (1 2))))", "t", "1" },
-        /*  7 */ { "(write (cdr (quote (1 2))))", "t", "(2)" },
-        /*  6 */ { "(write (car (cons (quote 1) (quote 2))))", "t", "1" },
-        /*  7 */ { "(write (cdr (cons (quote 1) (quote 2))))", "t", "2" },
+        /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote a1)) (cons (cons (quote b) (quote b2)) (cons (cons (quote c) (quote c3)) ()))))", "(b . b2)", null },
+        /*  6 */ { "(write (car (quote (v1 v2))))", "t", "v1" },
+        /*  7 */ { "(write (cdr (quote (v1 v2))))", "t", "(v2)" },
+        /*  6 */ { "(write (car (cons (quote v1) (quote v2))))", "t", "v1" },
+        /*  7 */ { "(write (cdr (cons (quote v1) (quote v2))))", "t", "v2" },
 
         // comments
         /*  8 */ { "; comment\n(write (quote HELLO))", "t", "HELLO" },
@@ -53,19 +53,19 @@ public class LambdaJTest {
         /* 20 */ { "((lambda () (write (quote noparam))))", "t", "noparam" },
         /* 21 */ { "((lambda (x) (write x)) (quote hello))", "t", "hello" },
         /* 22 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "t", "(p1 . p2)" },
-        /* 23 */ { "(write ((lambda () (write (quote 1)) (write (quote 2)))))", "t", "12t" },
+        /* 23 */ { "(write ((lambda () (write (quote s1)) (write (quote s2)))))", "t", "s1s2t" },
 
         // eq
-        /* 24 */ { "(write ((lambda () (eq (quote 1) (quote 2)))))", "t", "nil" },
-        /* 25 */ { "(write ((lambda () (eq (quote 1) (quote 1)))))", "t", "t" },
+        /* 24 */ { "(write ((lambda () (eq (quote s1) (quote s2)))))", "t", "nil" },
+        /* 25 */ { "(write ((lambda () (eq (quote s1) (quote s1)))))", "t", "t" },
 
         // cond
-        /* 26 */ { "((lambda (x) (cond ((eq x (quote 1)) (write (quote 1))) ((eq x (quote 2)) (write (quote 2))) ((eq x (quote 3)) (write (quote 3))))) (quote 3))", "t", "3" },
-        /* 27 */ { "((lambda (x) (cond ((eq x (quote 1)) (write (quote 1))) ((eq x (quote 2)) (write (quote 2))) ((eq x (quote 3)) (write (quote 3))))) (quote 4))", "nil", null },
+        /* 26 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s3))", "t", "s3" },
+        /* 27 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s4))", "nil", null },
 
         // labels
-        /* 28 */ { "(labels () (write (quote 1)) (write (quote 2)))", "t", "12" },
-        /* 29 */ { "(labels ((w1 (x) (write (cons (quote 1) x))) (w2 (x) (write (cons (quote 2) x)))) (w1 (quote 3)) (w2 (quote 4)))", "t", "(1 . 3)(2 . 4)" }, // todo
+        /* 28 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
+        /* 29 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
     };
 
     @Test

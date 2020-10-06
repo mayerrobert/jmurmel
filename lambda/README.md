@@ -53,7 +53,7 @@ The environment contains the symbol `nil` and the functions
 
 Variables and functions share one namespace.
 
-The only data types currently supported are symbols and pairs (i.e. lists).
+The only data types currently supported are symbols, pairs (i.e. lists) and numbers (represented as Java Double).
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
 

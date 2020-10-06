@@ -1,27 +1,27 @@
 ; from https://github.com/carld/micro-lisp/blob/master/examples/reverse.lisp
 
-; output: (fn (1 2 3 4))
+; output: (fn (a b c d))
 ; result: t
 
 ((lambda (exp)
-   ((lambda (exp1)
+   ((lambda (expa)
       ((lambda (fn)
          (cond
            ((pair? fn)
-              (write (quote (cons fn (cdr exp1)))))
+              (write (quote (cons fn (cdr expa)))))
            ((quote t)
               ((lambda (args)
                 ((lambda (evlist)
                     (write (cons fn (evlist evlist args (quote ())))))
-                  (lambda (evlist^ e1 evargs)
+                  (lambda (evlist^ ea evargs)
                     (cond
-                      ((null? e1)  (quote ()))
-                      ((quote t) (cons (car e1)
-                                    (evlist^ evlist^ (cdr e1) evargs)))))))
-              (cdr exp1)))))
-       (car exp1)))
+                      ((null? ea)  (quote ()))
+                      ((quote t) (cons (car ea)
+                                    (evlist^ evlist^ (cdr ea) evargs)))))))
+              (cdr expa)))))
+       (car expa)))
     (cond
       ((eq (car exp) (quote apply))  (cdr exp))
       ((quote t) exp))))
 
-  (quote (apply fn (1 2 3 4))))
+  (quote (apply fn (a b c d))))

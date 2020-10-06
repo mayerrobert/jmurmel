@@ -1,27 +1,27 @@
 ; A very inefficient tail recursive list-reverse function
 ;
-; output: ((1) (2) (3) (4) (5))((5) (4) (3) (2) (1))
+; output: ((a) (b) (c) (d) (e))((e) (d) (c) (b) (a))
 ; result: t
 
 (labels
-  ((A (L Lp)
+  ((R^ (L Lp)
       (if (eq L ())
           Lp
-          (A (cdr L) (cons (car L) Lp))))
+          (R^ (cdr L) (cons (car L) Lp))))
 
    (R (L)
-      (A L nil))
+      (R^ L nil))
 
    (test (L)
          (write L)
          (write (R L)))
 
    (make-a-list ()
-     (cons (cons (quote 1) ())
-     (cons (cons (quote 2) ())
-     (cons (cons (quote 3) ())
-     (cons (cons (quote 4) ())
-     (cons (cons (quote 5) ())
+     (cons (cons (quote a) ())
+     (cons (cons (quote b) ())
+     (cons (cons (quote c) ())
+     (cons (cons (quote d) ())
+     (cons (cons (quote e) ())
      ())))))))
 
   (test (make-a-list)))

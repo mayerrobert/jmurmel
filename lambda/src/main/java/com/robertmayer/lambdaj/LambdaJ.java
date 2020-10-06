@@ -11,7 +11,7 @@ public class LambdaJ {
     public static final int EOF = -1;
     public static final int SYMBOL_MAX = 32;
 
-    public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_LEX = 4;
+    public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
     public int trace = TRC_NONE;
 
     private InputStream in;
@@ -41,9 +41,11 @@ public class LambdaJ {
     private boolean escape;
     private int look;
     private int token[] = new int[SYMBOL_MAX];
+    private Object tok;
 
     private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
     private boolean isParens(int x) { return !escape && (x == '(' || x == ')'); }
+    private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
 
     private int getchar() {
         try {
@@ -86,7 +88,20 @@ public class LambdaJ {
         }
         token[index] = '\0';
         if (trace >= TRC_LEX)
-            System.err.println("*** token |" + tokenToString(token) + '|');
+            System.err.println("*** token  |" + tokenToString(token) + '|');
+        if (isDigit(token[0])) {
+            try {
+                tok = Double.valueOf(tokenToString(token));
+            }
+            catch (NumberFormatException e) {
+                throw new Error("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
+                + "' is not a valid symbol or number");
+            }
+        } else if (token[0] == '\0'){
+            tok = null;
+        } else {
+            tok = tokenToString(token);
+        }
     }
 
     private String tokenToString(int[] s) {
@@ -103,10 +118,6 @@ public class LambdaJ {
     /// symbol table
     private Pair symbols = null;
 
-    private String intern(int[] sym) {
-        return intern(tokenToString(sym));
-    }
-
     private String intern(String sym) {
         Pair pair = symbols;
         for ( ; pair != null; pair = (Pair)cdr(pair)) {
@@ -122,25 +133,32 @@ public class LambdaJ {
 
     /// parser
     private Object readObj() {
-        if (token[0] == '\0') {
+        if (tok == null) {
             if (trace >= TRC_PARSE)
-                System.err.println("*** list  ()");
+                System.err.println("*** list   ()");
             return null;
         }
-        if (token[0] == '(') {
+        if ("(".equals(tok)) {
             Object list = readList();
             if (trace >= TRC_PARSE)
-                System.err.println("*** list  " + printObj(list, true));
+                System.err.println("*** list   " + printObj(list, true));
             return list;
         }
-        return intern(token);
+        if (tok instanceof Number) {
+            if (trace >= TRC_TOK)
+                System.err.println("*** number " + tok.toString());
+            return tok;
+        }
+        if (trace >= TRC_TOK)
+            System.err.println("*** symbol " + (String)tok);
+        return intern((String)tok);
     }
 
     private Object readList() {
         readToken();
-        if (token[0] == '\0')
+        if (tok == null)
             throw new Error("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
-        if (token[0] == ')') return null;
+        if (")".equals(tok)) return null;
         Object tmp = readObj();
         if (isAtom(tmp)) return cons(tmp, readList());
         else return cons(tmp, readList());
@@ -157,6 +175,9 @@ public class LambdaJ {
                 Pair envEntry = assoc(exp, env);
                 if (envEntry != null) return car((Pair)cdr(envEntry));
                 throw new Error("'" + exp + "' is undefined");
+
+            } else if (isNumber(exp)) {
+                return exp;
 
             } else if (isAtom(car ((Pair) exp))) { /* special forms */
                 if (car((Pair) exp) == intern("quote")) {
@@ -301,6 +322,7 @@ public class LambdaJ {
     private boolean isAtom(Object x)           { return x == null || x instanceof String; }
     private boolean isPrim(Object x)           { return x instanceof Builtin; }
     private boolean isPair(Object x)           { return x instanceof Pair; }
+    private boolean isNumber(Object x)         { return x instanceof Number; }
     private Object car(Pair x)                 { return x.car; }
     private Object cdr(Pair x)                 { return x.cdr; }
     private Pair cons(Object car, Object cdr)  { return new Pair(car, cdr); }
@@ -341,6 +363,8 @@ public class LambdaJ {
             return ob.toString();
         } else if (isPrim(ob)) {
             return "#<primitive>";
+        } else if (isNumber(ob)) {
+            return ob.toString();
         } else {
             return "<internal error>";
         }
