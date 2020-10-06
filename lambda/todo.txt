@@ -22,7 +22,7 @@ eigentlich passiert die rekursion ja in eval:
 evlis, evcon & co inline expandieren, und das letzte listenelement nicht mit rekursion aufrufen sondern
 manuell tail recursion elimination machen.
 
-PROBLEM: function calls haben ein geändertes environment extenv
+PROBLEM: function calls haben ein geaendertes environment extenv
 -> einen stack aus extenvs aufbauen: ein int "stackarray" in dem merkt man sich, wieviele elemente vorne
 drangepickt wurden und nach verarbeiten des calls entfernt werden müssen 
 
@@ -81,7 +81,7 @@ try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldu
 JDBC vielleicht objectorientiert anbinden?
 funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mit (parameternameatom . wertexpression) tupeln
 
-nativeinsert könnte für batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
+nativeinsert koennte fuer batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
 mit ints liefern (ein int für jede insert-tupel-liste)
 
 lexikalische closures
@@ -93,9 +93,9 @@ Erledigt:
 welches ergebnis liefert lambda mit einer liste als body?
 -> sollte ergebnis der letzten form sein
 
-Klasse Builtin statt UnaryOperator<Pair> einführen
+Klasse Builtin statt UnaryOperator<Pair> einfuehren
 
-eq vergleicht identität, was macht Lisp? https://stackoverflow.com/questions/547436/whats-the-difference-between-eq-eql-equal-and-equalp-in-common-lisp
+eq vergleicht identitaet, was macht Lisp? https://stackoverflow.com/questions/547436/whats-the-difference-between-eq-eql-equal-and-equalp-in-common-lisp
 -> checken ob das passt, z.b. (eq (cons (quote 1) (quote 2)) (cons (quote 1) (quote 2))) ist nicht identisch aber gleich (?)
 -> GNU CLISP v2.49+ liefert NIL
 
@@ -113,7 +113,7 @@ Vielleicht in printObj umlenken:
 (quote t) -> "t"
 null -> "nil"
 
-beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
+beim scannen zeile und spalte mitzaehlen und in fehlermeldung einbauen
 
 apply fuer lambdas, siehe apply.lisp
 
