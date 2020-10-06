@@ -28,6 +28,11 @@ printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
 
 
+Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
+Vielleicht mit flags ein/ausschalten?
+
+
+
 Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 hoeher ist (?)
 oder wenigstens loop einbauen
 -> einfacher ists alle tailcalls zu optimieren
