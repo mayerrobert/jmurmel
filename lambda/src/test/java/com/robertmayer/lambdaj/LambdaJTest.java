@@ -105,6 +105,29 @@ public class LambdaJTest {
         /* 57 */ { "(/ 12 2 3)", "2.0", null },
 
         /* 58 */ { "(mod 12 5)", "2.0", null },
+
+        /*
+;(atom 1)              ; t
+;(atom (quote x))      ; t
+;(atom ())             ; t
+;(atom (quote (a)))    ; nil
+
+;(symbolp 1)              ; nil
+;(symbolp (quote x))      ; t
+;(symbolp ())             ; t
+;(symbolp (quote (a)))    ; nil
+
+;(consp 1)              ; nil
+;(consp (quote x))      ; nil
+;(consp ())             ; nil
+;(consp (quote (a)))    ; t
+
+;(numberp 1)           ; t
+;(numberp (quote x))   ; nil
+;(numberp ())          ; nil
+(numberp (quote (a))) ; nil
+
+         */
     };
 
     @Test

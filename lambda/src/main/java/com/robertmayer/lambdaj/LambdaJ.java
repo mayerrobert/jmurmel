@@ -395,20 +395,23 @@ public class LambdaJ {
     }
 
     /** arguments if any must be only numbers */
-    private void optNumbers(String func, Pair a) {
+    private void numbers(String func, Pair a) {
         if (a == null) return;
         for (; a != null; a = (Pair) cdr(a))
             if (!isNumber(car(a))) throw new Error(func + ": expected only number arguments but got " + printObj(a, true));
     }
 
+    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null        ? expTrue : null; };
+
+    private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
     private Builtin fcar =      (Pair a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
     private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
-    private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-    private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+
     private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car(cdr(a)) ? expTrue : null; };
+    private Builtin fatom =     (Pair a) -> { oneArg("symbol", a);  return isAtom(car(a))        ? expTrue : null; };
     private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))        ? expTrue : null; };
-    private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))        ? expTrue : null; };
-    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null        ? expTrue : null; };
+
+    private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
     private Builtin freadobj =  (Pair a) -> { noArgs("read", a);    look = getchar(); readToken(); return readObj(); };
     private Builtin fwriteobj = (Pair a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue; };
 
@@ -423,36 +426,36 @@ public class LambdaJ {
 
     private Builtin fnumbereq = (Pair args) -> {
         twoArgs("=", args);
-        optNumbers("=", args);
+        numbers("=", args);
         return ((Double)car(args)).equals(car(cdr(args))) ? expTrue : null;
     };
 
     private Builtin flt = (Pair args) -> {
         twoArgs("<", args);
-        optNumbers("<", args);
+        numbers("<", args);
         return ((Double)car(args)) < (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fle = (Pair args) -> {
         twoArgs("<=", args);
-        optNumbers("<=", args);
+        numbers("<=", args);
         return ((Double)car(args)) <= (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fgt = (Pair args) -> {
         twoArgs(">", args);
-        optNumbers(">", args);
+        numbers(">", args);
         return ((Double)car(args)) > (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fge = (Pair args) -> {
         twoArgs(">=", args);
-        optNumbers(">=", args);
+        numbers(">=", args);
         return ((Double)car(args)) >= (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fadd = (Pair args) -> {
-        optNumbers("+", args);
+        numbers("+", args);
         Double result = 0.0;
         for (; args != null; args = (Pair) cdr(args))
             result += (Double)car(args);
@@ -461,7 +464,7 @@ public class LambdaJ {
 
     private Builtin fsub = (Pair args) -> {
         oneOrMoreArgs("-", args);
-        optNumbers("-", args);
+        numbers("-", args);
         Double result = (Double)car(args);
         if (cdr(args) == null) return -result;
         for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args))
@@ -470,7 +473,7 @@ public class LambdaJ {
     };
 
     private Builtin fmul = (Pair args) -> {
-        optNumbers("*", args);
+        numbers("*", args);
         Double result = 1.0;
         for (; args != null; args = (Pair) cdr(args))
             result *= (Double)car(args);
@@ -479,7 +482,7 @@ public class LambdaJ {
 
     private Builtin fquot = (Pair args) -> {
         oneOrMoreArgs("-", args);
-        optNumbers("/", args);
+        numbers("/", args);
         Double result = (Double)car(args);
         if (cdr(args) == null) return 1 / result;
         for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args))
@@ -489,7 +492,7 @@ public class LambdaJ {
 
     private Builtin fmod = (Pair args) -> {
         twoArgs("-", args);
-        optNumbers("/", args);
+        numbers("/", args);
         return (Double)car(args) % (Double)car(cdr(args));
     };
 

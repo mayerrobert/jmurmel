@@ -41,6 +41,8 @@ The environment contains the symbol `nil` and the functions
 * `labels`
  
 * `eq, pair?, symbol?, null?`
+
+* `assoc`
 * `read`
 * `write, writeln`
 
