@@ -1,8 +1,3 @@
-car, cdr umstellen dass sie Object uebernehmen
--> dann gibts einen cast in car/cdr statt 1000 casts ueberall
-
-vielleicht "Object car(Object)" und "Pair pcar(Object)"?
--> Eruebrigt sich ggf. durch Umstellen von car(Pair) nach car(Object) 
 
 Vielleicht car, cdr, cons, Pair in eine Basisklasse LambdaJRuntime rausziehen?
 LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
@@ -153,3 +148,9 @@ eq fuer number korrigieren
 -> vielleicht = mit optionalem drittem double parameter fuzz fuer die genauigkeit
 
 + - * / %, factorial beispiel
+
+car, cdr umstellen dass sie Object uebernehmen
+-> dann gibts einen cast in car/cdr statt 1000 casts ueberall
+
+vielleicht "Object car(Object)" und "Pair pcar(Object)"?
+-> Eruebrigt sich ggf. durch Umstellen von car(Pair) nach car(Object) 

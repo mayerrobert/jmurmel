@@ -168,57 +168,57 @@ public class LambdaJ {
             if (isAtom(exp)) {
                 if (exp == null) return null;
                 Pair envEntry = assoc(exp, env);
-                if (envEntry != null) return car((Pair)cdr(envEntry));
+                if (envEntry != null) return car(cdr(envEntry));
                 throw new Error("'" + exp + "' is undefined");
 
             } else if (isNumber(exp)) {
                 return exp;
 
-            } else if (isAtom(car ((Pair) exp))) { /* special forms */
-                if (car((Pair) exp) == intern("quote")) {
-                    return car((Pair)cdr((Pair) exp));
+            } else if (isAtom(car (exp))) { /* special forms */
+                if (car(exp) == intern("quote")) {
+                    return car(cdr(exp));
 
-                } else if (car((Pair) exp) == intern("if")) {
-                    if (eval(car((Pair)cdr((Pair) exp)), env, level + 1) != null)
-                        return eval(car((Pair)cdr((Pair)cdr((Pair) exp))), env, level + 1);
+                } else if (car(exp) == intern("if")) {
+                    if (eval(car(cdr(exp)), env, level + 1) != null)
+                        return eval(car(cdr(cdr(exp))), env, level + 1);
                     else
-                        return eval(car((Pair)cdr((Pair)cdr((Pair)cdr((Pair) exp)))), env, level + 1);
+                        return eval(car(cdr(cdr(cdr(exp)))), env, level + 1);
 
-                } else if (car((Pair) exp) == intern("lambda")) {
+                } else if (car(exp) == intern("lambda")) {
                     return exp;
 
-                } else if (car((Pair) exp) == intern("labels")) { // labels bindings body -> object
-                    Pair bindings = (Pair) car((Pair) cdr((Pair) exp));
-                    Pair body =     (Pair) cdr((Pair) cdr((Pair) exp));
+                } else if (car(exp) == intern("labels")) { // labels bindings body -> object
+                    Pair bindings = (Pair) car(cdr(exp));
+                    Pair body =     (Pair) cdr(cdr(exp));
                     return evlabels(bindings, body, env, level);
 
-                } else if (car((Pair) exp) == intern("cond")) {
-                    return evcon((Pair) cdr((Pair) exp), env, level);
+                } else if (car(exp) == intern("cond")) {
+                    return evcon((Pair) cdr(exp), env, level);
 
-                } else if (car((Pair) exp) == intern("apply")) { // apply function to list
+                } else if (car(exp) == intern("apply")) { // apply function to list
                     /* assumes one argument and that it is a list */
-                    oneArg("apply", (Pair) cdr((Pair) cdr((Pair) exp)));
-                    Pair args = evlis((Pair) cdr((Pair) cdr((Pair) exp)), env, level);
+                    oneArg("apply", (Pair) cdr(cdr(exp)));
+                    Pair args = evlis((Pair) cdr(cdr(exp)), env, level);
                     args = (Pair)car(args);
-                    final Object func = eval(car((Pair)cdr((Pair) exp)), env, level + 1);
+                    final Object func = eval(car(cdr(exp)), env, level + 1);
                     if (isPair(func)) return eval(cons(func, args), env, level + 1);
                     else if (isPrim(func)) return applyPrimitive((Builtin) func, args, level);
                     else throw new Error("apply: not a function: " + printObj(func, true));
 
                 } else { /* function call */
-                    Object func = eval(car((Pair) exp), env, level + 1);
+                    Object func = eval(car(exp), env, level + 1);
                     if (isPair(func)) { /* user defined lambda, arg list eval happens in binding  below */
-                        return eval(cons(func, cdr((Pair) exp)), env, level + 1);
+                        return eval(cons(func, cdr(exp)), env, level + 1);
                     } else if (isPrim(func)) { /* built-in primitive */ // todo umbauen auf isPrim und ein "else error"
-                        return applyPrimitive((Builtin) func, evlis((Pair) cdr((Pair) exp), env, level), level);
+                        return applyPrimitive((Builtin) func, evlis((Pair) cdr(exp), env, level), level);
                     }
                     else throw new Error("not a function: " + printObj(func, true));
                 }
 
-            } else if (car((Pair) car((Pair) exp)) == intern("lambda")) {
+            } else if (car(car(exp)) == intern("lambda")) {
                 /* should be a lambda, bind args as "names" into env and eval body-list */
-                final Pair lambda = (Pair) cdr((Pair) car((Pair) exp));
-                Pair extenv = env, params = (Pair) car(lambda), args = (Pair) cdr((Pair) exp);
+                final Pair lambda = (Pair) cdr(car(exp));
+                Pair extenv = env, params = (Pair) car(lambda), args = (Pair) cdr(exp);
                 for ( ; params != null; params = (Pair) cdr(params), args = (Pair) cdr(args))
                     extenv = cons(cons(car(params),  cons(eval(car(args), env, level + 1), null)), extenv);
                 Pair body = (Pair) cdr(lambda);
@@ -247,8 +247,8 @@ public class LambdaJ {
     */
     private Object evcon(Pair c, Pair e, int level) {
         for ( ; c != null; c = (Pair) cdr(c)) {
-            Object condResult = eval(car((Pair) car(c)), e, level + 1);
-            if (condResult != null) return eval(car((Pair) cdr((Pair) car(c))), e, level + 1);
+            Object condResult = eval(car(car(c)), e, level + 1);
+            if (condResult != null) return eval(car(cdr(car(c))), e, level + 1);
         }
         return null;
     }
@@ -318,8 +318,8 @@ public class LambdaJ {
     private boolean isPrim(Object x)           { return x instanceof Builtin; }
     private boolean isPair(Object x)           { return x instanceof Pair; }
     private boolean isNumber(Object x)         { return x instanceof Number; }
-    private Object car(Pair x)                 { return x.car; }
-    private Object cdr(Pair x)                 { return x.cdr; }
+    private Object car(Object x)               { return ((Pair)x).car; }
+    private Object cdr(Object x)               { return ((Pair)x).cdr; }
     private Pair cons(Object car, Object cdr)  { return new Pair(car, cdr); }
 
     private Pair assoc(Object atom, Object maybePair) {
@@ -328,7 +328,7 @@ public class LambdaJ {
         if (!isPair(maybePair)) throw new Error("assoc: expected second argument to be a Pair but got " + printObj(maybePair, true));
         Pair env = (Pair) maybePair;
         for ( ; env != null; env = (Pair)cdr(env))
-            if (atom == car((Pair) car(env))) return (Pair) car(env);
+            if (atom == car(car(env))) return (Pair) car(env);
         return null;
     }
 
@@ -344,13 +344,13 @@ public class LambdaJ {
         if (ob == null) {
             return "nil";
         } else if (isPair(ob)) {
-            if (car((Pair) ob) == intern("quote") && car((Pair) cdr((Pair) ob)) == intern("t")) return "t";
+            if (car(ob) == intern("quote") && car(cdr(ob)) == intern("t")) return "t";
             final StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
-            sb.append(printObj(car((Pair) ob), true));
-            if (cdr((Pair) ob) != null) {
-                if (isPair(cdr((Pair) ob))) sb.append(' ').append(printObj(cdr((Pair) ob), false));
-                else sb.append(" . ").append(printObj(cdr((Pair) ob), false)).append(')');
+            sb.append(printObj(car(ob), true));
+            if (cdr(ob) != null) {
+                if (isPair(cdr(ob))) sb.append(' ').append(printObj(cdr(ob), false));
+                else sb.append(" . ").append(printObj(cdr(ob), false)).append(')');
             } else sb.append(')');
             return sb.toString();
         } else if (isAtom(ob)) {
@@ -394,14 +394,14 @@ public class LambdaJ {
             if (!isNumber(car(a))) throw new Error(func + ": expected only number arguments but got " + printObj(a, true));
     }
 
-    private Builtin fcar =      (Pair a) -> { onePair("car", a);    if (car(a) == null) return null; return car((Pair) car(a)); };
-    private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr((Pair) car(a)); };
-    private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
-    private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car((Pair) cdr(a))); };
-    private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car((Pair) cdr(a)) ? expTrue : null; };
-    private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))               ? expTrue : null; };
-    private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))               ? expTrue : null; };
-    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null               ? expTrue : null; };
+    private Builtin fcar =      (Pair a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+    private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
+    private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
+    private Builtin fassoc =    (Pair a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+    private Builtin feq =       (Pair a) -> { twoArgs("eq", a);     return car(a) == car(cdr(a)) ? expTrue : null; };
+    private Builtin fpair =     (Pair a) -> { oneArg("pair?", a);   return isPair(car(a))        ? expTrue : null; };
+    private Builtin fatom =     (Pair a) -> { oneArg("symbol?", a); return isAtom(car(a))        ? expTrue : null; };
+    private Builtin fnull =     (Pair a) -> { oneArg("null?", a);   return car(a) == null        ? expTrue : null; };
     private Builtin freadobj =  (Pair a) -> { noArgs("read", a);    look = getchar(); readToken(); return readObj(); };
     private Builtin fwriteobj = (Pair a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue; };
 
@@ -417,31 +417,31 @@ public class LambdaJ {
     private Builtin fnumbereq = (Pair args) -> {
         twoArgs("=", args);
         optNumbers("=", args);
-        return ((Double)car(args)).equals(car((Pair)cdr(args))) ? expTrue : null;
+        return ((Double)car(args)).equals(car(cdr(args))) ? expTrue : null;
     };
 
     private Builtin flt = (Pair args) -> {
         twoArgs("<", args);
         optNumbers("<", args);
-        return ((Double)car(args)) < (double)car((Pair)cdr(args)) ? expTrue : null;
+        return ((Double)car(args)) < (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fle = (Pair args) -> {
         twoArgs("<=", args);
         optNumbers("<=", args);
-        return ((Double)car(args)) <= (double)car((Pair)cdr(args)) ? expTrue : null;
+        return ((Double)car(args)) <= (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fgt = (Pair args) -> {
         twoArgs(">", args);
         optNumbers(">", args);
-        return ((Double)car(args)) > (double)car((Pair)cdr(args)) ? expTrue : null;
+        return ((Double)car(args)) > (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fge = (Pair args) -> {
         twoArgs(">=", args);
         optNumbers(">=", args);
-        return ((Double)car(args)) >= (double)car((Pair)cdr(args)) ? expTrue : null;
+        return ((Double)car(args)) >= (double)car(cdr(args)) ? expTrue : null;
     };
 
     private Builtin fadd = (Pair args) -> {
@@ -483,7 +483,7 @@ public class LambdaJ {
     private Builtin fmod = (Pair args) -> {
         twoArgs("-", args);
         optNumbers("/", args);
-        return (Double)car(args) % (Double)car((Pair)cdr(args));
+        return (Double)car(args) % (Double)car(cdr(args));
     };
 
     private Pair environment() {
