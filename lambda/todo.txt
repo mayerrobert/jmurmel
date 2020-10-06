@@ -18,7 +18,7 @@ PROBLEM: function calls haben ein geändertes environment extenv
 drangepickt wurden und nach verarbeiten des calls entfernt werden müssen 
 
 dann werden nicht nur tail rekursionen wegoptimiert, sondern alle tail calls. es ruft zwar die eine Lisp funktion
-eine andere auf, aber in wirklichkeit läuft nur der code der einzigen Java-methode eval. 
+eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-methode eval. 
 
 
 
@@ -37,14 +37,11 @@ readObj umbauen dass (a . b) eingelesen werden kann?
 
 flag ob die identifier auf UC umgestellt werden sollen
 
-builtin write-line
--> common lisp hat das, parameter muss aber ein string sein
-
 lisp write liefert als ergebnis den parameter
--> ich liefere (quote t)
+-> LambdaJ liefert (quote t)
 
 eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
-zweite map für FFI funktionen s.u.?
+zweite map fuer FFI funktionen s.u.?
 
 eval ins environment einhaengen?
 
@@ -101,3 +98,6 @@ beim scannen zeile und spalte mitzählen und in fehlermeldung einbauen
 apply fuer lambdas, siehe apply.lisp
 
 verschiedene konstruktoren fuer Pair und ueberladene cons brauchts wahrscheinlich nicht, cons(Object,Object) muesste reichen
+
+builtin write-line
+-> common lisp hat das, parameter muss aber ein string sein

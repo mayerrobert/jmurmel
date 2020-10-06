@@ -118,8 +118,14 @@ public class LambdaJTest {
                     runTest(fileName.toString(), contents, expectedResult, expectedOutput);
                 }
                 catch (LambdaJ.Error e) {
-                    if (expectedError != null && e.getMessage().contains(expectedError)) {
-                        // thats fine
+                    if (expectedError != null) {
+                        if (e.getMessage().contains(expectedError)) {
+                            // thats fine
+                        }
+                        else {
+                            Assert.fail(fileName.toString() + ": expected error \"" + expectedError + '\"'
+                                    + " but got error \"" + e.getMessage() + '\"');
+                        }
                     } else {
                         Assert.fail(fileName.toString() + " threw exception " + e.getMessage());
                     }
