@@ -28,48 +28,87 @@ public class LambdaJTest {
         /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote a1)) (cons (cons (quote b) (quote b2)) (cons (cons (quote c) (quote c3)) ()))))", "(b . b2)", null },
         /*  6 */ { "(write (car (quote (v1 v2))))", "t", "v1" },
         /*  7 */ { "(write (cdr (quote (v1 v2))))", "t", "(v2)" },
-        /*  6 */ { "(write (car (cons (quote v1) (quote v2))))", "t", "v1" },
-        /*  7 */ { "(write (cdr (cons (quote v1) (quote v2))))", "t", "v2" },
+        /*  8 */ { "(write (car (cons (quote v1) (quote v2))))", "t", "v1" },
+        /*  9 */ { "(write (cdr (cons (quote v1) (quote v2))))", "t", "v2" },
 
         // comments
-        /*  8 */ { "; comment\n(write (quote HELLO))", "t", "HELLO" },
-        /*  9 */ { "; comment\n(write (quote HELLO)) ; comment", "t", "HELLO" },
+        /* 10 */ { "; comment\n(write (quote HELLO))", "t", "HELLO" },
+        /* 11 */ { "; comment\n(write (quote HELLO)) ; comment", "t", "HELLO" },
 
         // quoted chars
-        /* 10 */ { "(write (quote HELLO\\ ))", "t", "HELLO " },
-        /* 11 */ { "(write (quote HELLO\\\\))", "t", "HELLO\\" },
-        /* 12 */ { "(write (quote HELLO\\)))", "t", "HELLO)" },
-        /* 13 */ { "(write (quote HELLO\\;))", "t", "HELLO;" },
+        /* 12 */ { "(write (quote HELLO\\ ))", "t", "HELLO " },
+        /* 13 */ { "(write (quote HELLO\\\\))", "t", "HELLO\\" },
+        /* 14 */ { "(write (quote HELLO\\)))", "t", "HELLO)" },
+        /* 15 */ { "(write (quote HELLO\\;))", "t", "HELLO;" },
 
         // apply
-        /* 14 */ { "(apply write (cons (quote HELLO) nil))", "t", "HELLO" },
-        /* 15 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "t", "(HELLO HELLO)" },
-        /* 16 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "t", "(HELLO HELLO)" },
-        /* 17 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "t", "(HELLO . HELLO)" },
+        /* 16 */ { "(apply write (cons (quote HELLO) nil))", "t", "HELLO" },
+        /* 17 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "t", "(HELLO HELLO)" },
+        /* 18 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "t", "(HELLO HELLO)" },
+        /* 19 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "t", "(HELLO . HELLO)" },
 
         // lambda
-        /* 18 */ { "(lambda () (write (quote noparam)))", "(lambda nil (write (quote noparam)))", null },
-        /* 19 */ { "(write (lambda () (write (quote noparam))))", "t", "(lambda nil (write (quote noparam)))" },
-        /* 20 */ { "((lambda () (write (quote noparam))))", "t", "noparam" },
-        /* 21 */ { "((lambda (x) (write x)) (quote hello))", "t", "hello" },
-        /* 22 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "t", "(p1 . p2)" },
-        /* 23 */ { "(write ((lambda () (write (quote s1)) (write (quote s2)))))", "t", "s1s2t" },
+        /* 20 */ { "(lambda () (write (quote noparam)))", "(lambda nil (write (quote noparam)))", null },
+        /* 21 */ { "(write (lambda () (write (quote noparam))))", "t", "(lambda nil (write (quote noparam)))" },
+        /* 22 */ { "((lambda () (write (quote noparam))))", "t", "noparam" },
+        /* 23 */ { "((lambda (x) (write x)) (quote hello))", "t", "hello" },
+        /* 24 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "t", "(p1 . p2)" },
+        /* 25 */ { "(write ((lambda () (write (quote s1)) (write (quote s2)))))", "t", "s1s2t" },
 
         // eq
-        /* 24 */ { "(write ((lambda () (eq (quote s1) (quote s2)))))", "t", "nil" },
-        /* 25 */ { "(write ((lambda () (eq (quote s1) (quote s1)))))", "t", "t" },
+        /* 26 */ { "(write ((lambda () (eq (quote s1) (quote s2)))))", "t", "nil" },
+        /* 27 */ { "(write ((lambda () (eq (quote s1) (quote s1)))))", "t", "t" },
 
         // cond
-        /* 26 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s3))", "t", "s3" },
-        /* 27 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s4))", "nil", null },
+        /* 28 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s3))", "t", "s3" },
+        /* 29 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s4))", "nil", null },
 
         // labels
-        /* 28 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
-        /* 29 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
+        /* 30 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
+        /* 31 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
+
+        // numbers, numeric operators
+        /* 32 */ { "1", "1.0", null },
+        /* 33 */ { "(write 1)", "t", "1.0" },
+
+        /* 34 */ { "(= 2 2)", "t", null },
+        /* 35 */ { "(= 2 3)", "nil", null },
+
+        /* 36 */ { "(< 2 3)", "t", null },
+        /* 37 */ { "(< 2 2)", "nil", null },
+
+        /* 38 */ { "(<= 3 3)", "t", null },
+        /* 39 */ { "(<= 4 2)", "nil", null },
+
+        /* 40 */ { "(> 4 3)", "t", null },
+        /* 41 */ { "(> 2 2)", "nil", null },
+
+        /* 42 */ { "(>= 3 3)", "t", null },
+        /* 43 */ { "(>= 3 4)", "nil", null },
+
+        /* 44 */ { "(+)", "0.0", null },
+        /* 45 */ { "(+ 3)", "3.0", null },
+        /* 46 */ { "(+ 3 4)", "7.0", null },
+        /* 47 */ { "(+ 3 4 5)", "12.0", null },
+
+        /* 48 */ { "(- 3)", "-3.0", null },
+        /* 49 */ { "(- 3 4)", "-1.0", null },
+        /* 50 */ { "(- 3 4 5)", "-6.0", null },
+
+        /* 51 */ { "(*)", "1.0", null },
+        /* 52 */ { "(* 3)", "3.0", null },
+        /* 53 */ { "(* 3 4)", "12.0", null },
+        /* 54 */ { "(* 3 4 5)", "60.0", null },
+
+        /* 55 */ { "(/ 5)", "0.2", null },
+        /* 56 */ { "(/ 12 2)", "6.0", null },
+        /* 57 */ { "(/ 12 2 3)", "2.0", null },
+
+        /* 58 */ { "(mod 12 5)", "2.0", null },
     };
 
     @Test
-    public void allTests() {
+    public void runAllTests() {
         for (int n = 0; n < tests.length; n++) {
             runTest(n);
         }
@@ -86,7 +125,7 @@ public class LambdaJTest {
 
 
 
-    public static void runTest(int n) {
+    static void runTest(int n) {
         String[] test = tests[n];
         String prog = test[0];
         String expectedResult = test[1];
@@ -167,7 +206,7 @@ public class LambdaJTest {
         LambdaJ interpreter = new LambdaJ();
         interpreter.trace = LambdaJ.TRC_LEX;
 
-        System.out.println("***** running program:");
+        System.out.println("***** running program '" + fileName + ':');
         System.out.println("-------------------------------------------------------");
         System.out.println(prog);
         System.out.println("-------------------------------------------------------");

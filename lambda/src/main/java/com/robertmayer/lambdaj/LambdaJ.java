@@ -456,6 +456,7 @@ public class LambdaJ {
         oneArg("-", args);
         optNumbers("-", args);
         Double result = (Double)car(args);
+        if (cdr(args) == null) return -result;
         for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args))
             result -= (Double)car(args);
         return result;
@@ -473,8 +474,9 @@ public class LambdaJ {
         oneArg("-", args);
         optNumbers("/", args);
         Double result = (Double)car(args);
+        if (cdr(args) == null) return 1 / result;
         for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args))
-            result *= (Double)car(args);
+            result /= (Double)car(args);
         return result;
     };
 

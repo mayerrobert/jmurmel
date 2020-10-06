@@ -1,9 +1,29 @@
+car, cdr umstellen dass sie Object uebernehmen
+-> dann gibts einen cast in car/cdr statt 1000 casts ueberall
+
+vielleicht "Object car(Object)" und "Pair pcar(Object)"?
+-> Eruebrigt sich ggf. durch Umstellen von car(Pair) nach car(Object) 
+
+Vielleicht car, cdr, cons, Pair in eine Basisklasse LambdaJRuntime rausziehen?
+LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
+und ein Lisp Programm verwendet Lisp Runtime wie car, cdr, ... .
+Falls ein LambaJ Compiler kommt, wuerden erzeugte Java Programme dieselbe Runtime verwenden.
+Fuer interpretierte Programme gibts die Builtin-Wrapper, die Parameter-Checks machen und
+die Argument-Liste in Argumente wandeln.
+
+Falls Compiler, sollte der nicht nur ein Programm sondern z.B. *.lisp uebersetzen,
+ggf. mit timestampcheck
+
+eval, evlis, evcon vielleicht in haendischem CPS?!?
+
+
+
+tests und fehlertests fuer number und operatoren
+
 numberp, ggf. atom korrigieren
 symbol? vs atom vs numberp
 
 die parameterchecks ignorieren zuviele argumente
-
-tests und fehlertests fuer number und operatoren
 
 <, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
