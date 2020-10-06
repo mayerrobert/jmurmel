@@ -383,6 +383,7 @@ public class LambdaJ {
         if (a == null) throw new Error(func + ": expected one argument but no argument was given");
     }
 
+    /** two args or more */
     private void twoArgs(String func, Pair a) {
         if (a == null) throw new Error(func + ": expected two arguments but no argument was given");
         if (cdr(a) == null) throw new Error(func + ": expected two arguments but only one argument was given");
@@ -393,6 +394,14 @@ public class LambdaJ {
         if (!isPair(car(a))) throw new Error(func + ": expected one Pair argument but got " + printObj(a, true));
     }
 
+    private void optNumbers(String func, Pair a) {
+        if (a == null) return;
+        for (; a != null; a = (Pair) cdr(a)) {
+            if (!isNumber(car(a))) {
+                throw new Error(func + ": expected only number arguments but got " + printObj(a, true));
+            }
+        }
+    }
     private Builtin fcar =      (Pair a) -> { onePair("car", a);    if (car(a) == null) return null; return car((Pair) car(a)); };
     private Builtin fcdr =      (Pair a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr((Pair) car(a)); };
     private Builtin fcons =     (Pair a) -> { twoArgs("cons", a);   if (car(a) == null && car((Pair) cdr(a)) == null) return null; return cons(car(a), car((Pair) cdr(a))); };
@@ -413,6 +422,84 @@ public class LambdaJ {
         return expTrue;
     };
 
+    private Builtin fnumbereq = (Pair args) -> {
+        twoArgs("=", args);
+        optNumbers("=", args);
+        return ((Double)car(args)).equals(car((Pair)cdr(args))) ? expTrue : null;
+    };
+
+    private Builtin flt = (Pair args) -> {
+        twoArgs("<", args);
+        optNumbers("<", args);
+        return ((Double)car(args)) < (double)car((Pair)cdr(args)) ? expTrue : null;
+    };
+
+    private Builtin fle = (Pair args) -> {
+        twoArgs("<=", args);
+        optNumbers("<=", args);
+        return ((Double)car(args)) <= (double)car((Pair)cdr(args)) ? expTrue : null;
+    };
+
+    private Builtin fgt = (Pair args) -> {
+        twoArgs(">", args);
+        optNumbers(">", args);
+        return ((Double)car(args)) > (double)car((Pair)cdr(args)) ? expTrue : null;
+    };
+
+    private Builtin fge = (Pair args) -> {
+        twoArgs(">=", args);
+        optNumbers(">=", args);
+        return ((Double)car(args)) >= (double)car((Pair)cdr(args)) ? expTrue : null;
+    };
+
+    private Builtin fadd = (Pair args) -> {
+        optNumbers("+", args);
+        Double result = 0.0;
+        for (; args != null; args = (Pair) cdr(args)) {
+            Double x = (Double)car(args);
+            result += x;
+        }
+        return result;
+    };
+
+    private Builtin fsub = (Pair args) -> {
+        oneArg("-", args);
+        optNumbers("-", args);
+        Double result = (Double)car(args);
+        for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args)) {
+            Double x = (Double)car(args);
+            result -= x;
+        }
+        return result;
+    };
+
+    private Builtin fmul = (Pair args) -> {
+        optNumbers("*", args);
+        Double result = 1.0;
+        for (; args != null; args = (Pair) cdr(args)) {
+            Double x = (Double)car(args);
+            result *= x;
+        }
+        return result;
+    };
+
+    private Builtin fquot = (Pair args) -> {
+        oneArg("-", args);
+        optNumbers("/", args);
+        Double result = (Double)car(args);
+        for (args = (Pair) cdr(args); args != null; args = (Pair) cdr(args)) {
+            Double x = (Double)car(args);
+            result *= x;
+        }
+        return result;
+    };
+
+    private Builtin fmod = (Pair args) -> {
+        twoArgs("-", args);
+        optNumbers("/", args);
+        return (Double)car(args) % (Double)car((Pair)cdr(args));
+    };
+
     private Pair environment() {
         return cons(cons(intern("car"),     cons(fcar, null)),
                cons(cons(intern("cdr"),     cons(fcdr, null)),
@@ -425,8 +512,21 @@ public class LambdaJ {
                cons(cons(intern("read"),    cons(freadobj, null)),
                cons(cons(intern("write"),   cons(fwriteobj, null)),
                cons(cons(intern("writeln"), cons(fwriteln, null)),
+
+               cons(cons(intern("="),       cons(fnumbereq, null)),
+               cons(cons(intern(">"),       cons(fgt, null)),
+               cons(cons(intern(">="),      cons(fge, null)),
+               cons(cons(intern("<"),       cons(flt, null)),
+               cons(cons(intern("<="),      cons(fle, null)),
+
+               cons(cons(intern("+"),       cons(fadd, null)),
+               cons(cons(intern("-"),       cons(fsub, null)),
+               cons(cons(intern("*"),       cons(fmul, null)),
+               cons(cons(intern("/"),       cons(fquot, null)),
+               cons(cons(intern("mod"),     cons(fmod, null)),
+
                cons(cons(intern("nil"),     cons((String)null, null)),
-               null))))))))))));
+               null))))))))))))))))))))));
     }
 
 

@@ -34,22 +34,18 @@ see e.g. `LambdaJTest.java` for an embedded use example.
 ## Features
 The environment contains the symbol `nil` and the functions
 
-* quote
-* apply
-* cond, if
-* lambda
-* labels
+* `quote, cons, car, cdr`
+* `cond, if`
+* `apply`
+* `lambda`
+* `labels`
  
-* cons
-* car
-* cdr
-* eq
-* pair?
-* symbol?
-* null?
-* read
-* write
-* writeln
+* `eq, pair?, symbol?, null?`
+* `read`
+* `write, writeln`
+
+* `=, <, <=, >, >=`
+* `+, -, *, /, mod`
 
 Variables and functions share one namespace.
 
