@@ -54,7 +54,13 @@ The environment contains the symbol `nil` and the functions
 * `=, <, <=, >, >=`
 * `+, -, *, /, mod`
 
-Variables and functions share one namespace.
+Variables and functions share one namespace, symbols names must not start with a digit.
+
+Numbers must start with a digit, a `+` or a `-`.
+E.g. the expression `(/ 1 -0)` is valid and will yield `-Infinity`.
+
+Math operators are implemented using Java operators for double. This is probably different to Common Lisp
+esp. around +/-NaN, +/-Infinity, division by zero and so on.
 
 The only data types currently supported are symbols, pairs (i.e. lists) and numbers (represented as Java Double).
 

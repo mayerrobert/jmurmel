@@ -6,6 +6,6 @@ public class SingleExpressionManualTest {
 
     @Test
     public void runExpression() {
-        LambdaJTest.runTest("quote", "(", "t", null);
+        LambdaJTest.runTest("quote", "(+ 1 (/ 1 (- 0)))", "-Infinity", null);
     }
 }

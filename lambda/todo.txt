@@ -3,14 +3,21 @@ tests fuer atom, consp, listp, symbolp, numberp
 
 tests und fehlertests fuer number und operatoren
 
-<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
-
 error tests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
 
 eval ins environment einhaengen?
 
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
+
+Numbersupport mit flags ausschalten?
+
+Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
+Vielleicht mit flags ein/ausschalten?
+
+div, remain, trunc, round, abs
+isNaN, isInfinite, isFinite
+-> ggf. parameter "Error bei NaN, Infinity etc."
 
 
 
@@ -29,11 +36,6 @@ eval, evlis, evcon vielleicht in haendischem CPS?!?
 
 
 printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
-
-
-
-Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
-Vielleicht mit flags ein/ausschalten?
 
 
 
@@ -166,3 +168,5 @@ die parameterchecks ignorieren zuviele argumente
 
 numberp, ggf. atom korrigieren
 symbol? vs atom vs numberp
+
+<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing

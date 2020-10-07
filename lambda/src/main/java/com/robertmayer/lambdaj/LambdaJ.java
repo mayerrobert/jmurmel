@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.IntPredicate;
 
 public class LambdaJ {
 
@@ -89,7 +91,7 @@ public class LambdaJ {
         token[index] = '\0';
         if (trace >= TRC_LEX)
             System.err.println("*** token  |" + tokenToString(token) + '|');
-        if (isDigit(token[0])) {
+        if (isNumber()) {
             try {
                 tok = Double.valueOf(tokenToString(token));
             }
@@ -102,6 +104,12 @@ public class LambdaJ {
         } else {
             tok = tokenToString(token);
         }
+    }
+
+    private boolean isNumber() {
+        final int first = token[0];
+        if (isDigit(first)) return true;
+        return ((first == '-' || first == '+') && isDigit(token[1]));
     }
 
     private String tokenToString(int[] s) {
@@ -409,6 +417,38 @@ public class LambdaJ {
             if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printObj(a, true));
     }
 
+    private void oneOrMoreNumbers(String func, ConsCell a) {
+        oneOrMoreArgs(func, a);
+        numbers(func, a);
+    }
+
+    /** generate a comparison operator */
+    private Object compareOp(ConsCell args, String opName, IntPredicate pred) {
+        twoArgs(opName, args);
+        numbers(opName, args);
+        final double lhs = (Double)car(args);
+        final double rhs = (Double)car(cdr(args));
+        return boolResult(pred.test(Double.compare(lhs,  rhs)));
+    }
+
+    /** generate operator for zero or more args */
+    private Object addOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
+        numbers(opName, args);
+        for (; args != null; args = (ConsCell) cdr(args))
+            startVal = op.applyAsDouble(startVal, (Double)car(args));
+        return startVal;
+    }
+
+    /** generate operator for one or more args */
+    private Object subOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
+        oneOrMoreNumbers("-", args);
+        double result = (Double)car(args);
+        if (cdr(args) == null) return op.applyAsDouble(startVal, result);
+        for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
+            result = op.applyAsDouble(result, (Double)car(args));
+        return result;
+    }
+
     private Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
 
     private Builtin fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
@@ -418,7 +458,7 @@ public class LambdaJ {
     private Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
     private Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp(a)); };
-    private Builtin fatom =    (ConsCell a) ->  { oneArg("atom", a);    return boolResult(atom(a)); };
+    private Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom(a)); };
     private Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
     private Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp(car(a))); };
     private Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
@@ -436,75 +476,21 @@ public class LambdaJ {
         return expTrue;
     };
 
-    private Builtin fnumbereq = (ConsCell args) -> {
-        twoArgs("=", args);
-        numbers("=", args);
-        return boolResult(((Double)car(args)).equals(car(cdr(args))));
-    };
+    private Builtin fnumbereq = args -> compareOp(args, "=",  compareResult -> compareResult == 0);
+    private Builtin flt =       args -> compareOp(args, "<",  compareResult -> compareResult <  0);
+    private Builtin fle =       args -> compareOp(args, "<=", compareResult -> compareResult <= 0);
+    private Builtin fgt =       args -> compareOp(args, ">",  compareResult -> compareResult >  0);
+    private Builtin fge =       args -> compareOp(args, ">=", compareResult -> compareResult >= 0);
 
-    private Builtin flt = (ConsCell args) -> {
-        twoArgs("<", args);
-        numbers("<", args);
-        return boolResult(((Double)car(args)) < (double)car(cdr(args)));
-    };
+    private Builtin fadd =  args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
+    private Builtin fmul =  args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
 
-    private Builtin fle = (ConsCell args) -> {
-        twoArgs("<=", args);
-        numbers("<=", args);
-        return boolResult(((Double)car(args)) <= (double)car(cdr(args)));
-    };
-
-    private Builtin fgt = (ConsCell args) -> {
-        twoArgs(">", args);
-        numbers(">", args);
-        return boolResult(((Double)car(args)) > (double)car(cdr(args)));
-    };
-
-    private Builtin fge = (ConsCell args) -> {
-        twoArgs(">=", args);
-        numbers(">=", args);
-        return boolResult(((Double)car(args)) >= (double)car(cdr(args)));
-    };
-
-    private Builtin fadd = (ConsCell args) -> {
-        numbers("+", args);
-        Double result = 0.0;
-        for (; args != null; args = (ConsCell) cdr(args))
-            result += (Double)car(args);
-        return result;
-    };
-
-    private Builtin fsub = (ConsCell args) -> {
-        oneOrMoreArgs("-", args);
-        numbers("-", args);
-        Double result = (Double)car(args);
-        if (cdr(args) == null) return -result;
-        for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
-            result -= (Double)car(args);
-        return result;
-    };
-
-    private Builtin fmul = (ConsCell args) -> {
-        numbers("*", args);
-        Double result = 1.0;
-        for (; args != null; args = (ConsCell) cdr(args))
-            result *= (Double)car(args);
-        return result;
-    };
-
-    private Builtin fquot = (ConsCell args) -> {
-        oneOrMoreArgs("-", args);
-        numbers("/", args);
-        Double result = (Double)car(args);
-        if (cdr(args) == null) return 1 / result;
-        for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
-            result /= (Double)car(args);
-        return result;
-    };
+    private Builtin fsub  = args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
+    private Builtin fquot = args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
 
     private Builtin fmod = (ConsCell args) -> {
-        twoArgs("-", args);
-        numbers("/", args);
+        twoArgs("mod", args);
+        numbers("mod", args);
         return (Double)car(args) % (Double)car(cdr(args));
     };
 
@@ -581,15 +567,15 @@ public class LambdaJ {
 
     public static void main(String args[]) {
         final LambdaJ interpreter = new LambdaJ();
-        if (hasFlag("--trace", args)) {
-            interpreter.trace = TRC_LEX;
-        }
+        if (hasFlag("--trace", args)) interpreter.trace = TRC_LEX;
+
         final boolean istty = null != System.console();
         if (istty) {
             System.out.println("Enter a Lisp expression:");
             System.out.print("LambdaJ> ");
             System.out.flush();
         }
+
         try {
             final String result = interpreter.interpretExpression(System.in, System.out);
             if (istty) {
@@ -605,9 +591,8 @@ public class LambdaJ {
     }
 
     private static boolean hasFlag(String flag, String[] args) {
-        for (String arg: args) {
+        for (String arg: args)
             if (flag.equals(arg)) return true;
-        }
         return false;
     }
 }
