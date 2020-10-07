@@ -327,10 +327,10 @@ public class LambdaJ {
     private Object   cdr(Object x)                { return ((ConsCell)x).cdr; }
 
     private boolean  consp(Object x)             { return x != null && x instanceof ConsCell; }
-    private boolean  atom(Object x)             { return x == null || !(x instanceof ConsCell); } // !isCons(x)
+    private boolean  atom(Object x)              { return x == null || !(x instanceof ConsCell); } // !isCons(x)
     private boolean  symbolp(Object x)           { return x == null || x instanceof String; } // null (alias nil) is a symbol too
-    private boolean  listp(Object x)             { return x instanceof ConsCell; } // null is a list too
-    private boolean  isPrim(Object x)             { return x instanceof Builtin; }
+    private boolean  listp(Object x)             { return x == null || x instanceof ConsCell; } // null is a list too
+    private boolean  isPrim(Object x)            { return x instanceof Builtin; }
     private boolean  numberp(Object x)           { return x instanceof Number; }
 
     private ConsCell assoc(Object atom, Object maybeList) {
@@ -457,10 +457,10 @@ public class LambdaJ {
 
     private Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
-    private Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp(a)); };
-    private Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom(a)); };
+    private Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
+    private Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
     private Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-    private Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp(car(a))); };
+    private Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
     private Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
 
     private Builtin fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };

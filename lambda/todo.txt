@@ -1,9 +1,12 @@
 test fuer eval nil und eval t, ggf. symbol t einfuehren
-tests fuer atom, consp, listp, symbolp, numberp
 
 tests und fehlertests fuer number und operatoren
 
 error tests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+
+Benchmark
+
+
 
 eval ins environment einhaengen?
 
@@ -11,13 +14,15 @@ Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
 Numbersupport mit flags ausschalten?
+Optional BigDecimal statt Double?
 
 Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 Vielleicht mit flags ein/ausschalten?
 
-div, remain, trunc, round, abs
 isNaN, isInfinite, isFinite
 -> ggf. parameter "Error bei NaN, Infinity etc."
+div, remain, trunc, round, abs
+weitere operatoren aus java.lang.Math (oder StrictMath?)
 
 
 
@@ -170,3 +175,5 @@ numberp, ggf. atom korrigieren
 symbol? vs atom vs numberp
 
 <, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
+
+tests fuer atom, consp, listp, symbolp, numberp

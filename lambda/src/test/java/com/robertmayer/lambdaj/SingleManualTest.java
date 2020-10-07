@@ -6,6 +6,6 @@ public class SingleManualTest {
 
     @Test
     public void runTest() {
-        LambdaJTest.runTest(6);
+        LambdaJTest.runTest(59);
     }
 }

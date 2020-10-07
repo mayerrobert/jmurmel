@@ -106,29 +106,37 @@ public class LambdaJTest {
 
         /* 58 */ { "(mod 12 5)", "2.0", null },
 
+        /* 59 */ { "(atom 1)",              "t", null },
+        /* 60 */ { "(atom (quote x))",      "t", null },
+        /* 61 */ { "(atom ())",             "t", null },
+        /* 62 */ { "(atom nil)",            "t", null },
+        /* 63 */ { "(atom (quote (a)))",    "nil", null },
+
+        /* 64 */ { "(symbolp 1)",           "nil", null },
+        /* 65 */ { "(symbolp (quote x))",   "t", null },
+        /* 66 */ { "(symbolp ())",          "t", null },
+        /* 67 */ { "(symbolp nil)",         "t", null },
+        /* 68 */ { "(symbolp (quote (a)))", "nil", null },
+
+        /* 69 */ { "(consp 1)",             "nil", null },
+        /* 70 */ { "(consp (quote x))",     "nil", null },
+        /* 71 */ { "(consp ())",            "nil", null },
+        /* 72 */ { "(consp nil)",           "nil", null },
+        /* 73 */ { "(consp (quote (a)))",   "t", null },
+
+        /* 74 */ { "(listp 1)",             "nil", null },
+        /* 75 */ { "(listp (quote x))",     "nil", null },
+        /* 76 */ { "(listp ())",            "t", null },
+        /* 77 */ { "(listp nil)",           "t", null },
+        /* 78 */ { "(listp (quote (a)))",   "t", null },
+
+        /* 79 */ { "(numberp 1)",           "t", null },
+        /* 80 */ { "(numberp (quote x))",   "nil", null },
+        /* 81 */ { "(numberp ())",          "nil", null },
+        /* 82 */ { "(numberp nil)",         "nil", null },
+        /* 83 */ { "(numberp (quote (a)))", "nil", null },
+
         /*
-selber mit clisp ausprobiert:
-;(atom 1)              ; t
-;(atom (quote x))      ; t
-;(atom ())             ; t
-;(atom (quote (a)))    ; nil
-
-;(symbolp 1)              ; nil
-;(symbolp (quote x))      ; t
-;(symbolp ())             ; t
-;(symbolp (quote (a)))    ; nil
-
-; CL consp ist dasselbe wie Scheme pair?. consp(nil) == nil, listp(nil) == true
-;(consp 1)              ; nil
-;(consp (quote x))      ; nil
-;(consp ())             ; nil
-;(consp (quote (a)))    ; t
-
-;(numberp 1)           ; t
-;(numberp (quote x))   ; nil
-;(numberp ())          ; nil
-;(numberp (quote (a))) ; nil
-
 
 https://graham.main.nc.us/~bhammel/graham/lisp.html
 
