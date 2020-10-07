@@ -591,7 +591,6 @@ public class LambdaJ {
             if (trace >= TRC_EVAL) {
                 System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
             }
-            look = getchar();
             readToken();
             exp = readObj();
             if (exp == null) return result;

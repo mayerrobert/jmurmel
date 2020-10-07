@@ -3,9 +3,6 @@ der Double Support ist eigentlich nur mittels Builtins umgesetzt
    oder alternativ/ zusaetzlich z.B. BigDecimal unterstuetzen
 -> UND im Lexer gibts Support fuer Double
 
-numberp() ggf. teilweise durch atom() ersetzen, dann koennen externe Builtins ihre eigenen Datentypen
-in car reinstecken, der Interpreter sieht und verarbeitet nur Object
-
 errortests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
 
 errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
@@ -221,3 +218,5 @@ test fuer eval nil und eval t, ggf. symbol t einfuehren
 
 tests und fehlertests fuer number und operatoren
 
+numberp() ggf. teilweise durch atom() ersetzen, dann koennen externe Builtins ihre eigenen Datentypen
+in car reinstecken, der Interpreter sieht und verarbeitet nur Object
