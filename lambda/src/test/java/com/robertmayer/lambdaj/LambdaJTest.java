@@ -220,7 +220,7 @@ The values that atom returns sets the stage for the two internally defined selfe
                 try {
                     runTest(fileName.toString(), contents, expectedResult, expectedOutput);
                 }
-                catch (LambdaJ.Error e) {
+                catch (LambdaJ.LambdaJError e) {
                     if (expectedError != null) {
                         if (e.getMessage().contains(expectedError)) {
                             // thats fine
@@ -237,7 +237,7 @@ The values that atom returns sets the stage for the two internally defined selfe
             else {
                 System.out.println("***** skipping " + fileName.toString());
         }
-        } catch (LambdaJ.Error e) {
+        } catch (LambdaJ.LambdaJError e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);

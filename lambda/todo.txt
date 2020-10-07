@@ -1,4 +1,4 @@
-test fuer eval nil und t
+test fuer eval nil und eval t, ggf. symbol t einfuehren
 tests fuer atom, consp, listp, symbolp, numberp
 
 tests und fehlertests fuer number und operatoren

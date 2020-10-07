@@ -17,9 +17,9 @@ public class LambdaJ {
     private InputStream in;
     private PrintStream out;
 
-    public static class Error extends RuntimeException {
+    public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1;
-        Error(String msg) {
+        LambdaJError(String msg) {
             super(msg, null, false, false);
         }
 
@@ -94,7 +94,7 @@ public class LambdaJ {
                 tok = Double.valueOf(tokenToString(token));
             }
             catch (NumberFormatException e) {
-                throw new Error("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
+                throw new LambdaJError("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
                 + "' is not a valid symbol or number");
             }
         } else if (token[0] == '\0'){
@@ -152,7 +152,7 @@ public class LambdaJ {
 
     private Object readList() {
         readToken();
-        if (tok == null) throw new Error("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
+        if (tok == null) throw new LambdaJError("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
         if (")".equals(tok)) return null;
         Object tmp = readObj();
         if (symbolp(tmp)) return cons(tmp, readList());
@@ -169,7 +169,7 @@ public class LambdaJ {
                 if (exp == null) return null;
                 ConsCell envEntry = assoc(exp, env);
                 if (envEntry != null) return car(cdr(envEntry));
-                throw new Error("'" + exp + "' is undefined");
+                throw new LambdaJError("'" + exp + "' is undefined");
 
             } else if (numberp(exp)) {
                 return exp;
@@ -203,7 +203,7 @@ public class LambdaJ {
                     final Object func = eval(car(cdr(exp)), env, level + 1);
                     if (listp(func)) return eval(cons(func, args), env, level + 1);
                     else if (isPrim(func)) return applyPrimitive((Builtin) func, args, level);
-                    else throw new Error("apply: not a function: " + printObj(func, true));
+                    else throw new LambdaJError("apply: not a function: " + printObj(func, true));
 
                 } else { /* function call */
                     Object func = eval(car(exp), env, level + 1);
@@ -212,7 +212,7 @@ public class LambdaJ {
                     } else if (isPrim(func)) { /* built-in primitive */ // todo umbauen auf isPrim und ein "else error"
                         return applyPrimitive((Builtin) func, evlis((ConsCell) cdr(exp), env, level), level);
                     }
-                    else throw new Error("not a function: " + printObj(func, true));
+                    else throw new LambdaJError("not a function: " + printObj(func, true));
                 }
 
             } else if (car(car(exp)) == intern("lambda")) {
@@ -229,7 +229,7 @@ public class LambdaJ {
 
             }
 
-            throw new Error("cannot eval expression '" + printObj(exp, true) + '\'');
+            throw new LambdaJError("cannot eval expression '" + printObj(exp, true) + '\'');
 
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
@@ -328,7 +328,7 @@ public class LambdaJ {
     private ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null) return null;
         if (maybeList == null) return null;
-        if (!listp(maybeList)) throw new Error("assoc: expected second argument to be a List but got " + printObj(maybeList, true));
+        if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printObj(maybeList, true));
         ConsCell env = (ConsCell) maybeList;
         for ( ; env != null; env = (ConsCell)cdr(env))
             if (atom == car(car(env))) return (ConsCell) car(env);
@@ -378,35 +378,35 @@ public class LambdaJ {
     private Object boolResult(boolean b) { return b ? expTrue : null; }
 
     private void noArgs(String func, ConsCell a) {
-        if (a != null) throw new Error(func + ": expected no arguments but got " + printObj(a, true));
+        if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printObj(a, true));
     }
 
     private void oneArg(String func, ConsCell a) {
-        if (a == null) throw new Error(func + ": expected one argument but no argument was given");
-        if (cdr(a) != null) throw new Error(func + ": expected one argument but got extra arg(s) " + printObj(cdr(a), true));
+        if (a == null) throw new LambdaJError(func + ": expected one argument but no argument was given");
+        if (cdr(a) != null) throw new LambdaJError(func + ": expected one argument but got extra arg(s) " + printObj(cdr(a), true));
     }
 
     private void oneOrMoreArgs(String func, ConsCell a) {
-        if (a == null) throw new Error(func + ": expected at least one argument but no argument was given");
+        if (a == null) throw new LambdaJError(func + ": expected at least one argument but no argument was given");
     }
 
     private void twoArgs(String func, ConsCell a) {
-        if (a == null) throw new Error(func + ": expected two arguments but no argument was given");
-        if (cdr(a) == null) throw new Error(func + ": expected two arguments but only one argument was given");
-        if (cdr(cdr(a)) != null) throw new Error(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true));
+        if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given");
+        if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given");
+        if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true));
     }
 
     private void onePair(String func, ConsCell a) {
-        if (a == null) throw new Error(func + ": expected one Pair argument but no argument was given");
-        if (!listp(car(a))) throw new Error(func + ": expected one Pair argument but got " + printObj(a, true));
-        if (cdr(a) != null) throw new Error(func + ": expected one Pair argument but got extra arg(s) " + printObj(cdr(a), true));
+        if (a == null) throw new LambdaJError(func + ": expected one Pair argument but no argument was given");
+        if (!listp(car(a))) throw new LambdaJError(func + ": expected one Pair argument but got " + printObj(a, true));
+        if (cdr(a) != null) throw new LambdaJError(func + ": expected one Pair argument but got extra arg(s) " + printObj(cdr(a), true));
     }
 
     /** arguments if any must be only numbers */
     private void numbers(String func, ConsCell a) {
         if (a == null) return;
         for (; a != null; a = (ConsCell) cdr(a))
-            if (!numberp(car(a))) throw new Error(func + ": expected only number arguments but got " + printObj(a, true));
+            if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printObj(a, true));
     }
 
     private Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
@@ -598,7 +598,7 @@ public class LambdaJ {
             } else if (hasFlag("--result", args)) {
                 System.out.println(result);
             }
-        } catch (Error e) {
+        } catch (LambdaJError e) {
             System.out.println();
             System.out.println(e.toString());
         }
