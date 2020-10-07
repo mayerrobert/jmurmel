@@ -1,22 +1,22 @@
+Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
+Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basierend auf printObj?
+Und toList(), toArray(), toMap(), stream()???
+
+printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
+
+Benchmark
+
+
+
 der Double Support ist eigentlich nur mittels Builtins umgesetzt
 -> in ein eigenes ExtEnv verpacken, damit kann mans optional machen,
    oder alternativ/ zusaetzlich z.B. BigDecimal unterstuetzen
 -> UND im Lexer gibts Support fuer Double
 
-errortests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
-
-errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
-
-Benchmark
-
-Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
-Vielleicht Object zurueck, und ConsCell bekommt eine toStringMethode basierend auf printObj?
-Und toList(), toArray(), toMap(), stream()???
-
 
 
 Erkennung von zirkulaeren Listen: http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-koennte man in printObj einbauen
+koennte man in printObj einbauen (aber ohne set gibts derzeit eh keine zirkulaeren Listen ?!?)
 
  list-length could be implemented as follows:
 
@@ -68,10 +68,6 @@ Falls Compiler, sollte der nicht nur ein Programm sondern z.B. *.lisp uebersetze
 ggf. mit timestampcheck
 
 eval, evlis, evcon vielleicht in haendischem CPS?!?
-
-
-
-printObj auf loop umbauen, zirklen erkennen, vgl collection.toString()
 
 
 
@@ -220,3 +216,7 @@ tests und fehlertests fuer number und operatoren
 
 numberp() ggf. teilweise durch atom() ersetzen, dann koennen externe Builtins ihre eigenen Datentypen
 in car reinstecken, der Interpreter sieht und verarbeitet nur Object
+
+errortests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+
+errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste

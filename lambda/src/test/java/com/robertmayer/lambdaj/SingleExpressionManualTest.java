@@ -6,6 +6,6 @@ public class SingleExpressionManualTest {
 
     @Test
     public void runExpression() {
-        LambdaJTest.runTest("quote", "(apply (assoc (quote x) ()) ())", "-Infinity", null);
+        LambdaJTest.runTest("quote", "(1 2 3)", "-Infinity", null);
     }
 }

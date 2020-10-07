@@ -188,7 +188,7 @@ public class LambdaJ {
                     return car(cdr(exp));
 
                 } else if (car(exp) == intern("if")) {
-                    nArgs("if", cdr(exp), 2, 3);
+                    nArgs("if", cdr(exp), 2, 3, exp);
                     if (eval(car(cdr(exp)), env, level + 1) != null)
                         return eval(car(cdr(cdr(exp))), env, level + 1);
                     else if (cdr(cdr(cdr(exp))) != null)
@@ -197,11 +197,11 @@ public class LambdaJ {
                         return null;
 
                 } else if (car(exp) == intern("lambda")) {
-                    nArgs("lambda", cdr(exp), 2);
+                    nArgs("lambda", cdr(exp), 2, exp);
                     return exp;
 
                 } else if (car(exp) == intern("labels")) { // labels bindings body -> object
-                    nArgs("labels", cdr(exp), 2);
+                    nArgs("labels", cdr(exp), 2, exp);
                     ConsCell bindings = (ConsCell) car(cdr(exp));
                     ConsCell body =     (ConsCell) cdr(cdr(exp));
                     return evlabels(bindings, body, env, level);
@@ -210,37 +210,48 @@ public class LambdaJ {
                     return evcon((ConsCell) cdr(exp), env, level);
 
                 } else if (car(exp) == intern("apply")) { // apply function to list
-                    twoArgs("apply", cdr(exp));
+                    twoArgs("apply", cdr(exp), exp);
                     final Object func = eval(car(cdr(exp)), env, level + 1);
                     final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, level));
                     if (consp(func)) return eval(cons(func, args), env, level + 1);
                     else if (isPrim(func)) return applyPrimitive((Builtin) func, args, level);
                     else throw new LambdaJError("apply: not a function: " + printObj(func, true)
                                                 + ". this was the result of evaluating the expression "
-                                                + printObj(car(cdr(exp)), true));
+                                                + printObj(car(cdr(exp)), true) + errorExp(exp));
 
                 } else { /* function call */
                     Object func = eval(car(exp), env, level + 1);
-                    //if (func == null) throw new LambdaJError("cannot call function nil which is the result of expression " + printObj(car(exp), true));
                     if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
                         return eval(cons(func, cdr(exp)), env, level + 1);
                     } else if (isPrim(func)) {
                         return applyPrimitive((Builtin) func, evlis((ConsCell) cdr(exp), env, level), level);
                     }
-                    else throw new LambdaJError("not a function: " + printObj(func, true));
+                    else throw new LambdaJError("not a function: " + printObj(func, true) + errorExp(exp));
                 }
 
-            } else if (car(car(exp)) == intern("lambda")) {
+            } else if (consp(car(exp)) && car(car(exp)) == intern("lambda")) {
                 /* should be a lambda, bind args as "names" into env and eval body-list */
-                final ConsCell lambda = (ConsCell) cdr(car(exp));
+                final Object lambda = cdr(car(exp));
+                nArgs("lambda", lambda, 2, exp);
+
                 ConsCell extenv = env, params = (ConsCell) car(lambda), args = (ConsCell) cdr(exp);
-                for ( ; params != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
+                for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
                     extenv = cons(cons(car(params),  cons(eval(car(args), env, level + 1), null)), extenv);
+                if (params != null)
+                    throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printObj(params, true)
+                                           + errorExp(exp));
+                if (args != null)
+                    throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printObj(args, true)
+                                           + errorExp(exp));
+
                 ConsCell body = (ConsCell) cdr(lambda);
                 Object result = null;
                 for (; body != null; body = (ConsCell) cdr(body))
                     result = eval(car(body), extenv, level);
                 return result;
+
+            } else if (atom(car(exp))) {
+                throw new LambdaJError("not a function: " + printObj(car(exp), true) + errorExp(exp));
 
             }
 
@@ -420,20 +431,25 @@ public class LambdaJ {
     }
 
     private void twoArgs(String func, Object a) {
-        if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given");
-        if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given");
-        if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true));
+        twoArgs(func, a, null);
     }
 
-    private void nArgs(String func, Object a, int min) {
-        int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " arguments or more but got only " + actualLength);
+    private void twoArgs(String func, Object a, Object exp) {
+        if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given" + errorExp(exp));
+        if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given" + errorExp(exp));
+        if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true) + errorExp(exp));
     }
 
-    private void nArgs(String func, Object a, int min, int max) {
+    /** at least {@code min} args */
+    private void nArgs(String func, Object a, int min, Object exp) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got only " + actualLength);
-        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printObj(nthcdr(max, a), true));
+        if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " arguments or more but got only " + actualLength + errorExp(exp));
+    }
+
+    private void nArgs(String func, Object a, int min, int max, Object exp) {
+        int actualLength = length(a);
+        if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got only " + actualLength + errorExp(exp));
+        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printObj(nthcdr(max, a), true) + errorExp(exp));
     }
 
     private void onePair(String func, ConsCell a) {
@@ -452,6 +468,11 @@ public class LambdaJ {
     private void oneOrMoreNumbers(String func, ConsCell a) {
         oneOrMoreArgs(func, a);
         numbers(func, a);
+    }
+
+    private String errorExp(Object exp) {
+        if (exp == null) return "";
+        return "\nerror occurred in expression " + printObj(exp, true);
     }
 
     /** generate a comparison operator */
