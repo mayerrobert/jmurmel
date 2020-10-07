@@ -1,8 +1,18 @@
-numberp, ggf. atom korrigieren
-symbol? vs atom vs numberp
 test fuer eval nil und t
+tests fuer atom, consp, listp, symbolp, numberp
+
+tests und fehlertests fuer number und operatoren
+
+<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
 error tests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+
+eval ins environment einhaengen?
+
+Variable INTERNAL-TIME-UNITS-PER-SECOND
+Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
+
+
 
 Vielleicht car, cdr, cons, Pair in eine Basisklasse LambdaJRuntime rausziehen?
 LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
@@ -15,12 +25,6 @@ Falls Compiler, sollte der nicht nur ein Programm sondern z.B. *.lisp uebersetze
 ggf. mit timestampcheck
 
 eval, evlis, evcon vielleicht in haendischem CPS?!?
-
-
-
-tests und fehlertests fuer number und operatoren
-
-<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
 
 
@@ -62,8 +66,6 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
   (reduce '* (loop for a from x downto 1 collect a)))
 
 
-
-eval ins environment einhaengen?
 
 Datentyp Strings, char unterstuetzen
 
@@ -161,3 +163,6 @@ vielleicht "Object car(Object)" und "Pair pcar(Object)"?
 -> Eruebrigt sich ggf. durch Umstellen von car(Pair) nach car(Object) 
 
 die parameterchecks ignorieren zuviele argumente
+
+numberp, ggf. atom korrigieren
+symbol? vs atom vs numberp

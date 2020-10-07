@@ -21,7 +21,12 @@ or
     Hello, World!
     $
 
-The commands above will read the expression from stdin and interpret it.
+The commands above will read an expression from stdin and interpret it.
+
+Command line parameters in standalone mode:
+
+* `--result` ... print the result to stdout, this is the default when reading an expression from the console 
+* `--trace` ... print lexing/ parsing/ eval info to stderr
 
 **Embedded use:**
 
@@ -40,7 +45,7 @@ The environment contains the symbol `nil` and the functions
 * `lambda`
 * `labels`
  
-* `eq, pair?, symbol?, null?`
+* `eq, atom, consp, listp, symbolp, numberp, null?`
 
 * `assoc`
 * `read`

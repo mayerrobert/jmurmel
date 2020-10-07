@@ -7,7 +7,7 @@
    ((lambda (expa)
       ((lambda (fn)
          (cond
-           ((pair? fn)
+           ((listp fn)
               (write (quote (cons fn (cdr expa)))))
            ((quote t)
               ((lambda (args)

@@ -127,7 +127,7 @@ selber mit clisp ausprobiert:
 ;(numberp 1)           ; t
 ;(numberp (quote x))   ; nil
 ;(numberp ())          ; nil
-(numberp (quote (a))) ; nil
+;(numberp (quote (a))) ; nil
 
 
 https://graham.main.nc.us/~bhammel/graham/lisp.html
