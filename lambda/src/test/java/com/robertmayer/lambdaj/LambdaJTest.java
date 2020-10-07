@@ -136,20 +136,22 @@ public class LambdaJTest {
         /* 82 */ { "(numberp nil)",         "nil", null },
         /* 83 */ { "(numberp (quote (a)))", "nil", null },
 
+        /* https://graham.main.nc.us/~bhammel/graham/lisp.html
+
+        It is a convention, and perhaps a logically infelicitous one, of most LISP interpreters
+        to equate the empty list with a selfevaluating atom called "nil". Thus,
+        */
+
+        /* 83 */ { "(cdr (cdr (cdr (quote (a (b c) (d (e f)))))))", "nil", null },
+        /* 83 */ { "()", "nil", null },
+        /* 83 */ { "(quote ())", "nil", null },
+        /* 83 */ { "nil", "nil", null },
+        /* 84 */ { "t", "t", null },
+
         /*
-
-https://graham.main.nc.us/~bhammel/graham/lisp.html
-
-It is a convention, and perhaps a logically infelicitous one, of most LISP interpreters to equate the empty list with a selfevaluating atom called "nil". Thus,
-
-       (cdr (cdr (cdr (quote (a (b c) (d (e f))))))) -> nil
-       () -> nil
-       (quote ()) -> nil
-       nil -> nil
-
-The values that atom returns sets the stage for the two internally defined selfevaluating boolean values "nil" and "t".
-
-   Examples:
+        The values that atom returns sets the stage for the two internally defined selfevaluating
+        boolean values "nil" and "t".
+        Examples:
 
         -> nil
            nil

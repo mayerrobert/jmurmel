@@ -525,7 +525,8 @@ public class LambdaJ {
                cons(cons(intern("mod"),     cons(fmod, null)),
 
                cons(cons(intern("nil"),     cons((String)null, null)),
-               null)))))))))))))))))))))))));
+               cons(cons(intern("t"),       cons(intern("t"), null)),
+               null))))))))))))))))))))))))));
     }
 
 

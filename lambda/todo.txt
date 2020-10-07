@@ -1,7 +1,3 @@
-test fuer eval nil und eval t, ggf. symbol t einfuehren
-
-tests und fehlertests fuer number und operatoren
-
 error tests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
 
 Benchmark
@@ -177,3 +173,8 @@ symbol? vs atom vs numberp
 <, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
 
 tests fuer atom, consp, listp, symbolp, numberp
+
+test fuer eval nil und eval t, ggf. symbol t einfuehren
+
+tests und fehlertests fuer number und operatoren
+

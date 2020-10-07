@@ -37,7 +37,7 @@ or pass a `new ByteArrayInputStream()` or something,
 see e.g. `LambdaJTest.java` for an embedded use example.
 
 ## Features
-The environment contains the symbol `nil` and the functions
+The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
 * `cond, if`
