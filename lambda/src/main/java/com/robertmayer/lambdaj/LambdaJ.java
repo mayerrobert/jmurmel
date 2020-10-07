@@ -335,37 +335,39 @@ public class LambdaJ {
     private static class ConsCell {
         Object car, cdr;
         ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+        //@Override
+        //public String toString() { return printObj(this, true); }
     }
 
 
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
-    private ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
-    private Object   car(Object x)                { return ((ConsCell)x).car; }
-    private Object   cdr(Object x)                { return ((ConsCell)x).cdr; }
+    private static ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
+    private static Object   car(Object x)                { return ((ConsCell)x).car; }
+    private static Object   cdr(Object x)                { return ((ConsCell)x).cdr; }
 
-    private boolean  consp(Object x)             { return x != null && x instanceof ConsCell; }
-    private boolean  atom(Object x)              { return x == null || !(x instanceof ConsCell); } // !isCons(x)
-    private boolean  symbolp(Object x)           { return x == null || x instanceof String; } // null (alias nil) is a symbol too
-    private boolean  listp(Object x)             { return x == null || x instanceof ConsCell; } // null is a list too
-    private boolean  isPrim(Object x)            { return x instanceof Builtin; }
-    private boolean  numberp(Object x)           { return x instanceof Number; }
+    private static boolean  consp(Object x)             { return x != null && x instanceof ConsCell; }
+    private static boolean  atom(Object x)              { return x == null || !(x instanceof ConsCell); } // !isCons(x)
+    private static boolean  symbolp(Object x)           { return x == null || x instanceof String; } // null (alias nil) is a symbol too
+    private static boolean  listp(Object x)             { return x == null || x instanceof ConsCell; } // null is a list too
+    private static boolean  isPrim(Object x)            { return x instanceof Builtin; }
+    private static boolean  numberp(Object x)           { return x instanceof Number; }
 
-    private int length(Object list) {
+    private static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
         for (ConsCell l = (ConsCell) list; l != null; l = (ConsCell) cdr(l)) n++;
         return n;
     }
 
-    private Object nthcdr(int n, Object list) {
+    private static Object nthcdr(int n, Object list) {
         if (list == null) return null;
         ConsCell l = (ConsCell) list;
         for (; l != null && n-- > 0; l = (ConsCell) cdr(l)) ;
         return l;
     }
 
-    private ConsCell assoc(Object atom, Object maybeList) {
+    private /*static*/ ConsCell assoc(Object atom, Object maybeList) { // todo static
         if (atom == null) return null;
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printObj(maybeList, true));
@@ -577,8 +579,8 @@ public class LambdaJ {
                cons(cons(intern("/"),       cons(fquot, null)),
                cons(cons(intern("mod"),     cons(fmod, null)),
 
-               cons(cons(intern("nil"),     cons((String)null, null)),
                cons(cons(intern("t"),       cons(intern("t"), null)),
+               cons(cons(intern("nil"),     cons(null, null)),
                null))))))))))))))))))))))))));
     }
 
