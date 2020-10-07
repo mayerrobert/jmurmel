@@ -340,6 +340,20 @@ public class LambdaJ {
     private boolean  isPrim(Object x)            { return x instanceof Builtin; }
     private boolean  numberp(Object x)           { return x instanceof Number; }
 
+    private int length(Object list) {
+        if (list == null) return 0;
+        int n = 0;
+        for (ConsCell l = (ConsCell) list; l != null; l = (ConsCell) cdr(l)) n++;
+        return n;
+    }
+
+    private Object nthcdr(int n, Object list) {
+        if (list == null) return null;
+        ConsCell l = (ConsCell) list;
+        for (; l != null && n-- > 0; l = (ConsCell) cdr(l)) ;
+        return l;
+    }
+
     private ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null) return null;
         if (maybeList == null) return null;
@@ -411,29 +425,15 @@ public class LambdaJ {
         if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true));
     }
 
-    private int listLength(Object list) {
-        if (list == null) return 0;
-        int n = 0;
-        for (ConsCell l = (ConsCell) list; l != null; l = (ConsCell) cdr(l)) n++;
-        return n;
-    }
-
-    private Object nth(Object list, int n) {
-        if (list == null) return null;
-        ConsCell l = (ConsCell) list;
-        for (; l != null && n-- > 0; l = (ConsCell) cdr(l)) ;
-        return l;
-    }
-
     private void nArgs(String func, Object a, int min) {
-        int actualLength = listLength(a);
+        int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " arguments or more but got only " + actualLength);
     }
 
     private void nArgs(String func, Object a, int min, int max) {
-        int actualLength = listLength(a);
+        int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got only " + actualLength);
-        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printObj(nth(a, max), true));
+        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printObj(nthcdr(max, a), true));
     }
 
     private void onePair(String func, ConsCell a) {

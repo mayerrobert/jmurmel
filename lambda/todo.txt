@@ -4,6 +4,32 @@ errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
 
 Benchmark
 
+Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
+Vielleicht Object zurueck, und ConsCell bekommt eine toStringMethode basierend auf printObj?
+
+
+
+Erkennung von zirkulaeren Listen: http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
+koennte man in printObj einbauen
+
+ list-length could be implemented as follows:
+
+(defun list-length (x) 
+  (do ((n 0 (+ n 2))            ;Counter 
+       (fast x (cddr fast))     ;Fast pointer: leaps by 2 
+       (slow x (cdr slow)))     ;Slow pointer: leaps by 1 
+      (nil) 
+    ;; If fast pointer hits the end, return the count. 
+    (when (endp fast) (return n)) 
+    (when (endp (cdr fast)) (return (+ n 1))) 
+    ;; If fast pointer eventually equals slow pointer, 
+    ;;  then we must be stuck in a circular list. 
+    ;; (A deeper property is the converse: if we are 
+    ;;  stuck in a circular list, then eventually the 
+    ;;  fast pointer will equal the slow pointer. 
+    ;;  That fact justifies this implementation.) 
+    (when (and (eq fast slow) (> n 0)) (return nil))))
+
 
 
 eval ins environment einhaengen?
@@ -15,7 +41,8 @@ Numbersupport mit flags ausschalten?
 Optional BigDecimal statt Double?
 
 Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
-Vielleicht mit flags ein/ausschalten?
+rplaca, rplacd
+Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
 
 isNaN, isInfinite, isFinite
 -> ggf. parameter "Error bei NaN, Infinity etc."
@@ -106,6 +133,11 @@ aber statt funktionsdefinitionen gibt man einen Klassennamen an (und vielleicht 
 damit man im falle von gleichnamige methoden in zwei klassen "namespaces" zum trennen verwenden kann), und
 von dieser klasse werden alle public methoden mit der Signatur UnaryOperator<Pair> ins Environment gesteckt.
 Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode die liefert eine Map Funktionsname->UnaryOperator<Pair>
+
+Oder: LambdaJ bekommt eine Methode void registerBuiltin(String funcName, Builtin javaFunc), die pickt eine neue
+Funktion ans Environment vorne dran.
+
+
 
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
 
