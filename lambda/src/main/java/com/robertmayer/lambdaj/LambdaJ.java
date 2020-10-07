@@ -179,7 +179,7 @@ public class LambdaJ {
                 if (envEntry != null) return car(cdr(envEntry));
                 throw new LambdaJError("'" + exp + "' is undefined");
 
-            } else if (numberp(exp)) {
+            } else if (atom(exp)) {
                 return exp;
 
             } else if (symbolp(car (exp))) { /* special forms */
@@ -393,7 +393,7 @@ public class LambdaJ {
             return ob.toString();
         } else if (isPrim(ob)) {
             return "#<primitive>";
-        } else if (numberp(ob)) {
+        } else if (atom(ob)) {
             return ob.toString();
         } else {
             return "<internal error>";
