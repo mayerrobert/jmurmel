@@ -349,8 +349,12 @@ public class LambdaJ {
             if (head_of_list) sb.append('(');
             sb.append(printObj(car(ob), true));
             if (cdr(ob) != null) {
-                if (isPair(cdr(ob))) sb.append(' ').append(printObj(cdr(ob), false));
-                else sb.append(" . ").append(printObj(cdr(ob), false)).append(')');
+                if (isPair(cdr(ob)))
+                    sb.append(' ').append(printObj(cdr(ob), false));
+                else if (head_of_list)
+                    sb.append(" . ").append(printObj(cdr(ob), false)).append(')');
+                else
+                    sb.append(' ').append(printObj(cdr(ob), false)).append(')');
             } else sb.append(')');
             return sb.toString();
         } else if (isAtom(ob)) {
@@ -562,9 +566,11 @@ public class LambdaJ {
         }
     }
 
-    public static void main(String argv[]) {
+    public static void main(String args[]) {
         final LambdaJ interpreter = new LambdaJ();
-        interpreter.trace = TRC_LEX;
+        if (hasFlag("--trace", args)) {
+            interpreter.trace = TRC_LEX;
+        }
         final boolean istty = null != System.console();
         if (istty) {
             System.out.println("Enter a Lisp expression:");
@@ -576,10 +582,19 @@ public class LambdaJ {
             if (istty) {
                 System.out.println();
                 System.out.println("result: " + result);
+            } else if (hasFlag("--result", args)) {
+                System.out.println(result);
             }
         } catch (Error e) {
             System.out.println();
             System.out.println(e.toString());
         }
+    }
+
+    private static boolean hasFlag(String flag, String[] args) {
+        for (String arg: args) {
+            if (flag.equals(arg)) return true;
+        }
+        return false;
     }
 }
