@@ -335,8 +335,8 @@ public class LambdaJ {
     private static class ConsCell {
         Object car, cdr;
         ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        //@Override
-        //public String toString() { return printObj(this, true); }
+        @Override
+        public String toString() { return printObj(this, true); }
     }
 
 
@@ -367,7 +367,7 @@ public class LambdaJ {
         return l;
     }
 
-    private /*static*/ ConsCell assoc(Object atom, Object maybeList) { // todo static
+    private static ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null) return null;
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printObj(maybeList, true));
@@ -385,11 +385,10 @@ public class LambdaJ {
         return primfn.apply(args);
     }
 
-    private String printObj(Object ob, boolean head_of_list) {
+    private static String printObj(Object ob, boolean head_of_list) {
         if (ob == null) {
             return "nil";
         } else if (listp(ob)) {
-            if (car(ob) == intern("quote") && car(cdr(ob)) == intern("t")) return "t";
             final StringBuffer sb = new StringBuffer(200);
             if (head_of_list) sb.append('(');
             sb.append(printObj(car(ob), true));
@@ -416,63 +415,64 @@ public class LambdaJ {
 
 
     /// runtime for Lisp programs
-    private final ConsCell expTrue = cons(intern("quote"), cons(intern("t"), null));
+    //private final ConsCell expTrue = cons(intern("quote"), cons(intern("t"), null)); // (quote t) could b used if there was no builtin t in the environment
+    private final Object expTrue = intern("t");
     private Object boolResult(boolean b) { return b ? expTrue : null; }
 
-    private void noArgs(String func, ConsCell a) {
+    private static void noArgs(String func, ConsCell a) {
         if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printObj(a, true));
     }
 
-    private void oneArg(String func, Object a) {
+    private static void oneArg(String func, Object a) {
         if (a == null) throw new LambdaJError(func + ": expected one argument but no argument was given");
         if (cdr(a) != null) throw new LambdaJError(func + ": expected one argument but got extra arg(s) " + printObj(cdr(a), true));
     }
 
-    private void oneOrMoreArgs(String func, ConsCell a) {
+    private static void oneOrMoreArgs(String func, ConsCell a) {
         if (a == null) throw new LambdaJError(func + ": expected at least one argument but no argument was given");
     }
 
-    private void twoArgs(String func, Object a) {
+    private static void twoArgs(String func, Object a) {
         twoArgs(func, a, null);
     }
 
-    private void twoArgs(String func, Object a, Object exp) {
+    private static void twoArgs(String func, Object a, Object exp) {
         if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given" + errorExp(exp));
         if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given" + errorExp(exp));
         if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true) + errorExp(exp));
     }
 
     /** at least {@code min} args */
-    private void nArgs(String func, Object a, int min, Object exp) {
+    private static void nArgs(String func, Object a, int min, Object exp) {
         int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " arguments or more but got only " + actualLength + errorExp(exp));
     }
 
-    private void nArgs(String func, Object a, int min, int max, Object exp) {
+    private static void nArgs(String func, Object a, int min, int max, Object exp) {
         int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got only " + actualLength + errorExp(exp));
         if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printObj(nthcdr(max, a), true) + errorExp(exp));
     }
 
-    private void onePair(String func, ConsCell a) {
+    private static void onePair(String func, ConsCell a) {
         if (a == null) throw new LambdaJError(func + ": expected one Pair argument but no argument was given");
         if (!listp(car(a))) throw new LambdaJError(func + ": expected one Pair argument but got " + printObj(a, true));
         if (cdr(a) != null) throw new LambdaJError(func + ": expected one Pair argument but got extra arg(s) " + printObj(cdr(a), true));
     }
 
     /** arguments if any must be only numbers */
-    private void numbers(String func, ConsCell a) {
+    private static void numbers(String func, ConsCell a) {
         if (a == null) return;
         for (; a != null; a = (ConsCell) cdr(a))
             if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printObj(a, true));
     }
 
-    private void oneOrMoreNumbers(String func, ConsCell a) {
+    private static void oneOrMoreNumbers(String func, ConsCell a) {
         oneOrMoreArgs(func, a);
         numbers(func, a);
     }
 
-    private String errorExp(Object exp) {
+    private static String errorExp(Object exp) {
         if (exp == null) return "";
         return "\nerror occurred in expression " + printObj(exp, true);
     }
@@ -487,7 +487,7 @@ public class LambdaJ {
     }
 
     /** generate operator for zero or more args */
-    private Object addOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
+    private static Object addOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         numbers(opName, args);
         for (; args != null; args = (ConsCell) cdr(args))
             startVal = op.applyAsDouble(startVal, (Double)car(args));
@@ -495,7 +495,7 @@ public class LambdaJ {
     }
 
     /** generate operator for one or more args */
-    private Object subOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
+    private static Object subOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         oneOrMoreNumbers("-", args);
         double result = (Double)car(args);
         if (cdr(args) == null) return op.applyAsDouble(startVal, result);
