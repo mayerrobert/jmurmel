@@ -1,3 +1,3 @@
-; error: apply: expected one argument but no argument was given
+; error: apply: expected two arguments but only one argument was given
 
 (apply (quote 1))

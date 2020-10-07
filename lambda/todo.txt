@@ -1,4 +1,6 @@
-error tests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+errortests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+
+errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
 
 Benchmark
 

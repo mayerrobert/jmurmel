@@ -49,7 +49,7 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `assoc`
 * `read`
-* `write, writeln`
+* `write, writeln` ... write expects one argument, writeln expects zero or one argument(s)
 
 * `=, <, <=, >, >=`
 * `+, -, *, /, mod`

@@ -63,6 +63,11 @@ public class LambdaJTest {
         /* 28 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s3))", "t", "s3" },
         /* 29 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s4))", "nil", null },
 
+        /* 30 */ { "(if (eq (quote a) (quote b)) (quote a))", "nil", null },
+        /* 30 */ { "(if (eq (quote a) (quote a)) (quote a))", "a", null },
+        /* 30 */ { "(if (eq (quote a) (quote b)) (quote a) (quote b))", "b", null },
+        /* 30 */ { "(if (eq (quote a) (quote a)) (quote a) (quote b))", "a", null },
+
         // labels
         /* 30 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
         /* 31 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
