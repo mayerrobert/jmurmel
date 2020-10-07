@@ -1,10 +1,13 @@
+fnull, fcons usw brauchen keine members zu sein, koennten lokale variablen in environment() sein
+
 Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
 Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basierend auf printObj?
 Und toList(), toArray(), toMap(), stream()???
+-> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
+-> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
+Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
 
 printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
-
-Benchmark
 
 
 
