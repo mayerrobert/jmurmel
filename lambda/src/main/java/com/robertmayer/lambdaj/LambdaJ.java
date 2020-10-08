@@ -16,7 +16,6 @@ public class LambdaJ {
     public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
     public int trace = TRC_NONE;
 
-    private InputStream in;
     private PrintStream out;
 
     public static class LambdaJError extends RuntimeException {
@@ -32,140 +31,166 @@ public class LambdaJ {
     }
 
     @FunctionalInterface
-    public static interface Builtin {
+    public interface Builtin {
         Object apply(ConsCell x);
     }
 
 
 
-    /// scanner
-    private int lineNo = 1, charNo;
-    private boolean escape;
-    private int look;
-    private int token[] = new int[SYMBOL_MAX];
-    private Object tok;
+    public interface Parser {
+        String intern(String symbol);
+        Object readObj();
+    }
 
-    private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
-    private boolean isParens(int x) { return !escape && (x == '(' || x == ')'); }
-    private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
+    public class LispParser implements Parser {
+        /// scanner
+        private InputStream in;
+        private boolean init;
 
-    private int getchar() {
-        try {
-            escape = false;
-            int c = readchar();
-            if (c == '\\') {
-                escape = true;
-                return readchar();
+        private int lineNo = 1, charNo;
+        private boolean escape;
+        private int look;
+        private int token[] = new int[SYMBOL_MAX];
+        private Object tok;
+
+        public LispParser(InputStream in) { this.in = in; }
+
+        private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
+        private boolean isParens(int x) { return !escape && (x == '(' || x == ')'); }
+        private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
+
+        private int getchar() {
+            try {
+                escape = false;
+                int c = readchar();
+                if (c == '\\') {
+                    escape = true;
+                    return readchar();
+                }
+                if (c == ';') {
+                    while ((c = readchar()) != '\n' && c != EOF);
+                }
+                return c;
+            } catch (Exception e) {
+                throw new RuntimeException("I/O error reading");
             }
-            if (c == ';') {
-                while ((c = readchar()) != '\n' && c != EOF);
-            }
-            return c;
-        } catch (Exception e) {
-            throw new RuntimeException("I/O error reading");
         }
-    }
 
-    private int readchar() throws IOException {
-        int c = in.read();
-        if (c == '\n') {
-            lineNo++;
-            charNo = 0;
-        } else charNo++;
-        return c;
-    }
+        private int readchar() throws IOException {
+            int c = in.read();
+            if (c == '\n') {
+                lineNo++;
+                charNo = 0;
+            } else charNo++;
+            return c;
+        }
 
-    private void readToken() {
-        int index = 0;
-        while (isSpace(look)) { look = getchar(); }
-        if (look != EOF) {
-            if (isParens(look)) {
-                token[index++] = look;  look = getchar();
-            } else {
-                while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
-                    if (index < SYMBOL_MAX - 1) token[index++] = look;
-                    look = getchar();
+        private void readToken() {
+            int index = 0;
+            while (isSpace(look)) { look = getchar(); }
+            if (look != EOF) {
+                if (isParens(look)) {
+                    token[index++] = look;  look = getchar();
+                } else {
+                    while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
+                        if (index < SYMBOL_MAX - 1) token[index++] = look;
+                        look = getchar();
+                    }
                 }
             }
-        }
-        token[index] = '\0';
-        if (trace >= TRC_LEX)
-            System.err.println("*** token  |" + tokenToString(token) + '|');
-        if (isNumber()) {
-            try {
-                tok = Double.valueOf(tokenToString(token));
-            }
-            catch (NumberFormatException e) {
-                throw new LambdaJError("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
-                + "' is not a valid symbol or number");
-            }
-        } else if (token[0] == '\0'){
-            tok = null;
-        } else {
-            tok = tokenToString(token);
-        }
-    }
-
-    private boolean isNumber() {
-        final int first = token[0];
-        if (isDigit(first)) return true;
-        return ((first == '-' || first == '+') && isDigit(token[1]));
-    }
-
-    private String tokenToString(int[] s) {
-        StringBuffer ret = new StringBuffer(32);
-        for (int c: s) {
-            if (c == '\0') break;
-            ret.append((char)c);
-        }
-        return ret.toString();
-    }
-
-
-
-    /// symbol table
-    private ConsCell symbols = null;
-
-    private String intern(String sym) {
-        ConsCell pair = symbols;
-        for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
-            if (sym.equalsIgnoreCase((String)car(pair))) {
-                return (String) car(pair);
+            token[index] = '\0';
+            if (trace >= TRC_LEX)
+                System.err.println("*** token  |" + tokenToString(token) + '|');
+            if (isNumber()) {
+                try {
+                    tok = Double.valueOf(tokenToString(token));
+                }
+                catch (NumberFormatException e) {
+                    throw new LambdaJError("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
+                    + "' is not a valid symbol or number");
+                }
+            } else if (token[0] == '\0'){
+                tok = null;
+            } else {
+                tok = tokenToString(token);
             }
         }
-        symbols = cons(sym, symbols);
-        return (String) car(symbols);
+
+        private boolean isNumber() {
+            final int first = token[0];
+            if (isDigit(first)) return true;
+            return ((first == '-' || first == '+') && isDigit(token[1]));
+        }
+
+        private String tokenToString(int[] s) {
+            StringBuffer ret = new StringBuffer(32);
+            for (int c: s) {
+                if (c == '\0') break;
+                ret.append((char)c);
+            }
+            return ret.toString();
+        }
+
+
+
+        /// symbol table
+        private ConsCell symbols = null;
+
+        @Override
+        public String intern(String sym) {
+            ConsCell pair = symbols;
+            for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
+                if (sym.equalsIgnoreCase((String)car(pair))) {
+                    return (String) car(pair);
+                }
+            }
+            symbols = cons(sym, symbols);
+            return (String) car(symbols);
+        }
+
+
+
+        /// parser
+        @Override
+        public Object readObj() {
+            if (!init) {
+                look = getchar();
+                init = true;
+            }
+            readToken();
+            return _readObj();
+        }
+
+        public Object _readObj() {
+            if (tok == null) {
+                if (trace >= TRC_PARSE) System.err.println("*** list   ()");
+                return null;
+            }
+            if ("(".equals(tok)) {
+                Object list = readList();
+                if (trace >= TRC_PARSE) System.err.println("*** list   " + printObj(list, true));
+                return list;
+            }
+            if (tok instanceof Number) {
+                if (trace >= TRC_TOK) System.err.println("*** number " + tok.toString());
+                return tok;
+            }
+            if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
+            return program.intern((String)tok);
+        }
+
+        private Object readList() {
+            readToken();
+            if (tok == null) throw new LambdaJError("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
+            if (")".equals(tok)) return null;
+            Object tmp = _readObj();
+            if (symbolp(tmp)) return cons(tmp, readList());
+            else return cons(tmp, readList());
+        }
     }
 
-
-
-    /// parser
-    private Object readObj() {
-        if (tok == null) {
-            if (trace >= TRC_PARSE) System.err.println("*** list   ()");
-            return null;
-        }
-        if ("(".equals(tok)) {
-            Object list = readList();
-            if (trace >= TRC_PARSE) System.err.println("*** list   " + printObj(list, true));
-            return list;
-        }
-        if (tok instanceof Number) {
-            if (trace >= TRC_TOK) System.err.println("*** number " + tok.toString());
-            return tok;
-        }
-        if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
-        return intern((String)tok);
-    }
-
-    private Object readList() {
-        readToken();
-        if (tok == null) throw new LambdaJError("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
-        if (")".equals(tok)) return null;
-        Object tmp = readObj();
-        if (symbolp(tmp)) return cons(tmp, readList());
-        else return cons(tmp, readList());
-    }
+    private Parser program;
+    private Parser inputData;
 
 
 
@@ -183,11 +208,11 @@ public class LambdaJ {
                 return exp;
 
             } else if (symbolp(car (exp))) { /* special forms */
-                if (car(exp) == intern("quote")) {
+                if (car(exp) == program.intern("quote")) {
                     oneArg("quote", cdr(exp));
                     return car(cdr(exp));
 
-                } else if (car(exp) == intern("if")) {
+                } else if (car(exp) == program.intern("if")) {
                     nArgs("if", cdr(exp), 2, 3, exp);
                     if (eval(car(cdr(exp)), env, level + 1) != null)
                         return eval(car(cdr(cdr(exp))), env, level + 1);
@@ -196,20 +221,20 @@ public class LambdaJ {
                     else
                         return null;
 
-                } else if (car(exp) == intern("lambda")) {
+                } else if (car(exp) == program.intern("lambda")) {
                     nArgs("lambda", cdr(exp), 2, exp);
                     return exp;
 
-                } else if (car(exp) == intern("labels")) { // labels bindings body -> object
+                } else if (car(exp) == program.intern("labels")) { // labels bindings body -> object
                     nArgs("labels", cdr(exp), 2, exp);
                     ConsCell bindings = (ConsCell) car(cdr(exp));
                     ConsCell body =     (ConsCell) cdr(cdr(exp));
                     return evlabels(bindings, body, env, level);
 
-                } else if (car(exp) == intern("cond")) {
+                } else if (car(exp) == program.intern("cond")) {
                     return evcon((ConsCell) cdr(exp), env, level);
 
-                } else if (car(exp) == intern("apply")) { // apply function to list
+                } else if (car(exp) == program.intern("apply")) { // apply function to list
                     twoArgs("apply", cdr(exp), exp);
                     final Object func = eval(car(cdr(exp)), env, level + 1);
                     final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, level));
@@ -229,7 +254,7 @@ public class LambdaJ {
                     else throw new LambdaJError("not a function: " + printObj(func, true) + errorExp(exp));
                 }
 
-            } else if (consp(car(exp)) && car(car(exp)) == intern("lambda")) {
+            } else if (consp(car(exp)) && car(car(exp)) == program.intern("lambda")) {
                 /* should be a lambda, bind args as "names" into env and eval body-list */
                 final Object lambda = cdr(car(exp));
                 nArgs("lambda", lambda, 2, exp);
@@ -301,8 +326,8 @@ public class LambdaJ {
             final ConsCell currentFunc = (ConsCell)car(bindings);
             final String currentName = (String)car(currentFunc);
             final ConsCell currentBody = (ConsCell)cdr(currentFunc);
-            final ConsCell lambda = cons(cons(intern("lambda"), currentBody), null);
-            extenv = cons(cons(intern(currentName), lambda), extenv);
+            final ConsCell lambda = cons(cons(program.intern("lambda"), currentBody), null);
+            extenv = cons(cons(program.intern(currentName), lambda), extenv);
         }
 
         Object result = null;
@@ -408,16 +433,20 @@ public class LambdaJ {
         } else if (atom(ob)) {
             return ob.toString();
         } else {
-            return "<internal error>";
+            return "<program.internal error>";
         }
     }
 
 
 
     /// runtime for Lisp programs
-    //private final ConsCell expTrue = cons(intern("quote"), cons(intern("t"), null)); // (quote t) could b used if there was no builtin t in the environment
-    private final Object expTrue = intern("t");
-    private Object boolResult(boolean b) { return b ? expTrue : null; }
+    //private final ConsCell expTrue() = cons(program.intern("quote"), cons(program.intern("t"), null)); // (quote t) could b used if there was no builtin t in the environment
+    private Object _expTrue;
+    private Object expTrue() {
+        if (_expTrue == null) _expTrue = program.intern("t");
+        return _expTrue;
+    }
+    private Object boolResult(boolean b) { return b ? expTrue() : null; }
 
     private static void noArgs(String func, ConsCell a) {
         if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printObj(a, true));
@@ -504,83 +533,83 @@ public class LambdaJ {
         return result;
     }
 
-    private Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
+    private final Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
 
-    private Builtin fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-    private Builtin fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
-    private Builtin fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
+    private final Builtin fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
+    private final Builtin fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+    private final Builtin fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
 
-    private Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
+    private final Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
-    private Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
-    private Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
-    private Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-    private Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
-    private Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
+    private final Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
+    private final Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+    private final Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
+    private final Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
+    private final Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
 
-    private Builtin fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
-    private Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    look = getchar(); readToken(); return readObj(); };
-    private Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue; };
+    private final Builtin fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+    private final Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    return inputData.readObj(); };
+    private final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
 
-    private Builtin fwriteln = (ConsCell a) -> {
+    private final Builtin fwriteln = (ConsCell a) -> {
         if (a == null) {
             out.println();
-            return expTrue;
+            return expTrue();
         }
         out.println(printObj(car(a), true));
-        return expTrue;
+        return expTrue();
     };
 
-    private Builtin fnumbereq = args -> compareOp(args, "=",  compareResult -> compareResult == 0);
-    private Builtin flt =       args -> compareOp(args, "<",  compareResult -> compareResult <  0);
-    private Builtin fle =       args -> compareOp(args, "<=", compareResult -> compareResult <= 0);
-    private Builtin fgt =       args -> compareOp(args, ">",  compareResult -> compareResult >  0);
-    private Builtin fge =       args -> compareOp(args, ">=", compareResult -> compareResult >= 0);
+    private final Builtin fnumbereq = args -> compareOp(args, "=",  compareResult -> compareResult == 0);
+    private final Builtin flt =       args -> compareOp(args, "<",  compareResult -> compareResult <  0);
+    private final Builtin fle =       args -> compareOp(args, "<=", compareResult -> compareResult <= 0);
+    private final Builtin fgt =       args -> compareOp(args, ">",  compareResult -> compareResult >  0);
+    private final Builtin fge =       args -> compareOp(args, ">=", compareResult -> compareResult >= 0);
 
-    private Builtin fadd =  args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
-    private Builtin fmul =  args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
+    private final Builtin fadd =  args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
+    private final Builtin fmul =  args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
 
-    private Builtin fsub  = args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
-    private Builtin fquot = args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
+    private final Builtin fsub  = args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
+    private final Builtin fquot = args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
 
-    private Builtin fmod = (ConsCell args) -> {
+    private final Builtin fmod = (ConsCell args) -> {
         twoArgs("mod", args);
         numbers("mod", args);
         return (Double)car(args) % (Double)car(cdr(args));
     };
 
     private ConsCell environment() {
-        return cons(cons(intern("car"),     cons(fcar, null)),
-               cons(cons(intern("cdr"),     cons(fcdr, null)),
-               cons(cons(intern("cons"),    cons(fcons, null)),
+        return cons(cons(program.intern("car"),     cons(fcar, null)),
+               cons(cons(program.intern("cdr"),     cons(fcdr, null)),
+               cons(cons(program.intern("cons"),    cons(fcons, null)),
 
-               cons(cons(intern("eq"),      cons(feq, null)),
-               cons(cons(intern("consp"),   cons(fconsp, null)),
-               cons(cons(intern("atom"),    cons(fatom, null)),
-               cons(cons(intern("symbolp"), cons(fsymbolp, null)),
-               cons(cons(intern("listp"),   cons(flistp, null)),
-               cons(cons(intern("numberp"), cons(fnumberp, null)),
-               cons(cons(intern("null?"),   cons(fnull, null)),
+               cons(cons(program.intern("eq"),      cons(feq, null)),
+               cons(cons(program.intern("consp"),   cons(fconsp, null)),
+               cons(cons(program.intern("atom"),    cons(fatom, null)),
+               cons(cons(program.intern("symbolp"), cons(fsymbolp, null)),
+               cons(cons(program.intern("listp"),   cons(flistp, null)),
+               cons(cons(program.intern("numberp"), cons(fnumberp, null)),
+               cons(cons(program.intern("null?"),   cons(fnull, null)),
 
-               cons(cons(intern("assoc"),   cons(fassoc, null)),
-               cons(cons(intern("read"),    cons(freadobj, null)),
-               cons(cons(intern("write"),   cons(fwriteobj, null)),
-               cons(cons(intern("writeln"), cons(fwriteln, null)),
+               cons(cons(program.intern("assoc"),   cons(fassoc, null)),
+               cons(cons(program.intern("read"),    cons(freadobj, null)),
+               cons(cons(program.intern("write"),   cons(fwriteobj, null)),
+               cons(cons(program.intern("writeln"), cons(fwriteln, null)),
 
-               cons(cons(intern("="),       cons(fnumbereq, null)),
-               cons(cons(intern(">"),       cons(fgt, null)),
-               cons(cons(intern(">="),      cons(fge, null)),
-               cons(cons(intern("<"),       cons(flt, null)),
-               cons(cons(intern("<="),      cons(fle, null)),
+               cons(cons(program.intern("="),       cons(fnumbereq, null)),
+               cons(cons(program.intern(">"),       cons(fgt, null)),
+               cons(cons(program.intern(">="),      cons(fge, null)),
+               cons(cons(program.intern("<"),       cons(flt, null)),
+               cons(cons(program.intern("<="),      cons(fle, null)),
 
-               cons(cons(intern("+"),       cons(fadd, null)),
-               cons(cons(intern("-"),       cons(fsub, null)),
-               cons(cons(intern("*"),       cons(fmul, null)),
-               cons(cons(intern("/"),       cons(fquot, null)),
-               cons(cons(intern("mod"),     cons(fmod, null)),
+               cons(cons(program.intern("+"),       cons(fadd, null)),
+               cons(cons(program.intern("-"),       cons(fsub, null)),
+               cons(cons(program.intern("*"),       cons(fmul, null)),
+               cons(cons(program.intern("/"),       cons(fquot, null)),
+               cons(cons(program.intern("mod"),     cons(fmod, null)),
 
-               cons(cons(intern("t"),       cons(intern("t"), null)),
-               cons(cons(intern("nil"),     cons(null, null)),
+               cons(cons(program.intern("t"),       cons(program.intern("t"), null)),
+               cons(cons(program.intern("nil"),     cons(null, null)),
                null))))))))))))))))))))))))));
     }
 
@@ -588,12 +617,11 @@ public class LambdaJ {
 
     /// build environment, read an S-expression and invoke eval()
     public Object interpretExpression(InputStream in, PrintStream out) {
-        this.in = in;
+        program = new LispParser(in);
+        inputData = program;
         this.out = out;
         final ConsCell env = environment();
-        look = getchar();
-        readToken();
-        final Object exp = readObj();
+        final Object exp = program.readObj();
         final Object result = eval(exp, env, 0);
         if (trace >= TRC_EVAL) {
             System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
@@ -603,19 +631,17 @@ public class LambdaJ {
 
     /// build environment, read S-expression and invoke eval() until EOF
     public Object interpretExpressions(InputStream in, PrintStream out) {
-        this.in = in;
+        program = new LispParser(in);
+        inputData = program;
         this.out = out;
         final ConsCell env = environment();
-        look = getchar();
-        readToken();
-        Object exp = readObj();
+        Object exp = program.readObj();
         while (true) {
             final Object result = eval(exp, env, 0);
             if (trace >= TRC_EVAL) {
                 System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
             }
-            readToken();
-            exp = readObj();
+            exp = program.readObj();
             if (exp == null) return result;
         }
     }

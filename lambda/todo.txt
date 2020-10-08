@@ -2,6 +2,7 @@ Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und 
 Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
 
 fnull, fcons usw brauchen keine members zu sein, koennten lokale variablen in environment() sein
+-> vorher environment() aufteilen?
 
 Methoden ConsCell toList(), toArray(), toMap(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
@@ -227,3 +228,7 @@ errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
 
 Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
 Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basierend auf printObj?
+
+Scanner/Parser in eine Klasse rausziehen, je ein Objekt ProgramParser und InputDataParser,
+die Lisp Funktion read verwendet den InputDataParser.
+Symboltabelle zu geeigneten Zeitpunkten auf null setzen, wahrscheinlich im Konstruktor der ScannerParserKlasse
