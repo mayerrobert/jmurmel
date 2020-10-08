@@ -14,7 +14,7 @@ The command above will wait for you to enter an expression, interpret it and pri
     C:\> echo (write (quote Hello,\ World!))| java -jar lambdaj-1.0-SNAPSHOT.jar
     Hello, World!
     C:\>
-    
+
 or
 
     $ echo "(write (quote Hello,\ World!))" | java -jar lambdaj-1.0-SNAPSHOT.jar
@@ -54,6 +54,8 @@ The environment contains the symbols `nil` and `t` and the functions
 * `=, <, <=, >, >=`
 * `+, -, *, /, mod`
 
+Most (maybe all) tail calls including tail recursive calls are optimized away.
+
 Variables and functions share one namespace, symbols names must not start with a digit.
 
 Numbers must start with a digit, a `+` or a `-`.
@@ -65,8 +67,6 @@ esp. around +/-NaN, +/-Infinity, division by zero and so on.
 The only data types currently supported are symbols, pairs (i.e. lists) and numbers (represented as Java Double).
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
-
-No tail recursion optimization (yet?), sorry.
 
 ## Customization
 
@@ -90,4 +90,8 @@ darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als jav
 
 ## References
 
-Based on [micro-lisp](https://github.com/carld/micro-lisp).
+Based on [micro-lisp](https://github.com/carld/micro-lisp)
+with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.c2.com/?ImplementingLisp).
+
+And, of course:
+[Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.

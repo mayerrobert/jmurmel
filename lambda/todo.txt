@@ -1,14 +1,18 @@
-( . ) supporten
-
-irgendwie fliessen eval und apply ineinander. apply kann man mit eval implementieren, und umgekehrt?!
-
 "t" aus/ einschaltbar machen: flag "HAVE_TRUE"
 -> falls true  -> t in der symbol table und _expTrue = t
 -> falls false -> t nicht in der symbol table und _expTrue = (quote t)
 
+printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
+
+readObj umbauen dass (a . b) eingelesen werden kann?
+
+irgendwie fliessen eval und apply ineinander. apply kann man mit eval implementieren, und umgekehrt?!
+
 Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
 waer ggf. besser fuer custom builtins
 -> environment() koennte static sein
+
+Datentyp Strings, char unterstuetzen
 
 Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
 Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
@@ -20,8 +24,6 @@ Methoden ConsCell toList(), toArray(), toMap(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
 Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
-
-printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
 
 
 
@@ -86,28 +88,6 @@ die Argument-Liste in Argumente wandeln.
 Falls Compiler, sollte der nicht nur ein Programm sondern z.B. *.lisp uebersetzen,
 ggf. mit timestampcheck
 
-eval, evlis, evcon vielleicht in haendischem CPS?!?
-
-
-
-Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 hoeher ist (?)
-oder wenigstens loop einbauen
--> einfacher ists alle tailcalls zu optimieren
-
-eval hat einige endrekursive aufrufe. koennte man eliminieren.
-vielleicht noch einen zweiten levelzaehler einfuehren, dann kann man den level fuer eval und (kleinere) rekursionstiefe anzeigen
-
-eigentlich passiert die rekursion ja in eval:
-evlis, evcon & co inline expandieren, und das letzte listenelement nicht mit rekursion aufrufen sondern
-manuell tail recursion elimination machen.
-
-PROBLEM: function calls haben ein geaendertes environment extenv
--> einen stack aus extenvs aufbauen: ein int "stackarray" in dem merkt man sich, wieviele elemente vorne
-drangepickt wurden und nach verarbeiten des calls entfernt werden müssen 
-
-dann werden nicht nur tail rekursionen wegoptimiert, sondern alle tail calls. es ruft zwar die eine Lisp funktion
-eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-methode eval. 
-
 
 
 (loop for thing in list
@@ -120,13 +100,7 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 
 
-Datentyp Strings, char unterstuetzen
-
-
-
 (write (((lambda () (lambda () (quote (1 2 3))))))) ; geht nur in scheme siehe apply.lisp
-
-
 
 
 
@@ -136,8 +110,6 @@ RuntimeError extends LambdaJError
 ExtFuncError extends RuntimeError
 
 
-
-readObj umbauen dass (a . b) eingelesen werden kann?
 
 flag ob die identifier auf UC umgestellt werden sollen
 
@@ -250,3 +222,29 @@ Symboltabelle zu geeigneten Zeitpunkten auf null setzen, wahrscheinlich im Konst
 if(!strcmp(token, "\'")) return cons(quote, cons(readobj(), nil));
 
 isParen und isQuote nach isSyntax zusammenziehen
+
+
+
+Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 hoeher ist (?)
+oder wenigstens loop einbauen
+-> einfacher ists alle tailcalls zu optimieren
+
+eval hat einige endrekursive aufrufe. koennte man eliminieren.
+vielleicht noch einen zweiten levelzaehler einfuehren, dann kann man den level fuer eval und (kleinere) rekursionstiefe anzeigen
+
+eigentlich passiert die rekursion ja in eval:
+evlis, evcon & co inline expandieren, und das letzte listenelement nicht mit rekursion aufrufen sondern
+manuell tail recursion elimination machen.
+
+PROBLEM: function calls haben ein geaendertes environment extenv
+-> einen stack aus extenvs aufbauen: ein int "stackarray" in dem merkt man sich, wieviele elemente vorne
+drangepickt wurden und nach verarbeiten des calls entfernt werden müssen 
+
+dann werden nicht nur tail rekursionen wegoptimiert, sondern alle tail calls. es ruft zwar die eine Lisp funktion
+eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-methode eval. 
+
+
+
+
+eval, evlis, evcon vielleicht in haendischem CPS?!?
+-> eruebrigt sich durch TCO
