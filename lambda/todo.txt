@@ -1,3 +1,11 @@
+"t" aus/ einschaltbar machen: flag "HAVE_TRUE"
+-> falls true  -> t in der symbol table und _expTrue = t
+-> falls false -> t nicht in der symbol table und _expTrue = (quote t)
+
+Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
+waer ggf. besser fuer custom builtins
+-> environment() koennte static sein
+
 Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
 Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
 
@@ -62,12 +70,14 @@ weitere operatoren aus java.lang.Math (oder StrictMath?)
 
 
 
-Vielleicht car, cdr, cons, Pair in eine Basisklasse LambdaJRuntime rausziehen?
+Vielleicht car, cdr, cons, ConsCell in eine Basisklasse LambdaJRuntime rausziehen?
 LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
 und ein Lisp Programm verwendet Lisp Runtime wie car, cdr, ... .
 Falls ein LambaJ Compiler kommt, wuerden erzeugte Java Programme dieselbe Runtime verwenden.
 Fuer interpretierte Programme gibts die Builtin-Wrapper, die Parameter-Checks machen und
 die Argument-Liste in Argumente wandeln.
+-> public static nested class LambdaJRuntime + "import static LambdaJ.*"
+   damit gaebs nur wenig Aenderungen in LambdaJ, und externer Code haette auch Zugriff mittels "import static LambdaJ.*" 
 
 Falls Compiler, sollte der nicht nur ein Programm sondern z.B. *.lisp uebersetzen,
 ggf. mit timestampcheck

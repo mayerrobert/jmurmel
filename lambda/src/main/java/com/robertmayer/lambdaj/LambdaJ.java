@@ -16,6 +16,16 @@ public class LambdaJ {
     public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
     public int trace = TRC_NONE;
 
+    private boolean
+    HAVE_NIL = true, HAVE_T = true,       // use () and (quote t) instead
+    HAVE_APPLY = true,                    // apply brauchts fuer Lisp, aber nicht fuer Lambda Kalkuel (?)
+    HAVE_LABELS = true,                   // use Y-combinator instead
+    HAVE_XTRA = true,                     // no if, in zukunft no loop. entweder if oder cond ist notwendig
+    HAVE_DOUBLE = true,                   // no +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
+    HAVE_IO = true,                       // no read/ write, result only
+    HAVE_UTIL = true                      // no null?, consp, listp, symbolp, assoc
+    ;
+
     private PrintStream out;
 
     public static class LambdaJError extends RuntimeException {
@@ -133,7 +143,7 @@ public class LambdaJ {
 
 
 
-        /// symbol table
+        /// symbol table implemented with a list. could easily replaced by a HashMap for better performance
         private ConsCell symbols = null;
 
         @Override
@@ -650,7 +660,26 @@ public class LambdaJ {
 
     public static void main(String args[]) {
         final LambdaJ interpreter = new LambdaJ();
-        if (hasFlag("--trace", args)) interpreter.trace = TRC_LEX;
+
+        if (hasFlag("--trace", args))     interpreter.trace = TRC_LEX;
+
+        if (hasFlag("--no-nil", args))    interpreter.HAVE_NIL = false;
+        if (hasFlag("--no-true", args))   interpreter.HAVE_T = false;
+        if (hasFlag("--no-labels", args)) interpreter.HAVE_LABELS = false;
+        if (hasFlag("--no-extra", args))  interpreter.HAVE_XTRA = false;
+        if (hasFlag("--no-double", args)) interpreter.HAVE_DOUBLE = false;
+        if (hasFlag("--no-io", args))     interpreter.HAVE_IO = false;
+        if (hasFlag("--no-util", args))   interpreter.HAVE_UTIL = false;
+
+        if (hasFlag("--min", args)) {
+            interpreter.HAVE_NIL = false;
+            interpreter.HAVE_T = false;
+            interpreter.HAVE_LABELS = false;
+            interpreter.HAVE_XTRA = false;
+            interpreter.HAVE_DOUBLE = false;
+            interpreter.HAVE_IO = false;
+            interpreter.HAVE_UTIL = false;
+        }
 
         final boolean istty = null != System.console();
         if (istty) {

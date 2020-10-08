@@ -1,6 +1,6 @@
 # LambdaJ
 
-A Lisp-1-ish interpreter written in Java8+ that can be used
+A customizable Lisp-1-ish interpreter written in Java8+ that can be used
 standalone as well as embedded.
 
 **Standalone use:**
@@ -67,5 +67,27 @@ The only data types currently supported are symbols, pairs (i.e. lists) and numb
 Lambdas are dynamic, i.e. no lexical closures (yet?).
 
 No tail recursion optimization (yet?), sorry.
+
+## Customization
+
+LambdaJ comes with:
+* a parser that reads S-expressions composed of lists, symbols and Doubles.
+* Math support for Doubles
+
+You could substitute the default parsers for reading data and/ or programs by your own parsers that reads e.g. XML or JSON
+instead of S-expressions, and/ or support additional data types.
+
+You could extend LambdaJ's environment with your own builtin functions and/ or data types e.g. for supporting BigDecimals
+or reading/ writing from/ to a JDBC Datasource.
+
+Datentypen kann man im Parser, in Builtins, oder beidem unterstuetzen. LambdaJ sieht nur Atoms.
+Wenns nur im Parser supported ist, kann man die datentypen nur in lists reinstecken und als result zurueckgeben.
+
+Wenns nur in builtins unterstuetzt ist, kann der source code die datentypen nicht enthalten, aber builtins koennten sie erzeugen und damit rechnen, z.B. (+ (big-decimal 1.0) (big-decimal 2.0))
+
+Beispiel: function "read-csv" die liest CSV und liefert eine List of Lists,
+darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als java.time.*
+
+## References
 
 Based on [micro-lisp](https://github.com/carld/micro-lisp).
