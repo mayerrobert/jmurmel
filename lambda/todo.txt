@@ -1,8 +1,9 @@
+Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
+Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
+
 fnull, fcons usw brauchen keine members zu sein, koennten lokale variablen in environment() sein
 
-Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
-Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basierend auf printObj?
-Und toList(), toArray(), toMap(), stream()???
+Methoden ConsCell toList(), toArray(), toMap(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
 Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
@@ -223,3 +224,6 @@ in car reinstecken, der Interpreter sieht und verarbeitet nur Object
 errortests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
 
 errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
+
+Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
+Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basierend auf printObj?

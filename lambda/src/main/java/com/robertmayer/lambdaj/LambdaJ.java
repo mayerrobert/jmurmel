@@ -587,14 +587,14 @@ public class LambdaJ {
 
 
     /// build environment, read an S-expression and invoke eval()
-    public String interpretExpression(InputStream in, PrintStream out) {
+    public Object interpretExpression(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
         final ConsCell env = environment();
         look = getchar();
         readToken();
         final Object exp = readObj();
-        final String result = printObj(eval(exp, env, 0), true);
+        final Object result = eval(exp, env, 0);
         if (trace >= TRC_EVAL) {
             System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
         }
@@ -602,7 +602,7 @@ public class LambdaJ {
     }
 
     /// build environment, read S-expression and invoke eval() until EOF
-    public String interpretExpressions(InputStream in, PrintStream out) {
+    public Object interpretExpressions(InputStream in, PrintStream out) {
         this.in = in;
         this.out = out;
         final ConsCell env = environment();
@@ -610,7 +610,7 @@ public class LambdaJ {
         readToken();
         Object exp = readObj();
         while (true) {
-            final String result = printObj(eval(exp, env, 0), true);
+            final Object result = eval(exp, env, 0);
             if (trace >= TRC_EVAL) {
                 System.err.println("*** max eval depth: " + maxEvalDepth + " ***");
             }
@@ -632,7 +632,7 @@ public class LambdaJ {
         }
 
         try {
-            final String result = interpreter.interpretExpression(System.in, System.out);
+            final String result = printObj(interpreter.interpretExpression(System.in, System.out), true);
             if (istty) {
                 System.out.println();
                 System.out.println("result: " + result);

@@ -292,9 +292,9 @@ public class LambdaJTest {
 
         String actualResult;
         if (fileName.endsWith(".lisp")) {
-            actualResult = interpreter.interpretExpressions(in, out);
+            actualResult = lispObjectToString(interpreter.interpretExpressions(in, out));
         } else {
-            actualResult = interpreter.interpretExpression(in, out);
+            actualResult = lispObjectToString(interpreter.interpretExpression(in, out));
         }
         out.flush();
         System.out.println("***** done program, result: " + actualResult);
@@ -307,5 +307,14 @@ public class LambdaJTest {
         } else {
             assertEquals("program " + fileName + " produced unexpected output", expectedOutput, actualOutput.toString());
         }
+    }
+
+    private static String lispObjectToString(Object exp) {
+        if (exp == null) return "nil";
+        if (exp instanceof LambdaJ.Builtin) return "#<primitive>";
+
+        // else it's either a ConsCell which has an appropriate toString() method
+        // or an Atom which really is a Java Object such as String (Lisp symbols) or Double (Lisp numbers)
+        return exp.toString();
     }
 }
