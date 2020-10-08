@@ -1,4 +1,4 @@
-isParen und isQuote nach isSyntax zusammenziehen, isDot dazu, ( . ) supporten
+( . ) supporten
 
 irgendwie fliessen eval und apply ineinander. apply kann man mit eval implementieren, und umgekehrt?!
 
@@ -248,3 +248,5 @@ die Lisp Funktion read verwendet den InputDataParser.
 Symboltabelle zu geeigneten Zeitpunkten auf null setzen, wahrscheinlich im Konstruktor der ScannerParserKlasse
 
 if(!strcmp(token, "\'")) return cons(quote, cons(readobj(), nil));
+
+isParen und isQuote nach isSyntax zusammenziehen
