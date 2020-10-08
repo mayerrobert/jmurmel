@@ -66,8 +66,7 @@ public class LambdaJ {
         public LispParser(InputStream in) { this.in = in; }
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
-        private boolean isParens(int x) { return !escape && (x == '(' || x == ')'); }
-        private boolean isQuote(int x)  { return !escape && (x == '\''); }
+        private boolean isSyntax(int x) { return !escape && (x == '(' || x == ')' || x == '\''); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
 
         private int getchar() {
@@ -100,10 +99,10 @@ public class LambdaJ {
             int index = 0;
             while (isSpace(look)) { look = getchar(); }
             if (look != EOF) {
-                if (isParens(look) || isQuote(look)) {
+                if (isSyntax(look)) {
                     token[index++] = look;  look = getchar();
                 } else {
-                    while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look) && !isQuote(look)) {
+                    while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isSyntax(look)) {
                         if (index < SYMBOL_MAX - 1) token[index++] = look;
                         look = getchar();
                     }
@@ -190,7 +189,7 @@ public class LambdaJ {
             }
             if ("'".equals(tok)) {
                 readToken();
-                return cons(quote, cons(_readObj(), null)); // todo quote als constante
+                return cons(quote, cons(_readObj(), null));
             }
             if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
             return intern((String)tok);
@@ -690,6 +689,11 @@ public class LambdaJ {
             interpreter.HAVE_UTIL = false;
         }
 
+        if (argError(args)) {
+            System.err.println("LambdaJ: exiting because of previous errors.");
+            return;
+        }
+
         final boolean istty = null != System.console();
         if (istty) {
             System.out.println("Enter a Lisp expression:");
@@ -712,8 +716,24 @@ public class LambdaJ {
     }
 
     private static boolean hasFlag(String flag, String[] args) {
-        for (String arg: args)
-            if (flag.equals(arg)) return true;
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (flag.equals(arg)) {
+                args[i] = null; // consume the arg
+                return true;
+            }
+        }
         return false;
+    }
+
+    private static boolean argError(String[] args) {
+        boolean err = false;
+        for (String arg: args) {
+            if (arg != null && arg.startsWith("-")) {
+                System.err.println("LambdaJ: unknown commandline argument " + arg);
+                err = true;
+            }
+        }
+        return err;
     }
 }
