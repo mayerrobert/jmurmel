@@ -578,7 +578,9 @@ public class LambdaJ {
         return (Double)car(args) % (Double)car(cdr(args));
     };
 
-    private ConsCell environment() {
+    /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
+     *  generating symbols in the {@link Parser} {@code program} on the fly */
+    private ConsCell environment(Parser program, ConsCell prev) {
         return cons(cons(program.intern("car"),     cons(fcar, null)),
                cons(cons(program.intern("cdr"),     cons(fcdr, null)),
                cons(cons(program.intern("cons"),    cons(fcons, null)),
@@ -610,7 +612,7 @@ public class LambdaJ {
 
                cons(cons(program.intern("t"),       cons(program.intern("t"), null)),
                cons(cons(program.intern("nil"),     cons(null, null)),
-               null))))))))))))))))))))))))));
+               prev))))))))))))))))))))))))));
     }
 
 
@@ -620,7 +622,7 @@ public class LambdaJ {
         program = new LispParser(in);
         inputData = program;
         this.out = out;
-        final ConsCell env = environment();
+        final ConsCell env = environment(program, null);
         final Object exp = program.readObj();
         final Object result = eval(exp, env, 0);
         if (trace >= TRC_EVAL) {
@@ -634,7 +636,7 @@ public class LambdaJ {
         program = new LispParser(in);
         inputData = program;
         this.out = out;
-        final ConsCell env = environment();
+        final ConsCell env = environment(program, null);
         Object exp = program.readObj();
         while (true) {
             final Object result = eval(exp, env, 0);
