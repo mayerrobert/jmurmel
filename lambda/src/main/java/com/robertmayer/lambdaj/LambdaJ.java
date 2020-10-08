@@ -219,91 +219,91 @@ public class LambdaJ {
             level--;
             while (true) {
                 level++;
-            if (symbolp(exp)) {
-                if (exp == null) return null;
-                ConsCell envEntry = assoc(exp, env);
-                if (envEntry != null) return car(cdr(envEntry));
-                throw new LambdaJError("'" + exp + "' is undefined");
+                if (symbolp(exp)) {
+                    if (exp == null) return null;
+                    ConsCell envEntry = assoc(exp, env);
+                    if (envEntry != null) return car(cdr(envEntry));
+                    throw new LambdaJError("'" + exp + "' is undefined");
 
-            } else if (atom(exp)) {
-                return exp;
-
-            } else if (symbolp(car (exp))) { /* special forms */
-                if (car(exp) == program.intern("quote")) {
-                    oneArg("quote", cdr(exp));
-                    return car(cdr(exp));
-
-                } else if (car(exp) == program.intern("if")) {
-                    nArgs("if", cdr(exp), 2, 3, exp);
-                    if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
-                        exp = car(cdr(cdr(exp))); continue;
-                    } else if (cdr(cdr(cdr(exp))) != null) {
-                        exp = car(cdr(cdr(cdr(exp)))); continue;
-                    } else
-                        return null;
-
-                } else if (car(exp) == program.intern("lambda")) {
-                    nArgs("lambda", cdr(exp), 2, exp);
+                } else if (atom(exp)) {
                     return exp;
 
-                } else if (car(exp) == program.intern("labels")) { // labels bindings body -> object
-                    nArgs("labels", cdr(exp), 2, exp);
-                    ConsCell bindings = (ConsCell) car(cdr(exp));
-                    ConsCell body =     (ConsCell) cdr(cdr(exp));
-                    return evlabels(bindings, body, env, stack, level);
+                } else if (symbolp(car (exp))) { /* special forms */
+                    if (car(exp) == program.intern("quote")) {
+                        oneArg("quote", cdr(exp));
+                        return car(cdr(exp));
 
-                } else if (car(exp) == program.intern("cond")) {
-                    return evcon((ConsCell) cdr(exp), env, stack, level);
+                    } else if (car(exp) == program.intern("if")) {
+                        nArgs("if", cdr(exp), 2, 3, exp);
+                        if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
+                            exp = car(cdr(cdr(exp))); continue;
+                        } else if (cdr(cdr(cdr(exp))) != null) {
+                            exp = car(cdr(cdr(cdr(exp)))); continue;
+                        } else
+                            return null;
 
-                } else if (car(exp) == program.intern("apply")) { // apply function to list
-                    twoArgs("apply", cdr(exp), exp);
-                    final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
-                    final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, stack, level));
-                    if (consp(func)) {
-                        exp = cons(func, args); continue;
-                    } else if (isPrim(func)) return applyPrimitive((Builtin) func, args, stack);
-                    else throw new LambdaJError("apply: not a function: " + printObj(func, true)
-                                                + ". this was the result of evaluating the expression "
-                                                + printObj(car(cdr(exp)), true) + errorExp(exp));
+                    } else if (car(exp) == program.intern("lambda")) {
+                        nArgs("lambda", cdr(exp), 2, exp);
+                        return exp;
 
-                } else { /* function call */
-                    Object func = eval(car(exp), env, stack + 1, level + 1);
-                    if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
-                        exp = cons(func, cdr(exp)); continue;
-                    } else if (isPrim(func)) {
-                        return applyPrimitive((Builtin) func, evlis((ConsCell) cdr(exp), env, stack, level + 1), stack);
+                    } else if (car(exp) == program.intern("labels")) { // labels bindings body -> object
+                        nArgs("labels", cdr(exp), 2, exp);
+                        ConsCell bindings = (ConsCell) car(cdr(exp));
+                        ConsCell body =     (ConsCell) cdr(cdr(exp));
+                        return evlabels(bindings, body, env, stack, level);
+
+                    } else if (car(exp) == program.intern("cond")) {
+                        return evcon((ConsCell) cdr(exp), env, stack, level);
+
+                    } else if (car(exp) == program.intern("apply")) { // apply function to list
+                        twoArgs("apply", cdr(exp), exp);
+                        final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
+                        final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, stack, level));
+                        if (consp(func)) {
+                            exp = cons(func, args); continue;
+                        } else if (isPrim(func)) return applyPrimitive((Builtin) func, args, stack);
+                        else throw new LambdaJError("apply: not a function: " + printObj(func, true)
+                        + ". this was the result of evaluating the expression "
+                        + printObj(car(cdr(exp)), true) + errorExp(exp));
+
+                    } else { /* function call */
+                        Object func = eval(car(exp), env, stack + 1, level + 1);
+                        if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
+                            exp = cons(func, cdr(exp)); continue;
+                        } else if (isPrim(func)) {
+                            return applyPrimitive((Builtin) func, evlis((ConsCell) cdr(exp), env, stack, level + 1), stack);
+                        }
+                        else throw new LambdaJError("not a function: " + printObj(func, true) + errorExp(exp));
                     }
-                    else throw new LambdaJError("not a function: " + printObj(func, true) + errorExp(exp));
+
+                } else if (consp(car(exp)) && car(car(exp)) == program.intern("lambda")) {
+                    /* should be a lambda, bind args as "names" into env and eval body-list */
+                    final Object lambda = cdr(car(exp));
+                    nArgs("lambda", lambda, 2, exp);
+
+                    ConsCell extenv = env, params = (ConsCell) car(lambda), args = (ConsCell) cdr(exp);
+                    for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
+                        extenv = cons(cons(car(params),  cons(eval(car(args), env, stack + 1, level + 1), null)), extenv);
+                    if (params != null)
+                        throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printObj(params, true)
+                        + errorExp(exp));
+                    if (args != null)
+                        throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printObj(args, true)
+                        + errorExp(exp));
+
+                    ConsCell body = (ConsCell) cdr(lambda);
+                    for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                        eval(car(body), extenv, stack + 1, level + 1);
+                    if (body != null) {
+                        exp = car(body); env = extenv; continue;
+                    } // else fall through to "cannot eval". should really not happen anyway
+
+                } else if (atom(car(exp))) {
+                    throw new LambdaJError("not a function: " + printObj(car(exp), true) + errorExp(exp));
+
                 }
 
-            } else if (consp(car(exp)) && car(car(exp)) == program.intern("lambda")) {
-                /* should be a lambda, bind args as "names" into env and eval body-list */
-                final Object lambda = cdr(car(exp));
-                nArgs("lambda", lambda, 2, exp);
-
-                ConsCell extenv = env, params = (ConsCell) car(lambda), args = (ConsCell) cdr(exp);
-                for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-                    extenv = cons(cons(car(params),  cons(eval(car(args), env, stack + 1, level + 1), null)), extenv);
-                if (params != null)
-                    throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printObj(params, true)
-                                           + errorExp(exp));
-                if (args != null)
-                    throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printObj(args, true)
-                                           + errorExp(exp));
-
-                ConsCell body = (ConsCell) cdr(lambda);
-                for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                    eval(car(body), extenv, stack + 1, level + 1);
-                if (body != null) {
-                    exp = car(body); env = extenv; continue;
-                } // else fall through to "cannot eval". should really not happen anyway
-
-            } else if (atom(car(exp))) {
-                throw new LambdaJError("not a function: " + printObj(car(exp), true) + errorExp(exp));
-
-            }
-
-            throw new LambdaJError("cannot eval expression '" + printObj(exp, true) + '\'');
+                throw new LambdaJError("cannot eval expression '" + printObj(exp, true) + '\'');
             }
 
         } catch (Exception e) {
@@ -444,46 +444,48 @@ public class LambdaJ {
     }
 
     private static void _printObj(StringBuffer sb, Object list, Object current, boolean head_of_list) {
-        if (current == null) {
-            sb.append("nil"); return;
-        } else if (listp(current)) {
-            if (head_of_list) sb.append('(');
-            if (car(current) == list) {
-                sb.append(head_of_list ? "#<this cons>" : "#<this list>");
-            } else {
-                _printObj(sb, car(current), car(current), true);
-            }
-            if (cdr(current) != null) {
-                if (listp(cdr(current))) {
-                    sb.append(' ');
-                    if (list == cdr(current)) {
-                        sb.append("#<circular list>)"); return;
-                    } else {
-                        _printObj(sb, list, cdr(current), false); return;
-                    }
-                } else if (head_of_list) {
-                    sb.append(" . ");
-                    _printObj(sb, list, cdr(current), false);
-                    sb.append(')');
-                    return;
+        while (true) {
+            if (current == null) {
+                sb.append("nil"); return;
+            } else if (listp(current)) {
+                if (head_of_list) sb.append('(');
+                if (car(current) == list) {
+                    sb.append(head_of_list ? "#<this cons>" : "#<this list>");
                 } else {
-                    sb.append(' ');
-                    _printObj(sb, list, cdr(current), false);
+                    _printObj(sb, car(current), car(current), true);
+                }
+                if (cdr(current) != null) {
+                    if (listp(cdr(current))) {
+                        sb.append(' ');
+                        if (list == cdr(current)) {
+                            sb.append("#<circular list>)"); return;
+                        } else {
+                            current = cdr(current); head_of_list = false; continue;
+                        }
+                    } else if (head_of_list) {
+                        sb.append(" . ");
+                        _printObj(sb, list, cdr(current), false);
+                        sb.append(')');
+                        return;
+                    } else {
+                        sb.append(' ');
+                        _printObj(sb, list, cdr(current), false); // must be an atom
+                        sb.append(')');
+                        return;
+                    }
+                } else {
                     sb.append(')');
                     return;
                 }
+            } else if (symbolp(current)) {
+                sb.append(current.toString()); return;
+            } else if (isPrim(current)) {
+                sb.append("#<primitive>"); return;
+            } else if (atom(current)) {
+                sb.append(current.toString()); return;
             } else {
-                sb.append(')');
-                return;
+                sb.append("<internal error>"); return;
             }
-        } else if (symbolp(current)) {
-            sb.append(current.toString()); return;
-        } else if (isPrim(current)) {
-            sb.append("#<primitive>"); return;
-        } else if (atom(current)) {
-            sb.append(current.toString()); return;
-        } else {
-            sb.append("<internal error>"); return;
         }
     }
 
@@ -700,6 +702,11 @@ public class LambdaJ {
 
     public static void main(String args[]) {
         final LambdaJ interpreter = new LambdaJ();
+
+        if (hasFlag("--version", args)) {
+            System.err.println("LambdaJ $Id$");
+            return;
+        }
 
         if (hasFlag("--trace", args))     interpreter.trace = TRC_LEX;
 
