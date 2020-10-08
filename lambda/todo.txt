@@ -1,3 +1,7 @@
+isParen und isQuote nach isSyntax zusammenziehen, isDot dazu, ( . ) supporten
+
+irgendwie fliessen eval und apply ineinander. apply kann man mit eval implementieren, und umgekehrt?!
+
 "t" aus/ einschaltbar machen: flag "HAVE_TRUE"
 -> falls true  -> t in der symbol table und _expTrue = t
 -> falls false -> t nicht in der symbol table und _expTrue = (quote t)
@@ -242,3 +246,5 @@ Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basieren
 Scanner/Parser in eine Klasse rausziehen, je ein Objekt ProgramParser und InputDataParser,
 die Lisp Funktion read verwendet den InputDataParser.
 Symboltabelle zu geeigneten Zeitpunkten auf null setzen, wahrscheinlich im Konstruktor der ScannerParserKlasse
+
+if(!strcmp(token, "\'")) return cons(quote, cons(readobj(), nil));

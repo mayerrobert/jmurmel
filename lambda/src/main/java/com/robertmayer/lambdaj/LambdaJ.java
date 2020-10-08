@@ -67,6 +67,7 @@ public class LambdaJ {
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
         private boolean isParens(int x) { return !escape && (x == '(' || x == ')'); }
+        private boolean isQuote(int x)  { return !escape && (x == '\''); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
 
         private int getchar() {
@@ -99,10 +100,10 @@ public class LambdaJ {
             int index = 0;
             while (isSpace(look)) { look = getchar(); }
             if (look != EOF) {
-                if (isParens(look)) {
+                if (isParens(look) || isQuote(look)) {
                     token[index++] = look;  look = getchar();
                 } else {
-                    while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look)) {
+                    while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isParens(look) && !isQuote(look)) {
                         if (index < SYMBOL_MAX - 1) token[index++] = look;
                         look = getchar();
                     }
@@ -184,6 +185,10 @@ public class LambdaJ {
             if (tok instanceof Number) {
                 if (trace >= TRC_TOK) System.err.println("*** number " + tok.toString());
                 return tok;
+            }
+            if ("'".equals(tok)) {
+                readToken();
+                return cons(program.intern("quote"), cons(_readObj(), null)); // todo quote als constante
             }
             if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
             return program.intern((String)tok);
@@ -665,6 +670,7 @@ public class LambdaJ {
 
         if (hasFlag("--no-nil", args))    interpreter.HAVE_NIL = false;
         if (hasFlag("--no-true", args))   interpreter.HAVE_T = false;
+        if (hasFlag("--no-apply", args))  interpreter.HAVE_APPLY = false;
         if (hasFlag("--no-labels", args)) interpreter.HAVE_LABELS = false;
         if (hasFlag("--no-extra", args))  interpreter.HAVE_XTRA = false;
         if (hasFlag("--no-double", args)) interpreter.HAVE_DOUBLE = false;
@@ -672,6 +678,7 @@ public class LambdaJ {
         if (hasFlag("--no-util", args))   interpreter.HAVE_UTIL = false;
 
         if (hasFlag("--min", args)) {
+            // nothing except apply
             interpreter.HAVE_NIL = false;
             interpreter.HAVE_T = false;
             interpreter.HAVE_LABELS = false;
