@@ -172,6 +172,8 @@ public class LambdaJ {
             return _readObj();
         }
 
+        private Object quote = intern("quote");
+
         public Object _readObj() {
             if (tok == null) {
                 if (trace >= TRC_PARSE) System.err.println("*** list   ()");
@@ -188,10 +190,10 @@ public class LambdaJ {
             }
             if ("'".equals(tok)) {
                 readToken();
-                return cons(program.intern("quote"), cons(_readObj(), null)); // todo quote als constante
+                return cons(quote, cons(_readObj(), null)); // todo quote als constante
             }
             if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
-            return program.intern((String)tok);
+            return intern((String)tok);
         }
 
         private Object readList() {
