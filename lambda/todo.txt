@@ -1,3 +1,5 @@
+warum ist das letzte element des environments (nil . nil) ?
+
 "t" aus/ einschaltbar machen: flag "HAVE_TRUE"
 -> falls true  -> t in der symbol table und _expTrue = t
 -> falls false -> t nicht in der symbol table und _expTrue = (quote t)
@@ -34,10 +36,8 @@ der Double Support ist eigentlich nur mittels Builtins umgesetzt
 
 
 
-Erkennung von zirkulaeren Listen: http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-koennte man in printObj einbauen (aber ohne set gibts derzeit eh keine zirkulaeren Listen ?!?)
-
- list-length could be implemented as follows:
+http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
+list-length could be implemented as follows:
 
 (defun list-length (x) 
   (do ((n 0 (+ n 2))            ;Counter 
@@ -248,3 +248,7 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 eval, evlis, evcon vielleicht in haendischem CPS?!?
 -> eruebrigt sich durch TCO
+
+Erkennung von zirkulaeren Listen koennte man in printObj einbauen
+-> aber ohne set gibts derzeit eh keine zirkulaeren Listen ?!?)
+-> contains self aber schon

@@ -383,9 +383,9 @@ public class LambdaJ {
 
 
     /// data type used by interpreter program as well as interpreted programs
-    private static class ConsCell {
-        Object car, cdr;
-        ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+    public static class ConsCell {
+        public Object car, cdr;
+        public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
         @Override
         public String toString() { return printObj(this, true); }
     }
@@ -437,29 +437,53 @@ public class LambdaJ {
     }
 
     private static String printObj(Object ob, boolean head_of_list) {
-        if (ob == null) {
-            return "nil";
-        } else if (listp(ob)) {
-            final StringBuffer sb = new StringBuffer(200);
+        if (ob == null) return "nil";
+        final StringBuffer sb = new StringBuffer(200);
+        _printObj(sb, ob, ob, head_of_list);
+        return sb.toString();
+    }
+
+    private static void _printObj(StringBuffer sb, Object list, Object current, boolean head_of_list) {
+        if (current == null) {
+            sb.append("nil"); return;
+        } else if (listp(current)) {
             if (head_of_list) sb.append('(');
-            sb.append(printObj(car(ob), true));
-            if (cdr(ob) != null) {
-                if (listp(cdr(ob)))
-                    sb.append(' ').append(printObj(cdr(ob), false));
-                else if (head_of_list)
-                    sb.append(" . ").append(printObj(cdr(ob), false)).append(')');
-                else
-                    sb.append(' ').append(printObj(cdr(ob), false)).append(')');
-            } else sb.append(')');
-            return sb.toString();
-        } else if (symbolp(ob)) {
-            return ob.toString();
-        } else if (isPrim(ob)) {
-            return "#<primitive>";
-        } else if (atom(ob)) {
-            return ob.toString();
+            if (car(current) == list) {
+                sb.append(head_of_list ? "#<this cons>" : "#<this list>");
+            } else {
+                _printObj(sb, car(current), car(current), true);
+            }
+            if (cdr(current) != null) {
+                if (listp(cdr(current))) {
+                    sb.append(' ');
+                    if (list == cdr(current)) {
+                        sb.append("#<circular list>)"); return;
+                    } else {
+                        _printObj(sb, list, cdr(current), false); return;
+                    }
+                } else if (head_of_list) {
+                    sb.append(" . ");
+                    _printObj(sb, list, cdr(current), false);
+                    sb.append(')');
+                    return;
+                } else {
+                    sb.append(' ');
+                    _printObj(sb, list, cdr(current), false);
+                    sb.append(')');
+                    return;
+                }
+            } else {
+                sb.append(')');
+                return;
+            }
+        } else if (symbolp(current)) {
+            sb.append(current.toString()); return;
+        } else if (isPrim(current)) {
+            sb.append("#<primitive>"); return;
+        } else if (atom(current)) {
+            sb.append(current.toString()); return;
         } else {
-            return "<program.internal error>";
+            sb.append("<internal error>"); return;
         }
     }
 
