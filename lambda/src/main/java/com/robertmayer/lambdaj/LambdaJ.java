@@ -2,7 +2,6 @@
 package com.robertmayer.lambdaj;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
@@ -970,7 +969,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.50 2020/10/09 15:22:00 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.51 2020/10/09 17:57:18 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

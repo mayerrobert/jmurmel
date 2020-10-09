@@ -2,8 +2,6 @@ package com.robertmayer.lambdaj;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;

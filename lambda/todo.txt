@@ -26,7 +26,7 @@ getrennter Reader fuer read
 
 readObj umbauen dass (a . b) eingelesen werden kann?
 
-performance:
+performance: benchmarken
 "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
 der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
 das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcall wird das environment erweitert,
