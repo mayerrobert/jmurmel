@@ -34,10 +34,34 @@ Command line parameters in standalone mode:
 **Embedded use:**
 
     LambdaJ interpreter = new LambdaJ();
-    String result = interpreter.interpret(System.in, System.out);
+    Object result = interpreter.interpretExpressions(System.in, System.out);
+    if (result instanceof LambdaJ.ConsCell) {
+        LambdaJ.ConsCell listResult = (LambdaJ.ConsCell)result;
+        for (Object car: listResult) {
+            System.out.println("received: " + car);
+        }
+    }
 
-or pass a `new ByteArrayInputStream()` or something,
+or pass a in `new ByteArrayInputStream()` or something,
 see e.g. `LambdaJTest.java` for an embedded use example.
+
+## Examples
+
+write, string-format
+
+    LambdaJ> (write (string-format "%s, World!%n" "Hello"))
+    Hello, World!
+    result: t
+
+Tail recursion
+
+    LambdaJ> (labels ((factTR (n a)
+                     (if (= n 0)
+                         a
+                         (factTR (- n 1) (* n a)))))
+     (write (string-format "Factorial of 50 is %g" (factTR 50 1))))
+    Factorial of 50 is 3,04141e+64
+    result: t
 
 ## Features
 The environment contains the symbols `nil` and `t` and the functions
@@ -75,44 +99,6 @@ The only data types currently supported are symbols, pairs (i.e. lists), numbers
 and strings. String literals are 2000 chars max length. (Strings have very limited support.)
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
-
-## Examples
-
-write, string-format
-
-    LambdaJ> (write (string-format "%s, World!%n" "Hello"))
-    Hello, World!
-    result: t
-
-Tail recursion
-
-    LambdaJ> (labels ((factTR (n a)
-                     (if (= n 0)
-                         a
-                         (factTR (- n 1) (* n a)))))
-     (write (string-format "Factorial of 50 is %g" (factTR 50 1))))
-    Factorial of 50 is 3,04141e+64
-    result: t
-
-## Customization
-
-LambdaJ comes with:
-* a parser that reads S-expressions composed of lists, symbols and Doubles.
-* Math support for Doubles
-
-You could substitute the default parsers for reading data and/ or programs by your own parsers that reads e.g. XML or JSON
-instead of S-expressions, and/ or support additional data types.
-
-You could extend LambdaJ's environment with your own builtin functions and/ or data types e.g. for supporting BigDecimals
-or reading/ writing from/ to a JDBC Datasource.
-
-Datentypen kann man im Parser, in Builtins, oder beidem unterstuetzen. LambdaJ sieht nur Atoms.
-Wenns nur im Parser supported ist, kann man die datentypen nur in lists reinstecken und als result zurueckgeben.
-
-Wenns nur in builtins unterstuetzt ist, kann der source code die datentypen nicht enthalten, aber builtins koennten sie erzeugen und damit rechnen, z.B. (+ (big-decimal 1.0) (big-decimal 2.0))
-
-Beispiel: function "read-csv" die liest CSV und liefert eine List of Lists,
-darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als java.time.*
 
 ## References
 

@@ -67,7 +67,7 @@ public class PrintObjTest {
         assertEquals("(a #<circular list>)", c.toString());
     }
 
-    private ConsCell cdr(Object l) {
+    static ConsCell cdr(Object l) {
         return (ConsCell)((ConsCell)l).cdr;
     }
 }

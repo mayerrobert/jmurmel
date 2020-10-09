@@ -7,7 +7,9 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 
@@ -93,7 +95,7 @@ public class LambdaJ {
 
 
 
-    public class LambdaJString {
+    public static class LambdaJString {
         private final String value;
         public LambdaJString(String value) { this.value = value; }
         @Override
@@ -445,11 +447,40 @@ public class LambdaJ {
 
 
     /// data type used by interpreter program as well as interpreted programs
-    public static class ConsCell {
+    public static class ConsCell implements Iterable<Object> {
+        private static class ConsCellIterator implements Iterator<Object> {
+            private final ConsCell coll;
+            private Object cursor;
+
+            private ConsCellIterator(ConsCell coll) { this.coll = coll; this.cursor = coll; }
+
+            @Override
+            public boolean hasNext() { return cursor != null; }
+
+            @Override
+            public Object next() {
+                if (cursor == null) throw new NoSuchElementException();
+                if (cursor instanceof ConsCell) {
+                    final ConsCell list = (ConsCell)cursor;
+                    final Object ret = list.car;
+                    if (list.cdr == coll) cursor = null; // circle detected, stop here
+                    else cursor = list.cdr;
+                    return ret;
+                }
+                final Object ret = cursor;
+                cursor = null;
+                return ret;
+            }
+        }
+
         public Object car, cdr;
         public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+
         @Override
         public String toString() { return printObj(this, true); }
+
+        @Override
+        public Iterator<Object> iterator() { return new ConsCellIterator(this); }
     }
 
 
@@ -500,10 +531,8 @@ public class LambdaJ {
         if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printObj(maybeList, true));
         ConsCell env = (ConsCell) maybeList;
         List<Object> ret = new ArrayList<>();
-        for ( ; env != null; env = (ConsCell)cdr(env)) {
+        for ( ; env != null && maybeList != cdr(env); env = (ConsCell)cdr(env))
             ret.add(car(env));
-            if (maybeList == cdr(env)) return null;
-        }
         return ret.toArray();
     }
 
@@ -910,8 +939,31 @@ public class LambdaJ {
         }
     }
 
+    private static boolean hasFlag(String flag, String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (flag.equals(arg)) {
+                args[i] = null; // consume the arg
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean argError(String[] args) {
+        boolean err = false;
+        for (String arg: args) {
+            if (arg != null && arg.startsWith("-")) {
+                System.err.println("LambdaJ: unknown commandline argument " + arg);
+                System.err.println("use '--help' to show available commandline arguments");
+                err = true;
+            }
+        }
+        return err;
+    }
+
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.48 2020/10/09 10:23:55 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.49 2020/10/09 14:11:02 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -979,28 +1031,5 @@ public class LambdaJ {
                 "                   symbols and cons-cells (i.e. lists)\n" +
                 "                   function application\n" +
                 "                   lambda");
-    }
-
-    private static boolean hasFlag(String flag, String[] args) {
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            if (flag.equals(arg)) {
-                args[i] = null; // consume the arg
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean argError(String[] args) {
-        boolean err = false;
-        for (String arg: args) {
-            if (arg != null && arg.startsWith("-")) {
-                System.err.println("LambdaJ: unknown commandline argument " + arg);
-                System.err.println("use '--help' to show available commandline arguments");
-                err = true;
-            }
-        }
-        return err;
     }
 }
