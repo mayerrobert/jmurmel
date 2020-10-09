@@ -1,13 +1,3 @@
-(char-int C:character): integer expr ; Converts character to integer.
-(int-char I:integer): character expr ; Converts integer to character.
-
-The read syntax for characters objects is simple: #\ followed by the desired character. 
-
-Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
-Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
-
-
-
 readObj umbauen dass (a . b) eingelesen werden kann?
 
 performance:
@@ -17,16 +7,27 @@ das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcal
 dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall erzeugt eine neue Map die
 einen link zum vorgaenger hat 
 
+Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() flatMap()
+-> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
+-> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
+Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
+
+
+
+
+
+(char-int C:character): integer expr ; Converts character to integer.
+(int-char I:integer): character expr ; Converts integer to character.
+
+The read syntax for characters objects is simple: #\ followed by the desired character. 
+
+
+
 Builtins sollten ggf. expression mitbekommen fuer ausgabe von fehlermeldungen
 
 Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
 waer ggf. besser fuer custom builtins
 -> environment() koennte static sein
-
-Methoden ConsCell toList(), toArray(), toMap(), stream()??? map() flatMap()
--> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
--> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
-Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
 
 
 
@@ -269,3 +270,6 @@ der Double Support ist eigentlich nur mittels Builtins umgesetzt
 
 Datentyp Strings unterstuetzen
 -> laenger als SYMBOL_MAX=32
+
+Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen (inkl printObj!!!) kennen.
+Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable

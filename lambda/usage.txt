@@ -20,6 +20,7 @@ Feature flags:
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
 --no-extra ....  no special form 'if'
 --no-double ...  no number support
+--no-string ...  no string support
 --no-io .......  no primitive functions read/ write/ writeln
 --no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc
 
