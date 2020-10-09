@@ -16,17 +16,37 @@ public class LambdaJ {
     public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
     public int trace = TRC_NONE;
 
-    // see https://news.ycombinator.com/item?id=8714988 for how to implement cons, car, cdr, true,false, if in Lambda
+    // see https://news.ycombinator.com/item?id=8714988 for how to implement cons, car, cdr, true, false, if in Lambda
     // as well as how to implement numbers using lists
     private boolean
-    HAVE_NIL = true, HAVE_T = true,       // use () and (quote t) instead
-    HAVE_APPLY = true,                    // apply brauchts fuer Lisp, aber nicht fuer Lambda Kalkuel (?)
+    HAVE_CONS = true,
+    HAVE_COND = true,
+    HAVE_APPLY = true,                    // a Lisp needs apply or eval, lambda calculus doesn't
     HAVE_LABELS = true,                   // use Y-combinator instead
-    HAVE_XTRA = true,                     // no if, in zukunft no loop. entweder if oder cond ist notwendig
+    HAVE_NIL = true, HAVE_T = true,       // use () and (quote t) instead. printObj will print nil regardless
+    HAVE_XTRA = true,                     // no extra special forms such as if
     HAVE_DOUBLE = true,                   // no +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
     HAVE_IO = true,                       // no read/ write, result only
     HAVE_UTIL = true                      // no null?, consp, listp, symbolp, assoc
     ;
+
+    /** bare lambda calculus */
+    public void haveLambda() {
+        HAVE_CONS = false;
+        HAVE_COND = false;
+        HAVE_APPLY = false;
+    }
+
+    /** nothing except cons, car, cdr, cond, apply */
+    public void haveMin() {
+        HAVE_LABELS = false;
+        HAVE_NIL = false;
+        HAVE_T = false;
+        HAVE_XTRA = false;
+        HAVE_DOUBLE = false;
+        HAVE_IO = false;
+        HAVE_UTIL = false;
+    }
 
     private PrintStream out;
 
@@ -113,7 +133,7 @@ public class LambdaJ {
             token[index] = '\0';
             if (trace >= TRC_LEX)
                 System.err.println("*** token  |" + tokenToString(token) + '|');
-            if (isNumber()) {
+            if (HAVE_DOUBLE && isNumber()) {
                 try {
                     tok = Double.valueOf(tokenToString(token));
                 }
@@ -228,12 +248,13 @@ public class LambdaJ {
                 } else if (atom(exp)) {
                     return exp;
 
-                } else if (symbolp(car (exp))) { /* special forms */
+                // special forms
+                } else if (symbolp(car (exp))) {
                     if (car(exp) == program.intern("quote")) {
                         oneArg("quote", cdr(exp));
                         return car(cdr(exp));
 
-                    } else if (car(exp) == program.intern("if")) {
+                    } else if (HAVE_XTRA && car(exp) == program.intern("if")) {
                         nArgs("if", cdr(exp), 2, 3, exp);
                         if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
                             exp = car(cdr(cdr(exp))); continue;
@@ -242,20 +263,20 @@ public class LambdaJ {
                         } else
                             return null;
 
-                    } else if (car(exp) == program.intern("lambda")) {
+                    } else if (HAVE_APPLY && car(exp) == program.intern("lambda")) {
                         nArgs("lambda", cdr(exp), 2, exp);
                         return exp;
 
-                    } else if (car(exp) == program.intern("labels")) { // labels bindings body -> object
+                    } else if (HAVE_LABELS && car(exp) == program.intern("labels")) { // labels bindings body -> object
                         nArgs("labels", cdr(exp), 2, exp);
                         ConsCell bindings = (ConsCell) car(cdr(exp));
                         ConsCell body =     (ConsCell) cdr(cdr(exp));
                         return evlabels(bindings, body, env, stack, level);
 
-                    } else if (car(exp) == program.intern("cond")) {
+                    } else if (HAVE_COND && car(exp) == program.intern("cond")) {
                         return evcon((ConsCell) cdr(exp), env, stack, level);
 
-                    } else if (car(exp) == program.intern("apply")) { // apply function to list
+                    } else if (HAVE_APPLY && car(exp) == program.intern("apply")) { // apply function to list
                         twoArgs("apply", cdr(exp), exp);
                         final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
                         final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, stack, level));
@@ -492,10 +513,12 @@ public class LambdaJ {
 
 
     /// runtime for Lisp programs
-    //private final ConsCell expTrue() = cons(program.intern("quote"), cons(program.intern("t"), null)); // (quote t) could b used if there was no builtin t in the environment
     private Object _expTrue;
     private Object expTrue() {
-        if (_expTrue == null) _expTrue = program.intern("t");
+        if (_expTrue == null) {
+            if (HAVE_T) _expTrue = program.intern("t");
+            else _expTrue = cons(program.intern("quote"), cons(program.intern("t"), null));
+        }
         return _expTrue;
     }
     private Object boolResult(boolean b) { return b ? expTrue() : null; }
@@ -585,87 +608,117 @@ public class LambdaJ {
         return result;
     }
 
-    private final Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
 
-    private final Builtin fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-    private final Builtin fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
-    private final Builtin fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
-
-    private final Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
-
-    private final Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
-    private final Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
-    private final Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-    private final Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
-    private final Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
-
-    private final Builtin fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
-    private final Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    return inputData.readObj(); };
-    private final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
-
-    private final Builtin fwriteln = (ConsCell a) -> {
-        nArgs("writeln", a, 0, 1, null);
-        if (a == null) {
-            out.println();
-            return expTrue();
-        }
-        out.println(printObj(car(a), true));
-        return expTrue();
-    };
-
-    private final Builtin fnumbereq = args -> compareOp(args, "=",  compareResult -> compareResult == 0);
-    private final Builtin flt =       args -> compareOp(args, "<",  compareResult -> compareResult <  0);
-    private final Builtin fle =       args -> compareOp(args, "<=", compareResult -> compareResult <= 0);
-    private final Builtin fgt =       args -> compareOp(args, ">",  compareResult -> compareResult >  0);
-    private final Builtin fge =       args -> compareOp(args, ">=", compareResult -> compareResult >= 0);
-
-    private final Builtin fadd =  args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
-    private final Builtin fmul =  args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
-
-    private final Builtin fsub  = args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
-    private final Builtin fquot = args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
-
-    private final Builtin fmod = (ConsCell args) -> {
-        twoArgs("mod", args);
-        numbers("mod", args);
-        return (Double)car(args) % (Double)car(cdr(args));
-    };
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link Parser} {@code program} on the fly */
     private ConsCell environment(Parser program, ConsCell prev) {
-        return cons(cons(program.intern("car"),     cons(fcar, null)),
-               cons(cons(program.intern("cdr"),     cons(fcdr, null)),
-               cons(cons(program.intern("cons"),    cons(fcons, null)),
+        final Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+        final Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
+        ConsCell env = prev;
+        env =
                cons(cons(program.intern("eq"),      cons(feq, null)),
-               cons(cons(program.intern("consp"),   cons(fconsp, null)),
                cons(cons(program.intern("atom"),    cons(fatom, null)),
-               cons(cons(program.intern("symbolp"), cons(fsymbolp, null)),
-               cons(cons(program.intern("listp"),   cons(flistp, null)),
-               cons(cons(program.intern("numberp"), cons(fnumberp, null)),
-               cons(cons(program.intern("null?"),   cons(fnull, null)),
 
-               cons(cons(program.intern("assoc"),   cons(fassoc, null)),
-               cons(cons(program.intern("read"),    cons(freadobj, null)),
-               cons(cons(program.intern("write"),   cons(fwriteobj, null)),
-               cons(cons(program.intern("writeln"), cons(fwriteln, null)),
+               env));
 
-               cons(cons(program.intern("="),       cons(fnumbereq, null)),
-               cons(cons(program.intern(">"),       cons(fgt, null)),
-               cons(cons(program.intern(">="),      cons(fge, null)),
-               cons(cons(program.intern("<"),       cons(flt, null)),
-               cons(cons(program.intern("<="),      cons(fle, null)),
+        if (HAVE_T)
+            env = cons(cons(program.intern("t"),
+                  cons(program.intern("t"), null)),
+                  env);
 
-               cons(cons(program.intern("+"),       cons(fadd, null)),
-               cons(cons(program.intern("-"),       cons(fsub, null)),
-               cons(cons(program.intern("*"),       cons(fmul, null)),
-               cons(cons(program.intern("/"),       cons(fquot, null)),
-               cons(cons(program.intern("mod"),     cons(fmod, null)),
+        if (HAVE_NIL)
+            env = cons(cons(program.intern("nil"),
+                  cons(null, null)),
+                  env);
 
-               cons(cons(program.intern("t"),       cons(program.intern("t"), null)),
-               cons(cons(program.intern("nil"),     cons(null, null)),
-               prev))))))))))))))))))))))))));
+        if (HAVE_IO) {
+            final Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    return inputData.readObj(); };
+            final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
+
+            final Builtin fwriteln = (ConsCell a) -> {
+                nArgs("writeln", a, 0, 1, null);
+                if (a == null) {
+                    out.println();
+                    return expTrue();
+                }
+                out.println(printObj(car(a), true));
+                return expTrue();
+            };
+
+            env = cons(cons(program.intern("read"),    cons(freadobj, null)),
+                  cons(cons(program.intern("write"),   cons(fwriteobj, null)),
+                  cons(cons(program.intern("writeln"), cons(fwriteln, null)),
+                  env)));
+        }
+
+        if (HAVE_UTIL) {
+            final Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
+
+            final Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
+            final Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
+            final Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
+
+            final Builtin fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+            env = cons(cons(program.intern("consp"),   cons(fconsp, null)),
+                  cons(cons(program.intern("symbolp"), cons(fsymbolp, null)),
+                  cons(cons(program.intern("listp"),   cons(flistp, null)),
+                  cons(cons(program.intern("null?"),   cons(fnull, null)),
+
+                  cons(cons(program.intern("assoc"),   cons(fassoc, null)),
+                  env)))));
+        }
+
+        if (HAVE_CONS) {
+            final Builtin fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
+            final Builtin fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+            final Builtin fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
+
+            env = cons(cons(program.intern("car"),     cons(fcar, null)),
+                  cons(cons(program.intern("cdr"),     cons(fcdr, null)),
+                  cons(cons(program.intern("cons"),    cons(fcons, null)),
+                  env)));
+        }
+
+        if (HAVE_DOUBLE) {
+            final Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
+
+            final Builtin fnumbereq = args -> compareOp(args, "=",  compareResult -> compareResult == 0);
+            final Builtin flt =       args -> compareOp(args, "<",  compareResult -> compareResult <  0);
+            final Builtin fle =       args -> compareOp(args, "<=", compareResult -> compareResult <= 0);
+            final Builtin fgt =       args -> compareOp(args, ">",  compareResult -> compareResult >  0);
+            final Builtin fge =       args -> compareOp(args, ">=", compareResult -> compareResult >= 0);
+
+            final Builtin fadd =  args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
+            final Builtin fmul =  args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
+
+            final Builtin fsub  = args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
+            final Builtin fquot = args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
+
+            final Builtin fmod = (ConsCell args) -> {
+                twoArgs("mod", args);
+                numbers("mod", args);
+                return (Double)car(args) % (Double)car(cdr(args));
+            };
+
+            env = cons(cons(program.intern("numberp"), cons(fnumberp, null)),
+
+                  cons(cons(program.intern("="),       cons(fnumbereq, null)),
+                  cons(cons(program.intern(">"),       cons(fgt, null)),
+                  cons(cons(program.intern(">="),      cons(fge, null)),
+                  cons(cons(program.intern("<"),       cons(flt, null)),
+                  cons(cons(program.intern("<="),      cons(fle, null)),
+
+                  cons(cons(program.intern("+"),       cons(fadd, null)),
+                  cons(cons(program.intern("-"),       cons(fsub, null)),
+                  cons(cons(program.intern("*"),       cons(fmul, null)),
+                  cons(cons(program.intern("/"),       cons(fquot, null)),
+                  cons(cons(program.intern("mod"),     cons(fmod, null)),
+                  env)))))))))));
+        }
+
+        return env;
     }
 
 
@@ -705,14 +758,14 @@ public class LambdaJ {
         final LambdaJ interpreter = new LambdaJ();
 
         if (hasFlag("--version", args)) {
-            System.err.println("LambdaJ $Id: LambdaJ.java,v 1.45 2020/10/08 19:29:18 Robert Exp $");
+            System.err.println("LambdaJ $Id: LambdaJ.java,v 1.46 2020/10/09 05:31:28 Robert Exp $");
             return;
         }
 
         if (hasFlag("--trace", args))     interpreter.trace = TRC_LEX;
 
         if (hasFlag("--no-nil", args))    interpreter.HAVE_NIL = false;
-        if (hasFlag("--no-true", args))   interpreter.HAVE_T = false;
+        if (hasFlag("--no-t", args))      interpreter.HAVE_T = false;
         if (hasFlag("--no-apply", args))  interpreter.HAVE_APPLY = false;
         if (hasFlag("--no-labels", args)) interpreter.HAVE_LABELS = false;
         if (hasFlag("--no-extra", args))  interpreter.HAVE_XTRA = false;
@@ -720,16 +773,8 @@ public class LambdaJ {
         if (hasFlag("--no-io", args))     interpreter.HAVE_IO = false;
         if (hasFlag("--no-util", args))   interpreter.HAVE_UTIL = false;
 
-        if (hasFlag("--min", args)) {
-            // nothing except apply
-            interpreter.HAVE_NIL = false;
-            interpreter.HAVE_T = false;
-            interpreter.HAVE_LABELS = false;
-            interpreter.HAVE_XTRA = false;
-            interpreter.HAVE_DOUBLE = false;
-            interpreter.HAVE_IO = false;
-            interpreter.HAVE_UTIL = false;
-        }
+        if (hasFlag("--min", args))       interpreter.haveMin();
+        if (hasFlag("--lambda", args))    interpreter.haveLambda();
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");

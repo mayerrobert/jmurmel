@@ -1,3 +1,5 @@
+--help
+
 performance:
 "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
 der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
@@ -5,15 +7,7 @@ das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcal
 dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall errzeugt eine neue Map die
 einen link zum vorgaenger hat 
 
-warum ist das letzte element des environments (nil . nil) ?
-
-"t" aus/ einschaltbar machen: flag "HAVE_TRUE"
--> falls true  -> t in der symbol table und _expTrue = t
--> falls false -> t nicht in der symbol table und _expTrue = (quote t)
-
 readObj umbauen dass (a . b) eingelesen werden kann?
-
-irgendwie fliessen eval und apply ineinander. apply kann man mit eval implementieren, und umgekehrt?!
 
 Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
 waer ggf. besser fuer custom builtins
@@ -24,20 +18,12 @@ Datentyp Strings, char unterstuetzen
 Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
 Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
 
-fnull, fcons usw brauchen keine members zu sein, koennten lokale variablen in environment() sein
--> vorher environment() aufteilen?
-
 Methoden ConsCell toList(), toArray(), toMap(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
 Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
 
 
-
-der Double Support ist eigentlich nur mittels Builtins umgesetzt
--> in ein eigenes ExtEnv verpacken, damit kann mans optional machen,
-   oder alternativ/ zusaetzlich z.B. BigDecimal unterstuetzen
--> UND im Lexer gibts Support fuer Double
 
 
 
@@ -67,9 +53,6 @@ eval ins environment einhaengen?
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
-Numbersupport mit flags ausschalten?
-Optional BigDecimal statt Double?
-
 Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
 Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
@@ -78,6 +61,8 @@ isNaN, isInfinite, isFinite
 -> ggf. parameter "Error bei NaN, Infinity etc."
 div, remain, trunc, round, abs
 weitere operatoren aus java.lang.Math (oder StrictMath?)
+
+irgendwie fliessen eval und apply ineinander. apply kann man mit eval implementieren, und umgekehrt?!
 
 
 
@@ -135,6 +120,7 @@ Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode di
 Oder: LambdaJ bekommt eine Methode void registerBuiltin(String funcName, Builtin javaFunc), die pickt eine neue
 Funktion ans Environment vorne dran.
 Oder: zus. Parameter ConsCell extEnv, damit kann man eine Liste mit zusaetzlichen Builtins mitgeben
+
 
 
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
@@ -250,7 +236,6 @@ eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-meth
 
 
 
-
 eval, evlis, evcon vielleicht in haendischem CPS?!?
 -> eruebrigt sich durch TCO
 
@@ -259,3 +244,18 @@ Erkennung von zirkulaeren Listen koennte man in printObj einbauen
 -> contains self aber schon
 
 printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
+
+"t" aus/ einschaltbar machen: flag "HAVE_TRUE"
+-> falls true  -> t in der symbol table und _expTrue = t
+-> falls false -> t nicht in der symbol table und _expTrue = (quote t)
+
+Numbersupport mit flags ausschalten?
+Optional BigDecimal statt Double?
+
+fnull, fcons usw brauchen keine members zu sein, koennten lokale variablen in environment() sein
+-> vorher environment() aufteilen?
+
+der Double Support ist eigentlich nur mittels Builtins umgesetzt
+-> in ein eigenes ExtEnv verpacken, damit kann mans optional machen,
+   oder alternativ/ zusaetzlich z.B. BigDecimal unterstuetzen
+-> UND im Lexer gibts Support fuer Double
