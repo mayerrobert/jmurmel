@@ -2,7 +2,6 @@
 package com.robertmayer.lambdaj;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +13,14 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 
 public class LambdaJ {
+
+    public interface LispReadSupplier {
+        int read() throws IOException;
+    }
+
+    public interface LispWriteConsumer {
+        void print(String s);
+    }
 
     /// infrastructure
     public static final int EOF = -1;
@@ -74,7 +81,7 @@ public class LambdaJ {
         HAVE_QUOTE = false;
     }
 
-    private PrintStream out;
+    private LispWriteConsumer out;
 
     public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1;
@@ -109,7 +116,7 @@ public class LambdaJ {
 
     public class LispParser implements Parser {
         /// scanner
-        private InputStream in;
+        private LispReadSupplier in;
         private boolean init;
 
         private int lineNo = 1, charNo;
@@ -118,7 +125,7 @@ public class LambdaJ {
         private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
-        public LispParser(InputStream in) { this.in = in; }
+        public LispParser(LispReadSupplier in) { this.in = in; }
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
         private boolean isSyntax(int x) { return !escape && (x == '(' || x == ')' || x == '\''); }
@@ -238,7 +245,7 @@ public class LambdaJ {
 
         private Object quote = intern("quote");
 
-        public Object _readObj() {
+        private Object _readObj() {
             if (tok == null) {
                 if (trace >= TRC_PARSE) System.err.println("*** list   ()");
                 return null;
@@ -248,13 +255,13 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) System.err.println("*** list   " + printObj(list, true));
                 return list;
             }
-            if (symbolp(tok)) {
-                if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
-                return intern((String)tok);
-            }
             if (HAVE_QUOTE && "'".equals(tok)) {
                 readToken();
                 return cons(quote, cons(_readObj(), null));
+            }
+            if (symbolp(tok)) {
+                if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
+                return intern((String)tok);
             }
             if (trace >= TRC_TOK) System.err.println("*** value  " + tok.toString());
             return tok;
@@ -735,10 +742,10 @@ public class LambdaJ {
             final Builtin fwriteln = (ConsCell a) -> {
                 nArgs("writeln", a, 0, 1, null);
                 if (a == null) {
-                    out.println();
+                    out.print(System.lineSeparator());
                     return expTrue();
                 }
-                out.println(printObj(car(a), true));
+                out.print(printObj(car(a), true) + System.lineSeparator());
                 return expTrue();
             };
 
@@ -839,8 +846,8 @@ public class LambdaJ {
 
 
 
-    /// build environment, read an S-expression and invoke eval()
-    public Object interpretExpression(InputStream in, PrintStream out) {
+    /// build environment, read a single S-expression, invoke eval() and return result
+    public Object interpretExpression(LispReadSupplier in, LispWriteConsumer out) {
         program = new LispParser(in);
         inputData = program;
         this.out = out;
@@ -853,8 +860,8 @@ public class LambdaJ {
         return result;
     }
 
-    /// build environment, read S-expression and invoke eval() until EOF
-    public Object interpretExpressions(InputStream in, PrintStream out) {
+    /// build environment, read S-expression and invoke eval() until EOF, return result of last expression
+    public Object interpretExpressions(LispReadSupplier in, LispWriteConsumer out) {
         program = new LispParser(in);
         inputData = program;
         this.out = out;
@@ -924,7 +931,7 @@ public class LambdaJ {
         }
 
         try {
-            final String result = printObj(interpreter.interpretExpression(System.in, System.out), true);
+            final String result = printObj(interpreter.interpretExpression(System.in::read, System.out::print), true);
             if (istty) {
                 System.out.println();
                 System.out.println("result: " + result);
@@ -963,7 +970,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.49 2020/10/09 14:11:02 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.50 2020/10/09 15:22:00 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

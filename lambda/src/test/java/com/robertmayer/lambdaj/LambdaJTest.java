@@ -2,10 +2,9 @@ package com.robertmayer.lambdaj;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -276,10 +275,7 @@ public class LambdaJTest {
     }
 
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
-        InputStream in = new ByteArrayInputStream(prog.getBytes());
-
-        ByteArrayOutputStream actualOutput = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(actualOutput);
+        StringBuffer out = new StringBuffer();
 
         LambdaJ interpreter = new LambdaJ();
         interpreter.trace = LambdaJ.TRC_LEX;
@@ -291,20 +287,19 @@ public class LambdaJTest {
 
         String actualResult;
         if (fileName.endsWith(".lisp")) {
-            actualResult = lispObjectToString(interpreter.interpretExpressions(in, out));
+            actualResult = lispObjectToString(interpreter.interpretExpressions(new StringReader(prog)::read, out::append));
         } else {
-            actualResult = lispObjectToString(interpreter.interpretExpression(in, out));
+            actualResult = lispObjectToString(interpreter.interpretExpression(new StringReader(prog)::read, out::append));
         }
-        out.flush();
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
 
         assertEquals("program " + fileName + " produced unexpected result", expectedResult, actualResult);
 
         if (expectedOutput == null) {
-            assertEquals("program " + fileName + " produced unexpected output", 0, actualOutput.size());
+            assertEquals("program " + fileName + " produced unexpected output", 0, out.length());
         } else {
-            final String outputStr = actualOutput.toString().replaceAll("\r", "");
+            final String outputStr = out.toString().replaceAll("\r", "");
             assertEquals("program " + fileName + " produced unexpected output", expectedOutput, outputStr);
         }
     }

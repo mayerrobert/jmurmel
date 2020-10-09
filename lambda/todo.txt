@@ -22,6 +22,8 @@ darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als jav
 
 
 
+getrennter Reader fuer read
+
 readObj umbauen dass (a . b) eingelesen werden kann?
 
 performance:
@@ -299,3 +301,10 @@ Datentyp Strings unterstuetzen
 
 Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen (inkl printObj!!!) kennen.
 Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
+
+Parser refactoren:
+LispParser bekommt statt InputStream einen IntProducer:
+fuer InputStream in:
+    () -> in::read
+oder fuer StringReader s:
+    () ->  s::read

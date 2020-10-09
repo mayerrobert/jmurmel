@@ -33,13 +33,26 @@ Command line parameters in standalone mode:
 
 **Embedded use:**
 
-    LambdaJ interpreter = new LambdaJ();
-    Object result = interpreter.interpretExpressions(System.in, System.out);
-    if (result instanceof LambdaJ.ConsCell) {
-        LambdaJ.ConsCell listResult = (LambdaJ.ConsCell)result;
-        for (Object car: listResult) {
-            System.out.println("received: " + car);
+    @Test
+    public void testHello() {
+        LambdaJ interpreter = new LambdaJ();
+        StringBuffer program = new StringReader("(cons 'a 'b)")
+        StringBuffer output = new StringBuffer();
+        Object result = interpreter.interpretExpression(program::read, output::append);
+
+        assertEquals("(a . b)", result.toString());
+        assertEquals(0, out.length());
+
+        assertTrue(result instanceof LambdaJ.ConsCell); // type of result depends on the Lisp program
+                                                        // could be String, Double or ConsCell (i.e. list)
+        LambdaJ.ConsCell list = (LambdaJ.ConsCell)result;
+
+        String s = "";
+        for (Object car: list) { // the iterator will return subsequent car
+                                 // and - if nonnull - the cdr of the last cons cell
+            s += car.toString();
         }
+        assertEquals("ab", s);
     }
 
 or pass a in `new ByteArrayInputStream()` or something,
