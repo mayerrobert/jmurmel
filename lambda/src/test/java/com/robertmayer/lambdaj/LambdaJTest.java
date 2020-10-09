@@ -271,9 +271,8 @@ public class LambdaJTest {
 
     private static String transform(String s) {
         if (s == null) return null;
-        //if ("nil".equals(s)) return null;
         if ("(empty)".equals(s)) return "";
-        return s;
+        return s.replaceAll("\\\\n", "\n");
     }
 
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
@@ -305,7 +304,8 @@ public class LambdaJTest {
         if (expectedOutput == null) {
             assertEquals("program " + fileName + " produced unexpected output", 0, actualOutput.size());
         } else {
-            assertEquals("program " + fileName + " produced unexpected output", expectedOutput, actualOutput.toString());
+            final String outputStr = actualOutput.toString().replaceAll("\r", "");
+            assertEquals("program " + fileName + " produced unexpected output", expectedOutput, outputStr);
         }
     }
 

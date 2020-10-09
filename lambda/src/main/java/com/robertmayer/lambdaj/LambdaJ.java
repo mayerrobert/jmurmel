@@ -62,7 +62,7 @@ public class LambdaJ {
         private int lineNo = 1, charNo;
         private boolean escape;
         private int look;
-        private int token[] = new int[SYMBOL_MAX];
+        private int token[] = new int[SYMBOL_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
         public LispParser(InputStream in) { this.in = in; }
@@ -104,8 +104,8 @@ public class LambdaJ {
                 if (isSyntax(look)) {
                     token[index++] = look;  look = getchar();
                 } else {
-                    while (index < SYMBOL_MAX - 1 && look != EOF && !isSpace(look) && !isSyntax(look)) {
-                        if (index < SYMBOL_MAX - 1) token[index++] = look;
+                    while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                        if (index < SYMBOL_MAX) token[index++] = look;
                         look = getchar();
                     }
                 }
@@ -135,7 +135,7 @@ public class LambdaJ {
         }
 
         private String tokenToString(int[] s) {
-            StringBuffer ret = new StringBuffer(32);
+            StringBuffer ret = new StringBuffer(SYMBOL_MAX);
             for (int c: s) {
                 if (c == '\0') break;
                 ret.append((char)c);
@@ -604,6 +604,7 @@ public class LambdaJ {
     private final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
 
     private final Builtin fwriteln = (ConsCell a) -> {
+        nArgs("writeln", a, 0, 1, null);
         if (a == null) {
             out.println();
             return expTrue();
@@ -704,7 +705,7 @@ public class LambdaJ {
         final LambdaJ interpreter = new LambdaJ();
 
         if (hasFlag("--version", args)) {
-            System.err.println("LambdaJ $Id$");
+            System.err.println("LambdaJ $Id: LambdaJ.java,v 1.45 2020/10/08 19:29:18 Robert Exp $");
             return;
         }
 

@@ -1,10 +1,15 @@
+performance:
+"intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
+der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
+das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcall wird das environment erweitert,
+dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall errzeugt eine neue Map die
+einen link zum vorgaenger hat 
+
 warum ist das letzte element des environments (nil . nil) ?
 
 "t" aus/ einschaltbar machen: flag "HAVE_TRUE"
 -> falls true  -> t in der symbol table und _expTrue = t
 -> falls false -> t nicht in der symbol table und _expTrue = (quote t)
-
-printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
 
 readObj umbauen dass (a . b) eingelesen werden kann?
 
@@ -252,3 +257,5 @@ eval, evlis, evcon vielleicht in haendischem CPS?!?
 Erkennung von zirkulaeren Listen koennte man in printObj einbauen
 -> aber ohne set gibts derzeit eh keine zirkulaeren Listen ?!?)
 -> contains self aber schon
+
+printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()

@@ -3,6 +3,9 @@
 A customizable Lisp-1-ish interpreter written in Java8+ that can be used
 standalone as well as embedded.
 
+LambdaJ has garbage collection, tail call optimization,
+and except read/ write/ writeln it is purely functional (but see Customization below).
+
 **Standalone use:**
 
     $ java -jar lambdaj-1.0-SNAPSHOT.jar
@@ -56,7 +59,8 @@ The environment contains the symbols `nil` and `t` and the functions
 
 Most (maybe all) tail calls including tail recursive calls are optimized away.
 
-Variables and functions share one namespace, symbols names must not start with a digit.
+Variables and functions share one namespace.
+Symbols names must not start with a digit, only the first 32 characters are significant.
 
 Numbers must start with a digit, a `+` or a `-`.
 E.g. the expression `(/ 1 -0)` is valid and will yield `-Infinity`.
