@@ -1,3 +1,4 @@
+/* Copyright (C) 2020 by Robert Mayer */
 package com.robertmayer.lambdaj;
 
 import java.io.IOException;
@@ -19,33 +20,51 @@ public class LambdaJ {
     // see https://news.ycombinator.com/item?id=8714988 for how to implement cons, car, cdr, true, false, if in Lambda
     // as well as how to implement numbers using lists
     private boolean
-    HAVE_CONS = true,
-    HAVE_COND = true,
-    HAVE_APPLY = true,                    // a Lisp needs apply or eval, lambda calculus doesn't
     HAVE_LABELS = true,                   // use Y-combinator instead
     HAVE_NIL = true, HAVE_T = true,       // use () and (quote t) instead. printObj will print nil regardless
     HAVE_XTRA = true,                     // no extra special forms such as if
     HAVE_DOUBLE = true,                   // no +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
+                                          // see https://stackoverflow.com/questions/3467317/can-you-implement-any-pure-lisp-function-using-the-ten-primitives-ie-no-type-p/3468060#3468060
+                                          // for how to implement numbers in lambda
     HAVE_IO = true,                       // no read/ write, result only
-    HAVE_UTIL = true                      // no null?, consp, listp, symbolp, assoc
+    HAVE_UTIL = true,                     // no null?, consp, listp, symbolp, assoc
+    HAVE_APPLY = true,                    // McCarthy didn't list apply
+    HAVE_CONS = true,
+    HAVE_COND = true,
+    HAVE_ATOM = true,
+    HAVE_EQ = true,
+    HAVE_QUOTE = true
     ;
 
-    /** bare lambda calculus */
-    public void haveLambda() {
-        HAVE_CONS = false;
-        HAVE_COND = false;
-        HAVE_APPLY = false;
-    }
-
     /** nothing except cons, car, cdr, cond, apply */
-    public void haveMin() {
-        HAVE_LABELS = false;
+    public void haveMinPlus() {
         HAVE_NIL = false;
         HAVE_T = false;
         HAVE_XTRA = false;
         HAVE_DOUBLE = false;
         HAVE_IO = false;
         HAVE_UTIL = false;
+    }
+
+    public void haveMin() {
+        haveMinPlus();
+        HAVE_APPLY = false;
+        HAVE_LABELS = false;
+    }
+
+    /** almost bare lambda calculus */
+    public void haveLambdaPlus() {
+        haveMin();
+        HAVE_CONS = false;
+        HAVE_COND = false;
+    }
+
+    /** bare lambda calculus */
+    public void haveLambda() {
+        haveLambdaPlus();
+        HAVE_ATOM = false;
+        HAVE_EQ = false;
+        HAVE_QUOTE = false;
     }
 
     private PrintStream out;
@@ -209,7 +228,7 @@ public class LambdaJ {
                 if (trace >= TRC_TOK) System.err.println("*** number " + tok.toString());
                 return tok;
             }
-            if ("'".equals(tok)) {
+            if (HAVE_QUOTE && "'".equals(tok)) {
                 readToken();
                 return cons(quote, cons(_readObj(), null));
             }
@@ -250,7 +269,7 @@ public class LambdaJ {
 
                 // special forms
                 } else if (symbolp(car (exp))) {
-                    if (car(exp) == program.intern("quote")) {
+                    if (HAVE_QUOTE && car(exp) == program.intern("quote")) {
                         oneArg("quote", cdr(exp));
                         return car(cdr(exp));
 
@@ -263,7 +282,7 @@ public class LambdaJ {
                         } else
                             return null;
 
-                    } else if (HAVE_APPLY && car(exp) == program.intern("lambda")) {
+                    } else if (car(exp) == program.intern("lambda")) {
                         nArgs("lambda", cdr(exp), 2, exp);
                         return exp;
 
@@ -517,7 +536,8 @@ public class LambdaJ {
     private Object expTrue() {
         if (_expTrue == null) {
             if (HAVE_T) _expTrue = program.intern("t");
-            else _expTrue = cons(program.intern("quote"), cons(program.intern("t"), null));
+            else if (HAVE_QUOTE) _expTrue = cons(program.intern("quote"), cons(program.intern("t"), null));
+            else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
         }
         return _expTrue;
     }
@@ -613,15 +633,19 @@ public class LambdaJ {
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link Parser} {@code program} on the fly */
     private ConsCell environment(Parser program, ConsCell prev) {
-        final Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
-        final Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
         ConsCell env = prev;
-        env =
-               cons(cons(program.intern("eq"),      cons(feq, null)),
-               cons(cons(program.intern("atom"),    cons(fatom, null)),
+        if (HAVE_EQ) {
+            final Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
+            env = cons(cons(program.intern("eq"), cons(feq, null)),
+                       env);
+        }
 
-               env));
+        if (HAVE_ATOM) {
+            final Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+            env = cons(cons(program.intern("atom"),    cons(fatom, null)),
+                       env);
+        }
 
         if (HAVE_T)
             env = cons(cons(program.intern("t"),
@@ -758,7 +782,14 @@ public class LambdaJ {
         final LambdaJ interpreter = new LambdaJ();
 
         if (hasFlag("--version", args)) {
-            System.err.println("LambdaJ $Id: LambdaJ.java,v 1.46 2020/10/09 05:31:28 Robert Exp $");
+            showVersion();
+            return;
+        }
+
+        if (hasFlag("--help", args) || hasFlag("--usage", args)) {
+            showVersion();
+            System.out.println();
+            showUsage();
             return;
         }
 
@@ -766,15 +797,26 @@ public class LambdaJ {
 
         if (hasFlag("--no-nil", args))    interpreter.HAVE_NIL = false;
         if (hasFlag("--no-t", args))      interpreter.HAVE_T = false;
-        if (hasFlag("--no-apply", args))  interpreter.HAVE_APPLY = false;
-        if (hasFlag("--no-labels", args)) interpreter.HAVE_LABELS = false;
         if (hasFlag("--no-extra", args))  interpreter.HAVE_XTRA = false;
         if (hasFlag("--no-double", args)) interpreter.HAVE_DOUBLE = false;
         if (hasFlag("--no-io", args))     interpreter.HAVE_IO = false;
         if (hasFlag("--no-util", args))   interpreter.HAVE_UTIL = false;
 
+        if (hasFlag("--no-labels", args)) interpreter.HAVE_LABELS = false;
+        if (hasFlag("--no-cons", args))   interpreter.HAVE_CONS = false;
+        if (hasFlag("--no-cond", args))   interpreter.HAVE_COND = false;
+        if (hasFlag("--no-apply", args))  interpreter.HAVE_APPLY = false;
+
+        if (hasFlag("--no-atom", args))   interpreter.HAVE_ATOM = false;
+        if (hasFlag("--no-eq", args))     interpreter.HAVE_EQ = false;
+        if (hasFlag("--no-quote", args))  interpreter.HAVE_QUOTE = false;
+
+        if (hasFlag("--min+", args))      interpreter.haveMinPlus();
         if (hasFlag("--min", args))       interpreter.haveMin();
+        if (hasFlag("--lambda+", args))   interpreter.haveLambdaPlus();
         if (hasFlag("--lambda", args))    interpreter.haveLambda();
+
+        final boolean printResult = hasFlag("--result", args);
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");
@@ -793,13 +835,85 @@ public class LambdaJ {
             if (istty) {
                 System.out.println();
                 System.out.println("result: " + result);
-            } else if (hasFlag("--result", args)) {
-                System.out.println(result);
+            } else {
+                if (printResult) {
+                    System.out.println(result);
+                }
             }
         } catch (LambdaJError e) {
             System.out.println();
             System.out.println(e.toString());
         }
+    }
+
+    private static void showVersion() {
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.47 2020/10/09 06:58:21 Robert Exp $");
+    }
+
+    // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
+    private static void showUsage() {
+        System.out.println("Usage:\n" +
+                "\n" +
+                "interactive:\n" +
+                "java -jar lambda.jar [commandline-flags]*\n" +
+                "\n" +
+                "non-interactive:\n" +
+                "java -jar lambda.jar [commandline-flags]* < lisp-source.lisp\n" +
+                "\n" +
+                "Commandline-flags are:\n" +
+                "\n" +
+                "Misc:\n" +
+                "--version .....  show version and exit\n" +
+                "--help ........  show this message and exit\n" +
+                "--trace .......  print internal interpreter info during\n" +
+                "                 reading/ parsing/ executing programs\n" +
+                "\n" +
+                "Feature flags:\n" +
+                "\n" +
+                "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n" +
+                "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n" +
+                "--no-extra ....  no special form 'if'\n" +
+                "--no-double ...  no number support\n" +
+                "--no-io .......  no primitive functions read/ write/ writeln\n" +
+                "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc\n" +
+                "\n" +
+                "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n" +
+                "                   S-expressions\n" +
+                "                   symbols and cons-cells (i.e. lists)\n" +
+                "                   function application\n" +
+                "                   the special form quote\n" +
+                "                   atom, eq, cons, car, cdr, lambda, apply, cond, labels\n" +
+                "\n" +
+                "--no-apply ....  no special form 'apply'\n" +
+                "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n" +
+                "\n" +
+                "--min .........  turn off all above features, leaving a Lisp with 8 primitives:\n" +
+                "                   S-expressions\n" +
+                "                   symbols and cons-cells (i.e. lists)\n" +
+                "                   function application\n" +
+                "                   the special form quote\n" +
+                "                   atom, eq, cons, car, cdr, lambda, cond\n" +
+                "\n" +
+                "--no-cons .....  no primitive functions cons/ car/ cdr\n" +
+                "--no-cond .....  no special form 'cond'\n" +
+                "\n" +
+                "--lambda+ .....  turn off pretty much everything except Lambda calculus,\n" +
+                "                 leaving a Lisp with 4 primitives:\n" +
+                "                   S-expressions\n" +
+                "                   symbols and cons-cells (i.e. lists)\n" +
+                "                   function application\n" +
+                "                   the special form quote\n" +
+                "                   atom, eq, lambda\n" +
+                "\n" +
+                "--no-atom .....  no primitive function 'atom'\n" +
+                "--no-eq .......  no primitive function 'eq'\n" +
+                "--no-quote ....  no special form quote\n" +
+                "\n" +
+                "--lambda ......  turns off yet even more stuff, leaving I guess bare bones Lambda calculus:\n" +
+                "                   S-expressions\n" +
+                "                   symbols and cons-cells (i.e. lists)\n" +
+                "                   function application\n" +
+                "                   lambda");
     }
 
     private static boolean hasFlag(String flag, String[] args) {
@@ -818,6 +932,7 @@ public class LambdaJ {
         for (String arg: args) {
             if (arg != null && arg.startsWith("-")) {
                 System.err.println("LambdaJ: unknown commandline argument " + arg);
+                System.err.println("use '--help' to show available commandline arguments");
                 err = true;
             }
         }

@@ -1,0 +1,62 @@
+Usage:
+
+interactive:
+java -jar lambda.jar [commandline-flags]*
+
+non-interactive:
+java -jar lambda.jar [commandline-flags]* < lisp-source.lisp
+
+Commandline-flags are:
+
+Misc:
+--version .....  show version and exit
+--help ........  show this message and exit
+--trace .......  print internal interpreter info during
+                 reading/ parsing/ executing programs
+
+Feature flags:
+
+--no-nil ......  don't predefine symbol nil (hint: use '()' instead)
+--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
+--no-extra ....  no special form 'if'
+--no-double ...  no number support
+--no-io .......  no primitive functions read/ write/ writeln
+--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc
+
+--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:
+                   S-expressions
+                   symbols and cons-cells (i.e. lists)
+                   function application
+                   the special form quote
+                   atom, eq, cons, car, cdr, lambda, apply, cond, labels
+
+--no-apply ....  no special form 'apply'
+--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)
+
+--min .........  turn off all above features, leaving a Lisp with 8 primitives:
+                   S-expressions
+                   symbols and cons-cells (i.e. lists)
+                   function application
+                   the special form quote
+                   atom, eq, cons, car, cdr, lambda, cond
+
+--no-cons .....  no primitive functions cons/ car/ cdr
+--no-cond .....  no special form 'cond'
+
+--lambda+ .....  turn off pretty much everything except Lambda calculus,
+                 leaving a Lisp with 4 primitives:
+                   S-expressions
+                   symbols and cons-cells (i.e. lists)
+                   function application
+                   the special form quote
+                   atom, eq, lambda
+
+--no-atom .....  no primitive function 'atom'
+--no-eq .......  no primitive function 'eq'
+--no-quote ....  no special form quote
+
+--lambda ......  turns off yet even more stuff, leaving I guess bare bones Lambda calculus:
+                   S-expressions
+                   symbols and cons-cells (i.e. lists)
+                   function application
+                   lambda

@@ -1,5 +1,3 @@
---help
-
 performance:
 "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
 der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
@@ -259,3 +257,5 @@ der Double Support ist eigentlich nur mittels Builtins umgesetzt
 -> in ein eigenes ExtEnv verpacken, damit kann mans optional machen,
    oder alternativ/ zusaetzlich z.B. BigDecimal unterstuetzen
 -> UND im Lexer gibts Support fuer Double
+
+--help
