@@ -29,7 +29,7 @@ The commands above will read an expression from stdin and interpret it.
 Command line parameters in standalone mode:
 
 * `--result` ... print the result to stdout, this is the default when reading an expression from the console 
-* `--trace` ... print lexing/ parsing/ eval info to stderr
+* `--help` ..... show all the available commandline parameters and quit
 
 **Embedded use:**
 
@@ -57,6 +57,9 @@ The environment contains the symbols `nil` and `t` and the functions
 * `=, <, <=, >, >=`
 * `+, -, *, /, mod`
 
+Most of these features can be disabled using commandline arguments.
+If you want to experiment with a bare-bones-Lisp use `--help` for details.
+ 
 Most (maybe all) tail calls including tail recursive calls are optimized away.
 
 Variables and functions share one namespace.

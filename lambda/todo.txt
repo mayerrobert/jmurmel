@@ -1,3 +1,10 @@
+Datentyp Strings, char unterstuetzen
+
+Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
+Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
+
+readObj umbauen dass (a . b) eingelesen werden kann?
+
 performance:
 "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
 der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
@@ -5,16 +12,9 @@ das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcal
 dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall errzeugt eine neue Map die
 einen link zum vorgaenger hat 
 
-readObj umbauen dass (a . b) eingelesen werden kann?
-
 Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
 waer ggf. besser fuer custom builtins
 -> environment() koennte static sein
-
-Datentyp Strings, char unterstuetzen
-
-Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen kennen.
-Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
 
 Methoden ConsCell toList(), toArray(), toMap(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
