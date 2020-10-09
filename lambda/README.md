@@ -54,8 +54,8 @@ The environment contains the symbols `nil` and `t` and the functions
 * `read`
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s)
 
-* `=, <, <=, >, >=`
-* `+, -, *, /, mod`
+* `=, <, <=, >, >=, +, -, *, /, mod` ... Java Double
+* `stringp, string-format` ... `string-format` works like Java `String#format(String format, Object... args)`
 
 Most of these features can be disabled using commandline arguments.
 If you want to experiment with a bare-bones-Lisp use `--help` for details.
@@ -63,7 +63,7 @@ If you want to experiment with a bare-bones-Lisp use `--help` for details.
 Most (maybe all) tail calls including tail recursive calls are optimized away.
 
 Variables and functions share one namespace.
-Symbols names must not start with a digit, only the first 32 characters are significant.
+Symbols names must not start with a digit, only the first 2000 characters are significant.
 
 Numbers must start with a digit, a `+` or a `-`.
 E.g. the expression `(/ 1 -0)` is valid and will yield `-Infinity`.
@@ -71,9 +71,28 @@ E.g. the expression `(/ 1 -0)` is valid and will yield `-Infinity`.
 Math operators are implemented using Java operators for double. This is probably different to Common Lisp
 esp. around +/-NaN, +/-Infinity, division by zero and so on.
 
-The only data types currently supported are symbols, pairs (i.e. lists) and numbers (represented as Java Double).
+The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double)
+and strings. String literals are 2000 chars max length. (Strings have very limited support.)
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
+
+## Examples
+
+write, string-format
+
+    LambdaJ> (write (string-format "%s, World!%n" "Hello"))
+    Hello, World!
+    result: t
+
+Tail recursion
+
+    LambdaJ> (labels ((factTR (n a)
+                     (if (= n 0)
+                         a
+                         (factTR (- n 1) (* n a)))))
+     (write (string-format "Factorial of 50 is %g" (factTR 50 1))))
+    Factorial of 50 is 3,04141e+64
+    result: t
 
 ## Customization
 

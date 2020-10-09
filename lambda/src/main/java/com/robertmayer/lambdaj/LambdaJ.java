@@ -4,7 +4,10 @@ package com.robertmayer.lambdaj;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.IllegalFormatException;
+import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 
@@ -12,7 +15,7 @@ public class LambdaJ {
 
     /// infrastructure
     public static final int EOF = -1;
-    public static final int SYMBOL_MAX = 32;
+    public static final int TOKEN_MAX = 2000; // max length of symbols and literals
 
     public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
     public int trace = TRC_NONE;
@@ -26,6 +29,7 @@ public class LambdaJ {
     HAVE_DOUBLE = true,                   // no +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
                                           // see https://stackoverflow.com/questions/3467317/can-you-implement-any-pure-lisp-function-using-the-ten-primitives-ie-no-type-p/3468060#3468060
                                           // for how to implement numbers in lambda
+    HAVE_STRING = true,
     HAVE_IO = true,                       // no read/ write, result only
     HAVE_UTIL = true,                     // no null?, consp, listp, symbolp, assoc
     HAVE_APPLY = true,                    // McCarthy didn't list apply
@@ -42,6 +46,7 @@ public class LambdaJ {
         HAVE_T = false;
         HAVE_XTRA = false;
         HAVE_DOUBLE = false;
+        HAVE_STRING = false;
         HAVE_IO = false;
         HAVE_UTIL = false;
     }
@@ -88,6 +93,13 @@ public class LambdaJ {
 
 
 
+    public class LambdaJString {
+        private final String value;
+        public LambdaJString(String value) { this.value = value; }
+        @Override
+        public String toString() { return value.toString(); }
+    }
+
     public interface Parser {
         String intern(String symbol);
         Object readObj();
@@ -101,13 +113,14 @@ public class LambdaJ {
         private int lineNo = 1, charNo;
         private boolean escape;
         private int look;
-        private int token[] = new int[SYMBOL_MAX + 1]; // provide for trailing '\0'
+        private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
         public LispParser(InputStream in) { this.in = in; }
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
         private boolean isSyntax(int x) { return !escape && (x == '(' || x == ')' || x == '\''); }
+        private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
 
         private int getchar() {
@@ -142,16 +155,21 @@ public class LambdaJ {
             if (look != EOF) {
                 if (isSyntax(look)) {
                     token[index++] = look;  look = getchar();
+                } else if (HAVE_STRING && isDQuote(look)) {
+                    do {
+                        if (index < TOKEN_MAX) token[index++] = look;
+                        look = getchar();
+                    } while (look != EOF && !isDQuote(look));
+                    if (look == EOF) throw new LambdaJError("line " + lineNo + ':' + charNo + ": ' string literal too long or missing closing \"");
+                    else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
-                        if (index < SYMBOL_MAX) token[index++] = look;
+                        if (index < TOKEN_MAX) token[index++] = look;
                         look = getchar();
                     }
                 }
             }
             token[index] = '\0';
-            if (trace >= TRC_LEX)
-                System.err.println("*** token  |" + tokenToString(token) + '|');
             if (HAVE_DOUBLE && isNumber()) {
                 try {
                     tok = Double.valueOf(tokenToString(token));
@@ -160,11 +178,15 @@ public class LambdaJ {
                     throw new LambdaJError("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
                     + "' is not a valid symbol or number");
                 }
+            } else if (HAVE_STRING && token[0] == '"') {
+                tok = new LambdaJString(tokenToString(token).substring(1));
             } else if (token[0] == '\0'){
                 tok = null;
             } else {
                 tok = tokenToString(token);
             }
+            if (trace >= TRC_LEX)
+                System.err.println("*** token  |" + String.valueOf(tok) + '|');
         }
 
         private boolean isNumber() {
@@ -174,7 +196,7 @@ public class LambdaJ {
         }
 
         private String tokenToString(int[] s) {
-            StringBuffer ret = new StringBuffer(SYMBOL_MAX);
+            StringBuffer ret = new StringBuffer(TOKEN_MAX);
             for (int c: s) {
                 if (c == '\0') break;
                 ret.append((char)c);
@@ -224,16 +246,16 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) System.err.println("*** list   " + printObj(list, true));
                 return list;
             }
-            if (tok instanceof Number) {
-                if (trace >= TRC_TOK) System.err.println("*** number " + tok.toString());
-                return tok;
+            if (symbolp(tok)) {
+                if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
+                return intern((String)tok);
             }
             if (HAVE_QUOTE && "'".equals(tok)) {
                 readToken();
                 return cons(quote, cons(_readObj(), null));
             }
-            if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
-            return intern((String)tok);
+            if (trace >= TRC_TOK) System.err.println("*** value  " + tok.toString());
+            return tok;
         }
 
         private Object readList() {
@@ -437,12 +459,14 @@ public class LambdaJ {
     private static Object   car(Object x)                { return ((ConsCell)x).car; }
     private static Object   cdr(Object x)                { return ((ConsCell)x).cdr; }
 
-    private static boolean  consp(Object x)             { return x != null && x instanceof ConsCell; }
+    private static boolean  consp(Object x)             { return x instanceof ConsCell; }
     private static boolean  atom(Object x)              { return x == null || !(x instanceof ConsCell); } // !isCons(x)
     private static boolean  symbolp(Object x)           { return x == null || x instanceof String; } // null (alias nil) is a symbol too
     private static boolean  listp(Object x)             { return x == null || x instanceof ConsCell; } // null is a list too
     private static boolean  isPrim(Object x)            { return x instanceof Builtin; }
+
     private static boolean  numberp(Object x)           { return x instanceof Number; }
+    private static boolean  stringp(Object x)           { return x instanceof LambdaJString; }
 
     private static int length(Object list) {
         if (list == null) return 0;
@@ -458,14 +482,29 @@ public class LambdaJ {
         return l;
     }
 
+    /** note: searches using object identity, will work for interned symbols, won't work for e.g. numbers */
     private static ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null) return null;
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printObj(maybeList, true));
         ConsCell env = (ConsCell) maybeList;
-        for ( ; env != null; env = (ConsCell)cdr(env))
+        for ( ; env != null; env = (ConsCell)cdr(env)) {
             if (atom == car(car(env))) return (ConsCell) car(env);
+            if (maybeList == cdr(env)) return null; // circular list, wne didn't find the symbol
+        }
         return null;
+    }
+
+    private static Object[] listToArray(Object maybeList) {
+        if (maybeList == null) return null;
+        if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printObj(maybeList, true));
+        ConsCell env = (ConsCell) maybeList;
+        List<Object> ret = new ArrayList<>();
+        for ( ; env != null; env = (ConsCell)cdr(env)) {
+            ret.add(car(env));
+            if (maybeList == cdr(env)) return null;
+        }
+        return ret.toArray();
     }
 
     private Object applyPrimitive(Builtin primfn, ConsCell args, int stack) {
@@ -521,6 +560,8 @@ public class LambdaJ {
                 sb.append(current.toString()); return;
             } else if (isPrim(current)) {
                 sb.append("#<primitive>"); return;
+            } else if (stringp(current)) {
+                sb.append('"').append(current.toString()).append('"'); return;
             } else if (atom(current)) {
                 sb.append(current.toString()); return;
             } else {
@@ -541,6 +582,7 @@ public class LambdaJ {
         }
         return _expTrue;
     }
+
     private Object boolResult(boolean b) { return b ? expTrue() : null; }
 
     private static void noArgs(String func, ConsCell a) {
@@ -705,6 +747,27 @@ public class LambdaJ {
                   env)));
         }
 
+        if (HAVE_STRING) {
+            final Builtin fstringp =  (ConsCell a) -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
+            final Builtin fformat =   a -> {
+                nArgs("string-format", a, 2, null);
+                if (!(car(a) instanceof LambdaJString))
+                    throw new LambdaJError("string-format: expected first argument to be a String but got " + printObj(cdr(a), true));
+                String s = ((LambdaJString)car(a)).value;
+                try {
+                    return String.format(s, listToArray(cdr(a)));
+                }
+                catch (IllegalFormatException e) {
+                    throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
+                    + "\nerror ocurred processing the argument(s) " + printObj(a, true));
+                }
+            };
+
+            env = cons(cons(program.intern("stringp"), cons(fstringp, null)),
+                  cons(cons(program.intern("string-format"), cons(fformat, null)),
+                  env));
+        }
+
         if (HAVE_DOUBLE) {
             final Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
 
@@ -799,6 +862,7 @@ public class LambdaJ {
         if (hasFlag("--no-t", args))      interpreter.HAVE_T = false;
         if (hasFlag("--no-extra", args))  interpreter.HAVE_XTRA = false;
         if (hasFlag("--no-double", args)) interpreter.HAVE_DOUBLE = false;
+        if (hasFlag("--no-string", args)) interpreter.HAVE_STRING = false;
         if (hasFlag("--no-io", args))     interpreter.HAVE_IO = false;
         if (hasFlag("--no-util", args))   interpreter.HAVE_UTIL = false;
 
@@ -847,7 +911,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.47 2020/10/09 06:58:21 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.48 2020/10/09 10:23:55 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -874,6 +938,7 @@ public class LambdaJ {
                 "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n" +
                 "--no-extra ....  no special form 'if'\n" +
                 "--no-double ...  no number support\n" +
+                "--no-string ...  no string support\n" +
                 "--no-io .......  no primitive functions read/ write/ writeln\n" +
                 "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc\n" +
                 "\n" +
