@@ -1,0 +1,29 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.robertmayer.parent</groupId>
+		<artifactId>jmh</artifactId>
+		<relativePath>../parent/jmh/pom.xml</relativePath>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	
+    <groupId>com.robertmayer.platform</groupId>
+    <artifactId>lambdajbm</artifactId>
+    <packaging>jar</packaging>
+
+	<properties>
+		<javac.target>1.8</javac.target>
+	</properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.robertmayer.platform</groupId>
+            <artifactId>lambdaj</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+</project>
