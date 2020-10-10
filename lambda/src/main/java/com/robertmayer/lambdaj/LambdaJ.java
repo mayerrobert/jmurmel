@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 
 public class LambdaJ {
 
@@ -80,8 +81,6 @@ public class LambdaJ {
         HAVE_QUOTE = false;
     }
 
-    private LispWriteConsumer out;
-
     public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1;
         LambdaJError(String msg) {
@@ -92,6 +91,13 @@ public class LambdaJ {
         public String toString() {
             return "Error: " + getMessage();
         }
+    }
+
+    public interface Parser {
+        String intern(String symbol);
+        Object readObj();
+        void printObj(Object ob);
+        void printEol();
     }
 
     @FunctionalInterface
@@ -108,14 +114,18 @@ public class LambdaJ {
         public String toString() { return value.toString(); }
     }
 
-    public interface Parser {
-        String intern(String symbol);
-        Object readObj();
+    private static boolean isSExSyntaxChar(int x) { return x == '(' || x == ')' || x == '\''; }
+
+    private static boolean containsSExSyntax(String s) {
+        for (int i = 0; i < s.length(); i++)
+        if (isSExSyntaxChar(s.charAt(i))) return true;
+        return false;
     }
 
     public class LispParser implements Parser {
         /// scanner
-        private LispReadSupplier in;
+        private LispReadSupplier in;    // readObj() will read from this
+        private LispWriteConsumer out;  // printObj() and printEol() will write to this
         private boolean init;
 
         private int lineNo = 1, charNo;
@@ -125,13 +135,13 @@ public class LambdaJ {
         private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
-        public LispParser(LispReadSupplier in) { this.in = in; }
+        public LispParser(LispReadSupplier in, LispWriteConsumer out) { this.in = in; this.out = out; }
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
 
-        private boolean isSyntax(int x) { return !escape && (x == '(' || x == ')' || x == '\''); }
+        private boolean isSyntax(int x) { return !escape && isSExSyntaxChar(x); }
 
         private int getchar() {
             try {
@@ -257,10 +267,10 @@ public class LambdaJ {
                 if (!tokEscape && ".".equals(tok)) {
                     Object cdr = readList();
                     Object cons = cons(car(list), car(cdr));
-                    if (trace >= TRC_PARSE) System.err.println("*** parse cons   " + printObj(cons, true));
+                    if (trace >= TRC_PARSE) System.err.println("*** parse cons   " + printSEx(cons));
                     return cons;
                 }
-                if (trace >= TRC_PARSE) System.err.println("*** parse list   " + printObj(list, true));
+                if (trace >= TRC_PARSE) System.err.println("*** parse list   " + printSEx(list));
                 return list;
             }
             if (!tokEscape && HAVE_QUOTE && "'".equals(tok)) {
@@ -286,12 +296,23 @@ public class LambdaJ {
             if (symbolp(tmp)) return cons(tmp, readList());
             else return cons(tmp, readList());
         }
+
+        @Override
+        public void printObj(Object ob) {
+            out.print(printSEx(ob));
+        }
+
+        @Override
+        public void printEol() {
+            out.print(System.lineSeparator());
+        }
     }
 
     private Parser program;
-    private Parser inputData;
 
 
+
+    private Supplier<String> sQuote = () -> { Supplier<String> sym = () -> program.intern("quote"); return (sQuote = sym).get(); };
 
     /// eval - interpreter
     private Object eval(Object exp, ConsCell env, int stack, int level) {
@@ -311,7 +332,7 @@ public class LambdaJ {
 
                 // special forms
                 } else if (symbolp(car (exp))) {
-                    if (HAVE_QUOTE && car(exp) == program.intern("quote")) {
+                    if (HAVE_QUOTE && car(exp) == sQuote.get()) {
                         oneArg("quote", cdr(exp));
                         return car(cdr(exp));
 
@@ -344,9 +365,9 @@ public class LambdaJ {
                         if (consp(func)) {
                             exp = cons(func, args); continue;
                         } else if (isPrim(func)) return applyPrimitive((Builtin) func, args, stack);
-                        else throw new LambdaJError("apply: not a function: " + printObj(func, true)
+                        else throw new LambdaJError("apply: not a function: " + printSEx(func)
                         + ". this was the result of evaluating the expression "
-                        + printObj(car(cdr(exp)), true) + errorExp(exp));
+                        + printSEx(car(cdr(exp))) + errorExp(exp));
 
                     } else { /* function call */
                         Object func = eval(car(exp), env, stack + 1, level + 1);
@@ -355,7 +376,7 @@ public class LambdaJ {
                         } else if (isPrim(func)) {
                             return applyPrimitive((Builtin) func, evlis((ConsCell) cdr(exp), env, stack, level + 1), stack);
                         }
-                        else throw new LambdaJError("not a function: " + printObj(func, true) + errorExp(exp));
+                        else throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
                     }
 
                 } else if (consp(car(exp)) && car(car(exp)) == program.intern("lambda")) {
@@ -367,10 +388,10 @@ public class LambdaJ {
                     for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
                         extenv = cons(cons(car(params),  cons(eval(car(args), env, stack + 1, level + 1), null)), extenv);
                     if (params != null)
-                        throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printObj(params, true)
+                        throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printSEx(params)
                         + errorExp(exp));
                     if (args != null)
-                        throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printObj(args, true)
+                        throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printSEx(args)
                         + errorExp(exp));
 
                     ConsCell body = (ConsCell) cdr(lambda);
@@ -381,11 +402,11 @@ public class LambdaJ {
                     } // else fall through to "cannot eval". should really not happen anyway
 
                 } else if (atom(car(exp))) {
-                    throw new LambdaJError("not a function: " + printObj(car(exp), true) + errorExp(exp));
+                    throw new LambdaJError("not a function: " + printSEx(car(exp)) + errorExp(exp));
 
                 }
 
-                throw new LambdaJError("cannot eval expression '" + printObj(exp, true) + '\'');
+                throw new LambdaJError("cannot eval expression '" + printSEx(exp) + '\'');
             }
 
         } catch (Exception e) {
@@ -451,8 +472,8 @@ public class LambdaJ {
             if (maxEvalLevel < level) maxEvalLevel = level;
             char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             System.err.println(pfx + "*** eval (" + stack + '/' + level + ") ********");
-            System.err.print(pfx + "env: "); System.err.println(printObj(env, true));
-            System.err.print(pfx + "exp: "); System.err.println(printObj(exp, true));
+            System.err.print(pfx + "env: "); System.err.println(printSEx(env));
+            System.err.print(pfx + "exp: "); System.err.println(printSEx(exp));
         }
     }
     private void dbgEvalDone(int stack, int level) {
@@ -495,7 +516,7 @@ public class LambdaJ {
         public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
 
         @Override
-        public String toString() { return printObj(this, true); }
+        public String toString() { return printSEx(this); }
 
         @Override
         public Iterator<Object> iterator() { return new ConsCellIterator(this); }
@@ -535,7 +556,7 @@ public class LambdaJ {
     private static ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null) return null;
         if (maybeList == null) return null;
-        if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printObj(maybeList, true));
+        if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printSEx(maybeList));
         ConsCell env = (ConsCell) maybeList;
         for ( ; env != null; env = (ConsCell)cdr(env)) {
             if (atom == car(car(env))) return (ConsCell) car(env);
@@ -546,7 +567,7 @@ public class LambdaJ {
 
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return null;
-        if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printObj(maybeList, true));
+        if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printSEx(maybeList));
         ConsCell env = (ConsCell) maybeList;
         List<Object> ret = new ArrayList<>();
         for ( ; env != null && maybeList != cdr(env); env = (ConsCell)cdr(env))
@@ -557,19 +578,20 @@ public class LambdaJ {
     private Object applyPrimitive(Builtin primfn, ConsCell args, int stack) {
         if (trace >= TRC_PRIM) {
             char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            System.err.println(pfx + "(<primitive> " + printObj(args, true) + ')');
+            System.err.println(pfx + "(<primitive> " + printSEx(args) + ')');
         }
         return primfn.apply(args);
     }
 
-    private static String printObj(Object ob, boolean head_of_list) {
+    /** transform {@code ob} into an S-expression */
+    private static String printSEx(Object ob) {
         if (ob == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
-        _printObj(sb, ob, ob, head_of_list);
+        _printSEx(sb, ob, ob, true);
         return sb.toString();
     }
 
-    private static void _printObj(StringBuffer sb, Object list, Object current, boolean head_of_list) {
+    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean head_of_list) {
         while (true) {
             if (current == null) {
                 sb.append("nil"); return;
@@ -578,7 +600,7 @@ public class LambdaJ {
                 if (car(current) == list) {
                     sb.append(head_of_list ? "#<this cons>" : "#<this list>");
                 } else {
-                    _printObj(sb, car(current), car(current), true);
+                    _printSEx(sb, car(current), car(current), true);
                 }
                 if (cdr(current) != null) {
                     if (listp(cdr(current))) {
@@ -590,12 +612,12 @@ public class LambdaJ {
                         }
                     } else if (head_of_list) {
                         sb.append(" . ");
-                        _printObj(sb, list, cdr(current), false);
+                        _printSEx(sb, list, cdr(current), false);
                         sb.append(')');
                         return;
                     } else {
                         sb.append(' ');
-                        _printObj(sb, list, cdr(current), false); // must be an atom
+                        _printSEx(sb, list, cdr(current), false); // must be an atom
                         sb.append(')');
                         return;
                     }
@@ -604,6 +626,10 @@ public class LambdaJ {
                     return;
                 }
             } else if (symbolp(current)) {
+                if (containsSExSyntax(current.toString())) {
+                    sb.append('|').append(current.toString()).append('|');
+                    return;
+                }
                 sb.append(current.toString()); return;
             } else if (isPrim(current)) {
                 sb.append("#<primitive>"); return;
@@ -633,12 +659,12 @@ public class LambdaJ {
     private Object boolResult(boolean b) { return b ? expTrue() : null; }
 
     private static void noArgs(String func, ConsCell a) {
-        if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printObj(a, true));
+        if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printSEx(a));
     }
 
     private static void oneArg(String func, Object a) {
         if (a == null) throw new LambdaJError(func + ": expected one argument but no argument was given");
-        if (cdr(a) != null) throw new LambdaJError(func + ": expected one argument but got extra arg(s) " + printObj(cdr(a), true));
+        if (cdr(a) != null) throw new LambdaJError(func + ": expected one argument but got extra arg(s) " + printSEx(cdr(a)));
     }
 
     private static void oneOrMoreArgs(String func, ConsCell a) {
@@ -652,7 +678,7 @@ public class LambdaJ {
     private static void twoArgs(String func, Object a, Object exp) {
         if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given" + errorExp(exp));
         if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given" + errorExp(exp));
-        if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printObj(cdr(cdr(a)), true) + errorExp(exp));
+        if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printSEx(cdr(cdr(a))) + errorExp(exp));
     }
 
     /** at least {@code min} args */
@@ -664,20 +690,20 @@ public class LambdaJ {
     private static void nArgs(String func, Object a, int min, int max, Object exp) {
         int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got only " + actualLength + errorExp(exp));
-        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printObj(nthcdr(max, a), true) + errorExp(exp));
+        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printSEx(nthcdr(max, a)) + errorExp(exp));
     }
 
     private static void onePair(String func, ConsCell a) {
         if (a == null) throw new LambdaJError(func + ": expected one Pair argument but no argument was given");
-        if (!listp(car(a))) throw new LambdaJError(func + ": expected one Pair argument but got " + printObj(a, true));
-        if (cdr(a) != null) throw new LambdaJError(func + ": expected one Pair argument but got extra arg(s) " + printObj(cdr(a), true));
+        if (!listp(car(a))) throw new LambdaJError(func + ": expected one Pair argument but got " + printSEx(a));
+        if (cdr(a) != null) throw new LambdaJError(func + ": expected one Pair argument but got extra arg(s) " + printSEx(cdr(a)));
     }
 
     /** arguments if any must be only numbers */
     private static void numbers(String func, ConsCell a) {
         if (a == null) return;
         for (; a != null; a = (ConsCell) cdr(a))
-            if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printObj(a, true));
+            if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printSEx(a));
     }
 
     private static void oneOrMoreNumbers(String func, ConsCell a) {
@@ -687,7 +713,7 @@ public class LambdaJ {
 
     private static String errorExp(Object exp) {
         if (exp == null) return "";
-        return "\nerror occurred in expression " + printObj(exp, true);
+        return "\nerror occurred in expression " + printSEx(exp);
     }
 
     /** generate a comparison operator */
@@ -721,6 +747,9 @@ public class LambdaJ {
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link Parser} {@code program} on the fly */
+
+    private Parser lispStdin;
+
     private ConsCell environment(Parser program, ConsCell prev) {
 
         ConsCell env = prev;
@@ -747,16 +776,17 @@ public class LambdaJ {
                   env);
 
         if (HAVE_IO) {
-            final Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    return inputData.readObj(); };
-            final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   out.print(printObj(car(a), true)); return expTrue(); };
+            final Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    return lispStdin.readObj(); };
+            final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   program.printObj(car(a)); return expTrue(); };
 
             final Builtin fwriteln = (ConsCell a) -> {
                 nArgs("writeln", a, 0, 1, null);
                 if (a == null) {
-                    out.print(System.lineSeparator());
+                    program.printEol();
                     return expTrue();
                 }
-                out.print(printObj(car(a), true) + System.lineSeparator());
+                program.printObj(car(a));
+                program.printEol();
                 return expTrue();
             };
 
@@ -799,14 +829,14 @@ public class LambdaJ {
             final Builtin fformat =   a -> {
                 nArgs("string-format", a, 2, null);
                 if (!(car(a) instanceof LambdaJString))
-                    throw new LambdaJError("string-format: expected first argument to be a String but got " + printObj(cdr(a), true));
+                    throw new LambdaJError("string-format: expected first argument to be a String but got " + printSEx(cdr(a)));
                 String s = ((LambdaJString)car(a)).value;
                 try {
                     return String.format(s, listToArray(cdr(a)));
                 }
                 catch (IllegalFormatException e) {
                     throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
-                    + "\nerror ocurred processing the argument(s) " + printObj(a, true));
+                    + "\nerror ocurred processing the argument(s) " + printSEx(a));
                 }
             };
 
@@ -859,9 +889,8 @@ public class LambdaJ {
 
     /// build environment, read a single S-expression, invoke eval() and return result
     public Object interpretExpression(LispReadSupplier in, LispWriteConsumer out) {
-        program = new LispParser(in);
-        inputData = program;
-        this.out = out;
+        program = new LispParser(in, out);
+        lispStdin = program;
         final ConsCell env = environment(program, null);
         final Object exp = program.readObj();
         final Object result = eval(exp, env, 0, 0);
@@ -873,9 +902,8 @@ public class LambdaJ {
 
     /// build environment, read S-expression and invoke eval() until EOF, return result of last expression
     public Object interpretExpressions(LispReadSupplier in, LispWriteConsumer out) {
-        program = new LispParser(in);
-        inputData = program;
-        this.out = out;
+        program = new LispParser(in, out);
+        lispStdin = program;
         final ConsCell env = environment(program, null);
         Object exp = program.readObj();
         while (true) {
@@ -942,7 +970,7 @@ public class LambdaJ {
         }
 
         try {
-            final String result = printObj(interpreter.interpretExpression(System.in::read, System.out::print), true);
+            final String result = printSEx(interpreter.interpretExpression(System.in::read, System.out::print));
             if (istty) {
                 System.out.println();
                 System.out.println("result: " + result);
@@ -981,7 +1009,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.52 2020/10/09 17:59:27 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.53 2020/10/10 10:12:41 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
