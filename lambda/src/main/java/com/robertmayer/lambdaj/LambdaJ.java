@@ -90,7 +90,7 @@ public class LambdaJ {
     public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
     public int trace = TRC_NONE;
 
-    private Tracer tracer;
+    private Tracer tracer = System.err::println;
 
     // see https://news.ycombinator.com/item?id=8714988 for how to implement cons, car, cdr, true, false, if in Lambda
     // as well as how to implement numbers using lists
@@ -892,7 +892,6 @@ public class LambdaJ {
 
     /// build environment, read a single S-expression, invoke eval() and return result
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        tracer = System.err::println;
         SExpressionParserWriter parser = new SExpressionParserWriter(in, out);
         program = parser;
         final ConsCell env = environment(program, null, parser, parser);
@@ -906,7 +905,6 @@ public class LambdaJ {
 
     /// build environment, read S-expression and invoke eval() until EOF, return result of last expression
     public Object interpretExpressions(ReadSupplier in, WriteConsumer out) {
-        tracer = System.err::println;
         SExpressionParserWriter parser = new SExpressionParserWriter(in, out);
         program = parser;
         final ConsCell env = environment(program, null, parser, parser);
@@ -1014,7 +1012,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.55 2020/10/10 13:17:10 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.56 2020/10/10 14:12:25 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
