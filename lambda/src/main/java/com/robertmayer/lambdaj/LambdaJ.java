@@ -119,7 +119,8 @@ public class LambdaJ {
         private boolean init;
 
         private int lineNo = 1, charNo;
-        private boolean escape;
+        private boolean escape; // is the lookahead escaped
+        private boolean tokEscape;
         private int look;
         private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
@@ -127,12 +128,14 @@ public class LambdaJ {
         public LispParser(LispReadSupplier in) { this.in = in; }
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
-        private boolean isSyntax(int x) { return !escape && (x == '(' || x == ')' || x == '\''); }
-        private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
+        private boolean isDQuote(int x) { return !escape && x == '"'; }
+
+        private boolean isSyntax(int x) { return !escape && (x == '(' || x == ')' || x == '\''); }
 
         private int getchar() {
             try {
+                tokEscape = escape;
                 escape = false;
                 int c = readchar();
                 if (c == '\\') {
@@ -194,7 +197,7 @@ public class LambdaJ {
                 tok = tokenToString(token);
             }
             if (trace >= TRC_LEX)
-                System.err.println("*** token  |" + String.valueOf(tok) + '|');
+                System.err.println("*** scan  token  |" + String.valueOf(tok) + '|');
         }
 
         private boolean isNumber() {
@@ -246,30 +249,39 @@ public class LambdaJ {
 
         private Object _readObj() {
             if (tok == null) {
-                if (trace >= TRC_PARSE) System.err.println("*** list   ()");
+                if (trace >= TRC_PARSE) System.err.println("*** parse list   ()");
                 return null;
             }
-            if ("(".equals(tok)) {
+            if (!tokEscape && "(".equals(tok)) {
                 Object list = readList();
-                if (trace >= TRC_PARSE) System.err.println("*** list   " + printObj(list, true));
+                if (!tokEscape && ".".equals(tok)) {
+                    Object cdr = readList();
+                    Object cons = cons(car(list), car(cdr));
+                    if (trace >= TRC_PARSE) System.err.println("*** parse cons   " + printObj(cons, true));
+                    return cons;
+                }
+                if (trace >= TRC_PARSE) System.err.println("*** parse list   " + printObj(list, true));
                 return list;
             }
-            if (HAVE_QUOTE && "'".equals(tok)) {
+            if (!tokEscape && HAVE_QUOTE && "'".equals(tok)) {
                 readToken();
                 return cons(quote, cons(_readObj(), null));
             }
             if (symbolp(tok)) {
-                if (trace >= TRC_TOK) System.err.println("*** symbol " + (String)tok);
+                if (trace >= TRC_TOK) System.err.println("*** parse symbol " + (String)tok);
                 return intern((String)tok);
             }
-            if (trace >= TRC_TOK) System.err.println("*** value  " + tok.toString());
+            if (trace >= TRC_TOK) System.err.println("*** parse value  " + tok.toString());
             return tok;
         }
 
         private Object readList() {
             readToken();
             if (tok == null) throw new LambdaJError("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
-            if (")".equals(tok)) return null;
+            if (!tokEscape) {
+                if (")".equals(tok)) return null;
+                if (".".equals(tok)) return null;
+            }
             Object tmp = _readObj();
             if (symbolp(tmp)) return cons(tmp, readList());
             else return cons(tmp, readList());
@@ -969,7 +981,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.51 2020/10/09 17:57:18 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.52 2020/10/09 17:59:27 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

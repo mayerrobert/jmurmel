@@ -9,19 +9,25 @@ import static com.robertmayer.lambdaj.LambdaJ.*;
 public class PrintObjTest {
 
     @Test
-    public void normalNull() {
+    public void listContainsNil() {
         ConsCell l = new ConsCell(null, null);
         assertEquals("(nil)", l.toString());
     }
 
     @Test
-    public void normalListNils() {
+    public void listContainsThreeNils() {
         ConsCell l = new ConsCell(null, new ConsCell(null, new ConsCell(null, null)));
         assertEquals("(nil nil nil)", l.toString());
     }
 
     @Test
-    public void normalList() {
+    public void listContainsTwoSymbols() {
+        ConsCell l = new ConsCell("a", new ConsCell("b", null));
+        assertEquals("(a b)", l.toString());
+    }
+
+    @Test
+    public void listContainsThreeSymbols() {
         ConsCell l = new ConsCell("a", new ConsCell("b", new ConsCell("c", null)));
         assertEquals("(a b c)", l.toString());
     }

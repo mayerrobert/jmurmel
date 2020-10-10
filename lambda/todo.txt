@@ -22,14 +22,33 @@ darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als jav
 
 
 
+printObj sollte symbols mit syntax als |xxx| printen. Was syntax characters sind, weiss nur der Parser
+-> printObj als Methode von Parser, naechsten punkt umsetzen!
+
+Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
+waer ggf. besser fuer custom builtins
+-> builtins mit env koennten late binding machen
+-> builtins muessen printObj des parsers verwenden
+-> environment() koennte static sein
+
+Alles falsch: Syntax characters bestimmt der ObjectWriter.
+Builtins sollten Symboltabelle, ObjectReader in, ObjectWriter out, ggf. Tracer, ggf. Environment bekommen
+
+Builtins sollten ggf. expression mitbekommen fuer ausgabe von fehlermeldungen
+
+
+
 getrennter Reader fuer read
 -> Object interpret(Supplier lispSource, Supplier lispStdin, Consumer lispStdout, Supplier<ConsCell> customEnvironment)
 -> oder LambdaJ in Builder Pattern umbauen:
 
 interface ObjectReader { Object readObj(); }
-interface Parser extends ObjectReader { String intern(); }
+interface SymbolTable { String intern(); }
+interface Parser extends ObjectReader, SymbolTable
 
 interface ObjectWriter { String printObj(Object o, boolean headOfList, boolean eol); }
+
+class LispParser implements Parser, ObjectWriter
 
 interface Tracer { void println(String); }
 
@@ -43,7 +62,7 @@ obige methoden liefern ein Interface "LambdaJBuilder" OHNE interpret aber mit bu
 build()               // bastelt alles zusammen und liefert ein Interface "LambdaJ" mit interpret(), withStdin(), withStdout()
 interpret(...)        // entweder einen char supplier oder einen Parser, oder ein String?!
 
-readObj umbauen dass (a . b) eingelesen werden kann?
+
 
 performance: benchmarken
 -> "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
@@ -68,14 +87,6 @@ Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach Cons
 (int-char I:integer): character expr ; Converts integer to character.
 
 The read syntax for characters objects is simple: #\ followed by the desired character. 
-
-
-
-Builtins sollten ggf. expression mitbekommen fuer ausgabe von fehlermeldungen
-
-Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
-waer ggf. besser fuer custom builtins
--> environment() koennte static sein
 
 
 
@@ -328,3 +339,5 @@ fuer InputStream in:
     () -> in::read
 oder fuer StringReader s:
     () ->  s::read
+
+readObj umbauen dass (a . b) eingelesen werden kann?

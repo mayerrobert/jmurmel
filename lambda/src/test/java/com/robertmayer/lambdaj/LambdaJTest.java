@@ -272,6 +272,16 @@ public class LambdaJTest {
         return s.replaceAll("\\\\n", "\n");
     }
 
+    /**
+     * <p>Eval the expression(s) {@code prog} and check it's result and output.
+     *
+     * <p>If {@code fileName} ends with ".lisp" then a list of expressions will be eval'd.
+     *
+     * @param fileName          name used for messages
+     * @param prog              the program to eval
+     * @param expectedResult    expected expression result, "nil" for null result
+     * @param expectedOutput    expected contents of stdout, null or "" for no output
+     */
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
         StringBuffer out = new StringBuffer();
 
