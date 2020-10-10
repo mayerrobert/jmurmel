@@ -308,13 +308,22 @@ public class LambdaJ {
         }
     }
 
-    private Parser program;
 
 
-
-    private Supplier<String> sQuote = () -> { Supplier<String> sym = () -> program.intern("quote"); return (sQuote = sym).get(); };
 
     /// eval - interpreter
+    private Parser program;
+
+    // look up the symbols for special forms only once on first use.
+    // the suppliers below will do a lookup on first use and then replace themselves by another supplier
+    // that simply returns the cached value
+    private Supplier<String> sApply  = () -> { Supplier<String> sym = () -> program.intern("apply");  return (sApply  = sym).get(); };
+    private Supplier<String> sCond   = () -> { Supplier<String> sym = () -> program.intern("cond");   return (sCond   = sym).get(); };
+    private Supplier<String> sIf     = () -> { Supplier<String> sym = () -> program.intern("if");     return (sIf     = sym).get(); };
+    private Supplier<String> sLabels = () -> { Supplier<String> sym = () -> program.intern("labels"); return (sLabels = sym).get(); };
+    private Supplier<String> sLambda = () -> { Supplier<String> sym = () -> program.intern("lambda"); return (sLambda = sym).get(); };
+    private Supplier<String> sQuote  = () -> { Supplier<String> sym = () -> program.intern("quote");  return (sQuote  = sym).get(); };
+
     private Object eval(Object exp, ConsCell env, int stack, int level) {
         dbgEvalStart(exp, env, stack, level);
         try {
@@ -336,7 +345,7 @@ public class LambdaJ {
                         oneArg("quote", cdr(exp));
                         return car(cdr(exp));
 
-                    } else if (HAVE_XTRA && car(exp) == program.intern("if")) {
+                    } else if (HAVE_XTRA && car(exp) == sIf.get()) {
                         nArgs("if", cdr(exp), 2, 3, exp);
                         if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
                             exp = car(cdr(cdr(exp))); continue;
@@ -345,20 +354,20 @@ public class LambdaJ {
                         } else
                             return null;
 
-                    } else if (car(exp) == program.intern("lambda")) {
+                    } else if (car(exp) == sLambda.get()) {
                         nArgs("lambda", cdr(exp), 2, exp);
                         return exp;
 
-                    } else if (HAVE_LABELS && car(exp) == program.intern("labels")) { // labels bindings body -> object
+                    } else if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
                         nArgs("labels", cdr(exp), 2, exp);
                         ConsCell bindings = (ConsCell) car(cdr(exp));
                         ConsCell body =     (ConsCell) cdr(cdr(exp));
                         return evlabels(bindings, body, env, stack, level);
 
-                    } else if (HAVE_COND && car(exp) == program.intern("cond")) {
+                    } else if (HAVE_COND && car(exp) == sCond.get()) {
                         return evcon((ConsCell) cdr(exp), env, stack, level);
 
-                    } else if (HAVE_APPLY && car(exp) == program.intern("apply")) { // apply function to list
+                    } else if (HAVE_APPLY && car(exp) == sApply.get()) { // apply function to list
                         twoArgs("apply", cdr(exp), exp);
                         final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
                         final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, stack, level));
@@ -379,7 +388,7 @@ public class LambdaJ {
                         else throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
                     }
 
-                } else if (consp(car(exp)) && car(car(exp)) == program.intern("lambda")) {
+                } else if (consp(car(exp)) && car(car(exp)) == sLambda.get()) {
                     /* should be a lambda, bind args as "names" into env and eval body-list */
                     final Object lambda = cdr(car(exp));
                     nArgs("lambda", lambda, 2, exp);
@@ -453,7 +462,7 @@ public class LambdaJ {
             final ConsCell currentFunc = (ConsCell)car(bindings);
             final String currentName = (String)car(currentFunc);
             final ConsCell currentBody = (ConsCell)cdr(currentFunc);
-            final ConsCell lambda = cons(cons(program.intern("lambda"), currentBody), null);
+            final ConsCell lambda = cons(cons(sLambda.get(), currentBody), null);
             extenv = cons(cons(program.intern(currentName), lambda), extenv);
         }
 
@@ -560,7 +569,7 @@ public class LambdaJ {
         ConsCell env = (ConsCell) maybeList;
         for ( ; env != null; env = (ConsCell)cdr(env)) {
             if (atom == car(car(env))) return (ConsCell) car(env);
-            if (maybeList == cdr(env)) return null; // circular list, wne didn't find the symbol
+            if (maybeList == cdr(env)) return null; // circular list, we didn't find the symbol
         }
         return null;
     }
@@ -649,7 +658,7 @@ public class LambdaJ {
     private Object _expTrue;
     private Object expTrue() {
         if (_expTrue == null) {
-            if (HAVE_T) _expTrue = program.intern("t");
+            if (HAVE_T) _expTrue = program.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
             else if (HAVE_QUOTE) _expTrue = cons(program.intern("quote"), cons(program.intern("t"), null));
             else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
         }
@@ -1009,7 +1018,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.53 2020/10/10 10:12:41 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.54 2020/10/10 12:46:56 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

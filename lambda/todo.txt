@@ -76,6 +76,8 @@ interpret(...)        // entweder einen char supplier oder einen Parser, oder ei
 
 
 performance: benchmarken
+warum ist das environment eine liste von listen statt eine liste von cons cells
+
 -> "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
    zumindest die Symbole wie lambda, labels,... nicht immer wieder internen, sondern deferred supplier
 -> der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
