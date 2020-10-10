@@ -898,7 +898,11 @@ public class LambdaJ {
 
 
 
-    /** build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result */
+    /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
+     *
+     *  <p>After the expression was read from {@code in}, the primitive function {@code read} (if used)
+     *  will read S-expressions from {@code in} as well,
+     *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         SExpressionParser sExpParser = new SExpressionParser(in);
         setSymtab(sExpParser);
@@ -912,13 +916,16 @@ public class LambdaJ {
         return result;
     }
 
-    /** build environment, repeatedly read an S-expression from {@code in} and invoke {@code eval()} until EOF,
-     *  return result of last expression */
-    public Object interpretExpressions(ReadSupplier in, WriteConsumer out) {
-        SExpressionParser sExpParser = new SExpressionParser(in);
+    /** <p>Build environment, repeatedly read an S-expression from {@code program} and invoke {@code eval()} until EOF,
+     *  return result of last expression.
+     *
+     *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}. */
+    public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
+        SExpressionParser sExpParser = new SExpressionParser(program);
         setSymtab(sExpParser);
-        SExpressionWriter sExpWriter = new SExpressionWriter(out);
-        final ConsCell env = environment(symtab, null, sExpParser, sExpWriter);
+        ObjectReader sExpReader = new SExpressionParser(in);
+        ObjectWriter sExpWriter = new SExpressionWriter(out);
+        final ConsCell env = environment(symtab, null, sExpReader, sExpWriter);
         Object exp = sExpParser.readObj();
         while (true) {
             final Object result = eval(exp, env, 0, 0);
@@ -1024,7 +1031,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.57 2020/10/10 14:23:00 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.58 2020/10/10 17:13:23 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

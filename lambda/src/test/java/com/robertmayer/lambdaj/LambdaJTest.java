@@ -295,7 +295,7 @@ public class LambdaJTest {
 
         String actualResult;
         if (fileName.endsWith(".lisp")) {
-            actualResult = lispObjectToString(interpreter.interpretExpressions(new StringReader(prog)::read, out::append));
+            actualResult = lispObjectToString(interpreter.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
         } else {
             actualResult = lispObjectToString(interpreter.interpretExpression(new StringReader(prog)::read, out::append));
         }
