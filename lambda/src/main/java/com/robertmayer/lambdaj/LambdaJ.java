@@ -154,12 +154,19 @@ public class LambdaJ {
         return false;
     }
 
+    public class SExpressionWriter implements ObjectWriter {
+        private WriteConsumer out;  // printObj() and printEol() will write to this
+
+        public SExpressionWriter(WriteConsumer out) { this.out = out; }
+        @Override public void printObj(Object ob) { out.print(printSEx(ob)); }
+        @Override public void printEol() { out.print(System.lineSeparator()); }
+    }
+
     // todo zum nur-lesen sollte zumindest symtab/intern, ggf. auch single quote handling mit einem flag im construktor abgedreht werden, oder die gelesenen objekte muessen halt strings in double quotes enthalten
     /** This class can read, parse (while generating symbol table entries) and write S-Expressions */
-    public class SExpressionParserWriter implements Parser, ObjectWriter {
+    public class SExpressionParser implements Parser {
         /// scanner
         private ReadSupplier in;    // readObj() will read from this
-        private WriteConsumer out;  // printObj() and printEol() will write to this
         private boolean init;
 
         private int lineNo = 1, charNo;
@@ -169,7 +176,7 @@ public class LambdaJ {
         private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
-        public SExpressionParserWriter(ReadSupplier in, WriteConsumer out) { this.in = in; this.out = out; }
+        public SExpressionParser(ReadSupplier in) { this.in = in; }
 
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
@@ -330,33 +337,34 @@ public class LambdaJ {
             if (symbolp(tmp)) return cons(tmp, readList());
             else return cons(tmp, readList());
         }
-
-        @Override
-        public void printObj(Object ob) {
-            out.print(printSEx(ob));
-        }
-
-        @Override
-        public void printEol() {
-            out.print(System.lineSeparator());
-        }
     }
 
 
 
 
     /// eval - interpreter
-    private Parser program;
+    private SymbolTable symtab;
 
+    private void setSymtab(SymbolTable symtab) {
+        this.symtab = symtab;
+
+        // (re-)set the suppliers so that they will (re-)read the new symtab
+        sApply  = () -> { Supplier<String> sym = () -> symtab.intern("apply");  return (sApply  = sym).get(); };
+        sCond   = () -> { Supplier<String> sym = () -> symtab.intern("cond");   return (sCond   = sym).get(); };
+        sIf     = () -> { Supplier<String> sym = () -> symtab.intern("if");     return (sIf     = sym).get(); };
+        sLabels = () -> { Supplier<String> sym = () -> symtab.intern("labels"); return (sLabels = sym).get(); };
+        sLambda = () -> { Supplier<String> sym = () -> symtab.intern("lambda"); return (sLambda = sym).get(); };
+        sQuote  = () -> { Supplier<String> sym = () -> symtab.intern("quote");  return (sQuote  = sym).get(); };
+    }
     // look up the symbols for special forms only once on first use.
     // the suppliers below will do a lookup on first use and then replace themselves by another supplier
     // that simply returns the cached value
-    private Supplier<String> sApply  = () -> { Supplier<String> sym = () -> program.intern("apply");  return (sApply  = sym).get(); };
-    private Supplier<String> sCond   = () -> { Supplier<String> sym = () -> program.intern("cond");   return (sCond   = sym).get(); };
-    private Supplier<String> sIf     = () -> { Supplier<String> sym = () -> program.intern("if");     return (sIf     = sym).get(); };
-    private Supplier<String> sLabels = () -> { Supplier<String> sym = () -> program.intern("labels"); return (sLabels = sym).get(); };
-    private Supplier<String> sLambda = () -> { Supplier<String> sym = () -> program.intern("lambda"); return (sLambda = sym).get(); };
-    private Supplier<String> sQuote  = () -> { Supplier<String> sym = () -> program.intern("quote");  return (sQuote  = sym).get(); };
+    private Supplier<String> sApply;
+    private Supplier<String> sCond;
+    private Supplier<String> sIf;
+    private Supplier<String> sLabels;
+    private Supplier<String> sLambda;
+    private Supplier<String> sQuote;
 
     private Object eval(Object exp, ConsCell env, int stack, int level) {
         dbgEvalStart(exp, env, stack, level);
@@ -497,7 +505,7 @@ public class LambdaJ {
             final String currentName = (String)car(currentFunc);
             final ConsCell currentBody = (ConsCell)cdr(currentFunc);
             final ConsCell lambda = cons(cons(sLambda.get(), currentBody), null);
-            extenv = cons(cons(program.intern(currentName), lambda), extenv);
+            extenv = cons(cons(symtab.intern(currentName), lambda), extenv);
         }
 
         Object result = null;
@@ -654,8 +662,8 @@ public class LambdaJ {
     private Object _expTrue;
     private Object expTrue() {
         if (_expTrue == null) {
-            if (HAVE_T) _expTrue = program.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-            else if (HAVE_QUOTE) _expTrue = cons(program.intern("quote"), cons(program.intern("t"), null));
+            if (HAVE_T) _expTrue = symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+            else if (HAVE_QUOTE) _expTrue = cons(symtab.intern("quote"), cons(symtab.intern("t"), null));
             else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
         }
         return _expTrue;
@@ -890,12 +898,13 @@ public class LambdaJ {
 
 
 
-    /// build environment, read a single S-expression, invoke eval() and return result
+    /** build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        SExpressionParserWriter parser = new SExpressionParserWriter(in, out);
-        program = parser;
-        final ConsCell env = environment(program, null, parser, parser);
-        final Object exp = program.readObj();
+        SExpressionParser sExpParser = new SExpressionParser(in);
+        setSymtab(sExpParser);
+        SExpressionWriter sExpWriter = new SExpressionWriter(out);
+        final ConsCell env = environment(symtab, null, sExpParser, sExpWriter);
+        final Object exp = sExpParser.readObj();
         final Object result = eval(exp, env, 0, 0);
         if (trace >= TRC_EVAL) {
             tracer.println("*** max eval depth: " + maxEvalStack + " ***");
@@ -903,25 +912,26 @@ public class LambdaJ {
         return result;
     }
 
-    /// build environment, read S-expression and invoke eval() until EOF, return result of last expression
+    /** build environment, repeatedly read an S-expression from {@code in} and invoke {@code eval()} until EOF,
+     *  return result of last expression */
     public Object interpretExpressions(ReadSupplier in, WriteConsumer out) {
-        SExpressionParserWriter parser = new SExpressionParserWriter(in, out);
-        program = parser;
-        final ConsCell env = environment(program, null, parser, parser);
-        Object exp = program.readObj();
+        SExpressionParser sExpParser = new SExpressionParser(in);
+        setSymtab(sExpParser);
+        SExpressionWriter sExpWriter = new SExpressionWriter(out);
+        final ConsCell env = environment(symtab, null, sExpParser, sExpWriter);
+        Object exp = sExpParser.readObj();
         while (true) {
             final Object result = eval(exp, env, 0, 0);
             if (trace >= TRC_EVAL) {
                 tracer.println("*** max eval depth: " + maxEvalStack + " ***");
             }
-            exp = program.readObj();
+            exp = sExpParser.readObj();
             if (exp == null) return result;
         }
     }
 
+    /** main() for interactive commandline use */
     public static void main(String args[]) {
-        final LambdaJ interpreter = new LambdaJ();
-
         if (hasFlag("--version", args)) {
             showVersion();
             return;
@@ -933,6 +943,8 @@ public class LambdaJ {
             showUsage();
             return;
         }
+
+        final LambdaJ interpreter = new LambdaJ();
 
         if (hasFlag("--trace", args))     interpreter.trace = TRC_LEX;
 
@@ -1012,7 +1024,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.56 2020/10/10 14:12:25 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.57 2020/10/10 14:23:00 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
