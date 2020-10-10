@@ -23,12 +23,32 @@ darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als jav
 
 
 getrennter Reader fuer read
+-> Object interpret(Supplier lispSource, Supplier lispStdin, Consumer lispStdout, Supplier<ConsCell> customEnvironment)
+-> oder LambdaJ in Builder Pattern umbauen:
+
+interface ObjectReader { Object readObj(); }
+interface Parser extends ObjectReader { String intern(); }
+
+interface ObjectWriter { String printObj(Object o, boolean headOfList, boolean eol); }
+
+interface Tracer { void println(String); }
+
+withStdin(...)        // entweder einen char supplier oder einen ObjectReader
+withStdout(...)       // entweder einen String consumer oder einen ObjectWriter
+withCustomEnv(...)    // Parameter ist ein Supplier<ConsCell>, der erzeugt eine Liste mit (symbol . builtin)
+                      // und wird in der Init Phase aufgerufen
+withTrace(Tracer)     // z.B. System.err::println
+withTty()             // Shortcut/ convenience: benutzt System in/out/err, kein Custom Env
+obige methoden liefern ein Interface "LambdaJBuilder" OHNE interpret aber mit build()
+build()               // bastelt alles zusammen und liefert ein Interface "LambdaJ" mit interpret(), withStdin(), withStdout()
+interpret(...)        // entweder einen char supplier oder einen Parser, oder ein String?!
 
 readObj umbauen dass (a . b) eingelesen werden kann?
 
 performance: benchmarken
-"intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
-der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
+-> "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
+   zumindest die Symbole wie lambda, labels,... nicht immer wieder internen, sondern deferred supplier
+-> der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
 das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcall wird das environment erweitert,
 dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall erzeugt eine neue Map die
 einen link zum vorgaenger hat 
