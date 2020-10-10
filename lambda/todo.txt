@@ -1,37 +1,8 @@
-## Customization
-
-LambdaJ comes with:
-* a parser that reads S-expressions composed of lists, symbols and Doubles.
-* Math support for Doubles
-
-You could substitute the default parsers for reading data and/ or programs by your own parsers that reads e.g. XML or JSON
-instead of S-expressions, and/ or support additional data types.
-
-You could extend LambdaJ's environment with your own builtin functions and/ or data types e.g. for supporting BigDecimals
-or reading/ writing from/ to a JDBC Datasource.
-
-Datentypen kann man im Parser, in Builtins, oder beidem unterstuetzen. LambdaJ sieht nur Atoms.
-Wenns nur im Parser supported ist, kann man die datentypen nur in lists reinstecken und als result zurueckgeben.
-
-Wenns nur in builtins unterstuetzt ist, kann der source code die datentypen nicht enthalten, aber builtins koennten sie erzeugen und damit rechnen, z.B. (+ (big-decimal 1.0) (big-decimal 2.0))
-
-Beispiel: function "read-csv" die liest CSV und liefert eine List of Lists,
-darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als java.time.*
-
-
-
-
-
-builder pattern:
-withStdin(...)        // entweder einen char supplier oder einen ObjectReader
-withStdout(...)       // entweder einen String consumer oder einen ObjectWriter
-withCustomEnv(...)    // Parameter ist ein Supplier<ConsCell>, der erzeugt eine Liste mit (symbol . builtin)
-                      // und wird in der Init Phase aufgerufen
-withTrace(Tracer)     // z.B. System.err::println
-withTty()             // Shortcut/ convenience: benutzt System in/out/err, kein Custom Env
-obige methoden liefern ein Interface "LambdaJBuilder" OHNE interpret aber mit build()
-build()               // bastelt alles zusammen und liefert ein Interface "LambdaJ" mit interpret(), withStdin(), withStdout()
-interpret(...)        // entweder einen char supplier oder einen Parser, oder ein String?!
+Doku: ein Custom Parser koennte statt parsen eine Liste liefern (koennte z.B. hardcodiert
+mit new ConsCell zusammengestoppelt werden) und intern() könnte mittels String.intern() umgesetzt werden.
+Anmerkung: Symbols sind Strings, Stringliterale in der o.a. Liste sind bereits mit String.intern() bearbeitet,
+  dazu passt die Umsetzung der Parsermethode intern() mittels String.intern()
+Anmerkung 2: Lisp Strings werden als LambdaJString repraesentiert
 
 
 
@@ -144,21 +115,6 @@ flag ob die identifier auf UC umgestellt werden sollen
 lisp write liefert als ergebnis den parameter
 -> LambdaJ liefert (quote t)
 
-eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
-zweite map fuer FFI funktionen s.u.?
-
-
-
-FFI: eine special form "extlabels". funktioniert aehnlich wie labels,
-aber statt funktionsdefinitionen gibt man einen Klassennamen an (und vielleicht ein zusaetzliches optionales namenspraefix,
-damit man im falle von gleichnamige methoden in zwei klassen "namespaces" zum trennen verwenden kann), und
-von dieser klasse werden alle public methoden mit der Signatur UnaryOperator<Pair> ins Environment gesteckt.
-Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode die liefert eine Map Funktionsname->UnaryOperator<Pair>
-
-Oder: LambdaJ bekommt eine Methode void registerBuiltin(String funcName, Builtin javaFunc), die pickt eine neue
-Funktion ans Environment vorne dran.
-Oder: zus. Parameter ConsCell extEnv, damit kann man eine Liste mit zusaetzlichen Builtins mitgeben
-
 
 
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
@@ -173,7 +129,31 @@ lexikalische closures
 
 
 
+
+
+Doch (noch) nicht:
+==========================================
+
+builder pattern:
+withStdin(...)        // entweder einen char supplier oder einen ObjectReader
+withStdout(...)       // entweder einen String consumer oder einen ObjectWriter
+withCustomEnv(...)    // Parameter ist ein Supplier<ConsCell>, der erzeugt eine Liste mit (symbol . builtin)
+                      // und wird in der Init Phase aufgerufen
+withTrace(Tracer)     // z.B. System.err::println
+withTty()             // Shortcut/ convenience: benutzt System in/out/err, kein Custom Env
+obige methoden liefern ein Interface "LambdaJBuilder" OHNE interpret aber mit build()
+build()               // bastelt alles zusammen und liefert ein Interface "LambdaJ" mit interpret(), withStdin(), withStdout()
+interpret(...)        // entweder einen char supplier oder einen Parser, oder ein String?!
+
+eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
+zweite map fuer FFI funktionen s.u.?
+
+
+
+
+
 Erledigt:
+==========================================
 
 welches ergebnis liefert lambda mit einer liste als body?
 -> sollte ergebnis der letzten form sein
@@ -350,3 +330,13 @@ interface ObjectWriter { String printObj(Object o, boolean headOfList, boolean e
 class LispParser implements Parser, ObjectWriter
 
 interface Tracer { void println(String); }
+
+FFI: eine special form "extlabels". funktioniert aehnlich wie labels,
+aber statt funktionsdefinitionen gibt man einen Klassennamen an (und vielleicht ein zusaetzliches optionales namenspraefix,
+damit man im falle von gleichnamige methoden in zwei klassen "namespaces" zum trennen verwenden kann), und
+von dieser klasse werden alle public methoden mit der Signatur UnaryOperator<Pair> ins Environment gesteckt.
+Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode die liefert eine Map Funktionsname->UnaryOperator<Pair>
+
+Oder: LambdaJ bekommt eine Methode void registerBuiltin(String funcName, Builtin javaFunc), die pickt eine neue
+Funktion ans Environment vorne dran.
+Oder: zus. Parameter ConsCell extEnv, damit kann man eine Liste mit zusaetzlichen Builtins mitgeben

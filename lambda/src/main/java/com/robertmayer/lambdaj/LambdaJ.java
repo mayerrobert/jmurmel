@@ -24,7 +24,13 @@ public class LambdaJ {
 
     public interface ObjectWriter { void printObj(Object o); void printEol(); }
 
-    @FunctionalInterface public interface Builtin { Object apply(ConsCell x); }
+    @FunctionalInterface public interface Primitive { Object apply(ConsCell x); }
+
+    public interface CustomBuiltinsSupplier {
+        ConsCell customEnvironment(SymbolTable symtab, ObjectReader lispStdin, ObjectWriter lispStdout);
+    }
+
+
 
     public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1;
@@ -154,7 +160,7 @@ public class LambdaJ {
         return false;
     }
 
-    public class SExpressionWriter implements ObjectWriter {
+    public static class SExpressionWriter implements ObjectWriter {
         private WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
@@ -415,7 +421,7 @@ public class LambdaJ {
                         final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, stack, level));
                         if (consp(func)) {
                             exp = cons(func, args); continue;
-                        } else if (isPrim(func)) return applyPrimitive((Builtin) func, args, stack);
+                        } else if (isPrim(func)) return applyPrimitive((Primitive) func, args, stack);
                         else throw new LambdaJError("apply: not a function: " + printSEx(func)
                         + ". this was the result of evaluating the expression "
                         + printSEx(car(cdr(exp))) + errorExp(exp));
@@ -425,7 +431,7 @@ public class LambdaJ {
                         if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
                             exp = cons(func, cdr(exp)); continue;
                         } else if (isPrim(func)) {
-                            return applyPrimitive((Builtin) func, evlis((ConsCell) cdr(exp), env, stack, level + 1), stack);
+                            return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack, level + 1), stack);
                         }
                         else throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
                     }
@@ -546,7 +552,7 @@ public class LambdaJ {
     private static boolean  atom(Object x)              { return x == null || !(x instanceof ConsCell); } // !isCons(x)
     private static boolean  symbolp(Object x)           { return x == null || x instanceof String; } // null (alias nil) is a symbol too
     private static boolean  listp(Object x)             { return x == null || x instanceof ConsCell; } // null is a list too
-    private static boolean  isPrim(Object x)            { return x instanceof Builtin; }
+    private static boolean  isPrim(Object x)            { return x instanceof Primitive; }
 
     private static boolean  numberp(Object x)           { return x instanceof Number; }
     private static boolean  stringp(Object x)           { return x instanceof LambdaJString; }
@@ -588,7 +594,7 @@ public class LambdaJ {
         return ret.toArray();
     }
 
-    private Object applyPrimitive(Builtin primfn, ConsCell args, int stack) {
+    private Object applyPrimitive(Primitive primfn, ConsCell args, int stack) {
         if (trace >= TRC_PRIM) {
             char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
             tracer.println(pfx + "(<primitive> " + printSEx(args) + ')');
@@ -765,13 +771,13 @@ public class LambdaJ {
     private ConsCell environment(SymbolTable symtab, ConsCell prev, ObjectReader lispStdin, ObjectWriter lispStdout) {
         ConsCell env = prev;
         if (HAVE_EQ) {
-            final Builtin feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
+            final Primitive feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
             env = cons(cons(symtab.intern("eq"), cons(feq, null)),
                        env);
         }
 
         if (HAVE_ATOM) {
-            final Builtin fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+            final Primitive fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
             env = cons(cons(symtab.intern("atom"),    cons(fatom, null)),
                        env);
         }
@@ -787,10 +793,10 @@ public class LambdaJ {
                   env);
 
         if (HAVE_IO) {
-            final Builtin freadobj =  (ConsCell a) -> { noArgs("read", a);    return lispStdin.readObj(); };
-            final Builtin fwriteobj = (ConsCell a) -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue(); };
+            final Primitive freadobj =  (ConsCell a) -> { noArgs("read", a);    return lispStdin.readObj(); };
+            final Primitive fwriteobj = (ConsCell a) -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue(); };
 
-            final Builtin fwriteln = (ConsCell a) -> {
+            final Primitive fwriteln = (ConsCell a) -> {
                 nArgs("writeln", a, 0, 1, null);
                 if (a == null) {
                     lispStdout.printEol();
@@ -808,13 +814,13 @@ public class LambdaJ {
         }
 
         if (HAVE_UTIL) {
-            final Builtin fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
+            final Primitive fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
 
-            final Builtin fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
-            final Builtin fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-            final Builtin flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
+            final Primitive fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
+            final Primitive fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
+            final Primitive flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
 
-            final Builtin fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+            final Primitive fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
             env = cons(cons(symtab.intern("consp"),   cons(fconsp, null)),
                   cons(cons(symtab.intern("symbolp"), cons(fsymbolp, null)),
                   cons(cons(symtab.intern("listp"),   cons(flistp, null)),
@@ -825,9 +831,9 @@ public class LambdaJ {
         }
 
         if (HAVE_CONS) {
-            final Builtin fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-            final Builtin fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
-            final Builtin fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
+            final Primitive fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
+            final Primitive fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+            final Primitive fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
 
             env = cons(cons(symtab.intern("car"),     cons(fcar, null)),
                   cons(cons(symtab.intern("cdr"),     cons(fcdr, null)),
@@ -836,8 +842,8 @@ public class LambdaJ {
         }
 
         if (HAVE_STRING) {
-            final Builtin fstringp =  (ConsCell a) -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
-            final Builtin fformat =   a -> {
+            final Primitive fstringp =  (ConsCell a) -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
+            final Primitive fformat =   a -> {
                 nArgs("string-format", a, 2, null);
                 if (!(car(a) instanceof LambdaJString))
                     throw new LambdaJError("string-format: expected first argument to be a String but got " + printSEx(cdr(a)));
@@ -857,21 +863,21 @@ public class LambdaJ {
         }
 
         if (HAVE_DOUBLE) {
-            final Builtin fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
+            final Primitive fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
 
-            final Builtin fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
-            final Builtin flt =       args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0);
-            final Builtin fle =       args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0);
-            final Builtin fgt =       args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0);
-            final Builtin fge =       args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0);
+            final Primitive fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
+            final Primitive flt =       args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0);
+            final Primitive fle =       args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0);
+            final Primitive fgt =       args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0);
+            final Primitive fge =       args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0);
 
-            final Builtin fadd =  args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
-            final Builtin fmul =  args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
+            final Primitive fadd =  args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
+            final Primitive fmul =  args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
 
-            final Builtin fsub  = args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
-            final Builtin fquot = args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
+            final Primitive fsub  = args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
+            final Primitive fquot = args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
 
-            final Builtin fmod = (ConsCell args) -> {
+            final Primitive fmod = (ConsCell args) -> {
                 twoArgs("mod", args);
                 numbers("mod", args);
                 return (Double)car(args) % (Double)car(cdr(args));
@@ -904,11 +910,11 @@ public class LambdaJ {
      *  will read S-expressions from {@code in} as well,
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        SExpressionParser sExpParser = new SExpressionParser(in);
-        setSymtab(sExpParser);
-        SExpressionWriter sExpWriter = new SExpressionWriter(out);
-        final ConsCell env = environment(symtab, null, sExpParser, sExpWriter);
-        final Object exp = sExpParser.readObj();
+        Parser parser = new SExpressionParser(in);
+        setSymtab(parser);
+        ObjectWriter outWriter = new SExpressionWriter(out);
+        final ConsCell env = environment(symtab, null, parser, outWriter);
+        final Object exp = parser.readObj();
         final Object result = eval(exp, env, 0, 0);
         if (trace >= TRC_EVAL) {
             tracer.println("*** max eval depth: " + maxEvalStack + " ***");
@@ -919,20 +925,30 @@ public class LambdaJ {
     /** <p>Build environment, repeatedly read an S-expression from {@code program} and invoke {@code eval()} until EOF,
      *  return result of last expression.
      *
-     *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}. */
+     *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
+     *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        SExpressionParser sExpParser = new SExpressionParser(program);
-        setSymtab(sExpParser);
-        ObjectReader sExpReader = new SExpressionParser(in);
-        ObjectWriter sExpWriter = new SExpressionWriter(out);
-        final ConsCell env = environment(symtab, null, sExpReader, sExpWriter);
-        Object exp = sExpParser.readObj();
+        Parser parser = new SExpressionParser(program);
+        ObjectReader inReader = new SExpressionParser(in);
+        ObjectWriter outWriter = new SExpressionWriter(out);
+        return interpretExpressions(parser, inReader, outWriter, (_symtab, _in, _out) -> null);
+    }
+
+    /** <p>Build environment, repeatedly read an expression from {@code parser} and invoke {@code eval()} until EOF,
+     *  return result of last expression.
+     *
+     *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
+     *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
+    public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
+        setSymtab(parser);
+        final ConsCell env = environment(symtab, customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
+        Object exp = parser.readObj();
         while (true) {
             final Object result = eval(exp, env, 0, 0);
             if (trace >= TRC_EVAL) {
                 tracer.println("*** max eval depth: " + maxEvalStack + " ***");
             }
-            exp = sExpParser.readObj();
+            exp = parser.readObj();
             if (exp == null) return result;
         }
     }
@@ -1031,7 +1047,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.58 2020/10/10 17:13:23 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.59 2020/10/10 17:36:28 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

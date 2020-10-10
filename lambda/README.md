@@ -113,6 +113,25 @@ and strings. String literals are 2000 chars max length. (Strings have very limit
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
 
+## Customization
+
+LambdaJ comes with:
+
+* a parser that reads S-expressions composed of lists, symbols, Doubles and Strings.
+* Math support for Doubles
+
+You could substitute the default parser for reading data and/ or programs by your own parsers that reads e.g. XML or JSON
+instead of S-expressions, and/ or support additional data types.
+
+You could extend LambdaJ's environment with your own builtin functions and/ or data types e.g. for supporting BigDecimals
+or reading/ writing from/ to a JDBC Datasource.
+
+Additional datatypes can be supported in your custom Parser, in your custom primitives or in both.
+
+LambdaJ is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
+without any need for change.
+See `EmbeddedTest#testCustomEnv()` for an example.
+
 ## References
 
 Based on [micro-lisp](https://github.com/carld/micro-lisp)

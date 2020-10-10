@@ -314,7 +314,7 @@ public class LambdaJTest {
 
     private static String lispObjectToString(Object exp) {
         if (exp == null) return "nil";
-        if (exp instanceof LambdaJ.Builtin) return "#<primitive>";
+        if (exp instanceof LambdaJ.Primitive) return "#<primitive>";
 
         // else it's either a ConsCell which has an appropriate toString() method
         // or an Atom which really is a Java Object such as String (Lisp symbols) or Double (Lisp numbers)
