@@ -22,47 +22,7 @@ darin sind Zahlen als BigDecimal representiert, und Datum/Zeit/Timestamp als jav
 
 
 
-printObj sollte symbols mit syntax als |xxx| printen. Was syntax characters sind, weiss nur der Parser
--> printObj als Methode von Parser, naechsten punkt umsetzen!
-
-
-
-Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
-waer ggf. besser fuer custom builtins
--> builtins mit env koennten late binding machen
--> builtins muessen printObj des parsers verwenden
--> environment() koennte static sein
-
-!!!!!!! Alles falsch: Syntax characters bestimmt der ObjectWriter.
-Builtins sollten Symboltabelle, ObjectReader in, ObjectWriter out, ggf. Tracer, ggf. Environment bekommen
-
-Builtins sollten ggf. expression mitbekommen fuer ausgabe von fehlermeldungen
-
-
-
-write sollte ObjectWriter.printObj() verwenden,
-zum Tracen weiterhin das statische printObj verwenden
--> LispParser (eigentlich ObjectWriter, s.u.) bekommt methode printObj, bisherige statische Methode printObj in traceObj umbenennen oder printSExpression 
--> write schreibt im gewuenschten Format, Errormessages sind im Format S-expression
--> Syntax characters von S-expressions als static Konstante von LambdaJ rausziehen,
-   dann kanns Lispparser und das statische printObj verwenden
-
-
-
-getrennter Reader fuer read
--> Object interpret(Supplier lispSource, Supplier lispStdin, Consumer lispStdout, Supplier<ConsCell> customEnvironment)
--> oder LambdaJ in Builder Pattern umbauen:
-
-interface ObjectReader { Object readObj(); }
-interface SymbolTable { String intern(); }
-interface Parser extends ObjectReader, SymbolTable
-
-interface ObjectWriter { String printObj(Object o, boolean headOfList, boolean eol); }
-
-class LispParser implements Parser, ObjectWriter
-
-interface Tracer { void println(String); }
-
+builder pattern:
 withStdin(...)        // entweder einen char supplier oder einen ObjectReader
 withStdout(...)       // entweder einen String consumer oder einen ObjectWriter
 withCustomEnv(...)    // Parameter ist ein Supplier<ConsCell>, der erzeugt eine Liste mit (symbol . builtin)
@@ -354,3 +314,39 @@ oder fuer StringReader s:
     () ->  s::read
 
 readObj umbauen dass (a . b) eingelesen werden kann?
+
+Builtins sollten ggf. expression mitbekommen fuer ausgabe von fehlermeldungen
+
+printObj sollte symbols mit syntax als |xxx| printen. Was syntax characters sind, weiss nur der Parser
+-> printObj als Methode von Parser, naechsten punkt umsetzen!
+
+Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
+waer ggf. besser fuer custom builtins
+-> builtins mit env koennten late binding machen
+-> builtins muessen printObj des parsers verwenden
+-> environment() koennte static sein
+
+!!!!!!! Alles falsch: Syntax characters bestimmt der ObjectWriter.
+Builtins sollten Symboltabelle, ObjectReader in, ObjectWriter out, ggf. Tracer, ggf. Environment bekommen
+
+write sollte ObjectWriter.printObj() verwenden,
+zum Tracen weiterhin das statische printObj verwenden
+-> LispParser (eigentlich ObjectWriter, s.u.) bekommt methode printObj, bisherige statische Methode printObj in traceObj umbenennen oder printSExpression 
+-> write schreibt im gewuenschten Format, Errormessages sind im Format S-expression
+-> Syntax characters von S-expressions als static Konstante von LambdaJ rausziehen,
+   dann kanns Lispparser und das statische printObj verwenden
+
+
+
+getrennter Reader fuer read
+-> Object interpret(Supplier lispSource, Supplier lispStdin, Consumer lispStdout, Supplier<ConsCell> customEnvironment)
+-> oder LambdaJ in Builder Pattern umbauen:
+
+interface ObjectReader { Object readObj(); }
+interface SymbolTable { String intern(); }
+interface Parser extends ObjectReader, SymbolTable
+
+interface ObjectWriter { String printObj(Object o, boolean headOfList, boolean eol); }
+class LispParser implements Parser, ObjectWriter
+
+interface Tracer { void println(String); }
