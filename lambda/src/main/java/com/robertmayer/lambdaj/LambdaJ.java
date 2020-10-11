@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
@@ -720,7 +721,7 @@ public class LambdaJ {
     }
 
     /** arguments if any must be only numbers */
-    private static void numbers(String func, ConsCell a) {
+    private static void numberArgs(String func, ConsCell a) {
         if (a == null) return;
         for (; a != null; a = (ConsCell) cdr(a))
             if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printSEx(a));
@@ -728,7 +729,13 @@ public class LambdaJ {
 
     private static void oneOrMoreNumbers(String func, ConsCell a) {
         oneOrMoreArgs(func, a);
-        numbers(func, a);
+        numberArgs(func, a);
+    }
+
+    /** the given arg must be a LambdaJString */
+    private void stringArg(String func, String arg, Object a) {
+        if (!(car(a) instanceof LambdaJString))
+            throw new LambdaJError(func + ": expected " + arg + " to be a String but got " + printSEx(car(a)));
     }
 
     private static String errorExp(Object exp) {
@@ -739,7 +746,7 @@ public class LambdaJ {
     /** generate a comparison operator */
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
         twoArgs(opName, args);
-        numbers(opName, args);
+        numberArgs(opName, args);
         final double lhs = (Double)car(args);
         final double rhs = (Double)car(cdr(args));
         return boolResult(pred.test(Double.compare(lhs,  rhs)));
@@ -747,7 +754,7 @@ public class LambdaJ {
 
     /** generate operator for zero or more args */
     private static Object makeAddOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
-        numbers(opName, args);
+        numberArgs(opName, args);
         for (; args != null; args = (ConsCell) cdr(args))
             startVal = op.applyAsDouble(startVal, (Double)car(args));
         return startVal;
@@ -844,23 +851,42 @@ public class LambdaJ {
 
         if (HAVE_STRING) {
             final Primitive fstringp =  (ConsCell a) -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
+
             final Primitive fformat =   a -> {
-                nArgs("string-format", a, 2, null);
-                if (!(car(a) instanceof LambdaJString))
-                    throw new LambdaJError("string-format: expected first argument to be a String but got " + printSEx(cdr(a)));
+                nArgs("string-format", a, 1, null);
+                stringArg("string-format", "first argument", a);
                 String s = ((LambdaJString)car(a)).value;
                 try {
                     return String.format(s, listToArray(cdr(a)));
-                }
-                catch (IllegalFormatException e) {
+                } catch (IllegalFormatException e) {
                     throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
+                    + "\nerror ocurred processing the argument(s) " + printSEx(a));
+                }
+            };
+
+            final Primitive fformatLocale = a -> {
+                nArgs("string-format-locale", a, 2, null);
+                String locString;
+                if (car(a) != null) {
+                    stringArg("string-format-locale", "first argument", a);
+                    locString = ((LambdaJString)car(a)).value;
+                } else locString = null;
+                stringArg("string-format-locale", "second argument", cdr(a));
+                String s = ((LambdaJString)car(cdr(a))).value;
+                try {
+                    if (locString == null) return String.format(s, listToArray(cdr(cdr(a))));
+                    Locale loc = Locale.forLanguageTag(locString);
+                    return String.format(loc, s, listToArray(cdr(cdr(a))));
+                } catch (IllegalFormatException e) {
+                    throw new LambdaJError("string-format-locale: illegal format string and/ or arguments: " + e.getMessage()
                     + "\nerror ocurred processing the argument(s) " + printSEx(a));
                 }
             };
 
             env = cons(cons(symtab.intern("stringp"), cons(fstringp, null)),
                   cons(cons(symtab.intern("string-format"), cons(fformat, null)),
-                  env));
+                  cons(cons(symtab.intern("string-format-locale"), cons(fformatLocale, null)),
+                  env)));
         }
 
         if (HAVE_DOUBLE) {
@@ -880,7 +906,7 @@ public class LambdaJ {
 
             final Primitive fmod = (ConsCell args) -> {
                 twoArgs("mod", args);
-                numbers("mod", args);
+                numberArgs("mod", args);
                 return (Double)car(args) % (Double)car(cdr(args));
             };
 
@@ -1048,7 +1074,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.61 2020/10/11 08:23:26 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.62 2020/10/11 09:23:56 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

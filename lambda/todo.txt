@@ -1,6 +1,3 @@
-primitive string-format-localized: erster parameter ist locale, z.B.
-(format-string-localized "en-US" "%g" 1)
-
 apply erlaubt nur 2 argumente, sollte aber 2+ akzeptieren (und gegen parameterliste checken?)
 siehe apply3.lisp
 laut http://www.n-a-n-o.com/lisp/cmucl-tutorials/LISP-tutorial-20.html:
@@ -10,13 +7,64 @@ Apply is just like funcall, except that its final argument should be a list; the
 
 
 
-Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen?
+Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen? XML schreiben muesste supereinfach sein?!
 
 Doku: ein Custom Parser koennte statt parsen eine Liste liefern (koennte z.B. hardcodiert
 mit new ConsCell zusammengestoppelt werden) und intern() könnte mittels String.intern() umgesetzt werden.
 Anmerkung: Symbols sind Strings, Stringliterale in der o.a. Liste sind bereits mit String.intern() bearbeitet,
   dazu passt die Umsetzung der Parsermethode intern() mittels String.intern()
 Anmerkung 2: Lisp Strings werden als LambdaJString repraesentiert
+Anmerkung 3: intern() mit einer HashMap waer auch nicht schwer
+
+Doku: https://en.wikipedia.org/wiki/Peano_axioms enthaelt natuerliche Zahlen basierend auf Mengen,
+koennte eine Anleitung sein, wie man Zahlen in einem Lisp ohne Zahlen umsetzen kann
+0 = nil
+1 = succ(0) = '(0) = '(nil)
+2 = succ(1) = '(0 1) = '(nil (nil))
+3 = succ(2) = '(0 1 2) = '(nil (nil (nil)))
+
+addition:
+(add (a b) (if (null? b) a (add '(nil a) (cdr b))) ; oder so aehnlich
+
+multiplikation:
+(mul (a b) (if (null? b) nil (add a (mul a (cdr b)))) ; oder so aehnlich
+
+
+Clisp:
+(setf zero ())                                ; -> zero = NIL
+
+;(define (cons a b) (lambda (f) (f a b)))      ; define?
+;(define (car c) (c (lambda (a b) a)))         ; define?
+;(define (cdr c) (c (lambda (a b) b)))         ; define?
+    
+(defun succ (a) (cons zero a))                ; das geht
+
+(setf one (succ zero))                        ; -> one = (NIL)
+(setf two (succ (succ zero)))                 ; -> two = (NIL NIL)
+(setf three (succ (succ (succ zero))))        ; -> three = (NIL NIL NIL)
+(setf four (succ (succ (succ (succ zero)))))  ; -> four = (NIL NIL NIL NIL)
+
+(defun add (a b) (if (eq b zero)
+                     a
+                     (add (succ a) (cdr b))))
+
+(defun mul (a b) (if (eq b zero)
+                     zero
+                     (add a (mul a (cdr b)))))
+
+;(write (add two three)) ; -> (NIL NIL NIL NIL NIL) aka six
+;(write (mul four three)) ; -> (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL) aka twelve
+(write (mul zero three)) ; -> NIL aka zero
+
+(defun true (a b) a)
+(defun false (a b) b)
+(defun my-if (a b c) (funcall a b c))
+
+;(write (my-if #'false one two)) ; -> (NIL NIL) aka two
+
+
+;(define and (lambda (p q) (if p q false)))    ; define?
+;(define or  (lambda (p q) (if p true  q)))    ; define?
 
 
 
@@ -34,6 +82,9 @@ einen link zum vorgaenger hat
 
 
 
+Multithreading waer eigentlich nicht so schwer: solange nix geschrieben werden kann, braucht eigentlich nur die
+Symboltable synchronized sein ?!?
+ 
 Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
@@ -354,3 +405,8 @@ Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode di
 Oder: LambdaJ bekommt eine Methode void registerBuiltin(String funcName, Builtin javaFunc), die pickt eine neue
 Funktion ans Environment vorne dran.
 Oder: zus. Parameter ConsCell extEnv, damit kann man eine Liste mit zusaetzlichen Builtins mitgeben
+
+
+
+primitive string-format-localized: erster parameter ist locale, z.B.
+(format-string-localized "en-US" "%g" 1)

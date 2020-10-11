@@ -108,7 +108,9 @@ The environment contains the symbols `nil` and `t` and the functions
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s)
 
 * `=, <, <=, >, >=, +, -, *, /, mod` ... Java Double
-* `stringp, string-format` ... `string-format` works like Java `String#format(String format, Object... args)`
+* `stringp, string-format, string-format-locale`
+    - `string-format` works like Java `String#format(String format, Object... args)`
+    - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)` 
 
 Most of these features can be disabled using commandline arguments.
 If you want to experiment with a bare-bones-Lisp use `--help` for details.
