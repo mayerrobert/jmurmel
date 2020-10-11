@@ -274,14 +274,15 @@ public class LambdaJ {
 
 
 
-        /// symbol table implemented with a list. could easily replaced by a HashMap for better performance
+        /// symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
         private ConsCell symbols = null;
 
         @Override
-        public String intern(String sym) {
+        public String intern(String sym) { // todo intern() koennte auf return Object umgestellt werden, spart einen cast
             ConsCell pair = symbols;
             for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
                 if (sym.equalsIgnoreCase((String)car(pair))) {  // todo equalsIgnoreCase ist langsam. vielleicht doch alles UC, dann reicht equals
+                                                                // wobei: stimmt der case bereits, scheints eh nicht so schlimm
                     return (String) car(pair);
                 }
             }
@@ -576,8 +577,8 @@ public class LambdaJ {
         if (atom == null) return null;
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printSEx(maybeList));
-        ConsCell env = (ConsCell) maybeList;
-        for ( ; env != null; env = (ConsCell)cdr(env)) {
+        ConsCell env = (ConsCell) maybeList; // todo env kann Object sein, dann brauchts die ganzen casts hier nicht (in car/cdr wird eh gecastet)
+        for ( ; env != null; env = (ConsCell)cdr(env)) { // todo cdr(env) wird 2x ermittelt, siehe auch listToArray()
             if (atom == car(car(env))) return (ConsCell) car(env);
             if (maybeList == cdr(env)) return null; // circular list, we didn't find the symbol
         }
@@ -587,9 +588,9 @@ public class LambdaJ {
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printSEx(maybeList));
-        ConsCell env = (ConsCell) maybeList;
+        ConsCell env = (ConsCell) maybeList; // todo env kann Object sein, dann brauchts die ganzen casts hier nicht (in car/cdr wird eh gecastet)
         List<Object> ret = new ArrayList<>();
-        for ( ; env != null && maybeList != cdr(env); env = (ConsCell)cdr(env))
+        for ( ; env != null && maybeList != cdr(env); env = (ConsCell)cdr(env)) // todo cdr(env) wird 2x ermittelt
             ret.add(car(env));
         return ret.toArray();
     }
@@ -1047,7 +1048,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.60 2020/10/10 20:43:08 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.61 2020/10/11 08:23:26 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
