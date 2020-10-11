@@ -66,6 +66,7 @@ public class LambdaJBenchmark {
         "1", //SIMPLE_CONS,
         "2", //LAMBDA_AND_ADD_DOUBLE,
         "3", //TAILREC,
+        "4", //FACT
     })
     private int prog;
 
