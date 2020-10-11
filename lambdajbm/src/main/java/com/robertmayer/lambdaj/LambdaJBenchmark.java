@@ -23,25 +23,55 @@ import org.openjdk.jmh.annotations.*;
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-//@Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 3, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(3)
+@Warmup(iterations = LambdaJBenchmark.WARMUP, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = LambdaJBenchmark.ITERATIONS, time = 1, timeUnit = TimeUnit.SECONDS)
+@Fork(LambdaJBenchmark.FORK)
 @State(value = Scope.Thread)
 public class LambdaJBenchmark {
+    public static final int FORK = 3;       // default: 3
+    public static final int WARMUP = 5;     // default: 5
+    public static final int ITERATIONS = 10; // default: 10
 
-    @Param({ "", "(cons 'a 'b)", "((lambda (x y) (+ x y)) 2 3)" })
-    private String prog;
+    public static final String EMPTY_PROGRAM = "; empty program";
+    public static final String SIMPLE_CONS = "(cons 'a 'b); simple cons";
+    public static final String LAMBDA_AND_ADD_DOUBLE = "((lambda (x y) (+ x y)) 2 3); lambda and add double";
+    public static final String TAILREC = "(labels ((print-last (list)\r\n" +
+    "              (if (null? (cdr list))\r\n" +
+    "                  (car list)\r\n" +
+    "                  (print-last (cdr list)))))\r\n" +
+    "    (print-last (quote (0 1 2 3 4 5 6 7 8 9))))";
+
+    public static final String[] PROGRAMS = {
+            EMPTY_PROGRAM,
+            SIMPLE_CONS,
+            LAMBDA_AND_ADD_DOUBLE,
+            TAILREC
+    };
+
+    public static final String[] RESULTS = {
+            "nil",
+            "(a . b)",
+            "5.0",
+            "9.0"
+    };
+
+    @Param({
+        "0", //EMPTY_PROGRAM,
+        "1", //SIMPLE_CONS,
+        "2", //LAMBDA_AND_ADD_DOUBLE,
+        "3", //TAILREC,
+    })
+    private int prog;
 
     private LambdaJ interpreter;
 
-    @Setup
+    @Setup(Level.Invocation)
     public void setup() {
         interpreter = new LambdaJ();
     }
 
     @Benchmark
     public Object eval() {
-        return interpreter.interpretExpression(new StringReader(prog)::read, (s) -> { return; });
+        return interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; });
     }
 }
