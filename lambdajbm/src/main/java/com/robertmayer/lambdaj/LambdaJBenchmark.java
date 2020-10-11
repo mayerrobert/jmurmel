@@ -19,6 +19,9 @@ import org.openjdk.jmh.annotations.*;
  * java -jar target/benchmarks.jar LambdaJBenchmark -prof gc
  *
  * oder:
+ * java  -jar target/benchmarks.jar -p prog=4 -prof stack:lines=3 ... prog=4 laesst nur das factorial programm laufen
+ *
+ * oder:
  * java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\benchmarks.jar
  */
 @BenchmarkMode(Mode.AverageTime)
