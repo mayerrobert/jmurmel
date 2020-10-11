@@ -4,6 +4,7 @@ import java.io.StringReader;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
 
 /**
  * Hilfe zum Aufruf:
@@ -83,5 +84,14 @@ public class LambdaJBenchmark {
     @Benchmark
     public Object eval() {
         return interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; });
+    }
+
+    @Benchmark
+    public void evalFiveTimes(Blackhole bh) {
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
     }
 }
