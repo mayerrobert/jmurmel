@@ -40,19 +40,25 @@ public class LambdaJBenchmark {
     "                  (car list)\r\n" +
     "                  (print-last (cdr list)))))\r\n" +
     "    (print-last (quote (0 1 2 3 4 5 6 7 8 9))))";
+    public static final String FACT = "(labels ((factTR (n a)\r\n" +
+            "                 (cond ((= n 0) a)\r\n" +
+            "                       (t (factTR (- n 1) (* n a))))))\r\n" +
+            " (string-format \"Factorial of 50 is %g\" (factTR 50 1)))";
 
     public static final String[] PROGRAMS = {
             EMPTY_PROGRAM,
             SIMPLE_CONS,
             LAMBDA_AND_ADD_DOUBLE,
-            TAILREC
+            TAILREC,
+            FACT,
     };
 
     public static final String[] RESULTS = {
             "nil",
             "(a . b)",
             "5.0",
-            "9.0"
+            "9.0",
+            "Factorial of 50 is 3,04141e+64", // the decimal char is locale depedent
     };
 
     @Param({
