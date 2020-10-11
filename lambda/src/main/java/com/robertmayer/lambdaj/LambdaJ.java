@@ -281,12 +281,12 @@ public class LambdaJ {
         public String intern(String sym) {
             ConsCell pair = symbols;
             for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
-                if (sym.equalsIgnoreCase((String)car(pair))) {
+                if (sym.equalsIgnoreCase((String)car(pair))) {  // todo equalsIgnoreCase ist langsam. vielleicht doch alles UC, dann reicht equals
                     return (String) car(pair);
                 }
             }
             symbols = cons(sym, symbols);
-            return (String) car(symbols);
+            return (String) car(symbols);  // todo car(symbols) liefert sym, nur langsamer
         }
 
 
@@ -1047,7 +1047,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.59 2020/10/10 17:36:28 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.60 2020/10/10 20:43:08 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

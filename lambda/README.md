@@ -33,13 +33,29 @@ Command line parameters in standalone mode:
 
 **Embedded use:**
 
+Minimal "Hello, World!" example:
+
     @Test
-    public void testHello() {
+    public void testMinimal() {
+        Object result = new LambdaJ().interpretExpression(
+                new StringReader("(cons 'Hello,\\ World! nil)")::read,
+                (s) -> { return; }
+                );
+        assertEquals("(Hello, World!)", result.toString());
+    }
+
+Slightly more advanced example:
+
+    @Test
+    public void testCons() {
+        // run a Lisp program
         LambdaJ interpreter = new LambdaJ();
         StringBuffer program = new StringReader("(cons 'a 'b)")
         StringBuffer output = new StringBuffer();
         Object result = interpreter.interpretExpression(program::read, output::append);
-
+        // done, that was it!
+        
+        // check results
         assertEquals("(a . b)", result.toString());
         assertEquals(0, out.length());
 
@@ -55,8 +71,8 @@ Command line parameters in standalone mode:
         assertEquals("ab", s);
     }
 
-or pass a in `new ByteArrayInputStream()` or something,
-see e.g. `LambdaJTest.java` for an embedded use example.
+See `EmbeddedTest.java` or `LambdaJTest.java` for more embedded use examples
+including an example of how to hook up your own Lisp primitives written in Java.
 
 ## Examples
 

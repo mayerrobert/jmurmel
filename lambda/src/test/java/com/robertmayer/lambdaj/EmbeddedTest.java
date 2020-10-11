@@ -30,6 +30,15 @@ public class EmbeddedTest {
     }
 
     @Test
+    public void testMinimal() {
+        Object result = new LambdaJ().interpretExpression(
+                new StringReader("(cons 'Hello,\\ World! nil)")::read,
+                (s) -> { return; }
+                );
+        assertEquals("(Hello, World!)", result.toString());
+    }
+
+    @Test
     public void testCons() {
         final LambdaJ interpreter = new LambdaJ();
         final StringBuffer out = new StringBuffer();
