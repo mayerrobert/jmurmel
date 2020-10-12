@@ -20,7 +20,7 @@ public class LambdaJ {
     @FunctionalInterface public interface Tracer { void println(String msg); }
 
     @FunctionalInterface public interface ObjectReader { Object readObj(); }
-    public interface SymbolTable { String intern(String symbol); }
+    public interface SymbolTable { Object intern(String symbol); }
     public interface Parser extends ObjectReader, SymbolTable {}
 
     public interface ObjectWriter { void printObj(Object o); void printEol(); }
@@ -156,8 +156,7 @@ public class LambdaJ {
     private static boolean isSExSyntaxChar(int x) { return x == '(' || x == ')' || x == '\''; }
 
     private static boolean containsSExSyntax(String s) {
-        for (int i = 0; i < s.length(); i++)
-        if (isSExSyntaxChar(s.charAt(i))) return true;
+        for (int i = 0; i < s.length(); i++) if (isSExSyntaxChar(s.charAt(i))) return true;
         return false;
     }
 
@@ -265,11 +264,10 @@ public class LambdaJ {
         }
 
         private String tokenToString(int[] s) {
-            StringBuffer ret = new StringBuffer(TOKEN_MAX);
-            for (int c: s) {
-                if (c == '\0') break;
+            final StringBuffer ret = new StringBuffer(32);
+            int len = s.length, c;
+            for (int i = 0; i < len && (c = s[i++]) != '\0'; )
                 ret.append((char)c);
-            }
             return ret.toString();
         }
 
@@ -279,16 +277,16 @@ public class LambdaJ {
         private ConsCell symbols = null;
 
         @Override
-        public String intern(String sym) { // todo intern() koennte auf return Object umgestellt werden, spart einen cast
+        public Object intern(String sym) {
             ConsCell pair = symbols;
             for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
                 if (sym.equalsIgnoreCase((String)car(pair))) {  // todo equalsIgnoreCase ist langsam. vielleicht doch alles UC, dann reicht equals
                                                                 // wobei: stimmt der case bereits, scheints eh nicht so schlimm
-                    return (String) car(pair);
+                    return car(pair);
                 }
             }
             symbols = cons(sym, symbols);
-            return (String) car(symbols);  // todo car(symbols) liefert sym, nur langsamer
+            return sym;
         }
 
 
@@ -357,22 +355,22 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)set the suppliers so that they will (re-)read the new symtab
-        sApply  = () -> { Supplier<String> sym = () -> symtab.intern("apply");  return (sApply  = sym).get(); };
-        sCond   = () -> { Supplier<String> sym = () -> symtab.intern("cond");   return (sCond   = sym).get(); };
-        sIf     = () -> { Supplier<String> sym = () -> symtab.intern("if");     return (sIf     = sym).get(); };
-        sLabels = () -> { Supplier<String> sym = () -> symtab.intern("labels"); return (sLabels = sym).get(); };
-        sLambda = () -> { Supplier<String> sym = () -> symtab.intern("lambda"); return (sLambda = sym).get(); };
-        sQuote  = () -> { Supplier<String> sym = () -> symtab.intern("quote");  return (sQuote  = sym).get(); };
+        sApply  = () -> { Supplier<Object> sym = () -> symtab.intern("apply");  return (sApply  = sym).get(); };
+        sCond   = () -> { Supplier<Object> sym = () -> symtab.intern("cond");   return (sCond   = sym).get(); };
+        sIf     = () -> { Supplier<Object> sym = () -> symtab.intern("if");     return (sIf     = sym).get(); };
+        sLabels = () -> { Supplier<Object> sym = () -> symtab.intern("labels"); return (sLabels = sym).get(); };
+        sLambda = () -> { Supplier<Object> sym = () -> symtab.intern("lambda"); return (sLambda = sym).get(); };
+        sQuote  = () -> { Supplier<Object> sym = () -> symtab.intern("quote");  return (sQuote  = sym).get(); };
     }
     // look up the symbols for special forms only once on first use.
     // the suppliers below will do a lookup on first use and then replace themselves by another supplier
     // that simply returns the cached value
-    private Supplier<String> sApply;
-    private Supplier<String> sCond;
-    private Supplier<String> sIf;
-    private Supplier<String> sLabels;
-    private Supplier<String> sLambda;
-    private Supplier<String> sQuote;
+    private Supplier<Object> sApply;
+    private Supplier<Object> sCond;
+    private Supplier<Object> sIf;
+    private Supplier<Object> sLabels;
+    private Supplier<Object> sLambda;
+    private Supplier<Object> sQuote;
 
     private Object eval(Object exp, ConsCell env, int stack, int level) {
         boolean isTc = false;
@@ -504,8 +502,8 @@ public class LambdaJ {
     */
     private Object evcon(ConsCell _c, ConsCell e, int stack, int level) {
         dbgEvalStart("evcon", _c, e, stack, level);
-        Object c = _c;
-        for ( ; c != null; c = cdr(c)) {
+        ConsCell c = _c;
+        for ( ; c != null; c = (ConsCell) cdr(c)) {
             Object condResult = eval(car(car(c)), e, stack+1, level+1);
             if (condResult != null) {
                 dbgEvalDone("evcon", c, stack, level);
@@ -605,15 +603,14 @@ public class LambdaJ {
     private static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
-        for (ConsCell l = (ConsCell) list; l != null; l = (ConsCell) cdr(l)) n++;
+        for (Object l = list; l != null; l = cdr(l)) n++;
         return n;
     }
 
     private static Object nthcdr(int n, Object list) {
         if (list == null) return null;
-        ConsCell l = (ConsCell) list;
-        for (; l != null && n-- > 0; l = (ConsCell) cdr(l)) ;
-        return l;
+        for (; list != null && n-- > 0; list = cdr(list)) ;
+        return list;
     }
 
     /** note: searches using object identity, will work for interned symbols, won't work for e.g. numbers */
@@ -621,10 +618,8 @@ public class LambdaJ {
         if (atom == null) return null;
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printSEx(maybeList));
-        ConsCell env = (ConsCell) maybeList; // todo env kann Object sein, dann brauchts die ganzen casts hier nicht (in car/cdr wird eh gecastet)
-        for ( ; env != null; env = (ConsCell)cdr(env)) { // todo cdr(env) wird 2x ermittelt, siehe auch listToArray()
+        for (ConsCell env = (ConsCell) maybeList ; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env)) {
             if (atom == car(car(env))) return (ConsCell) car(env);
-            if (maybeList == cdr(env)) return null; // circular list, we didn't find the symbol
         }
         return null;
     }
@@ -632,9 +627,8 @@ public class LambdaJ {
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printSEx(maybeList));
-        ConsCell env = (ConsCell) maybeList; // todo env kann Object sein, dann brauchts die ganzen casts hier nicht (in car/cdr wird eh gecastet)
-        List<Object> ret = new ArrayList<>();
-        for ( ; env != null && maybeList != cdr(env); env = (ConsCell)cdr(env)) // todo cdr(env) wird 2x ermittelt
+        final List<Object> ret = new ArrayList<>();
+        for (ConsCell env = (ConsCell) maybeList; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env))
             ret.add(car(env));
         return ret.toArray();
     }
@@ -1135,7 +1129,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.63 2020/10/11 16:36:38 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.64 2020/10/12 19:40:49 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
