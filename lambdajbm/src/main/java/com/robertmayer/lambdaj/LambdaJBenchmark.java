@@ -36,7 +36,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @State(value = Scope.Thread)
 public class LambdaJBenchmark {
     public static final int FORK = 3;       // default: 3
-    public static final int WARMUP = 5;     // default: 5
+    public static final int WARMUP = 10;     // default: 5
     public static final int ITERATIONS = 10; // default: 10
 
     public static final String EMPTY_PROGRAM = "; empty program";
@@ -50,7 +50,7 @@ public class LambdaJBenchmark {
     public static final String FACT = "(labels ((factTR (n a)\r\n" +
             "                 (cond ((= n 0) a)\r\n" +
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
-            " (string-format \"Factorial of 50 is %g\" (factTR 50 1)))";
+            " (string-format-locale \"en-US\" \"Factorial of 50 is %g\" (factTR 50 1)))";
 
     public static final String[] PROGRAMS = {
             EMPTY_PROGRAM,
@@ -65,7 +65,7 @@ public class LambdaJBenchmark {
             "(a . b)",
             "5.0",
             "9.0",
-            "Factorial of 50 is 3,04141e+64", // the decimal char is locale depedent
+            "Factorial of 50 is 3.04141e+64",
     };
 
     @Param({
