@@ -1,6 +1,8 @@
 package com.robertmayer.lambdaj;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -272,6 +274,16 @@ public class LambdaJTest {
         return s.replaceAll("\\\\n", "\n");
     }
 
+    static void runErrorTest(String fileName, String prog, String expectedExceptionMsgPfx) {
+        try {
+            LambdaJTest.runTest(fileName, prog, "ignored", "ignored");
+            fail("was expecting error: " + expectedExceptionMsgPfx);
+        }
+        catch (LambdaJ.LambdaJError e) {
+            assertTrue("got wrong exception message: " + e.getMessage(), e.getMessage().startsWith(expectedExceptionMsgPfx));
+        }
+    }
+
     /**
      * <p>Eval the expression(s) {@code prog} and check it's result and output.
      *
@@ -286,7 +298,7 @@ public class LambdaJTest {
         StringBuffer out = new StringBuffer();
 
         LambdaJ interpreter = new LambdaJ();
-        interpreter.trace = LambdaJ.TRC_LEX;
+        interpreter.trace = LambdaJ.TRC_EVAL;
 
         System.out.println("***** running program '" + fileName + ':');
         System.out.println("-------------------------------------------------------");

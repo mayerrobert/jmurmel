@@ -94,7 +94,7 @@ public class LambdaJ {
     public static final int EOF = -1;
     public static final int TOKEN_MAX = 2000; // max length of symbols and literals
 
-    public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_PRIM = 2, TRC_PARSE = 3, TRC_TOK = 4, TRC_LEX = 5;
+    public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_ENV = 2, TRC_PRIM = 3, TRC_PARSE = 4, TRC_TOK = 5, TRC_LEX = 6;
     public int trace = TRC_NONE;
 
     private Tracer tracer = System.err::println;
@@ -375,12 +375,13 @@ public class LambdaJ {
     private Supplier<String> sQuote;
 
     private Object eval(Object exp, ConsCell env, int stack, int level) {
-        dbgEvalStart(exp, env, stack, level);
+        boolean isTc = false;
         try {
             level--;
             while (true) {
                 level++;
-                if (symbolp(exp)) {
+                dbgEvalStart(isTc ? "eval TC" : "eval", exp, env, stack, level);
+                if (symbolp(exp)) {                 // this line is convenient breakpoint
                     if (exp == null) return null;
                     ConsCell envEntry = assoc(exp, env);
                     if (envEntry != null) return car(cdr(envEntry));
@@ -398,9 +399,9 @@ public class LambdaJ {
                     } else if (HAVE_XTRA && car(exp) == sIf.get()) {
                         nArgs("if", cdr(exp), 2, 3, exp);
                         if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
-                            exp = car(cdr(cdr(exp))); continue;
+                            exp = car(cdr(cdr(exp))); isTc = true; continue;
                         } else if (cdr(cdr(cdr(exp))) != null) {
-                            exp = car(cdr(cdr(cdr(exp)))); continue;
+                            exp = car(cdr(cdr(cdr(exp)))); isTc = true; continue;
                         } else
                             return null;
 
@@ -412,28 +413,47 @@ public class LambdaJ {
                         nArgs("labels", cdr(exp), 2, exp);
                         ConsCell bindings = (ConsCell) car(cdr(exp));
                         ConsCell body =     (ConsCell) cdr(cdr(exp));
-                        return evlabels(bindings, body, env, stack, level);
+                        return evlabels(bindings, body, env, stack+1, level+1);
 
                     } else if (HAVE_COND && car(exp) == sCond.get()) {
-                        return evcon((ConsCell) cdr(exp), env, stack, level);
+                        return evcon((ConsCell) cdr(exp), env, stack+1, level+1);
 
-                    } else if (HAVE_APPLY && car(exp) == sApply.get()) { // apply function to list
-                        twoArgs("apply", cdr(exp), exp);
+                    // apply function to list
+                    } else if (HAVE_APPLY && car(exp) == sApply.get()) {
+                        twoArgs("apply", cdr(exp), exp); // todo apply soll 2+ args haben, letztes eine liste
                         final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
-                        final ConsCell args = (ConsCell)car(evlis((ConsCell) cdr(cdr(exp)), env, stack, level));
+                        if (func == null) throw new LambdaJError("apply: cannot apply function nil. "
+                                                                 + "nil was the result of evaluating the expression "
+                                                                 + printSEx(car(cdr(exp))) + errorExp(exp));
+
+                        /*
+                        //final ConsCell args = (ConsCell)car(evlis((ConsCell)cdr(cdr(exp)), env, stack+1, level+1));
+                        final Object args = eval(car(cdr(cdr(exp))), env, stack+1, level+1);
                         if (consp(func)) {
-                            exp = cons(func, args); continue;
-                        } else if (isPrim(func)) return applyPrimitive((Primitive) func, args, stack);
-                        else throw new LambdaJError("apply: not a function: " + printSEx(func)
-                        + ". this was the result of evaluating the expression "
-                        + printSEx(car(cdr(exp))) + errorExp(exp));
+                            exp = cons(func, args); isTc = true; continue;
+                        } else if (symbolp(func)) {
+                            exp = cons(func, args); isTc = true; continue;
+                        } else throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
+                                                      + ". this was the result of evaluating the expression "
+                                                      + printSEx(car(cdr(exp))) + errorExp(exp));
+                        */
+                        final Object args = eval(car(cdr(cdr(exp))), env, stack+1, level+1);
+                        if (consp(func)) {
+                            exp = cons(func, args); isTc = true; continue;
+                        }
+                        if (isPrim(func)) return applyPrimitive((Primitive)func, (ConsCell)args, stack);
+                        throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
+                                               + ". this was the result of evaluating the expression "
+                                               + printSEx(car(cdr(exp))) + errorExp(exp));
+
+
 
                     } else { /* function call */
                         Object func = eval(car(exp), env, stack + 1, level + 1);
                         if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
-                            exp = cons(func, cdr(exp)); continue;
+                            exp = cons(func, cdr(exp)); isTc = true; continue;
                         } else if (isPrim(func)) {
-                            return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack, level + 1), stack);
+                            return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack+1, level + 1), stack);
                         }
                         else throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
                     }
@@ -455,9 +475,9 @@ public class LambdaJ {
 
                     ConsCell body = (ConsCell) cdr(lambda);
                     for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                        eval(car(body), extenv, stack + 1, level + 1);
+                        eval(car(body), extenv, stack+1, level+1);
                     if (body != null) {
-                        exp = car(body); env = extenv; continue;
+                        exp = car(body); env = extenv; isTc = true; continue;
                     } // else fall through to "cannot eval". should really not happen anyway
 
                 } else if (atom(car(exp))) {
@@ -471,7 +491,7 @@ public class LambdaJ {
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
         } finally {
-            dbgEvalDone(stack, level);
+            dbgEvalDone(isTc ? "eval TC" : "eval", exp, stack, level);
         }
     }
 
@@ -482,18 +502,26 @@ public class LambdaJ {
            (t
              (evcon (cdr c) e))))
     */
-    private Object evcon(ConsCell c, ConsCell e, int stack, int level) {
-        for ( ; c != null; c = (ConsCell) cdr(c)) {
-            Object condResult = eval(car(car(c)), e, stack + 1, level + 1);
-            if (condResult != null) return eval(car(cdr(car(c))), e, stack + 1, level + 1);
+    private Object evcon(ConsCell _c, ConsCell e, int stack, int level) {
+        dbgEvalStart("evcon", _c, e, stack, level);
+        Object c = _c;
+        for ( ; c != null; c = cdr(c)) {
+            Object condResult = eval(car(car(c)), e, stack+1, level+1);
+            if (condResult != null) {
+                dbgEvalDone("evcon", c, stack, level);
+                return eval(car(cdr(car(c))), e, stack+1, level+1);
+            }
         }
+        dbgEvalDone("evcon", _c, stack, level);
         return null;
     }
 
-    private ConsCell evlis(ConsCell list, ConsCell env, int stack, int level) {
+    private ConsCell evlis(ConsCell _list, ConsCell env, int stack, int level) {
+        dbgEvalStart("evlis", _list, env, stack, level);
         ConsCell head = null, insertPos = null;
-        for ( ; list != null; list = (ConsCell) cdr(list)) {
-            ConsCell currentArg = cons(eval(car(list), env, stack + 1, level + 1), null);
+        Object list = _list;
+        for (; list != null; list = cdr(list)) {    // todo zirklen erkennen
+            ConsCell currentArg = cons(eval(car(list), env, stack+1, level+1), null);
             if (head == null) {
                 head = currentArg;
                 insertPos = head;
@@ -503,47 +531,62 @@ public class LambdaJ {
                 insertPos = currentArg;
             }
         }
+        dbgEvalDone("evlis", _list, stack, level);
         return head;
     }
 
-    private Object evlabels(ConsCell bindings, ConsCell body, ConsCell env, int stack, int level) {
+    private Object evlabels(ConsCell _bindings, ConsCell _body, ConsCell env, int stack, int level) {
+        dbgEvalStart("evlabels 1", _bindings, env, stack, level);
         ConsCell extenv = env;
-        for (; bindings != null; bindings = (ConsCell)cdr(bindings)) {
+        Object bindings = _bindings, body = _body;
+        for (; bindings != null; bindings = cdr(bindings)) {
             final ConsCell currentFunc = (ConsCell)car(bindings);
             final String currentName = (String)car(currentFunc);
             final ConsCell currentBody = (ConsCell)cdr(currentFunc);
             final ConsCell lambda = cons(cons(sLambda.get(), currentBody), null);
             extenv = cons(cons(symtab.intern(currentName), lambda), extenv);
         }
+        dbgEvalDone("evlabels 1", _bindings, stack, level);
 
+        dbgEvalStart("evlabels 2", _body, extenv, stack, level);
         Object result = null;
-        for (; body != null; body = (ConsCell) cdr(body))
-            result = eval(car(body), extenv, stack + 1, level + 1);
+        for (; body != null; body = cdr(body))
+            result = eval(car(body), extenv, stack+1, level+1);
+        dbgEvalDone("evlabels 2", _body, stack, level);
         return result;
     }
 
     private int maxEvalStack;
     private int maxEvalLevel;
 
-    private void dbgEvalStart(Object exp, ConsCell env, int stack, int level) {
+    /** spaces printed to the left indicate java stack usage, total line length indicates Lisp call hierarchy depth.
+     *  due to tail call optimization Java stack usage sould be less than Lisp call hierarchy depth. */
+    private void dbgEvalStart(String evFunc, Object exp, ConsCell env, int stack, int level) {
         if (trace >= TRC_EVAL) {
+            evFunc = fmtEvFunc(evFunc);
             if (maxEvalStack < stack) maxEvalStack = stack;
             if (maxEvalLevel < level) maxEvalLevel = level;
             char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            tracer.println(pfx + "*** eval (" + stack + '/' + level + ") ********");
-            tracer.println(pfx + "env: " + printSEx(env));
-            tracer.println(pfx + "exp: " + printSEx(exp));
+            char[] csfx = new char[3+(level - stack)*2]; Arrays.fill(csfx, '*'); String sfx = new String(csfx);
+            tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ")      " + sfx);
+            if (trace >= TRC_ENV) tracer.println(pfx + "*** -> env:     " + printSEx(env));
+            tracer.println(pfx + "*** -> exp:     " + printSEx(exp));
         }
     }
 
-    private void dbgEvalDone(int stack, int level) {
+    private void dbgEvalDone(String evFunc, Object exp, int stack, int level) {
         if (trace >= TRC_EVAL) {
+            evFunc = fmtEvFunc(evFunc);
             char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            tracer.println(pfx + "*** eval (" + stack + '/' + level + ") done ***");
+            char[] csfx = new char[3+(level - stack)*2]; Arrays.fill(csfx, '*'); String sfx = new String(csfx);
+            tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
+            tracer.println(pfx + "*** -> exp was: " + printSEx(exp));
         }
     }
 
-
+    private static String fmtEvFunc(String func) {
+        return (func + "          ").substring(0, 10);
+    }
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
     private static ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
@@ -723,8 +766,10 @@ public class LambdaJ {
     /** arguments if any must be only numbers */
     private static void numberArgs(String func, ConsCell a) {
         if (a == null) return;
-        for (; a != null; a = (ConsCell) cdr(a))
-            if (!numberp(car(a))) throw new LambdaJError(func + ": expected only number arguments but got " + printSEx(a));
+        for (; a != null; a = (ConsCell) cdr(a)) {
+            if (!numberp(car(a)) || (cdr(a) != null && !consp(cdr(a))))
+                throw new LambdaJError(func + ": expected only number arguments but got " + printSEx(a));
+        }
     }
 
     private static void oneOrMoreNumbers(String func, ConsCell a) {
@@ -944,7 +989,8 @@ public class LambdaJ {
         final Object exp = parser.readObj();
         final Object result = eval(exp, env, 0, 0);
         if (trace >= TRC_EVAL) {
-            tracer.println("*** max eval depth: " + maxEvalStack + " ***");
+            tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
+            tracer.println("*** max stack used:   " + maxEvalStack + " ***");
         }
         return result;
     }
@@ -973,7 +1019,8 @@ public class LambdaJ {
         while (true) {
             final Object result = eval(exp, env, 0, 0);
             if (trace >= TRC_EVAL) {
-                tracer.println("*** max eval depth: " + maxEvalStack + " ***");
+                tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
+                tracer.println("*** max stack used:   " + maxEvalStack + " ***");
             }
             exp = parser.readObj();
             if (exp == null) return result;
@@ -1029,24 +1076,38 @@ public class LambdaJ {
 
         final boolean istty = null != System.console();
         if (istty) {
-            System.out.println("Enter a Lisp expression:");
-            System.out.print("LambdaJ> ");
-            System.out.flush();
+            System.out.println("Enter a Lisp expression (or enter 'q or <EOF> to exit):");
+            System.out.println();
+
+            String result = null;
+            do {
+                System.out.print("LambdaJ> ");
+                System.out.flush();
+
+                try {
+                    result = printSEx(interpreter.interpretExpression(System.in::read, System.out::print));
+                    System.out.println();
+                    System.out.println("result: " + result);
+                    System.out.println();
+                } catch (LambdaJError e) {
+                    System.out.println();
+                    System.out.println(e.toString());
+                    System.out.println();
+                }
+            } while (!"q".equals(result));
+            System.out.println("bye.");
+            return;
         }
 
         try {
-            final String result = printSEx(interpreter.interpretExpression(System.in::read, System.out::print));
-            if (istty) {
-                System.out.println();
-                System.out.println("result: " + result);
-            } else {
-                if (printResult) {
-                    System.out.println(result);
-                }
+            final String result = printSEx(interpreter.interpretExpressions(System.in::read, System.in::read, System.out::print));
+            if (printResult) {
+                System.out.println(result);
             }
         } catch (LambdaJError e) {
-            System.out.println();
-            System.out.println(e.toString());
+            System.err.println();
+            System.err.println(e.toString());
+            System.exit(1);
         }
     }
 
@@ -1074,7 +1135,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.62 2020/10/11 09:23:56 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.63 2020/10/11 16:36:38 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

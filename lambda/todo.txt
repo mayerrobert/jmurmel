@@ -1,16 +1,11 @@
-apply erlaubt nur 2 argumente, sollte aber 2+ akzeptieren (und gegen parameterliste checken?)
-siehe apply3.lisp
-laut http://www.n-a-n-o.com/lisp/cmucl-tutorials/LISP-tutorial-20.html:
-(apply #'+ 3 4 '(3 4))
-Apply is just like funcall, except that its final argument should be a list; the elements of that list are treated as if they were additional arguments to a funcall.
--> apply ist komplett hinueber
-
+Wenn eine Funktion labels oder cond enthaelt, werden tailcalls effektiv nicht wegoptimiert, weil evlabels bzw. evcond
+auf den Java stack kommt. "if" ist in eval inline drin, deswegen funktioniert TCO trotz "if".
 
 
 Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen? XML schreiben muesste supereinfach sein?!
 
 Doku: ein Custom Parser koennte statt parsen eine Liste liefern (koennte z.B. hardcodiert
-mit new ConsCell zusammengestoppelt werden) und intern() könnte mittels String.intern() umgesetzt werden.
+mit new ConsCell zusammengestoppelt werden) und intern() koennte mittels String.intern() umgesetzt werden.
 Anmerkung: Symbols sind Strings, Stringliterale in der o.a. Liste sind bereits mit String.intern() bearbeitet,
   dazu passt die Umsetzung der Parsermethode intern() mittels String.intern()
 Anmerkung 2: Lisp Strings werden als LambdaJString repraesentiert
@@ -130,6 +125,16 @@ Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
 Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
+
+        if(car(exp) == s_define)                        // "define"
+          return(extend_top(car(cdr(exp)),
+                            eval(car(cdr(cdr(exp))), env)));
+        if(car(exp) == s_setb) {                        // "set!"
+          obj *pair   = assoc(car(cdr(exp)), env);
+          obj *newval = eval(car(cdr(cdr(exp))), env);
+          setcdr(pair, newval);
+          return newval;
+        }
 
 isNaN, isInfinite, isFinite
 -> ggf. parameter "Error bei NaN, Infinity etc."
@@ -410,3 +415,14 @@ Oder: zus. Parameter ConsCell extEnv, damit kann man eine Liste mit zusaetzliche
 
 primitive string-format-localized: erster parameter ist locale, z.B.
 (format-string-localized "en-US" "%g" 1)
+
+evlis/ evcond sollten auch was tracen. stackanzeige erhoehen, evallevel nicht
+einrueckung basiert auf javastackzaehler, anzahl sterndaln evallevel - javastackzaehler
+
+apply erlaubt nur 2 argumente, sollte aber 2+ akzeptieren (und gegen parameterliste checken?)
+siehe apply3.lisp
+laut http://www.n-a-n-o.com/lisp/cmucl-tutorials/LISP-tutorial-20.html:
+(apply #'+ 3 4 '(3 4))
+Apply is just like funcall, except that its final argument should be a list; the elements of that list are treated
+as if they were additional arguments to a funcall.
+-> apply ist komplett hinueber

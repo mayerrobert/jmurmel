@@ -97,7 +97,7 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
 * `cond, if`
-* `apply`
+* `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
 * `lambda`
 * `labels`
  
@@ -112,9 +112,6 @@ The environment contains the symbols `nil` and `t` and the functions
     - `string-format` works like Java `String#format(String format, Object... args)`
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)` 
 
-Most of these features can be disabled using commandline arguments.
-If you want to experiment with a bare-bones-Lisp use `--help` for details.
- 
 Most (maybe all) tail calls including tail recursive calls are optimized away.
 
 Variables and functions share one namespace.
@@ -131,6 +128,10 @@ and strings. String literals are 2000 chars max length. (Strings have very limit
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
 
+Most of these features can be disabled using commandline arguments.
+You can disable pretty much everything except S-expressions, symbols, cons cells and lambda.
+If you want to experiment with a bare-bones-Lisp use `--help` for details.
+ 
 ## Customization
 
 LambdaJ comes with:
