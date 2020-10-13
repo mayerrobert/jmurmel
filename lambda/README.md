@@ -3,7 +3,7 @@
 A customizable Lisp-1-ish interpreter written in Java8+ that can be used
 standalone as well as embedded.
 
-LambdaJ has garbage collection, tail call optimization,
+LambdaJ has garbage collection c/o Java, tail call optimization,
 and except read/ write/ writeln it is purely functional (but see Customization below).
 
 **Standalone use:**
@@ -112,7 +112,8 @@ The environment contains the symbols `nil` and `t` and the functions
     - `string-format` works like Java `String#format(String format, Object... args)`
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)` 
 
-Most (maybe all) tail calls including tail recursive calls are optimized away.
+Most (hopefully all) tail calls including tail recursive calls are optimized,
+except tailcalls out of the body of a `labels` clause.
 
 Variables and functions share one namespace.
 Symbols names must not start with a digit, only the first 2000 characters are significant.
