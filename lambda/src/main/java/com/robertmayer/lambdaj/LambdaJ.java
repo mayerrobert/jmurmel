@@ -38,9 +38,7 @@ public class LambdaJ {
         public static final long serialVersionUID = 1;
 
         public LambdaJError(String msg) { super(msg, null, false, false); }
-
-        @Override
-        public String toString() { return "Error: " + getMessage(); }
+        @Override public String toString() { return "Error: " + getMessage(); }
     }
 
 
@@ -52,9 +50,7 @@ public class LambdaJ {
             private Object cursor;
 
             private ConsCellIterator(ConsCell coll) { this.coll = coll; this.cursor = coll; }
-
-            @Override
-            public boolean hasNext() { return cursor != null; }
+            @Override public boolean hasNext() { return cursor != null; }
 
             @Override
             public Object next() {
@@ -75,18 +71,14 @@ public class LambdaJ {
         public Object car, cdr;
         public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
 
-        @Override
-        public String toString() { return printObj(this); }
-
-        @Override
-        public Iterator<Object> iterator() { return new ConsCellIterator(this); }
+        @Override public String toString() { return printObj(this); }
+        @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
     }
 
     public static class LambdaJString {
         private final String value;
         public LambdaJString(String value) { this.value = value; }
-        @Override
-        public String toString() { return value.toString(); }
+        @Override public String toString() { return value.toString(); }
     }
 
 
@@ -354,7 +346,6 @@ public class LambdaJ {
 
 
 
-
     /// eval - interpreter
     private SymbolTable symtab;
 
@@ -391,10 +382,12 @@ public class LambdaJ {
     }
 
 
+
     private Object eval(Object exp, ConsCell env, int stack, int level) {
         boolean isTc = false;
         try {
             level--;
+            tailcall:
             while (true) {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", exp, env, stack, level);
@@ -433,7 +426,13 @@ public class LambdaJ {
                         return evlabels(bindings, body, env, stack+1, level+1);
 
                     } else if (HAVE_COND && car(exp) == sCond.get()) {
-                        return evcon((ConsCell) cdr(exp), env, stack+1, level+1);
+                        ConsCell c;
+                        for (c = (ConsCell) cdr(exp); c != null; c = (ConsCell) cdr(c)) {
+                            if (eval(car(car(c)), env, stack+1, level+1) != null) {
+                                exp = car(cdr(car(c))); isTc = true; continue tailcall;
+                            }
+                        }
+                        return null;
 
                     // apply function to list
                     } else if (HAVE_APPLY && car(exp) == sApply.get()) {
@@ -443,17 +442,6 @@ public class LambdaJ {
                                                                  + "nil was the result of evaluating the expression "
                                                                  + printSEx(car(cdr(exp))) + errorExp(exp));
 
-                        /*
-                        //final ConsCell args = (ConsCell)car(evlis((ConsCell)cdr(cdr(exp)), env, stack+1, level+1));
-                        final Object args = eval(car(cdr(cdr(exp))), env, stack+1, level+1);
-                        if (consp(func)) {
-                            exp = cons(func, args); isTc = true; continue;
-                        } else if (symbolp(func)) {
-                            exp = cons(func, args); isTc = true; continue;
-                        } else throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
-                                                      + ". this was the result of evaluating the expression "
-                                                      + printSEx(car(cdr(exp))) + errorExp(exp));
-                        */
                         final Object args = eval(car(cdr(cdr(exp))), env, stack+1, level+1);
                         if (consp(func)) {
                             exp = cons(func, args); isTc = true; continue;
@@ -462,8 +450,6 @@ public class LambdaJ {
                         throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
                                                + ". this was the result of evaluating the expression "
                                                + printSEx(car(cdr(exp))) + errorExp(exp));
-
-
 
                     } else { /* function call */
                         Object func = eval(car(exp), env, stack + 1, level + 1);
@@ -512,27 +498,6 @@ public class LambdaJ {
         }
     }
 
-    /*
-   (evcon (c e)
-     (cond ((eval (caar c) e)
-             (eval (cadar c) e))
-           (t
-             (evcon (cdr c) e))))
-    */
-    private Object evcon(ConsCell _c, ConsCell e, int stack, int level) {
-        dbgEvalStart("evcon", _c, e, stack, level);
-        ConsCell c = _c;
-        for ( ; c != null; c = (ConsCell) cdr(c)) {
-            Object condResult = eval(car(car(c)), e, stack+1, level+1);
-            if (condResult != null) {
-                dbgEvalDone("evcon", c, stack, level);
-                return eval(car(cdr(car(c))), e, stack+1, level+1);
-            }
-        }
-        dbgEvalDone("evcon", _c, stack, level);
-        return null;
-    }
-
     private ConsCell evlis(ConsCell _list, ConsCell env, int stack, int level) {
         dbgEvalStart("evlis", _list, env, stack, level);
         ConsCell head = null, insertPos = null;
@@ -577,7 +542,7 @@ public class LambdaJ {
     private int maxEvalLevel;
 
     /** spaces printed to the left indicate java stack usage, total line length indicates Lisp call hierarchy depth.
-     *  due to tail call optimization Java stack usage sould be less than Lisp call hierarchy depth. */
+     *  due to tail call optimization Java stack usage should be less than Lisp call hierarchy depth. */
     private void dbgEvalStart(String evFunc, Object exp, ConsCell env, int stack, int level) {
         if (trace >= TRC_EVAL) {
             evFunc = fmtEvFunc(evFunc);
@@ -836,20 +801,20 @@ public class LambdaJ {
 
 
 
-
-
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(SymbolTable symtab, ConsCell prev, ObjectReader lispStdin, ObjectWriter lispStdout) {
         ConsCell env = prev;
         if (HAVE_EQ) {
             final Primitive feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
+
             env = cons(cons(symtab.intern("eq"), cons(feq, null)),
                        env);
         }
 
         if (HAVE_ATOM) {
             final Primitive fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+
             env = cons(cons(symtab.intern("atom"),    cons(fatom, null)),
                        env);
         }
@@ -887,17 +852,15 @@ public class LambdaJ {
 
         if (HAVE_UTIL) {
             final Primitive fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
-
             final Primitive fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
             final Primitive fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
             final Primitive flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
-
             final Primitive fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+
             env = cons(cons(symtab.intern("consp"),   cons(fconsp, null)),
                   cons(cons(symtab.intern("symbolp"), cons(fsymbolp, null)),
                   cons(cons(symtab.intern("listp"),   cons(flistp, null)),
                   cons(cons(symtab.intern("null?"),   cons(fnull, null)),
-
                   cons(cons(symtab.intern("assoc"),   cons(fassoc, null)),
                   env)))));
         }
@@ -955,18 +918,15 @@ public class LambdaJ {
 
         if (HAVE_DOUBLE) {
             final Primitive fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
-
             final Primitive fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
             final Primitive flt =       args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0);
             final Primitive fle =       args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0);
             final Primitive fgt =       args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0);
             final Primitive fge =       args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0);
-
-            final Primitive fadd =  args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
-            final Primitive fmul =  args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
-
-            final Primitive fsub  = args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
-            final Primitive fquot = args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
+            final Primitive fadd =      args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
+            final Primitive fmul =      args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
+            final Primitive fsub  =     args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
+            final Primitive fquot =     args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
 
             final Primitive fmod = (ConsCell args) -> {
                 twoArgs("mod", args);
@@ -975,13 +935,11 @@ public class LambdaJ {
             };
 
             env = cons(cons(symtab.intern("numberp"), cons(fnumberp, null)),
-
                   cons(cons(symtab.intern("="),       cons(fnumbereq, null)),
                   cons(cons(symtab.intern(">"),       cons(fgt, null)),
                   cons(cons(symtab.intern(">="),      cons(fge, null)),
                   cons(cons(symtab.intern("<"),       cons(flt, null)),
                   cons(cons(symtab.intern("<="),      cons(fle, null)),
-
                   cons(cons(symtab.intern("+"),       cons(fadd, null)),
                   cons(cons(symtab.intern("-"),       cons(fsub, null)),
                   cons(cons(symtab.intern("*"),       cons(fmul, null)),
@@ -1154,7 +1112,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.68 2020/10/13 16:41:30 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.69 2020/10/13 16:56:31 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
