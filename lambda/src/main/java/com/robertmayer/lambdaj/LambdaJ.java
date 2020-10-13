@@ -803,32 +803,7 @@ public class LambdaJ {
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
-    private ConsCell environment(SymbolTable symtab, ConsCell prev, ObjectReader lispStdin, ObjectWriter lispStdout) {
-        ConsCell env = prev;
-        if (HAVE_EQ) {
-            final Primitive feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
-
-            env = cons(cons(symtab.intern("eq"), cons(feq, null)),
-                       env);
-        }
-
-        if (HAVE_ATOM) {
-            final Primitive fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
-
-            env = cons(cons(symtab.intern("atom"),    cons(fatom, null)),
-                       env);
-        }
-
-        if (HAVE_T)
-            env = cons(cons(symtab.intern("t"),
-                  cons(symtab.intern("t"), null)),
-                  env);
-
-        if (HAVE_NIL)
-            env = cons(cons(symtab.intern("nil"),
-                  cons(null, null)),
-                  env);
-
+    private ConsCell environment(SymbolTable symtab, ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
         if (HAVE_IO) {
             final Primitive freadobj =  (ConsCell a) -> { noArgs("read", a);    return lispStdin.readObj(); };
             final Primitive fwriteobj = (ConsCell a) -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
@@ -847,32 +822,6 @@ public class LambdaJ {
             env = cons(cons(symtab.intern("read"),    cons(freadobj, null)),
                   cons(cons(symtab.intern("write"),   cons(fwriteobj, null)),
                   cons(cons(symtab.intern("writeln"), cons(fwriteln, null)),
-                  env)));
-        }
-
-        if (HAVE_UTIL) {
-            final Primitive fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
-            final Primitive fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
-            final Primitive fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-            final Primitive flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
-            final Primitive fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
-
-            env = cons(cons(symtab.intern("consp"),   cons(fconsp, null)),
-                  cons(cons(symtab.intern("symbolp"), cons(fsymbolp, null)),
-                  cons(cons(symtab.intern("listp"),   cons(flistp, null)),
-                  cons(cons(symtab.intern("null?"),   cons(fnull, null)),
-                  cons(cons(symtab.intern("assoc"),   cons(fassoc, null)),
-                  env)))));
-        }
-
-        if (HAVE_CONS) {
-            final Primitive fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-            final Primitive fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
-            final Primitive fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
-
-            env = cons(cons(symtab.intern("car"),     cons(fcar, null)),
-                  cons(cons(symtab.intern("cdr"),     cons(fcdr, null)),
-                  cons(cons(symtab.intern("cons"),    cons(fcons, null)),
                   env)));
         }
 
@@ -916,6 +865,38 @@ public class LambdaJ {
                   env)));
         }
 
+        if (HAVE_T)
+            env = cons(cons(symtab.intern("t"),
+                  cons(symtab.intern("t"), null)),
+                  env);
+
+        if (HAVE_NIL)
+            env = cons(cons(symtab.intern("nil"),
+                  cons(null, null)),
+                  env);
+
+        if (HAVE_UTIL) {
+            final Primitive fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
+            final Primitive fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
+            final Primitive fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
+            final Primitive flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
+            final Primitive fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+
+            env = cons(cons(symtab.intern("consp"),   cons(fconsp, null)),
+                  cons(cons(symtab.intern("symbolp"), cons(fsymbolp, null)),
+                  cons(cons(symtab.intern("listp"),   cons(flistp, null)),
+                  cons(cons(symtab.intern("null?"),   cons(fnull, null)),
+                  cons(cons(symtab.intern("assoc"),   cons(fassoc, null)),
+                  env)))));
+        }
+
+        if (HAVE_ATOM) {
+            final Primitive fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+
+            env = cons(cons(symtab.intern("atom"),    cons(fatom, null)),
+                       env);
+        }
+
         if (HAVE_DOUBLE) {
             final Primitive fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
             final Primitive fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
@@ -934,18 +915,36 @@ public class LambdaJ {
                 return (Double)car(args) % (Double)car(cdr(args));
             };
 
-            env = cons(cons(symtab.intern("numberp"), cons(fnumberp, null)),
+            env = cons(cons(symtab.intern("+"),       cons(fadd, null)),
+                  cons(cons(symtab.intern("-"),       cons(fsub, null)),
+                  cons(cons(symtab.intern("*"),       cons(fmul, null)),
+                  cons(cons(symtab.intern("/"),       cons(fquot, null)),
                   cons(cons(symtab.intern("="),       cons(fnumbereq, null)),
                   cons(cons(symtab.intern(">"),       cons(fgt, null)),
                   cons(cons(symtab.intern(">="),      cons(fge, null)),
                   cons(cons(symtab.intern("<"),       cons(flt, null)),
                   cons(cons(symtab.intern("<="),      cons(fle, null)),
-                  cons(cons(symtab.intern("+"),       cons(fadd, null)),
-                  cons(cons(symtab.intern("-"),       cons(fsub, null)),
-                  cons(cons(symtab.intern("*"),       cons(fmul, null)),
-                  cons(cons(symtab.intern("/"),       cons(fquot, null)),
                   cons(cons(symtab.intern("mod"),     cons(fmod, null)),
+                  cons(cons(symtab.intern("numberp"), cons(fnumberp, null)),
                   env)))))))))));
+        }
+
+        if (HAVE_EQ) {
+            final Primitive feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
+
+            env = cons(cons(symtab.intern("eq"), cons(feq, null)),
+                       env);
+        }
+
+        if (HAVE_CONS) {
+            final Primitive fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
+            final Primitive fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+            final Primitive fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
+
+            env = cons(cons(symtab.intern("cdr"),     cons(fcdr, null)),
+                  cons(cons(symtab.intern("car"),     cons(fcar, null)),
+                  cons(cons(symtab.intern("cons"),    cons(fcons, null)),
+                  env)));
         }
 
         return env;
@@ -1112,7 +1111,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.69 2020/10/13 16:56:31 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.70 2020/10/13 17:46:06 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

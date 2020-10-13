@@ -113,7 +113,7 @@ The environment contains the symbols `nil` and `t` and the functions
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)` 
 
 Most (hopefully all) tail calls including tail recursive calls are optimized,
-except tailcalls out of the body of a `labels` clause.
+except tail calls out of the body of a `labels` clause.
 
 Variables and functions share one namespace.
 Symbols names must not start with a digit, only the first 2000 characters are significant.

@@ -14,13 +14,13 @@ import org.openjdk.jmh.infra.Blackhole;
  * java -jar target/benchmarks.jar
  *
  * oder:
- * java -jar target/benchmarks.jar LambdaJBenchmark -prof stack:lines=3
+ * java -jar target/benchmarks.jar LambdaJBenchmark.eval -prof stack:lines=3
  *
  * oder:
- * java -jar target/benchmarks.jar LambdaJBenchmark -prof gc
+ * java -jar target/benchmarks.jar LambdaJBenchmark.eval -prof gc
  *
  * oder:
- * java  -jar target/benchmarks.jar -p prog=4 -prof stack:lines=3 ... prog=4 laesst nur das factorial programm laufen
+ * java  -jar target/benchmarks.jar -p prog=4 -prof stack:lines=3 LambdaJBenchmark.eval ... prog=4 laesst nur das factorial programm laufen
  *
  * oder:
  * java  -jar target/benchmarks.jar -p prog=4 LambdaJBenchmark.evalFiveTimes
@@ -42,15 +42,17 @@ public class LambdaJBenchmark {
     public static final String EMPTY_PROGRAM = "; empty program";
     public static final String SIMPLE_CONS = "(cons 'a 'b); simple cons";
     public static final String LAMBDA_AND_ADD_DOUBLE = "((lambda (x y) (+ x y)) 2 3); lambda and add double";
-    public static final String TAILREC = "(labels ((print-last (list)\r\n" +
-    "              (if (null? (cdr list))\r\n" +
-    "                  (car list)\r\n" +
-    "                  (print-last (cdr list)))))\r\n" +
-    "    (print-last (quote (0 1 2 3 4 5 6 7 8 9))))";
-    public static final String FACT = "(labels ((factTR (n a)\r\n" +
+    public static final String TAILREC =
+            "(labels ((print-last (list)\r\n" +
+            "                     (if (null? (cdr list))\r\n" +
+            "                         (car list)\r\n" +
+            "                         (print-last (cdr list)))))\r\n" +
+            "        (print-last (quote (0 1 2 3 4 5 6 7 8 9))))";
+    public static final String FACT =
+            "(labels ((factTR (n a)\r\n" +
             "                 (cond ((= n 0) a)\r\n" +
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
-            " (string-format-locale \"en-US\" \"Factorial of 50 is %g\" (factTR 50 1)))";
+            "        (string-format-locale \"en-US\" \"Factorial of 50 is %g\" (factTR 50 1)))";
 
     public static final String[] PROGRAMS = {
             EMPTY_PROGRAM,
