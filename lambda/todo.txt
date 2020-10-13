@@ -1,4 +1,11 @@
-environment umsortieren
+damit man das environment von liste auf hashmap umstellen kann, sollte man methoden zum erweitern des environment einfuehren,
+und das intern verwendete assoc muesste angepasst werden. assoc braucht jetzt schon 40% der zeit, mit grossen
+programmen mit vielen methoden wirds nicht besser, und jede methode am callstack fuegt auch ihre parameter hinzu. damit
+man cdr aufrufen kann, muesste das alles durchsucht werden.
+
+redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
+
+k.a. wieviel die ConsCell casts bremsen
 
 nice to have: apply mit zuviel/ zuwenig args fuer ein lambda: ueberschuessige args koennten gemeinsam mit dem letzten als liste uebergeben werden,
 fehlende als null.
@@ -439,3 +446,5 @@ todo gelesen wird ein Symbol he\(lo, geschrieben wird |he(lo|
 
 Wenn eine Funktion labels oder cond enthaelt, werden tailcalls effektiv nicht wegoptimiert, weil evlabels bzw. evcond
 auf den Java stack kommt. "if" ist in eval inline drin, deswegen funktioniert TCO trotz "if".
+
+environment umsortieren
