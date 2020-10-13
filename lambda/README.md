@@ -21,7 +21,7 @@ The command above will wait for you to enter an expression, interpret it and pri
 or
 
     $ echo "(write (quote Hello,\ World!))" | java -jar lambdaj-1.0-SNAPSHOT.jar
-    Hello, World!
+    |Hello, World!|
     $
 
 The commands above will read an expression from stdin and interpret it.

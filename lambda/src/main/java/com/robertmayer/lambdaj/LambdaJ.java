@@ -12,6 +12,7 @@ import java.util.NoSuchElementException;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 public class LambdaJ {
 
@@ -75,7 +76,7 @@ public class LambdaJ {
         public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
 
         @Override
-        public String toString() { return printSEx(this); }
+        public String toString() { return printObj(this); }
 
         @Override
         public Iterator<Object> iterator() { return new ConsCellIterator(this); }
@@ -153,10 +154,15 @@ public class LambdaJ {
 
 
 
+    private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     private static boolean isSExSyntaxChar(int x) { return x == '(' || x == ')' || x == '\''; }
 
-    private static boolean containsSExSyntax(String s) {
-        for (int i = 0; i < s.length(); i++) if (isSExSyntaxChar(s.charAt(i))) return true;
+    private static boolean containsSExSyntaxOrBlank(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            char c;
+            if (isSExSyntaxChar(c = s.charAt(i))) return true;
+            if (isWhiteSpace(c)) return true;
+        }
         return false;
     }
 
@@ -165,7 +171,7 @@ public class LambdaJ {
         private WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object ob) { out.print(LambdaJ.printObj(ob)); }
+        @Override public void printObj(Object ob) { out.print(LambdaJ.printSEx(ob)); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
@@ -185,7 +191,7 @@ public class LambdaJ {
         public SExpressionParser(ReadSupplier in) { this.in = in; }
 
         /// scanner
-        private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
+        private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
 
@@ -419,7 +425,7 @@ public class LambdaJ {
 
                     // apply function to list
                     } else if (HAVE_APPLY && car(exp) == sApply.get()) {
-                        twoArgs("apply", cdr(exp), exp); // todo apply soll 2+ args haben, letztes eine liste
+                        twoArgs("apply", cdr(exp), exp);
                         final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
                         if (func == null) throw new LambdaJError("apply: cannot apply function nil. "
                                                                  + "nil was the result of evaluating the expression "
@@ -519,7 +525,7 @@ public class LambdaJ {
         dbgEvalStart("evlis", _list, env, stack, level);
         ConsCell head = null, insertPos = null;
         Object list = _list;
-        for (; list != null; list = cdr(list)) {    // todo zirklen erkennen
+        for (; list != null && _list != cdr(list); list = cdr(list)) {    // todo zirklen erkennen
             ConsCell currentArg = cons(eval(car(list), env, stack+1, level+1), null);
             if (head == null) {
                 head = currentArg;
@@ -657,7 +663,7 @@ public class LambdaJ {
         return sb.toString();
     }
 
-    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean headOfList, boolean dquoteStrings) {
+    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean headOfList, boolean escapeStrings) {
         while (true) {
             if (current == null) {
                 sb.append("nil"); return;
@@ -666,7 +672,7 @@ public class LambdaJ {
                 if (car(current) == list) {
                     sb.append(headOfList ? "#<this cons>" : "#<this list>");
                 } else {
-                    _printSEx(sb, car(current), car(current), true, dquoteStrings);
+                    _printSEx(sb, car(current), car(current), true, escapeStrings);
                 }
                 if (cdr(current) != null) {
                     if (listp(cdr(current))) {
@@ -678,12 +684,12 @@ public class LambdaJ {
                         }
                     } else if (headOfList) {
                         sb.append(" . ");
-                        _printSEx(sb, list, cdr(current), false, dquoteStrings);
+                        _printSEx(sb, list, cdr(current), false, escapeStrings);
                         sb.append(')');
                         return;
                     } else {
                         sb.append(' ');
-                        _printSEx(sb, list, cdr(current), false, dquoteStrings); // must be an atom
+                        _printSEx(sb, list, cdr(current), false, escapeStrings); // must be an atom
                         sb.append(')');
                         return;
                     }
@@ -691,22 +697,31 @@ public class LambdaJ {
                     sb.append(')');
                     return;
                 }
-            } else if (symbolp(current)) {
-                if (containsSExSyntax(current.toString())) {
+            } else if (escapeStrings && symbolp(current)) {
+                if (containsSExSyntaxOrBlank(current.toString())) {
                     sb.append('|').append(current.toString()).append('|');
                     return;
                 }
                 sb.append(current.toString()); return;
             } else if (isPrim(current)) {
                 sb.append("#<primitive>"); return;
-            } else if (dquoteStrings && stringp(current)) {
-                sb.append('"').append(current.toString()).append('"'); return;
+            } else if (escapeStrings && stringp(current)) {
+                sb.append('"').append(escapeString(current.toString())).append('"'); return;
             } else if (atom(current)) {
                 sb.append(current.toString()); return;
             } else {
                 sb.append("<internal error>"); return;
             }
         }
+    }
+
+    private static final Pattern dQuotePattern = Pattern.compile("[\"]");
+    private static final Pattern bSlashPattern = Pattern.compile("[\\\\]([^\"])");
+    /** prepend " and \ by a \ */
+    private static String escapeString(String current) {
+        current = dQuotePattern.matcher(current).replaceAll("\\\\\"");
+        current = bSlashPattern.matcher(current).replaceAll("\\\\\\\\$1");
+        return current;
     }
 
 
@@ -1137,7 +1152,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.65 2020/10/12 22:09:04 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.66 2020/10/13 05:27:17 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

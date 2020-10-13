@@ -6,4 +6,4 @@
 
 
 ; output: (empty)
-; result: a very long identifier that will be truncated
+; result: |a very long identifier that will be truncated|

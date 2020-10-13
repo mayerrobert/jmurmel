@@ -35,7 +35,7 @@ public class LambdaJTest {
         /* 11 */ { "; comment\n(write (quote HELLO)) ; comment", "t", "HELLO" },
 
         // quoted chars
-        /* 12 */ { "(write (quote HELLO\\ ))", "t", "HELLO " },
+        /* 12 */ { "(write (quote HELLO\\ ))", "t", "|HELLO |" },
         /* 13 */ { "(write (quote HELLO\\\\))", "t", "HELLO\\" },
         /* 14 */ { "(write (quote HELLO\\)))", "t", "|HELLO)|" },
         /* 15 */ { "(write (quote HELLO\\;))", "t", "HELLO;" },
@@ -325,11 +325,16 @@ public class LambdaJTest {
     }
 
     private static String lispObjectToString(Object exp) {
+        /*
         if (exp == null) return "nil";
         if (exp instanceof LambdaJ.Primitive) return "#<primitive>";
 
         // else it's either a ConsCell which has an appropriate toString() method
         // or an Atom which really is a Java Object such as String (Lisp symbols) or Double (Lisp numbers)
         return exp.toString();
+        */
+        StringBuffer sExp = new StringBuffer();
+        new LambdaJ.SExpressionWriter(sExp::append).printObj(exp);
+        return sExp.toString();
     }
 }

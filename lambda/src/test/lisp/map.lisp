@@ -1,6 +1,6 @@
 ; this doesn't work on GNU clisp nor Gauche v0.9.3.3 (scheme), don't know why
 
-; output: map called with element:amap called with element:bmap called with element:cmap called with element:dmap called with element:e
+; output: |map called with element:|a|map called with element:|b|map called with element:|c|map called with element:|d|map called with element:|e
 ; result: (t t t t t)
 
 (labels ((map (fn rest)

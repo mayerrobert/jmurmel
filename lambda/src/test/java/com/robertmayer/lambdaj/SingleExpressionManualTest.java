@@ -6,6 +6,6 @@ public class SingleExpressionManualTest {
 
     @Test
     public void runExpression() {
-        LambdaJTest.runTest("String", "(write \"aaa\")", "t", "aaa");
+        LambdaJTest.runTest("String", "(write \"aaa\")", "t", "\"aaa\"");
     }
 }
