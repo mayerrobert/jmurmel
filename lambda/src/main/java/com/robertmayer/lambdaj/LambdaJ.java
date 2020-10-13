@@ -371,6 +371,8 @@ public class LambdaJ {
         sLabels = () -> { Object sym = symtab.intern("labels"); sLabels = () -> sym; return sym; };
         sLambda = () -> { Object sym = symtab.intern("lambda"); sLambda = () -> sym; return sym; };
         sQuote  = () -> { Object sym = symtab.intern("quote");  sQuote  = () -> sym; return sym; };
+
+        expTrue = () -> { Object exp = makeExpTrue();           expTrue = () -> exp; return exp; };
     }
 
     private Supplier<Object> sApply;
@@ -379,6 +381,15 @@ public class LambdaJ {
     private Supplier<Object> sLabels;
     private Supplier<Object> sLambda;
     private Supplier<Object> sQuote;
+
+    private Supplier<Object> expTrue;
+
+    private Object makeExpTrue() {
+        if (HAVE_T) return symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+        else if (HAVE_QUOTE) return cons(symtab.intern("quote"), cons(symtab.intern("t"), null));
+        else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
+    }
+
 
     private Object eval(Object exp, ConsCell env, int stack, int level) {
         boolean isTc = false;
@@ -728,17 +739,7 @@ public class LambdaJ {
 
 
     /// runtime for Lisp programs
-    private Object _expTrue;
-    private Object expTrue() {
-        if (_expTrue == null) {
-            if (HAVE_T) _expTrue = symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-            else if (HAVE_QUOTE) _expTrue = cons(symtab.intern("quote"), cons(symtab.intern("t"), null));
-            else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
-        }
-        return _expTrue;
-    }
-
-    private Object boolResult(boolean b) { return b ? expTrue() : null; }
+    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     private static void noArgs(String func, ConsCell a) {
         if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printSEx(a));
@@ -865,17 +866,17 @@ public class LambdaJ {
 
         if (HAVE_IO) {
             final Primitive freadobj =  (ConsCell a) -> { noArgs("read", a);    return lispStdin.readObj(); };
-            final Primitive fwriteobj = (ConsCell a) -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue(); };
+            final Primitive fwriteobj = (ConsCell a) -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
 
             final Primitive fwriteln = (ConsCell a) -> {
                 nArgs("writeln", a, 0, 1, null);
                 if (a == null) {
                     lispStdout.printEol();
-                    return expTrue();
+                    return expTrue.get();
                 }
                 lispStdout.printObj(car(a));
                 lispStdout.printEol();
-                return expTrue();
+                return expTrue.get();
             };
 
             env = cons(cons(symtab.intern("read"),    cons(freadobj, null)),
@@ -1153,7 +1154,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.67 2020/10/13 15:40:28 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.68 2020/10/13 16:41:30 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
