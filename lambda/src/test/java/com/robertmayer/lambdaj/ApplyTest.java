@@ -66,6 +66,13 @@ public class ApplyTest {
     }
 
 
+    // todo could make this work by passing extra args as a list aka variadic...
+    @Test
+    public void lambdaExtraArgs() {
+        LambdaJTest.runErrorTest("lambdaExtraArgs", "(apply (lambda (a b) (writeln a) (writeln b)) '(1 2 3))",
+                                 "lambda: too many arguments. remaining arguments: (3.0)");
+    }
+
     @Test
     public void hello() {
         LambdaJTest.runTest("String", "(write (quote HELLO))", "t", "HELLO");

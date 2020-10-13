@@ -160,18 +160,18 @@ public class LambdaJ {
         return false;
     }
 
+    /** This class will write objects as S-expressions to the given {@link WriteConsumer} */
     public static class SExpressionWriter implements ObjectWriter {
         private WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object ob) { out.print(printSEx(ob)); }
+        @Override public void printObj(Object ob) { out.print(LambdaJ.printObj(ob)); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
-    // todo zum nur-lesen sollte zumindest symtab/intern, ggf. auch single quote handling mit einem flag im construktor abgedreht werden, oder die gelesenen objekte muessen halt strings in double quotes enthalten
-    /** This class can read, parse (while generating symbol table entries) and write S-Expressions */
+    /** This class will read and parse S-Expressions (while generating symbol table entries)
+     *  from the given {@link ReadSupplier} */
     public class SExpressionParser implements Parser {
-        /// scanner
         private ReadSupplier in;    // readObj() will read from this
         private boolean init;
 
@@ -184,6 +184,7 @@ public class LambdaJ {
 
         public SExpressionParser(ReadSupplier in) { this.in = in; }
 
+        /// scanner
         private boolean isSpace(int x)  { return !escape && (x == ' ' || x == '\t' || x == '\n' || x == '\r'); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
@@ -299,12 +300,12 @@ public class LambdaJ {
                 init = true;
             }
             readToken();
-            return _readObj();
+            return readObject();
         }
 
         private Object quote = intern("quote");
 
-        private Object _readObj() {
+        private Object readObject() {
             if (tok == null) {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   ()");
                 return null;
@@ -322,7 +323,7 @@ public class LambdaJ {
             }
             if (!tokEscape && HAVE_QUOTE && "'".equals(tok)) {
                 readToken();
-                return cons(quote, cons(_readObj(), null));
+                return cons(quote, cons(readObject(), null));
             }
             if (symbolp(tok)) {
                 if (trace >= TRC_TOK) tracer.println("*** parse symbol " + (String)tok);
@@ -339,7 +340,7 @@ public class LambdaJ {
                 if (")".equals(tok)) return null;
                 if (".".equals(tok)) return null;
             }
-            Object tmp = _readObj();
+            final Object tmp = readObject();
             if (symbolp(tmp)) return cons(tmp, readList());
             else return cons(tmp, readList());
         }
@@ -641,24 +642,31 @@ public class LambdaJ {
         return primfn.apply(args);
     }
 
-    /** transform {@code ob} into an S-expression */
+    /** transform {@code ob} into an S-expression, strings enclosed in double quotes */
     private static String printSEx(Object ob) {
         if (ob == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
-        _printSEx(sb, ob, ob, true);
+        _printSEx(sb, ob, ob, true, true);
         return sb.toString();
     }
 
-    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean head_of_list) {
+    private static String printObj(Object ob) {
+        if (ob == null) return "nil";
+        final StringBuffer sb = new StringBuffer(200);
+        _printSEx(sb, ob, ob, true, false);
+        return sb.toString();
+    }
+
+    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean headOfList, boolean dquoteStrings) {
         while (true) {
             if (current == null) {
                 sb.append("nil"); return;
             } else if (listp(current)) {
-                if (head_of_list) sb.append('(');
+                if (headOfList) sb.append('(');
                 if (car(current) == list) {
-                    sb.append(head_of_list ? "#<this cons>" : "#<this list>");
+                    sb.append(headOfList ? "#<this cons>" : "#<this list>");
                 } else {
-                    _printSEx(sb, car(current), car(current), true);
+                    _printSEx(sb, car(current), car(current), true, dquoteStrings);
                 }
                 if (cdr(current) != null) {
                     if (listp(cdr(current))) {
@@ -666,16 +674,16 @@ public class LambdaJ {
                         if (list == cdr(current)) {
                             sb.append("#<circular list>)"); return;
                         } else {
-                            current = cdr(current); head_of_list = false; continue;
+                            current = cdr(current); headOfList = false; continue;
                         }
-                    } else if (head_of_list) {
+                    } else if (headOfList) {
                         sb.append(" . ");
-                        _printSEx(sb, list, cdr(current), false);
+                        _printSEx(sb, list, cdr(current), false, dquoteStrings);
                         sb.append(')');
                         return;
                     } else {
                         sb.append(' ');
-                        _printSEx(sb, list, cdr(current), false); // must be an atom
+                        _printSEx(sb, list, cdr(current), false, dquoteStrings); // must be an atom
                         sb.append(')');
                         return;
                     }
@@ -691,7 +699,7 @@ public class LambdaJ {
                 sb.append(current.toString()); return;
             } else if (isPrim(current)) {
                 sb.append("#<primitive>"); return;
-            } else if (stringp(current)) {
+            } else if (dquoteStrings && stringp(current)) {
                 sb.append('"').append(current.toString()).append('"'); return;
             } else if (atom(current)) {
                 sb.append(current.toString()); return;
@@ -1129,7 +1137,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.64 2020/10/12 19:40:49 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.65 2020/10/12 22:09:04 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
