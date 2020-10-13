@@ -288,7 +288,7 @@ public class LambdaJ {
             ConsCell pair = symbols;
             for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
                 if (sym.equalsIgnoreCase((String)car(pair))) {  // todo equalsIgnoreCase ist langsam. vielleicht doch alles UC, dann reicht equals
-                                                                // wobei: stimmt der case bereits, scheints eh nicht so schlimm
+                                                                // todo wobei: stimmt der case bereits, scheints eh nicht so schlimm
                     return car(pair);
                 }
             }
@@ -358,20 +358,21 @@ public class LambdaJ {
     /// eval - interpreter
     private SymbolTable symtab;
 
+    /** look up the symbols for special forms only once on first use.
+     *  the suppliers below will do a lookup on first use and then replace themselves by another supplier
+     *  that simply returns the cached value */
     private void setSymtab(SymbolTable symtab) {
         this.symtab = symtab;
 
         // (re-)set the suppliers so that they will (re-)read the new symtab
-        sApply  = () -> { Supplier<Object> sym = () -> symtab.intern("apply");  return (sApply  = sym).get(); };
-        sCond   = () -> { Supplier<Object> sym = () -> symtab.intern("cond");   return (sCond   = sym).get(); };
-        sIf     = () -> { Supplier<Object> sym = () -> symtab.intern("if");     return (sIf     = sym).get(); };
-        sLabels = () -> { Supplier<Object> sym = () -> symtab.intern("labels"); return (sLabels = sym).get(); };
-        sLambda = () -> { Supplier<Object> sym = () -> symtab.intern("lambda"); return (sLambda = sym).get(); };
-        sQuote  = () -> { Supplier<Object> sym = () -> symtab.intern("quote");  return (sQuote  = sym).get(); };
+        sApply  = () -> { Object sym = symtab.intern("apply");  sApply  = () -> sym; return sym; };
+        sCond   = () -> { Object sym = symtab.intern("cond");   sCond   = () -> sym; return sym; };
+        sIf     = () -> { Object sym = symtab.intern("if");     sIf     = () -> sym; return sym; };
+        sLabels = () -> { Object sym = symtab.intern("labels"); sLabels = () -> sym; return sym; };
+        sLambda = () -> { Object sym = symtab.intern("lambda"); sLambda = () -> sym; return sym; };
+        sQuote  = () -> { Object sym = symtab.intern("quote");  sQuote  = () -> sym; return sym; };
     }
-    // look up the symbols for special forms only once on first use.
-    // the suppliers below will do a lookup on first use and then replace themselves by another supplier
-    // that simply returns the cached value
+
     private Supplier<Object> sApply;
     private Supplier<Object> sCond;
     private Supplier<Object> sIf;
@@ -525,7 +526,7 @@ public class LambdaJ {
         dbgEvalStart("evlis", _list, env, stack, level);
         ConsCell head = null, insertPos = null;
         Object list = _list;
-        for (; list != null && _list != cdr(list); list = cdr(list)) {    // todo zirklen erkennen
+        for (; list != null && _list != cdr(list); list = cdr(list)) {
             ConsCell currentArg = cons(eval(car(list), env, stack+1, level+1), null);
             if (head == null) {
                 head = currentArg;
@@ -1152,7 +1153,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.66 2020/10/13 05:27:17 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.67 2020/10/13 15:40:28 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
