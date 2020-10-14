@@ -18,7 +18,7 @@ Feature flags:
 
 --no-nil ......  don't predefine symbol nil (hint: use '()' instead)
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
---no-extra ....  no special form 'if'
+--no-extra ....  no special form 'define' or 'if'
 --no-double ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read/ write/ writeln
