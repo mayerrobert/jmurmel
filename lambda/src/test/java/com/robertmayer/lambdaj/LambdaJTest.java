@@ -180,9 +180,9 @@ public class LambdaJTest {
 
         -> (atom (quote (a b)))
            nil
-
-
          */
+
+        /* 85 */ { "(define *xyxxy* (lambda () ()))", "(lambda nil nil)", null },
     };
 
     @Test

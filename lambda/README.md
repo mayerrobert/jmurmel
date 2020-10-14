@@ -97,6 +97,10 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
 * `cond, if`
+* `define` ... inserts a (symbol value) into the top level environment. Note that if you define a symbol several times,
+  there will be several entries in the top level environment with the last shadowing the others. No fancy features, just `(define <symbol> <expression>)`, e.g.
+    - `(define *answer* 42)`
+    - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
 * `lambda`
 * `labels`

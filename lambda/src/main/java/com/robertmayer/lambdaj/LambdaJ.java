@@ -363,6 +363,7 @@ public class LambdaJ {
         sApply  = () -> { Object sym = symtab.intern("apply");  sApply  = () -> sym; return sym; };
         sCond   = () -> { Object sym = symtab.intern("cond");   sCond   = () -> sym; return sym; };
         sIf     = () -> { Object sym = symtab.intern("if");     sIf     = () -> sym; return sym; };
+        sDefine = () -> { Object sym = symtab.intern("define"); sDefine = () -> sym; return sym; };
         sLabels = () -> { Object sym = symtab.intern("labels"); sLabels = () -> sym; return sym; };
         sLambda = () -> { Object sym = symtab.intern("lambda"); sLambda = () -> sym; return sym; };
         sQuote  = () -> { Object sym = symtab.intern("quote");  sQuote  = () -> sym; return sym; };
@@ -373,6 +374,7 @@ public class LambdaJ {
     private Supplier<Object> sApply;
     private Supplier<Object> sCond;
     private Supplier<Object> sIf;
+    private Supplier<Object> sDefine;
     private Supplier<Object> sLabels;
     private Supplier<Object> sLambda;
     private Supplier<Object> sQuote;
@@ -387,7 +389,7 @@ public class LambdaJ {
 
 
 
-    private Object eval(Object exp, ConsCell env, int stack, int level) {
+    private Object eval(Object exp, ConsCell topEnv, ConsCell env, int stack, int level) {
         boolean isTc = false;
         try {
             level--;
@@ -417,12 +419,24 @@ public class LambdaJ {
 
                     if (HAVE_XTRA && car(exp) == sIf.get()) {
                         nArgs("if", cdr(exp), 2, 3, exp);
-                        if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
+                        if (eval(car(cdr(exp)), topEnv, env, stack + 1, level + 1) != null) {
                             exp = car(cdr(cdr(exp))); isTc = true; continue;
                         } else if (cdr(cdr(cdr(exp))) != null) {
                             exp = car(cdr(cdr(cdr(exp)))); isTc = true; continue;
                         } else
                             return null;
+                    }
+
+                    if (HAVE_XTRA && car(exp) == sDefine.get()) {
+                        twoArgs("define", cdr(exp), exp);
+                        Object symbol = car(cdr(exp));
+                        if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol or lambda: " + printSEx(symbol)
+                                                                     + ". this was the result of evaluating the expression "
+                                                                     + printSEx(car(cdr(exp))) + errorExp(exp));
+                        Object value = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
+                        topEnv.cdr = cons(cons(symtab.intern((String)symbol), cons(value, null)), cdr(topEnv));
+
+                        return value;
                     }
 
                     if (car(exp) == sLambda.get()) {
@@ -444,7 +458,7 @@ public class LambdaJ {
                         // run the function's expressions, the last one with TCO in case it's a tailcall
                         ConsCell body;
                         for (body = (ConsCell) cdr(cdr(exp)); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                            eval(car(body), extenv, stack+1, level+1);
+                            eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
                             exp = car(body); env = extenv; isTc = true; continue;
                         } // else fall through to "cannot eval". should really not happen anyway
@@ -453,7 +467,7 @@ public class LambdaJ {
                     if (HAVE_COND && car(exp) == sCond.get()) {
                         ConsCell c;
                         for (c = (ConsCell) cdr(exp); c != null; c = (ConsCell) cdr(c)) {
-                            if (eval(car(car(c)), env, stack+1, level+1) != null) {
+                            if (eval(car(car(c)), topEnv, env, stack+1, level+1) != null) {
                                 exp = car(cdr(car(c))); isTc = true; continue tailcall;
                             }
                         }
@@ -463,12 +477,12 @@ public class LambdaJ {
                     // apply function to list
                     if (HAVE_APPLY && car(exp) == sApply.get()) {
                         twoArgs("apply", cdr(exp), exp);
-                        final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
+                        final Object func = eval(car(cdr(exp)), topEnv, env, stack + 1, level + 1);
                         if (func == null) throw new LambdaJError("apply: cannot apply function nil. "
                                                                  + "nil was the result of evaluating the expression "
                                                                  + printSEx(car(cdr(exp))) + errorExp(exp));
 
-                        final Object args = eval(car(cdr(cdr(exp))), env, stack+1, level+1);
+                        final Object args = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
                         if (consp(func)) {
                             exp = cons(func, args); isTc = true; continue;
                         }
@@ -483,12 +497,12 @@ public class LambdaJ {
                     }
 
                     /* function call */
-                    Object func = eval(car(exp), env, stack + 1, level + 1);
+                    Object func = eval(car(exp), topEnv, env, stack + 1, level + 1);
                     if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
                         exp = cons(func, cdr(exp)); isTc = true; continue;
                     }
                     if (isPrim(func)) {
-                        try { return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack+1, level + 1), stack); }
+                        try { return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), topEnv, env, stack+1, level + 1), stack); }
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
                     throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
@@ -505,11 +519,11 @@ public class LambdaJ {
                     if (cdr(exp) != null && !consp(cdr(exp)))
                         throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp))
                                                + errorExp(exp));
-                    ConsCell extenv = makeArgList(exp, env, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
+                    ConsCell extenv = makeArgList(exp, topEnv, env, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
 
                     ConsCell body = (ConsCell) cdr(lambda);
                     for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                        eval(car(body), extenv, stack+1, level+1);
+                        eval(car(body), topEnv, extenv, stack+1, level+1);
                     if (body != null) {
                         exp = car(body); env = extenv; isTc = true; continue;
                     } // else fall through to "cannot eval". should really not happen anyway
@@ -536,10 +550,10 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
-    private ConsCell makeArgList(Object exp, ConsCell env, int stack, int level, ConsCell params, ConsCell args) {
+    private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, int stack, int level, ConsCell params, ConsCell args) {
         ConsCell extenv = env;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-            extenv = cons(cons(car(params),  cons(eval(car(args), env, stack + 1, level + 1), null)), extenv);
+            extenv = cons(cons(car(params),  cons(eval(car(args), topEnv, env, stack + 1, level + 1), null)), extenv);
         if (params != null)
             throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printSEx(params) + errorExp(exp));
         if (args != null)
@@ -547,12 +561,12 @@ public class LambdaJ {
         return extenv;
     }
 
-    private ConsCell evlis(ConsCell _list, ConsCell env, int stack, int level) {
+    private ConsCell evlis(ConsCell _list, ConsCell topEnv, ConsCell env, int stack, int level) {
         dbgEvalStart("evlis", _list, env, stack, level);
         ConsCell head = null, insertPos = null;
         Object list = _list;
         for (; list != null && _list != cdr(list); list = cdr(list)) {
-            ConsCell currentArg = cons(eval(car(list), env, stack+1, level+1), null);
+            ConsCell currentArg = cons(eval(car(list), topEnv, env, stack+1, level+1), null);
             if (head == null) {
                 head = currentArg;
                 insertPos = head;
@@ -990,8 +1004,9 @@ public class LambdaJ {
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
         final ConsCell env = environment(symtab, null, parser, outWriter);
+        final ConsCell topEnv = env;
         final Object exp = parser.readObj();
-        final Object result = eval(exp, env, 0, 0);
+        final Object result = eval(exp, topEnv, env, 0, 0);
         if (trace >= TRC_EVAL) {
             tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
             tracer.println("*** max stack used:   " + maxEvalStack + " ***");
@@ -1019,9 +1034,10 @@ public class LambdaJ {
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
         setSymtab(parser);
         final ConsCell env = environment(symtab, customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
+        final ConsCell topEnv = env;
         Object exp = parser.readObj();
         while (true) {
-            final Object result = eval(exp, env, 0, 0);
+            final Object result = eval(exp, topEnv, env, 0, 0);
             if (trace >= TRC_EVAL) {
                 tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
                 tracer.println("*** max stack used:   " + maxEvalStack + " ***");
@@ -1140,73 +1156,73 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.73 2020/10/14 06:27:05 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.74 2020/10/14 14:11:42 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
     private static void showUsage() {
-        System.out.println("Usage:\n" +
-                "\n" +
-                "interactive:\n" +
-                "java -jar lambda.jar [commandline-flags]*\n" +
-                "\n" +
-                "non-interactive:\n" +
-                "java -jar lambda.jar [commandline-flags]* < lisp-source.lisp\n" +
-                "\n" +
-                "Commandline-flags are:\n" +
-                "\n" +
-                "Misc:\n" +
-                "--version .....  show version and exit\n" +
-                "--help ........  show this message and exit\n" +
-                "--trace .......  print internal interpreter info during\n" +
-                "                 reading/ parsing/ executing programs\n" +
-                "\n" +
-                "Feature flags:\n" +
-                "\n" +
-                "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n" +
-                "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n" +
-                "--no-extra ....  no special form 'if'\n" +
-                "--no-double ...  no number support\n" +
-                "--no-string ...  no string support\n" +
-                "--no-io .......  no primitive functions read/ write/ writeln\n" +
-                "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc\n" +
-                "\n" +
-                "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n" +
-                "                   S-expressions\n" +
-                "                   symbols and cons-cells (i.e. lists)\n" +
-                "                   function application\n" +
-                "                   the special form quote\n" +
-                "                   atom, eq, cons, car, cdr, lambda, apply, cond, labels\n" +
-                "\n" +
-                "--no-apply ....  no special form 'apply'\n" +
-                "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n" +
-                "\n" +
-                "--min .........  turn off all above features, leaving a Lisp with 8 primitives:\n" +
-                "                   S-expressions\n" +
-                "                   symbols and cons-cells (i.e. lists)\n" +
-                "                   function application\n" +
-                "                   the special form quote\n" +
-                "                   atom, eq, cons, car, cdr, lambda, cond\n" +
-                "\n" +
-                "--no-cons .....  no primitive functions cons/ car/ cdr\n" +
-                "--no-cond .....  no special form 'cond'\n" +
-                "\n" +
-                "--lambda+ .....  turn off pretty much everything except Lambda calculus,\n" +
-                "                 leaving a Lisp with 4 primitives:\n" +
-                "                   S-expressions\n" +
-                "                   symbols and cons-cells (i.e. lists)\n" +
-                "                   function application\n" +
-                "                   the special form quote\n" +
-                "                   atom, eq, lambda\n" +
-                "\n" +
-                "--no-atom .....  no primitive function 'atom'\n" +
-                "--no-eq .......  no primitive function 'eq'\n" +
-                "--no-quote ....  no special form quote\n" +
-                "\n" +
-                "--lambda ......  turns off yet even more stuff, leaving I guess bare bones Lambda calculus:\n" +
-                "                   S-expressions\n" +
-                "                   symbols and cons-cells (i.e. lists)\n" +
-                "                   function application\n" +
-                "                   lambda");
+        System.out.println("Usage:\n"
+                + "\n"
+                + "interactive:\n"
+                + "java -jar lambda.jar [commandline-flags]*\n"
+                + "\n"
+                + "non-interactive:\n"
+                + "java -jar lambda.jar [commandline-flags]* < lisp-source.lisp\n"
+                + "\n"
+                + "Commandline-flags are:\n"
+                + "\n"
+                + "Misc:\n"
+                + "--version .....  show version and exit\n"
+                + "--help ........  show this message and exit\n"
+                + "--trace .......  print internal interpreter info during\n"
+                + "                 reading/ parsing/ executing programs\n"
+                + "\n"
+                + "Feature flags:\n"
+                + "\n"
+                + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
+                + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
+                + "--no-extra ....  no special form 'define' or 'if'\n"
+                + "--no-double ...  no number support\n"
+                + "--no-string ...  no string support\n"
+                + "--no-io .......  no primitive functions read/ write/ writeln\n"
+                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc\n"
+                + "\n"
+                + "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n"
+                + "                   S-expressions\n"
+                + "                   symbols and cons-cells (i.e. lists)\n"
+                + "                   function application\n"
+                + "                   the special form quote\n"
+                + "                   atom, eq, cons, car, cdr, lambda, apply, cond, labels\n"
+                + "\n"
+                + "--no-apply ....  no special form 'apply'\n"
+                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
+                + "\n"
+                + "--min .........  turn off all above features, leaving a Lisp with 8 primitives:\n"
+                + "                   S-expressions\n"
+                + "                   symbols and cons-cells (i.e. lists)\n"
+                + "                   function application\n"
+                + "                   the special form quote\n"
+                + "                   atom, eq, cons, car, cdr, lambda, cond\n"
+                + "\n"
+                + "--no-cons .....  no primitive functions cons/ car/ cdr\n"
+                + "--no-cond .....  no special form 'cond'\n"
+                + "\n"
+                + "--lambda+ .....  turn off pretty much everything except Lambda calculus,\n"
+                + "                 leaving a Lisp with 4 primitives:\n"
+                + "                   S-expressions\n"
+                + "                   symbols and cons-cells (i.e. lists)\n"
+                + "                   function application\n"
+                + "                   the special form quote\n"
+                + "                   atom, eq, lambda\n"
+                + "\n"
+                + "--no-atom .....  no primitive function 'atom'\n"
+                + "--no-eq .......  no primitive function 'eq'\n"
+                + "--no-quote ....  no special form quote\n"
+                + "\n"
+                + "--lambda ......  turns off yet even more stuff, leaving I guess bare bones Lambda calculus:\n"
+                + "                   S-expressions\n"
+                + "                   symbols and cons-cells (i.e. lists)\n"
+                + "                   function application\n"
+                + "                   lambda");
     }
 }
