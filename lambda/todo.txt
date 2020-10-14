@@ -1,3 +1,36 @@
+applyPrimitive (2x) in eval in ein try/catch wrappen, im catch:
+throw new LambdaJError(e.getMessage + expError(exp))
+-> damit sieht man in welcher expression z.B. argumente nicht passen
+
+LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren
+
+eval braucht keine elsif Kette sein: in jedem if gibts return oder continue
+
+evlabels inlinen und TCO
+
+Alternatives Objectmodell mit weniger casts:
+
+interface Value {
+    default car() { throw new Error("not a cons"); }
+    default cdr() { throw new Error("not a cons"); }
+    String toString();
+}
+
+interface Atom extends Value {
+    Object value;
+    String toString() { return value.toString(); }
+}
+
+class ConsCell extends Value {
+    Value car, cdr;
+}
+
+Value car(Value v) { return v.car(); }
+Value cdr(Value v) { return v.cdr(); }
+ConsCell cons(Value car, Value cdr) { return new ConsCell(car, cdr); }
+
+
+
 damit man das environment von liste auf hashmap umstellen kann, sollte man methoden zum erweitern des environment einfuehren,
 und das intern verwendete assoc muesste angepasst werden. assoc braucht jetzt schon 40% der zeit, mit grossen
 programmen mit vielen methoden wirds nicht besser, und jede methode am callstack fuegt auch ihre parameter hinzu. damit

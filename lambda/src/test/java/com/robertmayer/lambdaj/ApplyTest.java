@@ -92,4 +92,22 @@ public class ApplyTest {
     public void helloApply3() {
         LambdaJTest.runTest("String", "(apply write (cons 1 nil))", "t", "1.0");
     }
+
+
+
+
+    @Test
+    public void applyApply() {
+        LambdaJTest.runTest("String", "(apply (apply (lambda (a b) '(lambda () nil)) '(1 2)) '())", "nil", null);
+    }
+
+    @Test
+    public void x() {
+        LambdaJTest.runErrorTest("String", "(apply (apply (lambda (a b) '(lambda nil nil)) '(1 2)) '())", "lambda invocation: expected a parameter list but got nil");
+    }
+
+    @Test
+    public void y() {
+        LambdaJTest.runErrorTest("String", "(apply (apply (lambda (a b) '(lambda () nil)) '(1 2)) 'a)", "lambda invocation: expected an argument list but got a");
+    }
 }

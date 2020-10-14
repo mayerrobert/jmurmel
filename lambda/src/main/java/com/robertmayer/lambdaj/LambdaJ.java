@@ -1,4 +1,8 @@
-/* Copyright (C) 2020 by Robert Mayer */
+/* LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
+
+This work is licensed under the terms of the MIT license.
+For a copy, see https://opensource.org/licenses/MIT. */
+
 package com.robertmayer.lambdaj;
 
 import java.io.IOException;
@@ -387,26 +391,31 @@ public class LambdaJ {
         boolean isTc = false;
         try {
             level--;
+
             tailcall:
             while (true) {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", exp, env, stack, level);
+
                 if (symbolp(exp)) {                 // this line is convenient breakpoint
                     if (exp == null) return null;
                     ConsCell envEntry = assoc(exp, env);
                     if (envEntry != null) return car(cdr(envEntry));
                     throw new LambdaJError("'" + exp + "' is undefined");
+                }
 
-                } else if (atom(exp)) {
+                if (atom(exp)) {
                     return exp;
+                }
 
                 // special forms
-                } else if (symbolp(car (exp))) {
+                if (symbolp(car (exp))) {
                     if (HAVE_QUOTE && car(exp) == sQuote.get()) {
                         oneArg("quote", cdr(exp));
                         return car(cdr(exp));
+                    }
 
-                    } else if (HAVE_XTRA && car(exp) == sIf.get()) {
+                    if (HAVE_XTRA && car(exp) == sIf.get()) {
                         nArgs("if", cdr(exp), 2, 3, exp);
                         if (eval(car(cdr(exp)), env, stack + 1, level + 1) != null) {
                             exp = car(cdr(cdr(exp))); isTc = true; continue;
@@ -414,18 +423,21 @@ public class LambdaJ {
                             exp = car(cdr(cdr(cdr(exp)))); isTc = true; continue;
                         } else
                             return null;
+                    }
 
-                    } else if (car(exp) == sLambda.get()) {
+                    if (car(exp) == sLambda.get()) {
                         nArgs("lambda", cdr(exp), 2, exp);
                         return exp;
+                    }
 
-                    } else if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
+                    if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
                         nArgs("labels", cdr(exp), 2, exp);
                         ConsCell bindings = (ConsCell) car(cdr(exp));
                         ConsCell body =     (ConsCell) cdr(cdr(exp));
                         return evlabels(bindings, body, env, stack+1, level+1);
+                    }
 
-                    } else if (HAVE_COND && car(exp) == sCond.get()) {
+                    if (HAVE_COND && car(exp) == sCond.get()) {
                         ConsCell c;
                         for (c = (ConsCell) cdr(exp); c != null; c = (ConsCell) cdr(c)) {
                             if (eval(car(car(c)), env, stack+1, level+1) != null) {
@@ -433,9 +445,10 @@ public class LambdaJ {
                             }
                         }
                         return null;
+                    }
 
                     // apply function to list
-                    } else if (HAVE_APPLY && car(exp) == sApply.get()) {
+                    if (HAVE_APPLY && car(exp) == sApply.get()) {
                         twoArgs("apply", cdr(exp), exp);
                         final Object func = eval(car(cdr(exp)), env, stack + 1, level + 1);
                         if (func == null) throw new LambdaJError("apply: cannot apply function nil. "
@@ -451,30 +464,31 @@ public class LambdaJ {
                                                + ". this was the result of evaluating the expression "
                                                + printSEx(car(cdr(exp))) + errorExp(exp));
 
-                    } else { /* function call */
-                        Object func = eval(car(exp), env, stack + 1, level + 1);
-                        if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
-                            exp = cons(func, cdr(exp)); isTc = true; continue;
-                        } else if (isPrim(func)) {
-                            return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack+1, level + 1), stack);
-                        }
-                        else throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
                     }
 
-                } else if (consp(car(exp)) && car(car(exp)) == sLambda.get()) {
+                    /* function call */
+                    Object func = eval(car(exp), env, stack + 1, level + 1);
+                    if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
+                        exp = cons(func, cdr(exp)); isTc = true; continue;
+                    }
+                    if (isPrim(func)) {
+                        return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack+1, level + 1), stack);
+                    }
+                    throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
+
+                }
+
+                if (consp(car(exp)) && car(car(exp)) == sLambda.get()) {
                     /* should be a lambda, bind args as "names" into env and eval body-list */
                     final Object lambda = cdr(car(exp));
                     nArgs("lambda", lambda, 2, exp);
-
-                    ConsCell extenv = env, params = (ConsCell) car(lambda), args = (ConsCell) cdr(exp);
-                    for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-                        extenv = cons(cons(car(params),  cons(eval(car(args), env, stack + 1, level + 1), null)), extenv);
-                    if (params != null)
-                        throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printSEx(params)
-                        + errorExp(exp));
-                    if (args != null)
-                        throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printSEx(args)
-                        + errorExp(exp));
+                    if (car(lambda) != null && !consp(car(lambda)))
+                        throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda))
+                                               + errorExp(exp));
+                    if (cdr(exp) != null && !consp(cdr(exp)))
+                        throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp))
+                                               + errorExp(exp));
+                    ConsCell extenv = makeArgList(exp, env, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
 
                     ConsCell body = (ConsCell) cdr(lambda);
                     for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
@@ -483,7 +497,9 @@ public class LambdaJ {
                         exp = car(body); env = extenv; isTc = true; continue;
                     } // else fall through to "cannot eval". should really not happen anyway
 
-                } else if (atom(car(exp))) {
+                }
+
+                if (atom(car(exp))) {
                     throw new LambdaJError("not a function: " + printSEx(car(exp)) + errorExp(exp));
 
                 }
@@ -496,6 +512,22 @@ public class LambdaJ {
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", exp, stack, level);
         }
+    }
+
+    /** build an extended environment for a function invocation:<pre>
+     *  loop over params and args
+     *    construct a list (param arg)
+     *    stick above list in front of the environment
+     *  return extended environment</pre> */
+    private ConsCell makeArgList(Object exp, ConsCell env, int stack, int level, ConsCell params, ConsCell args) {
+        ConsCell extenv = env;
+        for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
+            extenv = cons(cons(car(params),  cons(eval(car(args), env, stack + 1, level + 1), null)), extenv);
+        if (params != null)
+            throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printSEx(params) + errorExp(exp));
+        if (args != null)
+            throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printSEx(args) + errorExp(exp));
+        return extenv;
     }
 
     private ConsCell evlis(ConsCell _list, ConsCell env, int stack, int level) {
@@ -1019,6 +1051,7 @@ public class LambdaJ {
 
         final LambdaJ interpreter = new LambdaJ();
 
+        if (hasFlag("--trace=eval", args)) interpreter.trace = TRC_EVAL;
         if (hasFlag("--trace", args))     interpreter.trace = TRC_LEX;
 
         if (hasFlag("--no-nil", args))    interpreter.HAVE_NIL = false;
@@ -1111,7 +1144,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.70 2020/10/13 17:46:06 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.71 2020/10/13 20:13:22 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
