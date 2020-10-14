@@ -106,12 +106,12 @@ public class EmbeddedTest {
     }
 
     // this will be invoked as first thing in interpretExpressions()
-    // create a list containing our custom primitive, i.e. a list containing (symbol function) or (symbol value) lists
+    // create a list containing our custom primitive, i.e. a list containing (symbol function) or (symbol value) pairs
     //
-    // here a list will be created that contains ((greet <Java code for greet>) (*answer* 42.0))
+    // here a list will be created that contains ((greet . <Java code for greet>) (*answer* . 42.0))
     private static LambdaJ.ConsCell makeEnvironment(LambdaJ.SymbolTable symtab, ObjectReader in, ObjectWriter out) {
-        return cons(cons(symtab.intern("greet"),    cons((Primitive)(a -> greet(a, in, out)), null)),
-               cons(cons(symtab.intern("*answer*"), cons(42.0, null)),
+        return cons(cons(symtab.intern("greet"),    (Primitive)(a -> greet(a, in, out))),
+               cons(cons(symtab.intern("*answer*"), 42.0),
                null));
     }
 
