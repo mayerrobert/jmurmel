@@ -1,4 +1,4 @@
-package com.robertmayer.lambdaj;
+package com.robertmayer.lambdaj.custom;
 
 import java.io.StringReader;
 import java.util.Locale;
@@ -9,11 +9,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.robertmayer.lambdaj.LambdaJ;
 import com.robertmayer.lambdaj.LambdaJ.ConsCell;
 import com.robertmayer.lambdaj.LambdaJ.ObjectReader;
 import com.robertmayer.lambdaj.LambdaJ.ObjectWriter;
 import com.robertmayer.lambdaj.LambdaJ.Parser;
 import com.robertmayer.lambdaj.LambdaJ.Primitive;
+import com.robertmayer.lambdaj.LambdaJ.SExpressionParser;
+import com.robertmayer.lambdaj.LambdaJ.SymbolTable;
 
 public class EmbeddedTest {
     private static Locale prev;
@@ -31,10 +34,8 @@ public class EmbeddedTest {
 
     @Test
     public void testMinimal() {
-        Object result = new LambdaJ().interpretExpression(
-                new StringReader("(cons 'Hello,\\ World! nil)")::read,
-                (s) -> { return; }
-                );
+        Object result = new LambdaJ()
+                .interpretExpression(new StringReader("(cons 'Hello,\\ World! nil)")::read, (s) -> { return; });
         assertEquals("(Hello, World!)", result.toString());
     }
 

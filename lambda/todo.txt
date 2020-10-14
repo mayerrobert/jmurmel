@@ -38,8 +38,6 @@ nice to have: apply mit zuviel/ zuwenig args fuer ein lambda: ueberschuessige ar
 fehlende als null.
 
 
-Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen? XML schreiben muesste supereinfach sein?!
-
 Doku: ein Custom Parser koennte statt parsen eine Liste liefern (koennte z.B. hardcodiert
 mit new ConsCell zusammengestoppelt werden) und intern() koennte mittels String.intern() umgesetzt werden.
 Anmerkung: Symbols sind Strings, Stringliterale in der o.a. Liste sind bereits mit String.intern() bearbeitet,
@@ -254,6 +252,8 @@ interpret(...)        // entweder einen char supplier oder einen Parser, oder ei
 eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
 zweite map fuer FFI funktionen s.u.?
 
+Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen? XML schreiben muesste supereinfach sein?!
+-> es braucht viele annotations und public noarg constructors, zawos brauchma des
 
 
 
