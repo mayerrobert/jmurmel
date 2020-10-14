@@ -432,9 +432,22 @@ public class LambdaJ {
 
                     if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
                         nArgs("labels", cdr(exp), 2, exp);
-                        ConsCell bindings = (ConsCell) car(cdr(exp));
-                        ConsCell body =     (ConsCell) cdr(cdr(exp));
-                        return evlabels(bindings, body, env, stack+1, level+1);
+                        ConsCell bindings, extenv = env;
+                        // stick the functions into the extenv
+                        for (bindings = (ConsCell) car(cdr(exp)); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
+                            final ConsCell currentFunc = (ConsCell)car(bindings);
+                            final Object currentSymbol = symtab.intern((String)car(currentFunc));
+                            final ConsCell lambda = cons(cons(sLambda.get(), cdr(currentFunc)), null);
+                            extenv = cons(cons(currentSymbol, lambda), extenv);
+                        }
+
+                        // run the function's expressions, the last one with TCO in case it's a tailcall
+                        ConsCell body;
+                        for (body = (ConsCell) cdr(cdr(exp)); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                            eval(car(body), extenv, stack+1, level+1);
+                        if (body != null) {
+                            exp = car(body); env = extenv; isTc = true; continue;
+                        } // else fall through to "cannot eval". should really not happen anyway
                     }
 
                     if (HAVE_COND && car(exp) == sCond.get()) {
@@ -551,27 +564,6 @@ public class LambdaJ {
         }
         dbgEvalDone("evlis", _list, stack, level);
         return head;
-    }
-
-    private Object evlabels(ConsCell _bindings, ConsCell _body, ConsCell env, int stack, int level) {
-        dbgEvalStart("evlabels 1", _bindings, env, stack, level);
-        ConsCell extenv = env;
-        Object bindings = _bindings, body = _body;
-        for (; bindings != null; bindings = cdr(bindings)) {
-            final ConsCell currentFunc = (ConsCell)car(bindings);
-            final String currentName = (String)car(currentFunc);
-            final ConsCell currentBody = (ConsCell)cdr(currentFunc);
-            final ConsCell lambda = cons(cons(sLambda.get(), currentBody), null);
-            extenv = cons(cons(symtab.intern(currentName), lambda), extenv);
-        }
-        dbgEvalDone("evlabels 1", _bindings, stack, level);
-
-        dbgEvalStart("evlabels 2", _body, extenv, stack, level);
-        Object result = null;
-        for (; body != null; body = cdr(body))
-            result = eval(car(body), extenv, stack+1, level+1);
-        dbgEvalDone("evlabels 2", _body, stack, level);
-        return result;
     }
 
     private int maxEvalStack;
@@ -1148,7 +1140,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.72 2020/10/14 06:12:25 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.73 2020/10/14 06:27:05 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

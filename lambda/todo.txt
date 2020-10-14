@@ -1,7 +1,6 @@
 
-LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren
-
-evlabels inlinen und TCO
+LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
+und ggf. Unterschieden
 
 Alternatives Objectmodell mit weniger casts:
 
@@ -482,3 +481,5 @@ eval braucht keine elsif Kette sein: in jedem if gibts return oder continue
 applyPrimitive (2x) in eval in ein try/catch wrappen, im catch:
 throw new LambdaJError(e.getMessage + expError(exp))
 -> damit sieht man in welcher expression z.B. argumente nicht passen
+
+evlabels inlinen und TCO
