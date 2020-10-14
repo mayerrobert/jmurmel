@@ -402,7 +402,7 @@ public class LambdaJ {
                 if (symbolp(exp)) {                 // this line is convenient breakpoint
                     if (exp == null) return null;
                     ConsCell envEntry = assoc(exp, env);
-                    if (envEntry != null) return car(cdr(envEntry));
+                    if (envEntry != null) return cdr(envEntry);
                     throw new LambdaJError("'" + exp + "' is undefined");
                 }
 
@@ -430,11 +430,11 @@ public class LambdaJ {
                     if (HAVE_XTRA && car(exp) == sDefine.get()) {
                         twoArgs("define", cdr(exp), exp);
                         Object symbol = car(cdr(exp));
-                        if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol or lambda: " + printSEx(symbol)
+                        if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol: " + printSEx(symbol)
                                                                      + ". this was the result of evaluating the expression "
                                                                      + printSEx(car(cdr(exp))) + errorExp(exp));
                         Object value = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
-                        topEnv.cdr = cons(cons(symtab.intern((String)symbol), cons(value, null)), cdr(topEnv));
+                        topEnv.cdr = cons(cons(symtab.intern((String)symbol), value), cdr(topEnv));
 
                         return value;
                     }
@@ -451,7 +451,7 @@ public class LambdaJ {
                         for (bindings = (ConsCell) car(cdr(exp)); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
-                            final ConsCell lambda = cons(cons(sLambda.get(), cdr(currentFunc)), null);
+                            final ConsCell lambda = cons(sLambda.get(), cdr(currentFunc));
                             extenv = cons(cons(currentSymbol, lambda), extenv);
                         }
 
@@ -553,7 +553,7 @@ public class LambdaJ {
     private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, int stack, int level, ConsCell params, ConsCell args) {
         ConsCell extenv = env;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-            extenv = cons(cons(car(params),  cons(eval(car(args), topEnv, env, stack + 1, level + 1), null)), extenv);
+            extenv = cons(cons(car(params),  eval(car(args), topEnv, env, stack + 1, level + 1)), extenv);
         if (params != null)
             throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printSEx(params) + errorExp(exp));
         if (args != null)
@@ -861,9 +861,9 @@ public class LambdaJ {
                 return expTrue.get();
             };
 
-            env = cons(cons(symtab.intern("read"),    cons(freadobj, null)),
-                  cons(cons(symtab.intern("write"),   cons(fwriteobj, null)),
-                  cons(cons(symtab.intern("writeln"), cons(fwriteln, null)),
+            env = cons(cons(symtab.intern("read"),    freadobj),
+                  cons(cons(symtab.intern("write"),   fwriteobj),
+                  cons(cons(symtab.intern("writeln"), fwriteln),
                   env)));
         }
 
@@ -901,20 +901,18 @@ public class LambdaJ {
                 }
             };
 
-            env = cons(cons(symtab.intern("stringp"), cons(fstringp, null)),
-                  cons(cons(symtab.intern("string-format"), cons(fformat, null)),
-                  cons(cons(symtab.intern("string-format-locale"), cons(fformatLocale, null)),
+            env = cons(cons(symtab.intern("stringp"), fstringp),
+                  cons(cons(symtab.intern("string-format"), fformat),
+                  cons(cons(symtab.intern("string-format-locale"), fformatLocale),
                   env)));
         }
 
         if (HAVE_T)
-            env = cons(cons(symtab.intern("t"),
-                  cons(symtab.intern("t"), null)),
+            env = cons(cons(symtab.intern("t"), symtab.intern("t")),
                   env);
 
         if (HAVE_NIL)
-            env = cons(cons(symtab.intern("nil"),
-                  cons(null, null)),
+            env = cons(cons(symtab.intern("nil"), null),
                   env);
 
         if (HAVE_UTIL) {
@@ -924,18 +922,18 @@ public class LambdaJ {
             final Primitive flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
             final Primitive fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
 
-            env = cons(cons(symtab.intern("consp"),   cons(fconsp, null)),
-                  cons(cons(symtab.intern("symbolp"), cons(fsymbolp, null)),
-                  cons(cons(symtab.intern("listp"),   cons(flistp, null)),
-                  cons(cons(symtab.intern("null?"),   cons(fnull, null)),
-                  cons(cons(symtab.intern("assoc"),   cons(fassoc, null)),
+            env = cons(cons(symtab.intern("consp"),   fconsp),
+                  cons(cons(symtab.intern("symbolp"), fsymbolp),
+                  cons(cons(symtab.intern("listp"),   flistp),
+                  cons(cons(symtab.intern("null?"),   fnull),
+                  cons(cons(symtab.intern("assoc"),   fassoc),
                   env)))));
         }
 
         if (HAVE_ATOM) {
             final Primitive fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
 
-            env = cons(cons(symtab.intern("atom"),    cons(fatom, null)),
+            env = cons(cons(symtab.intern("atom"), fatom),
                        env);
         }
 
@@ -957,24 +955,24 @@ public class LambdaJ {
                 return (Double)car(args) % (Double)car(cdr(args));
             };
 
-            env = cons(cons(symtab.intern("+"),       cons(fadd, null)),
-                  cons(cons(symtab.intern("-"),       cons(fsub, null)),
-                  cons(cons(symtab.intern("*"),       cons(fmul, null)),
-                  cons(cons(symtab.intern("/"),       cons(fquot, null)),
-                  cons(cons(symtab.intern("="),       cons(fnumbereq, null)),
-                  cons(cons(symtab.intern(">"),       cons(fgt, null)),
-                  cons(cons(symtab.intern(">="),      cons(fge, null)),
-                  cons(cons(symtab.intern("<"),       cons(flt, null)),
-                  cons(cons(symtab.intern("<="),      cons(fle, null)),
-                  cons(cons(symtab.intern("mod"),     cons(fmod, null)),
-                  cons(cons(symtab.intern("numberp"), cons(fnumberp, null)),
+            env = cons(cons(symtab.intern("+"),       fadd),
+                  cons(cons(symtab.intern("-"),       fsub),
+                  cons(cons(symtab.intern("*"),       fmul),
+                  cons(cons(symtab.intern("/"),       fquot),
+                  cons(cons(symtab.intern("="),       fnumbereq),
+                  cons(cons(symtab.intern(">"),       fgt),
+                  cons(cons(symtab.intern(">="),      fge),
+                  cons(cons(symtab.intern("<"),       flt),
+                  cons(cons(symtab.intern("<="),      fle),
+                  cons(cons(symtab.intern("mod"),     fmod),
+                  cons(cons(symtab.intern("numberp"), fnumberp),
                   env)))))))))));
         }
 
         if (HAVE_EQ) {
             final Primitive feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
-            env = cons(cons(symtab.intern("eq"), cons(feq, null)),
+            env = cons(cons(symtab.intern("eq"), feq),
                        env);
         }
 
@@ -983,9 +981,9 @@ public class LambdaJ {
             final Primitive fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
             final Primitive fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
 
-            env = cons(cons(symtab.intern("cdr"),     cons(fcdr, null)),
-                  cons(cons(symtab.intern("car"),     cons(fcar, null)),
-                  cons(cons(symtab.intern("cons"),    cons(fcons, null)),
+            env = cons(cons(symtab.intern("cdr"),     fcdr),
+                  cons(cons(symtab.intern("car"),     fcar),
+                  cons(cons(symtab.intern("cons"),    fcons),
                   env)));
         }
 
@@ -1156,7 +1154,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.74 2020/10/14 14:11:42 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.75 2020/10/14 19:48:04 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
