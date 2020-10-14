@@ -459,7 +459,10 @@ public class LambdaJ {
                         if (consp(func)) {
                             exp = cons(func, args); isTc = true; continue;
                         }
-                        if (isPrim(func)) return applyPrimitive((Primitive)func, (ConsCell)args, stack);
+                        if (isPrim(func)) {
+                            try { return applyPrimitive((Primitive)func, (ConsCell)args, stack); }
+                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
+                        }
                         throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
                                                + ". this was the result of evaluating the expression "
                                                + printSEx(car(cdr(exp))) + errorExp(exp));
@@ -472,14 +475,15 @@ public class LambdaJ {
                         exp = cons(func, cdr(exp)); isTc = true; continue;
                     }
                     if (isPrim(func)) {
-                        return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack+1, level + 1), stack);
+                        try { return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), env, stack+1, level + 1), stack); }
+                        catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
                     throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
 
                 }
 
+                //lambda, bind args as "parameter names" into env and eval body-list */
                 if (consp(car(exp)) && car(car(exp)) == sLambda.get()) {
-                    /* should be a lambda, bind args as "names" into env and eval body-list */
                     final Object lambda = cdr(car(exp));
                     nArgs("lambda", lambda, 2, exp);
                     if (car(lambda) != null && !consp(car(lambda)))
@@ -1144,7 +1148,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.71 2020/10/13 20:13:22 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.72 2020/10/14 06:12:25 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

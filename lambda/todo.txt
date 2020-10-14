@@ -1,10 +1,5 @@
-applyPrimitive (2x) in eval in ein try/catch wrappen, im catch:
-throw new LambdaJError(e.getMessage + expError(exp))
--> damit sieht man in welcher expression z.B. argumente nicht passen
 
 LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren
-
-eval braucht keine elsif Kette sein: in jedem if gibts return oder continue
 
 evlabels inlinen und TCO
 
@@ -481,3 +476,9 @@ Wenn eine Funktion labels oder cond enthaelt, werden tailcalls effektiv nicht we
 auf den Java stack kommt. "if" ist in eval inline drin, deswegen funktioniert TCO trotz "if".
 
 environment umsortieren
+
+eval braucht keine elsif Kette sein: in jedem if gibts return oder continue
+
+applyPrimitive (2x) in eval in ein try/catch wrappen, im catch:
+throw new LambdaJError(e.getMessage + expError(exp))
+-> damit sieht man in welcher expression z.B. argumente nicht passen
