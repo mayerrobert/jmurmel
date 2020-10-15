@@ -3,7 +3,8 @@
 A customizable Lisp-1-ish interpreter written in Java8+ that can be used
 standalone as well as embedded.
 
-LambdaJ has garbage collection c/o Java, tail call optimization,
+LambdaJ has tail call optimization,
+garbage collection c/o Java
 and except read/ write/ writeln it is purely functional (but see Customization below).
 
 LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.

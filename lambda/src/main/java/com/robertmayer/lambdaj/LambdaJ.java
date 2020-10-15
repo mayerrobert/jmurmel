@@ -72,8 +72,9 @@ public class LambdaJ {
             }
         }
 
+        private static int nCells;
         public Object car, cdr;
-        public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+        public ConsCell(Object car, Object cdr)    { nCells++; this.car = car; this.cdr = cdr; }
 
         @Override public String toString() { return printObj(this); }
         @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
@@ -91,7 +92,7 @@ public class LambdaJ {
     public static final int EOF = -1;
     public static final int TOKEN_MAX = 2000; // max length of symbols and literals
 
-    public static final int TRC_NONE = 0, TRC_EVAL = 1, TRC_ENV = 2, TRC_PRIM = 3, TRC_PARSE = 4, TRC_TOK = 5, TRC_LEX = 6;
+    public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_EVAL = 2, TRC_ENV = 3, TRC_PRIM = 4, TRC_PARSE = 5, TRC_TOK = 6, TRC_LEX = 7;
     public int trace = TRC_NONE;
 
     private Tracer tracer = System.err::println;
@@ -992,6 +993,7 @@ public class LambdaJ {
      *  will read S-expressions from {@code in} as well,
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
+        ConsCell.nCells = 0;
         Parser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
@@ -1003,6 +1005,7 @@ public class LambdaJ {
             tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
             tracer.println("*** max stack used:   " + maxEvalStack + " ***");
         }
+        if (trace >= TRC_STATS) tracer.println("*** total ConsCells:  " + ConsCell.nCells + " ***");
         return result;
     }
 
@@ -1024,6 +1027,7 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
      *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
+        ConsCell.nCells = 0;
         setSymtab(parser);
         final ConsCell env = environment(symtab, customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
         final ConsCell topEnv = env;
@@ -1034,6 +1038,7 @@ public class LambdaJ {
                 tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
                 tracer.println("*** max stack used:   " + maxEvalStack + " ***");
             }
+            if (trace >= TRC_STATS) tracer.println("*** total ConsCells:  " + ConsCell.nCells + " ***");
             exp = parser.readObj();
             if (exp == null) return result;
         }
@@ -1055,30 +1060,31 @@ public class LambdaJ {
 
         final LambdaJ interpreter = new LambdaJ();
 
-        if (hasFlag("--trace=eval", args)) interpreter.trace = TRC_EVAL;
-        if (hasFlag("--trace", args))     interpreter.trace = TRC_LEX;
+        if (hasFlag("--trace=stats", args)) interpreter.trace = TRC_STATS;
+        if (hasFlag("--trace=eval", args))  interpreter.trace = TRC_EVAL;
+        if (hasFlag("--trace", args))       interpreter.trace = TRC_LEX;
 
-        if (hasFlag("--no-nil", args))    interpreter.HAVE_NIL = false;
-        if (hasFlag("--no-t", args))      interpreter.HAVE_T = false;
-        if (hasFlag("--no-extra", args))  interpreter.HAVE_XTRA = false;
-        if (hasFlag("--no-double", args)) interpreter.HAVE_DOUBLE = false;
-        if (hasFlag("--no-string", args)) interpreter.HAVE_STRING = false;
-        if (hasFlag("--no-io", args))     interpreter.HAVE_IO = false;
-        if (hasFlag("--no-util", args))   interpreter.HAVE_UTIL = false;
+        if (hasFlag("--no-nil", args))      interpreter.HAVE_NIL = false;
+        if (hasFlag("--no-t", args))        interpreter.HAVE_T = false;
+        if (hasFlag("--no-extra", args))    interpreter.HAVE_XTRA = false;
+        if (hasFlag("--no-double", args))   interpreter.HAVE_DOUBLE = false;
+        if (hasFlag("--no-string", args))   interpreter.HAVE_STRING = false;
+        if (hasFlag("--no-io", args))       interpreter.HAVE_IO = false;
+        if (hasFlag("--no-util", args))     interpreter.HAVE_UTIL = false;
 
-        if (hasFlag("--no-labels", args)) interpreter.HAVE_LABELS = false;
-        if (hasFlag("--no-cons", args))   interpreter.HAVE_CONS = false;
-        if (hasFlag("--no-cond", args))   interpreter.HAVE_COND = false;
-        if (hasFlag("--no-apply", args))  interpreter.HAVE_APPLY = false;
+        if (hasFlag("--no-labels", args))   interpreter.HAVE_LABELS = false;
+        if (hasFlag("--no-cons", args))     interpreter.HAVE_CONS = false;
+        if (hasFlag("--no-cond", args))     interpreter.HAVE_COND = false;
+        if (hasFlag("--no-apply", args))    interpreter.HAVE_APPLY = false;
 
-        if (hasFlag("--no-atom", args))   interpreter.HAVE_ATOM = false;
-        if (hasFlag("--no-eq", args))     interpreter.HAVE_EQ = false;
-        if (hasFlag("--no-quote", args))  interpreter.HAVE_QUOTE = false;
+        if (hasFlag("--no-atom", args))     interpreter.HAVE_ATOM = false;
+        if (hasFlag("--no-eq", args))       interpreter.HAVE_EQ = false;
+        if (hasFlag("--no-quote", args))    interpreter.HAVE_QUOTE = false;
 
-        if (hasFlag("--min+", args))      interpreter.haveMinPlus();
-        if (hasFlag("--min", args))       interpreter.haveMin();
-        if (hasFlag("--lambda+", args))   interpreter.haveLambdaPlus();
-        if (hasFlag("--lambda", args))    interpreter.haveLambda();
+        if (hasFlag("--min+", args))        interpreter.haveMinPlus();
+        if (hasFlag("--min", args))         interpreter.haveMin();
+        if (hasFlag("--lambda+", args))     interpreter.haveLambdaPlus();
+        if (hasFlag("--lambda", args))      interpreter.haveLambda();
 
         final boolean printResult = hasFlag("--result", args);
 
@@ -1148,7 +1154,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.76 2020/10/14 20:43:31 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.77 2020/10/15 10:08:22 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1164,10 +1170,12 @@ public class LambdaJ {
                 + "Commandline-flags are:\n"
                 + "\n"
                 + "Misc:\n"
-                + "--version .....  show version and exit\n"
-                + "--help ........  show this message and exit\n"
-                + "--trace .......  print internal interpreter info during\n"
-                + "                 reading/ parsing/ executing programs\n"
+                + "--version .......  show version and exit\n"
+                + "--help ..........  show this message and exit\n"
+                + "--trace=stats ...  print stack and memory stats at end\n"
+                + "--trace=eval ....  print internal interpreter info during executing programs\n"
+                + "--trace .........  print lots of internal interpreter info during\n"
+                + "                   reading/ parsing/ executing programs\n"
                 + "\n"
                 + "Feature flags:\n"
                 + "\n"

@@ -1,18 +1,36 @@
 primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
 
-beispiel, wie man einen logger einhaengen kann.
-
-am ende wird stack und nesting getraced falls TRC_EVAL.
--> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
- 
-eval ins environment einhaengen?
+read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
+statt lispStdin
 
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
+eval ins environment einhaengen?
+
 cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eval wird
 -> solche primitiven wuerden auch Lisp programme schneller machen weil weniger assoc aufrufe
 -> ein optimizer, der in define oder lambda reingezwickt wird, koennte (car (cdr o)) erkennen und durch (cadr o) ersetzen
+   mit rekursivem abstieg muesste man nur current node und naechste stufe betrachten
+   car/car  -> caar
+   car/caar -> caaar
+   car/cadr -> caadr
+   car/cdr  -> cadr
+   car/cdar -> cadar
+   car/cddr -> caddr
+
+   cdr/car  -> cdar
+   cdr/caar -> cdaar
+   cdr/cadr -> cdadr
+   cdr/cdr  -> cddr
+   cdr/cdar -> cddar
+   cdr/cddr -> cdddr
+
+buitlin apply-java: erster parameter ist ein string statt symbol, d.h. die expression fuer das erste argument muss einen String liefern,
+das ist dann der Name einer Klasse und/ oder statischen Methode. Ggf. auch eine statische Methode,
+die ein Function<ConsCell,Object> Javalambda liefert.
+
+beispiel, wie man einen logger einhaengen kann.
 
 LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
 und ggf. Unterschieden
@@ -135,6 +153,13 @@ Clisp:
 das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcall wird das environment erweitert,
 dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall erzeugt eine neue Map die
 einen link zum vorgaenger hat 
+
+Zweiter Versuch:
+Das Environment sieht nur der Java Code, duplikate sind verboten. HashMap muesste also doch gehen?!
+Zugriff nur mit assoc und extend, extend schmeisst eine Excpeption, falls es das symbol schon gibt.
+sogar set! muesste gehen?!
+-> nein, geht auch nicht. beim aufruf von funktionen gibts schon duplikate, und nach dem return der funktion
+   muss das environment wieder abgeraeumt werden, s.o.
 
 
 
@@ -493,3 +518,6 @@ evlabels inlinen und TCO
 
 performance: benchmarken
 warum ist das environment eine liste von listen statt eine liste von cons cells
+
+am ende wird stack und nesting getraced falls TRC_EVAL.
+-> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
