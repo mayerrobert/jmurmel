@@ -9,10 +9,12 @@ java -jar lambda.jar [commandline-flags]* < lisp-source.lisp
 Commandline-flags are:
 
 Misc:
---version .....  show version and exit
---help ........  show this message and exit
---trace .......  print internal interpreter info during
-                 reading/ parsing/ executing programs
+--version .......  show version and exit
+--help ..........  show this message and exit
+--trace=stats ...  print stack and memory stats at end
+--trace=eval ....  print internal interpreter info during executing programs
+--trace .........  print lots of internal interpreter info during
+                   reading/ parsing/ executing programs
 
 Feature flags:
 
