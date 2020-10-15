@@ -1,6 +1,20 @@
+primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
+
+beispiel, wie man einen logger einhaengen kann.
+
+am ende wird stack und nesting getraced falls TRC_EVAL.
+-> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
+ 
+cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eval wird
+-> solche primitiven wuerden auch Lisp programme schneller machen weil weniger assoc aufrufe
+-> ein optimizer, der in define oder lambda reingezwickt wird, koennte (car (cdr o)) erkennen und durch (cadr o) ersetzen
 
 LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
 und ggf. Unterschieden
+oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreib eine Beschreibung
+zu "symbol" nach stdout
+
+
 
 Alternatives Objectmodell mit weniger casts:
 

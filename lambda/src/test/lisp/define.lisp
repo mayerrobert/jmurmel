@@ -1,5 +1,5 @@
 ; result: t
-; output: 42
+; output: "42"
 
 (define *answer* 42)
 

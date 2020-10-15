@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 public class LambdaJTest {
@@ -212,7 +211,7 @@ public class LambdaJTest {
         try {
             runTest("LambdaJTest.tests[" + n + "]", prog, expectedResult, expectedOutput);
         } catch (Exception e) {
-            Assert.fail("LambdaJTest.tests[" + n + "]: " + prog + " threw Exception " + e.getMessage());
+            fail("LambdaJTest.tests[" + n + "]: " + prog + " threw Exception " + e.getMessage());
         }
     }
 
@@ -233,6 +232,7 @@ public class LambdaJTest {
                 expectedResult = transform(expectedResult);
                 try {
                     runTest(fileName.toString(), contents, expectedResult, expectedOutput);
+                    if (expectedError != null) fail(fileName.toString() + ": expected error \"" + expectedError + "\" but no error occurred");
                 }
                 catch (LambdaJ.LambdaJError e) {
                     if (expectedError != null) {
@@ -240,11 +240,11 @@ public class LambdaJTest {
                             // thats fine
                         }
                         else {
-                            Assert.fail(fileName.toString() + ": expected error \"" + expectedError + '\"'
+                            fail(fileName.toString() + ": expected error \"" + expectedError + '\"'
                                     + " but got error \"" + e.getMessage() + '\"');
                         }
                     } else {
-                        Assert.fail(fileName.toString() + " threw exception " + e.getMessage());
+                        fail(fileName.toString() + " threw exception " + e.getMessage());
                     }
                 }
             }

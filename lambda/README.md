@@ -6,6 +6,11 @@ standalone as well as embedded.
 LambdaJ has garbage collection c/o Java, tail call optimization,
 and except read/ write/ writeln it is purely functional (but see Customization below).
 
+LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
+
+This work is licensed under the terms of the MIT license.
+For a copy, see https://opensource.org/licenses/MIT.
+
 **Standalone use:**
 
     $ java -jar lambdaj-1.0-SNAPSHOT.jar
@@ -32,6 +37,8 @@ Command line parameters in standalone mode:
 * `--help` ..... show all the available commandline parameters and quit
 
 **Embedded use:**
+
+LambdaJ uses Java8+ only, no third party dependencies are required.
 
 Minimal "Hello, World!" example:
 
@@ -79,7 +86,8 @@ including an example of how to hook up your own Lisp primitives written in Java.
 write, string-format
 
     LambdaJ> (write (string-format "%s, World!%n" "Hello"))
-    Hello, World!
+    "Hello, World!
+    "
     result: t
 
 Tail recursion
@@ -88,8 +96,8 @@ Tail recursion
                      (if (= n 0)
                          a
                          (factTR (- n 1) (* n a)))))
-     (write (string-format "Factorial of 50 is %g" (factTR 50 1))))
-    Factorial of 50 is 3,04141e+64
+     (write (string-format-locale "en-US" "Factorial of 50 is %g" (factTR 50 1))))
+    Factorial of 50 is 3.04141e+64
     result: t
 
 ## Features
@@ -97,8 +105,10 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
 * `cond, if`
-* `define` ... inserts a (symbol value) into the top level environment. Note that if you define a symbol several times,
-  there will be several entries in the top level environment with the last shadowing the others. No fancy features, just `(define <symbol> <expression>)`, e.g.
+* `define` ... inserts a (symbol value) pair into the top level environment, returns `value`.
+  You can define a symbol only once,
+  subsequent redefinitions will fail with an error.
+  No fancy features, just `(define <symbol> <expression>)`, e.g.
     - `(define *answer* 42)`
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
@@ -109,7 +119,7 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `assoc`
 * `read`
-* `write, writeln` ... write expects one argument, writeln expects zero or one argument(s)
+* `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
 
 * `=, <, <=, >, >=, +, -, *, /, mod` ... Java Double
 * `stringp, string-format, string-format-locale`
@@ -128,7 +138,7 @@ Math operators are implemented using Java operators for double. This is probably
 esp. around +/-NaN, +/-Infinity, division by zero and so on.
 
 The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double)
-and strings. String literals are 2000 chars max length. (Strings have very limited support.)
+and strings. String literals are 2000 chars max length.
 
 Lambdas are dynamic, i.e. no lexical closures (yet?).
 

@@ -167,7 +167,7 @@ public class LambdaJ {
         private WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object ob) { out.print(LambdaJ.printSEx(ob)); }
+        @Override public void printObj(Object ob) { out.print(printSEx(ob)); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
@@ -367,18 +367,10 @@ public class LambdaJ {
         sLabels = () -> { Object sym = symtab.intern("labels"); sLabels = () -> sym; return sym; };
         sLambda = () -> { Object sym = symtab.intern("lambda"); sLambda = () -> sym; return sym; };
         sQuote  = () -> { Object sym = symtab.intern("quote");  sQuote  = () -> sym; return sym; };
-
         expTrue = () -> { Object exp = makeExpTrue();           expTrue = () -> exp; return exp; };
     }
 
-    private Supplier<Object> sApply;
-    private Supplier<Object> sCond;
-    private Supplier<Object> sIf;
-    private Supplier<Object> sDefine;
-    private Supplier<Object> sLabels;
-    private Supplier<Object> sLambda;
-    private Supplier<Object> sQuote;
-
+    private Supplier<Object> sApply, sCond, sIf, sDefine, sLabels, sLambda, sQuote;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -401,7 +393,7 @@ public class LambdaJ {
 
                 if (symbolp(exp)) {                 // this line is convenient breakpoint
                     if (exp == null) return null;
-                    ConsCell envEntry = assoc(exp, env);
+                    final ConsCell envEntry = assoc(exp, env);
                     if (envEntry != null) return cdr(envEntry);
                     throw new LambdaJError("'" + exp + "' is undefined");
                 }
@@ -433,6 +425,10 @@ public class LambdaJ {
                         if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol: " + printSEx(symbol)
                                                                      + ". this was the result of evaluating the expression "
                                                                      + printSEx(car(cdr(exp))) + errorExp(exp));
+                        final ConsCell envEntry = assoc(symbol, env);
+                        if (envEntry != null) throw new LambdaJError("define: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
+
+
                         Object value = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
                         topEnv.cdr = cons(cons(symtab.intern((String)symbol), value), cdr(topEnv));
 
@@ -478,8 +474,7 @@ public class LambdaJ {
                     if (HAVE_APPLY && car(exp) == sApply.get()) {
                         twoArgs("apply", cdr(exp), exp);
                         final Object func = eval(car(cdr(exp)), topEnv, env, stack + 1, level + 1);
-                        if (func == null) throw new LambdaJError("apply: cannot apply function nil. "
-                                                                 + "nil was the result of evaluating the expression "
+                        if (func == null) throw new LambdaJError("apply: cannot apply function nil. nil was the result of evaluating the expression "
                                                                  + printSEx(car(cdr(exp))) + errorExp(exp));
 
                         final Object args = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
@@ -514,11 +509,9 @@ public class LambdaJ {
                     final Object lambda = cdr(car(exp));
                     nArgs("lambda", lambda, 2, exp);
                     if (car(lambda) != null && !consp(car(lambda)))
-                        throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda))
-                                               + errorExp(exp));
+                        throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
                     if (cdr(exp) != null && !consp(cdr(exp)))
-                        throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp))
-                                               + errorExp(exp));
+                        throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
                     ConsCell extenv = makeArgList(exp, topEnv, env, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
 
                     ConsCell body = (ConsCell) cdr(lambda);
@@ -737,10 +730,11 @@ public class LambdaJ {
     private static final Pattern dQuotePattern = Pattern.compile("[\"]");
     private static final Pattern bSlashPattern = Pattern.compile("[\\\\]([^\"])");
     /** prepend " and \ by a \ */
-    private static String escapeString(String current) {
-        current = dQuotePattern.matcher(current).replaceAll("\\\\\"");
-        current = bSlashPattern.matcher(current).replaceAll("\\\\\\\\$1");
-        return current;
+    private static String escapeString(String s) {
+        if (s == null) return null;
+        s = dQuotePattern.matcher(s).replaceAll("\\\\\"");
+        s = bSlashPattern.matcher(s).replaceAll("\\\\\\\\$1");
+        return s;
     }
 
 
@@ -847,10 +841,10 @@ public class LambdaJ {
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(SymbolTable symtab, ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
         if (HAVE_IO) {
-            final Primitive freadobj =  (ConsCell a) -> { noArgs("read", a);    return lispStdin.readObj(); };
-            final Primitive fwriteobj = (ConsCell a) -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
+            final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin.readObj(); };
+            final Primitive fwriteobj = a -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
 
-            final Primitive fwriteln = (ConsCell a) -> {
+            final Primitive fwriteln =  a -> {
                 nArgs("writeln", a, 0, 1, null);
                 if (a == null) {
                     lispStdout.printEol();
@@ -868,14 +862,14 @@ public class LambdaJ {
         }
 
         if (HAVE_STRING) {
-            final Primitive fstringp =  (ConsCell a) -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
+            final Primitive fstringp =  a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
 
             final Primitive fformat =   a -> {
                 nArgs("string-format", a, 1, null);
                 stringArg("string-format", "first argument", a);
                 String s = ((LambdaJString)car(a)).value;
                 try {
-                    return String.format(s, listToArray(cdr(a)));
+                    return new LambdaJString(String.format(s, listToArray(cdr(a))));
                 } catch (IllegalFormatException e) {
                     throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
                     + "\nerror ocurred processing the argument(s) " + printSEx(a));
@@ -894,7 +888,7 @@ public class LambdaJ {
                 try {
                     if (locString == null) return String.format(s, listToArray(cdr(cdr(a))));
                     Locale loc = Locale.forLanguageTag(locString);
-                    return String.format(loc, s, listToArray(cdr(cdr(a))));
+                    return new LambdaJString(String.format(loc, s, listToArray(cdr(cdr(a)))));
                 } catch (IllegalFormatException e) {
                     throw new LambdaJError("string-format-locale: illegal format string and/ or arguments: " + e.getMessage()
                     + "\nerror ocurred processing the argument(s) " + printSEx(a));
@@ -916,11 +910,11 @@ public class LambdaJ {
                   env);
 
         if (HAVE_UTIL) {
-            final Primitive fnull =     (ConsCell a) -> { oneArg("null?", a);   return boolResult(car(a) == null); };
-            final Primitive fconsp =    (ConsCell a) -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
-            final Primitive fsymbolp =  (ConsCell a) -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-            final Primitive flistp =    (ConsCell a) -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
-            final Primitive fassoc =    (ConsCell a) -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
+            final Primitive fnull =     a -> { oneArg("null?", a);   return boolResult(car(a) == null); };
+            final Primitive fconsp =    a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
+            final Primitive fsymbolp =  a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
+            final Primitive flistp =    a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
+            final Primitive fassoc =    a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
 
             env = cons(cons(symtab.intern("consp"),   fconsp),
                   cons(cons(symtab.intern("symbolp"), fsymbolp),
@@ -931,14 +925,14 @@ public class LambdaJ {
         }
 
         if (HAVE_ATOM) {
-            final Primitive fatom =     (ConsCell a) -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
+            final Primitive fatom =     a -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
 
             env = cons(cons(symtab.intern("atom"), fatom),
                        env);
         }
 
         if (HAVE_DOUBLE) {
-            final Primitive fnumberp =  (ConsCell a) -> { oneArg("numberp", a); return boolResult(numberp(car(a))); };
+            final Primitive fnumberp =  args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); };
             final Primitive fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
             final Primitive flt =       args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0);
             final Primitive fle =       args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0);
@@ -949,7 +943,7 @@ public class LambdaJ {
             final Primitive fsub  =     args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
             final Primitive fquot =     args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
 
-            final Primitive fmod = (ConsCell args) -> {
+            final Primitive fmod = args -> {
                 twoArgs("mod", args);
                 numberArgs("mod", args);
                 return (Double)car(args) % (Double)car(cdr(args));
@@ -970,16 +964,16 @@ public class LambdaJ {
         }
 
         if (HAVE_EQ) {
-            final Primitive feq =       (ConsCell a) -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
+            final Primitive feq =       a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
             env = cons(cons(symtab.intern("eq"), feq),
                        env);
         }
 
         if (HAVE_CONS) {
-            final Primitive fcons =     (ConsCell a) -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-            final Primitive fcar =      (ConsCell a) -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
-            final Primitive fcdr =      (ConsCell a) -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
+            final Primitive fcons =     a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
+            final Primitive fcar =      a -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+            final Primitive fcdr =      a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
 
             env = cons(cons(symtab.intern("cdr"),     fcdr),
                   cons(cons(symtab.intern("car"),     fcar),
@@ -1154,7 +1148,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.75 2020/10/14 19:48:04 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.76 2020/10/14 20:43:31 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
