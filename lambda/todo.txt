@@ -5,6 +5,11 @@ beispiel, wie man einen logger einhaengen kann.
 am ende wird stack und nesting getraced falls TRC_EVAL.
 -> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
  
+eval ins environment einhaengen?
+
+Variable INTERNAL-TIME-UNITS-PER-SECOND
+Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
+
 cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eval wird
 -> solche primitiven wuerden auch Lisp programme schneller machen weil weniger assoc aufrufe
 -> ein optimizer, der in define oder lambda reingezwickt wird, koennte (car (cdr o)) erkennen und durch (cadr o) ersetzen
@@ -14,8 +19,27 @@ und ggf. Unterschieden
 oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreib eine Beschreibung
 zu "symbol" nach stdout
 
+LambdaJError extends RuntimeException   ... abstract
+Syntaxerror extends LambdaJError        ... nur eval
+RuntimeError extends LambdaJError       ... nur primitives
+
+Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
+rplaca, rplacd
+Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
+
+        if(car(exp) == s_define)                        // "define"
+          return(extend_top(car(cdr(exp)),
+                            eval(car(cdr(cdr(exp))), env)));
+        if(car(exp) == s_setb) {                        // "set!"
+          obj *pair   = assoc(car(cdr(exp)), env);
+          obj *newval = eval(car(cdr(cdr(exp))), env);
+          setcdr(pair, newval);
+          return newval;
+        }
 
 
+
+k.a. wieviel die ConsCell casts bremsen
 Alternatives Objectmodell mit weniger casts:
 
 interface Value {
@@ -40,8 +64,6 @@ ConsCell cons(Value car, Value cdr) { return new ConsCell(car, cdr); }
 
 
 redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
-
-k.a. wieviel die ConsCell casts bremsen
 
 nice to have: apply mit zuviel/ zuwenig args fuer ein lambda: ueberschuessige args koennten gemeinsam mit dem letzten als liste uebergeben werden,
 fehlende als null.
@@ -106,12 +128,10 @@ Clisp:
 
 
 
-performance: benchmarken
-warum ist das environment eine liste von listen statt eine liste von cons cells
-
 -> "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
    zumindest die Symbole wie lambda, labels,... nicht immer wieder internen, sondern deferred supplier
--> der Lookup in env wird bremsen, auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
+   -> symbole memoizen ist erledigt
+-> der Lookup in env wird bremsen (jmh sagt: assoc braucht 40%), auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
 das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcall wird das environment erweitert,
 dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall erzeugt eine neue Map die
 einen link zum vorgaenger hat 
@@ -127,6 +147,7 @@ Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() fl
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
 Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
+    -> iterator ist erledigt
 
 
 
@@ -159,25 +180,6 @@ list-length could be implemented as follows:
     (when (and (eq fast slow) (> n 0)) (return nil))))
 
 
-
-eval ins environment einhaengen?
-
-Variable INTERNAL-TIME-UNITS-PER-SECOND
-Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
-
-Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
-rplaca, rplacd
-Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
-
-        if(car(exp) == s_define)                        // "define"
-          return(extend_top(car(cdr(exp)),
-                            eval(car(cdr(cdr(exp))), env)));
-        if(car(exp) == s_setb) {                        // "set!"
-          obj *pair   = assoc(car(cdr(exp)), env);
-          obj *newval = eval(car(cdr(cdr(exp))), env);
-          setcdr(pair, newval);
-          return newval;
-        }
 
 isNaN, isInfinite, isFinite
 -> ggf. parameter "Error bei NaN, Infinity etc."
@@ -216,17 +218,9 @@ ggf. mit timestampcheck
 
 
 
-LambdaJError extends RuntimeException
-Syntaxerror extends LambdaJError
-RuntimeError extends LambdaJError
-ExtFuncError extends RuntimeError
-
 
 
 flag ob die identifier auf UC umgestellt werden sollen
-
-lisp write liefert als ergebnis den parameter
--> LambdaJ liefert (quote t)
 
 
 
@@ -263,6 +257,10 @@ zweite map fuer FFI funktionen s.u.?
 
 Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen? XML schreiben muesste supereinfach sein?!
 -> es braucht viele annotations und public noarg constructors, zawos brauchma des
+
+lisp write liefert als ergebnis den parameter
+-> LambdaJ liefert (quote t)
+
 
 
 
@@ -492,3 +490,6 @@ throw new LambdaJError(e.getMessage + expError(exp))
 -> damit sieht man in welcher expression z.B. argumente nicht passen
 
 evlabels inlinen und TCO
+
+performance: benchmarken
+warum ist das environment eine liste von listen statt eine liste von cons cells
