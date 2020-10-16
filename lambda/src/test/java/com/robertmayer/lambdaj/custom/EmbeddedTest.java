@@ -67,7 +67,7 @@ public class EmbeddedTest {
         assertEquals("1.00000", result.toString()); // will be formatted according to default Locale
         assertEquals(0, out.length());
 
-        assertTrue(result instanceof String);
+        assertTrue(result instanceof LambdaJ.LambdaJString);
     }
 
     @Test

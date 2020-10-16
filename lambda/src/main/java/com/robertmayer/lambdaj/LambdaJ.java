@@ -72,7 +72,6 @@ public class LambdaJ {
             }
         }
 
-        private static int nCells;
         public Object car, cdr;
         public ConsCell(Object car, Object cdr)    { nCells++; this.car = car; this.cdr = cdr; }
 
@@ -352,6 +351,8 @@ public class LambdaJ {
 
 
     /// eval - interpreter
+    private static int nCells;
+    private static int maxEnvLen;
     private SymbolTable symtab;
 
     /** look up the symbols for special forms only once on first use.
@@ -584,10 +585,15 @@ public class LambdaJ {
             evFunc = fmtEvFunc(evFunc);
             if (maxEvalStack < stack) maxEvalStack = stack;
             if (maxEvalLevel < level) maxEvalLevel = level;
-            char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            char[] csfx = new char[3+(level - stack)*2]; Arrays.fill(csfx, '*'); String sfx = new String(csfx);
+            final int envLen = length(env);
+            if (maxEnvLen < envLen) maxEnvLen = envLen;
+
+            final String pfx = pfx(stack); final String sfx = sfx(stack, level);
             tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ")      " + sfx);
-            if (trace >= TRC_ENV) tracer.println(pfx + "*** -> env:     " + printSEx(env));
+            tracer.println(pfx + "*** -> env size:" + envLen);
+            if (trace >= TRC_ENV) {
+                tracer.println(pfx + "*** -> env:     " + printSEx(env));
+            }
             tracer.println(pfx + "*** -> exp:     " + printSEx(exp));
         }
     }
@@ -595,8 +601,7 @@ public class LambdaJ {
     private void dbgEvalDone(String evFunc, Object exp, int stack, int level) {
         if (trace >= TRC_EVAL) {
             evFunc = fmtEvFunc(evFunc);
-            char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            char[] csfx = new char[3+(level - stack)*2]; Arrays.fill(csfx, '*'); String sfx = new String(csfx);
+            final String pfx = pfx(stack); final String sfx = sfx(stack, level);
             tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
             tracer.println(pfx + "*** -> exp was: " + printSEx(exp));
         }
@@ -604,6 +609,18 @@ public class LambdaJ {
 
     private static String fmtEvFunc(String func) {
         return (func + "          ").substring(0, 10);
+    }
+
+    private String pfx(int stack) {
+        final char[] cpfx = new char[stack*2];
+        Arrays.fill(cpfx, ' ');
+        return new String(cpfx);
+    }
+
+    private String sfx(int stack, int level) {
+        char[] csfx = new char[3+(level - stack)*2];
+        Arrays.fill(csfx, '*');
+        return new String(csfx);
     }
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
@@ -993,7 +1010,7 @@ public class LambdaJ {
      *  will read S-expressions from {@code in} as well,
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        ConsCell.nCells = 0;
+        nCells = 0; maxEnvLen = 0;
         Parser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
@@ -1001,11 +1018,7 @@ public class LambdaJ {
         final ConsCell topEnv = env;
         final Object exp = parser.readObj();
         final Object result = eval(exp, topEnv, env, 0, 0);
-        if (trace >= TRC_EVAL) {
-            tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
-            tracer.println("*** max stack used:   " + maxEvalStack + " ***");
-        }
-        if (trace >= TRC_STATS) tracer.println("*** total ConsCells:  " + ConsCell.nCells + " ***");
+        traceStats();
         return result;
     }
 
@@ -1027,20 +1040,27 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
      *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
-        ConsCell.nCells = 0;
+        nCells = 0; maxEnvLen = 0;
         setSymtab(parser);
         final ConsCell env = environment(symtab, customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
         final ConsCell topEnv = env;
         Object exp = parser.readObj();
         while (true) {
             final Object result = eval(exp, topEnv, env, 0, 0);
-            if (trace >= TRC_EVAL) {
-                tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
-                tracer.println("*** max stack used:   " + maxEvalStack + " ***");
-            }
-            if (trace >= TRC_STATS) tracer.println("*** total ConsCells:  " + ConsCell.nCells + " ***");
+            traceStats();
             exp = parser.readObj();
             if (exp == null) return result;
+        }
+    }
+
+    private void traceStats() {
+        if (trace >= TRC_EVAL) {
+            tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
+            tracer.println("*** max stack used:   " + maxEvalStack + " ***");
+        }
+        if (trace >= TRC_STATS) {
+            tracer.println("*** total ConsCells:  " + nCells + " ***");
+            tracer.println("*** max env length:   " + maxEnvLen + " ***");
         }
     }
 
@@ -1154,7 +1174,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.77 2020/10/15 10:08:22 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.78 2020/10/15 17:10:37 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

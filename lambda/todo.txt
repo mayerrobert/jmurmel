@@ -1,12 +1,48 @@
-primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
+in dbeval die groesse des environment ausgeben. wahrscheinlich waechst das bei rekursion. 
+bei endcalls koennte man die parameter der aktuellen function fuer namensgleiche parameter nutzen: 
+nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnmamigen den alten wert ersetzen
+würd ggf bei dynamic UND lexical closures was bringen
+-> nein nur dynamic, lexical closures erben das environment ja nicht
 
-read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
-statt lispStdin
+interpreter bekommt eine methode init()
+interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
+
+im main loop: parsen und checken, ob obj.toString = :w oder = :q ist, so koennte man befehle für den REPL ausserhalb Lisp einbauen
+alles geparste in main merken, und mit :w in eine datei schreiben
+ggf mit :init altes environment vergessen
+weitere debug gschichten wie zb :l für environment auflisten
+
+statt dbgEval -> if (trace >= TRC_EVAL) dbgEval
+und die if clause aus dbgEval weg
+
+defun einbauen, weil define alleine ist mühsam
+
+eval ins environment einhaengen?
+
+
+
+lexical closures muessten gehen, indem man das env mit dem lambda mitspeichert und beim aufruf des lambda 
+nicht das aktuelle env extended sondern das abgespeicherte
+-> umsetzen, indem "lambda" nicht ein lambda ins environment steckt sondern "closure" 
+   (oder doch ein lambda und die liste enthält nicht nur ("lambda" args body) 
+   sondern ("lambda" args body closure), mit nullcheck entscheiden, 
+   ob lambda oder closure ausgeführt wird. und eval() erweitern, dass closure wie lambda verarbeitet wird, 
+   aber statt aktuellem env die closure mit args erweitert
+-> mit befehlszeilen parameter --dyn umstellen
+
+der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
+sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
+-> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
+
+
+
+primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
 
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
-eval ins environment einhaengen?
+read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
+statt lispStdin
 
 cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eval wird
 -> solche primitiven wuerden auch Lisp programme schneller machen weil weniger assoc aufrufe
@@ -56,6 +92,12 @@ Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
         }
 
 
+
+ConsCell hat 4 byte platz wg alignment. man koennte ein int mit typ machen statt LambdaJString und instanceof.
+CONS=0 PRIM = 1 LAMBDA=2 CLOSURE=3 ATOM=10 SYMBOL=10 STRING=11 CHAR=12 DOUBLE=12
+isAtom() { return typ >= ATOM }, dann koennte custom code seine eigenen typen erfinden.
+solange die neuen typnummern >= ATOM sind, sieht der interpreter alles als atom
+-> geht doch nicht so: das flag wird nicht bei ConsCell gebraucht, sondern bei den values, die als Object car oder cdr gespeichert sind
 
 k.a. wieviel die ConsCell casts bremsen
 Alternatives Objectmodell mit weniger casts:

@@ -40,6 +40,7 @@ Command line parameters in standalone mode:
 **Embedded use:**
 
 LambdaJ uses Java8+ only, no third party dependencies are required.
+It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
 
