@@ -9,6 +9,12 @@
             }
             start = System.nanoTime();
 
+primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
+
+Variable INTERNAL-TIME-UNITS-PER-SECOND
+Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
+
+
 
 continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
 ist currentcc cdr(exp) (und das env bzw. closure) ?
@@ -21,13 +27,8 @@ wuerd ggf bei dynamic UND lexical closures was bringen
 interpreter bekommt eine methode init()
 interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
 
-im main loop: parsen und checken, ob obj.toString = :w oder = :q ist, so koennte man befehle für den REPL ausserhalb Lisp einbauen
 alles geparste in main merken, und mit :w in eine datei schreiben
-ggf mit :init altes environment vergessen
-weitere debug gschichten wie zb :l fuer environment auflisten
-
-statt dbgEval -> if (trace >= TRC_EVAL) dbgEval
-und die if clause aus dbgEval weg
+weitere debug gschichten wie zb :env fuer environment auflisten
 
 defun einbauen, weil define alleine ist muehsam
 oder doch defun als macro und macros unterstuetzen?
@@ -51,11 +52,6 @@ sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
 -> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
 
 
-
-primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
-
-Variable INTERNAL-TIME-UNITS-PER-SECOND
-Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
 read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
 statt lispStdin
@@ -581,3 +577,10 @@ am ende wird stack und nesting getraced falls TRC_EVAL.
 -> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
 
 in dbeval die groesse des environment ausgeben. wahrscheinlich waechst das bei rekursion. 
+
+statt dbgEval -> if (trace >= TRC_EVAL) dbgEval
+und die if clause aus dbgEval weg
+
+ggf mit :init altes environment vergessen
+
+im main loop: parsen und checken, ob obj.toString = :w oder = :q ist, so koennte man befehle für den REPL ausserhalb Lisp einbauen
