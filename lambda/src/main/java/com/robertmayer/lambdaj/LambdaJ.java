@@ -535,7 +535,7 @@ public class LambdaJ {
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
         } finally {
-            dbgEvalDone(isTc ? "eval TC" : "eval", exp, stack, level);
+            dbgEvalDone(isTc ? "eval TC" : "eval", exp, env, stack, level);
         }
     }
 
@@ -570,7 +570,7 @@ public class LambdaJ {
                 insertPos = currentArg;
             }
         }
-        dbgEvalDone("evlis", _list, stack, level);
+        dbgEvalDone("evlis", _list, head, stack, level);
         return head;
     }
 
@@ -580,29 +580,33 @@ public class LambdaJ {
     /** spaces printed to the left indicate java stack usage, total line length indicates Lisp call hierarchy depth.
      *  due to tail call optimization Java stack usage should be less than Lisp call hierarchy depth. */
     private void dbgEvalStart(String evFunc, Object exp, ConsCell env, int stack, int level) {
-        if (trace >= TRC_EVAL) {
-            evFunc = fmtEvFunc(evFunc);
+        if (trace >= TRC_STATS) {
             if (maxEvalStack < stack) maxEvalStack = stack;
             if (maxEvalLevel < level) maxEvalLevel = level;
-            final int envLen = length(env);
-            if (maxEnvLen < envLen) maxEnvLen = envLen;
+            if (trace >= TRC_EVAL) {
+                evFunc = fmtEvFunc(evFunc);
 
-            final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-            tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ")      " + sfx);
-            tracer.println(pfx + "*** -> env size:" + envLen);
-            if (trace >= TRC_ENV) {
-                tracer.println(pfx + "*** -> env:     " + printSEx(env));
+                final String pfx = pfx(stack); final String sfx = sfx(stack, level);
+                tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ")      " + sfx);
+                tracer.println(pfx + "*** -> env size:" + length(env));
+                if (trace >= TRC_ENV) {
+                    tracer.println(pfx + "*** -> env:     " + printSEx(env));
+                }
+                tracer.println(pfx + "*** -> exp:     " + printSEx(exp));
             }
-            tracer.println(pfx + "*** -> exp:     " + printSEx(exp));
         }
     }
 
-    private void dbgEvalDone(String evFunc, Object exp, int stack, int level) {
-        if (trace >= TRC_EVAL) {
-            evFunc = fmtEvFunc(evFunc);
-            final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-            tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
-            tracer.println(pfx + "*** -> exp was: " + printSEx(exp));
+    private void dbgEvalDone(String evFunc, Object exp, Object env, int stack, int level) {
+        if (trace >= TRC_STATS) {
+            final int envLen = length(env);
+            if (maxEnvLen < envLen) maxEnvLen = envLen;
+            if (trace >= TRC_EVAL) {
+                evFunc = fmtEvFunc(evFunc);
+                final String pfx = pfx(stack); final String sfx = sfx(stack, level);
+                tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
+                tracer.println(pfx + "*** -> exp was: " + printSEx(exp));
+            }
         }
     }
 
@@ -856,7 +860,7 @@ public class LambdaJ {
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
-    private ConsCell environment(SymbolTable symtab, ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
+    private ConsCell environment(ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
         if (HAVE_IO) {
             final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin.readObj(); };
             final Primitive fwriteobj = a -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
@@ -998,7 +1002,7 @@ public class LambdaJ {
                   env)));
         }
 
-        return env;
+        return cons(cons(null, null), env); // top env begins with (nil . nil), this is where define will insert stuff.
     }
 
 
@@ -1013,10 +1017,9 @@ public class LambdaJ {
         Parser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
-        final ConsCell env = environment(symtab, null, parser, outWriter);
-        final ConsCell topEnv = env;
+        final ConsCell env = environment(null, parser, outWriter);
         final Object exp = parser.readObj();
-        final Object result = eval(exp, topEnv, env, 0, 0);
+        final Object result = eval(exp, env, env, 0, 0);
         traceStats();
         return result;
     }
@@ -1041,11 +1044,10 @@ public class LambdaJ {
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
         nCells = 0; maxEnvLen = 0;
         setSymtab(parser);
-        final ConsCell env = environment(symtab, customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
-        final ConsCell topEnv = env;
+        final ConsCell env = environment(customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
         Object exp = parser.readObj();
         while (true) {
-            final Object result = eval(exp, topEnv, env, 0, 0);
+            final Object result = eval(exp, env, env, 0, 0);
             traceStats();
             exp = parser.readObj();
             if (exp == null) return result;
@@ -1113,6 +1115,7 @@ public class LambdaJ {
         }
 
         final boolean istty = null != System.console();
+        /*
         if (istty) {
             System.out.println("Enter a Lisp expression (or enter 'q or <EOF> to exit):");
             System.out.println();
@@ -1135,6 +1138,54 @@ public class LambdaJ {
             } while (!"q".equals(result));
             System.out.println("bye.");
             return;
+        }
+        */
+        if (istty) {
+            System.out.println("Enter a Lisp expression (or enter :q or <EOF> to exit):");
+            System.out.println();
+
+            boolean isInit = false;
+            SExpressionParser parser = null;
+            ConsCell env = null;
+            for (;;) {
+                if (!isInit) {
+                    nCells = 0; maxEnvLen = 0;
+                    parser = interpreter.new SExpressionParser(System.in::read);
+                    interpreter.setSymtab(parser);
+                    ObjectWriter outWriter = new SExpressionWriter(System.out::print);
+                    env = interpreter.environment(null, parser, outWriter);
+                    isInit = true;
+                }
+
+                System.out.print("LambdaJ> ");
+                System.out.flush();
+
+                try {
+                    final Object exp = parser.readObj();
+
+                    if (":q".equals(exp) || exp == null && parser.look == EOF) {
+                        System.out.println("bye."); System.out.println();  return;
+                    }
+
+                    if (":env".equals(exp)) {
+                        System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue;
+                    }
+
+                    if (":init".equals(exp)) {
+                        isInit = false;  continue;
+                    }
+
+                    final Object result = interpreter.eval(exp, env, env, 0, 0);
+                    System.out.println();
+                    interpreter.traceStats();
+                    System.out.println("result: " + result);
+                    System.out.println();
+                } catch (LambdaJError e) {
+                    System.out.println();
+                    System.out.println(e.toString());
+                    System.out.println();
+                }
+            }
         }
 
         try {
@@ -1173,7 +1224,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.79 2020/10/16 05:02:43 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.80 2020/10/16 05:57:11 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

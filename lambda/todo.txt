@@ -1,7 +1,18 @@
-continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
-ist currentcc cdr(exp) (+ env bzw. closure) ?
+        ThreadMXBean threadBean = null;
+        long startCpu = 0L;
+        long start = 0L;
 
-in dbeval die groesse des environment ausgeben. wahrscheinlich waechst das bei rekursion. 
+            threadBean = ManagementFactory.getThreadMXBean();
+
+            if (threadBean != null) {
+                startCpu = threadBean.getCurrentThreadCpuTime();
+            }
+            start = System.nanoTime();
+
+
+continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
+ist currentcc cdr(exp) (und das env bzw. closure) ?
+
 bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
 nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnmamigen den alten wert ersetzen
 wuerd ggf bei dynamic UND lexical closures was bringen
@@ -19,6 +30,8 @@ statt dbgEval -> if (trace >= TRC_EVAL) dbgEval
 und die if clause aus dbgEval weg
 
 defun einbauen, weil define alleine ist muehsam
+oder doch defun als macro und macros unterstuetzen?
+(defmacro defun (sym params body) (define sym (lambda params body)))
 
 eval ins environment einhaengen?
 
@@ -566,3 +579,5 @@ warum ist das environment eine liste von listen statt eine liste von cons cells
 
 am ende wird stack und nesting getraced falls TRC_EVAL.
 -> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
+
+in dbeval die groesse des environment ausgeben. wahrscheinlich waechst das bei rekursion. 
