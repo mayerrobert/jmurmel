@@ -103,8 +103,8 @@ public class ApplyTest {
 
     @Test
     public void x() {
-        LambdaJTest.runErrorTest("String", "(apply (apply (lambda (a b) (lambda nil nil)) '(1 2)) '())",
-                                 "lambda invocation: expected a parameter list but got nil");
+        LambdaJTest.runTest("String", "(apply (apply (lambda (a b) (lambda nil nil)) '(1 2)) '())",
+                            "nil", null);
     }
 
     @Test
