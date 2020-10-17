@@ -1,3 +1,7 @@
+true in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
+deswegen ist auch der hack in eval bei funktionsaufruf notwendig
+-> vielleicht reichts doch, im perser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
+
 trace auf final int trace umstellen und im Konstruktor belegen
 
 statt Xmal boolean HAVE_xxx
@@ -5,11 +9,11 @@ statt Xmal boolean HAVE_xxx
    static final int HAVE_XXX = 1 << 1,2,3,4...
    methoden boolean haveXXX()
    -> den wert fuer features muss man vorher mit | zusammenbasteln
-      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, weil featurs final ist
+      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, weil features final ist
 
 in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
 
-"enter an expression, use :h for command help or use :q to exit"
+"enter an expression, enter :h for command help or :q to exit"
 
 pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen
 

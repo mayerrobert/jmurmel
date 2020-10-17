@@ -298,7 +298,7 @@ public class LambdaJTest {
         StringBuffer out = new StringBuffer();
 
         LambdaJ interpreter = new LambdaJ();
-        interpreter.trace = LambdaJ.TRC_EVAL;
+        interpreter.trace = LambdaJ.TRC_ENV;
 
         System.out.println("***** running program '" + fileName + ':');
         System.out.println("-------------------------------------------------------");

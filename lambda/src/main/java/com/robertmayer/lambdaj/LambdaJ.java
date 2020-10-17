@@ -73,7 +73,9 @@ public class LambdaJ {
         }
 
         public Object car, cdr;
+        ConsCell closure;
         public ConsCell(Object car, Object cdr)    { nCells++; this.car = car; this.cdr = cdr; }
+        public ConsCell(Object car, Object cdr, ConsCell closure)    { this(car, cdr); this.closure = closure; }
 
         @Override public String toString() { return printObj(this); }
         @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
@@ -115,7 +117,7 @@ public class LambdaJ {
     HAVE_EQ = true,
     HAVE_QUOTE = true,
 
-    HAVE_LEXC = false
+    HAVE_LEXC = true
     ;
 
     /** nothing except cons, car, cdr, cond, apply */
@@ -438,22 +440,24 @@ public class LambdaJ {
 
                     if (car(exp) == sLambda.get()) {
                         nArgs("lambda", cdr(exp), 2, exp);
-                        if (HAVE_LEXC) return cons(sLambda.get(), cons(cdr(exp), env));
+                        if (HAVE_LEXC) return cons3(sLambda.get(), cdr(exp), env);
                         else return exp;
                     }
 
                     if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
                         nArgs("labels", cdr(exp), 2, exp);
-                        ConsCell bindings, extenv = env;
+                        ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
                         for (bindings = (ConsCell) car(cdr(exp)); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
-                            if (HAVE_LEXC) lambda = cons(sLambda.get(), cons(cdr(currentFunc), env));
-                            else lambda = cons(sLambda.get(), cdr(currentFunc));
-                            extenv = cons(cons(currentSymbol, lambda), extenv);
+                            if (HAVE_LEXC) lambda = cons3(sLambda.get(), cdr(currentFunc), extenv);
+                            else           lambda = cons (sLambda.get(), cdr(currentFunc));
+                            extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
                         }
+                        extenv.car = car(cdr(extenv));
+                        extenv.cdr = cdr(cdr(extenv));
 
                         // run the function's expressions, the last one with TCO in case it's a tailcall
                         ConsCell body;
@@ -498,13 +502,13 @@ public class LambdaJ {
                     // function call
                     final Object func = eval(car(exp), topEnv, env, stack+1, level+1);
                     if (consp(func)) {
-                        final Object lambda = HAVE_LEXC ? car(cdr(func)) : cdr(func);          // (params . bodylist)
-                        final ConsCell closure = HAVE_LEXC ? (ConsCell) cdr(cdr(func)) : env;  // lexical or dynamic env
+                        final Object lambda = cdr(func);          // (params . bodylist)
+                        final ConsCell closure = HAVE_LEXC ? ((ConsCell)func).closure : env;  // lexical or dynamic env
                         nArgs("lambda", lambda, 2, exp);
                         Object paramList = car(lambda) == symtab.intern("nil") ? null : car(lambda); // todo diesen Hack reparieren, nil ist wahrscheinlich voellig falsch implementiert
                         if (!listp(paramList)) throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
                         if (!listp(cdr(exp))) throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
-                        ConsCell extenv = makeArgList(exp, topEnv, closure, stack, level, (ConsCell) paramList, (ConsCell) cdr(exp));
+                        ConsCell extenv = makeArgList(exp, topEnv, env, closure, stack, level, (ConsCell) paramList, (ConsCell) cdr(exp));
 
                         if (trace >= TRC_PRIM) {
                             tracer.println(pfx(stack) + sfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
@@ -541,9 +545,9 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
-    private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, int stack, int level, ConsCell _params, ConsCell _args) {
+    private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, ConsCell extenv, int stack, int level, ConsCell _params, ConsCell _args) {
         ConsCell params = _params, args = _args;
-        ConsCell extenv = env;
+        //ConsCell extenv = env;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             extenv = cons(cons(car(params), eval(car(args), topEnv, env, stack+1, level+1)), extenv);
         if (params != null)
@@ -587,12 +591,10 @@ public class LambdaJ {
                 evFunc = fmtEvFunc(evFunc);
 
                 final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + ")      ");
-                tracer.println(pfx + sfx + " -> env size:" + length(env));
+                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + "), exp:          " + printSEx(exp));
                 if (trace >= TRC_ENV) {
-                    tracer.println(pfx + sfx + " -> env:     " + printSEx(env));
+                    tracer.println(pfx + sfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
                 }
-                tracer.println(pfx + sfx + " -> exp:     " + printSEx(exp));
             }
         }
     }
@@ -604,8 +606,7 @@ public class LambdaJ {
             if (trace >= TRC_EVAL) {
                 evFunc = fmtEvFunc(evFunc);
                 final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
-                tracer.println(pfx + sfx + " -> exp was: " + printSEx(exp));
+                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
             }
         }
     }
@@ -630,6 +631,7 @@ public class LambdaJ {
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
     private static ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
+    private static ConsCell cons3(Object car, Object cdr, ConsCell closure) { return new ConsCell(car, cdr, closure); }
     private static Object   car(Object x)                { return ((ConsCell)x).car; }
     private static Object   cdr(Object x)                { return ((ConsCell)x).cdr; }
 
@@ -1087,6 +1089,7 @@ public class LambdaJ {
 
         if (hasFlag("--trace=stats", args)) interpreter.trace = TRC_STATS;
         if (hasFlag("--trace=eval", args))  interpreter.trace = TRC_EVAL;
+        if (hasFlag("--trace=env", args))   interpreter.trace = TRC_ENV;
         if (hasFlag("--trace", args))       interpreter.trace = TRC_LEX;
 
         if (hasFlag("--dyn", args))         interpreter.HAVE_LEXC = false;
@@ -1122,31 +1125,6 @@ public class LambdaJ {
         }
 
         final boolean istty = null != System.console();
-        /*
-        if (istty) {
-            System.out.println("Enter a Lisp expression (or enter 'q or <EOF> to exit):");
-            System.out.println();
-
-            String result = null;
-            do {
-                System.out.print("LambdaJ> ");
-                System.out.flush();
-
-                try {
-                    result = printSEx(interpreter.interpretExpression(System.in::read, System.out::print));
-                    System.out.println();
-                    System.out.println("result: " + result);
-                    System.out.println();
-                } catch (LambdaJError e) {
-                    System.out.println();
-                    System.out.println(e.toString());
-                    System.out.println();
-                }
-            } while (!"q".equals(result));
-            System.out.println("bye.");
-            return;
-        }
-        */
         if (istty) {
             System.out.println("Enter a Lisp expression (or enter :q or <EOF> to exit):");
             System.out.println();
@@ -1231,7 +1209,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.84 2020/10/17 16:40:36 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.85 2020/10/17 17:53:57 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1239,22 +1217,26 @@ public class LambdaJ {
         System.out.println("Usage:\n"
                 + "\n"
                 + "interactive:\n"
-                + "java -jar lambda.jar [commandline-flags]*\n"
+                + "java -jar lambdaj.jar [commandline arguments]*\n"
                 + "\n"
                 + "non-interactive:\n"
-                + "java -jar lambda.jar [commandline-flags]* < lisp-source.lisp\n"
+                + "java -jar lambdaj.jar [commandline arguments]* < lisp-source.lisp\n"
                 + "\n"
-                + "Commandline-flags are:\n"
+                + "Commandline arguments are:\n"
                 + "\n"
                 + "Misc:\n"
-                + "--version .......  show version and exit\n"
-                + "--help ..........  show this message and exit\n"
-                + "--trace=stats ...  print stack and memory stats at end\n"
-                + "--trace=eval ....  print internal interpreter info during executing programs\n"
-                + "--trace .........  print lots of internal interpreter info during\n"
-                + "                   reading/ parsing/ executing programs\n"
+                + "--version .....  show version and exit\n"
+                + "--help ........  show this message and exit\n"
+                + "--trace=stats .  print stack and memory stats at end\n"
+                + "--trace=eval ..  print internal interpreter info during executing programs\n"
+                + "--trace=eval ..  print more internal interpreter info during executing programs\n"
+                + "--trace .......  print lots of internal interpreter info during\n"
+                + "                 reading/ parsing/ executing programs\n"
                 + "\n"
                 + "Feature flags:\n"
+                + "\n"
+                + "--dyn .........  use dynamic environments\n"
+                + "--lex .........  use lexical environments, this is the default\n"
                 + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
