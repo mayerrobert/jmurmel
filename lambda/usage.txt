@@ -1,22 +1,26 @@
 Usage:
 
 interactive:
-java -jar lambda.jar [commandline-flags]*
+java -jar lambdaj.jar [commandline arguments]*
 
 non-interactive:
-java -jar lambda.jar [commandline-flags]* < lisp-source.lisp
+java -jar lambdaj.jar [commandline arguments]* < lisp-source.lisp
 
-Commandline-flags are:
+Commandline arguments are:
 
 Misc:
---version .......  show version and exit
---help ..........  show this message and exit
---trace=stats ...  print stack and memory stats at end
---trace=eval ....  print internal interpreter info during executing programs
---trace .........  print lots of internal interpreter info during
-                   reading/ parsing/ executing programs
+--version .....  show version and exit
+--help ........  show this message and exit
+--trace=stats .  print stack and memory stats at end
+--trace=eval ..  print internal interpreter info during executing programs
+--trace=eval ..  print more internal interpreter info during executing programs
+--trace .......  print lots of internal interpreter info during
+                 reading/ parsing/ executing programs
 
 Feature flags:
+
+--dyn .........  use dynamic environments
+--lex .........  use lexical environments, this is the default
 
 --no-nil ......  don't predefine symbol nil (hint: use '()' instead)
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
