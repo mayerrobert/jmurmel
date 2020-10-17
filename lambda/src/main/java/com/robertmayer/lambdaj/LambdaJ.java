@@ -113,7 +113,9 @@ public class LambdaJ {
     HAVE_COND = true,
     HAVE_ATOM = true,
     HAVE_EQ = true,
-    HAVE_QUOTE = true
+    HAVE_QUOTE = true,
+
+    HAVE_LEXC = false
     ;
 
     /** nothing except cons, car, cdr, cond, apply */
@@ -408,7 +410,7 @@ public class LambdaJ {
                 if (symbolp(car (exp))) {
                     if (HAVE_QUOTE && car(exp) == sQuote.get()) {
                         oneArg("quote", cdr(exp));
-                        return car(cdr(exp));
+                        return car(cdr(exp)); // todo hier muss man wohl ggf. aus einem lambda ein closure machen
                     }
 
                     if (HAVE_XTRA && car(exp) == sIf.get()) {
@@ -431,14 +433,15 @@ public class LambdaJ {
                         if (envEntry != null) throw new LambdaJError("define: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
                         final Object value = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
-                        topEnv.cdr = cons(cons(symtab.intern((String)symbol), value), cdr(topEnv)); // todo nicht nochmal intern()? sollte schon ein symbol sein
+                        topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
 
                         return value;
                     }
 
                     if (car(exp) == sLambda.get()) {
                         nArgs("lambda", cdr(exp), 2, exp);
-                        return exp; // todo closure erzeugen
+                        if (HAVE_LEXC) return cons(sLambda.get(), cons(cdr(exp), env));
+                        else return exp;
                     }
 
                     if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
@@ -448,8 +451,10 @@ public class LambdaJ {
                         for (bindings = (ConsCell) car(cdr(exp)); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
-                            final ConsCell lambda = cons(sLambda.get(), cdr(currentFunc));
-                            extenv = cons(cons(currentSymbol, lambda), extenv); // todo closures erzeugen
+                            final ConsCell lambda;
+                            if (HAVE_LEXC) lambda = cons(sLambda.get(), cons(cdr(currentFunc), env));
+                            else lambda = cons(sLambda.get(), cdr(currentFunc));
+                            extenv = cons(cons(currentSymbol, lambda), extenv);
                         }
 
                         // run the function's expressions, the last one with TCO in case it's a tailcall
@@ -474,7 +479,7 @@ public class LambdaJ {
                     // apply function to list
                     if (HAVE_APPLY && car(exp) == sApply.get()) {
                         twoArgs("apply", cdr(exp), exp);
-                        final Object func = eval(car(cdr(exp)), topEnv, env, stack + 1, level + 1);
+                        final Object func = eval(car(cdr(exp)), topEnv, env, stack+1, level+1);
                         if (func == null) throw new LambdaJError("apply: cannot apply function nil. nil was the result of evaluating the expression "
                                                                  + printSEx(car(cdr(exp))) + errorExp(exp));
 
@@ -505,15 +510,16 @@ public class LambdaJ {
 
                 }
 
-                //lambda, bind args as "parameter names" into env and eval body-list */
+                //lambda or closure, bind args as "parameter names" into env and eval body-list */
                 if (consp(car(exp)) && car(car(exp)) == sLambda.get()) {
-                    final Object lambda = cdr(car(exp));
+                    final Object lambda = HAVE_LEXC ? car(cdr(car(exp))) : cdr(car(exp));     // (params . bodylist)
+                    final ConsCell closure = HAVE_LEXC ? (ConsCell) cdr(cdr(car(exp))) : env; // lexical or dynamic env
                     nArgs("lambda", lambda, 2, exp);
                     if (car(lambda) != null && !consp(car(lambda)))
                         throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
                     if (cdr(exp) != null && !consp(cdr(exp)))
                         throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
-                    ConsCell extenv = makeArgList(exp, topEnv, env, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp)); // todo arglist an closure dranpicken
+                    ConsCell extenv = makeArgList(exp, topEnv, closure, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
 
                     ConsCell body = (ConsCell) cdr(lambda);
                     for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
@@ -1224,7 +1230,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.80 2020/10/16 05:57:11 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.81 2020/10/16 16:44:24 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

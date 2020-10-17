@@ -20,23 +20,13 @@ continuations: loops gibts ja keine, ist eine continuation einfach der restliche
 ist currentcc cdr(exp) (und das env bzw. closure) ?
 
 bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
-nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnmamigen den alten wert ersetzen
+nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
 wuerd ggf bei dynamic UND lexical closures was bringen
 -> nein nur dynamic, lexical closures erben das environment ja nicht
-
-interpreter bekommt eine methode init()
-interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
-
-alles geparste in main merken, und mit :w in eine datei schreiben
-weitere debug gschichten wie zb :env fuer environment auflisten
 
 defun einbauen, weil define alleine ist muehsam
 oder doch defun als macro und macros unterstuetzen?
 (defmacro defun (sym params body) (define sym (lambda params body)))
-
-eval ins environment einhaengen?
-
-
 
 lexical closures muessten gehen, indem man das env mit dem lambda mitspeichert und beim aufruf des lambda 
 nicht das aktuelle env extended sondern das abgespeicherte
@@ -46,6 +36,18 @@ nicht das aktuelle env extended sondern das abgespeicherte
    ob lambda oder closure ausgefuehrt wird. und eval() erweitern, dass closure wie lambda verarbeitet wird, 
    aber statt aktuellem env die closure mit args erweitert
 -> mit befehlszeilen parameter --dyn umstellen
+
+eval ins environment einhaengen?
+
+interpreter bekommt eine methode init()
+interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
+
+alles geparste in main merken, und mit :w in eine datei schreiben
+weitere debug gschichten wie zb :env fuer environment auflisten
+
+
+
+
 
 der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
 sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
