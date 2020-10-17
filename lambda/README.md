@@ -1,9 +1,8 @@
 # LambdaJ
 
-A customizable Lisp-1-ish interpreter written in Java8+ that can be used
-standalone as well as embedded.
+**A customizable Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
 
-LambdaJ has tail call optimization,
+LambdaJ has tail call optimization, dynamic or lexical environments,
 garbage collection c/o Java
 and except read/ write/ writeln it is purely functional (but see Customization below).
 
@@ -128,7 +127,9 @@ The environment contains the symbols `nil` and `t` and the functions
     - `string-format` works like Java `String#format(String format, Object... args)`
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)` 
 
-Tail calls includingtail recursive calls are optimized, also tail calls out of the body of a `labels` clause.
+Tail calls including tail recursive calls are optimized.
+
+Lambdas can be dynamic or lexical, this can be selected via command line arguments.
 
 Variables and functions share one namespace.
 Symbols names must not start with a digit, only the first 2000 characters are significant.
@@ -141,8 +142,6 @@ esp. around +/-NaN, +/-Infinity, division by zero and so on.
 
 The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double)
 and strings. String literals are 2000 chars max length.
-
-Lambdas are dynamic, i.e. no lexical closures (yet?).
 
 Most of these features can be disabled using commandline arguments.
 You can disable pretty much everything except S-expressions, symbols, cons cells and lambda.
@@ -165,6 +164,7 @@ Additional datatypes can be supported in your custom Parser, in your custom prim
 
 LambdaJ is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
 without any need for change.
+
 See `EmbeddedTest#testCustomEnv()` for an example.
 
 ## References
