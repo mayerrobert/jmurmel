@@ -353,8 +353,6 @@ public class LambdaJ {
 
 
     /// eval - interpreter
-    private static int nCells;
-    private static int maxEnvLen;
     private SymbolTable symtab;
 
     /** look up the symbols for special forms only once on first use.
@@ -407,10 +405,10 @@ public class LambdaJ {
                 }
 
                 // special forms
-                if (symbolp(car (exp))) {
+                if (consp(exp)) {
                     if (HAVE_QUOTE && car(exp) == sQuote.get()) {
                         oneArg("quote", cdr(exp));
-                        return car(cdr(exp)); // todo hier muss man wohl ggf. aus einem lambda ein closure machen
+                        return car(cdr(exp));
                     }
 
                     if (HAVE_XTRA && car(exp) == sIf.get()) {
@@ -463,7 +461,7 @@ public class LambdaJ {
                             eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
                             exp = car(body); env = extenv; isTc = true; continue;
-                        } // else fall through to "cannot eval". should really not happen anyway
+                        }
                     }
 
                     if (HAVE_COND && car(exp) == sCond.get()) {
@@ -488,7 +486,7 @@ public class LambdaJ {
                             exp = cons(func, args); isTc = true; continue;
                         }
                         if (isPrim(func)) {
-                            try { return applyPrimitive((Primitive)func, (ConsCell)args, stack); }
+                            try { return applyPrimitive((Primitive)func, (ConsCell)args, stack, level); }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                         }
                         throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
@@ -497,41 +495,35 @@ public class LambdaJ {
 
                     }
 
-                    /* function call */
-                    Object func = eval(car(exp), topEnv, env, stack + 1, level + 1);
-                    if (consp(func)) { /* user defined lambda, arg list eval happens in binding  below */
-                        exp = cons(func, cdr(exp)); isTc = true; continue;
+                    // function call
+                    final Object func = eval(car(exp), topEnv, env, stack+1, level+1);
+                    if (consp(func)) {
+                        final Object lambda = HAVE_LEXC ? car(cdr(func)) : cdr(func);          // (params . bodylist)
+                        final ConsCell closure = HAVE_LEXC ? (ConsCell) cdr(cdr(func)) : env;  // lexical or dynamic env
+                        nArgs("lambda", lambda, 2, exp);
+                        if (car(lambda) != null && !consp(car(lambda)))
+                            throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
+                        if (cdr(exp) != null && !consp(cdr(exp)))
+                            throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
+                        ConsCell extenv = makeArgList(exp, topEnv, closure, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
+
+                        if (trace >= TRC_PRIM) {
+                            tracer.println(pfx(stack) + sfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
+                        }
+
+                        ConsCell body = (ConsCell) cdr(lambda);
+                        for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                            eval(car(body), topEnv, extenv, stack+1, level+1);
+                        if (body != null) {
+                            exp = car(body); env = extenv; isTc = true; continue;
+                        }
                     }
                     if (isPrim(func)) {
-                        try { return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), topEnv, env, stack+1, level + 1), stack); }
+                        try { return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), topEnv, env, stack+1, level+1), stack, level); }
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
+
                     throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
-
-                }
-
-                //lambda or closure, bind args as "parameter names" into env and eval body-list */
-                if (consp(car(exp)) && car(car(exp)) == sLambda.get()) {
-                    final Object lambda = HAVE_LEXC ? car(cdr(car(exp))) : cdr(car(exp));     // (params . bodylist)
-                    final ConsCell closure = HAVE_LEXC ? (ConsCell) cdr(cdr(car(exp))) : env; // lexical or dynamic env
-                    nArgs("lambda", lambda, 2, exp);
-                    if (car(lambda) != null && !consp(car(lambda)))
-                        throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
-                    if (cdr(exp) != null && !consp(cdr(exp)))
-                        throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
-                    ConsCell extenv = makeArgList(exp, topEnv, closure, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
-
-                    ConsCell body = (ConsCell) cdr(lambda);
-                    for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                        eval(car(body), topEnv, extenv, stack+1, level+1);
-                    if (body != null) {
-                        exp = car(body); env = extenv; isTc = true; continue;
-                    } // else fall through to "cannot eval". should really not happen anyway
-
-                }
-
-                if (atom(car(exp))) {
-                    throw new LambdaJError("not a function: " + printSEx(car(exp)) + errorExp(exp));
 
                 }
 
@@ -550,7 +542,8 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
-    private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, int stack, int level, ConsCell params, ConsCell args) {
+    private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, int stack, int level, ConsCell _params, ConsCell _args) {
+        ConsCell params = _params, args = _args;
         ConsCell extenv = env;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             extenv = cons(cons(car(params), eval(car(args), topEnv, env, stack+1, level+1)), extenv);
@@ -580,10 +573,12 @@ public class LambdaJ {
         return head;
     }
 
+    private static int nCells;  // todo sollte eigentlich nicht static sein, ists aber weils der konstruktor der stat Klasse ConsCell schreibt
+    private int maxEnvLen;
     private int maxEvalStack;
     private int maxEvalLevel;
 
-    /** spaces printed to the left indicate java stack usage, total line length indicates Lisp call hierarchy depth.
+    /** spaces printed to the left indicate java stack usage, spaces+asterisks indicate Lisp call hierarchy depth.
      *  due to tail call optimization Java stack usage should be less than Lisp call hierarchy depth. */
     private void dbgEvalStart(String evFunc, Object exp, ConsCell env, int stack, int level) {
         if (trace >= TRC_STATS) {
@@ -593,12 +588,12 @@ public class LambdaJ {
                 evFunc = fmtEvFunc(evFunc);
 
                 final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-                tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ")      " + sfx);
-                tracer.println(pfx + "*** -> env size:" + length(env));
+                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + ")      ");
+                tracer.println(pfx + sfx + " -> env size:" + length(env));
                 if (trace >= TRC_ENV) {
-                    tracer.println(pfx + "*** -> env:     " + printSEx(env));
+                    tracer.println(pfx + sfx + " -> env:     " + printSEx(env));
                 }
-                tracer.println(pfx + "*** -> exp:     " + printSEx(exp));
+                tracer.println(pfx + sfx + " -> exp:     " + printSEx(exp));
             }
         }
     }
@@ -610,8 +605,8 @@ public class LambdaJ {
             if (trace >= TRC_EVAL) {
                 evFunc = fmtEvFunc(evFunc);
                 final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-                tracer.println(pfx + "*** " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
-                tracer.println(pfx + "*** -> exp was: " + printSEx(exp));
+                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + ") done " + sfx);
+                tracer.println(pfx + sfx + " -> exp was: " + printSEx(exp));
             }
         }
     }
@@ -631,6 +626,8 @@ public class LambdaJ {
         Arrays.fill(csfx, '*');
         return new String(csfx);
     }
+
+
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
     private static ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
@@ -679,15 +676,14 @@ public class LambdaJ {
         return ret.toArray();
     }
 
-    private Object applyPrimitive(Primitive primfn, ConsCell args, int stack) {
+    private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
         if (trace >= TRC_PRIM) {
-            char[] cpfx = new char[stack*2]; Arrays.fill(cpfx, ' '); String pfx = new String(cpfx);
-            tracer.println(pfx + "(<primitive> " + printSEx(args) + ')');
+            tracer.println(pfx(stack) + sfx(stack, level) + " #<primitive> " + printSEx(args));
         }
         return primfn.apply(args);
     }
 
-    /** transform {@code ob} into an S-expression, strings enclosed in double quotes */
+    /** transform {@code ob} into an S-expression, atoms are escaped */
     private static String printSEx(Object ob) {
         if (ob == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
@@ -702,7 +698,7 @@ public class LambdaJ {
         return sb.toString();
     }
 
-    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean headOfList, boolean escapeStrings) {
+    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean headOfList, boolean escapeAtoms) {
         while (true) {
             if (current == null) {
                 sb.append("nil"); return;
@@ -711,7 +707,7 @@ public class LambdaJ {
                 if (car(current) == list) {
                     sb.append(headOfList ? "#<this cons>" : "#<this list>");
                 } else {
-                    _printSEx(sb, car(current), car(current), true, escapeStrings);
+                    _printSEx(sb, car(current), car(current), true, escapeAtoms);
                 }
                 if (cdr(current) != null) {
                     if (listp(cdr(current))) {
@@ -723,12 +719,12 @@ public class LambdaJ {
                         }
                     } else if (headOfList) {
                         sb.append(" . ");
-                        _printSEx(sb, list, cdr(current), false, escapeStrings);
+                        _printSEx(sb, list, cdr(current), false, escapeAtoms);
                         sb.append(')');
                         return;
                     } else {
                         sb.append(' ');
-                        _printSEx(sb, list, cdr(current), false, escapeStrings); // must be an atom
+                        _printSEx(sb, list, cdr(current), false, escapeAtoms); // must be an atom
                         sb.append(')');
                         return;
                     }
@@ -736,7 +732,7 @@ public class LambdaJ {
                     sb.append(')');
                     return;
                 }
-            } else if (escapeStrings && symbolp(current)) {
+            } else if (escapeAtoms && symbolp(current)) {
                 if (containsSExSyntaxOrBlank(current.toString())) {
                     sb.append('|').append(current.toString()).append('|');
                     return;
@@ -744,7 +740,7 @@ public class LambdaJ {
                 sb.append(current.toString()); return;
             } else if (isPrim(current)) {
                 sb.append("#<primitive>"); return;
-            } else if (escapeStrings && stringp(current)) {
+            } else if (escapeAtoms && stringp(current)) {
                 sb.append('"').append(escapeString(current.toString())).append('"'); return;
             } else if (atom(current)) {
                 sb.append(current.toString()); return;
@@ -766,9 +762,7 @@ public class LambdaJ {
 
 
 
-    /// runtime for Lisp programs
-    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
-
+    /// error checking utils, used by interpreter and primitives
     private static void noArgs(String func, ConsCell a) {
         if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printSEx(a));
     }
@@ -832,8 +826,13 @@ public class LambdaJ {
 
     private static String errorExp(Object exp) {
         if (exp == null) return "";
-        return "\nerror occurred in expression " + printSEx(exp);
+        return System.lineSeparator() + "error occurred in expression " + printSEx(exp);
     }
+
+
+
+    /// runtime for Lisp programs
+    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     /** generate a comparison operator */
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
@@ -1091,6 +1090,9 @@ public class LambdaJ {
         if (hasFlag("--trace=eval", args))  interpreter.trace = TRC_EVAL;
         if (hasFlag("--trace", args))       interpreter.trace = TRC_LEX;
 
+        if (hasFlag("--dyn", args))         interpreter.HAVE_LEXC = false;
+        if (hasFlag("--lex", args))         interpreter.HAVE_LEXC = true;
+
         if (hasFlag("--no-nil", args))      interpreter.HAVE_NIL = false;
         if (hasFlag("--no-t", args))        interpreter.HAVE_T = false;
         if (hasFlag("--no-extra", args))    interpreter.HAVE_XTRA = false;
@@ -1155,7 +1157,7 @@ public class LambdaJ {
             ConsCell env = null;
             for (;;) {
                 if (!isInit) {
-                    nCells = 0; maxEnvLen = 0;
+                    nCells = 0; interpreter.maxEnvLen = 0;
                     parser = interpreter.new SExpressionParser(System.in::read);
                     interpreter.setSymtab(parser);
                     ObjectWriter outWriter = new SExpressionWriter(System.out::print);
@@ -1230,7 +1232,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.81 2020/10/16 16:44:24 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.82 2020/10/17 05:41:13 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

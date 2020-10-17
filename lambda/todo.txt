@@ -1,3 +1,22 @@
+trace auf final int trace umstellen und im Konstruktor belegen
+
+statt Xmal boolean HAVE_xxx
+-> ein final int features das im Konstruktor von LambdaJ belegt wird
+   static final int HAVE_XXX = 1 << 1,2,3,4...
+   methoden boolean haveXXX()
+   -> den wert fuer features muss man vorher mit | zusammenbasteln
+      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, weil featurs final ist
+
+in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
+
+"enter an expression, use :h for command help or use :q to exit"
+
+pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen
+
+labels gehen mit lex clos nicht: im closure sind die labels nicht drin
+
+
+
 builtin oder special form fuer try/catch:
 try = (lambda (func catch-handler finally) (
   try { return func(); }

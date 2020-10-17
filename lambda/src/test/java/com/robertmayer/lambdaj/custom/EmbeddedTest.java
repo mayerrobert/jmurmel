@@ -15,8 +15,6 @@ import com.robertmayer.lambdaj.LambdaJ.ObjectReader;
 import com.robertmayer.lambdaj.LambdaJ.ObjectWriter;
 import com.robertmayer.lambdaj.LambdaJ.Parser;
 import com.robertmayer.lambdaj.LambdaJ.Primitive;
-import com.robertmayer.lambdaj.LambdaJ.SExpressionParser;
-import com.robertmayer.lambdaj.LambdaJ.SymbolTable;
 
 public class EmbeddedTest {
     private static Locale prev;
