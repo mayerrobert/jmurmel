@@ -1,3 +1,12 @@
+builtin oder special form fuer try/catch:
+try = (lambda (func catch-handler finally) (
+  try { return func(); }
+  catch (Exception e) { return catch-handler(e); }
+  finally { finally(); }
+)
+
+
+
         ThreadMXBean threadBean = null;
         long startCpu = 0L;
         long start = 0L;
