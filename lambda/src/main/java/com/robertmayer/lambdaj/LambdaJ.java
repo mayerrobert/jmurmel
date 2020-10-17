@@ -501,10 +501,8 @@ public class LambdaJ {
                         final Object lambda = HAVE_LEXC ? car(cdr(func)) : cdr(func);          // (params . bodylist)
                         final ConsCell closure = HAVE_LEXC ? (ConsCell) cdr(cdr(func)) : env;  // lexical or dynamic env
                         nArgs("lambda", lambda, 2, exp);
-                        if (car(lambda) != null && !consp(car(lambda)))
-                            throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
-                        if (cdr(exp) != null && !consp(cdr(exp)))
-                            throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
+                        if (!listp(car(lambda))) throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
+                        if (!listp(cdr(exp))) throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
                         ConsCell extenv = makeArgList(exp, topEnv, closure, stack, level, (ConsCell) car(lambda), (ConsCell) cdr(exp));
 
                         if (trace >= TRC_PRIM) {
@@ -1232,7 +1230,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.82 2020/10/17 05:41:13 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.83 2020/10/17 12:59:14 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
