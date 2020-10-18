@@ -73,13 +73,14 @@ public class LambdaJ {
         }
 
         public Object car, cdr;
-        ConsCell closure;
+        private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
         public ConsCell(Object car, Object cdr)    { nCells++; this.car = car; this.cdr = cdr; }
         public ConsCell(Object car, Object cdr, ConsCell closure)    { this(car, cdr); this.closure = closure; }
 
         @Override public String toString() { return printObj(this); }
         @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
     }
+
 
     public static class LambdaJString {
         private final String value;
@@ -93,10 +94,10 @@ public class LambdaJ {
     public static final int EOF = -1;
     public static final int TOKEN_MAX = 2000; // max length of symbols and literals
 
-    public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_EVAL = 2, TRC_ENV = 3, TRC_PRIM = 4, TRC_PARSE = 5, TRC_TOK = 6, TRC_LEX = 7;
-    public int trace = TRC_NONE;
+    public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_EVAL = 2, TRC_ENV = 3, TRC_FUNC = 4, TRC_PARSE = 5, TRC_TOK = 6, TRC_LEX = 7;
+    private final int trace;
 
-    private Tracer tracer = System.err::println;
+    private final Tracer tracer;
 
     // see https://news.ycombinator.com/item?id=8714988 for how to implement cons, car, cdr, true, false, if in Lambda
     // as well as how to implement numbers using lists
@@ -119,6 +120,15 @@ public class LambdaJ {
 
     HAVE_LEXC = true
     ;
+
+    public LambdaJ() {
+        this(TRC_NONE);
+    }
+
+    public LambdaJ(int trace) {
+        this.trace = trace;
+        tracer = System.err::println;
+    }
 
     /** nothing except cons, car, cdr, cond, apply */
     public void haveMinPlus() {
@@ -175,6 +185,7 @@ public class LambdaJ {
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
+    /// scanner, symboltable and S-expression parser
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     public class SExpressionParser implements Parser {
@@ -283,12 +294,12 @@ public class LambdaJ {
         /// symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
         private ConsCell symbols = null;
 
+        // String#equalsIgnoreCase is slow. we could String#toUpperCase al symbols then we could use String#equals
         @Override
         public Object intern(String sym) {
             ConsCell pair = symbols;
             for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
-                if (sym.equalsIgnoreCase((String)car(pair))) {  // todo equalsIgnoreCase ist langsam. vielleicht doch alles UC, dann reicht equals
-                                                                // todo wobei: stimmt der case bereits, scheints eh nicht so schlimm
+                if (sym.equalsIgnoreCase((String)car(pair))) {
                     return car(pair);
                 }
             }
@@ -510,8 +521,8 @@ public class LambdaJ {
                         if (!listp(cdr(exp))) throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
                         ConsCell extenv = makeArgList(exp, topEnv, env, closure, stack, level, (ConsCell) paramList, (ConsCell) cdr(exp));
 
-                        if (trace >= TRC_PRIM) {
-                            tracer.println(pfx(stack) + sfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
+                        if (trace >= TRC_FUNC) {
+                            tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
                         }
 
                         ConsCell body = (ConsCell) cdr(lambda);
@@ -545,6 +556,7 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
+    // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
     private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, ConsCell extenv, int stack, int level, ConsCell _params, ConsCell _args) {
         ConsCell params = _params, args = _args;
         //ConsCell extenv = env;
@@ -590,10 +602,10 @@ public class LambdaJ {
             if (trace >= TRC_EVAL) {
                 evFunc = fmtEvFunc(evFunc);
 
-                final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + "), exp:          " + printSEx(exp));
+                final String pfx = pfx(stack, level);
+                tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + "), exp:          " + printSEx(exp));
                 if (trace >= TRC_ENV) {
-                    tracer.println(pfx + sfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
+                    tracer.println(pfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
                 }
             }
         }
@@ -605,8 +617,8 @@ public class LambdaJ {
             if (maxEnvLen < envLen) maxEnvLen = envLen;
             if (trace >= TRC_EVAL) {
                 evFunc = fmtEvFunc(evFunc);
-                final String pfx = pfx(stack); final String sfx = sfx(stack, level);
-                tracer.println(pfx + sfx + " " + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
+                final String pfx = pfx(stack, level);
+                tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
             }
         }
     }
@@ -615,16 +627,13 @@ public class LambdaJ {
         return (func + "          ").substring(0, 10);
     }
 
-    private String pfx(int stack) {
+    private String pfx(int stack, int level) {
         final char[] cpfx = new char[stack*2];
         Arrays.fill(cpfx, ' ');
-        return new String(cpfx);
-    }
 
-    private String sfx(int stack, int level) {
         char[] csfx = new char[3+(level - stack)*2];
         Arrays.fill(csfx, '*');
-        return new String(csfx);
+        return new String(cpfx) + new String(csfx);
     }
 
 
@@ -678,8 +687,8 @@ public class LambdaJ {
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
-        if (trace >= TRC_PRIM) {
-            tracer.println(pfx(stack) + sfx(stack, level) + " #<primitive> " + printSEx(args));
+        if (trace >= TRC_FUNC) {
+            tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         }
         return primfn.apply(args);
     }
@@ -1085,12 +1094,13 @@ public class LambdaJ {
             return;
         }
 
-        final LambdaJ interpreter = new LambdaJ();
+        int trace = TRC_NONE;
+        if (hasFlag("--trace=stats", args)) trace = TRC_STATS;
+        if (hasFlag("--trace=eval", args))  trace = TRC_EVAL;
+        if (hasFlag("--trace=env", args))   trace = TRC_ENV;
+        if (hasFlag("--trace", args))       trace = TRC_LEX;
 
-        if (hasFlag("--trace=stats", args)) interpreter.trace = TRC_STATS;
-        if (hasFlag("--trace=eval", args))  interpreter.trace = TRC_EVAL;
-        if (hasFlag("--trace=env", args))   interpreter.trace = TRC_ENV;
-        if (hasFlag("--trace", args))       interpreter.trace = TRC_LEX;
+        final LambdaJ interpreter = new LambdaJ(trace);
 
         if (hasFlag("--dyn", args))         interpreter.HAVE_LEXC = false;
         if (hasFlag("--lex", args))         interpreter.HAVE_LEXC = true;
@@ -1209,7 +1219,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.85 2020/10/17 17:53:57 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.86 2020/10/17 20:49:58 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

@@ -1,21 +1,22 @@
+LambdaJString.value von String auf char[] umstellen?
+-> wuerde ggf. builtins rund um java.lang.Character erleichtern
+-> char ist 16 bit
+-> Java11 speichert String.value nicht als char[] sondern byte[], dieses Speicherersparnis waer dann verloren
+
 true in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
 deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 -> vielleicht reichts doch, im perser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
-
-trace auf final int trace umstellen und im Konstruktor belegen
 
 statt Xmal boolean HAVE_xxx
 -> ein final int features das im Konstruktor von LambdaJ belegt wird
    static final int HAVE_XXX = 1 << 1,2,3,4...
    methoden boolean haveXXX()
    -> den wert fuer features muss man vorher mit | zusammenbasteln
-      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, weil features final ist
+      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist
 
 in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
 
 "enter an expression, enter :h for command help or :q to exit"
-
-pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen
 
 
 
@@ -72,6 +73,8 @@ try = (lambda (func catch-handler finally) (
 
 der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
 sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
+-> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf dn richtigen typ gebracht werden
+   / ergibt immer double, bei *+/mod haengt der ergebnistyp von den eingehenden typen ab
 -> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
 
 
@@ -618,3 +621,7 @@ nicht das aktuelle env extended sondern das abgespeicherte
 -> mit befehlszeilen parameter --dyn umstellen
 
 labels gehen mit lex clos nicht: im closure sind die labels nicht drin
+
+trace auf final int trace umstellen und im Konstruktor belegen
+
+pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen

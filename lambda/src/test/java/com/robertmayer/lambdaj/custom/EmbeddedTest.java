@@ -71,8 +71,7 @@ public class EmbeddedTest {
     @Test
     public void testCustomEnv() {
         // "create a Lisp"
-        final LambdaJ interpreter = new LambdaJ();
-        interpreter.trace = LambdaJ.TRC_PRIM; // turn on logging of eval and primitive invocations
+        final LambdaJ interpreter = new LambdaJ(LambdaJ.TRC_FUNC); // turn on logging of eval and function invocations
 
         // our Lisp "program"
         StringReader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
