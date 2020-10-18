@@ -71,7 +71,7 @@ public class ApplyTest {
 
     @Test
     public void cannotApplyNil() {
-        LambdaJTest.runErrorTest("String", "(apply nil '(1 2))", "apply: cannot apply function nil");
+        LambdaJTest.runErrorTest("String", "(apply nil '(1 2))", "function application: not a symbol or lambda: nil.");
     }
 
     @Test
@@ -90,7 +90,7 @@ public class ApplyTest {
     @Test
     public void lambdaExtraArgs() {
         LambdaJTest.runErrorTest("lambdaExtraArgs", "(apply (lambda (a b) (writeln a) (writeln b)) '(1 2 3))",
-                                 "lambda: too many arguments. remaining arguments: (3.0)");
+                                 "function application: too many arguments. remaining arguments: (3.0)");
     }
 
     @Test

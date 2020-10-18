@@ -1,7 +1,3 @@
-der code von apply und functioncall ist fast identisch:
--> makeArgs umbauen, dass kein eval gemacht wird
--> apply macht die args mit eval, functioncall mit evlis
--> mit einigen weiteren umbauten kann functioncall nach apply springen
 
 Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
 vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
@@ -642,3 +638,9 @@ pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen
 
 ' ist wsl falsch: sollte alles rekursiv quoten, derzeit machts nur ein einziges (quote...
 -> eher ist apply falsch
+
+der code von apply und functioncall ist fast identisch:
+-> makeArgs umbauen, dass kein eval gemacht wird
+-> apply macht die args mit eval, functioncall mit evlis
+-> mit einigen weiteren umbauten kann functioncall nach apply springen
+---> oder beide setzen ein neues 

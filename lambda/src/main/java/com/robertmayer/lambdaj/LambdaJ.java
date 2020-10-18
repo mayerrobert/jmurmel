@@ -417,8 +417,11 @@ public class LambdaJ {
                     return exp;
                 }
 
-                // special forms
                 if (consp(exp)) {
+                    final Object func;
+                    final ConsCell argList;
+
+                    // special forms
                     if (HAVE_QUOTE && car(exp) == sQuote.get()) {
                         oneArg("quote", cdr(exp));
                         return car(cdr(exp));
@@ -492,57 +495,29 @@ public class LambdaJ {
                     // apply function to list
                     if (HAVE_APPLY && car(exp) == sApply.get()) {
                         twoArgs("apply", cdr(exp), exp);
-                        final Object func = eval(car(cdr(exp)), topEnv, env, stack+1, level+1);
-                        if (func == null) throw new LambdaJError("apply: cannot apply function nil. nil was the result of evaluating the expression "
-                                                                 + printSEx(car(cdr(exp))) + errorExp(exp));
 
-                        final Object argList = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
-                        if (!listp(argList)) throw new LambdaJError("apply: expected an argument list but got " + printSEx(argList) + errorExp(exp));
-                        if (consp(func)) {
-                            final Object lambda = cdr(func);          // (params . bodylist)
-                            final ConsCell closure = HAVE_LEXC ? ((ConsCell)func).closure : env;  // lexical or dynamic env
-                            nArgs("lambda", lambda, 2, exp);
-                            Object paramList = car(lambda) == symtab.intern("nil") ? null : car(lambda); // todo diesen Hack reparieren, nil ist wahrscheinlich voellig falsch implementiert
-                            if (!listp(paramList)) throw new LambdaJError("apply: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
-                            ConsCell extenv = makeArgList(exp, topEnv, env, closure, stack, level, (ConsCell) paramList, (ConsCell) argList, false);
-
-                            if (trace >= TRC_FUNC) {
-                                tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
-                            }
-
-                            ConsCell body = (ConsCell) cdr(lambda);
-                            for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                                eval(car(body), topEnv, extenv, stack+1, level+1);
-                            if (body != null) {
-                                exp = car(body); env = extenv; isTc = true; continue;
-                            }
-                        }
-                        if (isPrim(func)) {
-                            try { return applyPrimitive((Primitive)func, (ConsCell)argList, stack+1, level); }
-                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
-                        }
-                        throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
-                                               + ". this was the result of evaluating the expression "
-                                               + printSEx(car(cdr(exp))) + errorExp(exp));
-                    }
+                        func = eval(car(cdr(exp)), topEnv, env, stack+1, level+1);
+                        final Object _argList = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
+                        if (!listp(_argList)) throw new LambdaJError("apply: expected an argument list but got " + printSEx(_argList) + errorExp(exp));
+                        argList = (ConsCell)_argList;
+                        // fall through to "actually perform..."
 
                     // function call
-                    final Object func = eval(car(exp), topEnv, env, stack+1, level+1);
-                    if (consp(func)) {
-                        final Object argList = cdr(exp);
-                        if (!listp(argList)) throw new LambdaJError("lambda invocation: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
+                    } else {
+                        func = eval(car(exp), topEnv, env, stack+1, level+1);
+                        if (!listp(cdr(exp))) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
+                        argList = evlis((ConsCell) cdr(exp), topEnv, env, stack+1, level+1);
+                        // fall through to "actually perform..."
+                    }
 
+                    // actually perform the function call that was set up by "apply" or "function call" above
+                    if (consp(func)) {
                         final Object lambda = cdr(func);          // (params . bodylist)
                         final ConsCell closure = HAVE_LEXC ? ((ConsCell)func).closure : env;  // lexical or dynamic env
-                        nArgs("lambda", lambda, 2, exp);
-                        Object paramList = car(lambda) == symtab.intern("nil") ? null : car(lambda); // todo diesen Hack reparieren, nil ist wahrscheinlich voellig falsch implementiert
-                        if (!listp(paramList)) throw new LambdaJError("lambda invocation: expected a parameter list but got " + printSEx(car(lambda)) + errorExp(exp));
-                        ConsCell extenv = makeArgList(exp, topEnv, env, closure, stack, level, (ConsCell) paramList, (ConsCell) argList, true);
+                        nArgs("lambda application", lambda, 2, exp);
+                        ConsCell extenv = zip(exp, closure, car(lambda), argList);
 
-                        if (trace >= TRC_FUNC) {
-                            tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
-                        }
-
+                        if (trace >= TRC_FUNC)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
                         ConsCell body = (ConsCell) cdr(lambda);
                         for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                             eval(car(body), topEnv, extenv, stack+1, level+1);
@@ -551,11 +526,13 @@ public class LambdaJ {
                         }
                     }
                     if (isPrim(func)) {
-                        try { return applyPrimitive((Primitive) func, evlis((ConsCell) cdr(exp), topEnv, env, stack+1, level+1), stack, level); }
+                        try { return applyPrimitive((Primitive) func, argList, stack, level); }
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
 
-                    throw new LambdaJError("not a function: " + printSEx(func) + errorExp(exp));
+                    throw new LambdaJError("function application: not a symbol or lambda: " + printSEx(func)
+                                           + ". this was the result of evaluating the expression "
+                                           + printSEx(car(cdr(exp))) + errorExp(exp));
 
                 }
 
@@ -575,14 +552,17 @@ public class LambdaJ {
      *    stick above list in front of the environment
      *  return extended environment</pre> */
     // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
-    private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, ConsCell extenv, int stack, int level, ConsCell _params, ConsCell _args, boolean evalArgs) {
-        ConsCell params = _params, args = _args;
+    private ConsCell zip(Object exp, ConsCell extenv, Object _params, ConsCell _args) {
+        final Object paramList = _params == symtab.intern("nil") ? null : _params; // todo diesen Hack reparieren, hier sollte nie das symbol nil sondern ggf. null reinkommen, oder: nil ist wahrscheinlich voellig falsch implementiert
+        if (!listp(paramList)) throw new LambdaJError("function application: expected a parameter list but got " + printSEx(_params) + errorExp(exp));
+
+        ConsCell params = (ConsCell)paramList, args = _args;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-            extenv = cons(cons(car(params), evalArgs ? eval(car(args), topEnv, env, stack+1, level+1) : car(args)), extenv);
+            extenv = cons(cons(car(params), car(args)), extenv);
         if (params != null)
-            throw new LambdaJError("lambda: not enough arguments. parameters w/o argument: " + printSEx(params) + errorExp(exp));
+            throw new LambdaJError("function application: not enough arguments. parameters w/o argument: " + printSEx(params) + errorExp(exp));
         if (args != null)
-            throw new LambdaJError("lambda: too many arguments. remaining arguments: " + printSEx(args) + errorExp(exp));
+            throw new LambdaJError("function application: too many arguments. remaining arguments: " + printSEx(args) + errorExp(exp));
         return extenv;
     }
 
@@ -1237,7 +1217,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.88 2020/10/18 13:42:54 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.89 2020/10/18 14:29:34 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
