@@ -496,18 +496,19 @@ public class LambdaJ {
                         if (func == null) throw new LambdaJError("apply: cannot apply function nil. nil was the result of evaluating the expression "
                                                                  + printSEx(car(cdr(exp))) + errorExp(exp));
 
-                        final Object args = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
                         if (consp(func)) {
-                            exp = cons(func, args); isTc = true; continue;
+                            final Object argList = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
+                            exp = cons(func, argList); isTc = true; continue;
                         }
                         if (isPrim(func)) {
-                            try { return applyPrimitive((Primitive)func, (ConsCell)args, stack, level); }
+                            final Object argList = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
+                            if (!listp(argList)) throw new LambdaJError("apply: was expecting a list but got " + printSEx(argList) + errorExp(exp));
+                            try { return applyPrimitive((Primitive)func, (ConsCell)argList, stack+1, level); }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                         }
                         throw new LambdaJError("apply: not a symbol or lambda: " + printSEx(func)
                                                + ". this was the result of evaluating the expression "
                                                + printSEx(car(cdr(exp))) + errorExp(exp));
-
                     }
 
                     // function call
@@ -559,7 +560,6 @@ public class LambdaJ {
     // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
     private ConsCell makeArgList(Object exp, ConsCell topEnv, ConsCell env, ConsCell extenv, int stack, int level, ConsCell _params, ConsCell _args) {
         ConsCell params = _params, args = _args;
-        //ConsCell extenv = env;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             extenv = cons(cons(car(params), eval(car(args), topEnv, env, stack+1, level+1)), extenv);
         if (params != null)
@@ -583,6 +583,7 @@ public class LambdaJ {
                 insertPos.cdr = currentArg;
                 insertPos = currentArg;
             }
+            if (!listp(cdr(list))) throw new LambdaJError("evlis: not a proper list: " + printSEx(_list));
         }
         dbgEvalDone("evlis", _list, head, stack, level);
         return head;
@@ -1219,7 +1220,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.86 2020/10/17 20:49:58 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.87 2020/10/18 05:54:20 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

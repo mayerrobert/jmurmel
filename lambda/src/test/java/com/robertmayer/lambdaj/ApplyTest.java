@@ -14,6 +14,12 @@ public class ApplyTest {
         LambdaJTest.runTest("primitiveOneArg", "(apply null? '(nil))", "nil", null);
     }
 
+    @Test
+    public void primitiveOneArgApplyError() {
+        LambdaJTest.runErrorTest("primitiveOneArg", "(apply null? 'a)",
+                "apply: was expecting a list but got a");
+    }
+
 
     @Test
     public void primitiveTwoArgs() {
@@ -37,11 +43,15 @@ public class ApplyTest {
     }
 
     @Test
-    public void primitiveThreeExpApply() {
-        LambdaJTest.runErrorTest("primitiveThreeArgs", "(apply + '((+ 1 1) (+ 2 2) 3))", "+: expected only number arguments but got ((+ 1.0 1.0) (+ 2.0 2.0) 3.0)");
+    public void primitiveThreeExpApplyError() {
+        LambdaJTest.runErrorTest("primitiveThreeArgs", "(apply + '((+ 1 1) (+ 2 2) 3))",
+                                 "+: expected only number arguments but got ((+ 1.0 1.0) (+ 2.0 2.0) 3.0)");
     }
 
-
+    @Test
+    public void primitiveThreeExpApply() {
+        LambdaJTest.runTest("primitiveThreeArgs", "(apply + (cons (+ 1 1) (cons (+ 2 2) (cons 3 ()))))", "9.0", null);
+    }
 
     @Test
     public void notASymbol() {
@@ -66,7 +76,6 @@ public class ApplyTest {
     }
 
 
-    // todo could make this work by passing extra args as a list aka variadic...
     @Test
     public void lambdaExtraArgs() {
         LambdaJTest.runErrorTest("lambdaExtraArgs", "(apply (lambda (a b) (writeln a) (writeln b)) '(1 2 3))",

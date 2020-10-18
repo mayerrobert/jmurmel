@@ -1,3 +1,15 @@
+' ist wsl falsch: sollte alles rekursiv quoten, derzeit machts nur ein einziges (quote...
+-> eher ist apply falsch
+
+Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
+vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
+(define xyzzy (lambda (a b c) (+ a b c)))
+(xyzzy 1 2) ; liefert einen fehler, koennte aber ein closure mit a und b und code: (lambda (c) (+ a b c)) liefern
+
+-> makeArgList muesste als ergebnis eine Liste mit 2 Listen liefern: das extenv mit den arguments + liste mit verbleibenden params
+   -> wenns keine verbleibenden params gibt, wird die funktion ausgeführt, gibts verbleibende args,
+      ist der returnwert ein lambda mit den verbleibenden params. 
+
 LambdaJString.value von String auf char[] umstellen?
 -> wuerde ggf. builtins rund um java.lang.Character erleichtern
 -> char ist 16 bit
@@ -5,7 +17,7 @@ LambdaJString.value von String auf char[] umstellen?
 
 true in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
 deswegen ist auch der hack in eval bei funktionsaufruf notwendig
--> vielleicht reichts doch, im perser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
+-> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
 
 statt Xmal boolean HAVE_xxx
 -> ein final int features das im Konstruktor von LambdaJ belegt wird
