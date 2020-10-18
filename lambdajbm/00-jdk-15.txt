@@ -1,0 +1,107 @@
+D:\robert\Workspace.java\platform\lambdajbm>c:\Apps\Java\X64\jdk-15\bin\java -jar target\benchmarks.jar  -p prog=4 LambdaJBenchmark.evalFiveTimes
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by org.openjdk.jmh.util.Utils (file:/D:/robert/Workspace.java/platform/lambdajbm/target/benchmarks.jar) to field java.io.Cons
+ole.cs
+WARNING: Please consider reporting this to the maintainers of org.openjdk.jmh.util.Utils
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+# JMH version: 1.26
+# VM version: JDK 15, OpenJDK 64-Bit Server VM, 15+36-1562
+# VM invoker: c:\Apps\Java\X64\jdk-15\bin\java.exe
+# VM options: <none>
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes
+# Parameters: (prog = 4)
+
+# Run progress: 0,00% complete, ETA 00:01:00
+# Fork: 1 of 3
+# Warmup Iteration   1: 17584594,806 ns/op
+# Warmup Iteration   2: 5024719,871 ns/op
+# Warmup Iteration   3: 3196279,339 ns/op
+# Warmup Iteration   4: 2247143,304 ns/op
+# Warmup Iteration   5: 3396087,015 ns/op
+# Warmup Iteration   6: 2470971,095 ns/op
+# Warmup Iteration   7: 2860377,333 ns/op
+# Warmup Iteration   8: 2039031,006 ns/op
+# Warmup Iteration   9: 1823038,177 ns/op
+# Warmup Iteration  10: 1811184,291 ns/op
+Iteration   1: 1808323,869 ns/op
+Iteration   2: 1812963,382 ns/op
+Iteration   3: 1811759,950 ns/op
+Iteration   4: 1885434,757 ns/op
+Iteration   5: 1800778,147 ns/op
+Iteration   6: 1798985,130 ns/op
+Iteration   7: 1804847,323 ns/op
+Iteration   8: 1830910,722 ns/op
+Iteration   9: 1809655,405 ns/op
+Iteration  10: 1814978,510 ns/op
+
+# Run progress: 33,33% complete, ETA 00:00:45
+# Fork: 2 of 3
+# Warmup Iteration   1: 20173225,231 ns/op
+# Warmup Iteration   2: 4272737,688 ns/op
+# Warmup Iteration   3: 4320883,848 ns/op
+# Warmup Iteration   4: 2215956,830 ns/op
+# Warmup Iteration   5: 4752099,821 ns/op
+# Warmup Iteration   6: 2018015,051 ns/op
+# Warmup Iteration   7: 2000247,958 ns/op
+# Warmup Iteration   8: 1809803,966 ns/op
+# Warmup Iteration   9: 1830699,099 ns/op
+# Warmup Iteration  10: 1814133,416 ns/op
+Iteration   1: 1824695,852 ns/op
+Iteration   2: 1816196,539 ns/op
+Iteration   3: 1826578,444 ns/op
+Iteration   4: 1833893,472 ns/op
+Iteration   5: 2225835,556 ns/op
+Iteration   6: 1814418,228 ns/op
+Iteration   7: 1804334,446 ns/op
+Iteration   8: 1808452,614 ns/op
+Iteration   9: 1811423,489 ns/op
+Iteration  10: 1805923,527 ns/op
+
+# Run progress: 66,67% complete, ETA 00:00:22
+# Fork: 3 of 3
+# Warmup Iteration   1: 19918955,538 ns/op
+# Warmup Iteration   2: 4279734,086 ns/op
+# Warmup Iteration   3: 3582341,810 ns/op
+# Warmup Iteration   4: 2275326,520 ns/op
+# Warmup Iteration   5: 4334100,316 ns/op
+# Warmup Iteration   6: 1943842,903 ns/op
+# Warmup Iteration   7: 2406844,469 ns/op
+# Warmup Iteration   8: 1880642,610 ns/op
+# Warmup Iteration   9: 1802078,772 ns/op
+# Warmup Iteration  10: 1796918,397 ns/op
+Iteration   1: 1791391,756 ns/op
+Iteration   2: 1794668,151 ns/op
+Iteration   3: 2231705,878 ns/op
+Iteration   4: 1782368,130 ns/op
+Iteration   5: 1783072,242 ns/op
+Iteration   6: 1780387,377 ns/op
+Iteration   7: 1778645,271 ns/op
+Iteration   8: 1779607,093 ns/op
+Iteration   9: 1790015,684 ns/op
+Iteration  10: 1782678,181 ns/op
+
+
+Result "com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes":
+  1834830,971 ±(99.9%) 72959,583 ns/op [Average]
+  (min, avg, max) = (1778645,271, 1834830,971, 2231705,878), stdev = 109202,477
+  CI (99.9%): [1761871,388, 1907790,554] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:01:07
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+Benchmark                       (prog)  Mode  Cnt        Score       Error  Units
+LambdaJBenchmark.evalFiveTimes       4  avgt   30  1834830,971 ± 72959,583  ns/op
+
+D:\robert\Workspace.java\platform\lambdajbm>

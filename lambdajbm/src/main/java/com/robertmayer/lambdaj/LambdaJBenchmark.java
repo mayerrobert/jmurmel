@@ -23,7 +23,7 @@ import org.openjdk.jmh.infra.Blackhole;
  * java  -jar target/benchmarks.jar -p prog=4 -prof stack:lines=3 LambdaJBenchmark.eval ... prog=4 laesst nur das factorial programm laufen
  *
  * oder:
- * java  -jar target/benchmarks.jar -p prog=4 LambdaJBenchmark.evalFiveTimes
+ * java  -jar target/benchmarks.jar -p prog=4 LambdaJBenchmark.fiveTimesEval
  *
  * oder:
  * java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\benchmarks.jar
@@ -92,7 +92,7 @@ public class LambdaJBenchmark {
     }
 
     @Benchmark
-    public void evalFiveTimes(Blackhole bh) {
+    public void fiveTimesEval(Blackhole bh) {
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));

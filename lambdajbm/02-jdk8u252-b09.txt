@@ -1,0 +1,281 @@
+Den StringBuffer fuer tok von 2000 auf 32 char verkürzt
+
+D:\robert\Workspace.java\platform\lambdajbm>c:\Apps\Java\X64\jdk8u252-b09\bin\java -jar target\benchmarks.jar  -p prog=2,3,4 LambdaJBenchmark.evalFiveTimes
+# JMH version: 1.26
+# VM version: JDK 1.8.0_252, OpenJDK 64-Bit Server VM, 25.252-b09
+# VM invoker: c:\Apps\Java\X64\jdk8u252-b09\jre\bin\java.exe
+# VM options: <none>
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes
+# Parameters: (prog = 2)
+
+# Run progress: 0,00% complete, ETA 00:03:00
+# Fork: 1 of 3
+# Warmup Iteration   1: 209558,079 ns/op
+# Warmup Iteration   2: 101748,763 ns/op
+# Warmup Iteration   3: 93630,491 ns/op
+# Warmup Iteration   4: 78506,623 ns/op
+# Warmup Iteration   5: 77886,078 ns/op
+# Warmup Iteration   6: 77717,296 ns/op
+# Warmup Iteration   7: 78794,016 ns/op
+# Warmup Iteration   8: 78843,820 ns/op
+# Warmup Iteration   9: 78917,935 ns/op
+# Warmup Iteration  10: 80800,598 ns/op
+Iteration   1: 77382,997 ns/op
+Iteration   2: 77878,084 ns/op
+Iteration   3: 78516,093 ns/op
+Iteration   4: 78505,843 ns/op
+Iteration   5: 79064,436 ns/op
+Iteration   6: 78715,348 ns/op
+Iteration   7: 78531,963 ns/op
+Iteration   8: 78696,890 ns/op
+Iteration   9: 78527,050 ns/op
+Iteration  10: 78400,177 ns/op
+
+# Run progress: 11,11% complete, ETA 00:02:51
+# Fork: 2 of 3
+# Warmup Iteration   1: 221701,663 ns/op
+# Warmup Iteration   2: 101966,002 ns/op
+# Warmup Iteration   3: 95368,153 ns/op
+# Warmup Iteration   4: 83921,121 ns/op
+# Warmup Iteration   5: 80009,632 ns/op
+# Warmup Iteration   6: 79447,136 ns/op
+# Warmup Iteration   7: 80525,770 ns/op
+# Warmup Iteration   8: 80337,279 ns/op
+# Warmup Iteration   9: 80842,217 ns/op
+# Warmup Iteration  10: 82049,172 ns/op
+Iteration   1: 80133,421 ns/op
+Iteration   2: 79629,854 ns/op
+Iteration   3: 80262,674 ns/op
+Iteration   4: 81121,470 ns/op
+Iteration   5: 83695,320 ns/op
+Iteration   6: 81956,595 ns/op
+Iteration   7: 83840,678 ns/op
+Iteration   8: 82332,832 ns/op
+Iteration   9: 80513,414 ns/op
+Iteration  10: 80093,275 ns/op
+
+# Run progress: 22,22% complete, ETA 00:02:29
+# Fork: 3 of 3
+# Warmup Iteration   1: 220087,246 ns/op
+# Warmup Iteration   2: 99847,856 ns/op
+# Warmup Iteration   3: 93504,044 ns/op
+# Warmup Iteration   4: 82035,158 ns/op
+# Warmup Iteration   5: 78498,237 ns/op
+# Warmup Iteration   6: 78146,461 ns/op
+# Warmup Iteration   7: 79178,297 ns/op
+# Warmup Iteration   8: 79848,195 ns/op
+# Warmup Iteration   9: 79618,397 ns/op
+# Warmup Iteration  10: 80462,872 ns/op
+Iteration   1: 78915,664 ns/op
+Iteration   2: 78965,710 ns/op
+Iteration   3: 79373,537 ns/op
+Iteration   4: 78874,809 ns/op
+Iteration   5: 78881,469 ns/op
+Iteration   6: 78707,609 ns/op
+Iteration   7: 78771,635 ns/op
+Iteration   8: 79108,775 ns/op
+Iteration   9: 78923,918 ns/op
+Iteration  10: 79093,475 ns/op
+
+
+Result "com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes":
+  79580,500 ±(99.9%) 1053,847 ns/op [Average]
+  (min, avg, max) = (77382,997, 79580,500, 83840,678), stdev = 1577,349
+  CI (99.9%): [78526,653, 80634,348] (assumes normal distribution)
+
+
+# JMH version: 1.26
+# VM version: JDK 1.8.0_252, OpenJDK 64-Bit Server VM, 25.252-b09
+# VM invoker: c:\Apps\Java\X64\jdk8u252-b09\jre\bin\java.exe
+# VM options: <none>
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes
+# Parameters: (prog = 3)
+
+# Run progress: 33,33% complete, ETA 00:02:07
+# Fork: 1 of 3
+# Warmup Iteration   1: 808884,362 ns/op
+# Warmup Iteration   2: 407149,495 ns/op
+# Warmup Iteration   3: 337302,599 ns/op
+# Warmup Iteration   4: 271114,228 ns/op
+# Warmup Iteration   5: 279827,173 ns/op
+# Warmup Iteration   6: 267767,560 ns/op
+# Warmup Iteration   7: 267142,880 ns/op
+# Warmup Iteration   8: 265872,888 ns/op
+# Warmup Iteration   9: 266642,524 ns/op
+# Warmup Iteration  10: 266504,372 ns/op
+Iteration   1: 267049,555 ns/op
+Iteration   2: 266593,348 ns/op
+Iteration   3: 269910,273 ns/op
+Iteration   4: 269686,483 ns/op
+Iteration   5: 271658,063 ns/op
+Iteration   6: 271002,270 ns/op
+Iteration   7: 266800,377 ns/op
+Iteration   8: 268032,955 ns/op
+Iteration   9: 268816,349 ns/op
+Iteration  10: 268847,223 ns/op
+
+# Run progress: 44,44% complete, ETA 00:01:47
+# Fork: 2 of 3
+# Warmup Iteration   1: 819374,646 ns/op
+# Warmup Iteration   2: 424684,932 ns/op
+# Warmup Iteration   3: 329027,447 ns/op
+# Warmup Iteration   4: 290193,258 ns/op
+# Warmup Iteration   5: 284269,741 ns/op
+# Warmup Iteration   6: 270033,886 ns/op
+# Warmup Iteration   7: 270183,630 ns/op
+# Warmup Iteration   8: 269434,021 ns/op
+# Warmup Iteration   9: 269421,734 ns/op
+# Warmup Iteration  10: 269931,678 ns/op
+Iteration   1: 270379,770 ns/op
+Iteration   2: 270233,338 ns/op
+Iteration   3: 270342,213 ns/op
+Iteration   4: 270449,262 ns/op
+Iteration   5: 272021,628 ns/op
+Iteration   6: 270164,088 ns/op
+Iteration   7: 270264,122 ns/op
+Iteration   8: 270547,903 ns/op
+Iteration   9: 272199,581 ns/op
+Iteration  10: 271763,388 ns/op
+
+# Run progress: 55,56% complete, ETA 00:01:25
+# Fork: 3 of 3
+# Warmup Iteration   1: 854476,334 ns/op
+# Warmup Iteration   2: 443670,095 ns/op
+# Warmup Iteration   3: 330300,527 ns/op
+# Warmup Iteration   4: 291722,876 ns/op
+# Warmup Iteration   5: 283253,057 ns/op
+# Warmup Iteration   6: 269550,356 ns/op
+# Warmup Iteration   7: 269107,005 ns/op
+# Warmup Iteration   8: 269912,037 ns/op
+# Warmup Iteration   9: 271452,636 ns/op
+# Warmup Iteration  10: 269346,706 ns/op
+Iteration   1: 270282,110 ns/op
+Iteration   2: 269676,877 ns/op
+Iteration   3: 269321,075 ns/op
+Iteration   4: 271033,818 ns/op
+Iteration   5: 269876,528 ns/op
+Iteration   6: 269979,360 ns/op
+Iteration   7: 270798,225 ns/op
+Iteration   8: 284459,034 ns/op
+Iteration   9: 272180,185 ns/op
+Iteration  10: 271389,502 ns/op
+
+
+Result "com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes":
+  270525,297 ±(99.9%) 2015,032 ns/op [Average]
+  (min, avg, max) = (266593,348, 270525,297, 284459,034), stdev = 3016,006
+  CI (99.9%): [268510,264, 272540,329] (assumes normal distribution)
+
+
+# JMH version: 1.26
+# VM version: JDK 1.8.0_252, OpenJDK 64-Bit Server VM, 25.252-b09
+# VM invoker: c:\Apps\Java\X64\jdk8u252-b09\jre\bin\java.exe
+# VM options: <none>
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes
+# Parameters: (prog = 4)
+
+# Run progress: 66,67% complete, ETA 00:01:04
+# Fork: 1 of 3
+# Warmup Iteration   1: 6536730,697 ns/op
+# Warmup Iteration   2: 1959804,720 ns/op
+# Warmup Iteration   3: 1769644,266 ns/op
+# Warmup Iteration   4: 1799392,122 ns/op
+# Warmup Iteration   5: 1550891,559 ns/op
+# Warmup Iteration   6: 1566329,644 ns/op
+# Warmup Iteration   7: 1695662,871 ns/op
+# Warmup Iteration   8: 1273602,941 ns/op
+# Warmup Iteration   9: 1242875,226 ns/op
+# Warmup Iteration  10: 1238606,565 ns/op
+Iteration   1: 1241401,092 ns/op
+Iteration   2: 1237917,983 ns/op
+Iteration   3: 1234132,722 ns/op
+Iteration   4: 1241791,754 ns/op
+Iteration   5: 1241249,952 ns/op
+Iteration   6: 1235023,330 ns/op
+Iteration   7: 1235079,176 ns/op
+Iteration   8: 1247962,756 ns/op
+Iteration   9: 1234046,690 ns/op
+Iteration  10: 1235355,021 ns/op
+
+# Run progress: 77,78% complete, ETA 00:00:42
+# Fork: 2 of 3
+# Warmup Iteration   1: 5589157,571 ns/op
+# Warmup Iteration   2: 1851320,656 ns/op
+# Warmup Iteration   3: 1709015,872 ns/op
+# Warmup Iteration   4: 1780938,211 ns/op
+# Warmup Iteration   5: 1456145,839 ns/op
+# Warmup Iteration   6: 1320855,587 ns/op
+# Warmup Iteration   7: 1214267,712 ns/op
+# Warmup Iteration   8: 1221527,727 ns/op
+# Warmup Iteration   9: 1216284,077 ns/op
+# Warmup Iteration  10: 1283328,054 ns/op
+Iteration   1: 1214909,323 ns/op
+Iteration   2: 1215463,466 ns/op
+Iteration   3: 1208918,983 ns/op
+Iteration   4: 1209456,391 ns/op
+Iteration   5: 1214230,261 ns/op
+Iteration   6: 1215542,805 ns/op
+Iteration   7: 1214047,787 ns/op
+Iteration   8: 1219071,881 ns/op
+Iteration   9: 1214790,401 ns/op
+Iteration  10: 1216142,504 ns/op
+
+# Run progress: 88,89% complete, ETA 00:00:21
+# Fork: 3 of 3
+# Warmup Iteration   1: 5626013,593 ns/op
+# Warmup Iteration   2: 1880491,526 ns/op
+# Warmup Iteration   3: 1709010,487 ns/op
+# Warmup Iteration   4: 1680677,288 ns/op
+# Warmup Iteration   5: 1336827,349 ns/op
+# Warmup Iteration   6: 1293259,416 ns/op
+# Warmup Iteration   7: 1261531,789 ns/op
+# Warmup Iteration   8: 1267777,584 ns/op
+# Warmup Iteration   9: 1265646,070 ns/op
+# Warmup Iteration  10: 1262630,129 ns/op
+Iteration   1: 1259854,403 ns/op
+Iteration   2: 1259881,989 ns/op
+Iteration   3: 1263140,753 ns/op
+Iteration   4: 1260343,876 ns/op
+Iteration   5: 1255917,351 ns/op
+Iteration   6: 1260332,095 ns/op
+Iteration   7: 1257210,728 ns/op
+Iteration   8: 1262790,018 ns/op
+Iteration   9: 1259781,826 ns/op
+Iteration  10: 1260118,247 ns/op
+
+
+Result "com.robertmayer.lambdaj.LambdaJBenchmark.evalFiveTimes":
+  1237530,185 ±(99.9%) 12868,249 ns/op [Average]
+  (min, avg, max) = (1208918,983, 1237530,185, 1263140,753), stdev = 19260,591
+  CI (99.9%): [1224661,936, 1250398,435] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:03:15
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+Benchmark                       (prog)  Mode  Cnt        Score       Error  Units
+LambdaJBenchmark.evalFiveTimes       2  avgt   30    79580,500 ±  1053,847  ns/op
+LambdaJBenchmark.evalFiveTimes       3  avgt   30   270525,297 ±  2015,032  ns/op
+LambdaJBenchmark.evalFiveTimes       4  avgt   30  1237530,185 ± 12868,249  ns/op
+
+D:\robert\Workspace.java\platform\lambdajbm>
