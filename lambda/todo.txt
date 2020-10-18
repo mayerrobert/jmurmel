@@ -1,3 +1,4 @@
+die sSymbol.get() gschichte ist total overengineered, besser das lazy loading ganz weglassen (ausser vielleicht bei exptrue lassen)
 
 Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
 vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
@@ -11,7 +12,17 @@ vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_l
 
 continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
 ist currentcc cdr(exp) (und das env bzw. closure) ?
-
+-> es koennte eine special form current-continuation geben, angelehnt an lambda, current-continuation haette eine parameterliste,
+   aber keinen stmt body. ergebnis von (current-continuation (a b c)) waere ein lambda (lambda (a b c) ...), ... steht fuer
+   jene automatisch eingefuegten stmts, die auf den aufruf von current-continuation folgen. d.h. wenn jemand dieses lambda aufruft,
+   gehts mit den stmts weiter, und die symbole a b c sind mit werten belegt im environment (d.h. closure) vorhanden.
+   -> geht zunaechst aber nur innerhalb einer flachen liste stmts eines lambdas, nicht z.b. innerhalb des true zweigs einer if-clause.
+      -> damit das auch geht, muesste man die stmts die der gesamten if clause folgen, auch ans lambda dranhaengen
+         -> das waer moeglich, wenn man bei jedem rekursiven oder tailrekursiven aufruf von eval eine verkette liste mit cdr(exp)
+            als parameter mitgibt, bei jedem aufruf wird die liste eins laenger. um dann das continuation lambda zu basteln,
+            haengt man diese stmt liste an eine kopie von cdr(exp) dran. haette z.b. zur folge: wenn nur im true zweig call/cc
+            aufgerufen wird, dann sind die parameter nach der if clause bei durchlauf durch true zweig vorhanden,
+            beim durchlaufen des false zweigs nicht vorhanden.
 
 
 LambdaJString.value von String auf char[] umstellen?
@@ -59,9 +70,7 @@ nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichna
 wuerd ggf bei dynamic UND lexical closures was bringen
 -> nein nur dynamic, lexical closures erben das environment ja nicht
 
-defun einbauen, weil define alleine ist muehsam
-oder doch defun als macro und macros unterstuetzen?
-(defmacro defun (sym params body) (define sym (lambda params body)))
+macros?
 
 eval ins environment einhaengen?
 
@@ -647,3 +656,7 @@ der code von apply und functioncall ist fast identisch:
 ---> oder beide setzen ein neues 
 
 "enter an expression, enter :h for command help or :q to exit"
+
+defun einbauen, weil define alleine ist muehsam
+oder doch defun als macro und macros unterstuetzen?
+(defmacro defun (sym params body) (define sym (lambda params body)))

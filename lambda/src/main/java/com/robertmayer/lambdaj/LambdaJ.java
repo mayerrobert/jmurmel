@@ -379,13 +379,14 @@ public class LambdaJ {
         sCond   = () -> { Object sym = symtab.intern("cond");   sCond   = () -> sym; return sym; };
         sIf     = () -> { Object sym = symtab.intern("if");     sIf     = () -> sym; return sym; };
         sDefine = () -> { Object sym = symtab.intern("define"); sDefine = () -> sym; return sym; };
+        sDefun  = () -> { Object sym = symtab.intern("defun");  sDefun  = () -> sym; return sym; };
         sLabels = () -> { Object sym = symtab.intern("labels"); sLabels = () -> sym; return sym; };
         sLambda = () -> { Object sym = symtab.intern("lambda"); sLambda = () -> sym; return sym; };
         sQuote  = () -> { Object sym = symtab.intern("quote");  sQuote  = () -> sym; return sym; };
         expTrue = () -> { Object exp = makeExpTrue();           expTrue = () -> exp; return exp; };
     }
 
-    private Supplier<Object> sApply, sCond, sIf, sDefine, sLabels, sLambda, sQuote;
+    private Supplier<Object> sApply, sCond, sIf, sDefine, sDefun, sLabels, sLambda, sQuote;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -418,51 +419,65 @@ public class LambdaJ {
                 }
 
                 if (consp(exp)) {
-                    final Object func;
-                    final ConsCell argList;
+                    final Object func;                     // will be used in case of a function call
+                    final ConsCell argList;                // will be used in case of a function call
+
+                    final Object operator = car(exp);      // first symbol of the S-expression
+                    final Object operandlist = cdr(exp);   // list with remaining symbols
 
                     // special forms
-                    if (HAVE_QUOTE && car(exp) == sQuote.get()) {
-                        oneArg("quote", cdr(exp));
-                        return car(cdr(exp));
+                    if (HAVE_QUOTE && operator == sQuote.get()) {
+                        oneArg("quote", operandlist);
+                        return car(operandlist);
                     }
 
-                    if (HAVE_XTRA && car(exp) == sIf.get()) {
-                        nArgs("if", cdr(exp), 2, 3, exp);
-                        if (eval(car(cdr(exp)), topEnv, env, stack+1, level+1) != null) {
-                            exp = car(cdr(cdr(exp))); isTc = true; continue;
-                        } else if (cdr(cdr(cdr(exp))) != null) {
-                            exp = car(cdr(cdr(cdr(exp)))); isTc = true; continue;
-                        } else
-                            return null;
+                    if (HAVE_XTRA && operator == sIf.get()) {
+                        nArgs("if", operandlist, 2, 3, exp);
+                        if (eval(car(operandlist), topEnv, env, stack+1, level+1) != null) {
+                            exp = car(cdr(operandlist)); isTc = true; continue;
+                        } else if (cdr(cdr(operandlist)) != null) {
+                            exp = car(cdr(cdr(operandlist))); isTc = true; continue;
+                        } else return null;
                     }
 
-                    if (HAVE_XTRA && car(exp) == sDefine.get()) {
-                        twoArgs("define", cdr(exp), exp);
-                        final Object symbol = car(cdr(exp)); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
-                                                             // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
-                        if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol: " + printSEx(symbol) + '.'
-                                                                     + printSEx(car(cdr(exp))) + errorExp(exp));
+                    if (HAVE_XTRA && operator == sDefine.get()) {
+                        twoArgs("define", operandlist, exp);
+                        final Object symbol = car(operandlist); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
+                                                                // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
+                        if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("define: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
-                        final Object value = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
+                        final Object value = eval(car(cdr(operandlist)), topEnv, env, stack+1, level+1);
                         topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
-
                         return value;
                     }
 
-                    if (car(exp) == sLambda.get()) {
-                        nArgs("lambda", cdr(exp), 2, exp);
-                        if (HAVE_LEXC) return cons3(sLambda.get(), cdr(exp), env);
+                    if (HAVE_XTRA && operator == sDefun.get()) {
+                        nArgs("defun", operandlist, 3, exp);
+                        final Object symbol = car(operandlist);
+                        if (!symbolp(symbol)) throw new LambdaJError("defun: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
+                        final Object params = car(cdr(operandlist));
+                        if (!listp(params)) throw new LambdaJError("defun: expected a parameter list but got " + printSEx(params) + '.' + errorExp(exp));
+                        final ConsCell envEntry = assoc(symbol, env);
+                        if (envEntry != null) throw new LambdaJError("defun: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
+
+                        final Object lambda = cons3(sLambda.get(), cdr(operandlist), HAVE_LEXC ? env : null);
+                        topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
+                        return lambda;
+                    }
+
+                    if (operator == sLambda.get()) {
+                        nArgs("lambda", operandlist, 2, exp);
+                        if (HAVE_LEXC) return cons3(sLambda.get(), operandlist, env);
                         else return exp;
                     }
 
-                    if (HAVE_LABELS && car(exp) == sLabels.get()) { // labels bindings body -> object
-                        nArgs("labels", cdr(exp), 2, exp);
+                    if (HAVE_LABELS && operator == sLabels.get()) { // labels bindings body -> object
+                        nArgs("labels", operandlist, 2, exp);
                         ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
-                        for (bindings = (ConsCell) car(cdr(exp)); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
+                        for (bindings = (ConsCell) car(operandlist); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
@@ -475,16 +490,15 @@ public class LambdaJ {
 
                         // run the function's expressions, the last one with TCO in case it's a tailcall
                         ConsCell body;
-                        for (body = (ConsCell) cdr(cdr(exp)); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                        for (body = (ConsCell) cdr(operandlist); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                             eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
                             exp = car(body); env = extenv; isTc = true; continue;
                         }
                     }
 
-                    if (HAVE_COND && car(exp) == sCond.get()) {
-                        ConsCell c;
-                        for (c = (ConsCell) cdr(exp); c != null; c = (ConsCell) cdr(c)) {
+                    if (HAVE_COND && operator == sCond.get()) {
+                        for (ConsCell c = (ConsCell) operandlist; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(car(car(c)), topEnv, env, stack+1, level+1) != null) {
                                 exp = car(cdr(car(c))); isTc = true; continue tailcall;
                             }
@@ -493,20 +507,20 @@ public class LambdaJ {
                     }
 
                     // apply function to list
-                    if (HAVE_APPLY && car(exp) == sApply.get()) {
-                        twoArgs("apply", cdr(exp), exp);
+                    if (HAVE_APPLY && operator == sApply.get()) {
+                        twoArgs("apply", operandlist, exp);
 
-                        func = eval(car(cdr(exp)), topEnv, env, stack+1, level+1);
-                        final Object _argList = eval(car(cdr(cdr(exp))), topEnv, env, stack+1, level+1);
+                        func = eval(car(operandlist), topEnv, env, stack+1, level+1);
+                        final Object _argList = eval(car(cdr(operandlist)), topEnv, env, stack+1, level+1);
                         if (!listp(_argList)) throw new LambdaJError("apply: expected an argument list but got " + printSEx(_argList) + errorExp(exp));
                         argList = (ConsCell)_argList;
                         // fall through to "actually perform..."
 
                     // function call
                     } else {
-                        func = eval(car(exp), topEnv, env, stack+1, level+1);
-                        if (!listp(cdr(exp))) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(cdr(exp)) + errorExp(exp));
-                        argList = evlis((ConsCell) cdr(exp), topEnv, env, stack+1, level+1);
+                        func = eval(operator, topEnv, env, stack+1, level+1);
+                        if (!listp(operandlist)) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(operandlist) + errorExp(exp));
+                        argList = evlis((ConsCell) operandlist, topEnv, env, stack+1, level+1);
                         // fall through to "actually perform..."
                     }
 
@@ -532,10 +546,12 @@ public class LambdaJ {
 
                     throw new LambdaJError("function application: not a symbol or lambda: " + printSEx(func)
                                            + ". this was the result of evaluating the expression "
-                                           + printSEx(car(cdr(exp))) + errorExp(exp));
+                                           + printSEx(car(operandlist)) + errorExp(exp));
 
                 }
 
+                // not a symbol/atom/cons - something is really wrong here
+                // let's sprinkle some crack on him and get out of here, dave.
                 throw new LambdaJError("cannot eval expression '" + printSEx(exp) + '\'');
             }
 
@@ -1227,7 +1243,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.90 2020/10/18 17:38:34 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.91 2020/10/18 18:06:57 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
