@@ -1,5 +1,7 @@
-' ist wsl falsch: sollte alles rekursiv quoten, derzeit machts nur ein einziges (quote...
--> eher ist apply falsch
+der code von apply und functioncall ist fast identisch:
+-> makeArgs umbauen, dass kein eval gemacht wird
+-> apply macht die args mit eval, functioncall mit evlis
+-> mit einigen weiteren umbauten kann functioncall nach apply springen
 
 Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
 vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
@@ -15,7 +17,7 @@ LambdaJString.value von String auf char[] umstellen?
 -> char ist 16 bit
 -> Java11 speichert String.value nicht als char[] sondern byte[], dieses Speicherersparnis waer dann verloren
 
-true in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
+nil in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
 deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 -> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
 
@@ -637,3 +639,6 @@ labels gehen mit lex clos nicht: im closure sind die labels nicht drin
 trace auf final int trace umstellen und im Konstruktor belegen
 
 pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen
+
+' ist wsl falsch: sollte alles rekursiv quoten, derzeit machts nur ein einziges (quote...
+-> eher ist apply falsch

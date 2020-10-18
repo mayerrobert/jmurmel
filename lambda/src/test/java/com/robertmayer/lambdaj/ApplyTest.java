@@ -17,7 +17,18 @@ public class ApplyTest {
     @Test
     public void primitiveOneArgApplyError() {
         LambdaJTest.runErrorTest("primitiveOneArg", "(apply null? 'a)",
-                "apply: was expecting a list but got a");
+                "apply: expected an argument list but got a");
+    }
+
+    @Test
+    public void lambdaOneArgApply() {
+        LambdaJTest.runTest("primitiveOneArg", "(apply (lambda (x) (null? x)) '(nil))", "nil", null);
+    }
+
+    @Test
+    public void lambdaOneArgApplyError() {
+        LambdaJTest.runErrorTest("lambdaOneArg", "(apply (lambda (x) (null? x)) 'a)",
+                "apply: expected an argument list but got a");
     }
 
 
@@ -119,6 +130,6 @@ public class ApplyTest {
     @Test
     public void y() {
         LambdaJTest.runErrorTest("String", "(apply (apply (lambda (a b) (lambda () nil)) '(1 2)) 'a)",
-                                 "lambda invocation: expected an argument list but got a");
+                                 "apply: expected an argument list but got a");
     }
 }
