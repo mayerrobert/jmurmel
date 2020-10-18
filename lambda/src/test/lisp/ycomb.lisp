@@ -1,10 +1,12 @@
-; from https://github.com/carld/micro-lisp/blob/master/examples/reverse.lisp
-
-; GNU CLISP v2.49+ (Common Lisp) gives an error, Gauche v0.9.3.3 (Scheme) runs it fine (after replacing eq -> eq?)
- 
-; LambdaJ gives an error: cannot eval expression
-; outputt: (1 2 3)
-; result: t
+;;; Y-combinator sample from https://github.com/carld/micro-lisp/blob/master/examples/reverse.lisp
+;;;
+;;; GNU CLISP v2.49+ (Common Lisp) gives an error, Gauche v0.9.3.3 (Scheme) runs it fine (after replacing eq -> eq?)
+;;;
+;;; Doesn't seem to work with dynamic environments, LambdaJ --dyn gives the error "Error: 'f' is undefined"
+;;; LambdaJ --lex runs it ok.
+;;;
+; result: (1.0 2.0 3.0)
+; output: (empty)
 
 (((lambda (fn)
           ((lambda (h) (h h))
