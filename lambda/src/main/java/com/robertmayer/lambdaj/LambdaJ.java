@@ -1134,7 +1134,7 @@ public class LambdaJ {
 
         final boolean istty = null != System.console();
         if (istty) {
-            System.out.println("Enter a Lisp expression (or enter :q or <EOF> to exit):");
+            System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
             System.out.println();
 
             boolean isInit = false;
@@ -1158,6 +1158,16 @@ public class LambdaJ {
 
                     if (":q".equals(exp) || exp == null && parser.look == EOF) {
                         System.out.println("bye."); System.out.println();  return;
+                    }
+
+                    if (":h".equals(exp)) {
+                        System.out.println("Available commands:");
+                        System.out.println("  :h ...... this help screen");
+                        System.out.println("  :env .... list current global environment");
+                        System.out.println("  :init ... re-init global environment");
+                        System.out.println("  :q ...... quit LambdaJ");
+                        System.out.println();
+                        continue;
                     }
 
                     if (":env".equals(exp)) {
@@ -1217,7 +1227,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.89 2020/10/18 14:29:34 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.90 2020/10/18 17:38:34 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

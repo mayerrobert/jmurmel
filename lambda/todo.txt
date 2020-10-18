@@ -7,6 +7,12 @@ vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_l
 -> makeArgList muesste als ergebnis eine Liste mit 2 Listen liefern: das extenv mit den arguments + liste mit verbleibenden params
    -> wenns keine verbleibenden params gibt, wird die funktion ausgeführt, gibts verbleibende args,
       ist der returnwert ein lambda mit den verbleibenden params. 
+-> nur sinnvoll bei lexical closures, weil sonst gingen ja die bereits gesetzten argumente verschuett 
+
+continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
+ist currentcc cdr(exp) (und das env bzw. closure) ?
+
+
 
 LambdaJString.value von String auf char[] umstellen?
 -> wuerde ggf. builtins rund um java.lang.Character erleichtern
@@ -25,8 +31,6 @@ statt Xmal boolean HAVE_xxx
       zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist
 
 in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
-
-"enter an expression, enter :h for command help or :q to exit"
 
 
 
@@ -49,9 +53,6 @@ Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
 
-
-continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
-ist currentcc cdr(exp) (und das env bzw. closure) ?
 
 bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
 nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
@@ -644,3 +645,5 @@ der code von apply und functioncall ist fast identisch:
 -> apply macht die args mit eval, functioncall mit evlis
 -> mit einigen weiteren umbauten kann functioncall nach apply springen
 ---> oder beide setzen ein neues 
+
+"enter an expression, enter :h for command help or :q to exit"
