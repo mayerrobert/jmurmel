@@ -1,35 +1,4 @@
-checken ob die string funktionen geeignet ein/ausgeblendet werden
 
-die sSymbol.get() gschichte ist total overengineered, besser das lazy loading ganz weglassen (ausser vielleicht bei exptrue lassen)
-
-Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
-vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
-(define xyzzy (lambda (a b c) (+ a b c)))
-(xyzzy 1 2) ; liefert einen fehler, koennte aber ein closure mit a und b und code: (lambda (c) (+ a b c)) liefern
-
--> makeArgList muesste als ergebnis eine Liste mit 2 Listen liefern: das extenv mit den arguments + liste mit verbleibenden params
-   -> wenns keine verbleibenden params gibt, wird die funktion ausgeführt, gibts verbleibende args,
-      ist der returnwert ein lambda mit den verbleibenden params. 
--> nur sinnvoll bei lexical closures, weil sonst gingen ja die bereits gesetzten argumente verschuett 
-
-continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
-ist currentcc cdr(exp) (und das env bzw. closure) ?
--> es koennte eine special form current-continuation geben, angelehnt an lambda, current-continuation haette eine parameterliste,
-   aber keinen stmt body. ergebnis von (current-continuation (a b c)) waere ein lambda (lambda (a b c) ...), ... steht fuer
-   jene automatisch eingefuegten stmts, die auf den aufruf von current-continuation folgen. d.h. wenn jemand dieses lambda aufruft,
-   gehts mit den stmts weiter, und die symbole a b c sind mit werten belegt im environment (d.h. closure) vorhanden.
-   -> geht zunaechst aber nur innerhalb einer flachen liste stmts eines lambdas, nicht z.b. innerhalb des true zweigs einer if-clause.
-      -> damit das auch geht, muesste man die stmts die der gesamten if clause folgen, auch ans lambda dranhaengen
-         -> das waer moeglich, wenn man bei jedem rekursiven oder tailrekursiven aufruf von eval eine verkette liste mit cdr(exp)
-            als parameter mitgibt, bei jedem aufruf wird die liste eins laenger. um dann das continuation lambda zu basteln,
-            haengt man diese stmt liste an eine kopie von cdr(exp) dran. haette z.b. zur folge: wenn nur im true zweig call/cc
-            aufgerufen wird, dann sind die parameter nach der if clause bei durchlauf durch true zweig vorhanden,
-            beim durchlaufen des false zweigs nicht vorhanden.
-         -> Aufrufe einer Continuation sind effektiv Endcalls
-            Nein, sind sie nicht, wenn die gerufene Continuation einfach endet, entspricht das einem return.
-            CPS waer ggf. moeglich und nicht so schwer?!?
-
- 
 LambdaJString.value von String auf char[] umstellen?
 -> wuerde ggf. builtins rund um java.lang.Character erleichtern
 -> char ist 16 bit
@@ -39,11 +8,7 @@ nil in der symboltabelle als Java null ist fishy, weil symbol nil == null false 
 deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 -> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
 
-in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
-
-
-
-
+primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
 
         ThreadMXBean threadBean = null;
         long startCpu = 0L;
@@ -56,14 +21,27 @@ in eval eine lokale variable result einfuehren, das wird vor dem return zugewies
             }
             start = System.nanoTime();
 
-primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
-
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
-primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht existiert, gibts nil, wenns nicht als
-double lesbar ist, gibts NaN
-primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
+read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
+statt lispStdin, write sinngemaess, ggf. format und format-locale
+
+Vielleicht doch set/setf/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
+rplaca, rplacd
+Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
+
+        if(car(exp) == s_define)                        // "define"
+          return(extend_top(car(cdr(exp)),
+                            eval(car(cdr(cdr(exp))), env)));
+        if(car(exp) == s_setb) {                        // "set!"
+          obj *pair   = assoc(car(cdr(exp)), env);
+          obj *newval = eval(car(cdr(cdr(exp))), env);
+          setcdr(pair, newval);
+          return newval;
+        }
+
+
 
 
 
@@ -72,12 +50,15 @@ nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichna
 wuerd ggf bei dynamic UND lexical closures was bringen
 -> nein nur dynamic, lexical closures erben das environment ja nicht
 
+in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
+
+primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht existiert, gibts nil, wenns nicht als
+double lesbar ist, gibts NaN
+primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
+
 macros?
 
 eval ins environment einhaengen?
-
-interpreter bekommt eine methode init()
-interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
 
 alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mot :l auflisten
 weitere debug gschichten wie zb :env fuer environment auflisten
@@ -91,8 +72,6 @@ try = (lambda (func catch-handler finally) (
 
 
 
-
-
 der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
 sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
 -> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf dn richtigen typ gebracht werden
@@ -100,9 +79,6 @@ sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
 -> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
 
 
-
-read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
-statt lispStdin
 
 cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eval wird
 -> solche primitiven wuerden auch Lisp programme schneller machen weil weniger assoc aufrufe
@@ -137,28 +113,6 @@ LambdaJError extends RuntimeException   ... abstract
 Syntaxerror extends LambdaJError        ... nur eval
 RuntimeError extends LambdaJError       ... nur primitives
 
-Vielleicht doch set/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
-rplaca, rplacd
-Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
-
-        if(car(exp) == s_define)                        // "define"
-          return(extend_top(car(cdr(exp)),
-                            eval(car(cdr(cdr(exp))), env)));
-        if(car(exp) == s_setb) {                        // "set!"
-          obj *pair   = assoc(car(cdr(exp)), env);
-          obj *newval = eval(car(cdr(cdr(exp))), env);
-          setcdr(pair, newval);
-          return newval;
-        }
-
-
-
-ConsCell hat 4 byte platz wg alignment. man koennte ein int mit typ machen statt LambdaJString und instanceof.
-CONS=0 PRIM = 1 LAMBDA=2 CLOSURE=3 ATOM=10 SYMBOL=10 STRING=11 CHAR=12 DOUBLE=12
-isAtom() { return typ >= ATOM }, dann koennte custom code seine eigenen typen erfinden.
-solange die neuen typnummern >= ATOM sind, sieht der interpreter alles als atom
--> geht doch nicht so: das flag wird nicht bei ConsCell gebraucht, sondern bei den values, die als Object car oder cdr gespeichert sind
-
 k.a. wieviel die ConsCell casts bremsen
 Alternatives Objectmodell mit weniger casts:
 
@@ -180,8 +134,6 @@ class ConsCell extends Value {
 Value car(Value v) { return v.car(); }
 Value cdr(Value v) { return v.cdr(); }
 ConsCell cons(Value car, Value cdr) { return new ConsCell(car, cdr); }
-
-
 
 redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
 
@@ -216,7 +168,7 @@ Clisp:
 ;(define (cons a b) (lambda (f) (f a b)))      ; define?
 ;(define (car c) (c (lambda (a b) a)))         ; define?
 ;(define (cdr c) (c (lambda (a b) b)))         ; define?
-    
+
 (defun succ (a) (cons zero a))                ; das geht
 
 (setf one (succ zero))                        ; -> one = (NIL)
@@ -387,6 +339,35 @@ Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koe
 
 lisp write liefert als ergebnis den parameter
 -> LambdaJ liefert (quote t)
+
+Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
+vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
+(define xyzzy (lambda (a b c) (+ a b c)))
+(xyzzy 1 2) ; liefert einen fehler, koennte aber ein closure mit a und b und code: (lambda (c) (+ a b c)) liefern
+
+-> makeArgList muesste als ergebnis eine Liste mit 2 Listen liefern: das extenv mit den arguments + liste mit verbleibenden params
+   -> wenns keine verbleibenden params gibt, wird die funktion ausgeführt, gibts verbleibende args,
+      ist der returnwert ein lambda mit den verbleibenden params. 
+-> nur sinnvoll bei lexical closures, weil sonst gingen ja die bereits gesetzten argumente verschuett 
+
+  -> erst mal nicht, currying/ variadic functions, default arguments passen schlecht zusammen
+
+continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
+ist currentcc cdr(exp) (und das env bzw. closure) ?
+-> es koennte eine special form current-continuation geben, angelehnt an lambda, current-continuation haette eine parameterliste,
+   aber keinen stmt body. ergebnis von (current-continuation (a b c)) waere ein lambda (lambda (a b c) ...), ... steht fuer
+   jene automatisch eingefuegten stmts, die auf den aufruf von current-continuation folgen. d.h. wenn jemand dieses lambda aufruft,
+   gehts mit den stmts weiter, und die symbole a b c sind mit werten belegt im environment (d.h. closure) vorhanden.
+   -> geht zunaechst aber nur innerhalb einer flachen liste stmts eines lambdas, nicht z.b. innerhalb des true zweigs einer if-clause.
+      -> damit das auch geht, muesste man die stmts die der gesamten if clause folgen, auch ans lambda dranhaengen
+         -> das waer moeglich, wenn man bei jedem rekursiven oder tailrekursiven aufruf von eval eine verkette liste mit cdr(exp)
+            als parameter mitgibt, bei jedem aufruf wird die liste eins laenger. um dann das continuation lambda zu basteln,
+            haengt man diese stmt liste an eine kopie von cdr(exp) dran. haette z.b. zur folge: wenn nur im true zweig call/cc
+            aufgerufen wird, dann sind die parameter nach der if clause bei durchlauf durch true zweig vorhanden,
+            beim durchlaufen des false zweigs nicht vorhanden.
+         -> Aufrufe einer Continuation sind effektiv Endcalls
+            Nein, sind sie nicht, wenn die gerufene Continuation einfach endet, entspricht das einem return.
+            CPS waer ggf. moeglich und nicht so schwer?!?
 
 
 
@@ -671,3 +652,17 @@ statt Xmal boolean HAVE_xxx
       zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist
 
 Bespiel Parser liest serialisierte Objekte, intern ist String.intern()
+
+checken ob die string funktionen geeignet ein/ausgeblendet werden
+
+interpreter bekommt eine methode init()
+interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
+
+die sSymbol.get() gschichte ist total overengineered, besser das lazy loading ganz weglassen (ausser vielleicht bei exptrue lassen)
+
+ConsCell hat 4 byte platz wg alignment. man koennte ein int mit typ machen statt LambdaJString und instanceof.
+CONS=0 PRIM = 1 LAMBDA=2 CLOSURE=3 ATOM=10 SYMBOL=10 STRING=11 CHAR=12 DOUBLE=12
+isAtom() { return typ >= ATOM }, dann koennte custom code seine eigenen typen erfinden.
+solange die neuen typnummern >= ATOM sind, sieht der interpreter alles als atom
+-> geht doch nicht so: das flag wird nicht bei ConsCell gebraucht, sondern bei den values, die als Object car oder cdr gespeichert sind
+-> fuer closure genutzt

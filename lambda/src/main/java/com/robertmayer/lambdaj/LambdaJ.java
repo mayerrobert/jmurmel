@@ -131,29 +131,29 @@ public class LambdaJ {
     private final int features;
 
     private boolean haveLabels() { return (features & HAVE_LABELS) != 0; }
-    private boolean haveNil()    { return (features & HAVE_NIL) != 0; }
-    private boolean haveT()      { return (features & HAVE_T) != 0; }
-    private boolean haveXtra()   { return (features & HAVE_XTRA) != 0; }
+    private boolean haveNil()    { return (features & HAVE_NIL)    != 0; }
+    private boolean haveT()      { return (features & HAVE_T)      != 0; }
+    private boolean haveXtra()   { return (features & HAVE_XTRA)   != 0; }
     private boolean haveDouble() { return (features & HAVE_DOUBLE) != 0; }
     private boolean haveString() { return (features & HAVE_STRING) != 0; }
-    private boolean haveIO()     { return (features & HAVE_IO) != 0; }
-    private boolean haveUtil()   { return (features & HAVE_UTIL) != 0; }
-    private boolean haveApply()  { return (features & HAVE_APPLY) != 0; }
-    private boolean haveCons()   { return (features & HAVE_CONS) != 0; }
-    private boolean haveCond()   { return (features & HAVE_COND) != 0; }
-    private boolean haveAtom()   { return (features & HAVE_ATOM) != 0; }
-    private boolean haveEq()     { return (features & HAVE_EQ) != 0; }
-    private boolean haveQuote()  { return (features & HAVE_QUOTE) != 0; }
-    private boolean haveLexC()   { return (features & HAVE_LEXC) != 0; }
+    private boolean haveIO()     { return (features & HAVE_IO)     != 0; }
+    private boolean haveUtil()   { return (features & HAVE_UTIL)   != 0; }
+    private boolean haveApply()  { return (features & HAVE_APPLY)  != 0; }
+    private boolean haveCons()   { return (features & HAVE_CONS)   != 0; }
+    private boolean haveCond()   { return (features & HAVE_COND)   != 0; }
+    private boolean haveAtom()   { return (features & HAVE_ATOM)   != 0; }
+    private boolean haveEq()     { return (features & HAVE_EQ)     != 0; }
+    private boolean haveQuote()  { return (features & HAVE_QUOTE)  != 0; }
+    private boolean haveLexC()   { return (features & HAVE_LEXC)   != 0; }
 
     public LambdaJ() {
         this(HAVE_ALL_LEXC, TRC_NONE);
     }
 
-    public LambdaJ(int features, int trace) {
+    public LambdaJ(int features, int trace, Tracer... tracer) {
         this.features = features;
         this.trace = trace;
-        tracer = System.err::println;
+        this.tracer = tracer != null && tracer.length > 0 ? tracer[0] : System.err::println;
     }
 
 
@@ -369,19 +369,19 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)set the suppliers so that they will (re-)read the new symtab
-        sApply  = () -> { Object sym = symtab.intern("apply");  sApply  = () -> sym; return sym; };
-        sCond   = () -> { Object sym = symtab.intern("cond");   sCond   = () -> sym; return sym; };
-        sIf     = () -> { Object sym = symtab.intern("if");     sIf     = () -> sym; return sym; };
-        sDefine = () -> { Object sym = symtab.intern("define"); sDefine = () -> sym; return sym; };
-        sDefun  = () -> { Object sym = symtab.intern("defun");  sDefun  = () -> sym; return sym; };
-        sLabels = () -> { Object sym = symtab.intern("labels"); sLabels = () -> sym; return sym; };
-        sLambda = () -> { Object sym = symtab.intern("lambda"); sLambda = () -> sym; return sym; };
-        sQuote  = () -> { Object sym = symtab.intern("quote");  sQuote  = () -> sym; return sym; };
-        expTrue = () -> { Object exp = makeExpTrue();           expTrue = () -> exp; return exp; };
+        sApply  = symtab.intern("apply");
+        sCond   = symtab.intern("cond");
+        sIf     = symtab.intern("if");
+        sDefine = symtab.intern("define");
+        sDefun  = symtab.intern("defun");
+        sLabels = symtab.intern("labels");
+        sLambda = symtab.intern("lambda");
+        sQuote  = symtab.intern("quote");
+        expTrue = makeExpTrue();
     }
 
-    private Supplier<Object> sApply, sCond, sIf, sDefine, sDefun, sLabels, sLambda, sQuote;
-    private Supplier<Object> expTrue;
+    private Object sApply, sCond, sIf, sDefine, sDefun, sLabels, sLambda, sQuote;
+    private Object expTrue;
 
     private Object makeExpTrue() {
         if (haveT()) return symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
@@ -420,12 +420,12 @@ public class LambdaJ {
                     final Object operandlist = cdr(exp);   // list with remaining symbols
 
                     // special forms
-                    if (haveQuote() && operator == sQuote.get()) {
+                    if (haveQuote() && operator == sQuote) {
                         oneArg("quote", operandlist);
                         return car(operandlist);
                     }
 
-                    if (haveXtra() && operator == sIf.get()) {
+                    if (haveXtra() && operator == sIf) {
                         nArgs("if", operandlist, 2, 3, exp);
                         if (eval(car(operandlist), topEnv, env, stack+1, level+1) != null) {
                             exp = car(cdr(operandlist)); isTc = true; continue;
@@ -434,7 +434,7 @@ public class LambdaJ {
                         } else return null;
                     }
 
-                    if (haveXtra() && operator == sDefine.get()) {
+                    if (haveXtra() && operator == sDefine) {
                         twoArgs("define", operandlist, exp);
                         final Object symbol = car(operandlist); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                                 // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
@@ -447,7 +447,7 @@ public class LambdaJ {
                         return value;
                     }
 
-                    if (haveXtra() && operator == sDefun.get()) {
+                    if (haveXtra() && operator == sDefun) {
                         nArgs("defun", operandlist, 3, exp);
                         final Object symbol = car(operandlist);
                         if (!symbolp(symbol)) throw new LambdaJError("defun: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
@@ -456,18 +456,18 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("defun: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
-                        final Object lambda = cons3(sLambda.get(), cdr(operandlist), haveLexC() ? env : null);
+                        final Object lambda = cons3(sLambda, cdr(operandlist), haveLexC() ? env : null);
                         topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
                         return lambda;
                     }
 
-                    if (operator == sLambda.get()) {
+                    if (operator == sLambda) {
                         nArgs("lambda", operandlist, 2, exp);
-                        if (haveLexC()) return cons3(sLambda.get(), operandlist, env);
+                        if (haveLexC()) return cons3(sLambda, operandlist, env);
                         else return exp;
                     }
 
-                    if (haveLabels() && operator == sLabels.get()) { // labels bindings body -> object
+                    if (haveLabels() && operator == sLabels) { // labels bindings body -> object
                         nArgs("labels", operandlist, 2, exp);
                         ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
@@ -475,8 +475,8 @@ public class LambdaJ {
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
-                            if (haveLexC()) lambda = cons3(sLambda.get(), cdr(currentFunc), extenv);
-                            else             lambda = cons (sLambda.get(), cdr(currentFunc));
+                            if (haveLexC()) lambda = cons3(sLambda, cdr(currentFunc), extenv);
+                            else             lambda = cons (sLambda, cdr(currentFunc));
                             extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
                         }
                         extenv.car = car(cdr(extenv));
@@ -491,7 +491,7 @@ public class LambdaJ {
                         }
                     }
 
-                    if (haveCond() && operator == sCond.get()) {
+                    if (haveCond() && operator == sCond) {
                         for (ConsCell c = (ConsCell) operandlist; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(car(car(c)), topEnv, env, stack+1, level+1) != null) {
                                 exp = car(cdr(car(c))); isTc = true; continue tailcall;
@@ -501,7 +501,7 @@ public class LambdaJ {
                     }
 
                     // apply function to list
-                    if (haveApply() && operator == sApply.get()) {
+                    if (haveApply() && operator == sApply) {
                         twoArgs("apply", operandlist, exp);
 
                         func = eval(car(operandlist), topEnv, env, stack+1, level+1);
@@ -850,7 +850,7 @@ public class LambdaJ {
 
 
     /// runtime for Lisp programs
-    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
+    private Object boolResult(boolean b) { return b ? expTrue : null; }
 
     /** generate a comparison operator */
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
@@ -889,7 +889,7 @@ public class LambdaJ {
             final Primitive fwriteobj = a -> {
                 oneArg("write", a);
                 if (lispStdout == null) throw new LambdaJError("write: lispStdout is nil");
-                lispStdout.printObj(car(a)); return expTrue.get();
+                lispStdout.printObj(car(a)); return expTrue;
             };
 
             final Primitive fwriteln =  a -> {
@@ -897,11 +897,11 @@ public class LambdaJ {
                 if (lispStdout == null) throw new LambdaJError("writeln: lispStdout is nil");
                 if (a == null) {
                     lispStdout.printEol();
-                    return expTrue.get();
+                    return expTrue;
                 }
                 lispStdout.printObj(car(a));
                 lispStdout.printEol();
-                return expTrue.get();
+                return expTrue;
             };
 
             env = cons(cons(symtab.intern("read"),    freadobj),
@@ -945,9 +945,11 @@ public class LambdaJ {
             };
 
             env = cons(cons(symtab.intern("stringp"), fstringp),
-                  cons(cons(symtab.intern("string-format"), fformat),
-                  cons(cons(symtab.intern("string-format-locale"), fformatLocale),
-                  env)));
+                  env);
+            if (haveUtil())
+                env = cons(cons(symtab.intern("string-format"), fformat),
+                      cons(cons(symtab.intern("string-format-locale"), fformatLocale),
+                      env));
         }
 
         if (haveT())
@@ -1244,7 +1246,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.93 2020/10/19 16:13:23 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.94 2020/10/19 17:47:21 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1279,7 +1281,8 @@ public class LambdaJ {
                 + "--no-double ...  no number support\n"
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read/ write/ writeln\n"
-                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc\n"
+                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/"
+                + "                 string-format/ string-format-locale\n"
                 + "\n"
                 + "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n"
                 + "                   S-expressions\n"
@@ -1291,7 +1294,7 @@ public class LambdaJ {
                 + "--no-apply ....  no special form 'apply'\n"
                 + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
                 + "\n"
-                + "--min .........  turn off all above features, leaving a Lisp with 8 primitives:\n"
+                + "--min .........  turn off all above features, leaving a Lisp with 8 special forms/ primitives:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
