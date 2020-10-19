@@ -1,9 +1,4 @@
 
-LambdaJString.value von String auf char[] umstellen?
--> wuerde ggf. builtins rund um java.lang.Character erleichtern
--> char ist 16 bit
--> Java11 speichert String.value nicht als char[] sondern byte[], dieses Speicherersparnis waer dann verloren
-
 nil in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
 deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 -> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
@@ -24,9 +19,6 @@ primitives format und format-locale: erstes bzw. zwei erste args sind strings, s
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
 
-read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
-statt lispStdin, write sinngemaess, ggf. format und format-locale
-
 Vielleicht doch set/setf/setq, define/defun vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
 Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
@@ -41,6 +33,9 @@ Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
           return newval;
         }
 
+read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
+statt lispStdin, write sinngemaess, ggf. format und format-locale
+
 
 
 
@@ -51,6 +46,11 @@ wuerd ggf bei dynamic UND lexical closures was bringen
 -> nein nur dynamic, lexical closures erben das environment ja nicht
 
 in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
+
+LambdaJString.value von String auf char[] umstellen?
+-> wuerde ggf. builtins rund um java.lang.Character erleichtern
+-> char ist 16 bit
+-> Java11 speichert String.value nicht als char[] sondern byte[], dieses Speicherersparnis waer dann verloren
 
 primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht existiert, gibts nil, wenns nicht als
 double lesbar ist, gibts NaN

@@ -1125,26 +1125,26 @@ public class LambdaJ {
         if (hasFlag("--trace=env", args))   trace = TRC_ENV;
         if (hasFlag("--trace", args))       trace = TRC_LEX;
 
-        int features = HAVE_LAMBDA;
-        if (hasFlag("--dyn", args))         features &= ~HAVE_LEXC;
-        if (hasFlag("--lex", args))         features |= HAVE_LEXC;
+        int features = HAVE_ALL_LEXC;
+        if (hasFlag("--dyn", args))         features = HAVE_ALL_DYN;
+        else if (hasFlag("--lex", args))    features = HAVE_ALL_LEXC;
 
-        if (hasFlag("--no-nil", args))      features |= HAVE_NIL;
-        if (hasFlag("--no-t", args))        features |= HAVE_T;
-        if (hasFlag("--no-extra", args))    features |= HAVE_XTRA;
-        if (hasFlag("--no-double", args))   features |= HAVE_DOUBLE;
-        if (hasFlag("--no-string", args))   features |= HAVE_STRING;
-        if (hasFlag("--no-io", args))       features |= HAVE_IO;
-        if (hasFlag("--no-util", args))     features |= HAVE_UTIL;
+        if (hasFlag("--no-nil", args))      features &= ~HAVE_NIL;
+        if (hasFlag("--no-t", args))        features &= ~HAVE_T;
+        if (hasFlag("--no-extra", args))    features &= ~HAVE_XTRA;
+        if (hasFlag("--no-double", args))   features &= ~HAVE_DOUBLE;
+        if (hasFlag("--no-string", args))   features &= ~HAVE_STRING;
+        if (hasFlag("--no-io", args))       features &= ~HAVE_IO;
+        if (hasFlag("--no-util", args))     features &= ~HAVE_UTIL;
 
-        if (hasFlag("--no-labels", args))   features |= HAVE_LABELS;
-        if (hasFlag("--no-cons", args))     features |= HAVE_CONS;
-        if (hasFlag("--no-cond", args))     features |= HAVE_COND;
-        if (hasFlag("--no-apply", args))    features |= HAVE_APPLY;
+        if (hasFlag("--no-labels", args))   features &= ~HAVE_LABELS;
+        if (hasFlag("--no-cons", args))     features &= ~HAVE_CONS;
+        if (hasFlag("--no-cond", args))     features &= ~HAVE_COND;
+        if (hasFlag("--no-apply", args))    features &= ~HAVE_APPLY;
 
-        if (hasFlag("--no-atom", args))     features |= HAVE_ATOM;
-        if (hasFlag("--no-eq", args))       features |= HAVE_EQ;
-        if (hasFlag("--no-quote", args))    features |= HAVE_QUOTE;
+        if (hasFlag("--no-atom", args))     features &= ~HAVE_ATOM;
+        if (hasFlag("--no-eq", args))       features &= ~HAVE_EQ;
+        if (hasFlag("--no-quote", args))    features &= ~HAVE_QUOTE;
 
         if (hasFlag("--min+", args))        features = HAVE_MINPLUS;
         if (hasFlag("--min", args))         features = HAVE_MIN;
@@ -1255,7 +1255,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.95 2020/10/19 18:55:47 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.96 2020/10/19 20:34:57 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
