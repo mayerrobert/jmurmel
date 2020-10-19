@@ -2,9 +2,8 @@
 
 **A customizable Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
 
-LambdaJ has tail call optimization, dynamic or lexical environments,
-garbage collection c/o Java
-and except read/ write/ writeln it is purely functional (but see Customization below).
+LambdaJ features tail call optimization, dynamic as well as lexical environments,
+and has garbage collection c/o Java.
 
 LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
 
@@ -53,10 +52,8 @@ Minimal "Hello, World!" example:
 
     @Test
     public void testMinimal() {
-        Object result = new LambdaJ().interpretExpression(
-                new StringReader("(cons 'Hello,\\ World! nil)")::read,
-                (s) -> { return; }
-                );
+        Object result = new LambdaJ()
+            .interpretExpression(new StringReader("(cons 'Hello,\\ World! nil)")::read, (s) -> { return; });
         assertEquals("(Hello, World!)", result.toString());
     }
 
@@ -98,12 +95,12 @@ write, string-format
     "
     result: t
 
-Tail recursion
+Tail recursion, locale dependent number formatting
 
     LambdaJ> (labels ((factTR (n a)
-                     (if (= n 0)
-                         a
-                         (factTR (- n 1) (* n a)))))
+                              (if (= n 0)
+                                  a
+                                  (factTR (- n 1) (* n a)))))
      (write (string-format-locale "en-US" "Factorial of 50 is %g" (factTR 50 1))))
     Factorial of 50 is 3.04141e+64
     result: t
@@ -162,19 +159,26 @@ LambdaJ comes with:
 
 * a parser that reads S-expressions composed of lists, symbols, Doubles and Strings.
 * Math support for Doubles
+* (Very) simple I/O
+* Some support for strings
+
+However:
 
 You could substitute the default parser for reading data and/ or programs by your own parsers that reads e.g. XML or JSON
 instead of S-expressions, and/ or support additional data types.
 
+See `SerializeTest`: this uses Java's serialization to deserialize Lisp objects containing expressions from a stream
+and feeds then to the interpreter instead of parsing S-expressions.
+
 You could extend LambdaJ's environment with your own builtin functions and/ or data types e.g. for supporting BigDecimals
 or reading/ writing from/ to a JDBC Datasource.
+
+See `EmbeddedTest#testCustomEnv()` for an example.
 
 Additional datatypes can be supported in your custom Parser, in your custom primitives or in both.
 
 LambdaJ is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
 without any need for change.
-
-See `EmbeddedTest#testCustomEnv()` for an example.
 
 ## References
 

@@ -6,6 +6,7 @@ For a copy, see https://opensource.org/licenses/MIT. */
 package com.robertmayer.lambdaj;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
@@ -39,7 +40,7 @@ public class LambdaJ {
 
 
     public static class LambdaJError extends RuntimeException {
-        public static final long serialVersionUID = 1;
+        public static final long serialVersionUID = 1L;
 
         public LambdaJError(String msg) { super(msg, null, false, false); }
         @Override public String toString() { return "Error: " + getMessage(); }
@@ -48,7 +49,7 @@ public class LambdaJ {
 
 
     /// data type used by interpreter program as well as interpreted programs
-    public static class ConsCell implements Iterable<Object> {
+    public static class ConsCell implements Iterable<Object>, Serializable {
         private static class ConsCellIterator implements Iterator<Object> {
             private final ConsCell coll;
             private Object cursor;
@@ -72,6 +73,7 @@ public class LambdaJ {
             }
         }
 
+        private static final long serialVersionUID = 1L;
         public Object car, cdr;
         private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
         public ConsCell(Object car, Object cdr)    { nCells++; this.car = car; this.cdr = cdr; }
@@ -82,7 +84,8 @@ public class LambdaJ {
     }
 
 
-    public static class LambdaJString {
+    public static class LambdaJString implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final String value;
         public LambdaJString(String value) { this.value = value; }
         @Override public String toString() { return value.toString(); }
@@ -882,11 +885,16 @@ public class LambdaJ {
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
         if (haveIO()) {
-            final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin.readObj(); };
-            final Primitive fwriteobj = a -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
+            final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin == null ? null : lispStdin.readObj(); };
+            final Primitive fwriteobj = a -> {
+                oneArg("write", a);
+                if (lispStdout == null) throw new LambdaJError("write: lispStdout is nil");
+                lispStdout.printObj(car(a)); return expTrue.get();
+            };
 
             final Primitive fwriteln =  a -> {
                 nArgs("writeln", a, 0, 1, null);
+                if (lispStdout == null) throw new LambdaJError("writeln: lispStdout is nil");
                 if (a == null) {
                     lispStdout.printEol();
                     return expTrue.get();
@@ -1064,7 +1072,8 @@ public class LambdaJ {
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
         nCells = 0; maxEnvLen = 0;
         setSymtab(parser);
-        final ConsCell env = environment(customEnv.customEnvironment(parser, inReader, outWriter), inReader, outWriter);
+        final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser, inReader, outWriter);
+        final ConsCell env = environment(customEnvironment, inReader, outWriter);
         Object exp = parser.readObj();
         while (true) {
             final Object result = eval(exp, env, env, 0, 0);
@@ -1235,7 +1244,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.92 2020/10/18 21:13:09 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.93 2020/10/19 16:13:23 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

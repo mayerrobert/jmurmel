@@ -29,8 +29,6 @@ ist currentcc cdr(exp) (und das env bzw. closure) ?
             Nein, sind sie nicht, wenn die gerufene Continuation einfach endet, entspricht das einem return.
             CPS waer ggf. moeglich und nicht so schwer?!?
 
-
-Bespiel Parser liest serialisierte Objekte, intern ist String.intern()
  
 LambdaJString.value von String auf char[] umstellen?
 -> wuerde ggf. builtins rund um java.lang.Character erleichtern
@@ -671,3 +669,5 @@ statt Xmal boolean HAVE_xxx
    methoden boolean haveXXX()
    -> den wert fuer features muss man vorher mit | zusammenbasteln
       zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist
+
+Bespiel Parser liest serialisierte Objekte, intern ist String.intern()
