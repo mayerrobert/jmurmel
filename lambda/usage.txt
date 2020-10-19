@@ -28,7 +28,8 @@ Feature flags:
 --no-double ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read/ write/ writeln
---no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc
+--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/
+                 string-format/ string-format-locale
 
 --min+ ........  turn off all above features, leaving a Lisp with 10 primitives:
                    S-expressions
@@ -40,7 +41,7 @@ Feature flags:
 --no-apply ....  no special form 'apply'
 --no-labels ...  no special form 'labels' (hint: use Y-combinator instead)
 
---min .........  turn off all above features, leaving a Lisp with 8 primitives:
+--min .........  turn off all above features, leaving a Lisp with 8 special forms/ primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
