@@ -11,7 +11,15 @@ LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT.
 
-**Standalone use:**
+| [Standalone use](#standalone-use)
+| [Embedded use](#embedded-use)
+| [Examples](#examples)
+| [Features](#features)
+| [Customization](#customization)
+| [References](#references)
+| 
+
+## Standalone use
 
     $ java -jar lambdaj-1.0-SNAPSHOT.jar
     Enter a Lisp expression:
@@ -36,7 +44,7 @@ Command line parameters in standalone mode:
 * `--result` ... print the result to stdout, this is the default when reading an expression from the console 
 * `--help` ..... show all the available commandline parameters and quit
 
-**Embedded use:**
+## Embedded use
 
 LambdaJ uses Java8+ only, no third party dependencies are required.
 It comes as one self contained jar, no further dependencies needed.
@@ -83,7 +91,6 @@ See `EmbeddedTest.java` or `LambdaJTest.java` for more embedded use examples
 including an example of how to hook up your own Lisp primitives written in Java.
 
 ## Examples
-
 write, string-format
 
     LambdaJ> (write (string-format "%s, World!%n" "Hello"))

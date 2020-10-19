@@ -99,67 +99,58 @@ public class LambdaJ {
 
     private final Tracer tracer;
 
-    // see https://news.ycombinator.com/item?id=8714988 for how to implement cons, car, cdr, true, false, if in Lambda
-    // as well as how to implement numbers using lists
-    private boolean
-    HAVE_LABELS = true,                   // use Y-combinator instead
-    HAVE_NIL = true, HAVE_T = true,       // use () and (quote t) instead. printObj will print nil regardless
-    HAVE_XTRA = true,                     // no extra special forms such as if
-    HAVE_DOUBLE = true,                   // no +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
-                                          // see https://stackoverflow.com/questions/3467317/can-you-implement-any-pure-lisp-function-using-the-ten-primitives-ie-no-type-p/3468060#3468060
-                                          // for how to implement numbers in lambda
-    HAVE_STRING = true,
-    HAVE_IO = true,                       // no read/ write, result only
-    HAVE_UTIL = true,                     // no null?, consp, listp, symbolp, assoc
-    HAVE_APPLY = true,                    // McCarthy didn't list apply
-    HAVE_CONS = true,
-    HAVE_COND = true,
-    HAVE_ATOM = true,
-    HAVE_EQ = true,
-    HAVE_QUOTE = true,
+    public static final int
+    HAVE_LABELS = 1,                   // use Y-combinator instead
+    HAVE_NIL    = 1<<2, HAVE_T = 1<<3, // use () and (quote t) instead. printObj will print nil regardless
+    HAVE_XTRA   = 1<<4,                // no extra special forms such as if
+    HAVE_DOUBLE = 1<<5,                // no numbers, +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
+    HAVE_STRING = 1<<6,                // no strings, string literals of string related functions
+    HAVE_IO     = 1<<7,                // no read/ write, result only
+    HAVE_UTIL   = 1<<8,                // no null?, consp, listp, symbolp, assoc
+    HAVE_APPLY  = 1<<9,                // McCarthy didn't list apply
+    HAVE_CONS   = 1<<10,
+    HAVE_COND   = 1<<11,
+    HAVE_ATOM   = 1<<12,
+    HAVE_EQ     = 1<<13,
+    HAVE_QUOTE  = 1<<14,
 
-    HAVE_LEXC = true
+    HAVE_LEXC   = 1<<15,
+
+
+    HAVE_LAMBDA     = 0,
+    HAVE_LAMBDAPLUS = HAVE_LAMBDA | HAVE_ATOM | HAVE_QUOTE | HAVE_EQ,
+    HAVE_MIN        = HAVE_LAMBDAPLUS | HAVE_CONS | HAVE_COND,
+    HAVE_MINPLUS    = HAVE_MIN | HAVE_APPLY | HAVE_LABELS,
+    HAVE_ALL_DYN    = HAVE_MINPLUS | HAVE_NIL | HAVE_T | HAVE_XTRA | HAVE_DOUBLE | HAVE_STRING | HAVE_IO | HAVE_UTIL,
+
+    HAVE_ALL_LEXC   = HAVE_ALL_DYN | HAVE_LEXC;
     ;
+    private final int features;
+
+    private boolean haveLabels() { return (features & HAVE_LABELS) != 0; }
+    private boolean haveNil()    { return (features & HAVE_NIL) != 0; }
+    private boolean haveT()      { return (features & HAVE_T) != 0; }
+    private boolean haveXtra()   { return (features & HAVE_XTRA) != 0; }
+    private boolean haveDouble() { return (features & HAVE_DOUBLE) != 0; }
+    private boolean haveString() { return (features & HAVE_STRING) != 0; }
+    private boolean haveIO()     { return (features & HAVE_IO) != 0; }
+    private boolean haveUtil()   { return (features & HAVE_UTIL) != 0; }
+    private boolean haveApply()  { return (features & HAVE_APPLY) != 0; }
+    private boolean haveCons()   { return (features & HAVE_CONS) != 0; }
+    private boolean haveCond()   { return (features & HAVE_COND) != 0; }
+    private boolean haveAtom()   { return (features & HAVE_ATOM) != 0; }
+    private boolean haveEq()     { return (features & HAVE_EQ) != 0; }
+    private boolean haveQuote()  { return (features & HAVE_QUOTE) != 0; }
+    private boolean haveLexC()   { return (features & HAVE_LEXC) != 0; }
 
     public LambdaJ() {
-        this(TRC_NONE);
+        this(HAVE_ALL_LEXC, TRC_NONE);
     }
 
-    public LambdaJ(int trace) {
+    public LambdaJ(int features, int trace) {
+        this.features = features;
         this.trace = trace;
         tracer = System.err::println;
-    }
-
-    /** nothing except cons, car, cdr, cond, apply */
-    public void haveMinPlus() {
-        HAVE_NIL = false;
-        HAVE_T = false;
-        HAVE_XTRA = false;
-        HAVE_DOUBLE = false;
-        HAVE_STRING = false;
-        HAVE_IO = false;
-        HAVE_UTIL = false;
-    }
-
-    public void haveMin() {
-        haveMinPlus();
-        HAVE_APPLY = false;
-        HAVE_LABELS = false;
-    }
-
-    /** almost bare lambda calculus */
-    public void haveLambdaPlus() {
-        haveMin();
-        HAVE_CONS = false;
-        HAVE_COND = false;
-    }
-
-    /** bare lambda calculus */
-    public void haveLambda() {
-        haveLambdaPlus();
-        HAVE_ATOM = false;
-        HAVE_EQ = false;
-        HAVE_QUOTE = false;
     }
 
 
@@ -241,7 +232,7 @@ public class LambdaJ {
             if (look != EOF) {
                 if (isSyntax(look)) {
                     token[index++] = look;  look = getchar();
-                } else if (HAVE_STRING && isDQuote(look)) {
+                } else if (haveString() && isDQuote(look)) {
                     do {
                         if (index < TOKEN_MAX) token[index++] = look;
                         look = getchar();
@@ -256,7 +247,7 @@ public class LambdaJ {
                 }
             }
             token[index] = '\0';
-            if (HAVE_DOUBLE && isNumber()) {
+            if (haveDouble() && isNumber()) {
                 try {
                     tok = Double.valueOf(tokenToString(token));
                 }
@@ -264,7 +255,7 @@ public class LambdaJ {
                     throw new LambdaJError("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
                     + "' is not a valid symbol or number");
                 }
-            } else if (HAVE_STRING && token[0] == '"') {
+            } else if (haveString() && token[0] == '"') {
                 tok = new LambdaJString(tokenToString(token).substring(1));
             } else if (token[0] == '\0'){
                 tok = null;
@@ -338,7 +329,7 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   " + printSEx(list));
                 return list;
             }
-            if (!tokEscape && HAVE_QUOTE && "'".equals(tok)) {
+            if (!tokEscape && haveQuote() && "'".equals(tok)) {
                 readToken();
                 return cons(quote, cons(readObject(), null));
             }
@@ -390,8 +381,8 @@ public class LambdaJ {
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
-        if (HAVE_T) return symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (HAVE_QUOTE) return cons(symtab.intern("quote"), cons(symtab.intern("t"), null));
+        if (haveT()) return symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+        else if (haveQuote()) return cons(symtab.intern("quote"), cons(symtab.intern("t"), null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
@@ -426,12 +417,12 @@ public class LambdaJ {
                     final Object operandlist = cdr(exp);   // list with remaining symbols
 
                     // special forms
-                    if (HAVE_QUOTE && operator == sQuote.get()) {
+                    if (haveQuote() && operator == sQuote.get()) {
                         oneArg("quote", operandlist);
                         return car(operandlist);
                     }
 
-                    if (HAVE_XTRA && operator == sIf.get()) {
+                    if (haveXtra() && operator == sIf.get()) {
                         nArgs("if", operandlist, 2, 3, exp);
                         if (eval(car(operandlist), topEnv, env, stack+1, level+1) != null) {
                             exp = car(cdr(operandlist)); isTc = true; continue;
@@ -440,7 +431,7 @@ public class LambdaJ {
                         } else return null;
                     }
 
-                    if (HAVE_XTRA && operator == sDefine.get()) {
+                    if (haveXtra() && operator == sDefine.get()) {
                         twoArgs("define", operandlist, exp);
                         final Object symbol = car(operandlist); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                                 // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
@@ -453,7 +444,7 @@ public class LambdaJ {
                         return value;
                     }
 
-                    if (HAVE_XTRA && operator == sDefun.get()) {
+                    if (haveXtra() && operator == sDefun.get()) {
                         nArgs("defun", operandlist, 3, exp);
                         final Object symbol = car(operandlist);
                         if (!symbolp(symbol)) throw new LambdaJError("defun: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
@@ -462,18 +453,18 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("defun: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
-                        final Object lambda = cons3(sLambda.get(), cdr(operandlist), HAVE_LEXC ? env : null);
+                        final Object lambda = cons3(sLambda.get(), cdr(operandlist), haveLexC() ? env : null);
                         topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
                         return lambda;
                     }
 
                     if (operator == sLambda.get()) {
                         nArgs("lambda", operandlist, 2, exp);
-                        if (HAVE_LEXC) return cons3(sLambda.get(), operandlist, env);
+                        if (haveLexC()) return cons3(sLambda.get(), operandlist, env);
                         else return exp;
                     }
 
-                    if (HAVE_LABELS && operator == sLabels.get()) { // labels bindings body -> object
+                    if (haveLabels() && operator == sLabels.get()) { // labels bindings body -> object
                         nArgs("labels", operandlist, 2, exp);
                         ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
@@ -481,8 +472,8 @@ public class LambdaJ {
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
-                            if (HAVE_LEXC) lambda = cons3(sLambda.get(), cdr(currentFunc), extenv);
-                            else           lambda = cons (sLambda.get(), cdr(currentFunc));
+                            if (haveLexC()) lambda = cons3(sLambda.get(), cdr(currentFunc), extenv);
+                            else             lambda = cons (sLambda.get(), cdr(currentFunc));
                             extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
                         }
                         extenv.car = car(cdr(extenv));
@@ -497,7 +488,7 @@ public class LambdaJ {
                         }
                     }
 
-                    if (HAVE_COND && operator == sCond.get()) {
+                    if (haveCond() && operator == sCond.get()) {
                         for (ConsCell c = (ConsCell) operandlist; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(car(car(c)), topEnv, env, stack+1, level+1) != null) {
                                 exp = car(cdr(car(c))); isTc = true; continue tailcall;
@@ -507,7 +498,7 @@ public class LambdaJ {
                     }
 
                     // apply function to list
-                    if (HAVE_APPLY && operator == sApply.get()) {
+                    if (haveApply() && operator == sApply.get()) {
                         twoArgs("apply", operandlist, exp);
 
                         func = eval(car(operandlist), topEnv, env, stack+1, level+1);
@@ -527,7 +518,7 @@ public class LambdaJ {
                     // actually perform the function call that was set up by "apply" or "function call" above
                     if (consp(func)) {
                         final Object lambda = cdr(func);          // (params . bodylist)
-                        final ConsCell closure = HAVE_LEXC ? ((ConsCell)func).closure : env;  // lexical or dynamic env
+                        final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
                         nArgs("lambda application", lambda, 2, exp);
                         ConsCell extenv = zip(exp, closure, car(lambda), argList);
 
@@ -890,7 +881,7 @@ public class LambdaJ {
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
-        if (HAVE_IO) {
+        if (haveIO()) {
             final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin.readObj(); };
             final Primitive fwriteobj = a -> { oneArg("write", a);   lispStdout.printObj(car(a)); return expTrue.get(); };
 
@@ -911,7 +902,7 @@ public class LambdaJ {
                   env)));
         }
 
-        if (HAVE_STRING) {
+        if (haveString()) {
             final Primitive fstringp =  a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
 
             final Primitive fformat =   a -> {
@@ -951,15 +942,15 @@ public class LambdaJ {
                   env)));
         }
 
-        if (HAVE_T)
+        if (haveT())
             env = cons(cons(symtab.intern("t"), symtab.intern("t")),
                   env);
 
-        if (HAVE_NIL)
+        if (haveNil())
             env = cons(cons(symtab.intern("nil"), null),
                   env);
 
-        if (HAVE_UTIL) {
+        if (haveUtil()) {
             final Primitive fnull =     a -> { oneArg("null?", a);   return boolResult(car(a) == null); };
             final Primitive fconsp =    a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
             final Primitive fsymbolp =  a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
@@ -974,14 +965,14 @@ public class LambdaJ {
                   env)))));
         }
 
-        if (HAVE_ATOM) {
+        if (haveAtom()) {
             final Primitive fatom =     a -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
 
             env = cons(cons(symtab.intern("atom"), fatom),
                        env);
         }
 
-        if (HAVE_DOUBLE) {
+        if (haveDouble()) {
             final Primitive fnumberp =  args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); };
             final Primitive fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
             final Primitive flt =       args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0);
@@ -1013,14 +1004,14 @@ public class LambdaJ {
                   env)))))))))));
         }
 
-        if (HAVE_EQ) {
+        if (haveEq()) {
             final Primitive feq =       a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
 
             env = cons(cons(symtab.intern("eq"), feq),
                        env);
         }
 
-        if (HAVE_CONS) {
+        if (haveCons()) {
             final Primitive fcons =     a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
             final Primitive fcar =      a -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
             final Primitive fcdr =      a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
@@ -1114,32 +1105,33 @@ public class LambdaJ {
         if (hasFlag("--trace=env", args))   trace = TRC_ENV;
         if (hasFlag("--trace", args))       trace = TRC_LEX;
 
-        final LambdaJ interpreter = new LambdaJ(trace);
+        int features = HAVE_LAMBDA;
+        if (hasFlag("--dyn", args))         features &= ~HAVE_LEXC;
+        if (hasFlag("--lex", args))         features |= HAVE_LEXC;
 
-        if (hasFlag("--dyn", args))         interpreter.HAVE_LEXC = false;
-        if (hasFlag("--lex", args))         interpreter.HAVE_LEXC = true;
+        if (hasFlag("--no-nil", args))      features |= HAVE_NIL;
+        if (hasFlag("--no-t", args))        features |= HAVE_T;
+        if (hasFlag("--no-extra", args))    features |= HAVE_XTRA;
+        if (hasFlag("--no-double", args))   features |= HAVE_DOUBLE;
+        if (hasFlag("--no-string", args))   features |= HAVE_STRING;
+        if (hasFlag("--no-io", args))       features |= HAVE_IO;
+        if (hasFlag("--no-util", args))     features |= HAVE_UTIL;
 
-        if (hasFlag("--no-nil", args))      interpreter.HAVE_NIL = false;
-        if (hasFlag("--no-t", args))        interpreter.HAVE_T = false;
-        if (hasFlag("--no-extra", args))    interpreter.HAVE_XTRA = false;
-        if (hasFlag("--no-double", args))   interpreter.HAVE_DOUBLE = false;
-        if (hasFlag("--no-string", args))   interpreter.HAVE_STRING = false;
-        if (hasFlag("--no-io", args))       interpreter.HAVE_IO = false;
-        if (hasFlag("--no-util", args))     interpreter.HAVE_UTIL = false;
+        if (hasFlag("--no-labels", args))   features |= HAVE_LABELS;
+        if (hasFlag("--no-cons", args))     features |= HAVE_CONS;
+        if (hasFlag("--no-cond", args))     features |= HAVE_COND;
+        if (hasFlag("--no-apply", args))    features |= HAVE_APPLY;
 
-        if (hasFlag("--no-labels", args))   interpreter.HAVE_LABELS = false;
-        if (hasFlag("--no-cons", args))     interpreter.HAVE_CONS = false;
-        if (hasFlag("--no-cond", args))     interpreter.HAVE_COND = false;
-        if (hasFlag("--no-apply", args))    interpreter.HAVE_APPLY = false;
+        if (hasFlag("--no-atom", args))     features |= HAVE_ATOM;
+        if (hasFlag("--no-eq", args))       features |= HAVE_EQ;
+        if (hasFlag("--no-quote", args))    features |= HAVE_QUOTE;
 
-        if (hasFlag("--no-atom", args))     interpreter.HAVE_ATOM = false;
-        if (hasFlag("--no-eq", args))       interpreter.HAVE_EQ = false;
-        if (hasFlag("--no-quote", args))    interpreter.HAVE_QUOTE = false;
+        if (hasFlag("--min+", args))        features = HAVE_MINPLUS;
+        if (hasFlag("--min", args))         features = HAVE_MIN;
+        if (hasFlag("--lambda+", args))     features = HAVE_LAMBDAPLUS;
+        if (hasFlag("--lambda", args))      features = HAVE_LAMBDA;
 
-        if (hasFlag("--min+", args))        interpreter.haveMinPlus();
-        if (hasFlag("--min", args))         interpreter.haveMin();
-        if (hasFlag("--lambda+", args))     interpreter.haveLambdaPlus();
-        if (hasFlag("--lambda", args))      interpreter.haveLambda();
+        final LambdaJ interpreter = new LambdaJ(features, trace);
 
         final boolean printResult = hasFlag("--result", args);
 
@@ -1243,7 +1235,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.91 2020/10/18 18:06:57 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.92 2020/10/18 21:13:09 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

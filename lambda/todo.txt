@@ -1,3 +1,5 @@
+checken ob die string funktionen geeignet ein/ausgeblendet werden
+
 die sSymbol.get() gschichte ist total overengineered, besser das lazy loading ganz weglassen (ausser vielleicht bei exptrue lassen)
 
 Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
@@ -23,8 +25,13 @@ ist currentcc cdr(exp) (und das env bzw. closure) ?
             haengt man diese stmt liste an eine kopie von cdr(exp) dran. haette z.b. zur folge: wenn nur im true zweig call/cc
             aufgerufen wird, dann sind die parameter nach der if clause bei durchlauf durch true zweig vorhanden,
             beim durchlaufen des false zweigs nicht vorhanden.
+         -> Aufrufe einer Continuation sind effektiv Endcalls
+            Nein, sind sie nicht, wenn die gerufene Continuation einfach endet, entspricht das einem return.
+            CPS waer ggf. moeglich und nicht so schwer?!?
 
 
+Bespiel Parser liest serialisierte Objekte, intern ist String.intern()
+ 
 LambdaJString.value von String auf char[] umstellen?
 -> wuerde ggf. builtins rund um java.lang.Character erleichtern
 -> char ist 16 bit
@@ -33,13 +40,6 @@ LambdaJString.value von String auf char[] umstellen?
 nil in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
 deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 -> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
-
-statt Xmal boolean HAVE_xxx
--> ein final int features das im Konstruktor von LambdaJ belegt wird
-   static final int HAVE_XXX = 1 << 1,2,3,4...
-   methoden boolean haveXXX()
-   -> den wert fuer features muss man vorher mit | zusammenbasteln
-      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist
 
 in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
 
@@ -62,6 +62,10 @@ primitives format und format-locale: erstes bzw. zwei erste args sind strings, s
 
 Variable INTERNAL-TIME-UNITS-PER-SECOND
 Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
+
+primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht existiert, gibts nil, wenns nicht als
+double lesbar ist, gibts NaN
+primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
 
 
 
@@ -660,3 +664,10 @@ der code von apply und functioncall ist fast identisch:
 defun einbauen, weil define alleine ist muehsam
 oder doch defun als macro und macros unterstuetzen?
 (defmacro defun (sym params body) (define sym (lambda params body)))
+
+statt Xmal boolean HAVE_xxx
+-> ein final int features das im Konstruktor von LambdaJ belegt wird
+   static final int HAVE_XXX = 1 << 1,2,3,4...
+   methoden boolean haveXXX()
+   -> den wert fuer features muss man vorher mit | zusammenbasteln
+      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist

@@ -297,7 +297,7 @@ public class LambdaJTest {
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
         StringBuffer out = new StringBuffer();
 
-        LambdaJ interpreter = new LambdaJ(LambdaJ.TRC_ENV);
+        LambdaJ interpreter = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TRC_ENV);
 
         System.out.println("***** running program '" + fileName + ':');
         System.out.println("-------------------------------------------------------");
