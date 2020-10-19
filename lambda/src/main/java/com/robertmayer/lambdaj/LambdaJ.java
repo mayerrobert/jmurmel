@@ -16,7 +16,6 @@ import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class LambdaJ {
@@ -368,7 +367,7 @@ public class LambdaJ {
     private void setSymtab(SymbolTable symtab) {
         this.symtab = symtab;
 
-        // (re-)set the suppliers so that they will (re-)read the new symtab
+        // (re-)read the new symtab
         sApply  = symtab.intern("apply");
         sCond   = symtab.intern("cond");
         sIf     = symtab.intern("if");
@@ -417,7 +416,7 @@ public class LambdaJ {
                     final ConsCell argList;                // will be used in case of a function call
 
                     final Object operator = car(exp);      // first symbol of the S-expression
-                    final Object operandlist = cdr(exp);   // list with remaining symbols
+                    final ConsCell operandlist = (ConsCell) cdr(exp);   // list with remaining symbols
 
                     // special forms
                     if (haveQuote() && operator == sQuote) {
@@ -428,9 +427,9 @@ public class LambdaJ {
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", operandlist, 2, 3, exp);
                         if (eval(car(operandlist), topEnv, env, stack+1, level+1) != null) {
-                            exp = car(cdr(operandlist)); isTc = true; continue;
-                        } else if (cdr(cdr(operandlist)) != null) {
-                            exp = car(cdr(cdr(operandlist))); isTc = true; continue;
+                            exp = cadr(operandlist); isTc = true; continue;
+                        } else if (cddr(operandlist) != null) {
+                            exp = caddr(operandlist); isTc = true; continue;
                         } else return null;
                     }
 
@@ -442,7 +441,7 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("define: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
-                        final Object value = eval(car(cdr(operandlist)), topEnv, env, stack+1, level+1);
+                        final Object value = eval(cadr(operandlist), topEnv, env, stack+1, level+1);
                         topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
                         return value;
                     }
@@ -451,7 +450,7 @@ public class LambdaJ {
                         nArgs("defun", operandlist, 3, exp);
                         final Object symbol = car(operandlist);
                         if (!symbolp(symbol)) throw new LambdaJError("defun: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
-                        final Object params = car(cdr(operandlist));
+                        final Object params = cadr(operandlist);
                         if (!listp(params)) throw new LambdaJError("defun: expected a parameter list but got " + printSEx(params) + '.' + errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("defun: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
@@ -476,11 +475,11 @@ public class LambdaJ {
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
                             if (haveLexC()) lambda = cons3(sLambda, cdr(currentFunc), extenv);
-                            else             lambda = cons (sLambda, cdr(currentFunc));
+                            else            lambda = cons (sLambda, cdr(currentFunc));
                             extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
                         }
-                        extenv.car = car(cdr(extenv));
-                        extenv.cdr = cdr(cdr(extenv));
+                        extenv.car = cadr(extenv);
+                        extenv.cdr = cddr(extenv);
 
                         // run the function's expressions, the last one with TCO in case it's a tailcall
                         ConsCell body;
@@ -492,9 +491,9 @@ public class LambdaJ {
                     }
 
                     if (haveCond() && operator == sCond) {
-                        for (ConsCell c = (ConsCell) operandlist; c != null; c = (ConsCell) cdr(c)) {
-                            if (eval(car(car(c)), topEnv, env, stack+1, level+1) != null) {
-                                exp = car(cdr(car(c))); isTc = true; continue tailcall;
+                        for (ConsCell c = operandlist; c != null; c = (ConsCell) cdr(c)) {
+                            if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
+                                exp = cadar(c); isTc = true; continue tailcall;
                             }
                         }
                         return null;
@@ -505,7 +504,7 @@ public class LambdaJ {
                         twoArgs("apply", operandlist, exp);
 
                         func = eval(car(operandlist), topEnv, env, stack+1, level+1);
-                        final Object _argList = eval(car(cdr(operandlist)), topEnv, env, stack+1, level+1);
+                        final Object _argList = eval(cadr(operandlist), topEnv, env, stack+1, level+1);
                         if (!listp(_argList)) throw new LambdaJError("apply: expected an argument list but got " + printSEx(_argList) + errorExp(exp));
                         argList = (ConsCell)_argList;
                         // fall through to "actually perform..."
@@ -514,7 +513,7 @@ public class LambdaJ {
                     } else {
                         func = eval(operator, topEnv, env, stack+1, level+1);
                         if (!listp(operandlist)) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(operandlist) + errorExp(exp));
-                        argList = evlis((ConsCell) operandlist, topEnv, env, stack+1, level+1);
+                        argList = evlis(operandlist, topEnv, env, stack+1, level+1);
                         // fall through to "actually perform..."
                     }
 
@@ -649,17 +648,27 @@ public class LambdaJ {
     /// functions used by interpreter program, a subset is used by interpreted programs as well
     private static ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
     private static ConsCell cons3(Object car, Object cdr, ConsCell closure) { return new ConsCell(car, cdr, closure); }
-    private static Object   car(Object x)                { return ((ConsCell)x).car; }
-    private static Object   cdr(Object x)                { return ((ConsCell)x).cdr; }
 
-    private static boolean  consp(Object x)             { return x instanceof ConsCell; }
-    private static boolean  atom(Object x)              { return x == null || !(x instanceof ConsCell); } // !isCons(x)
-    private static boolean  symbolp(Object x)           { return x == null || x instanceof String; } // null (alias nil) is a symbol too
-    private static boolean  listp(Object x)             { return x == null || x instanceof ConsCell; } // null is a list too
-    private static boolean  isPrim(Object x)            { return x instanceof Primitive; }
+    private static Object   car(ConsCell x)    { return x.car; }
+    private static Object   car(Object x)      { return ((ConsCell)x).car; }
+    private static Object   caar(ConsCell l)   { return car(car(l)); }
+    private static Object   cadr(ConsCell l)   { return car(cdr(l)); }
+    private static Object   cadar(ConsCell l)  { return car(cdr(car(l))); }
+    private static Object   caddr(ConsCell l)  { return car(cddr(l)); }
 
-    private static boolean  numberp(Object x)           { return x instanceof Number; }
-    private static boolean  stringp(Object x)           { return x instanceof LambdaJString; }
+    private static Object   cdr(ConsCell x)    { return x.cdr; }
+    private static Object   cdr(Object x)      { return ((ConsCell)x).cdr; }
+    private static Object   cddr(ConsCell l)   { return cdr(cdr(l)); }
+    private static Object   cddr(Object l)     { return cdr(cdr(l)); }
+
+    private static boolean  consp(Object x)    { return x instanceof ConsCell; }
+    private static boolean  atom(Object x)     { return x == null || !(x instanceof ConsCell); } // !isCons(x)
+    private static boolean  symbolp(Object x)  { return x == null || x instanceof String; } // null (alias nil) is a symbol too
+    private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; } // null is a list too
+    private static boolean  isPrim(Object x)   { return x instanceof Primitive; }
+
+    private static boolean  numberp(Object x)  { return x instanceof Number; }
+    private static boolean  stringp(Object x)  { return x instanceof LambdaJString; }
 
     private static int length(Object list) {
         if (list == null) return 0;
@@ -680,7 +689,7 @@ public class LambdaJ {
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printSEx(maybeList));
         for (ConsCell env = (ConsCell) maybeList ; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env)) {
-            if (atom == car(car(env))) return (ConsCell) car(env);
+            if (atom == caar(env)) return (ConsCell) car(env);
         }
         return null;
     }
@@ -801,7 +810,7 @@ public class LambdaJ {
     private static void twoArgs(String func, Object a, Object exp) {
         if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given" + errorExp(exp));
         if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given" + errorExp(exp));
-        if (cdr(cdr(a)) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printSEx(cdr(cdr(a))) + errorExp(exp));
+        if (cddr(a) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printSEx(cddr(a)) + errorExp(exp));
     }
 
     /** at least {@code min} args */
@@ -1023,7 +1032,7 @@ public class LambdaJ {
 
         if (haveCons()) {
             final Primitive fcons =     a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-            final Primitive fcar =      a -> { onePair("car", a);    if (car(a) == null) return null; return car(car(a)); };
+            final Primitive fcar =      a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); };
             final Primitive fcdr =      a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
 
             env = cons(cons(symtab.intern("cdr"),     fcdr),
@@ -1246,7 +1255,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.94 2020/10/19 17:47:21 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.95 2020/10/19 18:55:47 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
