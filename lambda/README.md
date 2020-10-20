@@ -131,7 +131,9 @@ The environment contains the symbols `nil` and `t` and the functions
 * `=, <, <=, >, >=, +, -, *, /, mod` ... Java Double
 * `stringp, string-format, string-format-locale`
     - `string-format` works like Java `String#format(String format, Object... args)`
-    - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)` 
+    - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)`
+* `format, format-locale` ... writes to stdout
+* `internal-time-units-per-second, get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep`
 
 Tail calls including tail recursive calls are optimized.
 
