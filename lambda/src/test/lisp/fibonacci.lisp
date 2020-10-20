@@ -30,7 +30,18 @@
 
 (defun iterative-fib (n) (iterative-fib-tr n 1 1 1))
 
-(define *n* 27)
 
-(writeln (string-format-locale "en-US" "recursive-fib %g: %g" *n* (recursive-fib *n*)))
-(writeln (string-format-locale "en-US" "iterative-fib %g: %g" *n* (iterative-fib *n*)))
+(defun timed (f) 
+       ((lambda (start f)
+                (format "starting... ")
+                (f)
+                (format-locale *locale* "done in %g seconds%n%n"
+                        (/ (- (get-internal-real-time) start) internal-time-units-per-second)))
+           (get-internal-real-time) f))
+
+(define *n* 30)
+(define *locale* "en-US")
+
+(format "%nFibonacci comparison recursive vs. pseudo iterative:%n%n")
+(timed (lambda () (format-locale *locale* "recursive-fib %2.2g: %g%n" *n* (recursive-fib *n*))))
+(timed (lambda () (format-locale *locale* "iterative-fib %2.2g: %g%n" *n* (iterative-fib *n*))))

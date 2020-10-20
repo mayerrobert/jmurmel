@@ -28,7 +28,7 @@ public class LambdaJ {
     public interface SymbolTable { Object intern(String symbol); }
     public interface Parser extends ObjectReader, SymbolTable {}
 
-    public interface ObjectWriter { void printObj(Object o); void printEol(); }
+    public interface ObjectWriter { void printObj(Object o); default void printString(String s) { printObj(s); } void printEol(); }
 
     @FunctionalInterface public interface Primitive { Object apply(ConsCell x); }
 
@@ -175,6 +175,7 @@ public class LambdaJ {
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
         @Override public void printObj(Object ob) { out.print(printSEx(ob)); }
+        @Override public void printString(String s) { out.print(s); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
@@ -888,6 +889,37 @@ public class LambdaJ {
         return result;
     }
 
+    private String stringFormat(ConsCell a) {
+        nArgs("string-format", a, 1, null);
+        stringArg("string-format", "first argument", a);
+        String s = ((LambdaJString)car(a)).value;
+        try {
+            return String.format(s, listToArray(cdr(a)));
+        } catch (IllegalFormatException e) {
+            throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
+            + "\nerror ocurred processing the argument(s) " + printSEx(a));
+        }
+    }
+
+    private String stringFormatLocale(ConsCell a) {
+        nArgs("string-format-locale", a, 2, null);
+        String locString;
+        if (car(a) != null) {
+            stringArg("string-format-locale", "first argument", a);
+            locString = ((LambdaJString)car(a)).value;
+        } else locString = null;
+        stringArg("string-format-locale", "second argument", cdr(a));
+        String s = ((LambdaJString)car(cdr(a))).value;
+        try {
+            if (locString == null) return String.format(s, listToArray(cdr(cdr(a))));
+            Locale loc = Locale.forLanguageTag(locString);
+            return String.format(loc, s, listToArray(cdr(cdr(a))));
+        } catch (IllegalFormatException e) {
+            throw new LambdaJError("string-format-locale: illegal format string and/ or arguments: " + e.getMessage()
+            + "\nerror ocurred processing the argument(s) " + printSEx(a));
+        }
+    }
+
 
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
@@ -917,48 +949,41 @@ public class LambdaJ {
                   cons(cons(symtab.intern("write"),   fwriteobj),
                   cons(cons(symtab.intern("writeln"), fwriteln),
                   env)));
+
         }
 
         if (haveString()) {
-            final Primitive fstringp =  a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
-
-            final Primitive fformat =   a -> {
-                nArgs("string-format", a, 1, null);
-                stringArg("string-format", "first argument", a);
-                String s = ((LambdaJString)car(a)).value;
-                try {
-                    return new LambdaJString(String.format(s, listToArray(cdr(a))));
-                } catch (IllegalFormatException e) {
-                    throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
-                    + "\nerror ocurred processing the argument(s) " + printSEx(a));
-                }
-            };
-
-            final Primitive fformatLocale = a -> {
-                nArgs("string-format-locale", a, 2, null);
-                String locString;
-                if (car(a) != null) {
-                    stringArg("string-format-locale", "first argument", a);
-                    locString = ((LambdaJString)car(a)).value;
-                } else locString = null;
-                stringArg("string-format-locale", "second argument", cdr(a));
-                String s = ((LambdaJString)car(cdr(a))).value;
-                try {
-                    if (locString == null) return String.format(s, listToArray(cdr(cdr(a))));
-                    Locale loc = Locale.forLanguageTag(locString);
-                    return new LambdaJString(String.format(loc, s, listToArray(cdr(cdr(a)))));
-                } catch (IllegalFormatException e) {
-                    throw new LambdaJError("string-format-locale: illegal format string and/ or arguments: " + e.getMessage()
-                    + "\nerror ocurred processing the argument(s) " + printSEx(a));
-                }
-            };
+            final Primitive fstringp =            a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
 
             env = cons(cons(symtab.intern("stringp"), fstringp),
                   env);
-            if (haveUtil())
-                env = cons(cons(symtab.intern("string-format"), fformat),
-                      cons(cons(symtab.intern("string-format-locale"), fformatLocale),
+
+            if (haveUtil()) {
+                final Primitive fstringformat =       a -> new LambdaJString(stringFormat(a));
+                final Primitive fstringformatLocale = a -> new LambdaJString(stringFormatLocale(a));
+
+                env = cons(cons(symtab.intern("string-format"),        fstringformat),
+                      cons(cons(symtab.intern("string-format-locale"), fstringformatLocale),
                       env));
+            }
+
+            if (haveIO()) {
+                final Primitive fformat = a -> {
+                    if (lispStdout == null) throw new LambdaJError("format: lispStdout is nil");
+                    lispStdout.printString(stringFormat(a));
+                    return expTrue;
+                };
+
+                final Primitive fformatLocale = a -> {
+                    if (lispStdout == null) throw new LambdaJError("format: lispStdout is nil");
+                    lispStdout.printString(stringFormatLocale(a));
+                    return expTrue;
+                };
+
+                env = cons(cons(symtab.intern("format"),        fformat),
+                      cons(cons(symtab.intern("format-locale"), fformatLocale),
+                      env));
+            }
         }
 
         if (haveT())
@@ -982,6 +1007,11 @@ public class LambdaJ {
                   cons(cons(symtab.intern("null?"),   fnull),
                   cons(cons(symtab.intern("assoc"),   fassoc),
                   env)))));
+
+
+            env = cons(cons(symtab.intern("internal-time-units-per-second"), new Double(1e9)),
+                  cons(cons(symtab.intern("get-internal-real-time"), (Primitive)a -> new Double(System.nanoTime())),
+                  env));
         }
 
         if (haveAtom()) {
@@ -1255,7 +1285,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.96 2020/10/19 20:34:57 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.97 2020/10/19 21:38:08 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
