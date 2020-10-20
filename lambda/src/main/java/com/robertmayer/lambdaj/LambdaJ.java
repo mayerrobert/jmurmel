@@ -362,7 +362,7 @@ public class LambdaJ {
 
 
 
-    /// eval - interpreter
+    /// symboltable Object
     private SymbolTable symtab;
 
     /** look up the symbols for special forms only once on first use.
@@ -383,6 +383,7 @@ public class LambdaJ {
         expTrue = makeExpTrue();
     }
 
+    /** well known symbols for special forms */
     private Object sApply, sCond, sIf, sDefine, sDefun, sLabels, sLambda, sQuote;
     private Object expTrue;
 
@@ -394,6 +395,7 @@ public class LambdaJ {
 
 
 
+    /// eval - the heart of most if not all Lisp interpreters
     private Object eval(Object exp, ConsCell topEnv, ConsCell env, int stack, int level) {
         boolean isTc = false;
         try {
@@ -404,7 +406,7 @@ public class LambdaJ {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", exp, env, stack, level);
 
-                if (symbolp(exp)) {                 // this line is convenient breakpoint
+                if (symbolp(exp)) {                 // this line is a convenient breakpoint
                     if (exp == null) return null;
                     final ConsCell envEntry = assoc(exp, env);
                     if (envEntry != null) return cdr(envEntry);
@@ -419,62 +421,63 @@ public class LambdaJ {
                     final Object func;                     // will be used in case of a function call
                     final ConsCell argList;                // will be used in case of a function call
 
-                    final Object operator = car(exp);      // first symbol of the S-expression
-                    final ConsCell operandlist = (ConsCell) cdr(exp);   // list with remaining symbols
+                    final Object operator = car(exp);      // first element of the of the S-expression should be a symbol or an expression that computes a symbol
+                    if (!listp(cdr(exp))) throw new LambdaJError("eval: was expecting a list but got " + printSEx(exp));
+                    final ConsCell arguments = (ConsCell) cdr(exp);   // list with remaining atoms/ expressions
 
                     // special forms
                     if (haveQuote() && operator == sQuote) {
-                        oneArg("quote", operandlist);
-                        return car(operandlist);
+                        oneArg("quote", arguments);
+                        return car(arguments);
                     }
 
                     if (haveXtra() && operator == sIf) {
-                        nArgs("if", operandlist, 2, 3, exp);
-                        if (eval(car(operandlist), topEnv, env, stack+1, level+1) != null) {
-                            exp = cadr(operandlist); isTc = true; continue;
-                        } else if (cddr(operandlist) != null) {
-                            exp = caddr(operandlist); isTc = true; continue;
+                        nArgs("if", arguments, 2, 3, exp);
+                        if (eval(car(arguments), topEnv, env, stack+1, level+1) != null) {
+                            exp = cadr(arguments); isTc = true; continue;
+                        } else if (cddr(arguments) != null) {
+                            exp = caddr(arguments); isTc = true; continue;
                         } else return null;
                     }
 
                     if (haveXtra() && operator == sDefine) {
-                        twoArgs("define", operandlist, exp);
-                        final Object symbol = car(operandlist); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
+                        twoArgs("define", arguments, exp);
+                        final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                                 // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
                         if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("define: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
-                        final Object value = eval(cadr(operandlist), topEnv, env, stack+1, level+1);
+                        final Object value = eval(cadr(arguments), topEnv, env, stack+1, level+1);
                         topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
                         return value;
                     }
 
                     if (haveXtra() && operator == sDefun) {
-                        nArgs("defun", operandlist, 3, exp);
-                        final Object symbol = car(operandlist);
+                        nArgs("defun", arguments, 3, exp);
+                        final Object symbol = car(arguments);
                         if (!symbolp(symbol)) throw new LambdaJError("defun: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
-                        final Object params = cadr(operandlist);
+                        final Object params = cadr(arguments);
                         if (!listp(params)) throw new LambdaJError("defun: expected a parameter list but got " + printSEx(params) + '.' + errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("defun: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
 
-                        final Object lambda = cons3(sLambda, cdr(operandlist), haveLexC() ? env : null);
+                        final Object lambda = cons3(sLambda, cdr(arguments), haveLexC() ? env : null);
                         topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
                         return lambda;
                     }
 
                     if (operator == sLambda) {
-                        nArgs("lambda", operandlist, 2, exp);
-                        if (haveLexC()) return cons3(sLambda, operandlist, env);
+                        nArgs("lambda", arguments, 2, exp);
+                        if (haveLexC()) return cons3(sLambda, arguments, env);
                         else return exp;
                     }
 
                     if (haveLabels() && operator == sLabels) { // labels bindings body -> object
-                        nArgs("labels", operandlist, 2, exp);
+                        nArgs("labels", arguments, 2, exp);
                         ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
-                        for (bindings = (ConsCell) car(operandlist); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
+                        for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
@@ -487,7 +490,7 @@ public class LambdaJ {
 
                         // run the function's expressions, the last one with TCO in case it's a tailcall
                         ConsCell body;
-                        for (body = (ConsCell) cdr(operandlist); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                        for (body = (ConsCell) cdr(arguments); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                             eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
                             exp = car(body); env = extenv; isTc = true; continue;
@@ -495,7 +498,7 @@ public class LambdaJ {
                     }
 
                     if (haveCond() && operator == sCond) {
-                        for (ConsCell c = operandlist; c != null; c = (ConsCell) cdr(c)) {
+                        for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
                                 exp = cadar(c); isTc = true; continue tailcall;
                             }
@@ -505,10 +508,10 @@ public class LambdaJ {
 
                     // apply function to list
                     if (haveApply() && operator == sApply) {
-                        twoArgs("apply", operandlist, exp);
+                        twoArgs("apply", arguments, exp);
 
-                        func = eval(car(operandlist), topEnv, env, stack+1, level+1);
-                        final Object _argList = eval(cadr(operandlist), topEnv, env, stack+1, level+1);
+                        func = eval(car(arguments), topEnv, env, stack+1, level+1);
+                        final Object _argList = eval(cadr(arguments), topEnv, env, stack+1, level+1);
                         if (!listp(_argList)) throw new LambdaJError("apply: expected an argument list but got " + printSEx(_argList) + errorExp(exp));
                         argList = (ConsCell)_argList;
                         // fall through to "actually perform..."
@@ -516,8 +519,8 @@ public class LambdaJ {
                     // function call
                     } else {
                         func = eval(operator, topEnv, env, stack+1, level+1);
-                        if (!listp(operandlist)) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(operandlist) + errorExp(exp));
-                        argList = evlis(operandlist, topEnv, env, stack+1, level+1);
+                        if (!listp(arguments)) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(arguments) + errorExp(exp));
+                        argList = evlis(arguments, topEnv, env, stack+1, level+1);
                         // fall through to "actually perform..."
                     }
 
@@ -536,14 +539,14 @@ public class LambdaJ {
                             exp = car(body); env = extenv; isTc = true; continue;
                         }
                     }
-                    if (isPrim(func)) {
+                    if (primp(func)) {
                         try { return applyPrimitive((Primitive) func, argList, stack, level); }
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
 
                     throw new LambdaJError("function application: not a symbol or lambda: " + printSEx(func)
                                            + ". this was the result of evaluating the expression "
-                                           + printSEx(car(operandlist)) + errorExp(exp));
+                                           + printSEx(car(arguments)) + errorExp(exp));
 
                 }
 
@@ -599,6 +602,16 @@ public class LambdaJ {
         return head;
     }
 
+    private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
+        if (trace >= TRC_FUNC) {
+            tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
+        }
+        return primfn.apply(args);
+    }
+
+
+
+    /// stats during eval and at the end
     private static int nCells;  // todo sollte eigentlich nicht static sein, ists aber weils der konstruktor der stat Klasse ConsCell schreibt
     private int maxEnvLen;
     private int maxEvalStack;
@@ -666,11 +679,10 @@ public class LambdaJ {
     private static Object   cddr(Object l)     { return cdr(cdr(l)); }
 
     private static boolean  consp(Object x)    { return x instanceof ConsCell; }
-    private static boolean  atom(Object x)     { return x == null || !(x instanceof ConsCell); } // !isCons(x)
-    private static boolean  symbolp(Object x)  { return x == null || x instanceof String; } // null (alias nil) is a symbol too
-    private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; } // null is a list too
-    private static boolean  isPrim(Object x)   { return x instanceof Primitive; }
-
+    private static boolean  atom(Object x)     { return x == null || !(x instanceof ConsCell); } // ! consp(x)
+    private static boolean  symbolp(Object x)  { return x == null || x instanceof String; }      // null (aka nil) is a symbol too
+    private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; }    // null (aka nil) is a list too
+    private static boolean  primp(Object x)    { return x instanceof Primitive; }
     private static boolean  numberp(Object x)  { return x instanceof Number; }
     private static boolean  stringp(Object x)  { return x instanceof LambdaJString; }
 
@@ -705,13 +717,6 @@ public class LambdaJ {
         for (ConsCell env = (ConsCell) maybeList; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env))
             ret.add(car(env));
         return ret.toArray();
-    }
-
-    private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
-        if (trace >= TRC_FUNC) {
-            tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
-        }
-        return primfn.apply(args);
     }
 
     /** transform {@code ob} into an S-expression, atoms are escaped */
@@ -769,7 +774,7 @@ public class LambdaJ {
                     return;
                 }
                 sb.append(current.toString()); return;
-            } else if (isPrim(current)) {
+            } else if (primp(current)) {
                 sb.append("#<primitive>"); return;
             } else if (escapeAtoms && stringp(current)) {
                 sb.append('"').append(escapeString(current.toString())).append('"'); return;
@@ -956,17 +961,12 @@ public class LambdaJ {
         }
 
         if (haveString()) {
-            final Primitive fstringp =            a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); };
-
-            env = cons(cons(symtab.intern("stringp"), fstringp),
+            env = cons(cons(symtab.intern("stringp"), (Primitive) a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); }),
                   env);
 
             if (haveUtil()) {
-                final Primitive fstringformat =       a -> new LambdaJString(stringFormat(a));
-                final Primitive fstringformatLocale = a -> new LambdaJString(stringFormatLocale(a));
-
-                env = cons(cons(symtab.intern("string-format"),        fstringformat),
-                      cons(cons(symtab.intern("string-format-locale"), fstringformatLocale),
+                env = cons(cons(symtab.intern("string-format"),        (Primitive) a -> new LambdaJString(stringFormat(a))),
+                      cons(cons(symtab.intern("string-format-locale"), (Primitive) a -> new LambdaJString(stringFormatLocale(a))),
                       env));
             }
 
@@ -998,17 +998,11 @@ public class LambdaJ {
                   env);
 
         if (haveUtil()) {
-            final Primitive fnull =     a -> { oneArg("null?", a);   return boolResult(car(a) == null); };
-            final Primitive fconsp =    a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); };
-            final Primitive fsymbolp =  a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); };
-            final Primitive flistp =    a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); };
-            final Primitive fassoc =    a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); };
-
-            env = cons(cons(symtab.intern("consp"),   fconsp),
-                  cons(cons(symtab.intern("symbolp"), fsymbolp),
-                  cons(cons(symtab.intern("listp"),   flistp),
-                  cons(cons(symtab.intern("null?"),   fnull),
-                  cons(cons(symtab.intern("assoc"),   fassoc),
+            env = cons(cons(symtab.intern("consp"),   (Primitive) a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); }),
+                  cons(cons(symtab.intern("symbolp"), (Primitive) a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); }),
+                  cons(cons(symtab.intern("listp"),   (Primitive) a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); }),
+                  cons(cons(symtab.intern("null?"),   (Primitive) a -> { oneArg("null?", a);   return boolResult(car(a) == null); }),
+                  cons(cons(symtab.intern("assoc"),   (Primitive) a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); }),
                   env)))));
 
             final Primitive fusertime = a -> {
@@ -1050,63 +1044,44 @@ public class LambdaJ {
         }
 
         if (haveAtom()) {
-            final Primitive fatom =     a -> { oneArg("atom", a);    return boolResult(atom   (car(a))); };
-
-            env = cons(cons(symtab.intern("atom"), fatom),
+            env = cons(cons(symtab.intern("atom"), (Primitive) a -> { oneArg("atom", a);    return boolResult(atom   (car(a))); }),
                        env);
         }
 
         if (haveDouble()) {
-            final Primitive fnumberp =  args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); };
-            final Primitive fnumbereq = args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0);
-            final Primitive flt =       args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0);
-            final Primitive fle =       args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0);
-            final Primitive fgt =       args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0);
-            final Primitive fge =       args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0);
-            final Primitive fadd =      args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs);
-            final Primitive fmul =      args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs);
-            final Primitive fsub  =     args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs);
-            final Primitive fquot =     args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs);
-
             final Primitive fmod = args -> {
                 twoArgs("mod", args);
                 numberArgs("mod", args);
                 return (Double)car(args) % (Double)car(cdr(args));
             };
 
-            env = cons(cons(symtab.intern("+"),       fadd),
-                  cons(cons(symtab.intern("-"),       fsub),
-                  cons(cons(symtab.intern("*"),       fmul),
-                  cons(cons(symtab.intern("/"),       fquot),
-                  cons(cons(symtab.intern("="),       fnumbereq),
-                  cons(cons(symtab.intern(">"),       fgt),
-                  cons(cons(symtab.intern(">="),      fge),
-                  cons(cons(symtab.intern("<"),       flt),
-                  cons(cons(symtab.intern("<="),      fle),
+            env = cons(cons(symtab.intern("+"),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
+                  cons(cons(symtab.intern("-"),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
+                  cons(cons(symtab.intern("*"),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
+                  cons(cons(symtab.intern("/"),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
+                  cons(cons(symtab.intern("="),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
+                  cons(cons(symtab.intern(">"),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
+                  cons(cons(symtab.intern(">="),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
+                  cons(cons(symtab.intern("<"),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
+                  cons(cons(symtab.intern("<="),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
+                  cons(cons(symtab.intern("numberp"), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
                   cons(cons(symtab.intern("mod"),     fmod),
-                  cons(cons(symtab.intern("numberp"), fnumberp),
                   env)))))))))));
         }
 
         if (haveEq()) {
-            final Primitive feq =       a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); };
-
-            env = cons(cons(symtab.intern("eq"), feq),
+            env = cons(cons(symtab.intern("eq"), (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); }),
                        env);
         }
 
         if (haveCons()) {
-            final Primitive fcons =     a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); };
-            final Primitive fcar =      a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); };
-            final Primitive fcdr =      a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); };
-
-            env = cons(cons(symtab.intern("cdr"),     fcdr),
-                  cons(cons(symtab.intern("car"),     fcar),
-                  cons(cons(symtab.intern("cons"),    fcons),
+            env = cons(cons(symtab.intern("cdr"),     (Primitive) a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); }),
+                  cons(cons(symtab.intern("car"),     (Primitive) a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); }),
+                  cons(cons(symtab.intern("cons"),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); }),
                   env)));
         }
 
-        return cons(cons(null, null), env); // top env begins with (nil . nil), this is where define will insert stuff.
+        return cons(cons(null, null), env); // top env begins with (nil . nil), will insert stuffimmediately after (nil . nil).
     }
 
 
@@ -1320,7 +1295,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.98 2020/10/20 04:50:13 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.99 2020/10/20 06:23:12 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
