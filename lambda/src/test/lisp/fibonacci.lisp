@@ -32,12 +32,14 @@
 
 
 (defun timed (f) 
-       ((lambda (start f)
+       ((lambda (start-realtime start-runtime f)
                 (format "starting... ")
                 (f)
-                (format-locale *locale* "done in %g seconds%n%n"
-                        (/ (- (get-internal-real-time) start) internal-time-units-per-second)))
-           (get-internal-real-time) f))
+                (format-locale *locale* "done in %g seconds realtime, %g seconds runtime%n%n"
+                        (/ (- (get-internal-real-time) start-realtime) internal-time-units-per-second)
+                        (/ (- (get-internal-run-time)  start-runtime)  internal-time-units-per-second)
+                        ))
+           (get-internal-real-time) (get-internal-run-time) f))
 
 (define *n* 30)
 (define *locale* "en-US")
@@ -45,3 +47,4 @@
 (format "%nFibonacci comparison recursive vs. pseudo iterative:%n%n")
 (timed (lambda () (format-locale *locale* "recursive-fib %2.2g: %g%n" *n* (recursive-fib *n*))))
 (timed (lambda () (format-locale *locale* "iterative-fib %2.2g: %g%n" *n* (iterative-fib *n*))))
+(format "slept %g nanos%n" (sleep 1e9))

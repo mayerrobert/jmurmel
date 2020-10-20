@@ -7,6 +7,8 @@ package com.robertmayer.lambdaj;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
@@ -14,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
@@ -1008,10 +1011,42 @@ public class LambdaJ {
                   cons(cons(symtab.intern("assoc"),   fassoc),
                   env)))));
 
-
+            final Primitive fusertime = a -> {
+                final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+                if (threadBean == null)
+                    throw new LambdaJError("get-internal-run-time: ThreadMXBean not supported in this Java Runtime");
+                if (!threadBean.isCurrentThreadCpuTimeSupported())
+                    throw new LambdaJError("get-internal-run-time: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime");
+                return new Double(threadBean.getCurrentThreadUserTime());
+            };
+            final Primitive fcputime = a -> {
+                final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+                if (threadBean == null)
+                    throw new LambdaJError("get-internal-run-time: ThreadMXBean not supported in this Java Runtime");
+                if (!threadBean.isCurrentThreadCpuTimeSupported())
+                    throw new LambdaJError("get-internal-run-time: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime");
+                return new Double(threadBean.getCurrentThreadCpuTime());
+            };
+            final Primitive fsleep = a -> {
+                oneArg("sleep", a);
+                numberArgs("sleep", a);
+                try {
+                    long startNanos = System.nanoTime();
+                    long nanos = ((Double)car(a)).longValue();
+                    long millis = TimeUnit.NANOSECONDS.toMillis(nanos);
+                    Thread.sleep(millis);
+                    return new Double(System.nanoTime() - startNanos);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new LambdaJError("sleep: got interrupted");
+                }
+            };
             env = cons(cons(symtab.intern("internal-time-units-per-second"), new Double(1e9)),
                   cons(cons(symtab.intern("get-internal-real-time"), (Primitive)a -> new Double(System.nanoTime())),
-                  env));
+                  cons(cons(symtab.intern("get-internal-run-time"), fusertime), // user
+                  cons(cons(symtab.intern("get-internal-cpu-time"), fcputime), // user + system
+                  cons(cons(symtab.intern("sleep"), fsleep),
+                  env)))));
         }
 
         if (haveAtom()) {
@@ -1285,7 +1320,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.97 2020/10/19 21:38:08 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.98 2020/10/20 04:50:13 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
