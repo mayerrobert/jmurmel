@@ -324,6 +324,9 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   ()");
                 return null;
             }
+            if (haveNil() && !tokEscape && tok instanceof String && "NIL".equalsIgnoreCase((String) tok)) {
+                return null;
+            }
             if (!tokEscape && "(".equals(tok)) {
                 Object list = readList();
                 if (!tokEscape && ".".equals(tok)) {
@@ -500,7 +503,14 @@ public class LambdaJ {
                     if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
-                                exp = cadar(c); isTc = true; continue tailcall;
+                                //return eval(cadar(c), topEnv, env, stack+1, level+1);
+                                //exp = cdar(c); isTc = true; continue tailcall;
+                                ConsCell body;
+                                for (body = (ConsCell) cdar(c); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                                    eval(car(body), topEnv, env, stack+1, level+1);
+                                if (body != null) {
+                                    exp = car(body); isTc = true; continue tailcall;
+                                }
                             }
                         }
                         return null;
@@ -568,9 +578,8 @@ public class LambdaJ {
      *    stick above list in front of the environment
      *  return extended environment</pre> */
     // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
-    private ConsCell zip(Object exp, ConsCell extenv, Object _params, ConsCell _args) {
-        final Object paramList = _params == symtab.intern("nil") ? null : _params; // todo diesen Hack reparieren, hier sollte nie das symbol nil sondern ggf. null reinkommen, oder: nil ist wahrscheinlich voellig falsch implementiert
-        if (!listp(paramList)) throw new LambdaJError("function application: expected a parameter list but got " + printSEx(_params) + errorExp(exp));
+    private ConsCell zip(Object exp, ConsCell extenv, Object paramList, ConsCell _args) {
+        if (!listp(paramList)) throw new LambdaJError("function application: expected a parameter list but got " + printSEx(paramList) + errorExp(exp));
 
         ConsCell params = (ConsCell)paramList, args = _args;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
@@ -675,6 +684,8 @@ public class LambdaJ {
 
     private static Object   cdr(ConsCell x)    { return x.cdr; }
     private static Object   cdr(Object x)      { return ((ConsCell)x).cdr; }
+    private static Object   cdar(ConsCell x)   { return cdr(x.car); }
+    private static Object   cdar(Object x)     { return cdr(((ConsCell)x).car); }
     private static Object   cddr(ConsCell l)   { return cdr(cdr(l)); }
     private static Object   cddr(Object l)     { return cdr(cdr(l)); }
 
@@ -1295,7 +1306,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.99 2020/10/20 06:23:12 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.100 2020/10/20 16:49:52 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

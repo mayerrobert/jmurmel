@@ -11,7 +11,7 @@ public class ApplyTest {
 
     @Test
     public void primitiveOneArgApply() {
-        LambdaJTest.runTest("primitiveOneArg", "(apply null? '(nil))", "nil", null);
+        LambdaJTest.runTest("primitiveOneArg", "(apply null? '(nil))", "t", null);
     }
 
     @Test
@@ -22,7 +22,7 @@ public class ApplyTest {
 
     @Test
     public void lambdaOneArgApply() {
-        LambdaJTest.runTest("primitiveOneArg", "(apply (lambda (x) (null? x)) '(nil))", "nil", null);
+        LambdaJTest.runTest("primitiveOneArg", "(apply (lambda (x) (null? x)) '(nil))", "t", null);
     }
 
     @Test
