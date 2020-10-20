@@ -1,5 +1,5 @@
 ; too many arguments
 
-; error: too many arguments. remaining arguments: ((quote b))
+; error: function application: too many arguments. remaining arguments: (b)
 
 ((lambda (x) (write (quote hello))) (quote a) (quote b))
