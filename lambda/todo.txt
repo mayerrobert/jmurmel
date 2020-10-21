@@ -1,19 +1,34 @@
-print/ pprint/ princ/
 writeln umbauen auf "\n<string> "
 -> mit param
 --eol=LISP
 --eol=C
 
-progn fuer if?
+format und string-format zusammenziehen:
+-> format t <string> schreibt auf stdout, return wert ist <string>
+-> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
+-> format-locale und string-format-locale detto
 
-Stringfunktionen:
-first, rest, combine, charp
-
-Environment variable fuer default options
-flag fuer sysmbols:
+flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
 --symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
 --symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
+
+progn fuer if und anderes?
+
+
+Stringfunktionen: format kann auch strings zusammensetzen
+strings sind eine LSIP sequence, fuer sequence gibts
+-> subseq sequence start &optional end => subsequence
+
+(concatenate 'string "all" " " "together" " " "now") =>  "all together now"
+(concatenate 'list "ABC" '(d e f) #(1 2 3) #*1011)
+=>  (#\A #\B #\C D E F 1 2 3 1 0 1 1)
+(concatenate 'list) =>  NIL
+
+CL hat stringp string= string<=, ...
+
+
+Environment variable fuer default options
 
 Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
@@ -367,7 +382,9 @@ ist currentcc cdr(exp) (und das env bzw. closure) ?
             Nein, sind sie nicht, wenn die gerufene Continuation einfach endet, entspricht das einem return.
             CPS waer ggf. moeglich und nicht so schwer?!?
 
-
+print/ pprint/ princ/
+-> die setzen parameter und rufen write, write kennt viele parameter zur formatierung, siehe
+   http://www.lispworks.com/documentation/HyperSpec/Body/f_wr_pr.htm
 
 
 

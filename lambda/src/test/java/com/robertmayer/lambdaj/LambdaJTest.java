@@ -297,7 +297,7 @@ public class LambdaJTest {
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
         StringBuffer out = new StringBuffer();
 
-        LambdaJ interpreter = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TRC_ENV);
+        LambdaJ intp = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TRC_ENV);
 
         System.out.println("***** running program '" + fileName + ':');
         System.out.println("-------------------------------------------------------");
@@ -306,9 +306,9 @@ public class LambdaJTest {
 
         String actualResult;
         if (fileName.endsWith(".lisp")) {
-            actualResult = lispObjectToString(interpreter.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
+            actualResult = lispObjectToString(intp, intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
         } else {
-            actualResult = lispObjectToString(interpreter.interpretExpression(new StringReader(prog)::read, out::append));
+            actualResult = lispObjectToString(intp, intp.interpretExpression(new StringReader(prog)::read, out::append));
         }
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
@@ -323,7 +323,7 @@ public class LambdaJTest {
         }
     }
 
-    private static String lispObjectToString(Object exp) {
+    private static String lispObjectToString(LambdaJ intp, Object exp) {
         /*
         if (exp == null) return "nil";
         if (exp instanceof LambdaJ.Primitive) return "#<primitive>";
@@ -333,7 +333,7 @@ public class LambdaJTest {
         return exp.toString();
         */
         StringBuffer sExp = new StringBuffer();
-        new LambdaJ.SExpressionWriter(sExp::append).printObj(exp);
+        intp.new SExpressionWriter(sExp::append).printObj(exp);
         return sExp.toString();
     }
 }

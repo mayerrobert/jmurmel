@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class LambdaJ {
@@ -174,11 +175,11 @@ public class LambdaJ {
     }
 
     /** This class will write objects as S-expressions to the given {@link WriteConsumer} */
-    public static class SExpressionWriter implements ObjectWriter {
-        private WriteConsumer out;  // printObj() and printEol() will write to this
+    public class SExpressionWriter implements ObjectWriter {
+        private final WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object ob) { printString(printSEx(ob)); }
+        @Override public void printObj(Object o) { printString(o == null && !haveNil() ? "()" : printSEx(o)); }
         @Override public void printString(String s) { out.print(s); }
         @Override public void printEol() { printString(System.lineSeparator()); }
     }
@@ -386,12 +387,12 @@ public class LambdaJ {
         sLabels = symtab.intern("labels");
         sLambda = symtab.intern("lambda");
         sQuote  = symtab.intern("quote");
-        expTrue = makeExpTrue();
+        expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
     /** well known symbols for special forms */
     private Object sApply, sCond, sIf, sDefine, sDefun, sLabels, sLambda, sQuote;
-    private Object expTrue;
+    private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
         if (haveT()) return symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
@@ -880,7 +881,7 @@ public class LambdaJ {
 
 
     /// runtime for Lisp programs
-    private Object boolResult(boolean b) { return b ? expTrue : null; }
+    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     /** generate a comparison operator */
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
@@ -950,7 +951,7 @@ public class LambdaJ {
             final Primitive fwriteobj = a -> {
                 oneArg("write", a);
                 if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "write");
-                lispStdout.printObj(car(a)); return expTrue;
+                lispStdout.printObj(car(a)); return expTrue.get();
             };
 
             final Primitive fwriteln =  a -> {
@@ -958,11 +959,11 @@ public class LambdaJ {
                 if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "write");
                 if (a == null) {
                     lispStdout.printEol();
-                    return expTrue;
+                    return expTrue.get();
                 }
                 lispStdout.printObj(car(a));
                 lispStdout.printEol();
-                return expTrue;
+                return expTrue.get();
             };
 
             env = cons(cons(symtab.intern("read"),    freadobj),
@@ -986,13 +987,13 @@ public class LambdaJ {
                 final Primitive fformat = a -> {
                     if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "format");
                     lispStdout.printString(stringFormat(a, "format"));
-                    return expTrue;
+                    return expTrue.get();
                 };
 
                 final Primitive fformatLocale = a -> {
                     if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "format");
                     lispStdout.printString(stringFormatLocale(a, "format-locale"));
-                    return expTrue;
+                    return expTrue.get();
                 };
 
                 env = cons(cons(symtab.intern("format"),        fformat),
@@ -1219,13 +1220,14 @@ public class LambdaJ {
 
             boolean isInit = false;
             SExpressionParser parser = null;
+            ObjectWriter outWriter = null;
             ConsCell env = null;
             for (;;) {
                 if (!isInit) {
                     nCells = 0; interpreter.maxEnvLen = 0;
                     parser = interpreter.new SExpressionParser(System.in::read);
                     interpreter.setSymtab(parser);
-                    ObjectWriter outWriter = new SExpressionWriter(System.out::print);
+                    outWriter = interpreter.new SExpressionWriter(System.out::print);
                     env = interpreter.environment(null, parser, outWriter);
                     isInit = true;
                 }
@@ -1261,7 +1263,7 @@ public class LambdaJ {
                     final Object result = interpreter.eval(exp, env, env, 0, 0);
                     System.out.println();
                     interpreter.traceStats();
-                    System.out.println("result: " + result);
+                    System.out.print("==> "); outWriter.printObj(result); System.out.println();
                     System.out.println();
                 } catch (LambdaJError e) {
                     System.out.println();
@@ -1307,7 +1309,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.101 2020/10/20 21:32:20 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.102 2020/10/21 19:31:35 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
