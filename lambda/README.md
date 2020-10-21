@@ -93,7 +93,7 @@ write, string-format
     LambdaJ> (write (string-format "%s, World!%n" "Hello"))
     "Hello, World!
     "
-    result: t
+    ==> t
 
 Tail recursion, locale dependent number formatting
 
@@ -103,7 +103,7 @@ Tail recursion, locale dependent number formatting
                                   (factTR (- n 1) (* n a)))))
      (write (string-format-locale "en-US" "Factorial of 50 is %g" (factTR 50 1))))
     Factorial of 50 is 3.04141e+64
-    result: t
+    ==> t
 
 ## Features
 The environment contains the symbols `nil` and `t` and the functions
