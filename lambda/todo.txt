@@ -1,5 +1,19 @@
 print/ pprint/ princ/
+writeln umbauen auf "\n<string> "
+-> mit param
+--eol=LISP
+--eol=C
+
 progn fuer if?
+
+Stringfunktionen:
+first, rest, combine, charp
+
+Environment variable fuer default options
+flag fuer sysmbols:
+--symbols=uc ... symbole werden beim lesen auf UC umgestellt
+--symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
+--symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
 
 Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
@@ -18,6 +32,8 @@ Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
 
 
 
+
+Generic S-Expression reader/ writer: (<n>:<octets>)
 
 read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
 statt lispStdin, write sinngemaess, ggf. format und format-locale
@@ -673,3 +689,5 @@ deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 -> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
 
 bei cond wird nur das erste stmt ausgefuehrt
+
+LambdaJError(String, Object...) + ggf. Stringkonstanten am anfang der Klasse

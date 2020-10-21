@@ -37,4 +37,9 @@ public class ScannerTest {
     public void testEscapedDot() {
         LambdaJTest.runTest("cons", "'(a \\. b)", "(a . b)", null); // ok, aber hier wird nicht gecheckt ob cons oder list
     }
+
+    @Test
+    public void testExtraParens() {
+        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:4: unexpected ')'");
+    }
 }

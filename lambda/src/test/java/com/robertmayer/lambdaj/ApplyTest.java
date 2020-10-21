@@ -66,7 +66,7 @@ public class ApplyTest {
 
     @Test
     public void notASymbol() {
-        LambdaJTest.runErrorTest("String", "(apply xyxxy '(1 2))", "'xyxxy' is undefined");
+        LambdaJTest.runErrorTest("String", "(apply xyxxy '(1 2))", "eval: 'xyxxy' is undefined");
     }
 
     @Test

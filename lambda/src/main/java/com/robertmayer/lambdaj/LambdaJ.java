@@ -45,6 +45,7 @@ public class LambdaJ {
         public static final long serialVersionUID = 1L;
 
         public LambdaJError(String msg) { super(msg, null, false, false); }
+        public LambdaJError(String msg, Object... params) { super(String.format(msg, params), null, false, false); }
         @Override public String toString() { return "Error: " + getMessage(); }
     }
 
@@ -177,9 +178,9 @@ public class LambdaJ {
         private WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object ob) { out.print(printSEx(ob)); }
+        @Override public void printObj(Object ob) { printString(printSEx(ob)); }
         @Override public void printString(String s) { out.print(s); }
-        @Override public void printEol() { out.print(System.lineSeparator()); }
+        @Override public void printEol() { printString(System.lineSeparator()); }
     }
 
     /// scanner, symboltable and S-expression parser
@@ -243,7 +244,7 @@ public class LambdaJ {
                         if (index < TOKEN_MAX) token[index++] = look;
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
-                    if (look == EOF) throw new LambdaJError("line " + lineNo + ':' + charNo + ": ' string literal too long or missing closing \"");
+                    if (look == EOF) throw new LambdaJError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
@@ -258,8 +259,7 @@ public class LambdaJ {
                     tok = Double.valueOf(tokenToString(token));
                 }
                 catch (NumberFormatException e) {
-                    throw new LambdaJError("line " + lineNo + ':' + charNo + ": '" + tokenToString(token)
-                    + "' is not a valid symbol or number");
+                    throw new LambdaJError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token));
                 }
             } else if (haveString() && token[0] == '"') {
                 tok = new LambdaJString(tokenToString(token).substring(1));
@@ -269,7 +269,7 @@ public class LambdaJ {
                 tok = tokenToString(token);
             }
             if (trace >= TRC_LEX)
-                tracer.println("*** scan  token  |" + String.valueOf(tok) + '|');
+                tracer.println("*** scan  token  |" + tok + '|');
         }
 
         private boolean isNumber() {
@@ -327,6 +327,9 @@ public class LambdaJ {
             if (haveNil() && !tokEscape && tok instanceof String && "NIL".equalsIgnoreCase((String) tok)) {
                 return null;
             }
+            if (!tokEscape && ")".equals(tok)) {
+                throw new LambdaJError("line %d:%d: unexpected ')'", lineNo, charNo);
+            }
             if (!tokEscape && "(".equals(tok)) {
                 Object list = readList();
                 if (!tokEscape && ".".equals(tok)) {
@@ -352,7 +355,7 @@ public class LambdaJ {
 
         private Object readList() {
             readToken();
-            if (tok == null) throw new LambdaJError("line " + lineNo + ':' + charNo + ": cannot read list. missing ')'?");
+            if (tok == null) throw new LambdaJError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
             if (!tokEscape) {
                 if (")".equals(tok)) return null;
                 if (".".equals(tok)) return null;
@@ -413,7 +416,7 @@ public class LambdaJ {
                     if (exp == null) return null;
                     final ConsCell envEntry = assoc(exp, env);
                     if (envEntry != null) return cdr(envEntry);
-                    throw new LambdaJError("'" + exp + "' is undefined");
+                    throw new LambdaJError("%s: '%s' is undefined", "eval", exp);
                 }
 
                 if (atom(exp)) {
@@ -425,7 +428,7 @@ public class LambdaJ {
                     final ConsCell argList;                // will be used in case of a function call
 
                     final Object operator = car(exp);      // first element of the of the S-expression should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(exp))) throw new LambdaJError("eval: was expecting a list but got " + printSEx(exp));
+                    if (!listp(cdr(exp))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s%s", "eval", printSEx(exp), errorExp(exp));
                     final ConsCell arguments = (ConsCell) cdr(exp);   // list with remaining atoms/ expressions
 
                     // special forms
@@ -447,9 +450,9 @@ public class LambdaJ {
                         twoArgs("define", arguments, exp);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                                 // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
-                        if (!symbolp(symbol)) throw new LambdaJError("define: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
+                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s%s", "define", printSEx(symbol), errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
-                        if (envEntry != null) throw new LambdaJError("define: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
+                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "define", symbol, printSEx(cdr(envEntry)), errorExp(exp));
 
                         final Object value = eval(cadr(arguments), topEnv, env, stack+1, level+1);
                         topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
@@ -459,11 +462,11 @@ public class LambdaJ {
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, exp);
                         final Object symbol = car(arguments);
-                        if (!symbolp(symbol)) throw new LambdaJError("defun: not a symbol: " + printSEx(symbol) + '.' + errorExp(exp));
+                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s%s", "defun", printSEx(symbol), errorExp(exp));
                         final Object params = cadr(arguments);
-                        if (!listp(params)) throw new LambdaJError("defun: expected a parameter list but got " + printSEx(params) + '.' + errorExp(exp));
+                        if (!listp(params)) throw new LambdaJError("%s: expected a parameter list but got %s%s", "defun", printSEx(params), errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
-                        if (envEntry != null) throw new LambdaJError("defun: '" + symbol + "' was already defined, current value: " + printSEx(cdr(envEntry)) + errorExp(exp));
+                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "defun", symbol, printSEx(cdr(envEntry)), errorExp(exp));
 
                         final Object lambda = cons3(sLambda, cdr(arguments), haveLexC() ? env : null);
                         topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
@@ -503,8 +506,6 @@ public class LambdaJ {
                     if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
-                                //return eval(cadar(c), topEnv, env, stack+1, level+1);
-                                //exp = cdar(c); isTc = true; continue tailcall;
                                 ConsCell body;
                                 for (body = (ConsCell) cdar(c); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                                     eval(car(body), topEnv, env, stack+1, level+1);
@@ -522,14 +523,14 @@ public class LambdaJ {
 
                         func = eval(car(arguments), topEnv, env, stack+1, level+1);
                         final Object _argList = eval(cadr(arguments), topEnv, env, stack+1, level+1);
-                        if (!listp(_argList)) throw new LambdaJError("apply: expected an argument list but got " + printSEx(_argList) + errorExp(exp));
+                        if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s%s", "apply", printSEx(_argList), errorExp(exp));
                         argList = (ConsCell)_argList;
                         // fall through to "actually perform..."
 
                     // function call
                     } else {
                         func = eval(operator, topEnv, env, stack+1, level+1);
-                        if (!listp(arguments)) throw new LambdaJError("function aplication: expected an argument list but got " + printSEx(arguments) + errorExp(exp));
+                        if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(exp));
                         argList = evlis(arguments, topEnv, env, stack+1, level+1);
                         // fall through to "actually perform..."
                     }
@@ -554,15 +555,14 @@ public class LambdaJ {
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
 
-                    throw new LambdaJError("function application: not a symbol or lambda: " + printSEx(func)
-                                           + ". this was the result of evaluating the expression "
-                                           + printSEx(car(arguments)) + errorExp(exp));
+                    throw new LambdaJError("function application: not a symbol or lambda: %s. this was the result of evaluating the expression %s%s",
+                                           printSEx(func), printSEx(car(arguments)), errorExp(exp));
 
                 }
 
                 // not a symbol/atom/cons - something is really wrong here
                 // let's sprinkle some crack on him and get out of here, dave.
-                throw new LambdaJError("cannot eval expression '" + printSEx(exp) + '\'');
+                throw new LambdaJError("eval: cannot eval expression '%s'", printSEx(exp));
             }
 
         } catch (Exception e) {
@@ -579,15 +579,16 @@ public class LambdaJ {
      *  return extended environment</pre> */
     // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
     private ConsCell zip(Object exp, ConsCell extenv, Object paramList, ConsCell _args) {
-        if (!listp(paramList)) throw new LambdaJError("function application: expected a parameter list but got " + printSEx(paramList) + errorExp(exp));
+        if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s%s",
+                                                      "function application", printSEx(paramList), errorExp(exp));
 
         ConsCell params = (ConsCell)paramList, args = _args;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             extenv = cons(cons(car(params), car(args)), extenv);
         if (params != null)
-            throw new LambdaJError("function application: not enough arguments. parameters w/o argument: " + printSEx(params) + errorExp(exp));
+            throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s%s", "function application", printSEx(params), errorExp(exp));
         if (args != null)
-            throw new LambdaJError("function application: too many arguments. remaining arguments: " + printSEx(args) + errorExp(exp));
+            throw new LambdaJError("%s: too many arguments. remaining arguments: %s%s", "function application", printSEx(args), errorExp(exp));
         return extenv;
     }
 
@@ -605,7 +606,7 @@ public class LambdaJ {
                 insertPos.cdr = currentArg;
                 insertPos = currentArg;
             }
-            if (!listp(cdr(list))) throw new LambdaJError("evlis: not a proper list: " + printSEx(_list));
+            if (!listp(cdr(list))) throw new LambdaJError("%s: was expecting a proper list of expressions but got %s", "evlis", printSEx(_list));
         }
         dbgEvalDone("evlis", _list, head, stack, level);
         return head;
@@ -714,7 +715,7 @@ public class LambdaJ {
     private static ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null) return null;
         if (maybeList == null) return null;
-        if (!listp(maybeList)) throw new LambdaJError("assoc: expected second argument to be a List but got " + printSEx(maybeList));
+        if (!listp(maybeList)) throw new LambdaJError("%s: expected second argument to be a List but got %s", "assoc", printSEx(maybeList));
         for (ConsCell env = (ConsCell) maybeList ; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env)) {
             if (atom == caar(env)) return (ConsCell) car(env);
         }
@@ -723,7 +724,7 @@ public class LambdaJ {
 
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return null;
-        if (!listp(maybeList)) throw new LambdaJError("listToArray: expected second argument to be a List but got " + printSEx(maybeList));
+        if (!listp(maybeList)) throw new LambdaJError("%s: expected second argument to be a List but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
         for (ConsCell env = (ConsCell) maybeList; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env))
             ret.add(car(env));
@@ -811,16 +812,16 @@ public class LambdaJ {
 
     /// error checking utils, used by interpreter and primitives
     private static void noArgs(String func, ConsCell a) {
-        if (a != null) throw new LambdaJError(func + ": expected no arguments but got " + printSEx(a));
+        if (a != null) throw new LambdaJError("%s: expected no arguments but got %s", func, printSEx(a));
     }
 
     private static void oneArg(String func, Object a) {
-        if (a == null) throw new LambdaJError(func + ": expected one argument but no argument was given");
-        if (cdr(a) != null) throw new LambdaJError(func + ": expected one argument but got extra arg(s) " + printSEx(cdr(a)));
+        if (a == null)      throw new LambdaJError("%s: expected one argument but no argument was given", func);
+        if (cdr(a) != null) throw new LambdaJError("%s: expected one argument but got extra arg(s) %s", func, printSEx(cdr(a)));
     }
 
     private static void oneOrMoreArgs(String func, ConsCell a) {
-        if (a == null) throw new LambdaJError(func + ": expected at least one argument but no argument was given");
+        if (a == null) throw new LambdaJError("%s: expected at least one argument but no argument was given", func);
     }
 
     private static void twoArgs(String func, Object a) {
@@ -828,27 +829,27 @@ public class LambdaJ {
     }
 
     private static void twoArgs(String func, Object a, Object exp) {
-        if (a == null) throw new LambdaJError(func + ": expected two arguments but no argument was given" + errorExp(exp));
-        if (cdr(a) == null) throw new LambdaJError(func + ": expected two arguments but only one argument was given" + errorExp(exp));
-        if (cddr(a) != null) throw new LambdaJError(func + ": expected two arguments but got extra arg(s) " + printSEx(cddr(a)) + errorExp(exp));
+        if (a == null)       throw new LambdaJError("%s: expected two arguments but no argument was given%s", func, errorExp(exp));
+        if (cdr(a) == null)  throw new LambdaJError("%s: expected two arguments but only one argument was given%s", func, errorExp(exp));
+        if (cddr(a) != null) throw new LambdaJError("%s: expected two arguments but got extra arg(s) %s%s", func, printSEx(cddr(a)), errorExp(exp));
     }
 
     /** at least {@code min} args */
     private static void nArgs(String func, Object a, int min, Object exp) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " arguments or more but got only " + actualLength + errorExp(exp));
+        if (actualLength < min) throw new LambdaJError("%s: expected %d arguments or more but got only %d%s", func, min, actualLength, errorExp(exp));
     }
 
     private static void nArgs(String func, Object a, int min, int max, Object exp) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got only " + actualLength + errorExp(exp));
-        if (actualLength > max) throw new LambdaJError(func + ": expected " + min + " to " + max + " arguments but got extra arg(s) " + printSEx(nthcdr(max, a)) + errorExp(exp));
+        if (actualLength < min) throw new LambdaJError("%s: expected %d to %d arguments but got only %d%s", func, min, max, actualLength, errorExp(exp));
+        if (actualLength > max) throw new LambdaJError("%s: expected %d to %d arguments but got extra arg(s) %s%s", func, min, max, printSEx(nthcdr(max, a)), errorExp(exp));
     }
 
     private static void onePair(String func, ConsCell a) {
-        if (a == null) throw new LambdaJError(func + ": expected one Pair argument but no argument was given");
-        if (!listp(car(a))) throw new LambdaJError(func + ": expected one Pair argument but got " + printSEx(a));
-        if (cdr(a) != null) throw new LambdaJError(func + ": expected one Pair argument but got extra arg(s) " + printSEx(cdr(a)));
+        if (a == null)      throw new LambdaJError("%s: expected one Pair argument but no argument was given", func);
+        if (!listp(car(a))) throw new LambdaJError("%s: expected one Pair argument but got %s", func, printSEx(a));
+        if (cdr(a) != null) throw new LambdaJError("%s: expected one Pair argument but got extra arg(s) %s", func, printSEx(cdr(a)));
     }
 
     /** arguments if any must be only numbers */
@@ -856,7 +857,7 @@ public class LambdaJ {
         if (a == null) return;
         for (; a != null; a = (ConsCell) cdr(a)) {
             if (!numberp(car(a)) || (cdr(a) != null && !consp(cdr(a))))
-                throw new LambdaJError(func + ": expected only number arguments but got " + printSEx(a));
+                throw new LambdaJError("%s: expected only number arguments but got %s", func, printSEx(a));
         }
     }
 
@@ -868,7 +869,7 @@ public class LambdaJ {
     /** the given arg must be a LambdaJString */
     private void stringArg(String func, String arg, Object a) {
         if (!(car(a) instanceof LambdaJString))
-            throw new LambdaJError(func + ": expected " + arg + " to be a String but got " + printSEx(car(a)));
+            throw new LambdaJError("%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
     }
 
     private static String errorExp(Object exp) {
@@ -908,34 +909,34 @@ public class LambdaJ {
         return result;
     }
 
-    private String stringFormat(ConsCell a) {
-        nArgs("string-format", a, 1, null);
-        stringArg("string-format", "first argument", a);
+    private String stringFormat(ConsCell a, String func) {
+        nArgs(func, a, 1, null);
+        stringArg(func, "first argument", a);
         String s = ((LambdaJString)car(a)).value;
         try {
             return String.format(s, listToArray(cdr(a)));
         } catch (IllegalFormatException e) {
-            throw new LambdaJError("string-format: illegal format string and/ or arguments: " + e.getMessage()
-            + "\nerror ocurred processing the argument(s) " + printSEx(a));
+            throw new LambdaJError("%s: illegal format string and/ or arguments: %s\nerror ocurred processing the argument(s) %s",
+                                   func, e.getMessage(), printSEx(a));
         }
     }
 
-    private String stringFormatLocale(ConsCell a) {
-        nArgs("string-format-locale", a, 2, null);
+    private String stringFormatLocale(ConsCell a, String func) {
+        nArgs(func, a, 2, null);
         String locString;
         if (car(a) != null) {
-            stringArg("string-format-locale", "first argument", a);
+            stringArg(func, "first argument", a);
             locString = ((LambdaJString)car(a)).value;
         } else locString = null;
-        stringArg("string-format-locale", "second argument", cdr(a));
+        stringArg(func, "second argument", cdr(a));
         String s = ((LambdaJString)car(cdr(a))).value;
         try {
             if (locString == null) return String.format(s, listToArray(cdr(cdr(a))));
             Locale loc = Locale.forLanguageTag(locString);
             return String.format(loc, s, listToArray(cdr(cdr(a))));
         } catch (IllegalFormatException e) {
-            throw new LambdaJError("string-format-locale: illegal format string and/ or arguments: " + e.getMessage()
-            + "\nerror ocurred processing the argument(s) " + printSEx(a));
+            throw new LambdaJError("%s: illegal format string and/ or arguments: %s\nerror ocurred processing the argument(s) %s",
+                    func, e.getMessage(), printSEx(a));
         }
     }
 
@@ -948,13 +949,13 @@ public class LambdaJ {
             final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin == null ? null : lispStdin.readObj(); };
             final Primitive fwriteobj = a -> {
                 oneArg("write", a);
-                if (lispStdout == null) throw new LambdaJError("write: lispStdout is nil");
+                if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "write");
                 lispStdout.printObj(car(a)); return expTrue;
             };
 
             final Primitive fwriteln =  a -> {
                 nArgs("writeln", a, 0, 1, null);
-                if (lispStdout == null) throw new LambdaJError("writeln: lispStdout is nil");
+                if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "write");
                 if (a == null) {
                     lispStdout.printEol();
                     return expTrue;
@@ -976,21 +977,21 @@ public class LambdaJ {
                   env);
 
             if (haveUtil()) {
-                env = cons(cons(symtab.intern("string-format"),        (Primitive) a -> new LambdaJString(stringFormat(a))),
-                      cons(cons(symtab.intern("string-format-locale"), (Primitive) a -> new LambdaJString(stringFormatLocale(a))),
+                env = cons(cons(symtab.intern("string-format"),        (Primitive) a -> new LambdaJString(stringFormat(a, "string-format"))),
+                      cons(cons(symtab.intern("string-format-locale"), (Primitive) a -> new LambdaJString(stringFormatLocale(a, "string-format-locale"))),
                       env));
             }
 
             if (haveIO()) {
                 final Primitive fformat = a -> {
-                    if (lispStdout == null) throw new LambdaJError("format: lispStdout is nil");
-                    lispStdout.printString(stringFormat(a));
+                    if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "format");
+                    lispStdout.printString(stringFormat(a, "format"));
                     return expTrue;
                 };
 
                 final Primitive fformatLocale = a -> {
-                    if (lispStdout == null) throw new LambdaJError("format: lispStdout is nil");
-                    lispStdout.printString(stringFormatLocale(a));
+                    if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "format");
+                    lispStdout.printString(stringFormatLocale(a, "format-locale"));
                     return expTrue;
                 };
 
@@ -1019,17 +1020,17 @@ public class LambdaJ {
             final Primitive fusertime = a -> {
                 final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
                 if (threadBean == null)
-                    throw new LambdaJError("get-internal-run-time: ThreadMXBean not supported in this Java Runtime");
+                    throw new LambdaJError("%s: ThreadMXBean not supported in this Java Runtime", "get-internal-run-time");
                 if (!threadBean.isCurrentThreadCpuTimeSupported())
-                    throw new LambdaJError("get-internal-run-time: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime");
+                    throw new LambdaJError("%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", "get-internal-run-time");
                 return new Double(threadBean.getCurrentThreadUserTime());
             };
             final Primitive fcputime = a -> {
                 final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
                 if (threadBean == null)
-                    throw new LambdaJError("get-internal-run-time: ThreadMXBean not supported in this Java Runtime");
+                    throw new LambdaJError("%s: ThreadMXBean not supported in this Java Runtime", "get-internal-cpu-time");
                 if (!threadBean.isCurrentThreadCpuTimeSupported())
-                    throw new LambdaJError("get-internal-run-time: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime");
+                    throw new LambdaJError("%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", "get-internal-cpu-time");
                 return new Double(threadBean.getCurrentThreadCpuTime());
             };
             final Primitive fsleep = a -> {
@@ -1306,7 +1307,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.100 2020/10/20 16:49:52 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.101 2020/10/20 21:32:20 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
