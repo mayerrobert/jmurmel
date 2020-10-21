@@ -1,8 +1,8 @@
 ;;; eval implemented in LISP
 ;;; based on https://www.reddit.com/r/lisp/comments/aklz0x/what_is_the_smallest_definition_of_lisp/
 
-; needs a LISP with S-expressions, symbols and cons, car, cdr, eq, atom, quote, cond, labels, defun
-; implements a LISP with           symbols and cons, car, cdr, eq, atom, quote, cond, label, lambda
+; needs a LISP with   S-expressions, symbols and cons, car, cdr, eq, atom, quote, cond, labels, defun
+; implements a LISP 1 (dyn env) with symbols and cons, car, cdr, eq, atom, quote, cond, label, lambda
 
 ;;; result of the test function:
 ; result: (AA BB CC DD EE FF)
