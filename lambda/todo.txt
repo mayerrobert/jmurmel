@@ -9,15 +9,6 @@ soll:
 '(a . (b . (c . ()))) ; (A B C)
 '(a b c)              ; (A B C)
 
-In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
--> Beispiel machen
-LambdaJ> (write (read)) "Hello, World!"
-"Hello, World!"
-==> t
-
-vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
--> let muss eine fexpr sein, special form oder macro, oder doch nicht?
-
 umbenennen: lispStdout -> lispPrinter, ObjectWriter -> LispPrinter
 
 writeln umbauen auf "\n<string> "
@@ -52,6 +43,15 @@ strings sind eine LSIP sequence, fuer sequence gibts
 (concatenate 'list) =>  NIL
 
 CL hat stringp string= string<=, ...
+
+vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
+-> let muss eine fexpr sein, special form oder macro, oder doch nicht?
+
+In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
+-> Beispiel machen
+LambdaJ> (write (read)) "Hello, World!"
+"Hello, World!"
+==> t
 
 
 Environment variable fuer default options

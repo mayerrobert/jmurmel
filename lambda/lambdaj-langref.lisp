@@ -25,33 +25,60 @@
 ;;; and the prompt "LambdaJ>"
 
 
-;;; == Basis Special Forms ===
+;;; == Basic Special Forms ===
 
-(lambda (p1 p2) p1)             ; returns a lambda expression
-(quote a-symbol)                ; returns an expression w/o evaluating it
-'a-symbol                       ; shorthand for (quote a-symbol
+; returns a lambda expression
+(lambda (p1 p2) p1)
+
+; returns an expression w/o evaluating it
+(quote a-symbol)
+
+; shorthand for (quote a-symbol)
+'a-symbol
 
 
 ;;; == S-expressions ==
 
-'(a . b)                        ; returns a dotted pair       ==> (a . b)
-'(a . (b . (c . d)))            ; returns a dotted list       ==> (a b c . d)
-'(a b c . d)                    ; shorthand for dotted list   ==> (a b c . d)
-'(a . (b . (c . ())))           ; returns a proper list       ==> (a b c)
-'(a b c)                        ; shorthand for a proper list ==> (a b c)
+; returns a dotted pair       ==> (a . b)
+'(a . b)
+
+; returns a dotted list       ==> (a b c . d)
+'(a . (b . (c . d)))
+
+; shorthand for dotted list   ==> (a b c . d)
+'(a b c . d)
+
+; returns a proper list       ==> (a b c)
+'(a . (b . (c . ())))
+
+; shorthand for a proper list ==> (a b c)
+'(a b c)
 
 
 ;;; == Data types ==
 ;;;
 ;;; LambdaJ supports symbols, lists, double precision numbers and strings
 
-'*a-sample-symbol*              ; a symbol
-'a\ symbol\ with\ spaces        ; guess. Max length is 2000 chars
-'()                             ; empty list, printed as "nil"
-nil                             ; shorthand for empty list
-1                               ; 1.0
-1e3                             ; scientific notation
-"a string literal"              ; strings literals are max length 2000 chars, too
+; a symbol
+'*a-sample-symbol*
+
+; guess. Max length is 2000 chars
+'a\ symbol\ with\ spaces
+
+; empty list, printed as "nil"
+'()
+
+; shorthand for empty list
+nil
+
+; 1.0
+1
+
+; scientific notation
+1e3
+
+; strings literals are max length 2000 chars, too
+"a string literal"
 
 
 ;;; == Additional Special Forms ==
