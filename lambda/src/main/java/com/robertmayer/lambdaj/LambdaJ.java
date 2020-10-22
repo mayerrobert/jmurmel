@@ -1211,7 +1211,8 @@ public class LambdaJ {
         final LambdaJ interpreter = new LambdaJ(features, trace);
 
         final boolean printResult = hasFlag("--result", args);
-        final boolean repl        = hasFlag("--repl", args) || null != System.console();
+        final boolean istty = null != System.console();
+        final boolean repl        = hasFlag("--repl", args) || istty;
 
         final BoolHolder echo = new BoolHolder(hasFlag("--echo", args));
 
@@ -1221,7 +1222,7 @@ public class LambdaJ {
         }
 
         if (repl) {
-            System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
+            if (!echo.value) System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
             System.out.println();
 
             boolean isInit = false;
@@ -1234,7 +1235,8 @@ public class LambdaJ {
                     parser = interpreter.new SExpressionParser(() -> {
                         int c = System.in.read();
                         if (echo.value && c != EOF)
-                            if (c == '\r') System.out.print(System.lineSeparator()); else System.out.print((char)c);
+                            if (istty && c == '\r') System.out.print(System.lineSeparator());
+                            else System.out.print((char)c);
                         return c;
                     });
                     interpreter.setSymtab(parser);
@@ -1243,8 +1245,10 @@ public class LambdaJ {
                     isInit = true;
                 }
 
-                System.out.print("LambdaJ> ");
-                System.out.flush();
+                if (!echo.value) {
+                    System.out.print("LambdaJ> ");
+                    System.out.flush();
+                }
 
                 try {
                     final Object exp = parser.readObj();
@@ -1289,7 +1293,7 @@ public class LambdaJ {
                     System.out.println();
                     System.out.println(e.toString());
                     System.out.println();
-                    if (null == System.console()) System.exit(1);
+                    if (!istty) System.exit(1);
                 }
             }
         }
@@ -1330,7 +1334,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.105 2020/10/22 16:52:11 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.106 2020/10/22 19:40:19 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

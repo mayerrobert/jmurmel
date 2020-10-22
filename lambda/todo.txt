@@ -1,6 +1,14 @@
 LambdaJ gibts schon, JavaLISP auch
 -> umbenamsen
 
+dotted lists werden entweder nicht richtig glesen oder geschrieben
+soll:
+'(a . b)              ; (A . B)
+'(a . (b . (c . d)))  ; (A B C . D)
+'(a b c . d)          ; pprint: (A B C . D)
+'(a . (b . (c . ()))) ; (A B C)
+'(a b c)              ; (A B C)
+
 In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
 -> Beispiel machen
 LambdaJ> (write (read)) "Hello, World!"
