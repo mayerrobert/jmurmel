@@ -1,3 +1,21 @@
+nCells nicht static, statt im Konstruktor in cons und cons3 schreiben
+
+in setsymtab nur die symbole erstellen, dies laut features geben soll (if have...)
+
+umbenennen: lispStdout -> lispPrinter, ObjectWriter -> LispPrinter
+
+File mit einigen Expressions als sample session herrichten, sample session mit
+  java -jar lambdaj.jar < sample-session.lisp > transcript.txt
+erzeugen.
+-> flag --prompt einbauen, default fuer tty = true, !tty = false
+-> eine sample session mit allen sprachmitteln und kommentaren koennte ein ausfuehrbares reference manual sein
+-> aber nur, wenn jede eingelesene zeile auch auf den schirm zurueckgeschrieben wird
+   -> parameter --echo und --no-echo
+   -> echo koennte umgesetzt werden, indem main SExpressionReader ein Lambda uebergibt, das nicht nur liest sondern ggf. alles
+      gelesene auch schreibt
+   -> --prompt koennte umgesetzt werden, indem main nicht direkt nach stdout schreibt sondern in ein lambda, das schreibt oder nicht
+      oder entweder nach --prompt: (s-> System.out.print) oder --no-prompt: (s-> return)
+
 writeln umbauen auf "\n<string> "
 -> mit param
 --eol=LISP
@@ -8,12 +26,16 @@ format und string-format zusammenziehen:
 -> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
 -> format-locale und string-format-locale detto
 
+sollte format write aufrufen statt direkt zum lispwriter zu schreiben? write koennte erweitert werden, dass es *print-pretty* usw.
+auswertet
+
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
 --symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
 --symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
 
 progn fuer if und anderes?
+-> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
 
 
 Stringfunktionen: format kann auch strings zusammensetzen
@@ -43,6 +65,24 @@ Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
           setcdr(pair, newval);
           return newval;
         }
+
+
+Java FFI:
+JSR-223 (Java scripting API)
+
+https://stackoverflow.com/questions/46611132/how-i-merge-lisp-and-java-or-how-i-run-lisp-code-using-java
+Interpreter interpreter = Interpreter.createInstance();
+interpreter.eval("(load \"my-lisp-code.lisp\")");
+
+Symbol myFunctionSym =
+          defaultPackage.findAccessibleSymbol(
+               "MY-FUNCTION");
+     Function myFunction =
+          myFunctionSym.getSymbolFunction();
+Cons list = 
+          (Cons) myFunction.execute(
+                        Fixnum.getInstance(64),
+                        Fixnum.getInstance(64));
 
 
 

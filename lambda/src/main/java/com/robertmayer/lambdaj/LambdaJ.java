@@ -579,11 +579,12 @@ public class LambdaJ {
      *    stick above list in front of the environment
      *  return extended environment</pre> */
     // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
-    private ConsCell zip(Object exp, ConsCell extenv, Object paramList, ConsCell _args) {
+    private ConsCell zip(Object exp, ConsCell extenv, Object paramList, ConsCell args) {
+        if (paramList == null && args == null) return extenv; // shortcut for no params
         if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s%s",
                                                       "function application", printSEx(paramList), errorExp(exp));
 
-        ConsCell params = (ConsCell)paramList, args = _args;
+        ConsCell params = (ConsCell)paramList;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             extenv = cons(cons(car(params), car(args)), extenv);
         if (params != null)
@@ -1309,7 +1310,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.102 2020/10/21 19:31:35 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.103 2020/10/21 21:41:01 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
