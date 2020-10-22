@@ -12,18 +12,6 @@ vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ei
 
 umbenennen: lispStdout -> lispPrinter, ObjectWriter -> LispPrinter
 
-File mit einigen Expressions als sample session herrichten, sample session mit
-  java -jar lambdaj.jar < sample-session.lisp > transcript.txt
-erzeugen.
--> flag --prompt einbauen, default fuer tty = true, !tty = false
--> eine sample session mit allen sprachmitteln und kommentaren koennte ein ausfuehrbares reference manual sein
--> aber nur, wenn jede eingelesene zeile auch auf den schirm zurueckgeschrieben wird
-   -> parameter --echo und --no-echo
-   -> echo koennte umgesetzt werden, indem main SExpressionReader ein Lambda uebergibt, das nicht nur liest sondern ggf. alles
-      gelesene auch schreibt
-   -> --prompt koennte umgesetzt werden, indem main nicht direkt nach stdout schreibt sondern in ein lambda, das schreibt oder nicht
-      oder entweder nach --prompt: (s-> System.out.print) oder --no-prompt: (s-> return)
-
 writeln umbauen auf "\n<string> "
 -> mit param
 --eol=LISP
@@ -760,3 +748,15 @@ LambdaJError(String, Object...) + ggf. Stringkonstanten am anfang der Klasse
 in setsymtab nur die symbole erstellen, dies laut features geben soll (if have...)
 
 nCells nicht static, statt im Konstruktor in cons und cons3 schreiben
+
+File mit einigen Expressions als sample session herrichten, sample session mit
+  java -jar lambdaj.jar < sample-session.lisp > transcript.txt
+erzeugen.
+-> flag --prompt einbauen, default fuer tty = true, !tty = false
+-> eine sample session mit allen sprachmitteln und kommentaren koennte ein ausfuehrbares reference manual sein
+-> aber nur, wenn jede eingelesene zeile auch auf den schirm zurueckgeschrieben wird
+   -> parameter --echo und --no-echo
+   -> echo koennte umgesetzt werden, indem main SExpressionReader ein Lambda uebergibt, das nicht nur liest sondern ggf. alles
+      gelesene auch schreibt
+   -> --prompt koennte umgesetzt werden, indem main nicht direkt nach stdout schreibt sondern in ein lambda, das schreibt oder nicht
+      oder entweder nach --prompt: (s-> System.out.print) oder --no-prompt: (s-> return)
