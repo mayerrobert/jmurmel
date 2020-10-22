@@ -1,3 +1,6 @@
+LambdaJ gibts schon, JavaLISP auch
+-> umbenamsen
+
 In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
 -> Beispiel machen
 LambdaJ> (write (read)) "Hello, World!"

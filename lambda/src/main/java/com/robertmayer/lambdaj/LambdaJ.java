@@ -1160,6 +1160,8 @@ public class LambdaJ {
         }
     }
 
+    private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
+
     /** main() for interactive commandline use */
     public static void main(String args[]) {
         if (hasFlag("--version", args)) {
@@ -1209,14 +1211,16 @@ public class LambdaJ {
         final LambdaJ interpreter = new LambdaJ(features, trace);
 
         final boolean printResult = hasFlag("--result", args);
+        final boolean repl        = hasFlag("--repl", args) || null != System.console();
+
+        final BoolHolder echo = new BoolHolder(hasFlag("--echo", args));
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");
             return;
         }
 
-        final boolean istty = null != System.console();
-        if (istty) {
+        if (repl) {
             System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
             System.out.println();
 
@@ -1227,7 +1231,12 @@ public class LambdaJ {
             for (;;) {
                 if (!isInit) {
                     interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-                    parser = interpreter.new SExpressionParser(System.in::read);
+                    parser = interpreter.new SExpressionParser(() -> {
+                        int c = System.in.read();
+                        if (echo.value && c != EOF)
+                            if (c == '\r') System.out.print(System.lineSeparator()); else System.out.print((char)c);
+                        return c;
+                    });
                     interpreter.setSymtab(parser);
                     outWriter = interpreter.new SExpressionWriter(System.out::print);
                     env = interpreter.environment(null, parser, outWriter);
@@ -1246,14 +1255,23 @@ public class LambdaJ {
 
                     if (":h".equals(exp)) {
                         System.out.println("Available commands:");
-                        System.out.println("  :h ...... this help screen");
-                        System.out.println("  :env .... list current global environment");
-                        System.out.println("  :init ... re-init global environment");
-                        System.out.println("  :q ...... quit LambdaJ");
+                        System.out.println("  :h ........ this help screen");
+                        System.out.println("  :echo ..... this help screen");
+                        System.out.println("  :noecho ... this help screen");
+                        System.out.println("  :env ...... list current global environment");
+                        System.out.println("  :init ..... re-init global environment");
+                        System.out.println("  :q ........ quit LambdaJ");
                         System.out.println();
                         continue;
                     }
-
+                    if (":echo".equals(exp)) {
+                        echo.value = true;
+                        continue;
+                    }
+                    if (":noecho".equals(exp)) {
+                        echo.value = false;
+                        continue;
+                    }
                     if (":env".equals(exp)) {
                         System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue;
                     }
@@ -1271,6 +1289,7 @@ public class LambdaJ {
                     System.out.println();
                     System.out.println(e.toString());
                     System.out.println();
+                    if (null == System.console()) System.exit(1);
                 }
             }
         }
@@ -1311,7 +1330,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.104 2020/10/22 06:43:22 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.105 2020/10/22 16:52:11 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1329,6 +1348,10 @@ public class LambdaJ {
                 + "Misc:\n"
                 + "--version .....  show version and exit\n"
                 + "--help ........  show this message and exit\n"
+                + "\n"
+                + "--repl ........  enter REPL even if the input isn't a tty,\n"
+                + "                 i.e. print prompt and results and support :commands.\n"
+                + "--echo ........  echo all input while reading\n"
                 + "--trace=stats .  print stack and memory stats at end\n"
                 + "--trace=eval ..  print internal interpreter info during executing programs\n"
                 + "--trace=eval ..  print more internal interpreter info during executing programs\n"
@@ -1346,7 +1369,7 @@ public class LambdaJ {
                 + "--no-double ...  no number support\n"
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read/ write/ writeln\n"
-                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/"
+                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/\n"
                 + "                 string-format/ string-format-locale\n"
                 + "\n"
                 + "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n"

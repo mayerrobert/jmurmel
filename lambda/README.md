@@ -1,6 +1,9 @@
 # LambdaJ
 
-**A customizable Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
+**A lightweight Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
+
+Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
+why not try LambdaJ?
 
 LambdaJ features tail call optimization, dynamic as well as lexical environments,
 and has garbage collection c/o Java.
@@ -134,6 +137,8 @@ The environment contains the symbols `nil` and `t` and the functions
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)`
 * `format, format-locale` ... writes to stdout
 * `internal-time-units-per-second, get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep`
+
+For more details on the language supported see lambdaj-langref.lisp.
 
 Tail calls including tail recursive calls are optimized.
 
