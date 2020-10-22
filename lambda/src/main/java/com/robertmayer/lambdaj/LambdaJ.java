@@ -80,7 +80,7 @@ public class LambdaJ {
         private static final long serialVersionUID = 1L;
         public Object car, cdr;
         private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
-        public ConsCell(Object car, Object cdr)    { nCells++; this.car = car; this.cdr = cdr; }
+        public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
         public ConsCell(Object car, Object cdr, ConsCell closure)    { this(car, cdr); this.closure = closure; }
 
         @Override public String toString() { return printObj(this); }
@@ -379,14 +379,14 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sApply  = symtab.intern("apply");
-        sCond   = symtab.intern("cond");
-        sIf     = symtab.intern("if");
-        sDefine = symtab.intern("define");
-        sDefun  = symtab.intern("defun");
-        sLabels = symtab.intern("labels");
+        if (haveApply())  sApply  = symtab.intern("apply");
+        if (haveCond())   sCond   = symtab.intern("cond");
+        if (haveXtra())   sIf     = symtab.intern("if");
+        if (haveXtra())   sDefine = symtab.intern("define");
+        if (haveXtra())   sDefun  = symtab.intern("defun");
+        if (haveLabels()) sLabels = symtab.intern("labels");
+        if (haveQuote())  sQuote  = symtab.intern("quote");
         sLambda = symtab.intern("lambda");
-        sQuote  = symtab.intern("quote");
         expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
@@ -624,7 +624,7 @@ public class LambdaJ {
 
 
     /// stats during eval and at the end
-    private static int nCells;  // todo sollte eigentlich nicht static sein, ists aber weils der konstruktor der stat Klasse ConsCell schreibt
+    private int nCells;  // todo sollte eigentlich nicht static sein, ists aber weils der konstruktor der stat Klasse ConsCell schreibt
     private int maxEnvLen;
     private int maxEvalStack;
     private int maxEvalLevel;
@@ -675,8 +675,8 @@ public class LambdaJ {
 
 
     /// functions used by interpreter program, a subset is used by interpreted programs as well
-    private static ConsCell cons(Object car, Object cdr) { return new ConsCell(car, cdr); }
-    private static ConsCell cons3(Object car, Object cdr, ConsCell closure) { return new ConsCell(car, cdr, closure); }
+    private  ConsCell cons(Object car, Object cdr) { nCells++; return new ConsCell(car, cdr); }
+    private  ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ConsCell(car, cdr, closure); }
 
     private static Object   car(ConsCell x)    { return x.car; }
     private static Object   car(Object x)      { return ((ConsCell)x).car; }
@@ -733,18 +733,19 @@ public class LambdaJ {
         return ret.toArray();
     }
 
+    /** transform {@code ob} into an S-expression, atoms are not escaped */
+    private static String printObj(Object ob) {
+        if (ob == null) return "nil";
+        final StringBuffer sb = new StringBuffer(200);
+        _printSEx(sb, ob, ob, true, false);
+        return sb.toString();
+    }
+
     /** transform {@code ob} into an S-expression, atoms are escaped */
     private static String printSEx(Object ob) {
         if (ob == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
         _printSEx(sb, ob, ob, true, true);
-        return sb.toString();
-    }
-
-    private static String printObj(Object ob) {
-        if (ob == null) return "nil";
-        final StringBuffer sb = new StringBuffer(200);
-        _printSEx(sb, ob, ob, true, false);
         return sb.toString();
     }
 
@@ -1225,7 +1226,7 @@ public class LambdaJ {
             ConsCell env = null;
             for (;;) {
                 if (!isInit) {
-                    nCells = 0; interpreter.maxEnvLen = 0;
+                    interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                     parser = interpreter.new SExpressionParser(System.in::read);
                     interpreter.setSymtab(parser);
                     outWriter = interpreter.new SExpressionWriter(System.out::print);
@@ -1310,7 +1311,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.103 2020/10/21 21:41:01 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.104 2020/10/22 06:43:22 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

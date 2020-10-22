@@ -1,6 +1,11 @@
-nCells nicht static, statt im Konstruktor in cons und cons3 schreiben
+In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
+-> Beispiel machen
+LambdaJ> (write (read)) "Hello, World!"
+"Hello, World!"
+==> t
 
-in setsymtab nur die symbole erstellen, dies laut features geben soll (if have...)
+vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
+-> let muss eine fexpr sein, special form oder macro, oder doch nicht?
 
 umbenennen: lispStdout -> lispPrinter, ObjectWriter -> LispPrinter
 
@@ -748,3 +753,7 @@ deswegen ist auch der hack in eval bei funktionsaufruf notwendig
 bei cond wird nur das erste stmt ausgefuehrt
 
 LambdaJError(String, Object...) + ggf. Stringkonstanten am anfang der Klasse
+
+in setsymtab nur die symbole erstellen, dies laut features geben soll (if have...)
+
+nCells nicht static, statt im Konstruktor in cons und cons3 schreiben
