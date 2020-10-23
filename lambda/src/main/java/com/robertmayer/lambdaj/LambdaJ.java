@@ -1309,9 +1309,14 @@ public class LambdaJ {
                     interpreter.traceStats();
                     System.out.print("==> "); outWriter.printObj(result); System.out.println();
                 } catch (LambdaJError e) {
-                    System.err.println();
-                    System.err.println(e.toString());
-                    if (!istty) System.exit(1);
+                    if (istty) {
+                        System.out.println();
+                        System.out.println(e.toString());
+                    } else {
+                        System.err.println();
+                        System.err.println(e.toString());
+                        System.exit(1);
+                    }
                 }
             }
         }
@@ -1352,7 +1357,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.108 2020/10/23 15:27:54 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.109 2020/10/23 17:48:35 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

@@ -1,19 +1,21 @@
 
 ;;;
-;;; === LambdaJ Reference ===
+;;; === LambdaJ Reference =============
 ;;;
 ;;; This file is an executable language reference manual
 ;;; for LambdaJ.
 ;;;
 ;;; You can read this file or run it with:
 ;;; java -jar lambdaj.jar --tty --echo < lambdaj-langref.lisp
+;;; or:
+;;; java -jar lambdaj.jar --tty --echo <lambdaj-langref.lisp >session.txt
 ;;;
 ;;; See also:
 ;;; java -jar lambdaj.jar --help ... will print usage information
 ;;; LambdaJ> :h                  ... will print REPL command help
 
 
-;;; == Introduction ==
+;;; == Introduction ===================
 ;;;
 ;;; "Hello, World!" program:
 
@@ -25,19 +27,19 @@
 ;;; and the prompt "LambdaJ>"
 
 
-;;; == Basic Special Forms ===
+;;; == Basic Special Forms ============
 
-; returns a lambda expression
+; lambda returns a lambda expression
 (lambda (p1 p2) p1)
 
-; returns an expression w/o evaluating it
+; quote returns an expression w/o evaluating it
 (quote a-symbol)
 
-; shorthand for (quote a-symbol)
+; a sible quote is a shorthand for (quote a-symbol)
 'a-symbol
 
 
-;;; == S-expressions ==
+;;; == S-expressions ==================
 
 ; returns a dotted pair       ==> (a . b)
 '(a . b)
@@ -55,15 +57,15 @@
 '(a b c)
 
 
-;;; == Data types ==
+;;; == Data types =====================
 ;;;
 ;;; LambdaJ supports symbols, lists, double precision numbers and strings
 
 ; a symbol
 '*a-sample-symbol*
 
-; guess. Max length is 2000 chars
-'a\ symbol\ with\ spaces
+; guess. Max symbol length is 2000 chars anything longer will be silently truncated
+'a\ symbol\ with\ spaces!
 
 ; empty list, printed as "nil"
 '()
@@ -71,56 +73,107 @@
 ; shorthand for empty list
 nil
 
-; 1.0
+; a number, currently double precision only
 1
 
-; scientific notation
+; a number in scientific notation
 1e3
 
 ; strings literals are max length 2000 chars, too
 "a string literal"
+"another 'literal' \"string literal\""
 
 
-;;; == Additional Special Forms ==
+;;; == Additional Special Forms =======
 
-labels
-cond
-if
+; the following special forms should work as expected
+;labels
+;cond
+;if
+
+; apply the function + to the arguments 1 and 2
 (apply + '(1 2))
+
+; define associates symbols with expressions
 (define f1 (lambda (p1 p2) (+ p1 p2)))
+
+; defun is a shorthand for defining functions
 (defun f2 (p1 p2) (+ p1 p2))
 
 
-;;; == Predefined Symbols ==
+;;; == Predefined Symbols =============
 
+; nil and t are self-evaluationg symbols
 nil
 t
+
+; resolution of the time related functions
 internal-time-units-per-second
 
 
-;;; == Predefined Primitives ==
-(cons 'a 'b)   ; ==> (a . b)
-(car '(a b c))  ; a
-(cdr '(a b c))  ; (b c)
-eq, atom, consp, listp, symbolp, numberp, stringp, null?
-assoc
-+-+/
-mod
-= < > <= >=
-read
-write
-writeln
-format
-format-locale
-string-format
-string-format-locale
-get-internal-real-time
-get-internal-run-time ; user
-get-internal-cpu-time ; user + system
-sleep
+;;; == Predefined Primitives ==========
+
+; (cons 'a 'b) ==> (a . b)
+(cons 'a 'b)
+
+; (car '(a b c)) ==> a
+(car '(a b c))
+
+; (cdr '(a b c)) ==> (b c)
+(cdr '(a b c))
+
+;eq, atom, consp, listp, symbolp, numberp, stringp, null?
+
+; assoc takes a key and a list of key/value tupels
+(assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
+(cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
+
+; The following operators accept numbers only, but otherwise should
+; work as expected. 
+; + - * /
+;mod
+; = < > <= >=
+
+; Both expressions as well as data is read from stdin, the following
+; expression reads the expression immediately following it
+; (in this case the expression to be read is the string "Hello!"
+(write (read)) "Hello!"
+
+; writeln accepts one optional argument
+(writeln "Hello, ")
+(writeln)
+(writeln "World!")
+
+; format writes a formatted string to stdout and returns t
+; format's parameters work as java.lang.String.format()
+(format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+; format-locale works similat to format except it has an additional
+; first string parameter that should be a locale, nil means Java's
+; default locale
+(format-locale
+   "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+;string-format string-format-locale work similar
+; to format and format-locale except they don't write to stdout
+; but return the string
+(string-format-locale
+   "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+               
+; walltime in nanoseconds after 1.1.1970 00:00:00.000000 UTC
+(get-internal-real-time)
+
+; user cpu time [nanoseconds]
+(get-internal-run-time)
+
+; user + system cpu time [nanoseconds]
+(get-internal-cpu-time)
+
+; pause execution for x nanoseconds, returns actually slept time
+(sleep (* 1 internal-time-units-per-second))
 
 
-;;; == Copyright ==
+;;; == Copyright ======================
 ;;;
 ;;; LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
 ;;;
