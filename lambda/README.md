@@ -197,3 +197,5 @@ with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://
 
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
+
+$Id$
