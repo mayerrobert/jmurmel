@@ -3,22 +3,6 @@ JavaLISP, http://jlambda.com, jlisp
 -> umbenamsen
 
 
-fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
--> oeffnende Zeile merken uns ausgeben
-
-umbenennen:
-lispStdout -> lispPrinter
-ObjectReader -> LispReader, #readObj -> #read
-ObjectWriter -> LispPrinter, #printObj -> #print
-
-format und string-format zusammenziehen:
--> format t <string> schreibt auf stdout, return wert ist <string>
--> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
--> format-locale und string-format-locale detto
-
-sollte format write aufrufen statt direkt zum lispwriter zu schreiben? write koennte erweitert werden, dass es *print-pretty* usw.
-auswertet
-
 writeln umbauen auf "\n<string> "
 -> mit param
 --eol=LISP
@@ -31,6 +15,44 @@ flag fuer symbols:
 
 progn fuer if und anderes?
 -> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
+
+bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
+nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
+wuerd ggf bei dynamic UND lexical closures was bringen
+-> nein nur dynamic, lexical closures erben das environment ja nicht
+
+vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
+-> let muss eine fexpr sein, special form oder macro, oder doch nicht?
+-> oder define setzt werte im aktuellen env
+
+Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
+rplaca, rplacd
+Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
+
+        if(car(exp) == s_define)                        // "define"
+          return(extend_top(car(cdr(exp)),
+                            eval(car(cdr(cdr(exp))), env)));
+        if(car(exp) == s_setb) {                        // "set!"
+          obj *pair   = assoc(car(cdr(exp)), env);
+          obj *newval = eval(car(cdr(cdr(exp))), env);
+          setcdr(pair, newval);
+          return newval;
+        }
+
+
+
+fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
+-> oeffnende Zeile merken und ausgeben
+
+umbenennen:
+lispStdout -> lispPrinter
+ObjectReader -> LispReader, #readObj -> #read
+ObjectWriter -> LispPrinter, #printObj -> #print
+
+format und string-format zusammenziehen:
+-> format t <string> schreibt auf stdout, return wert ist <string>
+-> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
+-> format-locale und string-format-locale detto
 
 
 
@@ -48,30 +70,12 @@ strings sind eine LSIP sequence, fuer sequence gibts
 
 CL hat stringp string= string<=, ...
 
-vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
--> let muss eine fexpr sein, special form oder macro, oder doch nicht?
--> oder define setzt werte im aktuellen env
-
 In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
 -> Beispiel machen
 LambdaJ> (write (read)) "Hello, World!"
 "Hello, World!"
 ==> t
 
-
-Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
-rplaca, rplacd
-Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
-
-        if(car(exp) == s_define)                        // "define"
-          return(extend_top(car(cdr(exp)),
-                            eval(car(cdr(cdr(exp))), env)));
-        if(car(exp) == s_setb) {                        // "set!"
-          obj *pair   = assoc(car(cdr(exp)), env);
-          obj *newval = eval(car(cdr(cdr(exp))), env);
-          setcdr(pair, newval);
-          return newval;
-        }
 
 
 script fuer den aufruf
@@ -105,11 +109,6 @@ Generic S-Expression reader/ writer: (<n>:<octets>)
 read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
 statt lispStdin, write sinngemaess, ggf. format und format-locale
 
-bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
-nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
-wuerd ggf bei dynamic UND lexical closures was bringen
--> nein nur dynamic, lexical closures erben das environment ja nicht
-
 in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
 
 LambdaJString.value von String auf char[] umstellen?
@@ -124,6 +123,7 @@ primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
 macros?
 
 eval ins environment einhaengen?
+-> The main reason for beginners is: you don't need it. https://stackoverflow.com/questions/2571401/why-exactly-is-eval-evil
 
 alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mot :l auflisten
 weitere debug gschichten wie zb :env fuer environment auflisten
@@ -168,11 +168,6 @@ das ist dann der Name einer Klasse und/ oder statischen Methode. Ggf. auch eine 
 die ein Function<ConsCell,Object> Javalambda liefert.
 
 beispiel, wie man einen logger einhaengen kann.
-
-LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
-und ggf. Unterschieden
-oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreibt eine Beschreibung
-zu "symbol" nach stdout
 
 LambdaJError extends RuntimeException   ... abstract
 Syntaxerror extends LambdaJError        ... nur eval
@@ -376,8 +371,6 @@ funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mi
 nativeinsert koennte fuer batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
 mit ints liefern (ein int für jede insert-tupel-liste)
 
-lexikalische closures
-
 
 
 
@@ -440,6 +433,11 @@ print/ pprint/ princ/
 
 Environment variable fuer default options
 -> aufrufscript stattdessen
+
+sollte format write aufrufen statt direkt zum lispwriter zu schreiben? write koennte erweitert werden, dass es *print-pretty* usw.
+auswertet
+-> nein, format ruft #printString, write ruft #printObj, format schreibt, was der user im formatstring spezifiziert
+   write schreibt entsprechend allfaelliger globalen variablen/ argumenten
 
 
 
@@ -686,6 +684,8 @@ ggf mit :init altes environment vergessen
 
 im main loop: parsen und checken, ob obj.toString = :w oder = :q ist, so koennte man befehle für den REPL ausserhalb Lisp einbauen
 
+lexikalische closures
+
 lexical closures muessten gehen, indem man das env mit dem lambda mitspeichert und beim aufruf des lambda 
 nicht das aktuelle env extended sondern das abgespeicherte
 -> umsetzen, indem "lambda" nicht ein lambda ins environment steckt sondern "closure" 
@@ -789,3 +789,8 @@ soll:
 '(a b c . d)          ; pprint: (A B C . D)
 '(a . (b . (c . ()))) ; (A B C)
 '(a b c)              ; (A B C)
+
+LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
+und ggf. Unterschieden
+oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreibt eine Beschreibung
+zu "symbol" nach stdout
