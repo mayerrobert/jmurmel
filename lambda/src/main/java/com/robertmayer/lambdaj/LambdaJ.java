@@ -1240,8 +1240,10 @@ public class LambdaJ {
         }
 
         if (repl) {
-            if (!echo.value) System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
-            System.out.println();
+            if (!echo.value) {
+                System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
+                System.out.println();
+            }
 
             boolean isInit = false;
             SExpressionParser parser = null;
@@ -1306,11 +1308,9 @@ public class LambdaJ {
                     System.out.println();
                     interpreter.traceStats();
                     System.out.print("==> "); outWriter.printObj(result); System.out.println();
-                    System.out.println();
                 } catch (LambdaJError e) {
-                    System.out.println();
-                    System.out.println(e.toString());
-                    System.out.println();
+                    System.err.println();
+                    System.err.println(e.toString());
                     if (!istty) System.exit(1);
                 }
             }
@@ -1352,7 +1352,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.107 2020/10/22 20:08:58 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.108 2020/10/23 15:27:54 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

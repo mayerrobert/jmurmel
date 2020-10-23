@@ -2,6 +2,9 @@
 
 **A lightweight Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
 
+Currenly weighing in at 35kB (size of compiled .jar file),
+or one single Java source file.
+
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
 why not try LambdaJ?
 

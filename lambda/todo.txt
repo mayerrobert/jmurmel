@@ -1,12 +1,15 @@
-LambdaJ gibts schon, JavaLISP auch
+LambdaJ gibts schon. Ausserdem gibts:
+JavaLISP, http://jlambda.com, jlisp
 -> umbenamsen
 
-umbenennen: lispStdout -> lispPrinter, ObjectWriter -> LispPrinter
 
-writeln umbauen auf "\n<string> "
--> mit param
---eol=LISP
---eol=C
+fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
+-> oeffnende Zeile merken uns ausgeben
+
+umbenennen:
+lispStdout -> lispPrinter
+ObjectReader -> LispReader, #readObj -> #read
+ObjectWriter -> LispPrinter, #printObj -> #print
 
 format und string-format zusammenziehen:
 -> format t <string> schreibt auf stdout, return wert ist <string>
@@ -16,6 +19,11 @@ format und string-format zusammenziehen:
 sollte format write aufrufen statt direkt zum lispwriter zu schreiben? write koennte erweitert werden, dass es *print-pretty* usw.
 auswertet
 
+writeln umbauen auf "\n<string> "
+-> mit param
+--eol=LISP
+--eol=C
+
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
 --symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
@@ -24,6 +32,10 @@ flag fuer symbols:
 progn fuer if und anderes?
 -> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
 
+
+
+(load 'utf-8 "lispfile.lisp")
+-> erster optionale parameter ist ein symbol fuer den Zeichensatz
 
 Stringfunktionen: format kann auch strings zusammensetzen
 strings sind eine LSIP sequence, fuer sequence gibts
@@ -38,6 +50,7 @@ CL hat stringp string= string<=, ...
 
 vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
 -> let muss eine fexpr sein, special form oder macro, oder doch nicht?
+-> oder define setzt werte im aktuellen env
 
 In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
 -> Beispiel machen
@@ -45,8 +58,6 @@ LambdaJ> (write (read)) "Hello, World!"
 "Hello, World!"
 ==> t
 
-
-Environment variable fuer default options
 
 Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
@@ -61,6 +72,11 @@ Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
           setcdr(pair, newval);
           return newval;
         }
+
+
+script fuer den aufruf
+-> default parameter
+-> files oeffnen und dann von console lesen
 
 
 Java FFI:
@@ -155,7 +171,7 @@ beispiel, wie man einen logger einhaengen kann.
 
 LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
 und ggf. Unterschieden
-oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreib eine Beschreibung
+oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreibt eine Beschreibung
 zu "symbol" nach stdout
 
 LambdaJError extends RuntimeException   ... abstract
@@ -421,6 +437,11 @@ ist currentcc cdr(exp) (und das env bzw. closure) ?
 print/ pprint/ princ/
 -> die setzen parameter und rufen write, write kennt viele parameter zur formatierung, siehe
    http://www.lispworks.com/documentation/HyperSpec/Body/f_wr_pr.htm
+
+Environment variable fuer default options
+-> aufrufscript stattdessen
+
+
 
 
 
