@@ -299,7 +299,7 @@ public class LambdaJTest {
 
         LambdaJ intp = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TRC_ENV);
 
-        System.out.println("***** running program '" + fileName + ':');
+        System.out.println("***** running program '" + fileName + "':");
         System.out.println("-------------------------------------------------------");
         System.out.println(prog);
         System.out.println("-------------------------------------------------------");

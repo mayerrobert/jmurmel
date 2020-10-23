@@ -33,9 +33,9 @@ public class PrintObjTest {
     }
 
     @Test
-    public void listToCons() {
+    public void dottedList() {
         ConsCell l = new ConsCell("a", new ConsCell("b", new ConsCell("c1", "c2")));
-        assertEquals("(a b c1 c2)", l.toString());
+        assertEquals("(a b c1 . c2)", l.toString());
     }
 
     @Test

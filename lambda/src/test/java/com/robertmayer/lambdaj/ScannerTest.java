@@ -29,6 +29,27 @@ public class ScannerTest {
     }
 
     @Test
+    public void testDottedList() {
+        LambdaJTest.runTest("dotted list", "'(a . (b . (c . d)))", "(a b c . d)", null);
+    }
+
+    @Test
+    public void testDottedListShort() {
+        LambdaJTest.runTest("dotted list short", "'(a b c . d)", "(a b c . d)", null);
+    }
+
+    @Test
+    public void testListDotListShort() {
+        LambdaJTest.runTest("dotted list short", "'((a b) . (c d))", "((a b) c d)", null);
+    }
+
+    @Test
+    public void testListDotListShort2() {
+        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "line 1:13: illegal end of dotted list: (c d)");
+    }
+
+
+    @Test
     public void testTwoElemList() {
         LambdaJTest.runTest("cons", "'(a b)", "(a b)", null);
     }

@@ -1,14 +1,6 @@
 LambdaJ gibts schon, JavaLISP auch
 -> umbenamsen
 
-dotted lists werden entweder nicht richtig glesen oder geschrieben
-soll:
-'(a . b)              ; (A . B)
-'(a . (b . (c . d)))  ; (A B C . D)
-'(a b c . d)          ; pprint: (A B C . D)
-'(a . (b . (c . ()))) ; (A B C)
-'(a b c)              ; (A B C)
-
 umbenennen: lispStdout -> lispPrinter, ObjectWriter -> LispPrinter
 
 writeln umbauen auf "\n<string> "
@@ -768,3 +760,11 @@ erzeugen.
       gelesene auch schreibt
    -> --prompt koennte umgesetzt werden, indem main nicht direkt nach stdout schreibt sondern in ein lambda, das schreibt oder nicht
       oder entweder nach --prompt: (s-> System.out.print) oder --no-prompt: (s-> return)
+
+dotted lists werden entweder nicht richtig glesen oder geschrieben
+soll:
+'(a . b)              ; (A . B)
+'(a . (b . (c . d)))  ; (A B C . D)
+'(a b c . d)          ; pprint: (A B C . D)
+'(a . (b . (c . ()))) ; (A B C)
+'(a b c)              ; (A B C)

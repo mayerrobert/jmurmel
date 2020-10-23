@@ -335,7 +335,8 @@ public class LambdaJ {
                 Object list = readList();
                 if (!tokEscape && ".".equals(tok)) {
                     Object cdr = readList();
-                    Object cons = cons(car(list), car(cdr));
+                    if (cdr(cdr) != null) throw new LambdaJError("line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
+                    Object cons = combine(list, car(cdr));
                     if (trace >= TRC_PARSE) tracer.println("*** parse cons   " + printSEx(cons));
                     return cons;
                 }
@@ -367,7 +368,24 @@ public class LambdaJ {
         }
     }
 
+    private ConsCell combine(Object first, Object rest) {
+        if (consp(first)) return appendToList((ConsCell)first, rest);
+        else return cons(first, rest);
+    }
 
+    private ConsCell appendToList(ConsCell first, Object rest) {
+        for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
+            if (cdr(last) == null) {
+                last.cdr = rest;
+                return first;
+            }
+            if (!consp(cdr(last))) {
+                last.cdr = cons(last.cdr, rest);
+                return first;
+            }
+        }
+        throw new LambdaJError("appendToList: internal error, can't append %s and %s", printSEx(first), printSEx(rest));
+    }
 
     /// symboltable Object
     private SymbolTable symtab;
@@ -742,40 +760,40 @@ public class LambdaJ {
     }
 
     /** transform {@code ob} into an S-expression, atoms are escaped */
-    private static String printSEx(Object ob) {
-        if (ob == null) return "nil";
+    private static String printSEx(Object obj) {
+        if (obj == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
-        _printSEx(sb, ob, ob, true, true);
+        _printSEx(sb, obj, obj, true, true);
         return sb.toString();
     }
 
-    private static void _printSEx(StringBuffer sb, Object list, Object current, boolean headOfList, boolean escapeAtoms) {
+    private static void _printSEx(StringBuffer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
         while (true) {
-            if (current == null) {
+            if (obj == null) {
                 sb.append("nil"); return;
-            } else if (listp(current)) {
+            } else if (listp(obj)) {
                 if (headOfList) sb.append('(');
-                if (car(current) == list) {
+                if (car(obj) == list) {
                     sb.append(headOfList ? "#<this cons>" : "#<this list>");
                 } else {
-                    _printSEx(sb, car(current), car(current), true, escapeAtoms);
+                    _printSEx(sb, car(obj), car(obj), true, escapeAtoms);
                 }
-                if (cdr(current) != null) {
-                    if (listp(cdr(current))) {
+                if (cdr(obj) != null) {
+                    if (listp(cdr(obj))) {
                         sb.append(' ');
-                        if (list == cdr(current)) {
+                        if (list == cdr(obj)) {
                             sb.append("#<circular list>)"); return;
                         } else {
-                            current = cdr(current); headOfList = false; continue;
+                            obj = cdr(obj); headOfList = false; continue;
                         }
                     } else if (headOfList) {
                         sb.append(" . ");
-                        _printSEx(sb, list, cdr(current), false, escapeAtoms);
+                        _printSEx(sb, list, cdr(obj), false, escapeAtoms);
                         sb.append(')');
                         return;
                     } else {
-                        sb.append(' ');
-                        _printSEx(sb, list, cdr(current), false, escapeAtoms); // must be an atom
+                        sb.append(" . ");
+                        _printSEx(sb, list, cdr(obj), false, escapeAtoms); // must be an atom
                         sb.append(')');
                         return;
                     }
@@ -783,18 +801,18 @@ public class LambdaJ {
                     sb.append(')');
                     return;
                 }
-            } else if (escapeAtoms && symbolp(current)) {
-                if (containsSExSyntaxOrBlank(current.toString())) {
-                    sb.append('|').append(current.toString()).append('|');
+            } else if (escapeAtoms && symbolp(obj)) {
+                if (containsSExSyntaxOrBlank(obj.toString())) {
+                    sb.append('|').append(obj.toString()).append('|');
                     return;
                 }
-                sb.append(current.toString()); return;
-            } else if (primp(current)) {
+                sb.append(obj.toString()); return;
+            } else if (primp(obj)) {
                 sb.append("#<primitive>"); return;
-            } else if (escapeAtoms && stringp(current)) {
-                sb.append('"').append(escapeString(current.toString())).append('"'); return;
-            } else if (atom(current)) {
-                sb.append(current.toString()); return;
+            } else if (escapeAtoms && stringp(obj)) {
+                sb.append('"').append(escapeString(obj.toString())).append('"'); return;
+            } else if (atom(obj)) {
+                sb.append(obj.toString()); return;
             } else {
                 sb.append("<internal error>"); return;
             }
@@ -1334,7 +1352,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.106 2020/10/22 19:40:19 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.107 2020/10/22 20:08:58 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
