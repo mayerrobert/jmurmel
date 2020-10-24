@@ -9,6 +9,15 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
+import java.time.zone.ZoneRules;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
@@ -1072,12 +1081,30 @@ public class LambdaJ {
                     throw new LambdaJError("sleep: got interrupted");
                 }
             };
+            final Primitive fUniversalTime = a -> {
+                ZoneId utc = ZoneId.of("UTC");
+                ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
+                return new Double(ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS));
+            };
+            final Primitive fDecodedTime = a -> {
+                final Instant now = Clock.systemDefaultZone().instant();
+                final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
+                final ZoneRules rules = n.getZone().getRules();
+                boolean daylightSavings = rules.isDaylightSavings(now);
+                double offset = rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
+                //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+                return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
+                       cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(),
+                       cons(boolResult(daylightSavings), cons(offset, null))))))));
+            };
             env = cons(cons(symtab.intern("internal-time-units-per-second"), new Double(1e9)),
                   cons(cons(symtab.intern("get-internal-real-time"), (Primitive)a -> new Double(System.nanoTime())),
                   cons(cons(symtab.intern("get-internal-run-time"), fusertime), // user
                   cons(cons(symtab.intern("get-internal-cpu-time"), fcputime), // user + system
                   cons(cons(symtab.intern("sleep"), fsleep),
-                  env)))));
+                  cons(cons(symtab.intern("get-universal-time"), fUniversalTime), // seconds since 1.1.1900
+                  cons(cons(symtab.intern("get-decoded-time"), fDecodedTime),
+                  env)))))));
         }
 
         if (haveAtom()) {
@@ -1366,7 +1393,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.111 2020/10/24 10:27:04 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.112 2020/10/24 12:52:15 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

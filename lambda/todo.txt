@@ -53,13 +53,6 @@ flag fuer symbols:
 --symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
 --symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
 
-http://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm
-get-universal-time <no arguments> => sekunden seit 1.1.1900
-get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
-
-http://www.lispworks.com/documentation/HyperSpec/Body/f_dec_un.htm
-decode-universal-time universal-time &optional time-zone => second, minute, hour, date, month, year, day, daylight-p, zone
-
 progn fuer if und anderes?
 -> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
 
@@ -95,6 +88,9 @@ umbenennen:
 lispStdout -> lispPrinter
 ObjectReader -> LispReader, #readObj -> #read
 ObjectWriter -> LispPrinter, #printObj -> #print
+
+http://www.lispworks.com/documentation/HyperSpec/Body/f_dec_un.htm
+decode-universal-time universal-time &optional time-zone => second, minute, hour, date, month, year, day, daylight-p, zone
 
 format und string-format zusammenziehen:
 -> format t <string> schreibt auf stdout, return wert ist <string>
@@ -848,3 +844,7 @@ writeln umbauen auf "\n<string> "
 -> mit param
 --eol=LISP
 --eol=C
+
+http://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm
+get-universal-time <no arguments> => sekunden seit 1.1.1900
+get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone

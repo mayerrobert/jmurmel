@@ -179,6 +179,13 @@ internal-time-units-per-second
 ; wall time in internal time units
 (sleep (* 1 internal-time-units-per-second))
 
+; get-universal-time <no arguments> => seconds since 1.1.1900 00:00:00 UTC
+; this will return approx. years since 1.1.1900
+(/ (get-universal-time) 60 60 24 365)
+
+; get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+(get-decoded-time)
+
 
 ;;; == Copyright ======================
 ;;;
@@ -189,4 +196,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file LambdaJ will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.5 2020/10/24 10:27:04 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.6 2020/10/24 12:52:50 Robert Exp $
