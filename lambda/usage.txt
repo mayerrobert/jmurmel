@@ -14,6 +14,10 @@ Misc:
 
 --repl ........  enter REPL even if the input isn't a tty,
                  i.e. print prompt and results and support :commands.
+
+--eol=LISP ....  writeln prints <EOL><argument>< >
+--eol=C .......  writeln prints <argument><EOL>
+
 --echo ........  echo all input while reading
 --trace=stats .  print stack and memory stats at end
 --trace=eval ..  print internal interpreter info during executing programs

@@ -1,6 +1,6 @@
 
 ;;;
-;;; === LambdaJ Reference =============
+;;; === LambdaJ Language Reference ====
 ;;;
 ;;; This file is an executable language reference manual
 ;;; for LambdaJ.
@@ -30,6 +30,7 @@
 ;;; == Basic Special Forms ============
 
 ; lambda returns a lambda expression
+; arguments are not evaluated
 (lambda (p1 p2) p1)
 
 ; quote returns an expression w/o evaluating it
@@ -93,12 +94,16 @@ nil
 ; if
 
 ; apply the function + to the arguments 1 and 2
+; expects 2 arguments which will be evaluated
 (apply + '(1 2))
 
 ; define associates symbols with expressions
+; the first argument is not evaluated, the second is
+(define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
 
 ; defun is a shorthand for defining functions
+; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
 
 
@@ -135,9 +140,9 @@ internal-time-units-per-second
 ; mod
 ; = < > <= >=
 
-; Both expressions as well as data is read from stdin, the following
-; expression reads the expression immediately following it
-; (in this case the expression to be read is the string "Hello!"
+; Both expressions as well as data are read from stdin.
+; the following expression reads the expression immediately following it
+; (in this case the expression to be read is the string "Hello!").
 (write (read)) "Hello!"
 
 ; writeln accepts one optional argument
@@ -145,13 +150,13 @@ internal-time-units-per-second
 (writeln)
 (writeln "World!")
 
-; format writes a formatted string to stdout and returns t
-; format's parameters work as java.lang.String.format()
+; format writes a formatted string to stdout and returns t.
+; format's parameters work as java.lang.String.format().
 (format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 ; format-locale works similar to format except it has an additional
 ; first string parameter that should be a locale, nil means Java's
-; default locale
+; default locale.
 (format-locale
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
@@ -184,4 +189,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file LambdaJ will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.4 2020/10/23 17:58:39 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.5 2020/10/24 10:27:04 Robert Exp $

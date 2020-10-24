@@ -47,11 +47,6 @@ JavaLISP, http://jlambda.com, jlisp, rlisp,
 
 scanner sollte | fuer symbole koennen
 
-writeln umbauen auf "\n<string> "
--> mit param
---eol=LISP
---eol=C
-
 flag ob die identifier auf UC umgestellt werden sollen
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
@@ -848,3 +843,8 @@ oder ein builtin "help": (help) listet alle special forms und builtins nach lisp
 zu "symbol" nach stdout
 
 im repl wird zeile/char immer weitergezaehlt
+
+writeln umbauen auf "\n<string> "
+-> mit param
+--eol=LISP
+--eol=C
