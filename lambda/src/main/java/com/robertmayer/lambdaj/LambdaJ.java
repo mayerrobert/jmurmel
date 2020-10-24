@@ -123,6 +123,8 @@ public class LambdaJ {
 
     HAVE_LEXC   = 1<<15,
 
+    HAVE_LISPEOL = 1 << 16,
+
 
     HAVE_LAMBDA     = 0,
     HAVE_LAMBDAPLUS = HAVE_LAMBDA | HAVE_ATOM | HAVE_QUOTE | HAVE_EQ,
@@ -134,21 +136,22 @@ public class LambdaJ {
     ;
     private final int features;
 
-    private boolean haveLabels() { return (features & HAVE_LABELS) != 0; }
-    private boolean haveNil()    { return (features & HAVE_NIL)    != 0; }
-    private boolean haveT()      { return (features & HAVE_T)      != 0; }
-    private boolean haveXtra()   { return (features & HAVE_XTRA)   != 0; }
-    private boolean haveDouble() { return (features & HAVE_DOUBLE) != 0; }
-    private boolean haveString() { return (features & HAVE_STRING) != 0; }
-    private boolean haveIO()     { return (features & HAVE_IO)     != 0; }
-    private boolean haveUtil()   { return (features & HAVE_UTIL)   != 0; }
-    private boolean haveApply()  { return (features & HAVE_APPLY)  != 0; }
-    private boolean haveCons()   { return (features & HAVE_CONS)   != 0; }
-    private boolean haveCond()   { return (features & HAVE_COND)   != 0; }
-    private boolean haveAtom()   { return (features & HAVE_ATOM)   != 0; }
-    private boolean haveEq()     { return (features & HAVE_EQ)     != 0; }
-    private boolean haveQuote()  { return (features & HAVE_QUOTE)  != 0; }
-    private boolean haveLexC()   { return (features & HAVE_LEXC)   != 0; }
+    private boolean haveLabels()  { return (features & HAVE_LABELS)  != 0; }
+    private boolean haveNil()     { return (features & HAVE_NIL)     != 0; }
+    private boolean haveT()       { return (features & HAVE_T)       != 0; }
+    private boolean haveXtra()    { return (features & HAVE_XTRA)    != 0; }
+    private boolean haveDouble()  { return (features & HAVE_DOUBLE)  != 0; }
+    private boolean haveString()  { return (features & HAVE_STRING)  != 0; }
+    private boolean haveIO()      { return (features & HAVE_IO)      != 0; }
+    private boolean haveUtil()    { return (features & HAVE_UTIL)    != 0; }
+    private boolean haveApply()   { return (features & HAVE_APPLY)   != 0; }
+    private boolean haveCons()    { return (features & HAVE_CONS)    != 0; }
+    private boolean haveCond()    { return (features & HAVE_COND)    != 0; }
+    private boolean haveAtom()    { return (features & HAVE_ATOM)    != 0; }
+    private boolean haveEq()      { return (features & HAVE_EQ)      != 0; }
+    private boolean haveQuote()   { return (features & HAVE_QUOTE)   != 0; }
+    private boolean haveLexC()    { return (features & HAVE_LEXC)    != 0; }
+    private boolean haveLispEOL() { return (features & HAVE_LISPEOL) != 0; }
 
     public LambdaJ() {
         this(HAVE_ALL_LEXC, TRC_NONE);
@@ -191,7 +194,7 @@ public class LambdaJ {
         private ReadSupplier in;    // readObj() will read from this
         private boolean init;
 
-        private int lineNo = 1, charNo = 1;
+        private int lineNo = 1, charNo = 0;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int look;
@@ -229,8 +232,8 @@ public class LambdaJ {
             int c = in.read();
             if (c == '\n') {
                 lineNo++;
-                charNo = 0;
-            } else charNo++;
+                charNo = 1;
+            } else if (c != '\r' && c != EOF) charNo++;
             return c;
         }
 
@@ -990,8 +993,14 @@ public class LambdaJ {
                     lispStdout.printEol();
                     return expTrue.get();
                 }
-                lispStdout.printObj(car(a));
-                lispStdout.printEol();
+                if (haveLispEOL()) {
+                    lispStdout.printEol();
+                    lispStdout.printObj(car(a));
+                    lispStdout.printString(" ");
+                } else {
+                    lispStdout.printObj(car(a));
+                    lispStdout.printEol();
+                }
                 return expTrue.get();
             };
 
@@ -1196,8 +1205,8 @@ public class LambdaJ {
         if (hasFlag("--trace", args))       trace = TRC_LEX;
 
         int features = HAVE_ALL_LEXC;
-        if (hasFlag("--dyn", args))         features = HAVE_ALL_DYN;
-        else if (hasFlag("--lex", args))    features = HAVE_ALL_LEXC;
+        if (hasFlag("--dyn", args))         features =  HAVE_ALL_DYN;
+        else if (hasFlag("--lex", args))    features =  HAVE_ALL_LEXC;
 
         if (hasFlag("--no-nil", args))      features &= ~HAVE_NIL;
         if (hasFlag("--no-t", args))        features &= ~HAVE_T;
@@ -1216,10 +1225,13 @@ public class LambdaJ {
         if (hasFlag("--no-eq", args))       features &= ~HAVE_EQ;
         if (hasFlag("--no-quote", args))    features &= ~HAVE_QUOTE;
 
-        if (hasFlag("--min+", args))        features = HAVE_MINPLUS;
-        if (hasFlag("--min", args))         features = HAVE_MIN;
-        if (hasFlag("--lambda+", args))     features = HAVE_LAMBDAPLUS;
-        if (hasFlag("--lambda", args))      features = HAVE_LAMBDA;
+        if (hasFlag("--min+", args))        features =  HAVE_MINPLUS;
+        if (hasFlag("--min", args))         features =  HAVE_MIN;
+        if (hasFlag("--lambda+", args))     features =  HAVE_LAMBDAPLUS;
+        if (hasFlag("--lambda", args))      features =  HAVE_LAMBDA;
+
+        if (hasFlag("--eol=C", args))       features &= ~HAVE_LISPEOL;
+        if (hasFlag("--eol=LISP", args))    features |= HAVE_LISPEOL;
 
         final LambdaJ interpreter = new LambdaJ(features, trace);
 
@@ -1354,7 +1366,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.110 2020/10/23 17:50:20 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.111 2020/10/24 10:27:04 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1375,6 +1387,10 @@ public class LambdaJ {
                 + "\n"
                 + "--repl ........  enter REPL even if the input isn't a tty,\n"
                 + "                 i.e. print prompt and results and support :commands.\n"
+                + "\n"
+                + "--eol=LISP ....  writeln prints <EOL><argument>< >\n"
+                + "--eol=C .......  writeln prints <argument><EOL>\n"
+                + "\n"
                 + "--echo ........  echo all input while reading\n"
                 + "--trace=stats .  print stack and memory stats at end\n"
                 + "--trace=eval ..  print internal interpreter info during executing programs\n"

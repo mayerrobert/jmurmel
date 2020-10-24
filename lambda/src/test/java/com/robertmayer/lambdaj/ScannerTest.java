@@ -45,7 +45,7 @@ public class ScannerTest {
 
     @Test
     public void testListDotListShort2() {
-        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "line 1:13: illegal end of dotted list: (c d)");
+        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "line 1:12: illegal end of dotted list: (c d)");
     }
 
 
@@ -61,6 +61,6 @@ public class ScannerTest {
 
     @Test
     public void testExtraParens() {
-        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:4: unexpected ')'");
+        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:5: unexpected ')'");
     }
 }

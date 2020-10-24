@@ -34,12 +34,14 @@ ConsCellImpl {
         case float: // Float#intBitsToFloat benutzen, vgl NaN trick in Lox
         }
     }
+    rplaca(newVal)...
+    rplacd(newVal)...
 }
 
 
 
 LambdaJ gibts schon. Ausserdem gibts:
-JavaLISP, http://jlambda.com, jlisp
+JavaLISP, http://jlambda.com, jlisp, rlisp, 
 -> umbenamsen
 
 
