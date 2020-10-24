@@ -2,7 +2,7 @@
 
 **A lightweight Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
 
-Currenly weighing in at 35kB (size of compiled .jar file),
+Currently weighing in at 37kB (size of compiled .jar file),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -128,6 +128,7 @@ The environment contains the symbols `nil` and `t` and the functions
     - `(define *answer* 42)`
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `defun` ... `(<symbol> (<params>*) <bodyexpression>*)`, e.g. `(defun addone (n) (+ n 1))`
+* `letrec, progn`
 * `eq, atom, consp, listp, symbolp, numberp, null?`
 
 * `assoc`
@@ -139,7 +140,7 @@ The environment contains the symbols `nil` and `t` and the functions
     - `string-format` works like Java `String#format(String format, Object... args)`
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)`
 * `format, format-locale` ... writes to stdout
-* `internal-time-units-per-second, get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep`
+* `internal-time-units-per-second, get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time`
 
 For more details on the language supported see lambdaj-langref.lisp.
 
@@ -198,4 +199,4 @@ with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id$
+$Id: README.md,v 1.40 2020/10/23 17:58:24 Robert Exp $

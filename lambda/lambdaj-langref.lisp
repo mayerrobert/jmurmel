@@ -10,6 +10,10 @@
 ;;; or:
 ;;; java -jar lambdaj.jar --tty --echo <lambdaj-langref.lisp >session.txt
 ;;;
+;;; Note that many of these forms, predefined variables can be
+;;; disabled using commandline arguments if you want to play
+;;; with an even more reduced Lisp.
+;;;
 ;;; See also:
 ;;; java -jar lambdaj.jar --help ... will print usage information
 ;;; LambdaJ> :h                  ... will print REPL command help
@@ -29,10 +33,12 @@
 
 ;;; == Basic Special Forms ============
 
+;;; (lambda (params...) forms...) -> lambda or closure
 ; lambda returns a lambda expression
 ; arguments are not evaluated
 (lambda (p1 p2) p1)
 
+;;; (quote symbol) -> symbol
 ; quote returns an expression w/o evaluating it
 (quote a-symbol)
 
@@ -93,20 +99,30 @@ nil
 ; labels
 ; if
 
-; define associates symbols with expressions
-; the first argument is not evaluated, the second is
+;;; (define symbol object) -> object
+; define associates symbols in the global environment
+; with expressions. Redefining already defined symbols
+; is an error.
+; The first argument is not evaluated, the second is
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
 
+;;; (defun symbol (params...) forms...) -> lambda or closure
 ; defun is a shorthand for defining functions
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
 
+;;; (letrec (bindings...) forms...) -> object
+; works like let and let* of others Lisps
+; except each binding "sees" the previous as well as itself
+(letrec ((x 1) (y (+ x 1))) (write y))
+
+;;; (apply expr arglist) -> object
 ; apply the function + to the arguments 1 and 2
-; expects 2 arguments which will be evaluated
+; expects 2 arguments which both will be evaluated
 (apply + '(1 2))
 
-; progn
+;;; (progn forms...) -> object
 (if t (progn (write 'abc) (write 'def)))
 
 
@@ -144,7 +160,7 @@ internal-time-units-per-second
 ; = < > <= >=
 
 ; Both expressions as well as data are read from stdin.
-; the following expression reads the expression immediately following it
+; The following expression reads the expression immediately following it
 ; (in this case the expression to be read is the string "Hello!").
 (write (read)) "Hello!"
 
@@ -199,4 +215,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file LambdaJ will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.6 2020/10/24 12:52:50 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.8 2020/10/24 16:56:29 Robert Exp $

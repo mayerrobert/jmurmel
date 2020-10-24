@@ -50,17 +50,13 @@ scanner sollte | fuer symbole koennen
 flag ob die identifier auf UC umgestellt werden sollen
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
---symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
+--symbols=ci ... symbole werden nicht umgestellt, aber case insensitive verglichen
 --symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
 
 bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
 nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
 wuerd ggf bei dynamic UND lexical closures was bringen
 -> nein nur dynamic, lexical closures erben das environment ja nicht
-
-vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
--> let muss eine fexpr sein, special form oder macro, oder doch nicht?
--> oder define setzt werte im aktuellen env
 
 Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
 rplaca, rplacd
@@ -76,6 +72,13 @@ Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
           return newval;
         }
 
+am besten setf weglassen, weil das macht serious magic
+-> set ... belegt den ersten gefundenen wert im environment neu. dynamic, lexical, global, halt dort, wos assoc zuerst findet
+           beide argumente werden evaluiert
+-> setq ... wie set aber das erste argument wird nicht evaluiert
+-> rplaca, rpclacd http://clhs.lisp.se/Body/f_rplaca.htm
+   rplaca cons object => cons
+   rplacd cons object => cons
 
 
 fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
@@ -848,3 +851,9 @@ get-decoded-time <no arguments> => second, minute, hour, date, month, year, day,
 
 progn fuer if und anderes?
 -> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
+
+vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
+  oder eine special form die nur das environment erweitert und dann "env=extenv; continue;"
+-> let muss eine fexpr sein, special form oder macro, oder doch nicht? ja, sonst wuerden die variablenlisten ausgefuehrt
+-> oder define setzt werte im aktuellen env
+-> nur letrec als special form. letrec ist die obermenge von let und let*

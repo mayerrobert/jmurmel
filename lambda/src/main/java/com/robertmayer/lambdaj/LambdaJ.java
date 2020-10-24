@@ -11,8 +11,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
@@ -417,6 +415,7 @@ public class LambdaJ {
         if (haveXtra())   sIf     = symtab.intern("if");
         if (haveXtra())   sDefine = symtab.intern("define");
         if (haveXtra())   sDefun  = symtab.intern("defun");
+        if (haveXtra())   sLetrec = symtab.intern("letrec");
 
         if (haveApply())  sApply  = symtab.intern("apply");
         if (haveXtra())   sProgn  = symtab.intern("progn");
@@ -425,7 +424,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sApply, sProgn;
+    private Object sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLetrec, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -508,15 +507,35 @@ public class LambdaJ {
                         return lambda;
                     }
 
+                    // (letrec (bindings...) forms...) -> object
+                    if (haveXtra() && operator == sLetrec) {
+                        Object bindings = car(arguments); Object forms = cdr(arguments);
+                        ConsCell extenv = env;
+                        for (ConsCell binding = (ConsCell)bindings; binding != null; binding = (ConsCell)cdr(binding)) {
+                            final ConsCell newBinding = cons(caar(binding), null);
+                            extenv = cons(newBinding, extenv);
+                            Object val = eval(cadar(binding), topEnv, extenv, stack+1, level+1);
+                            newBinding.cdr = val;
+                        }
+                        ConsCell body = (ConsCell)forms;
+                        for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                            eval(car(body), topEnv, extenv, stack+1, level+1);
+                        if (body != null) {
+                            exp = car(body); env = extenv; isTc = true; continue;
+                        }
+                        return null; // empty letrec body
+                    }
+
                     if (operator == sLambda) {
                         nArgs("lambda", arguments, 2, exp);
                         if (haveLexC()) return cons3(sLambda, arguments, env);
                         else return exp;
                     }
 
-                    if (haveLabels() && operator == sLabels) { // labels bindings body -> object
+                    // labels bindings body -> object
+                    if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, exp);
-                        ConsCell bindings, extenv = cons(cons(null, null), env);
+                        ConsCell bindings, extenv = cons(cons(null, null), env); // todo dieses cons einsparen vgl letrec
                         // stick the functions into the extenv
                         for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
@@ -577,6 +596,7 @@ public class LambdaJ {
                     }
 
                     // actually perform the function call that was set up by "apply" or "function call" above
+                    // todo refactor: progn bastelt ein lambda, hier wirds wieder zerlegt
                     if (consp(func)) {
                         final Object lambda = cdr(func);          // (params . bodylist)
                         final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
@@ -597,7 +617,7 @@ public class LambdaJ {
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
 
-                    throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(car(arguments)), errorExp(exp));
+                    throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(func), errorExp(exp));
 
                 }
 
@@ -1404,7 +1424,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.113 2020/10/24 14:34:16 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.114 2020/10/24 16:56:29 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1443,12 +1463,14 @@ public class LambdaJ {
                 + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
-                + "--no-extra ....  no special form 'define' or 'if'\n"
+                + "--no-extra ....  no special forms 'if', 'define', 'defun', 'letrec', 'progn'\n"
                 + "--no-double ...  no number support\n"
                 + "--no-string ...  no string support\n"
-                + "--no-io .......  no primitive functions read/ write/ writeln\n"
+                + "--no-io .......  no primitive functions read/ write/ writeln/\n"
+                + "                 format/ format-locale\n"
                 + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/\n"
                 + "                 string-format/ string-format-locale\n"
+                + "                 no time related primitives\n"
                 + "\n"
                 + "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n"
                 + "                   S-expressions\n"
