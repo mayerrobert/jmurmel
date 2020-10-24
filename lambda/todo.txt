@@ -47,9 +47,6 @@ JavaLISP, http://jlambda.com, jlisp, rlisp,
 
 scanner sollte | fuer symbole koennen
 
-progn fuer if und anderes?
--> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
-
 flag ob die identifier auf UC umgestellt werden sollen
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
@@ -848,3 +845,6 @@ writeln umbauen auf "\n<string> "
 http://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm
 get-universal-time <no arguments> => sekunden seit 1.1.1900
 get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+
+progn fuer if und anderes?
+-> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return

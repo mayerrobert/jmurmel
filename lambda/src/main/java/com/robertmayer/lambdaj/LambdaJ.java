@@ -409,19 +409,23 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        if (haveApply())  sApply  = symtab.intern("apply");
+        sLambda = symtab.intern("lambda");
+        if (haveQuote())  sQuote  = symtab.intern("quote");
         if (haveCond())   sCond   = symtab.intern("cond");
+        if (haveLabels()) sLabels = symtab.intern("labels");
+
         if (haveXtra())   sIf     = symtab.intern("if");
         if (haveXtra())   sDefine = symtab.intern("define");
         if (haveXtra())   sDefun  = symtab.intern("defun");
-        if (haveLabels()) sLabels = symtab.intern("labels");
-        if (haveQuote())  sQuote  = symtab.intern("quote");
-        sLambda = symtab.intern("lambda");
+
+        if (haveApply())  sApply  = symtab.intern("apply");
+        if (haveXtra())   sProgn  = symtab.intern("progn");
+
         expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
     /** well known symbols for special forms */
-    private Object sApply, sCond, sIf, sDefine, sDefun, sLabels, sLambda, sQuote;
+    private Object sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -558,6 +562,12 @@ public class LambdaJ {
                         argList = (ConsCell)_argList;
                         // fall through to "actually perform..."
 
+                    } else if (haveXtra() && operator == sProgn) {
+                        if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "progn", printSEx(arguments), errorExp(exp));
+                        func = cons3(null, cons(null, arguments), env);
+                        argList = null;
+                        // fall through to "actually perform..."
+
                     // function call
                     } else {
                         func = eval(operator, topEnv, env, stack+1, level+1);
@@ -580,14 +590,14 @@ public class LambdaJ {
                         if (body != null) {
                             exp = car(body); env = extenv; isTc = true; continue;
                         }
+                        return null; // lambda w/o body
                     }
                     if (primp(func)) {
                         try { return applyPrimitive((Primitive) func, argList, stack, level); }
                         catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
 
-                    throw new LambdaJError("function application: not a symbol or lambda: %s. this was the result of evaluating the expression %s%s",
-                                           printSEx(func), printSEx(car(arguments)), errorExp(exp));
+                    throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(car(arguments)), errorExp(exp));
 
                 }
 
@@ -708,19 +718,19 @@ public class LambdaJ {
     private  ConsCell cons(Object car, Object cdr) { nCells++; return new ConsCell(car, cdr); }
     private  ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ConsCell(car, cdr, closure); }
 
-    private static Object   car(ConsCell x)    { return x.car; }
-    private static Object   car(Object x)      { return ((ConsCell)x).car; }
-    private static Object   caar(ConsCell l)   { return car(car(l)); }
-    private static Object   cadr(ConsCell l)   { return car(cdr(l)); }
-    private static Object   cadar(ConsCell l)  { return car(cdr(car(l))); }
-    private static Object   caddr(ConsCell l)  { return car(cddr(l)); }
+    private static Object   car(ConsCell x)    { return x == null ? null : x.car; }
+    private static Object   car(Object x)      { return x == null ? null : ((ConsCell)x).car; }
+    private static Object   caar(ConsCell l)   { return l == null ? null : car(car(l)); }
+    private static Object   cadr(ConsCell l)   { return l == null ? null : car(cdr(l)); }
+    private static Object   cadar(ConsCell l)  { return l == null ? null : car(cdr(car(l))); }
+    private static Object   caddr(ConsCell l)  { return l == null ? null : car(cddr(l)); }
 
-    private static Object   cdr(ConsCell x)    { return x.cdr; }
-    private static Object   cdr(Object x)      { return ((ConsCell)x).cdr; }
-    private static Object   cdar(ConsCell x)   { return cdr(x.car); }
-    private static Object   cdar(Object x)     { return cdr(((ConsCell)x).car); }
-    private static Object   cddr(ConsCell l)   { return cdr(cdr(l)); }
-    private static Object   cddr(Object l)     { return cdr(cdr(l)); }
+    private static Object   cdr(ConsCell x)    { return x == null ? null : x.cdr; }
+    private static Object   cdr(Object x)      { return x == null ? null : ((ConsCell)x).cdr; }
+    private static Object   cdar(ConsCell x)   { return x == null ? null : cdr(x.car); }
+    private static Object   cdar(Object x)     { return x == null ? null : cdr(((ConsCell)x).car); }
+    private static Object   cddr(ConsCell l)   { return l == null ? null : cdr(cdr(l)); }
+    private static Object   cddr(Object l)     { return l == null ? null : cdr(cdr(l)); }
 
     private static boolean  consp(Object x)    { return x instanceof ConsCell; }
     private static boolean  atom(Object x)     { return x == null || !(x instanceof ConsCell); } // ! consp(x)
@@ -1360,7 +1370,8 @@ public class LambdaJ {
         try {
             final String result = printSEx(interpreter.interpretExpressions(System.in::read, System.in::read, System.out::print));
             if (printResult) {
-                System.out.println(result);
+                System.out.println();
+                System.out.println("==> " + result);
             }
         } catch (LambdaJError e) {
             System.err.println();
@@ -1393,7 +1404,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.112 2020/10/24 12:52:15 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.113 2020/10/24 14:34:16 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

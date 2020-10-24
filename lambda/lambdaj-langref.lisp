@@ -89,13 +89,9 @@ nil
 ;;; == Additional Special Forms =======
 
 ; the following special forms should work as expected
-; labels
 ; cond
+; labels
 ; if
-
-; apply the function + to the arguments 1 and 2
-; expects 2 arguments which will be evaluated
-(apply + '(1 2))
 
 ; define associates symbols with expressions
 ; the first argument is not evaluated, the second is
@@ -105,6 +101,13 @@ nil
 ; defun is a shorthand for defining functions
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
+
+; apply the function + to the arguments 1 and 2
+; expects 2 arguments which will be evaluated
+(apply + '(1 2))
+
+; progn
+(if t (progn (write 'abc) (write 'def)))
 
 
 ;;; == Predefined Symbols =============
