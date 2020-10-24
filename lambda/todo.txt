@@ -10,12 +10,32 @@ die ints werden als bitmasks interpretiert:
     number: die zahl 
     usw.
 
+statt 3 bits koennten mehr oder weniger verwendet werden, wird die max anzahl cons zells groesser oder kleiner
 in C koennten (muessen aber nicht) Pointer wirkliche Pointer statt indizes sein, wuerde eine indirektion sparen,
   diese muessten beim realloc des arrays (i.e. heap vergroessern) aber angepasst werden
 optionales GC waer moeglich, in C und in Java, oder man laessts weg fuer kleine programme
 generational heaps waeren auch moeglich, dann muesste es verschiedene pointertypen geben, jeder typ zeigt in einen anderen heap
 das ergebnis einer expression koennte aus dem Heap (der auch garbage enthaelt) rausextrahiert werden, indem man wie ein GC dem root folgt,
   das ergebnis ist dann ein array das kleiner ist als der heap, also der GC komprimierte Heap
+
+das waer alles in einer Klasse Heap { cons(); car(); cdr(); } abstrahierbar, nur die klasse kennt ConsCell
+-> interface ConsCell waer moeglich. beim ArrayHeap sieht ConsCellImpl so aus:
+ConsCellImpl {
+    ConsCell(int n);
+    Object car() { return get(n); }
+    Object cdr() { return get(n+1); }
+    Object get(int n) {
+        int type = heap[n] & 1<<3;
+        int value = heap[n] >> 3;
+        switch (type) {
+        case integer: 
+        case pointer: return new Integer(carvalue);
+        case symbol: return symtab[carvalue];
+        case float: // Float#intBitsToFloat benutzen, vgl NaN trick in Lox
+        }
+    }
+}
+
 
 
 LambdaJ gibts schon. Ausserdem gibts:
