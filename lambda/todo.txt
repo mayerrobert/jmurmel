@@ -47,14 +47,14 @@ JavaLISP, http://jlambda.com, jlisp, rlisp,
 
 scanner sollte | fuer symbole koennen
 
+progn fuer if und anderes?
+-> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
+
 flag ob die identifier auf UC umgestellt werden sollen
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
 --symbols=ci ... symbole werden nicht umgestellt, aber cas insensitive verglichen
 --symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
-
-progn fuer if und anderes?
--> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
 
 bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
 nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
