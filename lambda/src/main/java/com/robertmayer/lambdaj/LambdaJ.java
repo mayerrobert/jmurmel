@@ -191,7 +191,7 @@ public class LambdaJ {
         private ReadSupplier in;    // readObj() will read from this
         private boolean init;
 
-        private int lineNo = 1, charNo;
+        private int lineNo = 1, charNo = 1;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int look;
@@ -961,6 +961,15 @@ public class LambdaJ {
         }
     }
 
+    private static ThreadMXBean getThreadBean(final String func) {
+        final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        if (threadBean == null)
+            throw new LambdaJError("%s: ThreadMXBean not supported in this Java Runtime", func);
+        if (!threadBean.isCurrentThreadCpuTimeSupported())
+            throw new LambdaJError("%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
+        return threadBean;
+    }
+
 
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
@@ -1038,22 +1047,8 @@ public class LambdaJ {
                   cons(cons(symtab.intern("assoc"),   (Primitive) a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); }),
                   env)))));
 
-            final Primitive fusertime = a -> {
-                final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-                if (threadBean == null)
-                    throw new LambdaJError("%s: ThreadMXBean not supported in this Java Runtime", "get-internal-run-time");
-                if (!threadBean.isCurrentThreadCpuTimeSupported())
-                    throw new LambdaJError("%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", "get-internal-run-time");
-                return new Double(threadBean.getCurrentThreadUserTime());
-            };
-            final Primitive fcputime = a -> {
-                final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-                if (threadBean == null)
-                    throw new LambdaJError("%s: ThreadMXBean not supported in this Java Runtime", "get-internal-cpu-time");
-                if (!threadBean.isCurrentThreadCpuTimeSupported())
-                    throw new LambdaJError("%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", "get-internal-cpu-time");
-                return new Double(threadBean.getCurrentThreadCpuTime());
-            };
+            final Primitive fusertime = a -> { return new Double(getThreadBean("get-internal-run-time").getCurrentThreadUserTime()); };
+            final Primitive fcputime = a -> { return new Double(getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime()); };
             final Primitive fsleep = a -> {
                 oneArg("sleep", a);
                 numberArgs("sleep", a);
@@ -1077,7 +1072,7 @@ public class LambdaJ {
         }
 
         if (haveAtom()) {
-            env = cons(cons(symtab.intern("atom"), (Primitive) a -> { oneArg("atom", a);    return boolResult(atom   (car(a))); }),
+            env = cons(cons(symtab.intern("atom"), (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); }),
                        env);
         }
 
@@ -1271,6 +1266,7 @@ public class LambdaJ {
                 }
 
                 try {
+                    parser.lineNo = 1;  parser.charNo = 1;
                     final Object exp = parser.readObj();
 
                     if (":q".equals(exp) || exp == null && parser.look == EOF) {
@@ -1312,6 +1308,7 @@ public class LambdaJ {
                     if (istty) {
                         System.out.println();
                         System.out.println(e.toString());
+                        System.out.println();
                     } else {
                         System.err.println();
                         System.err.println(e.toString());
@@ -1357,7 +1354,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.109 2020/10/23 17:48:35 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.110 2020/10/23 17:50:20 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

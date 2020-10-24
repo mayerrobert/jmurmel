@@ -35,7 +35,7 @@
 ; quote returns an expression w/o evaluating it
 (quote a-symbol)
 
-; a sible quote is a shorthand for (quote a-symbol)
+; a single quote is a shorthand for (quote a-symbol)
 'a-symbol
 
 
@@ -64,7 +64,8 @@
 ; a symbol
 '*a-sample-symbol*
 
-; guess. Max symbol length is 2000 chars anything longer will be silently truncated
+; Guess. Max symbol length is 2000 chars, anything longer
+; will be silently truncated
 'a\ symbol\ with\ spaces!
 
 ; empty list, printed as "nil"
@@ -87,9 +88,9 @@ nil
 ;;; == Additional Special Forms =======
 
 ; the following special forms should work as expected
-;labels
-;cond
-;if
+; labels
+; cond
+; if
 
 ; apply the function + to the arguments 1 and 2
 (apply + '(1 2))
@@ -103,7 +104,7 @@ nil
 
 ;;; == Predefined Symbols =============
 
-; nil and t are self-evaluationg symbols
+; nil and t are pre-defined self-evaluating symbols
 nil
 t
 
@@ -122,16 +123,16 @@ internal-time-units-per-second
 ; (cdr '(a b c)) ==> (b c)
 (cdr '(a b c))
 
-;eq, atom, consp, listp, symbolp, numberp, stringp, null?
+; eq, atom, consp, listp, symbolp, numberp, stringp, null?
 
-; assoc takes a key and a list of key/value tupels
+; assoc takes a key and a list of key/value tupels (lists or conses)
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
 
 ; The following operators accept numbers only, but otherwise should
 ; work as expected. 
 ; + - * /
-;mod
+; mod
 ; = < > <= >=
 
 ; Both expressions as well as data is read from stdin, the following
@@ -148,28 +149,29 @@ internal-time-units-per-second
 ; format's parameters work as java.lang.String.format()
 (format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; format-locale works similat to format except it has an additional
+; format-locale works similar to format except it has an additional
 ; first string parameter that should be a locale, nil means Java's
 ; default locale
 (format-locale
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-;string-format string-format-locale work similar
+; string-format string-format-locale work similar
 ; to format and format-locale except they don't write to stdout
 ; but return the string
 (string-format-locale
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
                
-; walltime in nanoseconds after 1.1.1970 00:00:00.000000 UTC
+; walltime in internal time units, relative to an arbitrary time base
 (get-internal-real-time)
 
-; user cpu time [nanoseconds]
+; user cpu time in internal time units
 (get-internal-run-time)
 
-; user + system cpu time [nanoseconds]
+; user + system cpu time in internal time units
 (get-internal-cpu-time)
 
-; pause execution for x nanoseconds, returns actually slept time
+; pause execution for x internal time units, returns actually slept
+; wall time in internal time units
 (sleep (* 1 internal-time-units-per-second))
 
 
@@ -182,4 +184,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file LambdaJ will print "bye." and exit.
 
-;;; $Id$
+;;; $Id: lambdaj-langref.lisp,v 1.4 2020/10/23 17:58:39 Robert Exp $
