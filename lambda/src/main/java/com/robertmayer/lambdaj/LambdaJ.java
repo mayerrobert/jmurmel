@@ -415,6 +415,7 @@ public class LambdaJ {
         if (haveXtra())   sIf     = symtab.intern("if");
         if (haveXtra())   sDefine = symtab.intern("define");
         if (haveXtra())   sDefun  = symtab.intern("defun");
+        if (haveXtra())   sLetStar = symtab.intern("let*");
         if (haveXtra())   sLetrec = symtab.intern("letrec");
 
         if (haveApply())  sApply  = symtab.intern("apply");
@@ -424,7 +425,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLetrec, sApply, sProgn;
+    private Object sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLetStar, sLetrec, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -507,18 +508,38 @@ public class LambdaJ {
                         return lambda;
                     }
 
-                    // (letrec (bindings...) forms...) -> object
-                    if (haveXtra() && operator == sLetrec) {
-                        Object bindings = car(arguments); Object forms = cdr(arguments);
-                        ConsCell extenv = env;
-                        for (ConsCell binding = (ConsCell)bindings; binding != null; binding = (ConsCell)cdr(binding)) {
+                    // (let* optsymbol? (bindings...) forms...) -> object
+                    // (letrec optsymbol? (bindings...) forms...) -> object
+                    if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
+                        final boolean rec = operator == sLetrec;
+                        final boolean named = symbolp(car(arguments));
+                        final ConsCell bodyEnvEntry = cons(null, null), let;
+                        if (named) let = (ConsCell)cdr(arguments);
+                        else let = arguments;
+
+                        final ConsCell bindings = (ConsCell)car(let);
+                        ConsCell extenv = cons(bodyEnvEntry, env);
+                        for (ConsCell binding = bindings; binding != null; binding = (ConsCell)cdr(binding)) {
                             final ConsCell newBinding = cons(caar(binding), null);
-                            extenv = cons(newBinding, extenv);
-                            Object val = eval(cadar(binding), topEnv, extenv, stack+1, level+1);
-                            newBinding.cdr = val;
+                            if (rec) extenv.cdr = cons(newBinding, cdr(extenv));
+                            newBinding.cdr = eval(cadar(binding), topEnv, extenv, stack+1, level+1);
+                            if (!rec) extenv.cdr = cons(newBinding, cdr(extenv));
                         }
-                        ConsCell body = (ConsCell)forms;
-                        for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                        if (named) {
+                            bodyEnvEntry.car = car(arguments);
+                            ConsCell bodyParams = null, insertPos = null;
+                            for (ConsCell binding = bindings; binding != null; binding = (ConsCell) cdr(binding)) {
+                                if (bodyParams == null) {
+                                    bodyParams = cons(caar(binding), null);
+                                    insertPos = bodyParams;
+                                } else {
+                                    insertPos.cdr = cons(caar(binding), null);
+                                }
+                            }
+                            bodyEnvEntry.cdr = cons3(sLambda, cons(bodyParams, cdr(let)), extenv);
+                        }
+                        ConsCell body;
+                        for (body = (ConsCell)cdr(let); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                             eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
                             exp = car(body); env = extenv; isTc = true; continue;
@@ -535,7 +556,7 @@ public class LambdaJ {
                     // labels bindings body -> object
                     if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, exp);
-                        ConsCell bindings, extenv = cons(cons(null, null), env); // todo dieses cons einsparen vgl letrec
+                        ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
                         for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
                             final ConsCell currentFunc = (ConsCell)car(bindings);
@@ -964,7 +985,7 @@ public class LambdaJ {
 
     /** generate operator for one or more args */
     private static Object makeSubOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
-        oneOrMoreNumbers("-", args);
+        oneOrMoreNumbers(opName, args);
         double result = (Double)car(args);
         if (cdr(args) == null) return op.applyAsDouble(startVal, result);
         for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
@@ -1158,9 +1179,10 @@ public class LambdaJ {
                   cons(cons(symtab.intern(">="),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
                   cons(cons(symtab.intern("<"),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
                   cons(cons(symtab.intern("<="),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
-                  cons(cons(symtab.intern("numberp"), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
                   cons(cons(symtab.intern("mod"),     fmod),
-                  env)))))))))));
+                  cons(cons(symtab.intern("numberp"), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
+                  cons(cons(symtab.intern("floor"),   (Primitive) args -> { oneArg("floor", args); return (long)Math.floor((Double)car(args)); }),
+                  env))))))))))));
         }
 
         if (haveEq()) {
@@ -1424,7 +1446,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.114 2020/10/24 16:56:29 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.115 2020/10/24 20:54:23 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

@@ -40,10 +40,37 @@ ConsCellImpl {
 
 
 
-LambdaJ gibts schon. Ausserdem gibts:
-JavaLISP, http://jlambda.com, jlisp, rlisp, 
--> umbenamsen
+environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
 
+printSEx umbauen, dass es statt stringbuilder einen Consumer<String> uebernimmt, zum schreiben in file
+
+parameterchecks fuer letrec
+
+derzeit haben closures lexikalische lokale variablen und dynamische globale variablen.
+ggf. die globalen variablen
+auch beim closen in die closure stecken, nur dann kann die closure ein array werden,
+und man kann alle environment zugriffe durch array index zugriffe ersetzen.
+parameter sollten dann auch slots im array sein, beim func call entsprechend abfuellen
+-> umsetzung: beim closen nicht bei env sondern cdr(env) beginnen. das erste element ist das (null . nil) cons,
+erweiterungen werden dahintergezwickt. kann man per cmdline umswitchen.
+
+utils: combine, list, nth, nhtcdr, c*r
+
+LambdaJ gibts schon. Ausserdem gibts:
+JavaLISP, http://jlambda.com, jlisp, rlisp, ROMALISP
+-> umbenamsen:
+   Murmel: ich mag das tier, murmeln <->-lispeln
+
+
+Long im parser unterstuetzen
+-> number operatoren auf long erweitern
+   div: integer division, rem: rest
+   numberp erweitern
+   trunc und round
+
+Hashmaps
+-> make-hash-table
+   get-hash key -> value
 
 scanner sollte | fuer symbole koennen
 
@@ -79,6 +106,16 @@ am besten setf weglassen, weil das macht serious magic
 -> rplaca, rpclacd http://clhs.lisp.se/Body/f_rplaca.htm
    rplaca cons object => cons
    rplacd cons object => cons
+
+
+named let: gibt dem body einen namen, damit er sich rekursiv aufrufen kann. waer leicht moeglich, das in letrec einzubauen (if symbolp(car(arguments)))
+(define (number->list n)
+  (let loop ((n n)
+             (acc '()))
+    (if (< n 10)
+        (cons n acc)
+        (loop (quotient n 10)
+              (cons (remainder n 10) acc)))))
 
 
 fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
@@ -857,3 +894,12 @@ vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ei
 -> let muss eine fexpr sein, special form oder macro, oder doch nicht? ja, sonst wuerden die variablenlisten ausgefuehrt
 -> oder define setzt werte im aktuellen env
 -> nur letrec als special form. letrec ist die obermenge von let und let*
+
+letrec so wie labels umbauen, dass allfaellige closures alles andere sehen, nicht nur die vorher deklarierten
+
+let*
+
+named let* und letrec
+
+muss man bei named let immer alle parameter befuellen?
+-> in scheme ja

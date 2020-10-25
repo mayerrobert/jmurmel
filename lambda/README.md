@@ -128,14 +128,14 @@ The environment contains the symbols `nil` and `t` and the functions
     - `(define *answer* 42)`
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `defun` ... `(<symbol> (<params>*) <bodyexpression>*)`, e.g. `(defun addone (n) (+ n 1))`
-* `letrec, progn`
+* `let*, letrec, progn`
 * `eq, atom, consp, listp, symbolp, numberp, null?`
 
 * `assoc`
 * `read`
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
 
-* `=, <, <=, >, >=, +, -, *, /, mod` ... Java Double
+* `=, <, <=, >, >=, +, -, *, /, mod, floor` ... Java Double
 * `stringp, string-format, string-format-locale`
     - `string-format` works like Java `String#format(String format, Object... args)`
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)`
@@ -199,4 +199,4 @@ with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.40 2020/10/23 17:58:24 Robert Exp $
+$Id: README.md,v 1.41 2020/10/24 20:54:23 Robert Exp $

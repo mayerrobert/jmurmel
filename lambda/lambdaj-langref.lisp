@@ -112,6 +112,12 @@ nil
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
 
+;;; (let* optsymbol? (bindings...) forms...) -> object
+; works like let* of others Lisps
+; each binding "sees" the previous ones, optsymbol if given will be bound
+; to "forms..." inside forms... for recursive calls
+(let* loop ((x 3) (msg 'hi)) (if (= x 0) msg (progn (write (floor x)) (loop (- x 1) msg))))
+
 ;;; (letrec (bindings...) forms...) -> object
 ; works like let and let* of others Lisps
 ; except each binding "sees" the previous as well as itself
@@ -215,4 +221,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file LambdaJ will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.8 2020/10/24 16:56:29 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.9 2020/10/24 20:54:23 Robert Exp $
