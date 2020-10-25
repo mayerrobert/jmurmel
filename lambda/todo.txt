@@ -7,7 +7,7 @@ die ints werden als bitmasks interpretiert:
   intwert >> 3 ist der wert:
     pointer: ein index ins array
     symbol: ein index in die (getrennte) symboltabelle
-    number: die zahl 
+    number: die zahl
     usw.
 
 statt 3 bits koennten mehr oder weniger verwendet werden, wird die max anzahl cons zells groesser oder kleiner
@@ -28,7 +28,7 @@ ConsCellImpl {
         int type = heap[n] & 1<<3;
         int value = heap[n] >> 3;
         switch (type) {
-        case integer: 
+        case integer:
         case pointer: return new Integer(carvalue);
         case symbol: return symtab[carvalue];
         case float: // Float#intBitsToFloat benutzen, vgl NaN trick in Lox
@@ -40,9 +40,9 @@ ConsCellImpl {
 
 
 
-environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
+einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
 
-printSEx umbauen, dass es statt stringbuilder einen Consumer<String> uebernimmt, zum schreiben in file
+environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
 
 parameterchecks fuer letrec
 
@@ -102,15 +102,6 @@ am besten setf weglassen, weil das macht serious magic
    rplaca cons object => cons
    rplacd cons object => cons
 
-
-named let: gibt dem body einen namen, damit er sich rekursiv aufrufen kann. waer leicht moeglich, das in letrec einzubauen (if symbolp(car(arguments)))
-(define (number->list n)
-  (let loop ((n n)
-             (acc '()))
-    (if (< n 10)
-        (cons n acc)
-        (loop (quotient n 10)
-              (cons (remainder n 10) acc)))))
 
 
 fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
@@ -895,6 +886,14 @@ letrec so wie labels umbauen, dass allfaellige closures alles andere sehen, nich
 let*
 
 named let* und letrec
+named let: gibt dem body einen namen, damit er sich rekursiv aufrufen kann. waer leicht moeglich, das in letrec einzubauen (if symbolp(car(arguments)))
+(define (number->list n)
+  (let loop ((n n)
+             (acc '()))
+    (if (< n 10)
+        (cons n acc)
+        (loop (quotient n 10)
+              (cons (remainder n 10) acc)))))
 
 muss man bei named let immer alle parameter befuellen?
 -> in scheme ja
@@ -903,3 +902,5 @@ muss man bei named let immer alle parameter befuellen?
    div: integer division, rem: rest
    numberp erweitern
    floor, ceil und round
+
+printSEx umbauen, dass es statt stringbuilder einen Consumer<String> uebernimmt, zum schreiben in file

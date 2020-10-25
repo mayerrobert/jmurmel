@@ -189,9 +189,9 @@ public class LambdaJ {
         private final WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object o) { printString(o == null && !haveNil() ? "()" : printSEx(o)); }
+        @Override public void printObj(Object o) { if (o == null && !haveNil()) out.print("()"); printSEx(out, o); }
         @Override public void printString(String s) { out.print(s); }
-        @Override public void printEol() { printString(System.lineSeparator()); }
+        @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
     /// scanner, symboltable and S-expression parser
@@ -378,13 +378,17 @@ public class LambdaJ {
         }
     }
 
+    /** Append rest at the end of first. If first is a list it will be modified. */
     private ConsCell combine(Object first, Object rest) {
         if (consp(first)) return appendToList((ConsCell)first, rest);
         else return cons(first, rest);
     }
 
+    /** Append rest at the end of first, modifying first in the process.
+     *  Returns a dotted list unless rest is a proper list. */
     private ConsCell appendToList(ConsCell first, Object rest) {
         for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
+            if (cdr(last) == first) throw new LambdaJError("%s: first argument is a circular list", "appendToList");
             if (cdr(last) == null) {
                 last.cdr = rest;
                 return first;
@@ -394,7 +398,7 @@ public class LambdaJ {
                 return first;
             }
         }
-        throw new LambdaJError("appendToList: internal error, can't append %s and %s", printSEx(first), printSEx(rest));
+        throw new LambdaJError("%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
     }
 
     /// symboltable Object
@@ -759,19 +763,19 @@ public class LambdaJ {
     private  ConsCell cons(Object car, Object cdr) { nCells++; return new ConsCell(car, cdr); }
     private  ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ConsCell(car, cdr, closure); }
 
-    private static Object   car(ConsCell x)    { return x == null ? null : x.car; }
+    private static Object   car(ConsCell c)    { return c == null ? null : c.car; }
     private static Object   car(Object x)      { return x == null ? null : ((ConsCell)x).car; }
-    private static Object   caar(ConsCell l)   { return l == null ? null : car(car(l)); }
-    private static Object   cadr(ConsCell l)   { return l == null ? null : car(cdr(l)); }
-    private static Object   cadar(ConsCell l)  { return l == null ? null : car(cdr(car(l))); }
-    private static Object   caddr(ConsCell l)  { return l == null ? null : car(cddr(l)); }
+    private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
+    private static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
+    private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdr(car(c))); }
+    private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
 
-    private static Object   cdr(ConsCell x)    { return x == null ? null : x.cdr; }
+    private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr; }
     private static Object   cdr(Object x)      { return x == null ? null : ((ConsCell)x).cdr; }
-    private static Object   cdar(ConsCell x)   { return x == null ? null : cdr(x.car); }
-    private static Object   cdar(Object x)     { return x == null ? null : cdr(((ConsCell)x).car); }
-    private static Object   cddr(ConsCell l)   { return l == null ? null : cdr(cdr(l)); }
-    private static Object   cddr(Object l)     { return l == null ? null : cdr(cdr(l)); }
+    private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(c.car); }
+    private static Object   cdar(Object x)     { return x == null ? null : cdr(car(x)); }
+    private static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
+    private static Object   cddr(Object x)     { return x == null ? null : cdr(cdr(x)); }
 
     private static boolean  consp(Object x)    { return x instanceof ConsCell; }
     private static boolean  atom(Object x)     { return x == null || !(x instanceof ConsCell); } // ! consp(x)
@@ -818,7 +822,7 @@ public class LambdaJ {
     private static String printObj(Object ob) {
         if (ob == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
-        _printSEx(sb, ob, ob, true, false);
+        _printSEx(sb::append, ob, ob, true, false);
         return sb.toString();
     }
 
@@ -826,58 +830,62 @@ public class LambdaJ {
     private static String printSEx(Object obj) {
         if (obj == null) return "nil";
         final StringBuffer sb = new StringBuffer(200);
-        _printSEx(sb, obj, obj, true, true);
+        _printSEx(sb::append, obj, obj, true, true);
         return sb.toString();
     }
 
-    private static void _printSEx(StringBuffer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
+    private static void printSEx(WriteConsumer w, Object obj) {
+        _printSEx(w, obj, obj, true, true);
+    }
+
+    private static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
         while (true) {
             if (obj == null) {
-                sb.append("nil"); return;
+                sb.print("nil"); return;
             } else if (listp(obj)) {
-                if (headOfList) sb.append('(');
+                if (headOfList) sb.print("(");
                 if (car(obj) == list) {
-                    sb.append(headOfList ? "#<this cons>" : "#<this list>");
+                    sb.print(headOfList ? "#<this cons>" : "#<this list>");
                 } else {
                     _printSEx(sb, car(obj), car(obj), true, escapeAtoms);
                 }
                 if (cdr(obj) != null) {
                     if (listp(cdr(obj))) {
-                        sb.append(' ');
+                        sb.print(" ");
                         if (list == cdr(obj)) {
-                            sb.append("#<circular list>)"); return;
+                            sb.print("#<circular list>)"); return;
                         } else {
                             obj = cdr(obj); headOfList = false; continue;
                         }
                     } else if (headOfList) {
-                        sb.append(" . ");
+                        sb.print(" . ");
                         _printSEx(sb, list, cdr(obj), false, escapeAtoms);
-                        sb.append(')');
+                        sb.print(")");
                         return;
                     } else {
-                        sb.append(" . ");
+                        sb.print(" . ");
                         _printSEx(sb, list, cdr(obj), false, escapeAtoms); // must be an atom
-                        sb.append(')');
+                        sb.print(")");
                         return;
                     }
                 } else {
-                    sb.append(')');
+                    sb.print(")");
                     return;
                 }
             } else if (escapeAtoms && symbolp(obj)) {
                 if (containsSExSyntaxOrBlank(obj.toString())) {
-                    sb.append('|').append(obj.toString()).append('|');
+                    sb.print("|"); sb.print(obj.toString()); sb.print("|");
                     return;
                 }
-                sb.append(obj.toString()); return;
+                sb.print(obj.toString()); return;
             } else if (primp(obj)) {
-                sb.append("#<primitive>"); return;
+                sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
-                sb.append('"').append(escapeString(obj.toString())).append('"'); return;
+                sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
             } else if (atom(obj)) {
-                sb.append(obj.toString()); return;
+                sb.print(obj.toString()); return;
             } else {
-                sb.append("<internal error>"); return;
+                sb.print("<internal error>"); return;
             }
         }
     }
@@ -1451,7 +1459,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.116 2020/10/25 10:12:10 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.117 2020/10/25 11:37:48 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
