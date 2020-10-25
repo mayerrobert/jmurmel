@@ -508,29 +508,25 @@ public class LambdaJ {
                         } else return null;
                     }
 
+                    // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
+                    ConsCell forms = null;
+
                     // (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
                         if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "progn", printSEx(arguments), errorExp(exp));
-                        ConsCell body = arguments;
-                        for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                            eval(car(body), topEnv, env, stack+1, level+1);
-                        if (body != null) {
-                            exp = car(body); isTc = true; continue tailcall;
-                        }
+                        forms = arguments;
+                        // fall through to "eval a list of forms"
 
                     // (cond (condexpr forms...)... )
                     } else if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
-                                ConsCell body = (ConsCell) cdar(c);
-                                for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                                    eval(car(body), topEnv, env, stack+1, level+1);
-                                if (body != null) {
-                                    exp = car(body); isTc = true; continue tailcall;
-                                }
+                                forms = (ConsCell) cdar(c);
+                                break;
                             }
                         }
-                        return null; // no condition was true
+                        if (forms == null) return null; // no condition was true
+                        // fall through to "eval a list of forms"
 
                     // (labels (bindings...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
@@ -547,13 +543,8 @@ public class LambdaJ {
                         }
                         extenv.car = cadr(extenv);
                         extenv.cdr = cddr(extenv);
-
-                        ConsCell body = (ConsCell) cdr(arguments);
-                        for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                            eval(car(body), topEnv, extenv, stack+1, level+1);
-                        if (body != null) {
-                            exp = car(body); env = extenv; isTc = true; continue tailcall;
-                        }
+                        forms = (ConsCell) cdr(arguments);  env = extenv;
+                        // fall through to "eval a list of forms"
 
                     // (let* optsymbol? (bindings...) forms...) -> object
                     // (letrec optsymbol? (bindings...) forms...) -> object
@@ -584,65 +575,65 @@ public class LambdaJ {
                             }
                             bodyEnvEntry.cdr = cons3(sLambda, cons(bodyParams, cdr(let)), extenv);
                         }
-                        ConsCell body = (ConsCell)cdr(let);
-                        for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                            eval(car(body), topEnv, extenv, stack+1, level+1);
-                        if (body != null) {
-                            exp = car(body); env = extenv; isTc = true; continue tailcall;
-                        }
-                        return null; // no forms
+                        forms = (ConsCell)cdr(let);  env = extenv;
+                        // fall through to "eval a list of forms"
                     }
 
 
 
                     /// function application
+                    else {
+                        final Object func;                     // will be used in case of a function call
+                        final ConsCell argList;                // will be used in case of a function call
 
-                    final Object func;                     // will be used in case of a function call
-                    final ConsCell argList;                // will be used in case of a function call
+                        // apply function to list
+                        // (apply symbolexpr arglist) -> object
+                        if (haveApply() && operator == sApply) {
+                            twoArgs("apply", arguments, exp);
 
-                    // apply function to list
-                    // (apply symbolexpr arglist) -> object
-                    if (haveApply() && operator == sApply) {
-                        twoArgs("apply", arguments, exp);
+                            func = eval(car(arguments), topEnv, env, stack+1, level+1);
+                            final Object _argList = eval(cadr(arguments), topEnv, env, stack+1, level+1);
+                            if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s%s", "apply", printSEx(_argList), errorExp(exp));
+                            argList = (ConsCell)_argList;
+                            // fall through to "actually perform..."
 
-                        func = eval(car(arguments), topEnv, env, stack+1, level+1);
-                        final Object _argList = eval(cadr(arguments), topEnv, env, stack+1, level+1);
-                        if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s%s", "apply", printSEx(_argList), errorExp(exp));
-                        argList = (ConsCell)_argList;
-                        // fall through to "actually perform..."
-
-                    // function call
-                    // (symbolexpr args...) -> object
-                    } else {
-                        func = eval(operator, topEnv, env, stack+1, level+1);
-                        if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(exp));
-                        argList = evlis(arguments, topEnv, env, stack+1, level+1);
-                        // fall through to "actually perform..."
-                    }
-
-                    // actually perform the function call that was set up by "apply" or "function call" above
-                    if (primp(func)) {
-                        try { return applyPrimitive((Primitive) func, argList, stack, level); }
-                        catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
-                        // todo catch (Exception e) rethrow mit stacktrace und errorExp fuer laufzeitfehler von Primitives
-                    }
-                    if (consp(func)) {
-                        final Object lambda = cdr(func);          // (params . bodylist)
-                        final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
-                        nArgs("lambda application", lambda, 2, exp);
-                        ConsCell extenv = zip(exp, closure, car(lambda), argList);
-
-                        if (trace >= TRC_FUNC)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(extenv));
-                        ConsCell body = (ConsCell) cdr(lambda);
-                        for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                            eval(car(body), topEnv, extenv, stack+1, level+1);
-                        if (body != null) {
-                            exp = car(body); env = extenv; isTc = true; continue tailcall;
+                            // function call
+                            // (symbolexpr args...) -> object
+                        } else {
+                            func = eval(operator, topEnv, env, stack+1, level+1);
+                            if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(exp));
+                            argList = evlis(arguments, topEnv, env, stack+1, level+1);
+                            // fall through to "actually perform..."
                         }
-                        return null; // lambda w/o body
+
+                        // actually perform the function call that was set up by "apply" or "function call" above
+                        if (primp(func)) {
+                            try { return applyPrimitive((Primitive) func, argList, stack, level); }
+                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
+                            // todo catch (Exception e) rethrow mit stacktrace und errorExp fuer laufzeitfehler von Primitives
+
+                        } else if (consp(func)) {
+                            final Object lambda = cdr(func);          // (params . bodylist)
+                            final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
+                            nArgs("lambda application", lambda, 2, exp);
+                            env = zip(exp, closure, car(lambda), argList);
+
+                            if (trace >= TRC_FUNC)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
+                            forms = (ConsCell) cdr(lambda);
+                            // fall through to "eval a list of forms"
+
+                        } else {
+                            throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(func), errorExp(exp));
+                        }
                     }
 
-                    throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(func), errorExp(exp));
+                    // eval a list of forms
+                    for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
+                        eval(car(forms), topEnv, env, stack+1, level+1);
+                    if (forms != null) {
+                        exp = car(forms); isTc = true; continue tailcall;
+                    }
+                    return null; // lambda/ progn/ labels/... w/o body, shouldn't happen
 
                 }
 
@@ -1287,11 +1278,10 @@ public class LambdaJ {
     }
 
     private void traceStats() {
-        if (trace >= TRC_EVAL) {
+        if (trace >= TRC_STATS) {
             tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
             tracer.println("*** max stack used:   " + maxEvalStack + " ***");
-        }
-        if (trace >= TRC_STATS) {
+
             tracer.println("*** total ConsCells:  " + nCells + " ***");
             tracer.println("*** max env length:   " + maxEnvLen + " ***");
         }
@@ -1482,7 +1472,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.118 2020/10/25 15:55:00 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.119 2020/10/25 17:13:21 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
