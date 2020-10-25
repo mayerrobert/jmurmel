@@ -40,6 +40,9 @@ ConsCellImpl {
 
 
 
+eval wird IMMER mit stack+1/level+1 aufgerufen
+-> +1 bei den aufrufen weg, am anfang von eval machen
+
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
 
 environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)

@@ -378,29 +378,6 @@ public class LambdaJ {
         }
     }
 
-    /** Append rest at the end of first. If first is a list it will be modified. */
-    private ConsCell combine(Object first, Object rest) {
-        if (consp(first)) return appendToList((ConsCell)first, rest);
-        else return cons(first, rest);
-    }
-
-    /** Append rest at the end of first, modifying first in the process.
-     *  Returns a dotted list unless rest is a proper list. */
-    private ConsCell appendToList(ConsCell first, Object rest) {
-        for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
-            if (cdr(last) == first) throw new LambdaJError("%s: first argument is a circular list", "appendToList");
-            if (cdr(last) == null) {
-                last.cdr = rest;
-                return first;
-            }
-            if (!consp(cdr(last))) {
-                last.cdr = cons(last.cdr, rest);
-                return first;
-            }
-        }
-        throw new LambdaJError("%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
-    }
-
     /// symboltable Object
     private SymbolTable symtab;
 
@@ -463,28 +440,32 @@ public class LambdaJ {
                 }
 
                 if (consp(exp)) {
-                    final Object func;                     // will be used in case of a function call
-                    final ConsCell argList;                // will be used in case of a function call
-
                     final Object operator = car(exp);      // first element of the of the S-expression should be a symbol or an expression that computes a symbol
                     if (!listp(cdr(exp))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s%s", "eval", printSEx(exp), errorExp(exp));
                     final ConsCell arguments = (ConsCell) cdr(exp);   // list with remaining atoms/ expressions
 
-                    // special forms
+
+
+                    /// special forms
+
+                    // (quote exp) -> exp
                     if (haveQuote() && operator == sQuote) {
                         oneArg("quote", arguments);
                         return car(arguments);
                     }
 
-                    if (haveXtra() && operator == sIf) {
-                        nArgs("if", arguments, 2, 3, exp);
-                        if (eval(car(arguments), topEnv, env, stack+1, level+1) != null) {
-                            exp = cadr(arguments); isTc = true; continue;
-                        } else if (cddr(arguments) != null) {
-                            exp = caddr(arguments); isTc = true; continue;
-                        } else return null;
+                    // (lambda (params...) forms...) -> lambda or closure
+                    if (operator == sLambda) {
+                        nArgs("lambda", arguments, 2, exp);
+                        if (haveLexC()) return cons3(sLambda, arguments, env);
+                        else return exp;
                     }
 
+
+
+                    /// special forms that change the global environment
+
+                    // (define symbol exp) -> object with a side of global environment extension
                     if (haveXtra() && operator == sDefine) {
                         twoArgs("define", arguments, exp);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
@@ -498,6 +479,7 @@ public class LambdaJ {
                         return value;
                     }
 
+                    // (defun symbol (params...) forms...) -> lambda with a side of global environment extension
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, exp);
                         final Object symbol = car(arguments);
@@ -512,16 +494,76 @@ public class LambdaJ {
                         return lambda;
                     }
 
+
+
+                    /// special forms that run expressions
+
+                    // (if condexpr form optionalform) -> object
+                    if (haveXtra() && operator == sIf) {
+                        nArgs("if", arguments, 2, 3, exp);
+                        if (eval(car(arguments), topEnv, env, stack+1, level+1) != null) {
+                            exp = cadr(arguments); isTc = true; continue tailcall;
+                        } else if (cddr(arguments) != null) {
+                            exp = caddr(arguments); isTc = true; continue tailcall;
+                        } else return null;
+                    }
+
+                    // (progn forms...) -> object
+                    if (haveXtra() && operator == sProgn) {
+                        if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "progn", printSEx(arguments), errorExp(exp));
+                        ConsCell body = arguments;
+                        for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                            eval(car(body), topEnv, env, stack+1, level+1);
+                        if (body != null) {
+                            exp = car(body); isTc = true; continue tailcall;
+                        }
+
+                    // (cond (condexpr forms...)... )
+                    } else if (haveCond() && operator == sCond) {
+                        for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
+                            if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
+                                ConsCell body = (ConsCell) cdar(c);
+                                for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                                    eval(car(body), topEnv, env, stack+1, level+1);
+                                if (body != null) {
+                                    exp = car(body); isTc = true; continue tailcall;
+                                }
+                            }
+                        }
+                        return null; // no condition was true
+
+                    // (labels (bindings...) forms...) -> object
+                    } else if (haveLabels() && operator == sLabels) {
+                        nArgs("labels", arguments, 2, exp);
+                        ConsCell bindings, extenv = cons(cons(null, null), env);
+                        // stick the functions into the extenv
+                        for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
+                            final ConsCell currentFunc = (ConsCell)car(bindings);
+                            final Object currentSymbol = symtab.intern((String)car(currentFunc));
+                            final ConsCell lambda;
+                            if (haveLexC()) lambda = cons3(sLambda, cdr(currentFunc), extenv);
+                            else            lambda = cons (sLambda, cdr(currentFunc));
+                            extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
+                        }
+                        extenv.car = cadr(extenv);
+                        extenv.cdr = cddr(extenv);
+
+                        ConsCell body = (ConsCell) cdr(arguments);
+                        for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                            eval(car(body), topEnv, extenv, stack+1, level+1);
+                        if (body != null) {
+                            exp = car(body); env = extenv; isTc = true; continue tailcall;
+                        }
+
                     // (let* optsymbol? (bindings...) forms...) -> object
                     // (letrec optsymbol? (bindings...) forms...) -> object
-                    if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
+                    } else if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
                         final boolean rec = operator == sLetrec;
                         final boolean named = symbolp(car(arguments));
-                        final ConsCell bodyEnvEntry = cons(null, null), let;
-                        if (named) let = (ConsCell)cdr(arguments);
-                        else let = arguments;
-
+                        final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;
                         final ConsCell bindings = (ConsCell)car(let);
+
+                        final ConsCell bodyEnvEntry = cons(null, null);
                         ConsCell extenv = cons(bodyEnvEntry, env);
                         for (ConsCell binding = bindings; binding != null; binding = (ConsCell)cdr(binding)) {
                             final ConsCell newBinding = cons(caar(binding), null);
@@ -542,61 +584,24 @@ public class LambdaJ {
                             }
                             bodyEnvEntry.cdr = cons3(sLambda, cons(bodyParams, cdr(let)), extenv);
                         }
-                        ConsCell body;
-                        for (body = (ConsCell)cdr(let); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
+                        ConsCell body = (ConsCell)cdr(let);
+                        for ( ; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                             eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
-                            exp = car(body); env = extenv; isTc = true; continue;
+                            exp = car(body); env = extenv; isTc = true; continue tailcall;
                         }
-                        return null; // empty letrec body
+                        return null; // no forms
                     }
 
-                    if (operator == sLambda) {
-                        nArgs("lambda", arguments, 2, exp);
-                        if (haveLexC()) return cons3(sLambda, arguments, env);
-                        else return exp;
-                    }
 
-                    // labels bindings body -> object
-                    if (haveLabels() && operator == sLabels) {
-                        nArgs("labels", arguments, 2, exp);
-                        ConsCell bindings, extenv = cons(cons(null, null), env);
-                        // stick the functions into the extenv
-                        for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
-                            final ConsCell currentFunc = (ConsCell)car(bindings);
-                            final Object currentSymbol = symtab.intern((String)car(currentFunc));
-                            final ConsCell lambda;
-                            if (haveLexC()) lambda = cons3(sLambda, cdr(currentFunc), extenv);
-                            else            lambda = cons (sLambda, cdr(currentFunc));
-                            extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
-                        }
-                        extenv.car = cadr(extenv);
-                        extenv.cdr = cddr(extenv);
 
-                        // run the function's expressions, the last one with TCO in case it's a tailcall
-                        ConsCell body;
-                        for (body = (ConsCell) cdr(arguments); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                            eval(car(body), topEnv, extenv, stack+1, level+1);
-                        if (body != null) {
-                            exp = car(body); env = extenv; isTc = true; continue;
-                        }
-                    }
+                    /// function application
 
-                    if (haveCond() && operator == sCond) {
-                        for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
-                            if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
-                                ConsCell body;
-                                for (body = (ConsCell) cdar(c); body != null && cdr(body) != null; body = (ConsCell) cdr(body))
-                                    eval(car(body), topEnv, env, stack+1, level+1);
-                                if (body != null) {
-                                    exp = car(body); isTc = true; continue tailcall;
-                                }
-                            }
-                        }
-                        return null;
-                    }
+                    final Object func;                     // will be used in case of a function call
+                    final ConsCell argList;                // will be used in case of a function call
 
                     // apply function to list
+                    // (apply symbolexpr arglist) -> object
                     if (haveApply() && operator == sApply) {
                         twoArgs("apply", arguments, exp);
 
@@ -606,13 +611,8 @@ public class LambdaJ {
                         argList = (ConsCell)_argList;
                         // fall through to "actually perform..."
 
-                    } else if (haveXtra() && operator == sProgn) {
-                        if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "progn", printSEx(arguments), errorExp(exp));
-                        func = cons3(null, cons(null, arguments), env);
-                        argList = null;
-                        // fall through to "actually perform..."
-
                     // function call
+                    // (symbolexpr args...) -> object
                     } else {
                         func = eval(operator, topEnv, env, stack+1, level+1);
                         if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(exp));
@@ -621,7 +621,11 @@ public class LambdaJ {
                     }
 
                     // actually perform the function call that was set up by "apply" or "function call" above
-                    // todo refactor: progn bastelt ein lambda, hier wirds wieder zerlegt
+                    if (primp(func)) {
+                        try { return applyPrimitive((Primitive) func, argList, stack, level); }
+                        catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
+                        // todo catch (Exception e) rethrow mit stacktrace und errorExp fuer laufzeitfehler von Primitives
+                    }
                     if (consp(func)) {
                         final Object lambda = cdr(func);          // (params . bodylist)
                         final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
@@ -633,13 +637,9 @@ public class LambdaJ {
                         for (; body != null && cdr(body) != null; body = (ConsCell) cdr(body))
                             eval(car(body), topEnv, extenv, stack+1, level+1);
                         if (body != null) {
-                            exp = car(body); env = extenv; isTc = true; continue;
+                            exp = car(body); env = extenv; isTc = true; continue tailcall;
                         }
                         return null; // lambda w/o body
-                    }
-                    if (primp(func)) {
-                        try { return applyPrimitive((Primitive) func, argList, stack, level); }
-                        catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
                     }
 
                     throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(func), errorExp(exp));
@@ -807,6 +807,29 @@ public class LambdaJ {
             if (atom == caar(env)) return (ConsCell) car(env);
         }
         return null;
+    }
+
+    /** Append rest at the end of first. If first is a list it will be modified. */
+    private ConsCell combine(Object first, Object rest) {
+        if (consp(first)) return appendToList((ConsCell)first, rest);
+        else return cons(first, rest);
+    }
+
+    /** Append rest at the end of first, modifying first in the process.
+     *  Returns a dotted list unless rest is a proper list. */
+    private ConsCell appendToList(ConsCell first, Object rest) {
+        for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
+            if (cdr(last) == first) throw new LambdaJError("%s: first argument is a circular list", "appendToList");
+            if (cdr(last) == null) {
+                last.cdr = rest;
+                return first;
+            }
+            if (!consp(cdr(last))) {
+                last.cdr = cons(last.cdr, rest);
+                return first;
+            }
+        }
+        throw new LambdaJError("%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
     }
 
     private static Object[] listToArray(Object maybeList) {
@@ -1459,7 +1482,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.117 2020/10/25 11:37:48 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.118 2020/10/25 15:55:00 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
