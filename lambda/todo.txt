@@ -59,15 +59,10 @@ utils: combine, list, nth, nhtcdr, c*r
 LambdaJ gibts schon. Ausserdem gibts:
 JavaLISP, http://jlambda.com, jlisp, rlisp, ROMALISP
 -> umbenamsen:
-   Murmel: ich mag das tier, murmeln <->-lispeln
-
+   Murmel: ich mag das tier, murmeln <->-lispeln, Sprache: Murmel, interpreter: jmurmel
+   JUCL: Java Un Common Lisp, uncommon Lisp klingt negativ
 
 Long im parser unterstuetzen
--> number operatoren auf long erweitern
-   div: integer division, rem: rest
-   numberp erweitern
-   trunc und round
-
 Hashmaps
 -> make-hash-table
    get-hash key -> value
@@ -903,3 +898,8 @@ named let* und letrec
 
 muss man bei named let immer alle parameter befuellen?
 -> in scheme ja
+
+-> number operatoren auf long erweitern
+   div: integer division, rem: rest
+   numberp erweitern
+   floor, ceil und round

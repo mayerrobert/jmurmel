@@ -970,26 +970,27 @@ public class LambdaJ {
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
         twoArgs(opName, args);
         numberArgs(opName, args);
-        final double lhs = (Double)car(args);
-        final double rhs = (Double)car(cdr(args));
-        return boolResult(pred.test(Double.compare(lhs,  rhs)));
+        final Number lhs = (Number)car(args);
+        final Number rhs = (Number)cadr(args);
+        if (lhs instanceof Long && rhs instanceof Long) return boolResult(pred.test(Long.compare(lhs.longValue(),  rhs.longValue())));
+        else                                            return boolResult(pred.test(Double.compare(lhs.doubleValue(),  rhs.doubleValue())));
     }
 
     /** generate operator for zero or more args */
     private static Object makeAddOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         numberArgs(opName, args);
         for (; args != null; args = (ConsCell) cdr(args))
-            startVal = op.applyAsDouble(startVal, (Double)car(args));
+            startVal = op.applyAsDouble(startVal, ((Number)car(args)).doubleValue());
         return startVal;
     }
 
     /** generate operator for one or more args */
     private static Object makeSubOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         oneOrMoreNumbers(opName, args);
-        double result = (Double)car(args);
+        double result = ((Number)car(args)).doubleValue();
         if (cdr(args) == null) return op.applyAsDouble(startVal, result);
         for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
-            result = op.applyAsDouble(result, (Double)car(args));
+            result = op.applyAsDouble(result, ((Number)car(args)).doubleValue());
         return result;
     }
 
@@ -1167,22 +1168,26 @@ public class LambdaJ {
             final Primitive fmod = args -> {
                 twoArgs("mod", args);
                 numberArgs("mod", args);
-                return (Double)car(args) % (Double)car(cdr(args));
+                return ((Number)car(args)).doubleValue() % ((Number)car(cdr(args))).doubleValue();
             };
 
-            env = cons(cons(symtab.intern("+"),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
-                  cons(cons(symtab.intern("-"),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
-                  cons(cons(symtab.intern("*"),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
-                  cons(cons(symtab.intern("/"),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
-                  cons(cons(symtab.intern("="),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
+            env = cons(cons(symtab.intern("="),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
                   cons(cons(symtab.intern(">"),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
                   cons(cons(symtab.intern(">="),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
                   cons(cons(symtab.intern("<"),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
                   cons(cons(symtab.intern("<="),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
+                  env)))));
+            env = cons(cons(symtab.intern("+"),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
+                  cons(cons(symtab.intern("-"),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
+                  cons(cons(symtab.intern("*"),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
+                  cons(cons(symtab.intern("/"),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
                   cons(cons(symtab.intern("mod"),     fmod),
-                  cons(cons(symtab.intern("numberp"), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
-                  cons(cons(symtab.intern("floor"),   (Primitive) args -> { oneArg("floor", args); return (long)Math.floor((Double)car(args)); }),
-                  env))))))))))));
+                  env)))));
+            env = cons(cons(symtab.intern("numberp"), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
+                  cons(cons(symtab.intern("round"),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round((Double)car(args)); }),
+                  cons(cons(symtab.intern("floor"),   (Primitive) args -> { oneArg("floor",   args); return (long)Math.floor((Double)car(args)); }),
+                  cons(cons(symtab.intern("ceiling"), (Primitive) args -> { oneArg("ceiling", args); return (long)Math.ceil ((Double)car(args)); }),
+                  env))));
         }
 
         if (haveEq()) {
@@ -1446,7 +1451,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.115 2020/10/24 20:54:23 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.116 2020/10/25 10:12:10 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
