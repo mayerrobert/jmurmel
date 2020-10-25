@@ -335,7 +335,7 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   ()");
                 return null;
             }
-            if (haveNil() && !tokEscape && tok instanceof String && "NIL".equalsIgnoreCase((String) tok)) {
+            if (haveNil() && !tokEscape && tok instanceof String && "nil".equalsIgnoreCase((String) tok)) {
                 return null;
             }
             if (!tokEscape && ")".equals(tok)) {
@@ -583,11 +583,11 @@ public class LambdaJ {
 
                     /// function application
                     else {
-                        final Object func;                     // will be used in case of a function call
-                        final ConsCell argList;                // will be used in case of a function call
+                        final Object func;
+                        final ConsCell argList;
 
                         // apply function to list
-                        // (apply symbolexpr arglist) -> object
+                        // (apply expr arglist) -> object
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments, exp);
 
@@ -597,8 +597,8 @@ public class LambdaJ {
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
 
-                            // function call
-                            // (symbolexpr args...) -> object
+                        // function call
+                        // (expr args...) -> object
                         } else {
                             func = eval(operator, topEnv, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(exp));
@@ -610,9 +610,8 @@ public class LambdaJ {
                         if (primp(func)) {
                             try { return applyPrimitive((Primitive) func, argList, stack, level); }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(exp)); }
-                            // todo catch (Exception e) rethrow mit stacktrace und errorExp fuer laufzeitfehler von Primitives
 
-                        } else if (consp(func)) {
+                        } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // (params . bodylist)
                             final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
                             nArgs("lambda application", lambda, 2, exp);
@@ -623,7 +622,7 @@ public class LambdaJ {
                             // fall through to "eval a list of forms"
 
                         } else {
-                            throw new LambdaJError("function application: not a symbol or lambda: %s%s", printSEx(func), errorExp(exp));
+                            throw new LambdaJError("function application: not a primitive or lambda: %s%s", printSEx(func), errorExp(exp));
                         }
                     }
 
@@ -663,10 +662,8 @@ public class LambdaJ {
         ConsCell params = (ConsCell)paramList;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             extenv = cons(cons(car(params), car(args)), extenv);
-        if (params != null)
-            throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s%s", "function application", printSEx(params), errorExp(exp));
-        if (args != null)
-            throw new LambdaJError("%s: too many arguments. remaining arguments: %s%s", "function application", printSEx(args), errorExp(exp));
+        if (params != null) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s%s", "function application", printSEx(params), errorExp(exp));
+        if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s%s", "function application", printSEx(args), errorExp(exp));
         return extenv;
     }
 
@@ -691,16 +688,16 @@ public class LambdaJ {
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
-        if (trace >= TRC_FUNC) {
-            tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
-        }
-        return primfn.apply(args);
+        if (trace >= TRC_FUNC) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
+        try { return primfn.apply(args); }
+        catch (LambdaJError e) { throw e; }
+        catch (Exception e) { throw new LambdaJError("#<primitive> throws exception: %s", e.getMessage()); }
     }
 
 
 
     /// stats during eval and at the end
-    private int nCells;  // todo sollte eigentlich nicht static sein, ists aber weils der konstruktor der stat Klasse ConsCell schreibt
+    private int nCells;
     private int maxEnvLen;
     private int maxEvalStack;
     private int maxEvalLevel;
@@ -1224,7 +1221,10 @@ public class LambdaJ {
                   env)));
         }
 
-        return cons(cons(null, null), env); // top env begins with (nil . nil), will insert stuffimmediately after (nil . nil).
+        env = cons(cons(symtab.intern("throw"), (Primitive) a -> { oneArg("throw", a); throw new RuntimeException(car(a).toString()); }),
+                env);
+
+        return cons(cons(null, null), env); // top env begins with (nil . nil), define/ defun will insert stuff immediately after (nil . nil).
     }
 
 
@@ -1474,7 +1474,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.121 2020/10/25 18:15:14 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.122 2020/10/25 18:58:36 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

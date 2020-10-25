@@ -71,7 +71,7 @@ public class ApplyTest {
 
     @Test
     public void cannotApplyNil() {
-        LambdaJTest.runErrorTest("String", "(apply nil '(1 2))", "function application: not a symbol or lambda: nil");
+        LambdaJTest.runErrorTest("String", "(apply nil '(1 2))", "function application: not a primitive or lambda: nil");
     }
 
     @Test
