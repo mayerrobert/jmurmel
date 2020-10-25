@@ -421,7 +421,7 @@ public class LambdaJ {
     private Object eval(Object exp, ConsCell topEnv, ConsCell env, int stack, int level) {
         boolean isTc = false;
         try {
-            level--;
+            stack++;
 
             tailcall:
             while (true) {
@@ -474,7 +474,7 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "define", symbol, printSEx(cdr(envEntry)), errorExp(exp));
 
-                        final Object value = eval(cadr(arguments), topEnv, env, stack+1, level+1);
+                        final Object value = eval(cadr(arguments), topEnv, env, stack, level);
                         topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
                         return value;
                     }
@@ -501,7 +501,7 @@ public class LambdaJ {
                     // (if condexpr form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3, exp);
-                        if (eval(car(arguments), topEnv, env, stack+1, level+1) != null) {
+                        if (eval(car(arguments), topEnv, env, stack, level) != null) {
                             exp = cadr(arguments); isTc = true; continue tailcall;
                         } else if (cddr(arguments) != null) {
                             exp = caddr(arguments); isTc = true; continue tailcall;
@@ -520,7 +520,7 @@ public class LambdaJ {
                     // (cond (condexpr forms...)... )
                     } else if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
-                            if (eval(caar(c), topEnv, env, stack+1, level+1) != null) {
+                            if (eval(caar(c), topEnv, env, stack, level) != null) {
                                 forms = (ConsCell) cdar(c);
                                 break;
                             }
@@ -559,7 +559,7 @@ public class LambdaJ {
                         for (ConsCell binding = bindings; binding != null; binding = (ConsCell)cdr(binding)) {
                             final ConsCell newBinding = cons(caar(binding), null);
                             if (rec) extenv.cdr = cons(newBinding, cdr(extenv));
-                            newBinding.cdr = eval(cadar(binding), topEnv, extenv, stack+1, level+1);
+                            newBinding.cdr = eval(cadar(binding), topEnv, extenv, stack, level);
                             if (!rec) extenv.cdr = cons(newBinding, cdr(extenv));
                         }
                         if (named) {
@@ -591,8 +591,8 @@ public class LambdaJ {
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments, exp);
 
-                            func = eval(car(arguments), topEnv, env, stack+1, level+1);
-                            final Object _argList = eval(cadr(arguments), topEnv, env, stack+1, level+1);
+                            func = eval(car(arguments), topEnv, env, stack, level);
+                            final Object _argList = eval(cadr(arguments), topEnv, env, stack, level);
                             if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s%s", "apply", printSEx(_argList), errorExp(exp));
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
@@ -600,9 +600,9 @@ public class LambdaJ {
                             // function call
                             // (symbolexpr args...) -> object
                         } else {
-                            func = eval(operator, topEnv, env, stack+1, level+1);
+                            func = eval(operator, topEnv, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(exp));
-                            argList = evlis(arguments, topEnv, env, stack+1, level+1);
+                            argList = evlis(arguments, topEnv, env, stack, level);
                             // fall through to "actually perform..."
                         }
 
@@ -629,7 +629,7 @@ public class LambdaJ {
 
                     // eval a list of forms
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                        eval(car(forms), topEnv, env, stack+1, level+1);
+                        eval(car(forms), topEnv, env, stack, level);
                     if (forms != null) {
                         exp = car(forms); isTc = true; continue tailcall;
                     }
@@ -675,7 +675,7 @@ public class LambdaJ {
         ConsCell head = null, insertPos = null;
         Object list = _list;
         for (; list != null && _list != cdr(list); list = cdr(list)) {
-            ConsCell currentArg = cons(eval(car(list), topEnv, env, stack+1, level+1), null);
+            ConsCell currentArg = cons(eval(car(list), topEnv, env, stack, level), null);
             if (head == null) {
                 head = currentArg;
                 insertPos = head;
@@ -1472,7 +1472,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.119 2020/10/25 17:13:21 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.120 2020/10/25 17:55:44 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
