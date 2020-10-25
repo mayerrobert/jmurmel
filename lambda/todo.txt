@@ -40,6 +40,8 @@ ConsCellImpl {
 
 
 
+define und defun sollten ggf das symbol liefern
+
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
 
 environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)

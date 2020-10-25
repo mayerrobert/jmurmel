@@ -513,13 +513,15 @@ public class LambdaJ {
 
                     // (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
-                        if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "progn", printSEx(arguments), errorExp(exp));
+                        if (!consp(arguments)) throw new LambdaJError("%s: expected a list of forms but got %s%s", "progn", printSEx(arguments), errorExp(exp));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
                     // (cond (condexpr forms...)... )
                     } else if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
+                            if (!listp(car(c))) throw new LambdaJError("cond: malformed cond expression. was expecting a list (condexpr forms...) but got %s%s",
+                                                                       printSEx(car(c)), errorExp(exp));
                             if (eval(caar(c), topEnv, env, stack, level) != null) {
                                 forms = (ConsCell) cdar(c);
                                 break;
@@ -533,7 +535,7 @@ public class LambdaJ {
                         nArgs("labels", arguments, 2, exp);
                         ConsCell bindings, extenv = cons(cons(null, null), env);
                         // stick the functions into the extenv
-                        for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check
+                        for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check, dotted list
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
                             final ConsCell lambda;
@@ -541,8 +543,7 @@ public class LambdaJ {
                             else            lambda = cons (sLambda, cdr(currentFunc));
                             extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
                         }
-                        extenv.car = cadr(extenv);
-                        extenv.cdr = cddr(extenv);
+                        extenv.car = cadr(extenv);  extenv.cdr = cddr(extenv);
                         forms = (ConsCell) cdr(arguments);  env = extenv;
                         // fall through to "eval a list of forms"
 
@@ -627,6 +628,7 @@ public class LambdaJ {
                     }
 
                     // eval a list of forms
+                    // todo dotted list, circular list
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
                         eval(car(forms), topEnv, env, stack, level);
                     if (forms != null) {
@@ -1474,7 +1476,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.122 2020/10/25 18:58:36 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.123 2020/10/25 20:01:38 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
