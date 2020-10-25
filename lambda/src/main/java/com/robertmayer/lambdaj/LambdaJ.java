@@ -440,7 +440,7 @@ public class LambdaJ {
                 }
 
                 if (consp(exp)) {
-                    final Object operator = car(exp);      // first element of the of the S-expression should be a symbol or an expression that computes a symbol
+                    final Object operator = car(exp);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     if (!listp(cdr(exp))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s%s", "eval", printSEx(exp), errorExp(exp));
                     final ConsCell arguments = (ConsCell) cdr(exp);   // list with remaining atoms/ expressions
 
@@ -498,7 +498,7 @@ public class LambdaJ {
 
                     /// special forms that run expressions
 
-                    // (if condexpr form optionalform) -> object
+                    // (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3, exp);
                         if (eval(car(arguments), topEnv, env, stack, level) != null) {
@@ -517,7 +517,7 @@ public class LambdaJ {
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
-                    // (cond (condexpr forms...)... )
+                    // (cond (condform forms...)... )
                     } else if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (!listp(car(c))) throw new LambdaJError("cond: malformed cond expression. was expecting a list (condexpr forms...) but got %s%s",
@@ -530,7 +530,7 @@ public class LambdaJ {
                         if (forms == null) return null; // no condition was true
                         // fall through to "eval a list of forms"
 
-                    // (labels (bindings...) forms...) -> object
+                    // (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, exp);
                         ConsCell bindings, extenv = cons(cons(null, null), env);
@@ -1476,7 +1476,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.123 2020/10/25 20:01:38 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.124 2020/10/25 20:44:31 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

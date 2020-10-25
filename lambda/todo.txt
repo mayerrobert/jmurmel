@@ -42,6 +42,18 @@ ConsCellImpl {
 
 define und defun sollten ggf das symbol liefern
 
+FFI: methoden
+Object apply(String func, Object... args)
+Object apply(ObjectReader in, ObjectWriter out, String func, Object... args)
+Object getValue(String globalSymbol)
+
+Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
+(define my-map (# new java.util.HashMap nil))
+(# put java.util.HashMap my-map "my key" "my value")
+(# format java.lang.String nil "%g" 1.0)
+erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
+primitive # koennte durch eine klasse mit methodencache implementiert werden
+
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
 
 environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
