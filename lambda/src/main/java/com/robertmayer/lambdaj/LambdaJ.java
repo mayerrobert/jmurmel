@@ -1284,6 +1284,8 @@ public class LambdaJ {
 
             tracer.println("*** total ConsCells:  " + nCells + " ***");
             tracer.println("*** max env length:   " + maxEnvLen + " ***");
+
+            maxEvalLevel = maxEvalStack = nCells = maxEnvLen = 0;
         }
     }
 
@@ -1472,7 +1474,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.120 2020/10/25 17:55:44 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.121 2020/10/25 18:15:14 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

@@ -53,6 +53,7 @@ und man kann alle environment zugriffe durch array index zugriffe ersetzen.
 parameter sollten dann auch slots im array sein, beim func call entsprechend abfuellen
 -> umsetzung: beim closen nicht bei env sondern cdr(env) beginnen. das erste element ist das (null . nil) cons,
 erweiterungen werden dahintergezwickt. kann man per cmdline umswitchen.
+   -> leider nein, das environment beim closen ist (lokalesenv globalesenv)
 
 utils: combine, list, nth, nhtcdr, c*r
 
