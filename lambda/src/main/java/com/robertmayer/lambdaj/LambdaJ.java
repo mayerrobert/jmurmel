@@ -540,15 +540,15 @@ public class LambdaJ {
                     // (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, exp);
-                        ConsCell bindings, extenv = env;
-                        // stick the functions into the extenv
+                        ConsCell bindings;
+                        // stick the functions into the env
                         for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check, dotted list
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
-                            final ConsCell lambda = makeClosure(cdr(currentFunc), extenv);
-                            extendEnv(extenv, currentSymbol, lambda);
+                            final ConsCell lambda = makeClosure(cdr(currentFunc), env);
+                            extendEnv(env, currentSymbol, lambda);
                         }
-                        forms = (ConsCell) cdr(arguments);  env = extenv;
+                        forms = (ConsCell) cdr(arguments);
                         // fall through to "eval a list of forms"
 
                     // (let* optsymbol? (bindings...) forms...) -> object
@@ -559,19 +559,18 @@ public class LambdaJ {
                         final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;
                         final ConsCell bindings = (ConsCell)car(let);
 
-                        final ConsCell extenv = env;
                         for (ConsCell binding = bindings; binding != null; binding = (ConsCell)cdr(binding)) {
                             ConsCell newBinding = null;
-                            if (rec) newBinding = extendEnv(extenv, caar(binding), null);
-                            Object val = eval(cadar(binding), topEnv, extenv, stack, level);
-                            if (!rec) newBinding = extendEnv(extenv, caar(binding), null);
+                            if (rec) newBinding = extendEnv(env, caar(binding), null);
+                            Object val = eval(cadar(binding), topEnv, env, stack, level);
+                            if (!rec) newBinding = extendEnv(env, caar(binding), null);
                             newBinding.cdr = val;
                         }
                         if (named) {
                             ConsCell bodyParams = extractParamList(bindings);
-                            extendEnv(extenv, car(arguments), makeClosure(cons(bodyParams, cdr(let)), extenv));
+                            extendEnv(env, car(arguments), makeClosure(cons(bodyParams, cdr(let)), env));
                         }
-                        forms = (ConsCell)cdr(let);  env = extenv;
+                        forms = (ConsCell)cdr(let);
                         // fall through to "eval a list of forms"
                     }
 
@@ -647,9 +646,9 @@ public class LambdaJ {
 
     /** insert a new symbolentry at the front of env, env is modified in place, address of the list will not change */
     private ConsCell extendEnv(ConsCell env, Object symbol, Object value) {
-        ConsCell symbolEntry = cons(symbol, value);
-        Object oldCar = car(env);
-        Object oldCdr = cdr(env);
+        final ConsCell symbolEntry = cons(symbol, value);
+        final Object oldCar = car(env);
+        final Object oldCdr = cdr(env);
         env.car = symbolEntry;
         env.cdr = cons(oldCar, oldCdr);
         return symbolEntry;
@@ -674,26 +673,26 @@ public class LambdaJ {
      *    stick above list in front of the environment
      *  return extended environment</pre> */
     // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
-    private ConsCell zip(Object exp, ConsCell extenv, Object paramList, ConsCell args) {
-        if (paramList == null && args == null) return extenv; // shortcut for no params
+    private ConsCell zip(Object exp, ConsCell env, Object paramList, ConsCell args) {
+        if (paramList == null && args == null) return env; // shortcut for no params
         if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s%s",
                                                       "function application", printSEx(paramList), errorExp(exp));
 
         ConsCell params = (ConsCell)paramList;
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-            extenv = cons(cons(car(params), car(args)), extenv);
+            env = cons(cons(car(params), car(args)), env);
         if (params != null) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s%s", "function application", printSEx(params), errorExp(exp));
         if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s%s", "function application", printSEx(args), errorExp(exp));
-        return extenv;
+        return env;
     }
 
     /** eval a list of forms and return a list of results */
-    private ConsCell evlis(ConsCell _list, ConsCell topEnv, ConsCell env, int stack, int level) {
-        dbgEvalStart("evlis", _list, env, stack, level);
+    private ConsCell evlis(ConsCell _forms, ConsCell topEnv, ConsCell env, int stack, int level) {
+        dbgEvalStart("evlis", _forms, env, stack, level);
         ConsCell head = null, insertPos = null;
-        Object list = _list;
-        for (; list != null && _list != cdr(list); list = cdr(list)) {
-            ConsCell currentArg = cons(eval(car(list), topEnv, env, stack, level), null);
+        Object forms = _forms;
+        for (; forms != null && _forms != cdr(forms); forms = cdr(forms)) {
+            ConsCell currentArg = cons(eval(car(forms), topEnv, env, stack, level), null);
             if (head == null) {
                 head = currentArg;
                 insertPos = head;
@@ -702,9 +701,9 @@ public class LambdaJ {
                 insertPos.cdr = currentArg;
                 insertPos = currentArg;
             }
-            if (!listp(cdr(list))) throw new LambdaJError("%s: was expecting a proper list of expressions but got %s", "evlis", printSEx(_list));
+            if (!listp(cdr(forms))) throw new LambdaJError("%s: was expecting a proper list of expressions but got %s", "evlis", printSEx(_forms));
         }
-        dbgEvalDone("evlis", _list, head, stack, level);
+        dbgEvalDone("evlis", _forms, head, stack, level);
         return head;
     }
 
@@ -1501,7 +1500,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.129 2020/10/26 07:42:58 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.130 2020/10/26 10:12:50 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
