@@ -62,82 +62,82 @@ public class LambdaJTest {
         /* 29 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s4))", "nil", null },
 
         /* 30 */ { "(if (eq (quote a) (quote b)) (quote a))", "nil", null },
-        /* 30 */ { "(if (eq (quote a) (quote a)) (quote a))", "a", null },
-        /* 30 */ { "(if (eq (quote a) (quote b)) (quote a) (quote b))", "b", null },
-        /* 30 */ { "(if (eq (quote a) (quote a)) (quote a) (quote b))", "a", null },
+        /* 31 */ { "(if (eq (quote a) (quote a)) (quote a))", "a", null },
+        /* 32 */ { "(if (eq (quote a) (quote b)) (quote a) (quote b))", "b", null },
+        /* 33 */ { "(if (eq (quote a) (quote a)) (quote a) (quote b))", "a", null },
 
         // labels
-        /* 30 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
-        /* 31 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
+        /* 34 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
+        /* 35 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
 
         // numbers, numeric operators
-        /* 32 */ { "1", "1.0", null },
-        /* 33 */ { "(write 1)", "t", "1.0" },
+        /* 36 */ { "1", "1.0", null },
+        /* 37 */ { "(write 1)", "t", "1.0" },
 
-        /* 34 */ { "(= 2 2)", "t", null },
-        /* 35 */ { "(= 2 3)", "nil", null },
+        /* 38 */ { "(= 2 2)", "t", null },
+        /* 39 */ { "(= 2 3)", "nil", null },
 
-        /* 36 */ { "(< 2 3)", "t", null },
-        /* 37 */ { "(< 2 2)", "nil", null },
+        /* 40 */ { "(< 2 3)", "t", null },
+        /* 41 */ { "(< 2 2)", "nil", null },
 
-        /* 38 */ { "(<= 3 3)", "t", null },
-        /* 39 */ { "(<= 4 2)", "nil", null },
+        /* 42 */ { "(<= 3 3)", "t", null },
+        /* 43 */ { "(<= 4 2)", "nil", null },
 
-        /* 40 */ { "(> 4 3)", "t", null },
-        /* 41 */ { "(> 2 2)", "nil", null },
+        /* 44 */ { "(> 4 3)", "t", null },
+        /* 45 */ { "(> 2 2)", "nil", null },
 
-        /* 42 */ { "(>= 3 3)", "t", null },
-        /* 43 */ { "(>= 3 4)", "nil", null },
+        /* 46 */ { "(>= 3 3)", "t", null },
+        /* 47 */ { "(>= 3 4)", "nil", null },
 
-        /* 44 */ { "(+)", "0.0", null },
-        /* 45 */ { "(+ 3)", "3.0", null },
-        /* 46 */ { "(+ 3 4)", "7.0", null },
-        /* 47 */ { "(+ 3 4 5)", "12.0", null },
+        /* 48 */ { "(+)", "0.0", null },
+        /* 49 */ { "(+ 3)", "3.0", null },
+        /* 50 */ { "(+ 3 4)", "7.0", null },
+        /* 51 */ { "(+ 3 4 5)", "12.0", null },
 
-        /* 48 */ { "(- 3)", "-3.0", null },
-        /* 49 */ { "(- 3 4)", "-1.0", null },
-        /* 50 */ { "(- 3 4 5)", "-6.0", null },
+        /* 52 */ { "(- 3)", "-3.0", null },
+        /* 53 */ { "(- 3 4)", "-1.0", null },
+        /* 54 */ { "(- 3 4 5)", "-6.0", null },
 
-        /* 51 */ { "(*)", "1.0", null },
-        /* 52 */ { "(* 3)", "3.0", null },
-        /* 53 */ { "(* 3 4)", "12.0", null },
-        /* 54 */ { "(* 3 4 5)", "60.0", null },
+        /* 55 */ { "(*)", "1.0", null },
+        /* 56 */ { "(* 3)", "3.0", null },
+        /* 57 */ { "(* 3 4)", "12.0", null },
+        /* 58 */ { "(* 3 4 5)", "60.0", null },
 
-        /* 55 */ { "(/ 5)", "0.2", null },
-        /* 56 */ { "(/ 12 2)", "6.0", null },
-        /* 57 */ { "(/ 12 2 3)", "2.0", null },
+        /* 59 */ { "(/ 5)", "0.2", null },
+        /* 60 */ { "(/ 12 2)", "6.0", null },
+        /* 61 */ { "(/ 12 2 3)", "2.0", null },
 
-        /* 58 */ { "(mod 12 5)", "2.0", null },
+        /* 62 */ { "(mod 12 5)", "2.0", null },
 
-        /* 59 */ { "(atom 1)",              "t", null },
-        /* 60 */ { "(atom (quote x))",      "t", null },
-        /* 61 */ { "(atom ())",             "t", null },
-        /* 62 */ { "(atom nil)",            "t", null },
-        /* 63 */ { "(atom (quote (a)))",    "nil", null },
+        /* 63 */ { "(atom 1)",              "t", null },
+        /* 64 */ { "(atom (quote x))",      "t", null },
+        /* 65 */ { "(atom ())",             "t", null },
+        /* 66 */ { "(atom nil)",            "t", null },
+        /* 67 */ { "(atom (quote (a)))",    "nil", null },
 
-        /* 64 */ { "(symbolp 1)",           "nil", null },
-        /* 65 */ { "(symbolp (quote x))",   "t", null },
-        /* 66 */ { "(symbolp ())",          "t", null },
-        /* 67 */ { "(symbolp nil)",         "t", null },
-        /* 68 */ { "(symbolp (quote (a)))", "nil", null },
+        /* 68 */ { "(symbolp 1)",           "nil", null },
+        /* 69 */ { "(symbolp (quote x))",   "t", null },
+        /* 70 */ { "(symbolp ())",          "t", null },
+        /* 71 */ { "(symbolp nil)",         "t", null },
+        /* 72 */ { "(symbolp (quote (a)))", "nil", null },
 
-        /* 69 */ { "(consp 1)",             "nil", null },
-        /* 70 */ { "(consp (quote x))",     "nil", null },
-        /* 71 */ { "(consp ())",            "nil", null },
-        /* 72 */ { "(consp nil)",           "nil", null },
-        /* 73 */ { "(consp (quote (a)))",   "t", null },
+        /* 73 */ { "(consp 1)",             "nil", null },
+        /* 74 */ { "(consp (quote x))",     "nil", null },
+        /* 75 */ { "(consp ())",            "nil", null },
+        /* 76 */ { "(consp nil)",           "nil", null },
+        /* 77 */ { "(consp (quote (a)))",   "t", null },
 
-        /* 74 */ { "(listp 1)",             "nil", null },
-        /* 75 */ { "(listp (quote x))",     "nil", null },
-        /* 76 */ { "(listp ())",            "t", null },
-        /* 77 */ { "(listp nil)",           "t", null },
-        /* 78 */ { "(listp (quote (a)))",   "t", null },
+        /* 78 */ { "(listp 1)",             "nil", null },
+        /* 79 */ { "(listp (quote x))",     "nil", null },
+        /* 80 */ { "(listp ())",            "t", null },
+        /* 81 */ { "(listp nil)",           "t", null },
+        /* 82 */ { "(listp (quote (a)))",   "t", null },
 
-        /* 79 */ { "(numberp 1)",           "t", null },
-        /* 80 */ { "(numberp (quote x))",   "nil", null },
-        /* 81 */ { "(numberp ())",          "nil", null },
-        /* 82 */ { "(numberp nil)",         "nil", null },
-        /* 83 */ { "(numberp (quote (a)))", "nil", null },
+        /* 83 */ { "(numberp 1)",           "t", null },
+        /* 84 */ { "(numberp (quote x))",   "nil", null },
+        /* 85 */ { "(numberp ())",          "nil", null },
+        /* 86 */ { "(numberp nil)",         "nil", null },
+        /* 87 */ { "(numberp (quote (a)))", "nil", null },
 
         /* https://graham.main.nc.us/~bhammel/graham/lisp.html
 
@@ -145,11 +145,11 @@ public class LambdaJTest {
         to equate the empty list with a selfevaluating atom called "nil". Thus,
         */
 
-        /* 83 */ { "(cdr (cdr (cdr (quote (a (b c) (d (e f)))))))", "nil", null },
-        /* 83 */ { "()", "nil", null },
-        /* 83 */ { "(quote ())", "nil", null },
-        /* 83 */ { "nil", "nil", null },
-        /* 84 */ { "t", "t", null },
+        /* 88 */ { "(cdr (cdr (cdr (quote (a (b c) (d (e f)))))))", "nil", null },
+        /* 89 */ { "()", "nil", null },
+        /* 90 */ { "(quote ())", "nil", null },
+        /* 91 */ { "nil", "nil", null },
+        /* 92 */ { "t", "t", null },
 
         /*
         The values that atom returns sets the stage for the two internally defined selfevaluating
@@ -181,7 +181,7 @@ public class LambdaJTest {
            nil
          */
 
-        /* 85 */ { "(define *xyxxy* (lambda () ()))", "(lambda nil nil)", null },
+        /* 93 */ { "(define *xyxxy* (lambda () ()))", "*xyxxy*", null },
     };
 
     @Test

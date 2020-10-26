@@ -465,21 +465,21 @@ public class LambdaJ {
 
                     /// special forms that change the global environment
 
-                    // (define symbol exp) -> object with a side of global environment extension
+                    // (define symbol exp) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefine) {
                         twoArgs("define", arguments, exp);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
-                                                                // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
+                                                              // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
                         if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s%s", "define", printSEx(symbol), errorExp(exp));
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "define", symbol, printSEx(cdr(envEntry)), errorExp(exp));
 
                         final Object value = eval(cadr(arguments), topEnv, env, stack, level);
                         topEnv.cdr = cons(cons(symbol, value), cdr(topEnv));
-                        return value;
+                        return symbol;
                     }
 
-                    // (defun symbol (params...) forms...) -> lambda with a side of global environment extension
+                    // (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, exp);
                         final Object symbol = car(arguments);
@@ -491,7 +491,7 @@ public class LambdaJ {
 
                         final Object lambda = cons3(sLambda, cdr(arguments), haveLexC() ? env : null);
                         topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
-                        return lambda;
+                        return symbol;
                     }
 
 
@@ -517,7 +517,7 @@ public class LambdaJ {
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
-                    // (cond (condform forms...)... )
+                    // (cond (condform forms...)... ) -> object
                     } else if (haveCond() && operator == sCond) {
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (!listp(car(c))) throw new LambdaJError("cond: malformed cond expression. was expecting a list (condexpr forms...) but got %s%s",
@@ -588,7 +588,7 @@ public class LambdaJ {
                         final ConsCell argList;
 
                         // apply function to list
-                        // (apply expr arglist) -> object
+                        // (apply form argform) -> object
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments, exp);
 
@@ -1476,7 +1476,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.124 2020/10/25 20:44:31 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.125 2020/10/25 21:45:25 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes

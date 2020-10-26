@@ -1,22 +1,22 @@
 
 ;;;
-;;; === LambdaJ Language Reference ====
+;;; === Murmel Language Reference ====
 ;;;
 ;;; This file is an executable language reference manual
-;;; for LambdaJ.
+;;; for Murmel, a single-namespace Lisp dialect.
 ;;;
 ;;; You can read this file or run it with:
-;;; java -jar lambdaj.jar --tty --echo < lambdaj-langref.lisp
+;;; java -jar jmurmel.jar --tty --echo < jmurmel-langref.lisp
 ;;; or:
-;;; java -jar lambdaj.jar --tty --echo <lambdaj-langref.lisp >session.txt
+;;; java -jar jmurmel.jar --tty --echo < murmel-langref.lisp > murmel.txt
 ;;;
-;;; Note that many of these forms, predefined variables can be
+;;; Note that many of these forms, predefined variables, ... can be
 ;;; disabled using commandline arguments if you want to play
 ;;; with an even more reduced Lisp.
 ;;;
 ;;; See also:
-;;; java -jar lambdaj.jar --help ... will print usage information
-;;; LambdaJ> :h                  ... will print REPL command help
+;;; java -jar jmurmel.jar --help ... will print usage information
+;;; JMurmel> :h                  ... will print REPL command help
 
 
 ;;; == Introduction ===================
@@ -28,25 +28,29 @@
 ;;; the expression above should print the famous "Hello, World!"
 ;;; followed by the result
 ;;; ==> t
-;;; and the prompt "LambdaJ>"
+;;; and the prompt "JMurmel>"
 
 
-;;; == Basic Special Forms ============
-
-;;; (lambda (params...) forms...) -> lambda or closure
-; lambda returns a lambda expression
-; arguments are not evaluated
-(lambda (p1 p2) p1)
-
-;;; (quote symbol) -> symbol
-; quote returns an expression w/o evaluating it
-(quote a-symbol)
-
-; a single quote is a shorthand for (quote a-symbol)
-'a-symbol
+;;; == Terminology ====================
+;;;
+;;; Murmel is a Lisp dialect. As such the language isn't
+;;; really defined in terms of program text but in terms
+;;; of in-memory objects that will be passed to eval.
+;;;
+;;; That said, Murmel's default parser turns S-expressions
+;;; in the input file into equivalent in-memory objects. So
+;;; for this reference we'll just pretend Murmel was defined
+;;; in terms of S-expressions, and use S-expressions to describe
+;;; expressions that are valid Murmel, i.e. are acceptable to eval.
+;;; In this reference in-memory objects (or sloppily: S-expressions)
+;;; that are valid Murmel are referred to as "forms". 
+;;;
 
 
 ;;; == S-expressions ==================
+
+; a single quote is a shorthand for (quote an-expression)
+'an-expression
 
 ; returns a dotted pair       ==> (a . b)
 '(a . b)
@@ -64,9 +68,21 @@
 '(a b c)
 
 
+;;; == Basic Special Forms ============
+
+;;; (quote symbol) -> symbol
+; quote returns an expression w/o evaluating it
+(quote a-symbol)
+
+;;; (lambda (params...) forms...) -> lambda or closure
+; lambda returns a lambda expression
+; arguments are not evaluated
+(lambda (p1 p2) p1)
+
+
 ;;; == Data types =====================
 ;;;
-;;; LambdaJ supports symbols, lists, double precision numbers and strings
+;;; Murmel supports symbols, lists, double precision numbers and strings
 
 ; a symbol
 '*a-sample-symbol*
@@ -94,12 +110,7 @@ nil
 
 ;;; == Additional Special Forms =======
 
-; the following special forms should work as expected
-; cond
-; labels
-; if
-
-;;; (define symbol object) -> object
+;;; (define symbol object) -> symbol
 ; define associates symbols in the global environment
 ; with expressions. Redefining already defined symbols
 ; is an error.
@@ -107,30 +118,43 @@ nil
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
 
-;;; (defun symbol (params...) forms...) -> lambda or closure
+;;; (defun symbol (params...) forms...) -> symbol
 ; defun is a shorthand for defining functions
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
+
+;;; (if condform form optionalform) -> object
+
+;;; (progn expr...) -> object
+(if t (progn (write 'abc) (write 'def)))
+
+;;; (cond (condform forms...)... ) -> object
+
+;;; (labels ((symbol (params...) forms...)...) forms...) -> object
 
 ;;; (let* optsymbol? (bindings...) forms...) -> object
 ; works like let* of others Lisps
 ; each binding "sees" the previous ones, optsymbol if given will be bound
 ; to "forms..." inside forms... for recursive calls
-(let* loop ((x 3) (msg 'hi)) (if (= x 0) msg (progn (write (floor x)) (loop (- x 1) msg))))
+(let* loop ((x 3) (msg 'hi))
+           (if (= x 0) msg (progn (write (floor x)) (loop (- x 1) msg))))
 
-;;; (letrec (bindings...) forms...) -> object
+;;; (letrec (bindings...) expr...) -> object
 ; works like let and let* of others Lisps
-; except each binding "sees" the previous as well as itself
+; except each binding "sees" the previous as well as itself.
+; that way a let-bound variable could be a recursive lambda
 (letrec ((x 1) (y (+ x 1))) (write y))
 
-;;; (apply expr arglist) -> object
-; apply the function + to the arguments 1 and 2
-; expects 2 arguments which both will be evaluated
+;;; (apply form argform) -> object
+; form must return a primitive or lambda
+; argform must return a proper list
+; e.g. apply the function + to the arguments 1 and 2
 (apply + '(1 2))
 
-;;; (progn forms...) -> object
-(if t (progn (write 'abc) (write 'def)))
-
+;;; function call
+; applies the operator returned by operatorform to
+; the eval'd operands
+; (operatorform operands...)
 
 ;;; == Predefined Symbols =============
 
@@ -214,11 +238,11 @@ internal-time-units-per-second
 
 ;;; == Copyright ======================
 ;;;
-;;; LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
+;;; Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
 ;;;
 ;;; This work is licensed under the terms of the MIT license.
 ;;; For a copy, see https://opensource.org/licenses/MIT.
 
-;;; At the end of the input file LambdaJ will print "bye." and exit.
+;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.9 2020/10/24 20:54:23 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.10 2020/10/25 10:12:09 Robert Exp $

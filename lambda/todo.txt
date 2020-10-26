@@ -40,12 +40,19 @@ ConsCellImpl {
 
 
 
-define und defun sollten ggf das symbol liefern
+ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting, einfach beim return
+"alles freigeben, was nicht im returnvalue steckt" ?!?
+-> so wirds wohl rust machen, plus borrow checker
+-> "alles freigeben, was nicht im returnvalue steckt" ist aber nicht so leicht
 
 FFI: methoden
-Object apply(String func, Object... args)
-Object apply(ObjectReader in, ObjectWriter out, String func, Object... args)
 Object getValue(String globalSymbol)
+Object apply(String func, Object... args)
+
+und/ oder
+
+interface MurmelFunction { Object apply(Object... args); }
+MurmelFunction getFunction(String func) {...}
 
 Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
 (define my-map (# new java.util.HashMap nil))
@@ -66,8 +73,18 @@ auch beim closen in die closure stecken, nur dann kann die closure ein array wer
 und man kann alle environment zugriffe durch array index zugriffe ersetzen.
 parameter sollten dann auch slots im array sein, beim func call entsprechend abfuellen
 -> umsetzung: beim closen nicht bei env sondern cdr(env) beginnen. das erste element ist das (null . nil) cons,
-erweiterungen werden dahintergezwickt. kann man per cmdline umswitchen.
+   erweiterungen werden dahintergezwickt. kann man per cmdline umswitchen.
    -> leider nein, das environment beim closen ist (lokalesenv globalesenv)
+
+cache fuer assoc: define/ defun loescht einen allenfalls vorhandenen eintrag.
+nicht globaler cache sondern lokale variable in eval, wenn eval mit einem
+erweiterten environment endet, ist der nunmehr ungueltige cache auch weg.
+ggf nicht hashmap<string,object> sondern arraylist<ConsCell>, eine funktion
+wird wohl nur wenige symbole benutzen, da kann linear search schneller sein,
+und es werden viel weniger objekte erzeugt.
+-> problem: bringt nix bei rekursionen, ausser aufrufe von eval bekommen
+   eine kopie des aktuellen cache, aus dem neue lokale variablen/ argumente
+   entfernt wurden
 
 utils: combine, list, nth, nhtcdr, c*r
 
@@ -922,3 +939,5 @@ printSEx umbauen, dass es statt stringbuilder einen Consumer<String> uebernimmt,
 
 eval wird IMMER mit stack+1/level+1 aufgerufen
 -> +1 bei den aufrufen weg, am anfang von eval machen
+
+define und defun sollten ggf das symbol liefern
