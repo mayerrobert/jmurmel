@@ -45,6 +45,9 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 
 
+Long im parser unterstuetzen
+-> parser geht, cmdline switches + dok fehlen
+
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
 
 parameterchecks fuer letrec
@@ -111,7 +114,6 @@ JavaLISP, http://jlambda.com, jlisp, rlisp, ROMALISP
    Murmel: ich mag das tier, murmeln <->-lispeln, Sprache: Murmel, interpreter: jmurmel
    JUCL: Java Un Common Lisp, uncommon Lisp klingt negativ
 
-Long im parser unterstuetzen
 Hashmaps
 -> make-hash-table
    get-hash key -> value

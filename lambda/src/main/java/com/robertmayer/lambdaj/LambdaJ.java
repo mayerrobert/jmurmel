@@ -116,28 +116,29 @@ public class LambdaJ {
     public static final int
     HAVE_LABELS = 1,                   // use Y-combinator instead
     HAVE_NIL    = 1<<2, HAVE_T = 1<<3, // use () and (quote t) instead. printObj will print nil regardless
-    HAVE_XTRA   = 1<<4,                // no extra special forms such as if
-    HAVE_DOUBLE = 1<<5,                // no numbers, +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
-    HAVE_STRING = 1<<6,                // no strings, string literals of string related functions
-    HAVE_IO     = 1<<7,                // no read/ write, result only
-    HAVE_UTIL   = 1<<8,                // no null?, consp, listp, symbolp, assoc
-    HAVE_APPLY  = 1<<9,                // McCarthy didn't list apply
-    HAVE_CONS   = 1<<10,
-    HAVE_COND   = 1<<11,
-    HAVE_ATOM   = 1<<12,
-    HAVE_EQ     = 1<<13,
-    HAVE_QUOTE  = 1<<14,
+    HAVE_XTRA   = 1<<4,                // extra special forms such as if
+    HAVE_DOUBLE = 1<<5,                // numbers, +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
+    HAVE_LONG   = 1<<6,                // turns on only Long support in the reader, you'll want DOUBLE as well
+    HAVE_STRING = 1<<7,                // strings, string literals of string related functions
+    HAVE_IO     = 1<<8,                // read/ write, result only
+    HAVE_UTIL   = 1<<9,                // null?, consp, listp, symbolp, assoc
+    HAVE_APPLY  = 1<<10,               // McCarthy didn't list apply
+    HAVE_CONS   = 1<<11,
+    HAVE_COND   = 1<<12,
+    HAVE_ATOM   = 1<<13,
+    HAVE_EQ     = 1<<14,
+    HAVE_QUOTE  = 1<<15,
 
-    HAVE_LEXC   = 1<<15,
+    HAVE_LEXC   = 1<<16,
 
-    HAVE_LISPEOL = 1 << 16,
+    HAVE_LISPEOL = 1 << 17,
 
 
     HAVE_LAMBDA     = 0,
     HAVE_LAMBDAPLUS = HAVE_LAMBDA | HAVE_ATOM | HAVE_QUOTE | HAVE_EQ,
     HAVE_MIN        = HAVE_LAMBDAPLUS | HAVE_CONS | HAVE_COND,
     HAVE_MINPLUS    = HAVE_MIN | HAVE_APPLY | HAVE_LABELS,
-    HAVE_ALL_DYN    = HAVE_MINPLUS | HAVE_NIL | HAVE_T | HAVE_XTRA | HAVE_DOUBLE | HAVE_STRING | HAVE_IO | HAVE_UTIL,
+    HAVE_ALL_DYN    = HAVE_MINPLUS | HAVE_NIL | HAVE_T | HAVE_XTRA | HAVE_DOUBLE | HAVE_LONG | HAVE_STRING | HAVE_IO | HAVE_UTIL,
 
     HAVE_ALL_LEXC   = HAVE_ALL_DYN | HAVE_LEXC;
     ;
@@ -148,6 +149,7 @@ public class LambdaJ {
     private boolean haveT()       { return (features & HAVE_T)       != 0; }
     private boolean haveXtra()    { return (features & HAVE_XTRA)    != 0; }
     private boolean haveDouble()  { return (features & HAVE_DOUBLE)  != 0; }
+    private boolean haveLong()    { return (features & HAVE_LONG)    != 0; }
     private boolean haveString()  { return (features & HAVE_STRING)  != 0; }
     private boolean haveIO()      { return (features & HAVE_IO)      != 0; }
     private boolean haveUtil()    { return (features & HAVE_UTIL)    != 0; }
@@ -267,7 +269,9 @@ public class LambdaJ {
             token[index] = '\0';
             if (haveDouble() && isNumber()) {
                 try {
-                    tok = Double.valueOf(tokenToString(token));
+                    String s = tokenToString(token);
+                    if (!haveLong() || s.indexOf('.') != -1 || s.indexOf('e') != -1 || s.indexOf('E') != -1) tok = Double.valueOf(s);
+                    else tok = Long.valueOf(s);
                 }
                 catch (NumberFormatException e) {
                     throw new LambdaJError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token));
@@ -1535,7 +1539,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.132 2020/10/26 10:38:03 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.133 2020/10/26 11:24:21 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
