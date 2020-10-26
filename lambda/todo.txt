@@ -45,12 +45,14 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 
 
-environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
+soll bei named letXX das let-symbol in den bindings sichtbar sein?
 
 parameterchecks fuer letrec
 
 statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
 
+redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
+->
 special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
 die auswirkung davon laesst sich durch folgendes symptom beschreiben:
 effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
@@ -253,7 +255,7 @@ try = (lambda (func catch-handler finally) (
 
 der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
 sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
--> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf dn richtigen typ gebracht werden
+-> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf den richtigen typ gebracht werden
    / ergibt immer double, bei *+/mod haengt der ergebnistyp von den eingehenden typen ab
 -> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
 
@@ -308,8 +310,6 @@ class ConsCell extends Value {
 Value car(Value v) { return v.car(); }
 Value cdr(Value v) { return v.cdr(); }
 ConsCell cons(Value car, Value cdr) { return new ConsCell(car, cdr); }
-
-redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
 
 nice to have: apply mit zuviel/ zuwenig args fuer ein lambda: ueberschuessige args koennten gemeinsam mit dem letzten als liste uebergeben werden,
 fehlende als null.
@@ -395,6 +395,7 @@ sogar set! muesste gehen?!
 
 Multithreading waer eigentlich nicht so schwer: solange nix geschrieben werden kann, braucht eigentlich nur die
 Symboltable synchronized sein ?!?
+-> und das environment?
  
 Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
@@ -472,10 +473,6 @@ ggf. mit timestampcheck
 
 
 
-
-
-
-try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
 
 JDBC vielleicht objectorientiert anbinden?
 funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mit (parameternameatom . wertexpression) tupeln
@@ -958,3 +955,7 @@ define und defun sollten ggf das symbol liefern
 
 eval ins environment einhaengen?
 -> The main reason for beginners is: you don't need it. https://stackoverflow.com/questions/2571401/why-exactly-is-eval-evil
+
+environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
+
+try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
