@@ -45,7 +45,21 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 
 
+environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
+
+parameterchecks fuer letrec
+
 statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
+
+special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
+die auswirkung davon laesst sich durch folgendes symptom beschreiben:
+effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
+(define eval 1) -> eval
+(eval eval) -> 1
+(eval 'eval) -> 1
+vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angelegt werden, dann gibt define einen fehler
+und es gibt keine sonstigen auswirkungen mehr
+-> aber let & co lassen das redefinieren trotzdem zu
 
 FFI: methoden
 Object getValue(String globalSymbol)
@@ -69,10 +83,6 @@ backticks und , ggf. auch ,@ im scanner einbauen?
   (eval `(lambda (b) (+ (quote ,a) b))))
 
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
-
-environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
-
-parameterchecks fuer letrec
 
 derzeit haben closures lexikalische lokale variablen und dynamische globale variablen.
 ggf. die globalen variablen
