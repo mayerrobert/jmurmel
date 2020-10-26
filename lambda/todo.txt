@@ -38,12 +38,14 @@ ConsCellImpl {
     rplacd(newVal)...
 }
 
-
-
 ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting, einfach beim return
 "alles freigeben, was nicht im returnvalue steckt" ?!?
 -> so wirds wohl rust machen, plus borrow checker
 -> "alles freigeben, was nicht im returnvalue steckt" ist aber nicht so leicht
+
+
+
+statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
 
 FFI: methoden
 Object getValue(String globalSymbol)
@@ -61,6 +63,10 @@ Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenr
 (# format java.lang.String nil "%g" 1.0)
 erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
 primitive # koennte durch eine klasse mit methodencache implementiert werden
+
+backticks und , ggf. auch ,@ im scanner einbauen?
+(defun constant-adder (a)
+  (eval `(lambda (b) (+ (quote ,a) b))))
 
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
 
@@ -222,9 +228,6 @@ double lesbar ist, gibts NaN
 primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
 
 macros?
-
-eval ins environment einhaengen?
--> The main reason for beginners is: you don't need it. https://stackoverflow.com/questions/2571401/why-exactly-is-eval-evil
 
 alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mot :l auflisten
 weitere debug gschichten wie zb :env fuer environment auflisten
@@ -942,3 +945,6 @@ eval wird IMMER mit stack+1/level+1 aufgerufen
 -> +1 bei den aufrufen weg, am anfang von eval machen
 
 define und defun sollten ggf das symbol liefern
+
+eval ins environment einhaengen?
+-> The main reason for beginners is: you don't need it. https://stackoverflow.com/questions/2571401/why-exactly-is-eval-evil

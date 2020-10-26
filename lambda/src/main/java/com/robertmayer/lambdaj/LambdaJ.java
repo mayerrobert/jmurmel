@@ -393,6 +393,7 @@ public class LambdaJ {
         if (haveCond())   sCond   = symtab.intern("cond");
         if (haveLabels()) sLabels = symtab.intern("labels");
 
+        if (haveXtra())   sEval   = symtab.intern("eval");
         if (haveXtra())   sIf     = symtab.intern("if");
         if (haveXtra())   sDefine = symtab.intern("define");
         if (haveXtra())   sDefun  = symtab.intern("defun");
@@ -406,7 +407,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLetStar, sLetrec, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -497,6 +498,12 @@ public class LambdaJ {
 
 
                     /// special forms that run expressions
+
+                    // (eval form) -> object
+                    if (operator == sEval) {
+                        oneArg("eval", arguments);
+                        exp = eval(car(arguments), topEnv, env, stack, level); isTc = true; continue tailcall;
+                    }
 
                     // (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
@@ -924,6 +931,7 @@ public class LambdaJ {
         if (a != null) throw new LambdaJError("%s: expected no arguments but got %s", func, printSEx(a));
     }
 
+    /** ecactly one argument */
     private static void oneArg(String func, Object a) {
         if (a == null)      throw new LambdaJError("%s: expected one argument but no argument was given", func);
         if (cdr(a) != null) throw new LambdaJError("%s: expected one argument but got extra arg(s) %s", func, printSEx(cdr(a)));
@@ -1480,7 +1488,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.126 2020/10/26 06:41:04 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.127 2020/10/26 07:03:41 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
