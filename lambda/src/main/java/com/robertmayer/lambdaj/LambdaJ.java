@@ -1488,7 +1488,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.127 2020/10/26 07:03:41 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.128 2020/10/26 07:41:37 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1516,18 +1516,20 @@ public class LambdaJ {
                 + "--echo ........  echo all input while reading\n"
                 + "--trace=stats .  print stack and memory stats at end\n"
                 + "--trace=eval ..  print internal interpreter info during executing programs\n"
-                + "--trace=eval ..  print more internal interpreter info during executing programs\n"
+                + "--trace=eval ..  print more internal interpreter info executing programs\n"
                 + "--trace .......  print lots of internal interpreter info during\n"
                 + "                 reading/ parsing/ executing programs\n"
                 + "\n"
                 + "Feature flags:\n"
                 + "\n"
                 + "--dyn .........  use dynamic environments\n"
-                + "--lex .........  use lexical environments, this is the default\n"
+                + "--lex .........  use lexical closures (with dynamic global environment),\n"
+                + "                 this is the default\n"
                 + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
-                + "--no-extra ....  no special forms 'if', 'define', 'defun', 'letrec', 'progn'\n"
+                + "--no-extra ....  no special forms 'eval', 'if', 'define', 'defun',\n"
+                + "                 'letrec', 'progn'\n"
                 + "--no-double ...  no number support\n"
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read/ write/ writeln/\n"
@@ -1536,7 +1538,8 @@ public class LambdaJ {
                 + "                 string-format/ string-format-locale\n"
                 + "                 no time related primitives\n"
                 + "\n"
-                + "--min+ ........  turn off all above features, leaving a Lisp with 10 primitives:\n"
+                + "--min+ ........  turn off all above features, leaving a Lisp\n"
+                + "                 with 10 primitives:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
@@ -1546,7 +1549,8 @@ public class LambdaJ {
                 + "--no-apply ....  no special form 'apply'\n"
                 + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
                 + "\n"
-                + "--min .........  turn off all above features, leaving a Lisp with 8 special forms/ primitives:\n"
+                + "--min .........  turn off all above features, leaving a Lisp with\n"
+                + "                 8 special forms/ primitives:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
@@ -1568,7 +1572,8 @@ public class LambdaJ {
                 + "--no-eq .......  no primitive function 'eq'\n"
                 + "--no-quote ....  no special form quote\n"
                 + "\n"
-                + "--lambda ......  turns off yet even more stuff, leaving I guess bare bones Lambda calculus:\n"
+                + "--lambda ......  turns off yet even more stuff, leaving I guess\n"
+                + "                 bare bones Lambda calculus:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"

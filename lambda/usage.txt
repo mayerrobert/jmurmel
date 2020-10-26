@@ -21,18 +21,20 @@ Misc:
 --echo ........  echo all input while reading
 --trace=stats .  print stack and memory stats at end
 --trace=eval ..  print internal interpreter info during executing programs
---trace=eval ..  print more internal interpreter info during executing programs
+--trace=eval ..  print more internal interpreter info executing programs
 --trace .......  print lots of internal interpreter info during
                  reading/ parsing/ executing programs
 
 Feature flags:
 
 --dyn .........  use dynamic environments
---lex .........  use lexical environments, this is the default
+--lex .........  use lexical closures (with dynamic global environment),
+                 this is the default
 
 --no-nil ......  don't predefine symbol nil (hint: use '()' instead)
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
---no-extra ....  no special forms 'if', 'define', 'defun', 'letrec', 'progn'
+--no-extra ....  no special forms 'eval', 'if', 'define', 'defun',
+                 'letrec', 'progn'
 --no-double ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read/ write/ writeln/
@@ -41,7 +43,8 @@ Feature flags:
                  string-format/ string-format-locale
                  no time related primitives
 
---min+ ........  turn off all above features, leaving a Lisp with 10 primitives:
+--min+ ........  turn off all above features, leaving a Lisp
+                 with 10 primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
@@ -51,7 +54,8 @@ Feature flags:
 --no-apply ....  no special form 'apply'
 --no-labels ...  no special form 'labels' (hint: use Y-combinator instead)
 
---min .........  turn off all above features, leaving a Lisp with 8 special forms/ primitives:
+--min .........  turn off all above features, leaving a Lisp with
+                 8 special forms/ primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
@@ -73,7 +77,8 @@ Feature flags:
 --no-eq .......  no primitive function 'eq'
 --no-quote ....  no special form quote
 
---lambda ......  turns off yet even more stuff, leaving I guess bare bones Lambda calculus:
+--lambda ......  turns off yet even more stuff, leaving I guess
+                 bare bones Lambda calculus:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application

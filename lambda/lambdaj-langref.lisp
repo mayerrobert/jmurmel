@@ -123,6 +123,10 @@ nil
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
 
+;;; (eval form) -> object
+; form will be eval'd, it must return a form
+(eval '(+ 1 2))
+
 ;;; (if condform form optionalform) -> object
 
 ;;; (progn expr...) -> object
@@ -245,4 +249,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.10 2020/10/25 10:12:09 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.11 2020/10/26 06:41:04 Robert Exp $
