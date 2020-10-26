@@ -45,6 +45,22 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 
 
+topEnv kann ein member sein, nicht immer rumreichen, stack detto, mit bisserl aufwand auch level
+-> synchronized ueberlegen
+
+topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
+dasselbe environment haben.
+Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
+wuerd gehen
+ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
+des executioncontext (parameter, let, ...)aufeinander gestapelt,
+drunter ggf. lexical closure, drunter globales topEnv. wenns in einem Scope keine duplikate geben darf, koennte
+es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
+(einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
+der Scope endet beim return von eval, damit ist die hashmap auch weg.
+bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
+(symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
+
 Long im parser unterstuetzen
 -> parser geht, cmdline switches + dok fehlen
 
