@@ -49,8 +49,6 @@ soll bei named letXX das let-symbol in den bindings sichtbar sein?
 
 parameterchecks fuer letrec
 
-statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
-
 redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
 ->
 special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
@@ -959,3 +957,5 @@ eval ins environment einhaengen?
 environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
 
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
+
+statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln

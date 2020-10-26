@@ -302,15 +302,15 @@ public class LambdaJ {
         /// symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
         private ConsCell symbols = null;
 
-        // String#equalsIgnoreCase is slow. we could String#toUpperCase al symbols then we could use String#equals
+        // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
         public Object intern(String sym) {
-            ConsCell pair = symbols;
-            for ( ; pair != null; pair = (ConsCell)cdr(pair)) {
-                if (sym.equalsIgnoreCase((String)car(pair))) {
-                    return car(pair);
+            if (symbols != null)
+                for (Object symbol: symbols) {
+                    if (sym.equalsIgnoreCase((String)symbol)) {
+                        return symbol;
+                    }
                 }
-            }
             symbols = cons(sym, symbols);
             return sym;
         }
@@ -526,6 +526,7 @@ public class LambdaJ {
 
                     // (cond (condform forms...)... ) -> object
                     } else if (haveCond() && operator == sCond) {
+                        /*
                         for (ConsCell c = arguments; c != null; c = (ConsCell) cdr(c)) {
                             if (!listp(car(c))) throw new LambdaJError("cond: malformed cond. expected a list (condexpr forms...) but got %s%s",
                                                                        printSEx(car(c)), errorExp(form));
@@ -534,12 +535,24 @@ public class LambdaJ {
                                 break;
                             }
                         }
+                        */
+                        if (arguments != null)
+                            for (Object c: arguments) {
+                                if (!listp(c)) throw new LambdaJError("cond: malformed cond. expected a list (condexpr forms...) but got %s%s",
+                                                                           printSEx(c), errorExp(form));
+                                if (eval(car(c), topEnv, env, stack, level) != null) {
+                                    forms = (ConsCell) cdr(c);
+                                    break;
+                                }
+                            }
+
                         if (forms == null) return null; // no condition was true
                         // fall through to "eval a list of forms"
 
                     // (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, form);
+                        /*
                         ConsCell bindings;
                         // stick the functions into the env
                         for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check, dotted list
@@ -548,6 +561,15 @@ public class LambdaJ {
                             final ConsCell lambda = makeClosure(cdr(currentFunc), env);
                             extendEnv(env, currentSymbol, lambda);
                         }
+                        */
+                        // stick the functions into the env
+                        if (car(arguments) != null)
+                            for (Object binding: (ConsCell) car(arguments)) {
+                                final ConsCell currentFunc = (ConsCell)binding;
+                                final Object currentSymbol = symtab.intern((String)car(currentFunc));
+                                final ConsCell lambda = makeClosure(cdr(currentFunc), env);
+                                extendEnv(env, currentSymbol, lambda);
+                            }
                         forms = (ConsCell) cdr(arguments);
                         // fall through to "eval a list of forms"
 
@@ -559,11 +581,20 @@ public class LambdaJ {
                         final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;
                         final ConsCell bindings = (ConsCell)car(let);
 
+                        /*
                         for (ConsCell binding = bindings; binding != null; binding = (ConsCell)cdr(binding)) {
                             ConsCell newBinding = null;
                             if (rec) newBinding = extendEnv(env, caar(binding), null);
                             Object val = eval(cadar(binding), topEnv, env, stack, level);
                             if (!rec) newBinding = extendEnv(env, caar(binding), null);
+                            newBinding.cdr = val;
+                        }
+                        */
+                        for (Object binding: bindings) {
+                            ConsCell newBinding = null;
+                            if (rec) newBinding = extendEnv(env, car(binding), null);
+                            Object val = eval(cadr(binding), topEnv, env, stack, level);
+                            if (!rec) newBinding = extendEnv(env, car(binding), null);
                             newBinding.cdr = val;
                         }
                         if (named) {
@@ -656,14 +687,15 @@ public class LambdaJ {
 
     private ConsCell extractParamList(final ConsCell bindings) {
         ConsCell bodyParams = null, insertPos = null;
-        for (ConsCell binding = bindings; binding != null; binding = (ConsCell) cdr(binding)) {
-            if (bodyParams == null) {
-                bodyParams = cons(caar(binding), null);
-                insertPos = bodyParams;
-            } else {
-                insertPos.cdr = cons(caar(binding), null);
+        if (bindings != null)
+            for (Object binding: bindings) {
+                if (bodyParams == null) {
+                    bodyParams = cons(car(binding), null);
+                    insertPos = bodyParams;
+                } else {
+                    insertPos.cdr = cons(car(binding), null);
+                }
             }
-        }
         return bodyParams;
     }
 
@@ -690,19 +722,19 @@ public class LambdaJ {
     private ConsCell evlis(ConsCell _forms, ConsCell topEnv, ConsCell env, int stack, int level) {
         dbgEvalStart("evlis", _forms, env, stack, level);
         ConsCell head = null, insertPos = null;
-        Object forms = _forms;
-        for (; forms != null && _forms != cdr(forms); forms = cdr(forms)) {
-            ConsCell currentArg = cons(eval(car(forms), topEnv, env, stack, level), null);
-            if (head == null) {
-                head = currentArg;
-                insertPos = head;
+        ConsCell forms = _forms;
+        if (forms != null)
+            for (Object form: forms) {
+                ConsCell currentArg = cons(eval(form, topEnv, env, stack, level), null);
+                if (head == null) {
+                    head = currentArg;
+                    insertPos = head;
+                }
+                else {
+                    insertPos.cdr = currentArg;
+                    insertPos = currentArg;
+                }
             }
-            else {
-                insertPos.cdr = currentArg;
-                insertPos = currentArg;
-            }
-            if (!listp(cdr(forms))) throw new LambdaJError("%s: was expecting a proper list of expressions but got %s", "evlis", printSEx(_forms));
-        }
         dbgEvalDone("evlis", _forms, head, stack, level);
         return head;
     }
@@ -780,6 +812,7 @@ public class LambdaJ {
     private static Object   car(Object x)      { return x == null ? null : ((ConsCell)x).car; }
     private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
     private static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
+    private static Object   cadr(Object c)     { return c == null ? null : car(cdr(c)); }
     private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdr(car(c))); }
     private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
 
@@ -801,10 +834,12 @@ public class LambdaJ {
     private static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
-        for (Object l = list; l != null; l = cdr(l)) n++;
+        for (Object l: (ConsCell)list) n++;
         return n;
     }
 
+    /** this is supposed to handle circular lists, todo avoid cce on dotted lists, throw eror instead:
+     * (nthcdr 3 '(0 . 1))) -> Error: Attempted to take CDR of 1. */
     private static Object nthcdr(int n, Object list) {
         if (list == null) return null;
         for (; list != null && n-- > 0; list = cdr(list)) ;
@@ -1500,7 +1535,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.131 2020/10/26 10:28:25 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.132 2020/10/26 10:38:03 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
