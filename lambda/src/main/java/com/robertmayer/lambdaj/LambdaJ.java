@@ -457,7 +457,7 @@ public class LambdaJ {
                     // (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         nArgs("lambda", arguments, 2, exp);
-                        if (haveLexC()) return cons3(sLambda, arguments, env);
+                        if (haveLexC()) return makeClosure(arguments, env);
                         else return exp;
                     }
 
@@ -489,7 +489,7 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "defun", symbol, printSEx(cdr(envEntry)), errorExp(exp));
 
-                        final Object lambda = cons3(sLambda, cdr(arguments), haveLexC() ? env : null);
+                        final Object lambda = makeClosure(cdr(arguments), env);
                         topEnv.cdr = cons(cons(symbol, lambda), cdr(topEnv));
                         return symbol;
                     }
@@ -538,9 +538,7 @@ public class LambdaJ {
                         for (bindings = (ConsCell) car(arguments); bindings != null; bindings = (ConsCell) cdr(bindings)) { // todo circle check, dotted list
                             final ConsCell currentFunc = (ConsCell)car(bindings);
                             final Object currentSymbol = symtab.intern((String)car(currentFunc));
-                            final ConsCell lambda;
-                            if (haveLexC()) lambda = cons3(sLambda, cdr(currentFunc), extenv);
-                            else            lambda = cons (sLambda, cdr(currentFunc));
+                            final ConsCell lambda = makeClosure(cdr(currentFunc), extenv);
                             extenv.cdr = cons(cons(currentSymbol, lambda), cdr(extenv));
                         }
                         extenv.car = cadr(extenv);  extenv.cdr = cddr(extenv);
@@ -574,7 +572,7 @@ public class LambdaJ {
                                     insertPos.cdr = cons(caar(binding), null);
                                 }
                             }
-                            bodyEnvEntry.cdr = cons3(sLambda, cons(bodyParams, cdr(let)), extenv);
+                            bodyEnvEntry.cdr = makeClosure(cons(bodyParams, cdr(let)), extenv);
                         }
                         forms = (ConsCell)cdr(let);  env = extenv;
                         // fall through to "eval a list of forms"
@@ -669,6 +667,7 @@ public class LambdaJ {
         return extenv;
     }
 
+    /** eval a list of forms and return a list of results */
     private ConsCell evlis(ConsCell _list, ConsCell topEnv, ConsCell env, int stack, int level) {
         dbgEvalStart("evlis", _list, env, stack, level);
         ConsCell head = null, insertPos = null;
@@ -687,6 +686,11 @@ public class LambdaJ {
         }
         dbgEvalDone("evlis", _list, head, stack, level);
         return head;
+    }
+
+    /** make a lexical closure (if enabled) or lambda */
+    private ConsCell makeClosure(final Object paramsAndForms, ConsCell env) {
+        return cons3(sLambda, paramsAndForms, haveLexC() ? env : null);
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
@@ -1476,7 +1480,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.125 2020/10/25 21:45:25 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.126 2020/10/26 06:41:04 Robert Exp $");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
