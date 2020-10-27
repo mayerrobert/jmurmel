@@ -679,13 +679,13 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
-    // todo for tail calls for dynamic environments re-use slots in the current methods environment with the same name
     private ConsCell zip(Object exp, ConsCell env, Object paramList, ConsCell args) {
         if (paramList == null && args == null) return env; // shortcut for no params
         if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s%s",
                                                       "function application", printSEx(paramList), errorExp(exp));
 
         ConsCell params = (ConsCell)paramList;
+     // todo circular, dotted. params sollte wsl proper list sein, args sollte alles erlauben
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             env = cons(cons(car(params), car(args)), env);
         if (params != null) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s%s", "function application", printSEx(params), errorExp(exp));
@@ -859,8 +859,7 @@ public class LambdaJ {
         if (maybeList == null) return null;
         if (!listp(maybeList)) throw new LambdaJError("%s: expected second argument to be a List but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
-        for (ConsCell env = (ConsCell) maybeList; env != null && maybeList != cdr(env); env = (ConsCell) cdr(env))
-            ret.add(car(env));
+        ((ConsCell) maybeList).forEach(ret::add);
         return ret.toArray();
     }
 
@@ -1503,7 +1502,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.135 2020/10/26 18:49:16 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.136 2020/10/27 05:43:26 Robert Exp $");
     }
 
     private static void showHelp() {
