@@ -75,8 +75,12 @@
 (quote a-symbol)
 
 ;;; (lambda (params...) forms...) -> lambda or closure
-; lambda returns a lambda expression
-; arguments are not evaluated
+; In --dyn mode no environment is captured,
+; lambdas - when applied - get the dynamic environment.
+; In --lex mode the dynamic global environment plus
+; the lexical environment are captured at the time of
+; lambda creation.
+; arguments to lambda are not evaluated
 (lambda (p1 p2) p1)
 
 
@@ -97,8 +101,15 @@
 ; shorthand for empty list
 nil
 
-; a number, currently double precision only
+; an integer number
+; tokens that consist of a sign or digit followed by digits
+; are interpreted as integer numbers (java.lang.Long)
 1
+
+; a number in double precision
+; numbers that contain the characters '.eE' are interpreted
+; as double precision (java.lang.Double)
+1.
 
 ; a number in scientific notation
 1e3
@@ -187,11 +198,19 @@ internal-time-units-per-second
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
 
-; The following operators accept numbers only, but otherwise should
-; work as expected. 
-; + - * /
-; mod
+; +, -, *, /, mod
+; The math operators accept numbers only, but otherwise should
+; work as expected, all numeric operators return a double
+; eg. (+ number number) -> double
+(+ 1 1)
+
+; round, floor, ceiling
+; These operators return an integer (java.lang.Long)
+; eg. (floor number) -> integer
+(floor 1.)
+
 ; = < > <= >=
+(= 1 1.0)
 
 ; Both expressions as well as data are read from stdin.
 ; The following expression reads the expression immediately following it
@@ -208,7 +227,7 @@ internal-time-units-per-second
 (format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 ; format-locale works similar to format except it has an additional
-; first string parameter that should be a locale, nil means Java's
+; first string parameter that should be a locale, nil means use Java's
 ; default locale.
 (format-locale
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
@@ -249,4 +268,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.11 2020/10/26 06:41:04 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.12 2020/10/26 07:42:58 Robert Exp $
