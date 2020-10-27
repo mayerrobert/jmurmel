@@ -423,7 +423,9 @@ public class LambdaJ {
 
 
     /// eval - the heart of most if not all Lisp interpreters
-    private Object eval(Object form, ConsCell topEnv, ConsCell env, int stack, int level) {
+    private ConsCell topEnv;
+
+    private Object eval(Object form, ConsCell env, int stack, int level) {
         boolean isTc = false;
         try {
             stack++;
@@ -479,7 +481,7 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "define", symbol, printSEx(cdr(envEntry)), errorExp(form));
 
-                        final Object value = eval(cadr(arguments), topEnv, env, stack, level);
+                        final Object value = eval(cadr(arguments), env, stack, level);
                         extendEnv(topEnv, symbol, value);
                         return symbol;
                     }
@@ -506,13 +508,13 @@ public class LambdaJ {
                     // (eval form) -> object
                     if (operator == sEval) {
                         oneArg("eval", arguments);
-                        form = eval(car(arguments), topEnv, env, stack, level); isTc = true; continue tailcall;
+                        form = eval(car(arguments), env, stack, level); isTc = true; continue tailcall;
                     }
 
                     // (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3, form);
-                        if (eval(car(arguments), topEnv, env, stack, level) != null) {
+                        if (eval(car(arguments), env, stack, level) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (cddr(arguments) != null) {
                             form = caddr(arguments); isTc = true; continue tailcall;
@@ -534,7 +536,7 @@ public class LambdaJ {
                             for (Object c: arguments) {
                                 if (!listp(c)) throw new LambdaJError("cond: malformed cond. expected a list (condexpr forms...) but got %s%s",
                                                                            printSEx(c), errorExp(form));
-                                if (eval(car(c), topEnv, env, stack, level) != null) {
+                                if (eval(car(c), env, stack, level) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
                                 }
@@ -568,7 +570,7 @@ public class LambdaJ {
                         for (Object binding: bindings) {
                             ConsCell newBinding = null;
                             if (rec) newBinding = extendEnv(env, car(binding), null);
-                            Object val = eval(cadr(binding), topEnv, env, stack, level);
+                            Object val = eval(cadr(binding), env, stack, level);
                             if (!rec) newBinding = extendEnv(env, car(binding), null);
                             newBinding.cdr = val;
                         }
@@ -592,8 +594,8 @@ public class LambdaJ {
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments, form);
 
-                            func = eval(car(arguments), topEnv, env, stack, level);
-                            final Object _argList = eval(cadr(arguments), topEnv, env, stack, level);
+                            func = eval(car(arguments), env, stack, level);
+                            final Object _argList = eval(cadr(arguments), env, stack, level);
                             if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s%s", "apply", printSEx(_argList), errorExp(form));
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
@@ -601,9 +603,9 @@ public class LambdaJ {
                         // function call
                         // (expr args...) -> object
                         } else {
-                            func = eval(operator, topEnv, env, stack, level);
+                            func = eval(operator, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(form));
-                            argList = evlis(arguments, topEnv, env, stack, level);
+                            argList = evlis(arguments, env, stack, level);
                             // fall through to "actually perform..."
                         }
 
@@ -630,7 +632,7 @@ public class LambdaJ {
                     // eval a list of forms
                     // todo dotted list, circular list
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                        eval(car(forms), topEnv, env, stack, level);
+                        eval(car(forms), env, stack, level);
                     if (forms != null) {
                         form = car(forms); isTc = true; continue tailcall;
                     }
@@ -694,13 +696,13 @@ public class LambdaJ {
     }
 
     /** eval a list of forms and return a list of results */
-    private ConsCell evlis(ConsCell _forms, ConsCell topEnv, ConsCell env, int stack, int level) {
+    private ConsCell evlis(ConsCell _forms, ConsCell env, int stack, int level) {
         dbgEvalStart("evlis", _forms, env, stack, level);
         ConsCell head = null, insertPos = null;
         ConsCell forms = _forms;
         if (forms != null)
             for (Object form: forms) {
-                ConsCell currentArg = cons(eval(form, topEnv, env, stack, level), null);
+                ConsCell currentArg = cons(eval(form, env, stack, level), null);
                 if (head == null) {
                     head = currentArg;
                     insertPos = head;
@@ -1276,7 +1278,8 @@ public class LambdaJ {
         ObjectWriter outWriter = new SExpressionWriter(out);
         final ConsCell env = environment(null, parser, outWriter);
         final Object exp = parser.readObj();
-        final Object result = eval(exp, env, env, 0, 0);
+        topEnv = env;
+        final Object result = eval(exp, env, 0, 0);
         traceStats();
         return result;
     }
@@ -1304,8 +1307,9 @@ public class LambdaJ {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser, inReader, outWriter);
         final ConsCell env = environment(customEnvironment, inReader, outWriter);
         Object exp = parser.readObj();
+        topEnv = env;
         while (true) {
-            final Object result = eval(exp, env, env, 0, 0);
+            final Object result = eval(exp, env, 0, 0);
             traceStats();
             exp = parser.readObj();
             if (exp == null) return result;
@@ -1411,6 +1415,7 @@ public class LambdaJ {
                     interpreter.setSymtab(parser);
                     outWriter = interpreter.new SExpressionWriter(System.out::print);
                     env = interpreter.environment(null, parser, outWriter);
+                    interpreter.topEnv = env;
                     isInit = true;
                 }
 
@@ -1447,7 +1452,7 @@ public class LambdaJ {
                         isInit = false;  continue;
                     }
 
-                    final Object result = interpreter.eval(exp, env, env, 0, 0);
+                    final Object result = interpreter.eval(exp, env, 0, 0);
                     System.out.println();
                     interpreter.traceStats();
                     System.out.print("==> "); outWriter.printObj(result); System.out.println();
@@ -1502,7 +1507,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.136 2020/10/27 05:43:26 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.137 2020/10/27 06:07:31 Robert Exp $");
     }
 
     private static void showHelp() {

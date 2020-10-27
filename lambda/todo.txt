@@ -45,44 +45,7 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 
 
-topEnv kann ein member sein, nicht immer rumreichen, stack detto, mit bisserl aufwand auch level
--> synchronized ueberlegen
-
-topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
-dasselbe globale environment haben und ggf erweiterungen sehen
-Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
-wuerd gehen
-ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
-des executioncontext (parameter, let, ...) aufeinander gestapelt,
-drunter ggf. lexical closure, drunter (dynamisches) globales topEnv.
-Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure topEnv).
-Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
--> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
-
-wenns in einem Scope keine duplikate geben darf, koennte
-es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
-(einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
-der Scope endet beim return von eval, damit ist die hashmap auch weg.
-bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
-(symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
-
-vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
-
-soll bei named letXX das let-symbol in den bindings sichtbar sein?
-
-parameterchecks fuer letrec
-
-redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
-->
-special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
-die auswirkung davon laesst sich durch folgendes symptom beschreiben:
-effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
-(define eval 1) -> eval
-(eval eval) -> 1
-(eval 'eval) -> 1
-vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angelegt werden, dann gibt define einen fehler
-und es gibt keine sonstigen auswirkungen mehr
--> aber let & co lassen das redefinieren trotzdem zu
+synchronized ueberlegen
 
 FFI: methoden
 Object getValue(String globalSymbol)
@@ -101,6 +64,59 @@ Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenr
 erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
 primitive # koennte durch eine klasse mit methodencache implementiert werden
 
+
+cache fuer assoc: define/ defun loescht einen allenfalls vorhandenen eintrag.
+nicht globaler cache sondern lokale variable in eval, wenn eval mit einem
+erweiterten environment endet, ist der nunmehr ungueltige cache auch weg.
+ggf nicht hashmap<string,object> sondern arraylist<ConsCell>, eine funktion
+wird wohl nur wenige symbole benutzen, da kann linear search schneller sein,
+und es werden viel weniger objekte erzeugt.
+-> problem: bringt nix bei rekursionen, ausser aufrufe von eval bekommen
+   eine kopie des aktuellen cache, aus dem neue lokale variablen/ argumente
+   entfernt wurden
+
+zweiter versuch:
+topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
+dasselbe globale environment haben und ggf erweiterungen sehen
+Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
+wuerd gehen
+ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
+des executioncontext (parameter, let, ...) aufeinander gestapelt,
+drunter ggf. lexical closure, drunter (dynamisches) globales topEnv.
+Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure topEnv).
+Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
+-> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
+
+wenns in einem Scope keine duplikate geben darf, koennte
+es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
+(einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
+der Scope endet beim return von eval, damit ist die hashmap auch weg.
+bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
+(symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
+
+
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
+
+soll bei named letXX das let-symbol in den bindings sichtbar sein?
+
+parameterchecks fuer letrec
+
+
+
+
+
+redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
+->
+special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
+die auswirkung davon laesst sich durch folgendes symptom beschreiben:
+effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
+(define eval 1) -> eval
+(eval eval) -> 1
+(eval 'eval) -> 1
+vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angelegt werden, dann gibt define einen fehler
+und es gibt keine sonstigen auswirkungen mehr
+-> aber let & co lassen das redefinieren trotzdem zu
+
 backticks und , ggf. auch ,@ im scanner einbauen?
 (defun constant-adder (a)
   (eval `(lambda (b) (+ (quote ,a) b))))
@@ -115,16 +131,6 @@ parameter sollten dann auch slots im array sein, beim func call entsprechend abf
 -> umsetzung: beim closen nicht bei env sondern cdr(env) beginnen. das erste element ist das (null . nil) cons,
    erweiterungen werden dahintergezwickt. kann man per cmdline umswitchen.
    -> leider nein, das environment beim closen ist (lokalesenv globalesenv)
-
-cache fuer assoc: define/ defun loescht einen allenfalls vorhandenen eintrag.
-nicht globaler cache sondern lokale variable in eval, wenn eval mit einem
-erweiterten environment endet, ist der nunmehr ungueltige cache auch weg.
-ggf nicht hashmap<string,object> sondern arraylist<ConsCell>, eine funktion
-wird wohl nur wenige symbole benutzen, da kann linear search schneller sein,
-und es werden viel weniger objekte erzeugt.
--> problem: bringt nix bei rekursionen, ausser aufrufe von eval bekommen
-   eine kopie des aktuellen cache, aus dem neue lokale variablen/ argumente
-   entfernt wurden
 
 utils: combine, list, nth, nhtcdr, c*r
 
@@ -182,9 +188,6 @@ umbenennen:
 lispStdout -> lispPrinter
 ObjectReader -> LispReader, #readObj -> #read
 ObjectWriter -> LispPrinter, #printObj -> #print
-
-http://www.lispworks.com/documentation/HyperSpec/Body/f_dec_un.htm
-decode-universal-time universal-time &optional time-zone => second, minute, hour, date, month, year, day, daylight-p, zone
 
 format und string-format zusammenziehen:
 -> format t <string> schreibt auf stdout, return wert ist <string>
@@ -272,12 +275,6 @@ try = (lambda (func catch-handler finally) (
 )
 
 
-
-der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
-sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
--> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf den richtigen typ gebracht werden
-   / ergibt immer double, bei *+/mod haengt der ergebnistyp von den eingehenden typen ab
--> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
 
 
 
@@ -982,6 +979,18 @@ try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldu
 
 statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
 
+der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
+sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
+-> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf den richtigen typ gebracht werden
+   / ergibt immer double, bei *+/mod haengt der ergebnistyp von den eingehenden typen ab
+-> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
+
 Long im parser unterstuetzen
 -> parser geht, cmdline switches + dok fehlen
 statt double number dreht double und long auf/ ab, no long dreht ggf. long ab
+
+topEnv kann ein member sein, nicht immer rumreichen, stack detto, mit bisserl aufwand auch level
+-> stack und level bleiben params, das sind eigenschaften der methode eval
+
+http://www.lispworks.com/documentation/HyperSpec/Body/f_dec_un.htm
+decode-universal-time universal-time &optional time-zone => second, minute, hour, date, month, year, day, daylight-p, zone
