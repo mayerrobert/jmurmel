@@ -1331,6 +1331,8 @@ public class LambdaJ {
 
 
     /// FFI: Java calls Murmel with getValue() and getFunction()
+
+    /** Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
         final ConsCell envEntry = assoc(symtab.intern(globalSymbol), topEnv);
@@ -1355,10 +1357,18 @@ public class LambdaJ {
         CallLambda(ConsCell lambda) { this.lambda = lambda; this.env = topEnv; }
         @Override
         public Object apply(Object... args) {
+            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function, global environment was rebuilt");
             return eval(cons(lambda, list(args)), env, 0, 0);
         }
     }
 
+    /** Function objects of Lambdas will be usable until the interpreter's environment is rebuilt
+     *  by a call to interpretExpression/s, eg.<pre>
+     *  MurmelFunction f = getFunction("my-function");
+     *  interpreter.interpretExpressions("...");
+     *  f.apply(1, 2, 3);  // this will throw a "stale function..." Exception
+     *  </pre>
+     */
     public MurmelFunction getFunction(String func) {
         final Object maybeFunction = getValue(func);
         if (maybeFunction instanceof Primitive) {
@@ -1559,7 +1569,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.139 2020/10/27 08:00:48 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.140 2020/10/27 08:08:07 Robert Exp $");
     }
 
     private static void showHelp() {
