@@ -35,7 +35,7 @@ Feature flags:
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
 --no-extra ....  no special forms 'eval', 'if', 'define', 'defun',
                  'letrec', 'progn'
---no-double ...  no number support
+--no-number ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read/ write/ writeln/
                  format/ format-locale

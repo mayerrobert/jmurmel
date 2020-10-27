@@ -135,7 +135,7 @@ The environment contains the symbols `nil` and `t` and the functions
 * `read`
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
 
-* `=, <, <=, >, >=, +, -, *, /, mod, floor` ... Java Double
+* `=, <, <=, >, >=, +, -, *, /, mod, round, ceiling, floor`
 * `stringp, string-format, string-format-locale`
     - `string-format` works like Java `String#format(String format, Object... args)`
     - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)`
@@ -157,7 +157,7 @@ E.g. the expression `(/ 1 -0)` is valid and will yield `-Infinity`.
 Math operators are implemented using Java operators for double. This is probably different to Common Lisp
 esp. around +/-NaN, +/-Infinity, division by zero and so on.
 
-The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double)
+The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double or Long)
 and strings. String literals are 2000 chars max length.
 
 Most of these features can be disabled using commandline arguments.
@@ -168,7 +168,7 @@ If you want to experiment with a bare-bones-Lisp use `--help` for details.
 
 LambdaJ comes with:
 
-* a parser that reads S-expressions composed of lists, symbols, Doubles and Strings.
+* a parser that reads S-expressions composed of lists, symbols, Doubles, Longs and Strings.
 * Math support for Doubles
 * (Very) simple I/O
 * Some support for strings
@@ -199,4 +199,4 @@ with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.41 2020/10/24 20:54:23 Robert Exp $
+$Id: README.md,v 1.42 2020/10/25 10:12:10 Robert Exp $

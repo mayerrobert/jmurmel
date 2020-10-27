@@ -49,20 +49,24 @@ topEnv kann ein member sein, nicht immer rumreichen, stack detto, mit bisserl au
 -> synchronized ueberlegen
 
 topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
-dasselbe environment haben.
+dasselbe globale environment haben und ggf erweiterungen sehen
 Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
 wuerd gehen
 ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
-des executioncontext (parameter, let, ...)aufeinander gestapelt,
-drunter ggf. lexical closure, drunter globales topEnv. wenns in einem Scope keine duplikate geben darf, koennte
+des executioncontext (parameter, let, ...) aufeinander gestapelt,
+drunter ggf. lexical closure, drunter (dynamisches) globales topEnv.
+Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure topEnv).
+Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
+-> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
+
+wenns in einem Scope keine duplikate geben darf, koennte
 es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
 (einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
 der Scope endet beim return von eval, damit ist die hashmap auch weg.
 bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
 (symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
 
-Long im parser unterstuetzen
--> parser geht, cmdline switches + dok fehlen
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
 
@@ -977,3 +981,7 @@ environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
 try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
 
 statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
+
+Long im parser unterstuetzen
+-> parser geht, cmdline switches + dok fehlen
+statt double number dreht double und long auf/ ab, no long dreht ggf. long ab

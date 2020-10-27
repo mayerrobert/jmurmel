@@ -839,6 +839,7 @@ public class LambdaJ {
 
     /** Append rest at the end of first, modifying first in the process.
      *  Returns a dotted list unless rest is a proper list. */
+    // todo ist das nconc
     private ConsCell appendToList(ConsCell first, Object rest) {
         for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
             if (cdr(last) == first) throw new LambdaJError("%s: first argument is a circular list", "appendToList");
@@ -1353,7 +1354,7 @@ public class LambdaJ {
         if (hasFlag("--no-nil", args))      features &= ~HAVE_NIL;
         if (hasFlag("--no-t", args))        features &= ~HAVE_T;
         if (hasFlag("--no-extra", args))    features &= ~HAVE_XTRA;
-        if (hasFlag("--no-double", args))   features &= ~HAVE_DOUBLE;
+        if (hasFlag("--no-number", args))   features &= ~(HAVE_DOUBLE | HAVE_LONG);
         if (hasFlag("--no-string", args))   features &= ~HAVE_STRING;
         if (hasFlag("--no-io", args))       features &= ~HAVE_IO;
         if (hasFlag("--no-util", args))     features &= ~HAVE_UTIL;
@@ -1428,14 +1429,7 @@ public class LambdaJ {
                     }
 
                     if (":h".equals(exp)) {
-                        System.out.println("Available commands:");
-                        System.out.println("  :h ........ this help screen");
-                        System.out.println("  :echo ..... this help screen");
-                        System.out.println("  :noecho ... this help screen");
-                        System.out.println("  :env ...... list current global environment");
-                        System.out.println("  :init ..... re-init global environment");
-                        System.out.println("  :q ........ quit LambdaJ");
-                        System.out.println();
+                        showHelp();
                         continue;
                     }
                     if (":echo".equals(exp)) {
@@ -1509,7 +1503,18 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.134 2020/10/26 11:51:22 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.135 2020/10/26 18:49:16 Robert Exp $");
+    }
+
+    private static void showHelp() {
+        System.out.println("Available commands:");
+        System.out.println("  :h ........ this help screen");
+        System.out.println("  :echo ..... this help screen");
+        System.out.println("  :noecho ... this help screen");
+        System.out.println("  :env ...... list current global environment");
+        System.out.println("  :init ..... re-init global environment");
+        System.out.println("  :q ........ quit LambdaJ");
+        System.out.println();
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -1551,7 +1556,7 @@ public class LambdaJ {
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
                 + "--no-extra ....  no special forms 'eval', 'if', 'define', 'defun',\n"
                 + "                 'letrec', 'progn'\n"
-                + "--no-double ...  no number support\n"
+                + "--no-number ...  no number support\n"
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read/ write/ writeln/\n"
                 + "                 format/ format-locale\n"
