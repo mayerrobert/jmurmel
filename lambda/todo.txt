@@ -1,3 +1,56 @@
+Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
+-> # hat in CL schon ein Bedeutung, z.B. #\C
+
+(define my-map (:: new java.util.HashMap nil))
+(:: "put" "java.util.HashMap" my-map "my key" "my value")
+(:: "format" "java.lang.String" nil "%g" 1.0)
+erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
+primitive :: koennte durch eine klasse mit methodencache implementiert werden
+
+synchronized ueberlegen
+
+soll bei named letXX das let-symbol in den bindings sichtbar sein?
+
+parameterchecks fuer letrec
+
+
+
+cache fuer assoc: define/ defun loescht einen allenfalls vorhandenen eintrag.
+nicht globaler cache sondern lokale variable in eval, wenn eval mit einem
+erweiterten environment endet, ist der nunmehr ungueltige cache auch weg.
+ggf nicht hashmap<string,object> sondern arraylist<ConsCell>, eine funktion
+wird wohl nur wenige symbole benutzen, da kann linear search schneller sein,
+und es werden viel weniger objekte erzeugt.
+-> problem: bringt nix bei rekursionen, ausser aufrufe von eval bekommen
+   eine kopie des aktuellen cache, aus dem neue lokale variablen/ argumente
+   entfernt wurden
+
+zweiter versuch:
+topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
+dasselbe globale environment haben und ggf erweiterungen sehen
+Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
+wuerd gehen
+ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
+des executioncontext (parameter, let, ...) aufeinander gestapelt,
+drunter ggf. lexical closure, drunter (dynamisches) globales topEnv.
+Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure topEnv).
+Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
+-> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
+
+wenns in einem Scope keine duplikate geben darf, koennte
+es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
+(einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
+der Scope endet beim return von eval, damit ist die hashmap auch weg.
+bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
+(symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
+
+
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
+
+
+
+
+
 Speicherverwaltung selber machen in Java oder C:
 
 Der Heap ist ein Array int[], 2 aufeinander folgende elemente sind ein cons
@@ -42,56 +95,6 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 "alles freigeben, was nicht im returnvalue steckt" ?!?
 -> so wirds wohl rust machen, plus borrow checker
 -> "alles freigeben, was nicht im returnvalue steckt" ist aber nicht so leicht
-
-
-
-synchronized ueberlegen
-
-Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
-(define my-map (# new java.util.HashMap nil))
-(# put java.util.HashMap my-map "my key" "my value")
-(# format java.lang.String nil "%g" 1.0)
-erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
-primitive # koennte durch eine klasse mit methodencache implementiert werden
-
-
-cache fuer assoc: define/ defun loescht einen allenfalls vorhandenen eintrag.
-nicht globaler cache sondern lokale variable in eval, wenn eval mit einem
-erweiterten environment endet, ist der nunmehr ungueltige cache auch weg.
-ggf nicht hashmap<string,object> sondern arraylist<ConsCell>, eine funktion
-wird wohl nur wenige symbole benutzen, da kann linear search schneller sein,
-und es werden viel weniger objekte erzeugt.
--> problem: bringt nix bei rekursionen, ausser aufrufe von eval bekommen
-   eine kopie des aktuellen cache, aus dem neue lokale variablen/ argumente
-   entfernt wurden
-
-zweiter versuch:
-topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
-dasselbe globale environment haben und ggf erweiterungen sehen
-Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
-wuerd gehen
-ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
-des executioncontext (parameter, let, ...) aufeinander gestapelt,
-drunter ggf. lexical closure, drunter (dynamisches) globales topEnv.
-Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure topEnv).
-Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
--> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
-
-wenns in einem Scope keine duplikate geben darf, koennte
-es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
-(einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
-der Scope endet beim return von eval, damit ist die hashmap auch weg.
-bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
-(symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
-
-
-vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
-
-soll bei named letXX das let-symbol in den bindings sichtbar sein?
-
-parameterchecks fuer letrec
-
-
 
 
 

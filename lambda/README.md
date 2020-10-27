@@ -1,17 +1,21 @@
-# LambdaJ
+# JMurmel
 
-**A lightweight Lisp-1-to-1.5-ish interpreter written in Java8+ that can be used standalone as well as embedded.**
+**A lightweight Lisp-1-to-1.5-ish-with-a-side-of-Scheme Interpreter written in Java8+ that can be used standalone as well as embedded.**
 
-Currently weighing in at 37kB (size of compiled .jar file),
+Currently weighing in at 41kB (size of compiled .jar file),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
-why not try LambdaJ?
+why not try JMurmel?
 
-LambdaJ features tail call optimization, dynamic as well as lexical environments,
+(Murmel is the name of the programming language (which is a Lisp dialect),
+JMurmel is the name of the interpreter that supports Murmel.
+For more details on the language supported see `murmel-langref.lisp`.)
+
+JMurmel features tail call optimization, dynamic as well as lexical environments,
 and has garbage collection c/o Java.
 
-LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
+Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT.
@@ -51,7 +55,7 @@ Command line parameters in standalone mode:
 
 ## Embedded use
 
-LambdaJ uses Java8+ only, no third party dependencies are required.
+JMurmel uses Java8+ only, no third party dependencies are required.
 It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
@@ -90,7 +94,19 @@ Slightly more advanced example:
         assertEquals("ab", s);
     }
 
-See `EmbeddedTest.java` or `LambdaJTest.java` for more embedded use examples
+Java calls JMurmel function:
+
+    @Test
+    public void testLambda() {
+        LambdaJ interp = new LambdaJ();
+        interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, (s) -> { return; });
+
+        MurmelFunction add = interp.getFunction("f");
+        Object result = add.apply(2, 3);
+        assertEquals(6.0, result);
+    }
+
+See `EmbeddedTest.java` or `FFITest.java` for more embedded use examples
 including an example of how to hook up your own Lisp primitives written in Java.
 
 ## Examples
@@ -142,7 +158,7 @@ The environment contains the symbols `nil` and `t` and the functions
 * `format, format-locale` ... writes to stdout
 * `internal-time-units-per-second, get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time`
 
-For more details on the language supported see lambdaj-langref.lisp.
+For more details on the language supported see `murmel-langref.lisp`.
 
 Tail calls including tail recursive calls are optimized.
 
@@ -166,7 +182,7 @@ If you want to experiment with a bare-bones-Lisp use `--help` for details.
  
 ## Customization
 
-LambdaJ comes with:
+JMurmel comes with:
 
 * a parser that reads S-expressions composed of lists, symbols, Doubles, Longs and Strings.
 * Math support for Doubles
@@ -188,7 +204,7 @@ See `EmbeddedTest#testCustomEnv()` for an example.
 
 Additional datatypes can be supported in your custom Parser, in your custom primitives or in both.
 
-LambdaJ is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
+JMurmel is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
 without any need for change.
 
 ## References
@@ -199,4 +215,4 @@ with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.42 2020/10/25 10:12:10 Robert Exp $
+$Id: README.md,v 1.43 2020/10/27 05:43:26 Robert Exp $

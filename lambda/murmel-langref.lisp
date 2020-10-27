@@ -273,4 +273,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.13 2020/10/27 05:43:45 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.14 2020/10/27 06:51:40 Robert Exp $
