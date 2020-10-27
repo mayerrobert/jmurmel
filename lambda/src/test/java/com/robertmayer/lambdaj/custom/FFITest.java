@@ -23,7 +23,8 @@ public class FFITest {
     @Test
     public void testPrimitive() {
         LambdaJ interp = new LambdaJ();
-        interp.interpretExpression(new StringReader("")::read, (s) -> { return; }); // must interpret *something* so that environment will be set up
+        // must interpret *something* so that environment will be set up. "()->-1" is a ReadSupplier that returns EOF
+        interp.interpretExpression(() -> -1, (s) -> { return; });
 
         MurmelFunction add = interp.getFunction("+");
         Object result = add.apply(1, 2);

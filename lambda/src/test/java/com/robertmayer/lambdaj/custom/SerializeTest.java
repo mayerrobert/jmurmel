@@ -69,7 +69,7 @@ public class SerializeTest {
         byte[] program = sExpToByteArray(interp, "(+ 1 2)");
 
         SerializationParser myParser = new SerializationParser(program);
-        Object result = interp.interpretExpressions(myParser, (ObjectReader)null, (ObjectWriter)null, (CustomBuiltinsSupplier)null);
+        Object result = interp.interpretExpressions(myParser, (ObjectReader)null, (ObjectWriter)null, (CustomEnvironmentSupplier)null);
         assertEquals(3.0,  result);
     }
 

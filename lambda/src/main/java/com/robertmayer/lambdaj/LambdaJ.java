@@ -29,7 +29,17 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+/** <p>Interpreter for the Lisp-dialect Murmel. Could probably read top-down like a book.
+ *
+ *  <p>Comments starting with '///' could be considered similar to headings or chapter titles.
+ *  You may want to run 'grep " ///" LambdaJ.java' to get something like birds-eye-view
+ *  of the interpreter implementation or sort of a table-of-contents. */
 public class LambdaJ {
+
+    /// Public interfaces and an exception class to use the interpreter from Java
+
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.141 2020/10/27 08:28:28 Robert Exp $";
+    public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
@@ -37,13 +47,18 @@ public class LambdaJ {
 
     @FunctionalInterface public interface ObjectReader { Object readObj(); }
     public interface SymbolTable { Object intern(String symbol); }
-    public interface Parser extends ObjectReader, SymbolTable {}
+    public interface Parser extends ObjectReader, SymbolTable {
+        default void setInput(ReadSupplier input) {
+            throw new UnsupportedOperationException("This parser does not support changing input");
+        }
+    }
 
     public interface ObjectWriter { void printObj(Object o); default void printString(String s) { printObj(s); } void printEol(); }
 
     @FunctionalInterface public interface Primitive { Object apply(ConsCell x); }
 
-    public interface CustomBuiltinsSupplier {
+    // todo parameter lispStdin/ out weg
+    public interface CustomEnvironmentSupplier {
         ConsCell customEnvironment(SymbolTable symtab, ObjectReader lispStdin, ObjectWriter lispStdout);
     }
 
@@ -59,7 +74,7 @@ public class LambdaJ {
 
 
 
-    /// data type used by interpreter program as well as interpreted programs
+    /// Data types used by interpreter program as well as interpreted programs
     public static class ConsCell implements Iterable<Object>, Serializable {
         private static class ConsCellIterator implements Iterator<Object> {
             private final ConsCell coll;
@@ -104,7 +119,7 @@ public class LambdaJ {
 
 
 
-    /// infrastructure
+    /// Infrastructure
     public static final int EOF = -1;
     public static final int TOKEN_MAX = 2000; // max length of symbols and literals
 
@@ -196,7 +211,7 @@ public class LambdaJ {
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
-    /// scanner, symboltable and S-expression parser
+    /// Scanner, symboltable and S-expression parser
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     public class SExpressionParser implements Parser {
@@ -211,8 +226,10 @@ public class LambdaJ {
         private Object tok;
 
         public SExpressionParser(ReadSupplier in) { this.in = in; }
+        @Override
+        public void setInput(ReadSupplier input) { in = input; init = false; }
 
-        /// scanner
+        /// Scanner
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
@@ -303,7 +320,7 @@ public class LambdaJ {
 
 
 
-        /// symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
+        /// A symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
         private ConsCell symbols = null;
 
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
@@ -321,7 +338,7 @@ public class LambdaJ {
 
 
 
-        /// parser
+        /// S-expression parser
         @Override
         public Object readObj() {
             if (!init) {
@@ -382,7 +399,7 @@ public class LambdaJ {
         }
     }
 
-    /// symboltable Object
+    /// Symboltable
     private SymbolTable symtab;
 
     /** look up the symbols for special forms only once on first use.
@@ -435,6 +452,7 @@ public class LambdaJ {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
+                /// Lookup ymbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
                     if (form == null) return null;
                     final ConsCell envEntry = assoc(form, env);
@@ -442,10 +460,12 @@ public class LambdaJ {
                     throw new LambdaJError("%s: '%s' is undefined", "eval", form);
                 }
 
+                /// Atoms eval to themselves
                 if (atom(form)) {
                     return form;   // this catches nil as well
                 }
 
+                /// The form is enclosed in parentheses, either a special form or a function application
                 if (consp(form)) {
                     final Object operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     if (!listp(cdr(form))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s%s", "eval", printSEx(form), errorExp(form));
@@ -453,7 +473,7 @@ public class LambdaJ {
 
 
 
-                    /// special forms
+                    /// Special forms
 
                     // (quote exp) -> exp
                     if (haveQuote() && operator == sQuote) {
@@ -470,7 +490,7 @@ public class LambdaJ {
 
 
 
-                    /// special forms that change the global environment
+                    /// Special forms that change the global environment
 
                     // (define symbol exp) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefine) {
@@ -503,15 +523,15 @@ public class LambdaJ {
 
 
 
-                    /// special forms that run expressions
+                    /// Special forms that run expressions
 
-                    // (eval form) -> object
+                    /// (eval form) -> object
                     if (operator == sEval) {
                         oneArg("eval", arguments);
                         form = eval(car(arguments), env, stack, level); isTc = true; continue tailcall;
                     }
 
-                    // (if condform form optionalform) -> object
+                    /// (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3, form);
                         if (eval(car(arguments), env, stack, level) != null) {
@@ -524,13 +544,13 @@ public class LambdaJ {
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
                     ConsCell forms = null;
 
-                    // (progn forms...) -> object
+                    /// (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
                         if (!consp(arguments)) throw new LambdaJError("%s: malformed cond. expected a list of forms but got %s%s", "progn", printSEx(arguments), errorExp(form));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
-                    // (cond (condform forms...)... ) -> object
+                    /// (cond (condform forms...)... ) -> object
                     } else if (haveCond() && operator == sCond) {
                         if (arguments != null)
                             for (Object c: arguments) {
@@ -545,7 +565,7 @@ public class LambdaJ {
                         if (forms == null) return null; // no condition was true
                         // fall through to "eval a list of forms"
 
-                    // (labels ((symbol (params...) forms...)...) forms...) -> object
+                    /// (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, form);
                         // stick the functions into the env
@@ -559,8 +579,8 @@ public class LambdaJ {
                         forms = (ConsCell) cdr(arguments);
                         // fall through to "eval a list of forms"
 
-                    // (let* optsymbol? (bindings...) forms...) -> object
-                    // (letrec optsymbol? (bindings...) forms...) -> object
+                    /// (let* optsymbol? (bindings...) forms...) -> object
+                    /// (letrec optsymbol? (bindings...) forms...) -> object
                     } else if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
                         final boolean rec = operator == sLetrec;
                         final boolean named = symbolp(car(arguments));
@@ -589,8 +609,8 @@ public class LambdaJ {
                         final Object func;
                         final ConsCell argList;
 
-                        // apply function to list
-                        // (apply form argform) -> object
+                        /// apply function to list
+                        /// (apply form argform) -> object
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments, form);
 
@@ -600,8 +620,8 @@ public class LambdaJ {
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
 
-                        // function call
-                        // (expr args...) -> object
+                        /// function call
+                        /// (expr args...) -> object
                         } else {
                             func = eval(operator, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(form));
@@ -640,8 +660,8 @@ public class LambdaJ {
 
                 }
 
-                // not a symbol/atom/cons - something is really wrong here
-                // let's sprinkle some crack on him and get out of here, dave.
+                /// Not a symbol/atom/cons - something is really wrong here.
+                /// Let's sprinkle some crack on him and get out of here, Dave.
                 throw new LambdaJError("eval: cannot eval expression '%s'", printSEx(form));
             }
 
@@ -730,7 +750,7 @@ public class LambdaJ {
 
 
 
-    /// stats during eval and at the end
+    /// Stats during eval and at the end
     private int nCells;
     private int maxEnvLen;
     private int maxEvalStack;
@@ -781,7 +801,7 @@ public class LambdaJ {
 
 
 
-    /// functions used by interpreter program, a subset is used by interpreted programs as well
+    /// Functions used by interpreter program, a subset is used by interpreted programs as well
     private        ConsCell cons(Object car, Object cdr)                    { nCells++; return new ConsCell(car, cdr); }
     private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ConsCell(car, cdr, closure); }
 
@@ -928,7 +948,7 @@ public class LambdaJ {
             } else if (primp(obj)) {
                 sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
-                sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
+                sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return; // todo statt | -> \<blank>
             } else if (atom(obj)) {
                 sb.print(obj.toString()); return;
             } else {
@@ -949,23 +969,11 @@ public class LambdaJ {
 
 
 
-    /// error checking utils, used by interpreter and primitives
-    private static void noArgs(String func, ConsCell a) {
-        if (a != null) throw new LambdaJError("%s: expected no arguments but got %s", func, printSEx(a));
-    }
-
+    /// Error checking functions, used by interpreter and primitives
     /** ecactly one argument */
     private static void oneArg(String func, Object a) {
         if (a == null)      throw new LambdaJError("%s: expected one argument but no argument was given", func);
         if (cdr(a) != null) throw new LambdaJError("%s: expected one argument but got extra arg(s) %s", func, printSEx(cdr(a)));
-    }
-
-    private static void oneOrMoreArgs(String func, ConsCell a) {
-        if (a == null) throw new LambdaJError("%s: expected at least one argument but no argument was given", func);
-    }
-
-    private static void twoArgs(String func, Object a) {
-        twoArgs(func, a, null);
     }
 
     private static void twoArgs(String func, Object a, Object exp) {
@@ -984,6 +992,37 @@ public class LambdaJ {
         int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError("%s: expected %d to %d arguments but got only %d%s", func, min, max, actualLength, errorExp(exp));
         if (actualLength > max) throw new LambdaJError("%s: expected %d to %d arguments but got extra arg(s) %s%s", func, min, max, printSEx(nthcdr(max, a)), errorExp(exp));
+    }
+
+    private static String errorExp(Object exp) {
+        if (exp == null) return "";
+        return System.lineSeparator() + "error occurred in expression " + printSEx(exp);
+    }
+
+    ///
+    /// That's (almost) all, folks.
+    ///
+    /// At this point we have reached the end of the Murmel interpreter core, i.e. we have everything needed
+    /// to read S-Expressions and eval() them in an environment.
+    ///
+    /// The rest of this file contains Murmel primitives and driver functions such as interpretExpression/s and main
+    /// for interactive use.
+    ///
+
+
+
+    /// Additional error checking functions used by primitives only.
+
+    private static void noArgs(String func, ConsCell a) {
+        if (a != null) throw new LambdaJError("%s: expected no arguments but got %s", func, printSEx(a));
+    }
+
+    private static void oneOrMoreArgs(String func, ConsCell a) {
+        if (a == null) throw new LambdaJError("%s: expected at least one argument but no argument was given", func);
+    }
+
+    private static void twoArgs(String func, Object a) {
+        twoArgs(func, a, null);
     }
 
     private static void onePair(String func, ConsCell a) {
@@ -1007,19 +1046,15 @@ public class LambdaJ {
     }
 
     /** the given arg must be a LambdaJString */
-    private void stringArg(String func, String arg, Object a) {
+    private static void stringArg(String func, String arg, Object a) {
         if (!(car(a) instanceof LambdaJString))
             throw new LambdaJError("%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
     }
 
-    private static String errorExp(Object exp) {
-        if (exp == null) return "";
-        return System.lineSeparator() + "error occurred in expression " + printSEx(exp);
-    }
 
 
+    /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
 
-    /// runtime for Lisp programs
     private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     /** generate a comparison operator */
@@ -1092,9 +1127,17 @@ public class LambdaJ {
 
 
 
+    private ObjectReader lispStdin;
+    private ObjectWriter lispStdout;
+
+    public void setInOut(ObjectReader lispStdin, ObjectWriter lispStdout) {
+        this.lispStdin = lispStdin;
+        this.lispStdout = lispStdout;
+    }
+
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
-    private ConsCell environment(ConsCell env, ObjectReader lispStdin, ObjectWriter lispStdout) {
+    private ConsCell environment(ConsCell env) {
         if (haveIO()) {
             final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin == null ? null : lispStdin.readObj(); };
             final Primitive fwriteobj = a -> {
@@ -1266,6 +1309,25 @@ public class LambdaJ {
 
 
 
+    /// Public driver methods and functions to use the interpreter from Java (embedded)
+    /// or from the command prompt (interactive)
+
+    private Parser scriptParser;
+
+    // todo out is ignored on the second and subsequent calls
+    public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
+        if (scriptParser == null) {
+            scriptParser = new SExpressionParser(in);
+            setSymtab(scriptParser);
+            final ConsCell env = environment(null);
+            topEnv = env;
+        }
+        scriptParser.setInput(program);
+        setInOut(scriptParser, new SExpressionWriter(out));
+        final Object exp = scriptParser.readObj();
+        return eval(exp, topEnv, 0, 0);
+    }
+
     /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
      *
      *  <p>After the expression was read from {@code in}, the primitive function {@code read} (if used)
@@ -1276,7 +1338,8 @@ public class LambdaJ {
         Parser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
-        final ConsCell env = environment(null, parser, outWriter);
+        lispStdin = parser; lispStdout = outWriter;
+        final ConsCell env = environment(null);
         final Object exp = parser.readObj();
         topEnv = env;
         final Object result = eval(exp, env, 0, 0);
@@ -1301,11 +1364,12 @@ public class LambdaJ {
      *
      *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
      *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
-    public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomBuiltinsSupplier customEnv) {
+    public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
         nCells = 0; maxEnvLen = 0;
         setSymtab(parser);
+        lispStdin = parser; lispStdout = outWriter;
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser, inReader, outWriter);
-        final ConsCell env = environment(customEnvironment, inReader, outWriter);
+        final ConsCell env = environment(customEnvironment);
         Object exp = parser.readObj();
         topEnv = env;
         while (true) {
@@ -1476,7 +1540,8 @@ public class LambdaJ {
                     });
                     interpreter.setSymtab(parser);
                     outWriter = interpreter.new SExpressionWriter(System.out::print);
-                    env = interpreter.environment(null, parser, outWriter);
+                    interpreter.lispStdin = parser; interpreter.lispStdout = outWriter;
+                    env = interpreter.environment(null);
                     interpreter.topEnv = env;
                     isInit = true;
                 }
@@ -1569,7 +1634,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.140 2020/10/27 08:08:07 Robert Exp $");
+        System.out.println(ENGINE_VERSION);
     }
 
     private static void showHelp() {
