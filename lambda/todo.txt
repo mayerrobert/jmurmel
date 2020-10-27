@@ -1,5 +1,5 @@
 Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
--> # hat in CL schon ein Bedeutung, z.B. #\C
+-> # hat in CL schon eine Bedeutung, z.B. #\C
 
 (define my-map (:: new java.util.HashMap nil))
 (:: "put" "java.util.HashMap" my-map "my key" "my value")
@@ -21,6 +21,8 @@ synchronized ueberlegen
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
 
 parameterchecks fuer letrec
+
+Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
 
 
 

@@ -109,6 +109,10 @@ Java calls JMurmel function:
 See `EmbeddedTest.java` or `FFITest.java` for more embedded use examples
 including an example of how to hook up your own Lisp primitives written in Java.
 
+Or see `JSR223Test.java` for an example on how to use JMurmel through the
+[Java Scripting API](https://docs.oracle.com/javase/8/docs/technotes/guides/scripting/prog_guide/about.html)
+(setting/ accessing Java objects from Murmel code is not supported yet.)
+
 ## Examples
 write, string-format
 
@@ -215,4 +219,4 @@ with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.43 2020/10/27 05:43:26 Robert Exp $
+$Id: README.md,v 1.44 2020/10/27 09:01:12 Robert Exp $
