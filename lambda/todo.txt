@@ -234,23 +234,6 @@ script fuer den aufruf
 -> files oeffnen und dann von console lesen
 
 
-Java FFI:
-JSR-223 (Java scripting API)
-
-https://stackoverflow.com/questions/46611132/how-i-merge-lisp-and-java-or-how-i-run-lisp-code-using-java
-Interpreter interpreter = Interpreter.createInstance();
-interpreter.eval("(load \"my-lisp-code.lisp\")");
-
-Symbol myFunctionSym =
-          defaultPackage.findAccessibleSymbol(
-               "MY-FUNCTION");
-     Function myFunction =
-          myFunctionSym.getSymbolFunction();
-Cons list = 
-          (Cons) myFunction.execute(
-                        Fixnum.getInstance(64),
-                        Fixnum.getInstance(64));
-
 
 
 
@@ -1008,3 +991,20 @@ und/ oder
 interface MurmelFunction { Object apply(Object... args); }
 MurmelFunction getFunction(String func) {...}
 Object         getValue(String globalSymbol)
+
+Java FFI:
+JSR-223 (Java scripting API)
+
+https://stackoverflow.com/questions/46611132/how-i-merge-lisp-and-java-or-how-i-run-lisp-code-using-java
+Interpreter interpreter = Interpreter.createInstance();
+interpreter.eval("(load \"my-lisp-code.lisp\")");
+
+Symbol myFunctionSym =
+          defaultPackage.findAccessibleSymbol(
+               "MY-FUNCTION");
+     Function myFunction =
+          myFunctionSym.getSymbolFunction();
+Cons list = 
+          (Cons) myFunction.execute(
+                        Fixnum.getInstance(64),
+                        Fixnum.getInstance(64));

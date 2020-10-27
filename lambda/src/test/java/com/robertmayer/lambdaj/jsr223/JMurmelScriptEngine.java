@@ -59,6 +59,7 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
 
     @Override
     public Bindings createBindings() {
+        // todo das wird wohl fuer setzen von Java Objekten gebraucht werden
         return null;
     }
 
