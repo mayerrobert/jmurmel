@@ -7,6 +7,15 @@ Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenr
 erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
 primitive :: koennte durch eine klasse mit methodencache implementiert werden
 
+oder :: erzeugt ein Primitive-Objekt, das Klasse, und Methode enthaelt und spaeter wie eine normale Lisp Funktion aufgerufen
+werden kann (aehnlich wie lambda ein closure erzeugt):
+(define make-java-map (:: "new" "java.util.HashMap"))
+(define java-put-hash (:: "put" "java.util.HashMap")
+
+(define my-map (make-java-map nil))
+(java-put-hash my-map "my key" "my value") ; erstes Argument beim Aufruf von "Java-Methoden" ist immer das Java-Objekt, ggf. nil fuer statische Methoden
+
+
 synchronized ueberlegen
 
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
