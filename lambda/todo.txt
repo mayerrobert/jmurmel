@@ -47,16 +47,6 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 synchronized ueberlegen
 
-FFI: methoden
-Object getValue(String globalSymbol)
-Object apply(String func, Object... args)
-
-und/ oder
-
-interface MurmelFunction { Object apply(Object... args); }
-MurmelFunction getFunction(String func) {...}
-Object         getValue(String globalSymbol)
-
 Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
 (define my-map (# new java.util.HashMap nil))
 (# put java.util.HashMap my-map "my key" "my value")
@@ -994,3 +984,13 @@ topEnv kann ein member sein, nicht immer rumreichen, stack detto, mit bisserl au
 
 http://www.lispworks.com/documentation/HyperSpec/Body/f_dec_un.htm
 decode-universal-time universal-time &optional time-zone => second, minute, hour, date, month, year, day, daylight-p, zone
+
+FFI: methoden
+Object getValue(String globalSymbol)
+Object apply(String func, Object... args)
+
+und/ oder
+
+interface MurmelFunction { Object apply(Object... args); }
+MurmelFunction getFunction(String func) {...}
+Object         getValue(String globalSymbol)

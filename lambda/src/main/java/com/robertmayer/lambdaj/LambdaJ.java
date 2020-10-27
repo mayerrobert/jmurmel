@@ -1328,6 +1328,59 @@ public class LambdaJ {
         }
     }
 
+
+
+    /// FFI: Java calls Murmel with getValue() and getFunction()
+    public Object getValue(String globalSymbol) {
+        if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
+        final ConsCell envEntry = assoc(symtab.intern(globalSymbol), topEnv);
+        if (envEntry != null) return cdr(envEntry);
+        throw new LambdaJError("%s: '%s' is undefined", "getValue", globalSymbol);
+    }
+
+    public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
+
+    private static class CallPrimitive implements MurmelFunction {
+        final Primitive p;
+        CallPrimitive(Primitive p) { this.p = p; }
+        @Override
+        public Object apply(Object... args) {
+            return p.apply(list(args));
+        }
+    }
+
+    private class CallLambda implements MurmelFunction {
+        final ConsCell lambda;
+        final ConsCell env;
+        CallLambda(ConsCell lambda) { this.lambda = lambda; this.env = topEnv; }
+        @Override
+        public Object apply(Object... args) {
+            return eval(cons(lambda, list(args)), env, 0, 0);
+        }
+    }
+
+    public MurmelFunction getFunction(String func) {
+        final Object maybeFunction = getValue(func);
+        if (maybeFunction instanceof Primitive) {
+            return new CallPrimitive((Primitive)maybeFunction);
+        }
+        if (maybeFunction instanceof ConsCell) {
+            // todo checken obs ein lambda ist
+            return new CallLambda((ConsCell)maybeFunction);
+        }
+        throw new LambdaJError("getFunction: not a primitive or lambda: %s", func);
+    }
+
+    private static ConsCell list(Object[] a) {
+        ConsCell ret = null;
+        for (Object o: a) {
+            ret = new ConsCell(o, ret);
+        }
+        return ret;
+    }
+
+
+
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
 
     /** main() for interactive commandline use */
@@ -1507,7 +1560,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.137 2020/10/27 06:07:31 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.138 2020/10/27 06:51:16 Robert Exp $");
     }
 
     private static void showHelp() {
