@@ -1364,8 +1364,7 @@ public class LambdaJ {
         if (maybeFunction instanceof Primitive) {
             return new CallPrimitive((Primitive)maybeFunction);
         }
-        if (maybeFunction instanceof ConsCell) {
-            // todo checken obs ein lambda ist
+        if (maybeFunction instanceof ConsCell && car((ConsCell)maybeFunction) == sLambda) {
             return new CallLambda((ConsCell)maybeFunction);
         }
         throw new LambdaJError("getFunction: not a primitive or lambda: %s", func);
@@ -1560,7 +1559,7 @@ public class LambdaJ {
     }
 
     private static void showVersion() {
-        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.138 2020/10/27 06:51:16 Robert Exp $");
+        System.out.println("LambdaJ $Id: LambdaJ.java,v 1.139 2020/10/27 08:00:48 Robert Exp $");
     }
 
     private static void showHelp() {
