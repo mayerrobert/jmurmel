@@ -123,8 +123,13 @@ nil
 
 ;;; (define symbol object) -> symbol
 ; define associates symbols in the global environment
-; with expressions. Redefining already defined symbols
-; is an error.
+; with expressions.
+; Redefining already defined symbols is an error.
+; Redefining special forms is undefined
+; behaviour, i.e. it won't work as expected and may
+; throw an error in future versions. Same goes for
+; names of function parameters, let-bound variables,
+; all symbol names really.
 ; The first argument is not evaluated, the second is
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
@@ -268,4 +273,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.12 2020/10/26 07:42:58 Robert Exp $
+;;; $Id: lambdaj-langref.lisp,v 1.13 2020/10/27 05:43:45 Robert Exp $
