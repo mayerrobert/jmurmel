@@ -91,7 +91,13 @@
 ;;; Murmel supports symbols, lists, double precision
 ;;; floating point numbers, 64bit integer numbers and strings.
 
-; a symbol. Murmel ignores the case of symbols.
+; A symbol. Murmel treats symbols case-insensitive.
+; Implementation note: JMurmel preserves the
+; capitalization of the first encounter of a symbol
+; for printing, e.g.:
+; '(AbC . dEf) -> (AbC . dEf)
+; but
+; '(AbC . abc) -> (AbC . AbC)
 '*a-sample-symbol*
 
 ; Guess. Max symbol length is 2000 chars, anything longer
@@ -276,4 +282,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.1 2020/10/27 09:01:12 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.2 2020/10/28 05:36:53 Robert Exp $

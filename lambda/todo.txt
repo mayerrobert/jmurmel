@@ -10,8 +10,6 @@ vgl auch special form als symbol verwenden
 Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 196
 pp73ff: modernes defmacro
 
-(cons 'a . 'A) -> (a . a)
-
 scanner sollte | fuer symbole koennen
 oder keine | schreiben
 -> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
@@ -1044,3 +1042,5 @@ Cons list =
                         Fixnum.getInstance(64));
 
 trace und features in 2 methoden rausziehen
+
+(cons 'a . 'A) -> (a . a)
