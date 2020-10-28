@@ -6,7 +6,7 @@
 ;;; for Murmel, a single-namespace Lisp dialect.
 ;;;
 ;;; You can read this file or run it with:
-;;; java -jar jmurmel.jar --tty --echo < jmurmel-langref.lisp
+;;; java -jar jmurmel.jar --tty --echo < murmel-langref.lisp
 ;;; or:
 ;;; java -jar jmurmel.jar --tty --echo < murmel-langref.lisp > murmel.txt
 ;;;
@@ -16,6 +16,8 @@
 ;;;
 ;;; See also:
 ;;; java -jar jmurmel.jar --help ... will print usage information
+;;;
+;;; In JMurmels REPL:
 ;;; JMurmel> :h                  ... will print REPL command help
 
 
@@ -25,49 +27,71 @@
 
 (write "Hello, World!")
 
-;;; the expression above should print the famous "Hello, World!"
+;;; the program text above when run in the REPL should print the famous
+;;; "Hello, World!"
 ;;; followed by the result
 ;;; ==> t
 ;;; and the prompt "JMurmel>"
 
 
+;;; == Disclaimer =====================
+;;;
+;;; In order to understand and make use of this Reference Manual
+;;; you should probably at least know some Lisp.
+;;; This manual does not attempt to be a tutorial.
+;;;
+
+
 ;;; == Terminology ====================
 ;;;
+;;; Murmel is a programming language and JMurmel is program
+;;; that consists of I/O functions and a Murmel interpreter.
+;;; 
 ;;; Murmel is a Lisp dialect. As such the language isn't
 ;;; really defined in terms of program text but in terms
 ;;; of in-memory objects (lists, symbols and other atoms)
 ;;; that are acceptable to eval.
 ;;;
-;;; That said, Murmel's default parser turns S-expressions
-;;; in the input file into equivalent in-memory objects. So
-;;; for this reference we'll just pretend Murmel was defined
-;;; in terms of S-expressions, and use S-expressions to describe
-;;; expressions that are valid Murmel, i.e. are acceptable to eval.
+;;; That said, JMurmel's default reader turns S-expressions
+;;; from the input stream into equivalent in-memory objects. So
+;;; for this reference we'll S-expressions to describe
+;;; programs that are valid Murmel, i.e. are acceptable to eval.
 ;;;
-;;; In this reference in-memory objects (or sloppily: S-expressions)
-;;; that are valid Murmel are referred to as "forms". 
+;;; In this reference in-memory objects that are valid Murmel
+;;; (as well as their textual representation as S-expressions)
+;;; are referred to as "forms".
 ;;;
 
 
 ;;; == S-expressions ==================
 
+;;; The following are S-expressions that JMurmel's reader
+;;; will accept and transform into in-memory objects.
+;;; They may or may not be "forms".
+
+; atoms
+a-symbol
+1
+1.0
+"a string"
+
 ; a single quote is a shorthand for (quote an-expression)
 'an-expression
 
-; returns a dotted pair       ==> (a . b)
-'(a . b)
+; a dotted pair
+(a . b)
 
-; returns a dotted list       ==> (a b c . d)
-'(a . (b . (c . d)))
+; a dotted list
+(a . (b . (c . d)))
 
 ; shorthand for dotted list   ==> (a b c . d)
-'(a b c . d)
+(a b c . d)
 
-; returns a proper list       ==> (a b c)
-'(a . (b . (c . ())))
+; a proper list       ==> (a b c)
+(a . (b . (c . ())))
 
 ; shorthand for a proper list ==> (a b c)
-'(a b c)
+(a b c)
 
 
 ;;; == Basic Special Forms ============
@@ -79,9 +103,9 @@
 ;;; (lambda (params...) forms...) -> lambda or closure
 ; In --dyn mode no environment is captured,
 ; lambdas - when applied - get the dynamic environment.
-; In --lex mode the dynamic global environment plus
-; the lexical environment are captured at the time of
-; lambda creation.
+; In --lex mode the lexical environment is captured
+; at the time of lambda creation. (Both dynamic as well
+; as lexical lambdas will "see" the dynamic global environment.)
 ; arguments to lambda are not evaluated
 (lambda (p1 p2) p1)
 
@@ -197,6 +221,14 @@ internal-time-units-per-second
 
 ;;; == Predefined Primitives ==========
 
+; Note that the number of primitives is not fixed as in other
+Lisps. In embedded use primitives may be added, also Java methods
+created by the primitive :: act as builtins.
+As far as the language is concerned, all primitives are variadic functions.
+The primitives themselves may have parameter checks, tough.
+In case you call them with th wrong type(s) or number of parameters
+the primitives may throw an error.
+
 ; (cons 'a 'b) ==> (a . b)
 (cons 'a 'b)
 
@@ -236,22 +268,6 @@ internal-time-units-per-second
 (writeln)
 (writeln "World!")
 
-; format writes a formatted string to stdout and returns t.
-; format's parameters work as java.lang.String.format().
-(format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-
-; format-locale works similar to format except it has an additional
-; first string parameter that should be a locale, nil means use Java's
-; default locale.
-(format-locale
-   "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-
-; string-format string-format-locale work similar
-; to format and format-locale except they don't write to stdout
-; but return the string
-(string-format-locale
-   "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-               
 ; walltime in internal time units, relative to an arbitrary time base
 (get-internal-real-time)
 
@@ -273,6 +289,42 @@ internal-time-units-per-second
 (get-decoded-time)
 
 
+;;; == Additional JMurmel Primitives ==========
+
+; format writes a formatted string to stdout and returns t.
+; format's parameters work as java.lang.String.format().
+(format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+; format-locale works similar to format except it has an additional
+; first string parameter that should be a locale, nil means use Java's
+; default locale.
+(format-locale
+   "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+; string-format string-format-locale work similar
+; to format and format-locale except they don't write to stdout
+; but return the string
+(string-format-locale
+   "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+               
+; (:: classname methodname paramclass...) -> primitive
+; The primitive "::" will return a newly created primitive
+; that is implemented by the method "methodname" of the Java class
+; "classname" that has the formal parameters "paramclass...".
+; Parameters to "::" must be strings.
+(:: "java.lang.System" "currentTimeMillis")
+
+; When invoking primitives created by "::" the first argument must be
+; a Java object of the primitive's method's class or nil for static methods:
+; invoke static method:
+(define ctm (:: "java.lang.System" "currentTimeMillis"))
+(ctm nil)
+
+; invoke method on an object
+(define my-hash ((:: "java.util.HashMap" "new")))
+(write ((:: "java.util.HashMap" "toString") my-hash))
+
+
 ;;; == Copyright ======================
 ;;;
 ;;; Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
@@ -282,4 +334,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.2 2020/10/28 05:36:53 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.3 2020/10/28 05:46:27 Robert Exp $

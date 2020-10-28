@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -38,7 +40,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.142 2020/10/27 15:09:10 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.143 2020/10/28 05:36:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -115,6 +117,8 @@ public class LambdaJ {
         private final String value;
         public LambdaJString(String value) { this.value = value; }
         @Override public String toString() { return value.toString(); }
+        @Override public boolean equals(Object o) { return o instanceof LambdaJString && value.equals(((LambdaJString)o).value); }
+        @Override public int hashCode() { return value.hashCode(); }
     }
 
 
@@ -226,8 +230,7 @@ public class LambdaJ {
         private Object tok;
 
         public SExpressionParser(ReadSupplier in) { this.in = in; }
-        @Override
-        public void setInput(ReadSupplier input) { in = input; init = false; }
+        @Override public void setInput(ReadSupplier input) { in = input; init = false; }
 
         /// Scanner
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
@@ -1051,6 +1054,15 @@ public class LambdaJ {
             throw new LambdaJError("%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
     }
 
+    /** arguments if any must be only strings */
+    private static void stringArgs(String func, ConsCell a) {
+        if (a == null) return;
+        for (; a != null; a = (ConsCell) cdr(a)) {
+            if (!stringp(car(a)) || (cdr(a) != null && !consp(cdr(a))))
+                throw new LambdaJError("%s: expected only string arguments but got %s", func, printSEx(a));
+        }
+    }
+
 
 
     /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
@@ -1123,6 +1135,58 @@ public class LambdaJ {
         if (!threadBean.isCurrentThreadCpuTimeSupported())
             throw new LambdaJError("%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
         return threadBean;
+    }
+
+
+
+    private static class JavaConstructor implements Primitive {
+        private final Constructor<?> constructor;
+
+        private JavaConstructor(Constructor<?> constructor) { this.constructor = constructor; }
+
+        @Override
+        public Object apply(ConsCell x) {
+            final Object[] args = listToArray(x);
+            try { return constructor.newInstance(args); }
+            catch (Exception e) { throw new LambdaJError("new %s: %s: %s", constructor.getName(), e.getClass().getName(), e.getMessage()); }
+        }
+    }
+
+    private static class JavaMethod implements Primitive {
+        private final Method method;
+
+        private JavaMethod(Method method) { this.method = method; }
+
+        @Override
+        public Object apply(ConsCell x) {
+            final Object obj = car(x);
+            if (obj != null && !method.getDeclaringClass().isInstance(obj))
+                throw new LambdaJError(":: : %s is not an instance of class %s", obj, method.getDeclaringClass().getName());
+            final Object[] args = listToArray(cdr(x));
+            try { return method.invoke(obj, args); }
+            catch (Exception e) { throw new LambdaJError("%s.%s: exception: %s", method.getClass(), method.getName(), e.getMessage()); }
+        }
+    }
+
+    private static Primitive findJavaMethod(ConsCell x) {
+        stringArgs("::", x);
+        final String className = ((LambdaJString) car(x)).value;
+        final String methodName = ((LambdaJString) cadr(x)).value;
+        final ArrayList<Class<?>> paramTypes = new ArrayList<>();
+        if (cddr(x) != null)
+        for (Object arg: (ConsCell)cddr(x)) {
+            String paramType = ((LambdaJString)arg).value;
+            try { paramTypes.add(Class.forName(paramType)); }
+            catch (ClassNotFoundException e) { throw new LambdaJError(":: : exception finding parameter class %s: %s : %s", paramType, e.getClass().getName(), e.getMessage()); }
+        }
+        final Class<?>[] params = paramTypes.isEmpty() ? null : paramTypes.toArray(new Class[0]);
+        try {
+            final Class<?> clazz = Class.forName(className);
+            return "new".equals(methodName)
+                    ? new JavaConstructor(clazz.getDeclaredConstructor(params))
+                            : new JavaMethod(clazz.getMethod(methodName, params));
+        }
+        catch (Exception e) { throw new LambdaJError(":: : exception finding method: %s: %s", e.getClass().getName(), e.getMessage()); }
     }
 
 
@@ -1304,6 +1368,9 @@ public class LambdaJ {
         env = cons(cons(symtab.intern("throw"), (Primitive) a -> { oneArg("throw", a); throw new RuntimeException(car(a).toString()); }),
                    env);
 
+        env = cons(cons(symtab.intern("::"), (Primitive) a -> findJavaMethod(a)),
+                env);
+
         return env;
     }
 
@@ -1394,10 +1461,7 @@ public class LambdaJ {
     private static class CallPrimitive implements MurmelFunction {
         final Primitive p;
         CallPrimitive(Primitive p) { this.p = p; }
-        @Override
-        public Object apply(Object... args) {
-            return p.apply(list(args));
-        }
+        @Override public Object apply(Object... args) { return p.apply(list(args)); }
     }
 
     private class CallLambda implements MurmelFunction {
@@ -1406,7 +1470,7 @@ public class LambdaJ {
         CallLambda(ConsCell lambda) { this.lambda = lambda; this.env = topEnv; }
         @Override
         public Object apply(Object... args) {
-            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function, global environment was rebuilt");
+            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
             return eval(cons(lambda, list(args)), env, 0, 0);
         }
     }

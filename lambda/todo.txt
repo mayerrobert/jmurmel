@@ -1,3 +1,27 @@
+symbol vielleicht nicht als String sondern class LambdaJSymbol { char[] symname; }, dafuer LambdaJString weg -> stattdessen java.lang.String
+-> murmel muss sonst Java string argumente mit symbol abfuellen und Java return String liefert ein symbol (das es nicht gibt)
+-> spart eher speicher
+
+JSR223 vielleicht in ein zweites jar verpacken?
+
+mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
+
+in readme.md nur einfache beispiele, rest in features.md
+
+nach bytecode compilieren: der bytecode wird dann in einem threaded interpreter abgearbeitet
+der interpreter sollte wsl direkt in eval drinstehen wg. TCO. der threaded interpreter kann
+direkt cons, car, cdr, +-*/ usw. ist sonst aber sehr aehnlich dem interpreter-eval.
+die threaded interpreter "methode" bekommt environment
+und ein int( oderchar?) array mit bytecode und arbeitet den bytecode ab:
+char[] code; XXX env;
+int ip = 0;
+top:
+while (ip < code.length) {
+switch (code[ip++]) {
+case car: extendenv(...; continue top;
+case cons: extendenv(new ConsCell(...; continue top;
+}
+
 printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 
 vielleicht die feature flags nur im repl, sonst file variablen
@@ -15,23 +39,6 @@ oder keine | schreiben
 -> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
    which refers to the concept of objects being printed in a machine-readable way, so that when the
    printed representation is scanned by the reader, a similar object is produced.
-
-Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
--> # hat in CL schon eine Bedeutung, z.B. #\C
-
-(define my-map (:: new java.util.HashMap nil))
-(:: "put" "java.util.HashMap" my-map "my key" "my value")
-(:: "format" "java.lang.String" nil "%g" 1.0)
-erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
-primitive :: koennte durch eine klasse mit methodencache implementiert werden
-
-oder :: erzeugt ein Primitive-Objekt, das Klasse, und Methode enthaelt und spaeter wie eine normale Lisp Funktion aufgerufen
-werden kann (aehnlich wie lambda ein closure erzeugt):
-(define make-java-map (:: "new" "java.util.HashMap"))
-(define java-put-hash (:: "put" "java.util.HashMap")
-
-(define my-map (make-java-map nil))
-(java-put-hash my-map "my key" "my value") ; erstes Argument beim Aufruf von "Java-Methoden" ist immer das Java-Objekt, ggf. nil fuer statische Methoden
 
 
 Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
@@ -1044,3 +1051,21 @@ Cons list =
 trace und features in 2 methoden rausziehen
 
 (cons 'a . 'A) -> (a . a)
+-> dokumentiert, kein wirkliches problem, nur kosmetische eher positive auswirkung
+
+Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
+-> # hat in CL schon eine Bedeutung, z.B. #\C
+
+(define my-map (:: new java.util.HashMap nil))
+(:: "put" "java.util.HashMap" my-map "my key" "my value")
+(:: "format" "java.lang.String" nil "%g" 1.0)
+erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
+primitive :: koennte durch eine klasse mit methodencache implementiert werden
+
+oder :: erzeugt ein Primitive-Objekt, das Klasse, und Methode enthaelt und spaeter wie eine normale Lisp Funktion aufgerufen
+werden kann (aehnlich wie lambda ein closure erzeugt):
+(define make-java-map (:: "new" "java.util.HashMap"))
+(define java-put-hash (:: "put" "java.util.HashMap")
+
+(define my-map (make-java-map nil))
+(java-put-hash my-map "my key" "my value") ; erstes Argument beim Aufruf von "Java-Methoden" ist immer das Java-Objekt, ggf. nil fuer statische Methoden
