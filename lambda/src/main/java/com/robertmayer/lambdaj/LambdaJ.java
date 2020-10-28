@@ -38,7 +38,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.141 2020/10/27 08:28:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.142 2020/10/27 15:09:10 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -206,7 +206,7 @@ public class LambdaJ {
         private final WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object o) { if (o == null && !haveNil()) out.print("()"); printSEx(out, o); }
+        @Override public void printObj(Object o) { if (o == null && !haveNil()) out.print("()"); else printSEx(out, o); }
         @Override public void printString(String s) { out.print(s); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
@@ -452,7 +452,7 @@ public class LambdaJ {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
-                /// Lookup ymbols in the current environment
+                /// Lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
                     if (form == null) return null;
                     final ConsCell envEntry = assoc(form, env);
@@ -460,7 +460,7 @@ public class LambdaJ {
                     throw new LambdaJError("%s: '%s' is undefined", "eval", form);
                 }
 
-                /// Atoms eval to themselves
+                /// Atoms that are not symbols eval to themselves
                 if (atom(form)) {
                     return form;   // this catches nil as well
                 }
@@ -1312,22 +1312,6 @@ public class LambdaJ {
     /// Public driver methods and functions to use the interpreter from Java (embedded)
     /// or from the command prompt (interactive)
 
-    private Parser scriptParser;
-
-    // todo out is ignored on the second and subsequent calls
-    public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        if (scriptParser == null) {
-            scriptParser = new SExpressionParser(in);
-            setSymtab(scriptParser);
-            final ConsCell env = environment(null);
-            topEnv = env;
-        }
-        scriptParser.setInput(program);
-        setInOut(scriptParser, new SExpressionWriter(out));
-        final Object exp = scriptParser.readObj();
-        return eval(exp, topEnv, 0, 0);
-    }
-
     /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
      *
      *  <p>After the expression was read from {@code in}, the primitive function {@code read} (if used)
@@ -1338,10 +1322,10 @@ public class LambdaJ {
         Parser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
-        lispStdin = parser; lispStdout = outWriter;
+        setInOut(parser, outWriter);
         final ConsCell env = environment(null);
-        final Object exp = parser.readObj();
         topEnv = env;
+        final Object exp = parser.readObj();
         final Object result = eval(exp, env, 0, 0);
         traceStats();
         return result;
@@ -1367,11 +1351,11 @@ public class LambdaJ {
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
         nCells = 0; maxEnvLen = 0;
         setSymtab(parser);
-        lispStdin = parser; lispStdout = outWriter;
+        setInOut(parser, outWriter);
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser, inReader, outWriter);
         final ConsCell env = environment(customEnvironment);
-        Object exp = parser.readObj();
         topEnv = env;
+        Object exp = parser.readObj();
         while (true) {
             final Object result = eval(exp, env, 0, 0);
             traceStats();
@@ -1380,6 +1364,7 @@ public class LambdaJ {
         }
     }
 
+    /** print and reset interpreter stats */
     private void traceStats() {
         if (trace >= TRC_STATS) {
             tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
@@ -1452,30 +1437,151 @@ public class LambdaJ {
         return ret;
     }
 
+    /// JSR-223 support
 
+    /** <p>evalScript is for JSR-223 support.
+     *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
+     *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
+    public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
+        if (symtab == null) {
+            Parser scriptParser = new SExpressionParser(in);
+            setSymtab(scriptParser);
+            final ConsCell env = environment(null);
+            topEnv = env;
+        }
+        Parser scriptParser = (Parser)symtab;
+        scriptParser.setInput(program);
+        setInOut(scriptParser, new SExpressionWriter(out));
+        final Object exp = scriptParser.readObj();
+        return eval(exp, topEnv, 0, 0);
+    }
+
+
+
+    /** main() for commandline use */
+    public static void main(String args[]) {
+        misc(args);
+        int trace = trace(args);
+        int features = features(args);
+        final LambdaJ interpreter = new LambdaJ(features, trace);
+
+        final boolean istty = null != System.console();
+        final boolean repl        = hasFlag("--repl", args) || istty;
+        final boolean echo        = hasFlag("--echo", args);    // used only in repl
+        final boolean printResult = hasFlag("--result", args);  // used only in filemode
+
+        if (argError(args)) {
+            System.err.println("LambdaJ: exiting because of previous errors.");
+            System.exit(1);
+        }
+
+        if (repl) {
+            repl(interpreter, istty, echo);
+        }
+
+        try {
+            final String result = printSEx(interpreter.interpretExpressions(System.in::read, System.in::read, System.out::print));
+            if (printResult) {
+                System.out.println();
+                System.out.println("==> " + result);
+            }
+        } catch (LambdaJError e) {
+            System.err.println();
+            System.err.println(e.toString());
+            System.exit(1);
+        }
+    }
 
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
+    /** Enter REPL, doesn't return */
+    private static void repl(final LambdaJ interpreter, final boolean istty, final boolean echo) {
+        final BoolHolder echoHolder = new BoolHolder(echo);
 
-    /** main() for interactive commandline use */
-    public static void main(String args[]) {
+        if (!echoHolder.value) {
+            System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
+            System.out.println();
+        }
+
+        boolean isInit = false;
+        SExpressionParser parser = null;
+        ObjectWriter outWriter = null;
+        ConsCell env = null;
+        for (;;) {
+            if (!isInit) {
+                interpreter.nCells = 0; interpreter.maxEnvLen = 0;
+                parser = interpreter.new SExpressionParser(() -> {
+                    int c = System.in.read();
+                    if (echoHolder.value && c != EOF)
+                        if (istty && c == '\r') System.out.print(System.lineSeparator());
+                        else System.out.print((char)c);
+                    return c;
+                });
+                interpreter.setSymtab(parser);
+                outWriter = interpreter.new SExpressionWriter(System.out::print);
+                interpreter.lispStdin = parser; interpreter.lispStdout = outWriter;
+                env = interpreter.environment(null);
+                interpreter.topEnv = env;
+                isInit = true;
+            }
+
+            if (!echoHolder.value) {
+                System.out.print("LambdaJ> ");
+                System.out.flush();
+            }
+
+            try {
+                parser.lineNo = 1;  parser.charNo = 1;
+                final Object exp = parser.readObj();
+
+                if (exp == null && parser.look == EOF
+                    || ":q"  .equals(exp)) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                if (":h"     .equals(exp)) { showHelp();  continue; }
+                if (":echo"  .equals(exp)) { echoHolder.value = true; continue; }
+                if (":noecho".equals(exp)) { echoHolder.value = false; continue; }
+                if (":env"   .equals(exp)) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
+                if (":init"  .equals(exp)) { isInit = false;  continue; }
+
+                final Object result = interpreter.eval(exp, env, 0, 0);
+                System.out.println();
+                interpreter.traceStats();
+                System.out.print("==> "); outWriter.printObj(result); System.out.println();
+            } catch (LambdaJError e) {
+                if (istty) {
+                    System.out.println();
+                    System.out.println(e.toString());
+                    System.out.println();
+                } else {
+                    System.err.println();
+                    System.err.println(e.toString());
+                    System.exit(1);
+                }
+            }
+        }
+    }
+
+    private static void misc(String[] args) {
         if (hasFlag("--version", args)) {
             showVersion();
-            return;
+            System.exit(0);
         }
 
         if (hasFlag("--help", args) || hasFlag("--usage", args)) {
             showVersion();
             System.out.println();
             showUsage();
-            return;
+            System.exit(0);
         }
-
+    }
+    private static int trace(String[] args) {
         int trace = TRC_NONE;
         if (hasFlag("--trace=stats", args)) trace = TRC_STATS;
         if (hasFlag("--trace=eval", args))  trace = TRC_EVAL;
         if (hasFlag("--trace=env", args))   trace = TRC_ENV;
         if (hasFlag("--trace", args))       trace = TRC_LEX;
+        return trace;
+    }
 
+    private static int features(String[] args) {
         int features = HAVE_ALL_LEXC;
         if (hasFlag("--dyn", args))         features =  HAVE_ALL_DYN;
         else if (hasFlag("--lex", args))    features =  HAVE_ALL_LEXC;
@@ -1504,110 +1610,7 @@ public class LambdaJ {
 
         if (hasFlag("--eol=C", args))       features &= ~HAVE_LISPEOL;
         if (hasFlag("--eol=LISP", args))    features |= HAVE_LISPEOL;
-
-        final LambdaJ interpreter = new LambdaJ(features, trace);
-
-        final boolean printResult = hasFlag("--result", args);
-        final boolean istty = null != System.console();
-        final boolean repl        = hasFlag("--repl", args) || istty;
-
-        final BoolHolder echo = new BoolHolder(hasFlag("--echo", args));
-
-        if (argError(args)) {
-            System.err.println("LambdaJ: exiting because of previous errors.");
-            return;
-        }
-
-        if (repl) {
-            if (!echo.value) {
-                System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
-                System.out.println();
-            }
-
-            boolean isInit = false;
-            SExpressionParser parser = null;
-            ObjectWriter outWriter = null;
-            ConsCell env = null;
-            for (;;) {
-                if (!isInit) {
-                    interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-                    parser = interpreter.new SExpressionParser(() -> {
-                        int c = System.in.read();
-                        if (echo.value && c != EOF)
-                            if (istty && c == '\r') System.out.print(System.lineSeparator());
-                            else System.out.print((char)c);
-                        return c;
-                    });
-                    interpreter.setSymtab(parser);
-                    outWriter = interpreter.new SExpressionWriter(System.out::print);
-                    interpreter.lispStdin = parser; interpreter.lispStdout = outWriter;
-                    env = interpreter.environment(null);
-                    interpreter.topEnv = env;
-                    isInit = true;
-                }
-
-                if (!echo.value) {
-                    System.out.print("LambdaJ> ");
-                    System.out.flush();
-                }
-
-                try {
-                    parser.lineNo = 1;  parser.charNo = 1;
-                    final Object exp = parser.readObj();
-
-                    if (":q".equals(exp) || exp == null && parser.look == EOF) {
-                        System.out.println("bye."); System.out.println();  return;
-                    }
-
-                    if (":h".equals(exp)) {
-                        showHelp();
-                        continue;
-                    }
-                    if (":echo".equals(exp)) {
-                        echo.value = true;
-                        continue;
-                    }
-                    if (":noecho".equals(exp)) {
-                        echo.value = false;
-                        continue;
-                    }
-                    if (":env".equals(exp)) {
-                        System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue;
-                    }
-
-                    if (":init".equals(exp)) {
-                        isInit = false;  continue;
-                    }
-
-                    final Object result = interpreter.eval(exp, env, 0, 0);
-                    System.out.println();
-                    interpreter.traceStats();
-                    System.out.print("==> "); outWriter.printObj(result); System.out.println();
-                } catch (LambdaJError e) {
-                    if (istty) {
-                        System.out.println();
-                        System.out.println(e.toString());
-                        System.out.println();
-                    } else {
-                        System.err.println();
-                        System.err.println(e.toString());
-                        System.exit(1);
-                    }
-                }
-            }
-        }
-
-        try {
-            final String result = printSEx(interpreter.interpretExpressions(System.in::read, System.in::read, System.out::print));
-            if (printResult) {
-                System.out.println();
-                System.out.println("==> " + result);
-            }
-        } catch (LambdaJError e) {
-            System.err.println();
-            System.err.println(e.toString());
-            System.exit(1);
-        }
+        return features;
     }
 
     private static boolean hasFlag(String flag, String[] args) {

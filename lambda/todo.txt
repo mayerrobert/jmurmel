@@ -1,3 +1,23 @@
+printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
+
+vielleicht die feature flags nur im repl, sonst file variablen
+
+reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
+-> NIL may not be used as a function, nor as a variable
+-> T may not be used as a variable.
+vgl auch special form als symbol verwenden
+
+Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 196
+pp73ff: modernes defmacro
+
+(cons 'a . 'A) -> (a . a)
+
+scanner sollte | fuer symbole koennen
+oder keine | schreiben
+-> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
+   which refers to the concept of objects being printed in a machine-readable way, so that when the
+   printed representation is scanned by the reader, a similar object is produced.
+
 Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
 -> # hat in CL schon eine Bedeutung, z.B. #\C
 
@@ -16,13 +36,18 @@ werden kann (aehnlich wie lambda ein closure erzeugt):
 (java-put-hash my-map "my key" "my value") ; erstes Argument beim Aufruf von "Java-Methoden" ist immer das Java-Objekt, ggf. nil fuer statische Methoden
 
 
+Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
+vielleicht ein --debug flag, dann allokiert der parser andere ConsCells mit zeilennummern?
+und printSEx bekommt einen parameter "lines" damit errorexp objekte mit zeilennummern ausgibt
+oder LambdaJError bekommt einen zusaetzlichen parameter errorExp und gibt die errorExp aus mit oder ohne zeilennummern
+-> ConsCells mit zeilennummern koennte der parser eigentlich immer erzeugen, code gibts nicht so viel, und die daten
+   werden dadurch nicht vergroessert
+
 synchronized ueberlegen
 
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
 
 parameterchecks fuer letrec
-
-Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
 
 
 
@@ -148,8 +173,6 @@ Hashmaps
 -> make-hash-table
    get-hash key -> value
 
-scanner sollte | fuer symbole koennen
-
 flag ob die identifier auf UC umgestellt werden sollen
 flag fuer symbols:
 --symbols=uc ... symbole werden beim lesen auf UC umgestellt
@@ -199,6 +222,17 @@ format und string-format zusammenziehen:
 -> format-locale und string-format-locale detto
 
 
+
+Datei IO
+(pprint (read (open typ "/Users/ashokkhanna/lisp/test-pprint.lisp"))) ; typ koennte 'utf-8 oder 'ansi oder auch 'url oder 'ftp sein
+-> datentyp File
+-> funktion (open string...) -> File ; koennte eine menge pathelemente bekommen, setzt die mittels pathsep zusammen vgl NIO
+            (close file) -> t
+            (read-line file) -> String oder nil
+            (read-all-lines file) -> (line...)
+bringt aber nur was, wenns auch stringmanipulationsfunktionen gibt
+-> string->charlist
+-> (split splitchars sting) -> (elements...)
 
 (load 'utf-8 "lispfile.lisp")
 -> erster optionale parameter ist ein symbol fuer den Zeichensatz
@@ -1008,3 +1042,5 @@ Cons list =
           (Cons) myFunction.execute(
                         Fixnum.getInstance(64),
                         Fixnum.getInstance(64));
+
+trace und features in 2 methoden rausziehen
