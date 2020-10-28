@@ -35,13 +35,15 @@
 ;;;
 ;;; Murmel is a Lisp dialect. As such the language isn't
 ;;; really defined in terms of program text but in terms
-;;; of in-memory objects that will be passed to eval.
+;;; of in-memory objects (lists, symbols and other atoms)
+;;; that are acceptable to eval.
 ;;;
 ;;; That said, Murmel's default parser turns S-expressions
 ;;; in the input file into equivalent in-memory objects. So
 ;;; for this reference we'll just pretend Murmel was defined
 ;;; in terms of S-expressions, and use S-expressions to describe
 ;;; expressions that are valid Murmel, i.e. are acceptable to eval.
+;;;
 ;;; In this reference in-memory objects (or sloppily: S-expressions)
 ;;; that are valid Murmel are referred to as "forms". 
 ;;;
@@ -86,9 +88,10 @@
 
 ;;; == Data types =====================
 ;;;
-;;; Murmel supports symbols, lists, double precision numbers and strings
+;;; Murmel supports symbols, lists, double precision
+;;; floating point numbers, 64bit integer numbers and strings.
 
-; a symbol
+; a symbol. Murmel ignores the case of symbols.
 '*a-sample-symbol*
 
 ; Guess. Max symbol length is 2000 chars, anything longer
@@ -96,14 +99,14 @@
 'a\ symbol\ with\ spaces!
 
 ; empty list, printed as "nil"
-'()
+()
 
 ; shorthand for empty list
 nil
 
 ; an integer number
 ; tokens that consist of a sign or digit followed by digits
-; are interpreted as integer numbers (java.lang.Long)
+; are interpreted as 64bit integer numbers (java.lang.Long)
 1
 
 ; a number in double precision
@@ -123,7 +126,7 @@ nil
 
 ;;; (define symbol object) -> symbol
 ; define associates symbols in the global environment
-; with expressions.
+; with a value.
 ; Redefining already defined symbols is an error.
 ; Redefining special forms is undefined
 ; behaviour, i.e. it won't work as expected and may
@@ -273,4 +276,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: lambdaj-langref.lisp,v 1.14 2020/10/27 06:51:40 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.1 2020/10/27 09:01:12 Robert Exp $
