@@ -1,6 +1,4 @@
-symbol vielleicht nicht als String sondern class LambdaJSymbol { char[] symname; }, dafuer LambdaJString weg -> stattdessen java.lang.String
--> murmel muss sonst Java string argumente mit symbol abfuellen und Java return String liefert ein symbol (das es nicht gibt)
--> spart eher speicher
+behandlung von nil beschreiben (Lisp <> Scheme)
 
 JSR223 vielleicht in ein zweites jar verpacken?
 
@@ -1069,3 +1067,8 @@ werden kann (aehnlich wie lambda ein closure erzeugt):
 
 (define my-map (make-java-map nil))
 (java-put-hash my-map "my key" "my value") ; erstes Argument beim Aufruf von "Java-Methoden" ist immer das Java-Objekt, ggf. nil fuer statische Methoden
+
+symbol vielleicht nicht als String sondern class LambdaJSymbol { char[] symname; }, dafuer LambdaJString weg -> stattdessen java.lang.String
+-> murmel muss sonst Java string argumente mit symbol abfuellen und Java return String liefert ein symbol (das es nicht gibt)
+-> spart eher speicher
+

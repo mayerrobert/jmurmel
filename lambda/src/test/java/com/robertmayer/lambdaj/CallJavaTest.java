@@ -9,7 +9,7 @@ public class CallJavaTest {
         System.setProperty("testprop", "testvalue");
         LambdaJTest.runTest("staticmethod.lisp",
                 "(define get-property (:: \"java.lang.System\" \"getProperty\" \"java.lang.String\"))"
-                + "(get-property nil 'testprop)", "testvalue", null);
+                + "(get-property nil \"testprop\")", "\"testvalue\"", null);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class CallJavaTest {
                 "(define create-hash (:: \"java.util.HashMap\" \"new\"))"
                 + "(define my-hash (create-hash))"
                 + "(define hash-tostring (:: \"java.util.HashMap\" \"toString\"))"
-                + "(hash-tostring my-hash)", "{}", null);
+                + "(hash-tostring my-hash)", "\"{}\"", null);
     }
 
     @Test
@@ -44,6 +44,6 @@ public class CallJavaTest {
                 + "(define hash-tostring (:: \"java.util.HashMap\" \"toString\"))"
                 + "((:: \"java.util.HashMap\" \"put\" \"java.lang.Object\" \"java.lang.Object\") my-hash \"key\" \"value\")"
                 + "(write ((:: \"java.util.HashMap\" \"get\" \"java.lang.Object\") my-hash \"key\"))"
-                + "(hash-tostring my-hash)", "{key=value}", "\"value\"");
+                + "(hash-tostring my-hash)", "\"{key=value}\"", "\"value\"");
     }
 }

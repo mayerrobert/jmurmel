@@ -31,6 +31,8 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import com.robertmayer.lambdaj.LambdaJ.LambdaJSymbol;
+
 /** <p>Interpreter for the Lisp-dialect Murmel. Could probably read top-down like a book.
  *
  *  <p>Comments starting with '///' could be considered similar to headings or chapter titles.
@@ -40,7 +42,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.143 2020/10/28 05:36:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.144 2020/10/28 20:02:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -48,7 +50,7 @@ public class LambdaJ {
     @FunctionalInterface public interface Tracer { void println(String msg); }
 
     @FunctionalInterface public interface ObjectReader { Object readObj(); }
-    public interface SymbolTable { Object intern(String symbol); }
+    public interface SymbolTable { Object intern(LambdaJSymbol symbol); }
     public interface Parser extends ObjectReader, SymbolTable {
         default void setInput(ReadSupplier input) {
             throw new UnsupportedOperationException("This parser does not support changing input");
@@ -112,6 +114,7 @@ public class LambdaJ {
     }
 
 
+    /*
     public static class LambdaJString implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String value;
@@ -120,6 +123,19 @@ public class LambdaJ {
         @Override public boolean equals(Object o) { return o instanceof LambdaJString && value.equals(((LambdaJString)o).value); }
         @Override public int hashCode() { return value.hashCode(); }
     }
+    */
+    public static class LambdaJSymbol implements Serializable {
+        private static final long serialVersionUID = 1L;
+        private final String value;
+        public LambdaJSymbol(String value) { this.value = value; }
+        @Override public String toString() { return value.toString(); }
+        @Override public int hashCode() { return value.hashCode(); }
+        @Override public boolean equals(Object o) { return o instanceof LambdaJSymbol && value.equals(((LambdaJSymbol)o).value); }
+        public boolean equalsIgnoreCase(LambdaJSymbol other) { return value.equalsIgnoreCase(other.value); }
+        public boolean equalsIgnoreCase(String other) { return value.equalsIgnoreCase(other); }
+    }
+
+
 
 
 
@@ -297,11 +313,11 @@ public class LambdaJ {
                     throw new LambdaJError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token));
                 }
             } else if (haveString() && token[0] == '"') {
-                tok = new LambdaJString(tokenToString(token).substring(1));
+                tok = tokenToString(token).substring(1);
             } else if (token[0] == '\0'){
                 tok = null;
             } else {
-                tok = tokenToString(token);
+                tok = new LambdaJSymbol(tokenToString(token));
             }
             if (trace >= TRC_LEX)
                 tracer.println("*** scan  token  |" + tok + '|');
@@ -328,10 +344,10 @@ public class LambdaJ {
 
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
-        public Object intern(String sym) {
+        public Object intern(LambdaJSymbol sym) {
             if (symbols != null)
                 for (Object symbol: symbols) {
-                    if (sym.equalsIgnoreCase((String)symbol)) {
+                    if (((LambdaJSymbol) symbol).equalsIgnoreCase(sym)) {
                         return symbol;
                     }
                 }
@@ -352,22 +368,22 @@ public class LambdaJ {
             return readObject();
         }
 
-        private Object quote = intern("quote");
+        private Object quote = intern(new LambdaJSymbol("quote"));
 
         private Object readObject() {
             if (tok == null) {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   ()");
                 return null;
             }
-            if (haveNil() && !tokEscape && tok instanceof String && "nil".equalsIgnoreCase((String) tok)) {
+            if (haveNil() && !tokEscape && tok instanceof LambdaJSymbol && isToken(tok, "nil")) {
                 return null;
             }
-            if (!tokEscape && ")".equals(tok)) {
+            if (!tokEscape && isToken(tok, ")")) {
                 throw new LambdaJError("line %d:%d: unexpected ')'", lineNo, charNo);
             }
-            if (!tokEscape && "(".equals(tok)) {
+            if (!tokEscape && isToken(tok, "(")) {
                 Object list = readList();
-                if (!tokEscape && ".".equals(tok)) {
+                if (!tokEscape && isToken(tok, ".")) {
                     Object cdr = readList();
                     if (cdr(cdr) != null) throw new LambdaJError("line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
                     Object cons = combine(list, car(cdr));
@@ -377,13 +393,13 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   " + printSEx(list));
                 return list;
             }
-            if (!tokEscape && haveQuote() && "'".equals(tok)) {
+            if (!tokEscape && haveQuote() && isToken(tok, "'")) {
                 readToken();
                 return cons(quote, cons(readObject(), null));
             }
             if (symbolp(tok)) {
-                if (trace >= TRC_TOK) tracer.println("*** parse symbol " + (String)tok);
-                return intern((String)tok);
+                if (trace >= TRC_TOK) tracer.println("*** parse symbol " + tok);
+                return intern((LambdaJSymbol)tok);
             }
             if (trace >= TRC_TOK) tracer.println("*** parse value  " + tok.toString());
             return tok;
@@ -393,12 +409,16 @@ public class LambdaJ {
             readToken();
             if (tok == null) throw new LambdaJError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
             if (!tokEscape) {
-                if (")".equals(tok)) return null;
-                if (".".equals(tok)) return null;
+                if (isToken(tok, ")")) return null;
+                if (isToken(tok, ".")) return null;
             }
             final Object tmp = readObject();
             if (symbolp(tmp)) return cons(tmp, readList());
             else return cons(tmp, readList());
+        }
+
+        private boolean isToken(Object tok, String s) {
+            return tok instanceof LambdaJSymbol && ((LambdaJSymbol)tok).equalsIgnoreCase(s);
         }
     }
 
@@ -412,20 +432,20 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sLambda = symtab.intern("lambda");
-        if (haveQuote())  sQuote   = symtab.intern("quote");
-        if (haveCond())   sCond    = symtab.intern("cond");
-        if (haveLabels()) sLabels  = symtab.intern("labels");
+        sLambda = symtab.intern(new LambdaJSymbol("lambda"));
+        if (haveQuote())  sQuote   = symtab.intern(new LambdaJSymbol("quote"));
+        if (haveCond())   sCond    = symtab.intern(new LambdaJSymbol("cond"));
+        if (haveLabels()) sLabels  = symtab.intern(new LambdaJSymbol("labels"));
 
-        if (haveXtra())   sEval    = symtab.intern("eval");
-        if (haveXtra())   sIf      = symtab.intern("if");
-        if (haveXtra())   sDefine  = symtab.intern("define");
-        if (haveXtra())   sDefun   = symtab.intern("defun");
-        if (haveXtra())   sLetStar = symtab.intern("let*");
-        if (haveXtra())   sLetrec  = symtab.intern("letrec");
+        if (haveXtra())   sEval    = symtab.intern(new LambdaJSymbol("eval"));
+        if (haveXtra())   sIf      = symtab.intern(new LambdaJSymbol("if"));
+        if (haveXtra())   sDefine  = symtab.intern(new LambdaJSymbol("define"));
+        if (haveXtra())   sDefun   = symtab.intern(new LambdaJSymbol("defun"));
+        if (haveXtra())   sLetStar = symtab.intern(new LambdaJSymbol("let*"));
+        if (haveXtra())   sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));
 
-        if (haveApply())  sApply   = symtab.intern("apply");
-        if (haveXtra())   sProgn   = symtab.intern("progn");
+        if (haveApply())  sApply   = symtab.intern(new LambdaJSymbol("apply"));
+        if (haveXtra())   sProgn   = symtab.intern(new LambdaJSymbol("progn"));
 
         expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
@@ -435,8 +455,8 @@ public class LambdaJ {
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
-        if (haveT()) return symtab.intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (haveQuote()) return cons(symtab.intern("quote"), cons(symtab.intern("t"), null));
+        if (haveT()) return symtab.intern(new LambdaJSymbol("t")); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+        else if (haveQuote()) return cons(symtab.intern(new LambdaJSymbol("quote")), cons(symtab.intern(new LambdaJSymbol("t")), null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
@@ -575,7 +595,7 @@ public class LambdaJ {
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
                                 final ConsCell currentFunc = (ConsCell)binding;
-                                final Object currentSymbol = symtab.intern((String)car(currentFunc));
+                                final Object currentSymbol = symtab.intern((LambdaJSymbol)car(currentFunc));
                                 final ConsCell lambda = makeClosure(cdr(currentFunc), env);
                                 extendEnv(env, currentSymbol, lambda);
                             }
@@ -825,11 +845,11 @@ public class LambdaJ {
 
     private static boolean  consp(Object x)    { return x instanceof ConsCell; }
     private static boolean  atom(Object x)     { return !(x instanceof ConsCell); }            // ! consp(x)
-    private static boolean  symbolp(Object x)  { return x == null || x instanceof String; }    // null (aka nil) is a symbol too
+    private static boolean  symbolp(Object x)  { return x == null || x instanceof LambdaJSymbol; }    // null (aka nil) is a symbol too
     private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; }  // null (aka nil) is a list too
     private static boolean  primp(Object x)    { return x instanceof Primitive; }
     private static boolean  numberp(Object x)  { return x instanceof Number; }
-    private static boolean  stringp(Object x)  { return x instanceof LambdaJString; }
+    private static boolean  stringp(Object x)  { return x instanceof String; }
 
     private static int length(Object list) {
         if (list == null) return 0;
@@ -1037,9 +1057,10 @@ public class LambdaJ {
     /** arguments if any must be only numbers */
     private static void numberArgs(String func, ConsCell a) {
         if (a == null) return;
+        ConsCell start = a;
         for (; a != null; a = (ConsCell) cdr(a)) {
-            if (!numberp(car(a)) || (cdr(a) != null && !consp(cdr(a))))
-                throw new LambdaJError("%s: expected only number arguments but got %s", func, printSEx(a));
+            if (!numberp(car(a)) || (cdr(a) != null && (cdr(a) == start || !consp(cdr(a)))))
+                throw new LambdaJError("%s: expected a proper list of numbers but got %s", func, printSEx(a));
         }
     }
 
@@ -1050,16 +1071,17 @@ public class LambdaJ {
 
     /** the given arg must be a LambdaJString */
     private static void stringArg(String func, String arg, Object a) {
-        if (!(car(a) instanceof LambdaJString))
+        if (!stringp(car(a)))
             throw new LambdaJError("%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
     }
 
     /** arguments if any must be only strings */
     private static void stringArgs(String func, ConsCell a) {
         if (a == null) return;
+        ConsCell start = a;
         for (; a != null; a = (ConsCell) cdr(a)) {
-            if (!stringp(car(a)) || (cdr(a) != null && !consp(cdr(a))))
-                throw new LambdaJError("%s: expected only string arguments but got %s", func, printSEx(a));
+            if (!stringp(car(a)) || (cdr(a) != null && (cdr(a) == start || !consp(cdr(a)))))
+                throw new LambdaJError("%s: expected a proper list of strings but got %s", func, printSEx(a));
         }
     }
 
@@ -1100,7 +1122,7 @@ public class LambdaJ {
     private String stringFormat(ConsCell a, String func) {
         nArgs(func, a, 1, null);
         stringArg(func, "first argument", a);
-        String s = ((LambdaJString)car(a)).value;
+        String s = (String) car(a);
         try {
             return String.format(s, listToArray(cdr(a)));
         } catch (IllegalFormatException e) {
@@ -1114,10 +1136,10 @@ public class LambdaJ {
         String locString;
         if (car(a) != null) {
             stringArg(func, "first argument", a);
-            locString = ((LambdaJString)car(a)).value;
+            locString = (String) car(a);
         } else locString = null;
         stringArg(func, "second argument", cdr(a));
-        String s = ((LambdaJString)car(cdr(a))).value;
+        String s = (String) cadr(a);
         try {
             if (locString == null) return String.format(s, listToArray(cdr(cdr(a))));
             Locale loc = Locale.forLanguageTag(locString);
@@ -1169,13 +1191,13 @@ public class LambdaJ {
     }
 
     private static Primitive findJavaMethod(ConsCell x) {
-        stringArgs("::", x);
-        final String className = ((LambdaJString) car(x)).value;
-        final String methodName = ((LambdaJString) cadr(x)).value;
+        stringArgs(":: ", x);
+        final String className = (String) car(x);
+        final String methodName = (String) cadr(x);
         final ArrayList<Class<?>> paramTypes = new ArrayList<>();
         if (cddr(x) != null)
         for (Object arg: (ConsCell)cddr(x)) {
-            String paramType = ((LambdaJString)arg).value;
+            String paramType = (String)arg;
             try { paramTypes.add(Class.forName(paramType)); }
             catch (ClassNotFoundException e) { throw new LambdaJError(":: : exception finding parameter class %s: %s : %s", paramType, e.getClass().getName(), e.getMessage()); }
         }
@@ -1228,20 +1250,20 @@ public class LambdaJ {
                 return expTrue.get();
             };
 
-            env = cons(cons(symtab.intern("read"),    freadobj),
-                  cons(cons(symtab.intern("write"),   fwriteobj),
-                  cons(cons(symtab.intern("writeln"), fwriteln),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("read")),    freadobj),
+                  cons(cons(symtab.intern(new LambdaJSymbol("write")),   fwriteobj),
+                  cons(cons(symtab.intern(new LambdaJSymbol("writeln")), fwriteln),
                   env)));
 
         }
 
         if (haveString()) {
-            env = cons(cons(symtab.intern("stringp"), (Primitive) a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("stringp")), (Primitive) a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); }),
                   env);
 
             if (haveUtil()) {
-                env = cons(cons(symtab.intern("string-format"),        (Primitive) a -> new LambdaJString(stringFormat(a, "string-format"))),
-                      cons(cons(symtab.intern("string-format-locale"), (Primitive) a -> new LambdaJString(stringFormatLocale(a, "string-format-locale"))),
+                env = cons(cons(symtab.intern(new LambdaJSymbol("string-format")),        (Primitive) a -> stringFormat(a, "string-format")),
+                      cons(cons(symtab.intern(new LambdaJSymbol("string-format-locale")), (Primitive) a -> stringFormatLocale(a, "string-format-locale")),
                       env));
             }
 
@@ -1258,26 +1280,26 @@ public class LambdaJ {
                     return expTrue.get();
                 };
 
-                env = cons(cons(symtab.intern("format"),        fformat),
-                      cons(cons(symtab.intern("format-locale"), fformatLocale),
+                env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        fformat),
+                      cons(cons(symtab.intern(new LambdaJSymbol("format-locale")), fformatLocale),
                       env));
             }
         }
 
         if (haveT())
-            env = cons(cons(symtab.intern("t"), symtab.intern("t")),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("t")), symtab.intern(new LambdaJSymbol("t"))),
                   env);
 
         if (haveNil())
-            env = cons(cons(symtab.intern("nil"), null),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("nil")), null),
                   env);
 
         if (haveUtil()) {
-            env = cons(cons(symtab.intern("consp"),   (Primitive) a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); }),
-                  cons(cons(symtab.intern("symbolp"), (Primitive) a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); }),
-                  cons(cons(symtab.intern("listp"),   (Primitive) a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); }),
-                  cons(cons(symtab.intern("null?"),   (Primitive) a -> { oneArg("null?", a);   return boolResult(car(a) == null); }),
-                  cons(cons(symtab.intern("assoc"),   (Primitive) a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("consp")),   (Primitive) a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("symbolp")), (Primitive) a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("listp")),   (Primitive) a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("null?")),   (Primitive) a -> { oneArg("null?", a);   return boolResult(car(a) == null); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("assoc")),   (Primitive) a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); }),
                   env)))));
 
             final Primitive fusertime = a -> { return new Double(getThreadBean("get-internal-run-time").getCurrentThreadUserTime()); };
@@ -1312,18 +1334,18 @@ public class LambdaJ {
                        cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(),
                        cons(boolResult(daylightSavings), cons(offset, null))))))));
             };
-            env = cons(cons(symtab.intern("internal-time-units-per-second"), new Double(1e9)),
-                  cons(cons(symtab.intern("get-internal-real-time"), (Primitive)a -> new Double(System.nanoTime())),
-                  cons(cons(symtab.intern("get-internal-run-time"), fusertime), // user
-                  cons(cons(symtab.intern("get-internal-cpu-time"), fcputime), // user + system
-                  cons(cons(symtab.intern("sleep"), fsleep),
-                  cons(cons(symtab.intern("get-universal-time"), fUniversalTime), // seconds since 1.1.1900
-                  cons(cons(symtab.intern("get-decoded-time"), fDecodedTime),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("internal-time-units-per-second")), new Double(1e9)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-real-time")), (Primitive)a -> new Double(System.nanoTime())),
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-run-time")), fusertime), // user
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-cpu-time")), fcputime), // user + system
+                  cons(cons(symtab.intern(new LambdaJSymbol("sleep")), fsleep),
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-universal-time")), fUniversalTime), // seconds since 1.1.1900
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-decoded-time")), fDecodedTime),
                   env)))))));
         }
 
         if (haveAtom()) {
-            env = cons(cons(symtab.intern("atom"), (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("atom")), (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); }),
                        env);
         }
 
@@ -1334,41 +1356,41 @@ public class LambdaJ {
                 return ((Number)car(args)).doubleValue() % ((Number)car(cdr(args))).doubleValue();
             };
 
-            env = cons(cons(symtab.intern("="),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
-                  cons(cons(symtab.intern(">"),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
-                  cons(cons(symtab.intern(">="),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
-                  cons(cons(symtab.intern("<"),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
-                  cons(cons(symtab.intern("<="),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("=")),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol(">")),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol(">=")),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("<")),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("<=")),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
                   env)))));
-            env = cons(cons(symtab.intern("+"),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
-                  cons(cons(symtab.intern("-"),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
-                  cons(cons(symtab.intern("*"),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
-                  cons(cons(symtab.intern("/"),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
-                  cons(cons(symtab.intern("mod"),     fmod),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("+")),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("-")),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("*")),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("mod")),     fmod),
                   env)))));
-            env = cons(cons(symtab.intern("numberp"), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
-                  cons(cons(symtab.intern("round"),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round((Double)car(args)); }),
-                  cons(cons(symtab.intern("floor"),   (Primitive) args -> { oneArg("floor",   args); return (long)Math.floor((Double)car(args)); }),
-                  cons(cons(symtab.intern("ceiling"), (Primitive) args -> { oneArg("ceiling", args); return (long)Math.ceil ((Double)car(args)); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round((Double)car(args)); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { oneArg("floor",   args); return (long)Math.floor((Double)car(args)); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { oneArg("ceiling", args); return (long)Math.ceil ((Double)car(args)); }),
                   env))));
         }
 
         if (haveEq()) {
-            env = cons(cons(symtab.intern("eq"), (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("eq")), (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); }),
                        env);
         }
 
         if (haveCons()) {
-            env = cons(cons(symtab.intern("cdr"),     (Primitive) a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); }),
-                  cons(cons(symtab.intern("car"),     (Primitive) a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); }),
-                  cons(cons(symtab.intern("cons"),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("car")),     (Primitive) a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); }),
                   env)));
         }
 
-        env = cons(cons(symtab.intern("throw"), (Primitive) a -> { oneArg("throw", a); throw new RuntimeException(car(a).toString()); }),
+        env = cons(cons(symtab.intern(new LambdaJSymbol("throw")), (Primitive) a -> { oneArg("throw", a); throw new RuntimeException(car(a).toString()); }),
                    env);
 
-        env = cons(cons(symtab.intern("::"), (Primitive) a -> findJavaMethod(a)),
+        env = cons(cons(symtab.intern(new LambdaJSymbol("::")), (Primitive) a -> findJavaMethod(a)),
                 env);
 
         return env;
@@ -1451,7 +1473,7 @@ public class LambdaJ {
     /** Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
-        final ConsCell envEntry = assoc(symtab.intern(globalSymbol), topEnv);
+        final ConsCell envEntry = assoc(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
         if (envEntry != null) return cdr(envEntry);
         throw new LambdaJError("%s: '%s' is undefined", "getValue", globalSymbol);
     }

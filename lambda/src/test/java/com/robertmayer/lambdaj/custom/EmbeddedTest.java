@@ -84,7 +84,7 @@ public class EmbeddedTest {
         assertEquals("1.00000", result.toString()); // will be formatted according to default Locale
         assertEquals(0, out.length());
 
-        assertTrue(result instanceof LambdaJ.LambdaJString);
+        assertTrue(result instanceof String);
     }
 
     @Test
@@ -126,8 +126,8 @@ public class EmbeddedTest {
     //
     // here a list will be created that contains ((greet . <Java code for greet>) (*answer* . 42.0))
     private static LambdaJ.ConsCell makeEnvironment(LambdaJ.SymbolTable symtab, ObjectReader in, ObjectWriter out) {
-        return cons(cons(symtab.intern("greet"),    (Primitive)(a -> greet(a, in, out))),
-               cons(cons(symtab.intern("*answer*"), 42.0),
+        return cons(cons(symtab.intern(new LambdaJ.LambdaJSymbol("greet")),    (Primitive)(a -> greet(a, in, out))),
+               cons(cons(symtab.intern(new LambdaJ.LambdaJSymbol("*answer*")), 42.0),
                null));
     }
 

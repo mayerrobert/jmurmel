@@ -200,7 +200,7 @@ nil
 
 ;;; (apply form argform) -> object
 ; form must return a primitive or lambda
-; argform must return a proper list
+; argform must eval to a proper list
 ; e.g. apply the function + to the arguments 1 and 2
 (apply + '(1 2))
 
@@ -334,4 +334,4 @@ the primitives may throw an error.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.3 2020/10/28 05:46:27 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.4 2020/10/28 20:02:28 Robert Exp $

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StringReader;
+import java.util.HashMap;
 
 import org.junit.Test;
 
@@ -17,7 +18,8 @@ import com.robertmayer.lambdaj.LambdaJ.*;
 public class SerializeTest {
 
     public static class SerializationParser implements Parser {
-        Object obj;
+        private Object obj;
+        private HashMap<LambdaJSymbol, LambdaJSymbol> symbols = new HashMap<>();
 
         public SerializationParser(byte[] serialized) throws IOException, ClassNotFoundException {
             obj = new ObjectInputStream(new ByteArrayInputStream(serialized)).readObject();
@@ -28,10 +30,10 @@ public class SerializeTest {
             if (o instanceof ConsCell) {
                 final ConsCell c = (ConsCell) o;
                 if (c.car instanceof ConsCell) internSymbols(c.car);
-                else if (c.car instanceof String) c.car = ((String)c.car).intern();
+                else if (c.car instanceof LambdaJSymbol) c.car = intern((LambdaJSymbol)c.car);
 
                 if (c.cdr instanceof ConsCell) internSymbols(c.cdr);
-                else if (c.car instanceof String) c.car = ((String)c.car).intern();
+                else if (c.cdr instanceof LambdaJSymbol) c.cdr = intern((LambdaJSymbol)c.cdr);
             }
         }
 
@@ -43,14 +45,16 @@ public class SerializeTest {
         }
 
         @Override
-        public Object intern(String symbol) {
-            return symbol.intern();
+        public Object intern(LambdaJSymbol symbol) {
+            Object prev = symbols.putIfAbsent(symbol, symbol);
+            if (prev != null) return prev;
+            return symbol;
         }
     }
 
     @Test
     public void testSerialize() throws Exception {
-        ConsCell c = new ConsCell("symbol", new LambdaJString("stringvalue"));
+        ConsCell c = new ConsCell("symbol", "stringvalue");
 
         ByteArrayOutputStream s = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(s);

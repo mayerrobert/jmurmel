@@ -23,7 +23,7 @@ public class JSR223Test {
         ScriptEngine se = new JMurmelScriptEngine();
 
         Object result = se.eval("(defun f (p1 p2) (* p1 p2))");
-        assertEquals("f", result);
+        assertEquals("f", result.toString());
 
         result = se.eval("(f 2 3)");
         assertEquals(6.0, result);
