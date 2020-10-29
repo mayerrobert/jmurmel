@@ -74,6 +74,8 @@ a-symbol
 1
 1.0
 "a string"
+|a symbol|
+a\ symbol
 
 ; a single quote is a shorthand for (quote an-expression)
 'an-expression
@@ -334,4 +336,4 @@ the primitives may throw an error.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.4 2020/10/28 20:02:28 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.5 2020/10/28 23:43:50 Robert Exp $
