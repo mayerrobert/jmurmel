@@ -42,7 +42,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.145 2020/10/28 23:43:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.146 2020/10/29 07:49:25 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -72,8 +72,15 @@ public class LambdaJ {
         public static final long serialVersionUID = 1L;
 
         public LambdaJError(String msg) { super(msg, null, false, false); }
-        public LambdaJError(String msg, Object... params) { super(String.format(msg, params), null, false, false); }
+        public LambdaJError(String msg, Object... params) {
+            super(String.format(msg, params) + getErrorExp(params), null, false, false);
+        }
         @Override public String toString() { return "Error: " + getMessage(); }
+
+        private static String getErrorExp(Object[] params) {
+            if (params != null && params.length > 0 && params[params.length-1] instanceof ConsCell) return errorExp(params[params.length-1]);
+            return "";
+        }
     }
 
 
@@ -491,7 +498,7 @@ public class LambdaJ {
                 /// The form is enclosed in parentheses, either a special form or a function application
                 if (consp(form)) {
                     final Object operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(form))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s%s", "eval", printSEx(form), errorExp(form));
+                    if (!listp(cdr(form))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s", "eval", printSEx(form), form);
                     final ConsCell arguments = (ConsCell) cdr(form);   // list with remaining atoms/ expressions
 
 
@@ -520,9 +527,9 @@ public class LambdaJ {
                         twoArgs("define", arguments, form);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                               // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
-                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s%s", "define", printSEx(symbol), errorExp(form));
+                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "define", printSEx(symbol), form);
                         final ConsCell envEntry = assoc(symbol, env);
-                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "define", symbol, printSEx(cdr(envEntry)), errorExp(form));
+                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)), form);
 
                         final Object value = eval(cadr(arguments), env, stack, level);
                         extendEnv(topEnv, symbol, value);
@@ -533,11 +540,11 @@ public class LambdaJ {
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, form);
                         final Object symbol = car(arguments);
-                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s%s", "defun", printSEx(symbol), errorExp(form));
+                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "defun", printSEx(symbol), form);
                         final Object params = cadr(arguments);
-                        if (!listp(params)) throw new LambdaJError("%s: expected a parameter list but got %s%s", "defun", printSEx(params), errorExp(form));
+                        if (!listp(params)) throw new LambdaJError("%s: expected a parameter list but got %s", "defun", printSEx(params), form);
                         final ConsCell envEntry = assoc(symbol, env);
-                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s%s", "defun", symbol, printSEx(cdr(envEntry)), errorExp(form));
+                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "defun", symbol, printSEx(cdr(envEntry)), form);
 
                         final Object lambda = makeClosure(cdr(arguments), env);
                         extendEnv(topEnv, symbol, lambda);
@@ -569,7 +576,7 @@ public class LambdaJ {
 
                     /// (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
-                        if (!consp(arguments)) throw new LambdaJError("%s: malformed cond. expected a list of forms but got %s%s", "progn", printSEx(arguments), errorExp(form));
+                        if (!consp(arguments)) throw new LambdaJError("%s: malformed cond. expected a list of forms but got %s", "progn", printSEx(arguments), form);
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
@@ -577,8 +584,7 @@ public class LambdaJ {
                     } else if (haveCond() && operator == sCond) {
                         if (arguments != null)
                             for (Object c: arguments) {
-                                if (!listp(c)) throw new LambdaJError("cond: malformed cond. expected a list (condexpr forms...) but got %s%s",
-                                                                           printSEx(c), errorExp(form));
+                                if (!listp(c)) throw new LambdaJError("cond: malformed cond. expected a list (condexpr forms...) but got %s", printSEx(c), form);
                                 if (eval(car(c), env, stack, level) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
@@ -607,10 +613,15 @@ public class LambdaJ {
                     } else if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
                         final boolean rec = operator == sLetrec;
                         final boolean named = symbolp(car(arguments));
+                        final String op = (named ? "named " : "") + operator.toString();
                         final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;
+
+                        if (!consp(car(let))) throw new LambdaJError("%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(let)), form);
                         final ConsCell bindings = (ConsCell)car(let);
 
                         for (Object binding: bindings) {
+                            if (!consp(binding)) throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding), form);
+                            if (!listp(cdr(binding))) throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding), form);
                             ConsCell newBinding = null;
                             if (rec) newBinding = extendEnv(env, car(binding), null);
                             Object val = eval(cadr(binding), env, stack, level);
@@ -639,7 +650,7 @@ public class LambdaJ {
 
                             func = eval(car(arguments), env, stack, level);
                             final Object _argList = eval(cadr(arguments), env, stack, level);
-                            if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s%s", "apply", printSEx(_argList), errorExp(form));
+                            if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s", "apply", printSEx(_argList), form);
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
 
@@ -647,7 +658,7 @@ public class LambdaJ {
                         /// (expr args...) -> object
                         } else {
                             func = eval(operator, env, stack, level);
-                            if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s%s", "function application", printSEx(arguments), errorExp(form));
+                            if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s", "function application", printSEx(arguments), form);
                             argList = evlis(arguments, env, stack, level);
                             // fall through to "actually perform..."
                         }
@@ -655,7 +666,7 @@ public class LambdaJ {
                         // actually perform the function call that was set up by "apply" or "function call" above
                         if (primp(func)) {
                             try { return applyPrimitive((Primitive) func, argList, stack, level); }
-                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage() + errorExp(form)); }
+                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage(), form); }
 
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // (params . (forms...))
@@ -668,7 +679,7 @@ public class LambdaJ {
                             // fall through to "eval a list of forms"
 
                         } else {
-                            throw new LambdaJError("function application: not a primitive or lambda: %s%s", printSEx(func), errorExp(form));
+                            throw new LambdaJError("function application: not a primitive or lambda: %s", printSEx(func), form);
                         }
                     }
 
@@ -695,7 +706,8 @@ public class LambdaJ {
         }
     }
 
-    /** insert a new symbolentry at the front of env, env is modified in place, address of the list will not change */
+    /** insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
+     *  returns the newly created (and inserted) symbolentry (symbol . value) */
     private ConsCell extendEnv(ConsCell env, Object symbol, Object value) {
         final ConsCell symbolEntry = cons(symbol, value);
         final Object oldCar = car(env);
@@ -726,15 +738,15 @@ public class LambdaJ {
      *  return extended environment</pre> */
     private ConsCell zip(Object exp, ConsCell env, Object paramList, ConsCell args) {
         if (paramList == null && args == null) return env; // shortcut for no params
-        if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s%s",
-                                                      "function application", printSEx(paramList), errorExp(exp));
+        if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s",
+                                                      "function application", printSEx(paramList), exp);
 
         ConsCell params = (ConsCell)paramList;
      // todo circular, dotted. params sollte wsl proper list sein, args sollte alles erlauben
         for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
             env = cons(cons(car(params), car(args)), env);
-        if (params != null) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s%s", "function application", printSEx(params), errorExp(exp));
-        if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s%s", "function application", printSEx(args), errorExp(exp));
+        if (params != null) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params), exp);
+        if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s", "function application", printSEx(args), exp);
         return env;
     }
 
@@ -1000,21 +1012,21 @@ public class LambdaJ {
     }
 
     private static void twoArgs(String func, Object a, Object exp) {
-        if (a == null)       throw new LambdaJError("%s: expected two arguments but no argument was given%s", func, errorExp(exp));
-        if (cdr(a) == null)  throw new LambdaJError("%s: expected two arguments but only one argument was given%s", func, errorExp(exp));
-        if (cddr(a) != null) throw new LambdaJError("%s: expected two arguments but got extra arg(s) %s%s", func, printSEx(cddr(a)), errorExp(exp));
+        if (a == null)       throw new LambdaJError("%s: expected two arguments but no argument was given", func, exp);
+        if (cdr(a) == null)  throw new LambdaJError("%s: expected two arguments but only one argument was given", func, exp);
+        if (cddr(a) != null) throw new LambdaJError("%s: expected two arguments but got extra arg(s) %s", func, printSEx(cddr(a)), exp);
     }
 
     /** at least {@code min} args */
     private static void nArgs(String func, Object a, int min, Object exp) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError("%s: expected %d arguments or more but got only %d%s", func, min, actualLength, errorExp(exp));
+        if (actualLength < min) throw new LambdaJError("%s: expected %d arguments or more but got only %d", func, min, actualLength, exp);
     }
 
     private static void nArgs(String func, Object a, int min, int max, Object exp) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError("%s: expected %d to %d arguments but got only %d%s", func, min, max, actualLength, errorExp(exp));
-        if (actualLength > max) throw new LambdaJError("%s: expected %d to %d arguments but got extra arg(s) %s%s", func, min, max, printSEx(nthcdr(max, a)), errorExp(exp));
+        if (actualLength < min) throw new LambdaJError("%s: expected %d to %d arguments but got only %d", func, min, max, actualLength, exp);
+        if (actualLength > max) throw new LambdaJError("%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)), exp);
     }
 
     private static String errorExp(Object exp) {
@@ -1612,7 +1624,7 @@ public class LambdaJ {
             }
 
             if (!echoHolder.value) {
-                System.out.print("LambdaJ> ");
+                System.out.print("JMurmel> ");
                 System.out.flush();
             }
 

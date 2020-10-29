@@ -1,6 +1,20 @@
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
+-> CL hat keine named let
+   scheme hat nur named let, kein named let* letrec, body symbol ist in den binding expressions unbound
+    -> rausfinden was die nachteile von named let* und letrec sind
+    -> rausfinden was die nachteile von named binding in binding expressions sind 
 
-parameterchecks fuer letrec
+dzt gibts let* und letrec
+-> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
+   braucht man zum macros programmieren
+-> was ist letrec*
+
+
+
+wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
+-> variadic function mit zumindest einem parameter, scheme machts so
+-> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
+   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
 
 behandlung von nil beschreiben (Lisp <> Scheme)
 
@@ -1071,3 +1085,4 @@ symbol vielleicht nicht als String sondern class LambdaJSymbol { char[] symname;
 -> murmel muss sonst Java string argumente mit symbol abfuellen und Java return String liefert ein symbol (das es nicht gibt)
 -> spart eher speicher
 
+parameterchecks fuer letrec
