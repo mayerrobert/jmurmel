@@ -1,28 +1,9 @@
-soll bei named letXX das let-symbol in den bindings sichtbar sein?
--> CL hat keine named let
-   scheme hat nur named let, kein named let* letrec, body symbol ist in den binding expressions unbound
-    -> rausfinden was die nachteile von named let* und letrec sind
-    -> rausfinden was die nachteile von named binding in binding expressions sind 
+vielleicht die feature flags nur im repl, sonst file variablen
+-> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
+   beim setInput() die featureflags wieder zuruecksetzen
 
-dzt gibts let* und letrec
--> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
-   braucht man zum macros programmieren
--> was ist letrec*
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 
-
-
-wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
--> variadic function mit zumindest einem parameter, scheme machts so
--> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
-   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
-
-behandlung von nil beschreiben (Lisp <> Scheme)
-
-scanner sollte | fuer symbole koennen
-oder keine | schreiben
--> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
-   which refers to the concept of objects being printed in a machine-readable way, so that when the
-   printed representation is scanned by the reader, a similar object is produced.
 
 reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
 -> NIL may not be used as a function, nor as a variable
@@ -41,23 +22,37 @@ vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angeleg
 und es gibt keine sonstigen auswirkungen mehr
 -> aber let & co lassen das redefinieren trotzdem zu
 
+
+behandlung von nil beschreiben (Lisp <> Scheme)
+
 in readme.md nur einfache beispiele, rest in features.md
 
 
 
-Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
-vielleicht ein --debug flag, dann allokiert der parser andere ConsCells mit zeilennummern?
-und printSEx bekommt einen parameter "lines" damit errorexp objekte mit zeilennummern ausgibt
-oder LambdaJError bekommt einen zusaetzlichen parameter errorExp und gibt die errorExp aus mit oder ohne zeilennummern
--> ConsCells mit zeilennummern koennte der parser eigentlich immer erzeugen, code gibts nicht so viel, und die daten
-   werden dadurch nicht vergroessert
+
+
+soll bei named letXX das let-symbol in den bindings sichtbar sein?
+-> CL hat keine named let
+   scheme hat nur named let, kein named let* letrec, body symbol ist in den binding expressions unbound
+    -> rausfinden was die nachteile von named let* und letrec sind
+    -> rausfinden was die nachteile von named binding in binding expressions sind 
+
+dzt gibts let* und letrec
+-> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
+   braucht man zum macros programmieren
+-> was ist letrec*
+
+
+wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
+-> variadic function mit zumindest einem parameter, scheme machts so
+-> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
+   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
+
+
 
 synchronized ueberlegen
 
 printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
-
-vielleicht die feature flags nur im repl, sonst file variablen
-vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 
 JSR223 vielleicht in ein zweites jar verpacken?
 
@@ -104,8 +99,8 @@ Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure
 Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
 -> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
 
-wenns in einem Scope keine duplikate geben darf, koennte
-es pro scope einen cache fuers environment geben. Ist ein parameter von eval so wie env, bei einem neuen executionscope
+wenns in einem Scope keine duplikate geben darf, koennte es pro scope einen cache fuers environment geben.
+Ist ein parameter von eval so wie env, bei einem neuen executionscope
 (einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
 der Scope endet beim return von eval, damit ist die hashmap auch weg.
 bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
@@ -178,12 +173,6 @@ parameter sollten dann auch slots im array sein, beim func call entsprechend abf
    -> leider nein, das environment beim closen ist (lokalesenv globalesenv)
 
 utils: combine, list, nth, nhtcdr, c*r
-
-LambdaJ gibts schon. Ausserdem gibts:
-JavaLISP, http://jlambda.com, jlisp, rlisp, ROMALISP
--> umbenamsen:
-   Murmel: ich mag das tier, murmeln <->-lispeln, Sprache: Murmel, interpreter: jmurmel
-   JUCL: Java Un Common Lisp, uncommon Lisp klingt negativ
 
 Hashmaps
 -> make-hash-table
@@ -1086,3 +1075,22 @@ symbol vielleicht nicht als String sondern class LambdaJSymbol { char[] symname;
 -> spart eher speicher
 
 parameterchecks fuer letrec
+
+LambdaJ gibts schon. Ausserdem gibts:
+JavaLISP, http://jlambda.com, jlisp, rlisp, ROMALISP
+-> umbenamsen:
+   Murmel: ich mag das tier, murmeln <->-lispeln, Sprache: Murmel, interpreter: jmurmel
+   JUCL: Java Un Common Lisp, uncommon Lisp klingt negativ
+
+Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
+vielleicht ein --debug flag, dann allokiert der parser andere ConsCells mit zeilennummern?
+und printSEx bekommt einen parameter "lines" damit errorexp objekte mit zeilennummern ausgibt
+oder LambdaJError bekommt einen zusaetzlichen parameter errorExp und gibt die errorExp aus mit oder ohne zeilennummern
+-> ConsCells mit zeilennummern koennte der parser eigentlich immer erzeugen, code gibts nicht so viel, und die daten
+   werden dadurch nicht vergroessert
+
+scanner sollte | fuer symbole koennen
+oder keine | schreiben
+-> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
+   which refers to the concept of objects being printed in a machine-readable way, so that when the
+   printed representation is scanned by the reader, a similar object is produced.

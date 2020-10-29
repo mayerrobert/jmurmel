@@ -29,9 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
-
-import com.robertmayer.lambdaj.LambdaJ.LambdaJSymbol;
 
 /** <p>Interpreter for the Lisp-dialect Murmel. Could probably read top-down like a book.
  *
@@ -42,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.146 2020/10/29 07:49:25 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.147 2020/10/29 18:54:32 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -120,17 +117,12 @@ public class LambdaJ {
         @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
     }
 
-
-    /*
-    public static class LambdaJString implements Serializable {
+    public static class SExpConsCell extends ConsCell {
         private static final long serialVersionUID = 1L;
-        private final String value;
-        public LambdaJString(String value) { this.value = value; }
-        @Override public String toString() { return value.toString(); }
-        @Override public boolean equals(Object o) { return o instanceof LambdaJString && value.equals(((LambdaJString)o).value); }
-        @Override public int hashCode() { return value.hashCode(); }
+        private final int lineNo, charNo;
+        public SExpConsCell(int line, int charNo, Object car, Object cdr)    { super(car, cdr); this.lineNo = line; this.charNo = charNo; }
     }
-    */
+
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String value;
@@ -245,6 +237,7 @@ public class LambdaJ {
         private ReadSupplier in;    // readObj() will read from this
         private boolean init;
 
+        private boolean pos = false;
         private int lineNo = 1, charNo = 0;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
@@ -259,8 +252,18 @@ public class LambdaJ {
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
         private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
+        private boolean isBar(int x)    { return !escape && x == '|'; }
 
         private boolean isSyntax(int x) { return !escape && isSExSyntaxChar(x); }
+
+        private int readchar() throws IOException {
+            int c = in.read();
+            if (c == '\n') {
+                lineNo++;
+                charNo = 1;
+            } else if (c != '\r' && c != EOF) charNo++;
+            return c;
+        }
 
         private int getchar() {
             try {
@@ -280,15 +283,6 @@ public class LambdaJ {
             }
         }
 
-        private int readchar() throws IOException {
-            int c = in.read();
-            if (c == '\n') {
-                lineNo++;
-                charNo = 1;
-            } else if (c != '\r' && c != EOF) charNo++;
-            return c;
-        }
-
         private void readToken() {
             int index = 0;
             while (isSpace(look)) { look = getchar(); }
@@ -301,6 +295,14 @@ public class LambdaJ {
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
                     if (look == EOF) throw new LambdaJError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
+                    else look = getchar(); // consume trailing "
+                } else if (isBar(look)) {
+                    look = getchar();
+                    do {
+                        if (index < TOKEN_MAX) token[index++] = look;
+                        look = getchar();
+                    } while (look != EOF && !isBar(look));
+                    if (look == EOF) throw new LambdaJError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
@@ -368,11 +370,19 @@ public class LambdaJ {
         @Override
         public Object readObj() {
             if (!init) {
+                lineNo = 1; charNo = 0;
                 look = getchar();
                 init = true;
             }
             readToken();
             return readObject();
+        }
+
+        public Object readObj(boolean pos) {
+            this.pos = true;
+            Object ret = readObj();
+            this.pos = false;
+            return ret;
         }
 
         private Object quote = intern(new LambdaJSymbol("quote"));
@@ -426,6 +436,10 @@ public class LambdaJ {
 
         private boolean isToken(Object tok, String s) {
             return tok instanceof LambdaJSymbol && ((LambdaJSymbol)tok).equalsIgnoreCase(s);
+        }
+
+        private ConsCell cons(Object car, Object cdr) {
+            return pos ? new SExpConsCell(lineNo, charNo, car, cdr) : new ConsCell(car, cdr);
         }
     }
 
@@ -976,14 +990,14 @@ public class LambdaJ {
                 }
             } else if (escapeAtoms && symbolp(obj)) {
                 if (containsSExSyntaxOrBlank(obj.toString())) {
-                    sb.print("|"); sb.print(obj.toString()); sb.print("|");
+                    sb.print("|"); sb.print(escapeSymbol((LambdaJSymbol) obj)); sb.print("|");
                     return;
                 }
-                sb.print(obj.toString()); return;
+                sb.print(escapeSymbol((LambdaJSymbol) obj)); return;
             } else if (primp(obj)) {
                 sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
-                sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return; // todo statt | -> \<blank>
+                sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
             } else if (atom(obj)) {
                 sb.print(obj.toString()); return;
             } else {
@@ -992,14 +1006,39 @@ public class LambdaJ {
         }
     }
 
-    private static final Pattern dQuotePattern = Pattern.compile("[\"]");
-    private static final Pattern bSlashPattern = Pattern.compile("[\\\\]([^\"])");
+    private static String escapeSymbol(LambdaJSymbol s) {
+        if (s.value == null) return null;
+        if (s.value.length() == 0) return "";
+
+        final StringBuffer ret = new StringBuffer();
+        for (char c: s.value.toCharArray()) {
+            switch (c) {
+            case '|':  ret.append('\\').append('|'); break;
+            /*case '(':  ret.append('\\').append('('); break;
+            case ')':  ret.append('\\').append(')'); break;
+            case ' ':  ret.append('\\').append(' '); break;
+            case '\'': ret.append('\\').append('\''); break;
+            case '\\': ret.append('\\').append('\\'); break;*/
+            default: ret.append(c);
+            }
+        }
+        return ret.toString();
+    }
+
     /** prepend " and \ by a \ */
     private static String escapeString(String s) {
         if (s == null) return null;
-        s = dQuotePattern.matcher(s).replaceAll("\\\\\"");
-        s = bSlashPattern.matcher(s).replaceAll("\\\\\\\\$1");
-        return s;
+        if (s.length() == 0) return "";
+
+        final StringBuffer ret = new StringBuffer();
+        for (char c: s.toCharArray()) {
+            switch (c) {
+            case '\"':  ret.append('\\').append('\"'); break;
+            case '\\': ret.append('\\').append('\\'); break;
+            default: ret.append(c);
+            }
+        }
+        return ret.toString();
     }
 
 
@@ -1031,7 +1070,8 @@ public class LambdaJ {
 
     private static String errorExp(Object exp) {
         if (exp == null) return "";
-        return System.lineSeparator() + "error occurred in expression " + printSEx(exp);
+        final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
+        return System.lineSeparator() + "error occurred in expression " + l + printSEx(exp);
     }
 
     ///
@@ -1457,11 +1497,11 @@ public class LambdaJ {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser, inReader, outWriter);
         final ConsCell env = environment(customEnvironment);
         topEnv = env;
-        Object exp = parser.readObj();
+        Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
             final Object result = eval(exp, env, 0, 0);
             traceStats();
-            exp = parser.readObj();
+            exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
         }
     }
@@ -1551,7 +1591,7 @@ public class LambdaJ {
         Parser scriptParser = (Parser)symtab;
         scriptParser.setInput(program);
         setInOut(scriptParser, new SExpressionWriter(out));
-        final Object exp = scriptParser.readObj();
+        final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
         return eval(exp, topEnv, 0, 0);
     }
 
@@ -1630,7 +1670,7 @@ public class LambdaJ {
 
             try {
                 parser.lineNo = 1;  parser.charNo = 1;
-                final Object exp = parser.readObj();
+                final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF
                     || ":q"  .equals(exp)) { System.out.println("bye."); System.out.println();  System.exit(0); }
