@@ -1,10 +1,53 @@
+soll bei named letXX das let-symbol in den bindings sichtbar sein?
+
+parameterchecks fuer letrec
+
 behandlung von nil beschreiben (Lisp <> Scheme)
+
+scanner sollte | fuer symbole koennen
+oder keine | schreiben
+-> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
+   which refers to the concept of objects being printed in a machine-readable way, so that when the
+   printed representation is scanned by the reader, a similar object is produced.
+
+reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
+-> NIL may not be used as a function, nor as a variable
+-> T may not be used as a variable.
+vgl auch special form als symbol verwenden
+
+redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
+->
+special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
+die auswirkung davon laesst sich durch folgendes symptom beschreiben:
+effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
+(define eval 1) -> eval
+(eval eval) -> 1
+(eval 'eval) -> 1
+vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angelegt werden, dann gibt define einen fehler
+und es gibt keine sonstigen auswirkungen mehr
+-> aber let & co lassen das redefinieren trotzdem zu
+
+in readme.md nur einfache beispiele, rest in features.md
+
+
+
+Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
+vielleicht ein --debug flag, dann allokiert der parser andere ConsCells mit zeilennummern?
+und printSEx bekommt einen parameter "lines" damit errorexp objekte mit zeilennummern ausgibt
+oder LambdaJError bekommt einen zusaetzlichen parameter errorExp und gibt die errorExp aus mit oder ohne zeilennummern
+-> ConsCells mit zeilennummern koennte der parser eigentlich immer erzeugen, code gibts nicht so viel, und die daten
+   werden dadurch nicht vergroessert
+
+synchronized ueberlegen
+
+printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
+
+vielleicht die feature flags nur im repl, sonst file variablen
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 
 JSR223 vielleicht in ein zweites jar verpacken?
 
 mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
-
-in readme.md nur einfache beispiele, rest in features.md
 
 nach bytecode compilieren: der bytecode wird dann in einem threaded interpreter abgearbeitet
 der interpreter sollte wsl direkt in eval drinstehen wg. TCO. der threaded interpreter kann
@@ -20,37 +63,8 @@ case car: extendenv(...; continue top;
 case cons: extendenv(new ConsCell(...; continue top;
 }
 
-printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
-
-vielleicht die feature flags nur im repl, sonst file variablen
-
-reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
--> NIL may not be used as a function, nor as a variable
--> T may not be used as a variable.
-vgl auch special form als symbol verwenden
-
 Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 196
 pp73ff: modernes defmacro
-
-scanner sollte | fuer symbole koennen
-oder keine | schreiben
--> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
-   which refers to the concept of objects being printed in a machine-readable way, so that when the
-   printed representation is scanned by the reader, a similar object is produced.
-
-
-Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
-vielleicht ein --debug flag, dann allokiert der parser andere ConsCells mit zeilennummern?
-und printSEx bekommt einen parameter "lines" damit errorexp objekte mit zeilennummern ausgibt
-oder LambdaJError bekommt einen zusaetzlichen parameter errorExp und gibt die errorExp aus mit oder ohne zeilennummern
--> ConsCells mit zeilennummern koennte der parser eigentlich immer erzeugen, code gibts nicht so viel, und die daten
-   werden dadurch nicht vergroessert
-
-synchronized ueberlegen
-
-soll bei named letXX das let-symbol in den bindings sichtbar sein?
-
-parameterchecks fuer letrec
 
 
 
@@ -82,9 +96,6 @@ es pro scope einen cache fuers environment geben. Ist ein parameter von eval so 
 der Scope endet beim return von eval, damit ist die hashmap auch weg.
 bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
 (symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
-
-
-vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 
 
 
@@ -136,18 +147,6 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 -> "alles freigeben, was nicht im returnvalue steckt" ist aber nicht so leicht
 
 
-
-redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
-->
-special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
-die auswirkung davon laesst sich durch folgendes symptom beschreiben:
-effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
-(define eval 1) -> eval
-(eval eval) -> 1
-(eval 'eval) -> 1
-vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angelegt werden, dann gibt define einen fehler
-und es gibt keine sonstigen auswirkungen mehr
--> aber let & co lassen das redefinieren trotzdem zu
 
 backticks und , ggf. auch ,@ im scanner einbauen?
 (defun constant-adder (a)

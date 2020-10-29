@@ -42,7 +42,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.144 2020/10/28 20:02:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.145 2020/10/28 23:43:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1036,6 +1036,7 @@ public class LambdaJ {
 
     /// Additional error checking functions used by primitives only.
 
+    /** a must be the empty list */
     private static void noArgs(String func, ConsCell a) {
         if (a != null) throw new LambdaJError("%s: expected no arguments but got %s", func, printSEx(a));
     }
@@ -1054,7 +1055,7 @@ public class LambdaJ {
         if (cdr(a) != null) throw new LambdaJError("%s: expected one Pair argument but got extra arg(s) %s", func, printSEx(cdr(a)));
     }
 
-    /** arguments if any must be only numbers */
+    /** a must be a proper list of only numbers (empty list is fine, too) */
     private static void numberArgs(String func, ConsCell a) {
         if (a == null) return;
         ConsCell start = a;
@@ -1075,7 +1076,7 @@ public class LambdaJ {
             throw new LambdaJError("%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
     }
 
-    /** arguments if any must be only strings */
+    /** a must be a proper list of only strings (empty list is fine, too) */
     private static void stringArgs(String func, ConsCell a) {
         if (a == null) return;
         ConsCell start = a;
