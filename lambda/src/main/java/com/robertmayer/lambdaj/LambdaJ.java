@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.148 2020/10/29 23:23:48 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.149 2020/10/30 08:00:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -751,15 +751,31 @@ public class LambdaJ {
      *    stick above list in front of the environment
      *  return extended environment</pre> */
     private ConsCell zip(Object exp, ConsCell env, Object paramList, ConsCell args) {
-        if (paramList == null && args == null) return env; // shortcut for no params
-        if (!listp(paramList)) throw new LambdaJError("%s: expected a parameter list but got %s",
-                                                      "function application", printSEx(paramList), exp);
+        if (paramList == null && args == null) return env; // shortcut for no params/ no args
 
-        ConsCell params = (ConsCell)paramList;
-     // todo circular, dotted. params sollte wsl proper list sein, args sollte alles erlauben
-        for ( ; params != null && args != null; params = (ConsCell) cdr(params), args = (ConsCell) cdr(args))
-            env = cons(cons(car(params), car(args)), env);
-        if (params != null) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params), exp);
+        for (Object params = paramList; params != null; ) {
+            // regular param/arg: add to env
+            if (consp(params)) env = cons(cons(car(params), car(args)), env);   // todo checken ob car(params) ein symbol ist
+
+            // if paramList is a dotted list then the last param will be bound to the list of remaining args
+            else {
+                env = cons(cons(params, args), env);  // todo checken ob params ein symbol ist
+                args = null; break;
+            }
+
+            params = cdr(params);
+            if (params == paramList) throw new LambdaJError("%s: malformed lambda: bindings are a circular list", "function application", exp);
+
+            args = (ConsCell) cdr(args);
+            if (args == null) {
+                if (consp(params)) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params), exp);
+                else {
+                    // paramList is a dotted list, no argument for vararg parm: assign nil
+                    env = cons(cons(params, null), env);
+                    break;
+                }
+            }
+        }
         if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s", "function application", printSEx(args), exp);
         return env;
     }
@@ -870,9 +886,9 @@ public class LambdaJ {
     private static Object   cddr(Object x)     { return x == null ? null : cdr(cdr(x)); }
 
     private static boolean  consp(Object x)    { return x instanceof ConsCell; }
-    private static boolean  atom(Object x)     { return !(x instanceof ConsCell); }            // ! consp(x)
-    private static boolean  symbolp(Object x)  { return x == null || x instanceof LambdaJSymbol; }    // null (aka nil) is a symbol too
-    private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; }  // null (aka nil) is a list too
+    private static boolean  atom(Object x)     { return !(x instanceof ConsCell); }                // ! consp(x)
+    private static boolean  symbolp(Object x)  { return x == null || x instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+    private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; }      // null (aka nil) is a list too
     private static boolean  primp(Object x)    { return x instanceof Primitive; }
     private static boolean  numberp(Object x)  { return x instanceof Number; }
     private static boolean  stringp(Object x)  { return x instanceof String; }
@@ -1353,7 +1369,8 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("listp")),   (Primitive) a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("null?")),   (Primitive) a -> { oneArg("null?", a);   return boolResult(car(a) == null); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("assoc")),   (Primitive) a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); }),
-                  env)))));
+                  cons(cons(symtab.intern(new LambdaJSymbol("list")),    (Primitive) a -> a),
+                  env))))));
 
             final Primitive fusertime = a -> { return new Double(getThreadBean("get-internal-run-time").getCurrentThreadUserTime()); };
             final Primitive fcputime = a -> { return new Double(getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime()); };
@@ -1669,7 +1686,7 @@ public class LambdaJ {
             }
 
             try {
-                parser.lineNo = 1;  parser.charNo = 1;
+                parser.lineNo = 1;  parser.charNo = 0;
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF

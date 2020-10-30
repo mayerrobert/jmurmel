@@ -1,14 +1,16 @@
-statt intern(new LambdaJSymbol... -> genSym(String...
--> das checkt unique symbols
+dzt gibts let* und letrec
+-> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
+   braucht man zum macros programmieren
+-> was ist letrec*
 
-vielleicht die feature flags nur im repl, sonst file variablen
--> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
-   beim setInput() die featureflags wieder zuruecksetzen
+printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
+der reader sollte wsl ' immer auf (quote... umsetzen, egal ob quote unterstuetzt wird oder nicht
 
 vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 
-printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 
+statt intern(new LambdaJSymbol... -> genSym(String...
+-> das checkt unique symbols und reserved keywords
 
 reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
 -> NIL may not be used as a function, nor as a variable
@@ -27,15 +29,14 @@ vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angeleg
 und es gibt keine sonstigen auswirkungen mehr
 -> aber let & co lassen das redefinieren trotzdem zu
 
+vielleicht die feature flags nur im repl, sonst file variablen
+-> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
+   beim setInput() die featureflags wieder zuruecksetzen
+
 
 behandlung von nil beschreiben (Lisp <> Scheme)
 
 in readme.md nur einfache beispiele, rest in features.md
-
-wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
--> variadic function mit zumindest einem parameter, scheme machts so
--> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
-   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
 
 
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
@@ -44,16 +45,21 @@ soll bei named letXX das let-symbol in den bindings sichtbar sein?
     -> rausfinden was die nachteile von named let* und letrec sind
     -> rausfinden was die nachteile von named binding in binding expressions sind 
 
-dzt gibts let* und letrec
--> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
-   braucht man zum macros programmieren
--> was ist letrec*
-
 
 
 
 
 synchronized ueberlegen
+
+solange es kein rplaca gibt, koennte man int, float, double und ggf kurze/ lange strings/ symbols in jeweils massgeschneiderte ConsCell stecken
+-> muesste sehr hohe speichereinsparung und performanceverbesserung bringen
+sollte es rplaca geben, muesste dieses logik haben, um bei typaenderung in ein neues ConsCell umzukopieren und dieses ggf. einzuhaengen
+-> oder typaenderungen sind verboten
+-> oder man kann optional einen typ angeben, dann ists schnell und der typ ist fix, ohne typangabe ists langsam aber der typ darf sich aendern
+z.B. statt
+(lambda (a b) (...))
+(lambda (integer a double b) (...))
+ 
 
 JSR223 vielleicht in ein zweites jar verpacken?
 
@@ -63,7 +69,7 @@ nach bytecode compilieren: der bytecode wird dann in einem threaded interpreter 
 der interpreter sollte wsl direkt in eval drinstehen wg. TCO. der threaded interpreter kann
 direkt cons, car, cdr, +-*/ usw. ist sonst aber sehr aehnlich dem interpreter-eval.
 die threaded interpreter "methode" bekommt environment
-und ein int( oderchar?) array mit bytecode und arbeitet den bytecode ab:
+und ein int (oder char? eher byte[]) array mit bytecode und arbeitet den bytecode ab:
 char[] code; XXX env;
 int ip = 0;
 top:
@@ -73,7 +79,10 @@ case car: extendenv(...; continue top;
 case cons: extendenv(new ConsCell(...; continue top;
 }
 
-Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 196
+ggf. auch in den interpreter einige funktionen wie +/- "inlinen"
+
+
+Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 1996
 pp73ff: modernes defmacro
 
 
@@ -1095,3 +1104,11 @@ oder keine | schreiben
 -> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
    which refers to the concept of objects being printed in a machine-readable way, so that when the
    printed representation is scanned by the reader, a similar object is produced.
+
+die primitive "list" ist trivial: einfach das argument liefern, das ist die variable "arguments" in eval, und das ist bereits genau
+die gewuenschte liste
+
+wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
+-> variadic function mit zumindest einem parameter, scheme machts so
+-> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
+   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
