@@ -114,8 +114,12 @@ a\ symbol
 
 ;;; == Data types =====================
 ;;;
-;;; Murmel supports symbols, lists, double precision
-;;; floating point numbers, 64bit integer numbers and strings.
+;;; Murmel supports symbols, lists as well as other atoms
+;;; that are not symbols.
+;;;
+;;; These other atoms are double precision floating point numbers,
+;;; 64bit integer numbers and strings. Custom primitives
+;;; may support additional atoms.
 
 ; A symbol. Murmel treats symbols case-insensitive.
 ; Implementation note: JMurmel preserves the
@@ -126,7 +130,8 @@ a\ symbol
 ; '(AbC . abc) -> (AbC . AbC)
 '*a-sample-symbol*
 
-; Guess. Max symbol length is 2000 chars, anything longer
+; Guess (hint: it'a symbol with embedded spaces).
+; Max symbol length is 2000 chars, anything longer
 ; will be silently truncated
 'a\ symbol\ with\ spaces!
 
@@ -336,4 +341,4 @@ the primitives may throw an error.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.5 2020/10/28 23:43:50 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.6 2020/10/29 23:24:11 Robert Exp $

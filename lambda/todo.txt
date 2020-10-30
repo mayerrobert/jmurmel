@@ -1,8 +1,13 @@
+statt intern(new LambdaJSymbol... -> genSym(String...
+-> das checkt unique symbols
+
 vielleicht die feature flags nur im repl, sonst file variablen
 -> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
    beim setInput() die featureflags wieder zuruecksetzen
 
 vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
+
+printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 
 
 reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
@@ -27,8 +32,10 @@ behandlung von nil beschreiben (Lisp <> Scheme)
 
 in readme.md nur einfache beispiele, rest in features.md
 
-
-
+wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
+-> variadic function mit zumindest einem parameter, scheme machts so
+-> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
+   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
 
 
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
@@ -43,16 +50,10 @@ dzt gibts let* und letrec
 -> was ist letrec*
 
 
-wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
--> variadic function mit zumindest einem parameter, scheme machts so
--> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
-   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
 
 
 
 synchronized ueberlegen
-
-printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 
 JSR223 vielleicht in ein zweites jar verpacken?
 

@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.147 2020/10/29 18:54:32 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.148 2020/10/29 23:23:48 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -60,7 +60,7 @@ public class LambdaJ {
 
     // todo parameter lispStdin/ out weg
     public interface CustomEnvironmentSupplier {
-        ConsCell customEnvironment(SymbolTable symtab, ObjectReader lispStdin, ObjectWriter lispStdout);
+        ConsCell customEnvironment(SymbolTable symtab);
     }
 
 
@@ -1266,39 +1266,39 @@ public class LambdaJ {
 
 
 
-    private ObjectReader lispStdin;
-    private ObjectWriter lispStdout;
+    public ObjectReader lispReader;
+    public ObjectWriter lispPrinter;
 
-    public void setInOut(ObjectReader lispStdin, ObjectWriter lispStdout) {
-        this.lispStdin = lispStdin;
-        this.lispStdout = lispStdout;
+    public void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) {
+        this.lispReader = lispStdin;
+        this.lispPrinter = lispStdout;
     }
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(ConsCell env) {
         if (haveIO()) {
-            final Primitive freadobj =  a -> { noArgs("read", a);    return lispStdin == null ? null : lispStdin.readObj(); };
+            final Primitive freadobj =  a -> { noArgs("read", a);    return lispReader == null ? null : lispReader.readObj(); };
             final Primitive fwriteobj = a -> {
                 oneArg("write", a);
-                if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "write");
-                lispStdout.printObj(car(a)); return expTrue.get();
+                if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "write");
+                lispPrinter.printObj(car(a)); return expTrue.get();
             };
 
             final Primitive fwriteln =  a -> {
                 nArgs("writeln", a, 0, 1, null);
-                if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "write");
+                if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "write");
                 if (a == null) {
-                    lispStdout.printEol();
+                    lispPrinter.printEol();
                     return expTrue.get();
                 }
                 if (haveLispEOL()) {
-                    lispStdout.printEol();
-                    lispStdout.printObj(car(a));
-                    lispStdout.printString(" ");
+                    lispPrinter.printEol();
+                    lispPrinter.printObj(car(a));
+                    lispPrinter.printString(" ");
                 } else {
-                    lispStdout.printObj(car(a));
-                    lispStdout.printEol();
+                    lispPrinter.printObj(car(a));
+                    lispPrinter.printEol();
                 }
                 return expTrue.get();
             };
@@ -1322,14 +1322,14 @@ public class LambdaJ {
 
             if (haveIO()) {
                 final Primitive fformat = a -> {
-                    if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "format");
-                    lispStdout.printString(stringFormat(a, "format"));
+                    if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "format");
+                    lispPrinter.printString(stringFormat(a, "format"));
                     return expTrue.get();
                 };
 
                 final Primitive fformatLocale = a -> {
-                    if (lispStdout == null) throw new LambdaJError("%s: lispStdout is nil", "format");
-                    lispStdout.printString(stringFormatLocale(a, "format-locale"));
+                    if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "format");
+                    lispPrinter.printString(stringFormatLocale(a, "format-locale"));
                     return expTrue.get();
                 };
 
@@ -1464,7 +1464,7 @@ public class LambdaJ {
         Parser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
-        setInOut(parser, outWriter);
+        setReaderPrinter(parser, outWriter);
         final ConsCell env = environment(null);
         topEnv = env;
         final Object exp = parser.readObj();
@@ -1482,7 +1482,7 @@ public class LambdaJ {
         Parser parser = new SExpressionParser(program);
         ObjectReader inReader = new SExpressionParser(in);
         ObjectWriter outWriter = new SExpressionWriter(out);
-        return interpretExpressions(parser, inReader, outWriter, (_symtab, _in, _out) -> null);
+        return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
 
     /** <p>Build environment, repeatedly read an expression from {@code parser} and invoke {@code eval()} until EOF,
@@ -1493,8 +1493,8 @@ public class LambdaJ {
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
         nCells = 0; maxEnvLen = 0;
         setSymtab(parser);
-        setInOut(parser, outWriter);
-        final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser, inReader, outWriter);
+        setReaderPrinter(parser, outWriter);
+        final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser);
         final ConsCell env = environment(customEnvironment);
         topEnv = env;
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
@@ -1590,7 +1590,7 @@ public class LambdaJ {
         }
         Parser scriptParser = (Parser)symtab;
         scriptParser.setInput(program);
-        setInOut(scriptParser, new SExpressionWriter(out));
+        setReaderPrinter(scriptParser, new SExpressionWriter(out));
         final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
         return eval(exp, topEnv, 0, 0);
     }
@@ -1657,7 +1657,7 @@ public class LambdaJ {
                 });
                 interpreter.setSymtab(parser);
                 outWriter = interpreter.new SExpressionWriter(System.out::print);
-                interpreter.lispStdin = parser; interpreter.lispStdout = outWriter;
+                interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 env = interpreter.environment(null);
                 interpreter.topEnv = env;
                 isInit = true;
