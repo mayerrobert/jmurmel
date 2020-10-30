@@ -47,12 +47,12 @@ public class LambdaJBenchmark {
             "                     (if (null? (cdr list))\r\n" +
             "                         (car list)\r\n" +
             "                         (print-last (cdr list)))))\r\n" +
-            "        (print-last (quote (0 1 2 3 4 5 6 7 8 9))))";
+            "        (print-last (quote (0. 1. 2. 3. 4. 5. 6. 7. 8. 9.))))";
     public static final String FACT =
             "(labels ((factTR (n a)\r\n" +
             "                 (cond ((= n 0) a)\r\n" +
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
-            "        (string-format-locale \"en-US\" \"Factorial of 50 is %g\" (factTR 50 1)))";
+            "        (string-format-locale \"en-US\" \"Factorial of 50 is %g\" (factTR 50. 1.)))";
 
     public static final String[] PROGRAMS = {
             EMPTY_PROGRAM,
