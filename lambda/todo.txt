@@ -1,3 +1,5 @@
+define hat varargs, defun nicht
+
 dzt gibts let* und letrec
 -> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
    braucht man zum macros programmieren
