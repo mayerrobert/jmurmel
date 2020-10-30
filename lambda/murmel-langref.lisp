@@ -111,6 +111,14 @@ a\ symbol
 ; arguments to lambda are not evaluated
 (lambda (p1 p2) p1)
 
+; lambda with varargs:
+; If paramlist is a symbol then all arguments will be
+; packed into a list and bound to the symbol.
+; If paramlist is a dotted list then remaining arguments
+; will be bound to the last parameter.
+(lambda popt (write popt)) ; no mandatory arguments
+(lambda (p1 p2 . prest))   ; two mandatory arguments
+
 
 ;;; == Data types =====================
 ;;;
@@ -341,4 +349,4 @@ the primitives may throw an error.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.6 2020/10/29 23:24:11 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.7 2020/10/30 08:00:54 Robert Exp $
