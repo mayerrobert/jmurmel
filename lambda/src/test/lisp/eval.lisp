@@ -14,7 +14,7 @@
 (defun caddr  (l) (car (cdr (cdr l))))
 (defun caddar (l) (car (cdr (cdr (car l)))))
 
-(defun list (a b) (cond ((eq  a ()) (cond ((atom b) (cons b ()))
+(defun my-list (a b) (cond ((eq  a ()) (cond ((atom b) (cons b ()))
                                            (t b)))
                          (t (cons a (cons b ())))))
 
