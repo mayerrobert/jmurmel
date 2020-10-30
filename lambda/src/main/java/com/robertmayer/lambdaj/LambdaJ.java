@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.149 2020/10/30 08:00:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.150 2020/10/30 21:22:03 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -528,6 +528,7 @@ public class LambdaJ {
                     // (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         nArgs("lambda", arguments, 2, form);
+                        // todo checken ob car(arguments) ein symbol oder eine liste mit nur symbols ist
                         if (haveLexC()) return makeClosure(arguments, env);
                         else return form;
                     }
@@ -755,11 +756,11 @@ public class LambdaJ {
 
         for (Object params = paramList; params != null; ) {
             // regular param/arg: add to env
-            if (consp(params)) env = cons(cons(car(params), car(args)), env);   // todo checken ob car(params) ein symbol ist
+            if (consp(params)) env = cons(cons(car(params), car(args)), env);
 
             // if paramList is a dotted list then the last param will be bound to the list of remaining args
             else {
-                env = cons(cons(params, args), env);  // todo checken ob params ein symbol ist
+                env = cons(cons(params, args), env);
                 args = null; break;
             }
 
