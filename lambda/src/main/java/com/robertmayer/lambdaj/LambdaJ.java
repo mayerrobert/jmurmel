@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.155 2020/10/31 11:29:51 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.156 2020/10/31 16:11:53 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -500,7 +500,7 @@ public class LambdaJ {
                     if (form == null) return null;
                     final ConsCell envEntry = assoc(form, env);
                     if (envEntry != null) return cdr(envEntry);
-                    throw new LambdaJError("%s: '%s' is undefined", "eval", form);
+                    throw new LambdaJError("%s: '%s' is undefined", "eval");
                 }
 
                 /// eval - atoms that are not symbols eval to themselves
@@ -511,7 +511,7 @@ public class LambdaJ {
                 /// eval - the form is enclosed in parentheses, either a special form or a function application
                 if (consp(form)) {
                     final Object operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(form))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s", "eval", printSEx(form), form);
+                    if (!listp(cdr(form))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
                     final ConsCell arguments = (ConsCell) cdr(form);   // list with remaining atoms/ expressions
 
 
@@ -541,9 +541,9 @@ public class LambdaJ {
                         twoArgs("define", arguments, form);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                               // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
-                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "define", printSEx(symbol), form);
+                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "define", printSEx(symbol));
                         final ConsCell envEntry = assoc(symbol, env);
-                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)), form);
+                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
                         final Object value = eval(cadr(arguments), env, stack, level);
                         extendEnv(topEnv, symbol, value);
@@ -582,7 +582,7 @@ public class LambdaJ {
 
                     /// eval - (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
-                        if (!consp(arguments)) throw new LambdaJError("%s: malformed cond. expected a list of forms but got %s", "progn", printSEx(arguments), form);
+                        if (!consp(arguments)) throw new LambdaJError("%s: malformed cond. expected a list of forms but got %s", "progn", printSEx(arguments));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
@@ -590,7 +590,7 @@ public class LambdaJ {
                     } else if (haveCond() && operator == sCond) {
                         if (arguments != null)
                             for (Object c: arguments) {
-                                if (!listp(c)) throw new LambdaJError("%s: malformed cond. expected a list (condexpr forms...) but got %s", "cond", printSEx(c), form);
+                                if (!listp(c)) throw new LambdaJError("%s: malformed cond. expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
                                 if (eval(car(c), env, stack, level) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
@@ -622,12 +622,14 @@ public class LambdaJ {
                         final String op = (named ? "named " : "") + operator.toString();
                         final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;
 
-                        if (!consp(car(let))) throw new LambdaJError("%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(let)), form);
+                        if (!consp(car(let))) throw new LambdaJError("%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(let)));
                         final ConsCell bindings = (ConsCell)car(let);
 
                         for (Object binding: bindings) {
-                            if (!consp(binding)) throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding), form);
-                            if (!listp(cdr(binding))) throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding), form);
+                            if (!consp(binding))        throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
+                            if (!symbolp(car(binding))) throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                            // todo checken ob car(binding) eh nicht reserved ist
+                            if (!listp(cdr(binding)))   throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
                             ConsCell newBinding = null;
                             if (rec) newBinding = extendEnv(env, car(binding), null);
                             Object val = eval(cadr(binding), env, stack, level);
@@ -656,7 +658,7 @@ public class LambdaJ {
 
                             func = eval(car(arguments), env, stack, level);
                             final Object _argList = eval(cadr(arguments), env, stack, level);
-                            if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s", "apply", printSEx(_argList), form);
+                            if (!listp(_argList)) throw new LambdaJError("%s: expected an argument list but got %s", "apply", printSEx(_argList));
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
 
@@ -664,7 +666,7 @@ public class LambdaJ {
                         /// eval - (expr args...) -> object
                         } else {
                             func = eval(operator, env, stack, level);
-                            if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s", "function application", printSEx(arguments), form);
+                            if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s", "function application", printSEx(arguments));
                             argList = evlis(arguments, env, stack, level);
                             // fall through to "actually perform..."
                         }
@@ -672,7 +674,7 @@ public class LambdaJ {
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         if (primp(func)) {
                             try { return applyPrimitive((Primitive) func, argList, stack, level); }
-                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage(), form); }
+                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
 
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // (params . (forms...))
@@ -685,7 +687,7 @@ public class LambdaJ {
                             // fall through to "eval a list of forms"
 
                         } else {
-                            throw new LambdaJError("function application: not a primitive or lambda: %s", printSEx(func), form);
+                            throw new LambdaJError("function application: not a primitive or lambda: %s", printSEx(func));
                         }
                     }
 
@@ -702,7 +704,7 @@ public class LambdaJ {
 
                 /// eval - not a symbol/atom/cons - something is really wrong here.
                 /// eval - let's sprinkle some crack on him and get out of here, Dave.
-                throw new LambdaJError("eval: cannot eval expression '%s'", printSEx(form));
+                throw new LambdaJError("eval: cannot eval expression");
             }
 
         } catch (LambdaJError e) {
@@ -1104,6 +1106,7 @@ public class LambdaJ {
             if (cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list of bindings is not allowed", func, func, exp);
             if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
                 throw new LambdaJError("%s: expected a symbol or a list of symbols but got %s", func, printSEx(a), exp);
+            // todo checken ob car(a) eh nicht reserved ist
         }
     }
 
