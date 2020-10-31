@@ -1,3 +1,5 @@
+tests von lis.py verpacken
+
 dzt gibts let* und letrec
 -> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
    braucht man zum macros programmieren
@@ -15,7 +17,6 @@ statt intern(new LambdaJSymbol... -> genSym(String...
 reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
 -> NIL may not be used as a function, nor as a variable
 -> T may not be used as a variable.
-vgl auch special form als symbol verwenden
 
 redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
 ->
