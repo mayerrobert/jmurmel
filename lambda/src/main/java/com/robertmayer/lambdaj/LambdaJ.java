@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.151 2020/10/30 21:41:37 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.152 2020/10/31 07:22:41 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -527,7 +527,10 @@ public class LambdaJ {
                     /// eval - (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         nArgs("lambda", arguments, 2, form);
-                        // todo checken ob car(arguments) ein symbol oder eine liste mit nur symbols ist
+                        final Object bindings = car(arguments);
+                        if (atom(bindings) && !symbolp(bindings))
+                            throw new LambdaJError("%s: malformed lambda: expected bindings to be a symbol or list of symbols but got %s", "lambda", bindings, form);
+                        if (!symbolp(bindings)) symbolArgs("lambda", (ConsCell) bindings, form);
                         if (haveLexC()) return makeClosure(arguments, env);
                         else return form;
                     }
@@ -1082,6 +1085,18 @@ public class LambdaJ {
         int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError("%s: expected %d to %d arguments but got only %d", func, min, max, actualLength, exp);
         if (actualLength > max) throw new LambdaJError("%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)), exp);
+    }
+
+    /** a must be a symbol or a proper or dotted list of only symbols (empty list is fine, too) */
+    private static void symbolArgs(String func, ConsCell a, Object exp) {
+        if (a == null) return;
+        if (symbolp(a)) return;
+        final ConsCell start = a;
+        for (; a != null; a = (ConsCell) cdr(a)) {
+            if (cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list is not allowed", func, func, exp);
+            if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
+                throw new LambdaJError("%s: expected a symbol or a list of symbols but got %s", func, printSEx(a), exp);
+        }
     }
 
     private static String errorExp(Object exp) {
