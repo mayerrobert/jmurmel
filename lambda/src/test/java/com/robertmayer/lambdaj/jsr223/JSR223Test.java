@@ -19,7 +19,7 @@ public class JSR223Test {
     }
 
     @Test
-    public void testLambda() throws Exception {
+    public void testEvalLambda() throws Exception {
         ScriptEngine se = new JMurmelScriptEngine();
 
         Object result = se.eval("(defun f (p1 p2) (* p1 p2))");
@@ -39,12 +39,15 @@ public class JSR223Test {
     }
 
     @Test
-    public void testScriptEngineManagerMurmel() throws Exception {
+    public void testScriptEngineManagerEval() throws Exception {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("jmurmel");
 
         // evaluate Murmel code
-        engine.eval("(writeln \"Hello, World!\")");
+        Object result = engine.eval("(writeln \"Hello, World!\")");
+
+        // result is a LambdaJSymbol, invoke toString() to get the symbol name
+        assertEquals("t", result.toString());
     }
 
     @Test

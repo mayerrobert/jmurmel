@@ -34,12 +34,12 @@ import java.util.function.Supplier;
  *
  *  <p>Comments starting with '///' could be considered similar to headings or chapter titles.
  *  You may want to run 'grep " ///" LambdaJ.java' to get something like birds-eye-view
- *  of the interpreter implementation or sort of a table-of-contents. */
+ *  or sort of a table-of-contents of the interpreter implementation. */
 public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.150 2020/10/30 21:22:03 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.151 2020/10/30 21:41:37 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -58,7 +58,6 @@ public class LambdaJ {
 
     @FunctionalInterface public interface Primitive { Object apply(ConsCell x); }
 
-    // todo parameter lispStdin/ out weg
     public interface CustomEnvironmentSupplier {
         ConsCell customEnvironment(SymbolTable symtab);
     }
@@ -399,11 +398,11 @@ public class LambdaJ {
                 throw new LambdaJError("line %d:%d: unexpected ')'", lineNo, charNo);
             }
             if (!tokEscape && isToken(tok, "(")) {
-                Object list = readList();
+                final Object list = readList();
                 if (!tokEscape && isToken(tok, ".")) {
-                    Object cdr = readList();
+                    final Object cdr = readList();
                     if (cdr(cdr) != null) throw new LambdaJError("line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
-                    Object cons = combine(list, car(cdr));
+                    final Object cons = combine(list, car(cdr));
                     if (trace >= TRC_PARSE) tracer.println("*** parse cons   " + printSEx(cons));
                     return cons;
                 }
@@ -496,7 +495,7 @@ public class LambdaJ {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
-                /// Lookup symbols in the current environment
+                /// eval - lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
                     if (form == null) return null;
                     final ConsCell envEntry = assoc(form, env);
@@ -504,12 +503,12 @@ public class LambdaJ {
                     throw new LambdaJError("%s: '%s' is undefined", "eval", form);
                 }
 
-                /// Atoms that are not symbols eval to themselves
+                /// eval - atoms that are not symbols eval to themselves
                 if (atom(form)) {
                     return form;   // this catches nil as well
                 }
 
-                /// The form is enclosed in parentheses, either a special form or a function application
+                /// eval - the form is enclosed in parentheses, either a special form or a function application
                 if (consp(form)) {
                     final Object operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     if (!listp(cdr(form))) throw new LambdaJError("%s: expected an operand list to follow operator but got %s", "eval", printSEx(form), form);
@@ -517,15 +516,15 @@ public class LambdaJ {
 
 
 
-                    /// Special forms
+                    /// eval - special forms
 
-                    // (quote exp) -> exp
+                    /// eval - (quote exp) -> exp
                     if (haveQuote() && operator == sQuote) {
                         oneArg("quote", arguments);
                         return car(arguments);
                     }
 
-                    // (lambda (params...) forms...) -> lambda or closure
+                    /// eval - (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         nArgs("lambda", arguments, 2, form);
                         // todo checken ob car(arguments) ein symbol oder eine liste mit nur symbols ist
@@ -535,9 +534,9 @@ public class LambdaJ {
 
 
 
-                    /// Special forms that change the global environment
+                    /// eval - special forms that change the global environment
 
-                    // (define symbol exp) -> symbol with a side of global environment extension
+                    /// eval - (define symbol exp) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefine) {
                         twoArgs("define", arguments, form);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
@@ -551,7 +550,7 @@ public class LambdaJ {
                         return symbol;
                     }
 
-                    // (defun symbol (params...) forms...) -> symbol with a side of global environment extension
+                    /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, form);
                         final Object symbol = car(arguments);
@@ -568,15 +567,15 @@ public class LambdaJ {
 
 
 
-                    /// Special forms that run expressions
+                    /// eval - special forms that run expressions
 
-                    /// (eval form) -> object
+                    /// eval - (eval form) -> object
                     if (operator == sEval) {
                         oneArg("eval", arguments);
                         form = eval(car(arguments), env, stack, level); isTc = true; continue tailcall;
                     }
 
-                    /// (if condform form optionalform) -> object
+                    /// eval - (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3, form);
                         if (eval(car(arguments), env, stack, level) != null) {
@@ -589,17 +588,17 @@ public class LambdaJ {
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
                     ConsCell forms = null;
 
-                    /// (progn forms...) -> object
+                    /// eval - (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
                         if (!consp(arguments)) throw new LambdaJError("%s: malformed cond. expected a list of forms but got %s", "progn", printSEx(arguments), form);
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
-                    /// (cond (condform forms...)... ) -> object
+                    /// eval - (cond (condform forms...)... ) -> object
                     } else if (haveCond() && operator == sCond) {
                         if (arguments != null)
                             for (Object c: arguments) {
-                                if (!listp(c)) throw new LambdaJError("cond: malformed cond. expected a list (condexpr forms...) but got %s", printSEx(c), form);
+                                if (!listp(c)) throw new LambdaJError("%s: malformed cond. expected a list (condexpr forms...) but got %s", "cond", printSEx(c), form);
                                 if (eval(car(c), env, stack, level) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
@@ -609,7 +608,7 @@ public class LambdaJ {
                         if (forms == null) return null; // no condition was true
                         // fall through to "eval a list of forms"
 
-                    /// (labels ((symbol (params...) forms...)...) forms...) -> object
+                    /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, form);
                         // stick the functions into the env
@@ -623,8 +622,8 @@ public class LambdaJ {
                         forms = (ConsCell) cdr(arguments);
                         // fall through to "eval a list of forms"
 
-                    /// (let* optsymbol? (bindings...) forms...) -> object
-                    /// (letrec optsymbol? (bindings...) forms...) -> object
+                    /// eval - (let* optsymbol? (bindings...) forms...) -> object
+                    /// eval - (letrec optsymbol? (bindings...) forms...) -> object
                     } else if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
                         final boolean rec = operator == sLetrec;
                         final boolean named = symbolp(car(arguments));
@@ -653,13 +652,13 @@ public class LambdaJ {
 
 
 
-                    /// function application
+                    /// eval - function application
                     else {
                         final Object func;
                         final ConsCell argList;
 
-                        /// apply function to list
-                        /// (apply form argform) -> object
+                        /// eval - apply function to list
+                        /// eval - (apply form argform) -> object
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments, form);
 
@@ -669,8 +668,8 @@ public class LambdaJ {
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
 
-                        /// function call
-                        /// (expr args...) -> object
+                        /// eval - function call
+                        /// eval - (expr args...) -> object
                         } else {
                             func = eval(operator, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s", "function application", printSEx(arguments), form);
@@ -678,7 +677,7 @@ public class LambdaJ {
                             // fall through to "actually perform..."
                         }
 
-                        // actually perform the function call that was set up by "apply" or "function call" above
+                        /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         if (primp(func)) {
                             try { return applyPrimitive((Primitive) func, argList, stack, level); }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage(), form); }
@@ -698,8 +697,8 @@ public class LambdaJ {
                         }
                     }
 
-                    // eval a list of forms
-                    // todo dotted list, circular list
+                    /// eval - eval a list of forms
+                    // todo dotted list wird cce geben
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
                         eval(car(forms), env, stack, level);
                     if (forms != null) {
@@ -709,8 +708,8 @@ public class LambdaJ {
 
                 }
 
-                /// Not a symbol/atom/cons - something is really wrong here.
-                /// Let's sprinkle some crack on him and get out of here, Dave.
+                /// eval - not a symbol/atom/cons - something is really wrong here.
+                /// eval - let's sprinkle some crack on him and get out of here, Dave.
                 throw new LambdaJError("eval: cannot eval expression '%s'", printSEx(form));
             }
 
@@ -1295,7 +1294,11 @@ public class LambdaJ {
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(ConsCell env) {
         if (haveIO()) {
-            final Primitive freadobj =  a -> { noArgs("read", a);    return lispReader == null ? null : lispReader.readObj(); };
+            final Primitive freadobj =  a -> {
+                noArgs("read", a);
+                if (lispReader == null) throw new LambdaJError("%s: lispStdin is nil", "read");
+                return lispReader.readObj();
+            };
             final Primitive fwriteobj = a -> {
                 oneArg("write", a);
                 if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "write");
@@ -1304,7 +1307,7 @@ public class LambdaJ {
 
             final Primitive fwriteln =  a -> {
                 nArgs("writeln", a, 0, 1, null);
-                if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "write");
+                if (lispPrinter == null) throw new LambdaJError("%s: lispStdout is nil", "writeln");
                 if (a == null) {
                     lispPrinter.printEol();
                     return expTrue.get();
@@ -1469,6 +1472,82 @@ public class LambdaJ {
 
 
 
+    /// JMurmel native FFI: Java calls Murmel with getValue() and getFunction()
+
+    /** Return the value of {@code globalSymbol} in the interpreter's current global environment */
+    public Object getValue(String globalSymbol) {
+        if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
+        final ConsCell envEntry = assoc(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
+        if (envEntry != null) return cdr(envEntry);
+        throw new LambdaJError("%s: '%s' is undefined", "getValue", globalSymbol);
+    }
+
+    public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
+
+    private static class CallPrimitive implements MurmelFunction {
+        final Primitive p;
+        CallPrimitive(Primitive p) { this.p = p; }
+        @Override public Object apply(Object... args) { return p.apply(list(args)); }
+    }
+
+    private class CallLambda implements MurmelFunction {
+        final ConsCell lambda;
+        final ConsCell env;
+        CallLambda(ConsCell lambda) { this.lambda = lambda; this.env = topEnv; }
+        @Override
+        public Object apply(Object... args) {
+            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
+            return eval(cons(lambda, list(args)), env, 0, 0);
+        }
+    }
+
+    /** Function objects of Lambdas will be usable until the interpreter's environment is rebuilt
+     *  by a call to interpretExpression/s, eg.<pre>
+     *  MurmelFunction f = getFunction("my-function");
+     *  interpreter.interpretExpressions("...");
+     *  f.apply(1, 2, 3);  // this will throw a "stale function..." Exception
+     *  </pre>
+     */
+    public MurmelFunction getFunction(String func) {
+        final Object maybeFunction = getValue(func);
+        if (maybeFunction instanceof Primitive) {
+            return new CallPrimitive((Primitive)maybeFunction);
+        }
+        if (maybeFunction instanceof ConsCell && car((ConsCell)maybeFunction) == sLambda) {
+            return new CallLambda((ConsCell)maybeFunction);
+        }
+        throw new LambdaJError("getFunction: not a primitive or lambda: %s", func);
+    }
+
+    private static ConsCell list(Object[] a) {
+        ConsCell ret = null;
+        for (Object o: a) {
+            ret = new ConsCell(o, ret);
+        }
+        return ret;
+    }
+
+    /// JMurmel JSR-223 FFI support - Java calls Murmel with JSR223 eval
+
+    /** <p>evalScript is for JSR-223 support.
+     *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
+     *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
+    public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
+        if (symtab == null) {
+            Parser scriptParser = new SExpressionParser(in);
+            setSymtab(scriptParser);
+            final ConsCell env = environment(null);
+            topEnv = env;
+        }
+        Parser scriptParser = (Parser)symtab;
+        scriptParser.setInput(program);
+        setReaderPrinter(scriptParser, new SExpressionWriter(out));
+        final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
+        return eval(exp, topEnv, 0, 0);
+    }
+
+
+
     /// Public driver methods and functions to use the interpreter from Java (embedded)
     /// or from the command prompt (interactive)
 
@@ -1535,82 +1614,6 @@ public class LambdaJ {
 
             maxEvalLevel = maxEvalStack = nCells = maxEnvLen = 0;
         }
-    }
-
-
-
-    /// FFI: Java calls Murmel with getValue() and getFunction()
-
-    /** Return the value of {@code globalSymbol} in the interpreter's current global environment */
-    public Object getValue(String globalSymbol) {
-        if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
-        final ConsCell envEntry = assoc(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
-        if (envEntry != null) return cdr(envEntry);
-        throw new LambdaJError("%s: '%s' is undefined", "getValue", globalSymbol);
-    }
-
-    public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
-
-    private static class CallPrimitive implements MurmelFunction {
-        final Primitive p;
-        CallPrimitive(Primitive p) { this.p = p; }
-        @Override public Object apply(Object... args) { return p.apply(list(args)); }
-    }
-
-    private class CallLambda implements MurmelFunction {
-        final ConsCell lambda;
-        final ConsCell env;
-        CallLambda(ConsCell lambda) { this.lambda = lambda; this.env = topEnv; }
-        @Override
-        public Object apply(Object... args) {
-            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-            return eval(cons(lambda, list(args)), env, 0, 0);
-        }
-    }
-
-    /** Function objects of Lambdas will be usable until the interpreter's environment is rebuilt
-     *  by a call to interpretExpression/s, eg.<pre>
-     *  MurmelFunction f = getFunction("my-function");
-     *  interpreter.interpretExpressions("...");
-     *  f.apply(1, 2, 3);  // this will throw a "stale function..." Exception
-     *  </pre>
-     */
-    public MurmelFunction getFunction(String func) {
-        final Object maybeFunction = getValue(func);
-        if (maybeFunction instanceof Primitive) {
-            return new CallPrimitive((Primitive)maybeFunction);
-        }
-        if (maybeFunction instanceof ConsCell && car((ConsCell)maybeFunction) == sLambda) {
-            return new CallLambda((ConsCell)maybeFunction);
-        }
-        throw new LambdaJError("getFunction: not a primitive or lambda: %s", func);
-    }
-
-    private static ConsCell list(Object[] a) {
-        ConsCell ret = null;
-        for (Object o: a) {
-            ret = new ConsCell(o, ret);
-        }
-        return ret;
-    }
-
-    /// JSR-223 support
-
-    /** <p>evalScript is for JSR-223 support.
-     *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
-     *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
-    public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        if (symtab == null) {
-            Parser scriptParser = new SExpressionParser(in);
-            setSymtab(scriptParser);
-            final ConsCell env = environment(null);
-            topEnv = env;
-        }
-        Parser scriptParser = (Parser)symtab;
-        scriptParser.setInput(program);
-        setReaderPrinter(scriptParser, new SExpressionWriter(out));
-        final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
-        return eval(exp, topEnv, 0, 0);
     }
 
 
