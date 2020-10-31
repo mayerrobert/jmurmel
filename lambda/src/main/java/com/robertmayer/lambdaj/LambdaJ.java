@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.154 2020/10/31 09:25:13 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.155 2020/10/31 11:29:51 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1582,8 +1582,9 @@ public class LambdaJ {
         final ConsCell env = environment(null);
         topEnv = env;
         final Object exp = parser.readObj();
+        long tStart = System.nanoTime();
         final Object result = eval(exp, env, 0, 0);
-        traceStats();
+        traceStats(System.nanoTime() - tStart);
         return result;
     }
 
@@ -1613,21 +1614,27 @@ public class LambdaJ {
         topEnv = env;
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
+            long tStart = System.nanoTime();
             final Object result = eval(exp, env, 0, 0);
-            traceStats();
+            traceStats(System.nanoTime() - tStart);
             exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
         }
     }
 
     /** print and reset interpreter stats */
-    private void traceStats() {
+    private void traceStats(long nanos) {
         if (trace >= TRC_STATS) {
-            tracer.println("*** max eval nesting: " + maxEvalLevel + " ***");
-            tracer.println("*** max stack used:   " + maxEvalStack + " ***");
+            tracer.println("*** max eval nesting:  " + maxEvalLevel + " ***");
+            tracer.println("*** max stack used:    " + maxEvalStack + " ***");
 
-            tracer.println("*** total ConsCells:  " + nCells + " ***");
-            tracer.println("*** max env length:   " + maxEnvLen + " ***");
+            tracer.println("*** total ConsCells:   " + nCells + " ***");
+            tracer.println("*** max env length:    " + maxEnvLen + " ***");
+
+            long millis = (long)(nanos * 0.000001D);
+            String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
+            tracer.println("*** elapsed wall time: " + ms + "ms ***");
+            tracer.println("");
 
             maxEvalLevel = maxEvalStack = nCells = maxEnvLen = 0;
         }
@@ -1718,9 +1725,11 @@ public class LambdaJ {
                 if (":env"   .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
                 if (":init"  .equals(exp.toString())) { isInit = false;  continue; }
 
+                long tStart = System.nanoTime();
                 final Object result = interpreter.eval(exp, env, 0, 0);
+                long tEnd = System.nanoTime();
                 System.out.println();
-                interpreter.traceStats();
+                interpreter.traceStats(tEnd - tStart);
                 System.out.print("==> "); outWriter.printObj(result); System.out.println();
             } catch (LambdaJError e) {
                 if (istty) {
