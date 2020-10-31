@@ -21,7 +21,7 @@ Misc:
 --echo ........  echo all input while reading
 --trace=stats .  print stack and memory stats at end
 --trace=eval ..  print internal interpreter info during executing programs
---trace=eval ..  print more internal interpreter info executing programs
+--trace=env ...  print more internal interpreter info executing programs
 --trace .......  print lots of internal interpreter info during
                  reading/ parsing/ executing programs
 
