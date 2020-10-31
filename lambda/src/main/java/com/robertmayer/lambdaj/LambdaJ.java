@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.153 2020/10/31 08:15:32 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.154 2020/10/31 09:25:13 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -634,11 +634,11 @@ public class LambdaJ {
                             if (!rec) newBinding = extendEnv(env, car(binding), null);
                             newBinding.cdr = val;
                         }
+                        forms = (ConsCell)cdr(let);
                         if (named) {
                             ConsCell bodyParams = extractParamList(bindings);
-                            extendEnv(env, car(arguments), makeClosure(cons(bodyParams, cdr(let)), env));
+                            extendEnv(env, car(arguments), makeClosure(cons(bodyParams, forms), env));
                         }
-                        forms = (ConsCell)cdr(let);
                         // fall through to "eval a list of forms"
                     }
 
@@ -912,16 +912,16 @@ public class LambdaJ {
         return null;
     }
 
-    private static ConsCell list(Object... a) {
+    private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
         ConsCell ret = null, insertPos = null;
         for (Object o: a) {
             if (ret == null) {
-                ret = new ConsCell(o, null);
+                ret = cons(o, null);
                 insertPos = ret;
             }
             else {
-                insertPos.cdr = new ConsCell(o, null);
+                insertPos.cdr = cons(o, null);
                 insertPos = (ConsCell) insertPos.cdr;
             }
         }
@@ -936,7 +936,7 @@ public class LambdaJ {
 
     /** Append rest at the end of first, modifying first in the process.
      *  Returns a dotted list unless rest is a proper list. */
-    // todo ist das nconc
+    // todo ist das nconc (destructive concatenate)
     private ConsCell appendToList(ConsCell first, Object rest) {
         for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
             if (cdr(last) == first) throw new LambdaJError("%s: first argument is a circular list", "appendToList");
@@ -1507,7 +1507,7 @@ public class LambdaJ {
 
     public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
 
-    private static class CallPrimitive implements MurmelFunction {
+    private class CallPrimitive implements MurmelFunction {
         final Primitive p;
         CallPrimitive(Primitive p) { this.p = p; }
         @Override public Object apply(Object... args) { return p.apply(list(args)); }
@@ -1711,12 +1711,12 @@ public class LambdaJ {
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF
-                    || ":q"  .equals(exp)) { System.out.println("bye."); System.out.println();  System.exit(0); }
-                if (":h"     .equals(exp)) { showHelp();  continue; }
-                if (":echo"  .equals(exp)) { echoHolder.value = true; continue; }
-                if (":noecho".equals(exp)) { echoHolder.value = false; continue; }
-                if (":env"   .equals(exp)) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                if (":init"  .equals(exp)) { isInit = false;  continue; }
+                    || ":q"  .equals(exp.toString())) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                if (":h"     .equals(exp.toString())) { showHelp();  continue; }
+                if (":echo"  .equals(exp.toString())) { echoHolder.value = true; continue; }
+                if (":noecho".equals(exp.toString())) { echoHolder.value = false; continue; }
+                if (":env"   .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
+                if (":init"  .equals(exp.toString())) { isInit = false;  continue; }
 
                 final Object result = interpreter.eval(exp, env, 0, 0);
                 System.out.println();
@@ -1853,7 +1853,7 @@ public class LambdaJ {
                 + "--echo ........  echo all input while reading\n"
                 + "--trace=stats .  print stack and memory stats at end\n"
                 + "--trace=eval ..  print internal interpreter info during executing programs\n"
-                + "--trace=eval ..  print more internal interpreter info executing programs\n"
+                + "--trace=env ...  print more internal interpreter info executing programs\n"
                 + "--trace .......  print lots of internal interpreter info during\n"
                 + "                 reading/ parsing/ executing programs\n"
                 + "\n"
