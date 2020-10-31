@@ -25,14 +25,14 @@
     ((lambda (g) (g g))
      (lambda (g) (f (g g))))))
 
-((Y (lambda (ackermann)
-      (lambda (m n)
-        (cond
-        ((= m 0) (+ n 1))
-        ((= n 0) (ackermann (- m 1) 1))
-        (t (ackermann (- m 1) (ackermann m (- n 1))))))))
- 3
- 6) ; ==> 509; stackoverflow
+;((Y (lambda (ackermann)
+;      (lambda (m n)
+;        (cond
+;        ((= m 0) (+ n 1))
+;        ((= n 0) (ackermann (- m 1) 1))
+;        (t (ackermann (- m 1) (ackermann m (- n 1))))))))
+; 3
+; 6) ; ==> 509; stackoverflow
 
 
 
