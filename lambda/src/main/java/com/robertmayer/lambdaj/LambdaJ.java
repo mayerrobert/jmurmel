@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.156 2020/10/31 16:11:53 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.157 2020/10/31 18:37:25 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -445,27 +445,31 @@ public class LambdaJ {
     /// Symboltable
     private SymbolTable symtab;
 
-    /** look up the symbols for special forms only once on first use.
+    private ConsCell reservedWords;
+
+    /** <p>Look up the symbols for special forms only once on first use.
      *  the suppliers below will do a lookup on first use and then replace themselves by another supplier
-     *  that simply returns the cached value */
+     *  that simply returns the cached value.
+     *
+     *  <p>Also start to build the table of reserved words. */
     private void setSymtab(SymbolTable symtab) {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sLambda = symtab.intern(new LambdaJSymbol("lambda"));
-        if (haveQuote())  sQuote   = symtab.intern(new LambdaJSymbol("quote"));
-        if (haveCond())   sCond    = symtab.intern(new LambdaJSymbol("cond"));
-        if (haveLabels()) sLabels  = symtab.intern(new LambdaJSymbol("labels"));
+        sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reservedWords = cons(sLambda, null);
+        if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reservedWords = cons(sQuote, reservedWords); }
+        if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reservedWords = cons(sCond, reservedWords); }
+        if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reservedWords = cons(sLabels, reservedWords); }
 
-        if (haveXtra())   sEval    = symtab.intern(new LambdaJSymbol("eval"));
-        if (haveXtra())   sIf      = symtab.intern(new LambdaJSymbol("if"));
-        if (haveXtra())   sDefine  = symtab.intern(new LambdaJSymbol("define"));
-        if (haveXtra())   sDefun   = symtab.intern(new LambdaJSymbol("defun"));
-        if (haveXtra())   sLetStar = symtab.intern(new LambdaJSymbol("let*"));
-        if (haveXtra())   sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));
+        if (haveXtra())   { sEval    = symtab.intern(new LambdaJSymbol("eval"));     reservedWords = cons(sEval, reservedWords); }
+        if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reservedWords = cons(sIf, reservedWords); }
+        if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reservedWords = cons(sDefine, reservedWords); }
+        if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reservedWords = cons(sDefun, reservedWords); }
+        if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reservedWords = cons(sLetStar, reservedWords); }
+        if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reservedWords = cons(sLetrec, reservedWords); }
 
-        if (haveApply())  sApply   = symtab.intern(new LambdaJSymbol("apply"));
-        if (haveXtra())   sProgn   = symtab.intern(new LambdaJSymbol("progn"));
+        if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reservedWords = cons(sApply, reservedWords); }
+        if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reservedWords = cons(sProgn, reservedWords); }
 
         expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
@@ -500,7 +504,7 @@ public class LambdaJ {
                     if (form == null) return null;
                     final ConsCell envEntry = assoc(form, env);
                     if (envEntry != null) return cdr(envEntry);
-                    throw new LambdaJError("%s: '%s' is undefined", "eval");
+                    throw new LambdaJError("%s: '%s' is undefined", "eval", form);
                 }
 
                 /// eval - atoms that are not symbols eval to themselves
@@ -529,7 +533,7 @@ public class LambdaJ {
                         nArgs("lambda", arguments, 2, form);
                         symbolArgs("lambda", car(arguments), form);
                         if (haveLexC()) return makeClosure(arguments, env);
-                        else return form;
+                        else return form; // todo makeClosure refact dass es lex und dyn macht
                     }
 
 
@@ -542,6 +546,7 @@ public class LambdaJ {
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                               // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
                         if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "define", printSEx(symbol));
+                        notReserved("define", symbol);
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
@@ -607,7 +612,8 @@ public class LambdaJ {
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
                                 final ConsCell currentFunc = (ConsCell)binding;
-                                final Object currentSymbol = symtab.intern((LambdaJSymbol)car(currentFunc));
+                                final Object currentSymbol = car(currentFunc);
+                                notReserved("labels", currentSymbol);
                                 final ConsCell lambda = makeClosure(cdr(currentFunc), env);
                                 extendEnv(env, currentSymbol, lambda);
                             }
@@ -627,18 +633,19 @@ public class LambdaJ {
 
                         for (Object binding: bindings) {
                             if (!consp(binding))        throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
-                            if (!symbolp(car(binding))) throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
-                            // todo checken ob car(binding) eh nicht reserved ist
+                            final Object sym = car(binding);
+                            if (!symbolp(sym)) throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                            notReserved(op, sym);
                             if (!listp(cdr(binding)))   throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
                             ConsCell newBinding = null;
-                            if (rec) newBinding = extendEnv(env, car(binding), null);
+                            if (rec) newBinding = extendEnv(env, sym, null);
                             Object val = eval(cadr(binding), env, stack, level);
-                            if (!rec) newBinding = extendEnv(env, car(binding), null);
+                            if (!rec) newBinding = extendEnv(env, sym, null);
                             newBinding.cdr = val;
                         }
                         forms = (ConsCell)cdr(let);
                         if (named) {
-                            ConsCell bodyParams = extractParamList(bindings);
+                            ConsCell bodyParams = extractParamList(op, bindings);
                             extendEnv(env, car(arguments), makeClosure(cons(bodyParams, forms), env));
                         }
                         // fall through to "eval a list of forms"
@@ -663,11 +670,12 @@ public class LambdaJ {
                             // fall through to "actually perform..."
 
                         /// eval - function call
-                        /// eval - (expr args...) -> object
+                        /// eval - (operatorform argforms...) -> object
                         } else {
                             func = eval(operator, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s", "function application", printSEx(arguments));
                             argList = evlis(arguments, env, stack, level);
+                            // todo hier gleich z.B. eq inlinen
                             // fall through to "actually perform..."
                         }
 
@@ -716,6 +724,12 @@ public class LambdaJ {
         }
     }
 
+    /** Throw error if sym is a reserved symbol */
+    private void notReserved(final String op, final Object sym) {
+        if (member(sym, reservedWords))
+            throw new LambdaJError("%s: can't use reserved word %s as a symbol", op, sym.toString());
+    }
+
     /** insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
      *  returns the newly created (and inserted) symbolentry (symbol . value) */
     private ConsCell extendEnv(ConsCell env, Object symbol, Object value) {
@@ -727,15 +741,17 @@ public class LambdaJ {
         return symbolEntry;
     }
 
-    private ConsCell extractParamList(final ConsCell bindings) {
+    private ConsCell extractParamList(String op, final ConsCell bindings) {
         ConsCell bodyParams = null, insertPos = null;
         if (bindings != null)
             for (Object binding: bindings) {
+                final Object symbol = car(binding);
+                notReserved(op, symbol);
                 if (bodyParams == null) {
-                    bodyParams = cons(car(binding), null);
+                    bodyParams = cons(symbol, null);
                     insertPos = bodyParams;
                 } else {
-                    insertPos.cdr = cons(car(binding), null);
+                    insertPos.cdr = cons(symbol, null);
                 }
             }
         return bodyParams;
@@ -912,6 +928,13 @@ public class LambdaJ {
             if (atom == car(env)) return (ConsCell) env;
         }
         return null;
+    }
+
+    private static boolean member(Object obj, ConsCell list) {
+        if (obj == null) return false;
+        if (list == null) return false;
+        for (Object e: list) if (e == obj) return true;
+        return false;
     }
 
     private ConsCell list(Object... a) {
@@ -1096,8 +1119,9 @@ public class LambdaJ {
         if (actualLength > max) throw new LambdaJError("%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)), exp);
     }
 
-    /** a must be a symbol or a proper or dotted list of only symbols (empty list is fine, too) */
-    private static void symbolArgs(String func, Object a, Object exp) {
+    /** 'a' must be a symbol or a proper or dotted list of only symbols (empty list is fine, too).
+     *  Also 'a' must not contain reserved symbols. */
+    private void symbolArgs(String func, Object a, Object exp) {
         if (a == null) return;
         if (symbolp(a)) return;
         if (atom(a)) throw new LambdaJError("%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a, exp);
@@ -1106,7 +1130,7 @@ public class LambdaJ {
             if (cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list of bindings is not allowed", func, func, exp);
             if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
                 throw new LambdaJError("%s: expected a symbol or a list of symbols but got %s", func, printSEx(a), exp);
-            // todo checken ob car(a) eh nicht reserved ist
+            notReserved(func, car(a));
         }
     }
 
@@ -1385,13 +1409,19 @@ public class LambdaJ {
             }
         }
 
-        if (haveT())
-            env = cons(cons(symtab.intern(new LambdaJSymbol("t")), symtab.intern(new LambdaJSymbol("t"))),
+        if (haveT()) {
+            Object sT = symtab.intern(new LambdaJSymbol("t"));
+            env = cons(cons(sT, sT),
                   env);
+            reservedWords = cons(sT, reservedWords);
+        }
 
-        if (haveNil())
-            env = cons(cons(symtab.intern(new LambdaJSymbol("nil")), null),
+        if (haveNil()) {
+            final Object sNil = symtab.intern(new LambdaJSymbol("nil"));
+            env = cons(cons(sNil, null),
                   env);
+            reservedWords = cons(sNil, reservedWords);
+        }
 
         if (haveUtil()) {
             env = cons(cons(symtab.intern(new LambdaJSymbol("consp")),   (Primitive) a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); }),
