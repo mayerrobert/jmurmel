@@ -1,5 +1,3 @@
-define hat varargs, defun nicht
-
 dzt gibts let* und letrec
 -> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
    braucht man zum macros programmieren
@@ -1114,3 +1112,5 @@ wenn formale parameter eine dotted list sind, wird auf den letzten parameter ein
 -> variadic function mit zumindest einem parameter, scheme machts so
 -> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
    alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
+
+define hat varargs, defun nicht
