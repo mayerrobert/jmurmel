@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.152 2020/10/31 07:22:41 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.153 2020/10/31 08:15:32 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -527,10 +527,7 @@ public class LambdaJ {
                     /// eval - (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         nArgs("lambda", arguments, 2, form);
-                        final Object bindings = car(arguments);
-                        if (atom(bindings) && !symbolp(bindings))
-                            throw new LambdaJError("%s: malformed lambda: expected bindings to be a symbol or list of symbols but got %s", "lambda", bindings, form);
-                        if (!symbolp(bindings)) symbolArgs("lambda", (ConsCell) bindings, form);
+                        symbolArgs("lambda", car(arguments), form);
                         if (haveLexC()) return makeClosure(arguments, env);
                         else return form;
                     }
@@ -556,16 +553,8 @@ public class LambdaJ {
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, form);
-                        final Object symbol = car(arguments);
-                        if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "defun", printSEx(symbol), form);
-                        final Object params = cadr(arguments);
-                        if (!listp(params)) throw new LambdaJError("%s: expected a parameter list but got %s", "defun", printSEx(params), form);
-                        final ConsCell envEntry = assoc(symbol, env);
-                        if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "defun", symbol, printSEx(cdr(envEntry)), form);
-
-                        final Object lambda = makeClosure(cdr(arguments), env);
-                        extendEnv(topEnv, symbol, lambda);
-                        return symbol;
+                        ConsCell newExp = list(sDefine, car(arguments), list(sLambda, cadr(arguments), caddr(arguments)));
+                        return eval(newExp, env, stack, level);
                     }
 
 
@@ -716,6 +705,8 @@ public class LambdaJ {
                 throw new LambdaJError("eval: cannot eval expression '%s'", printSEx(form));
             }
 
+        } catch (LambdaJError e) {
+            throw new LambdaJError(e.getMessage(), form);
         } catch (Exception e) {
             throw e; // convenient breakpoint for errors
         } finally {
@@ -921,6 +912,22 @@ public class LambdaJ {
         return null;
     }
 
+    private static ConsCell list(Object... a) {
+        if (a == null || a.length == 0) return null;
+        ConsCell ret = null, insertPos = null;
+        for (Object o: a) {
+            if (ret == null) {
+                ret = new ConsCell(o, null);
+                insertPos = ret;
+            }
+            else {
+                insertPos.cdr = new ConsCell(o, null);
+                insertPos = (ConsCell) insertPos.cdr;
+            }
+        }
+        return ret;
+    }
+
     /** Append rest at the end of first. If first is a list it will be modified. */
     private ConsCell combine(Object first, Object rest) {
         if (consp(first)) return appendToList((ConsCell)first, rest);
@@ -1088,12 +1095,13 @@ public class LambdaJ {
     }
 
     /** a must be a symbol or a proper or dotted list of only symbols (empty list is fine, too) */
-    private static void symbolArgs(String func, ConsCell a, Object exp) {
+    private static void symbolArgs(String func, Object a, Object exp) {
         if (a == null) return;
         if (symbolp(a)) return;
-        final ConsCell start = a;
-        for (; a != null; a = (ConsCell) cdr(a)) {
-            if (cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list is not allowed", func, func, exp);
+        if (atom(a)) throw new LambdaJError("%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a, exp);
+        final ConsCell start = (ConsCell) a;
+        for (; a != null; a = cdr(a)) {
+            if (cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list of bindings is not allowed", func, func, exp);
             if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
                 throw new LambdaJError("%s: expected a symbol or a list of symbols but got %s", func, printSEx(a), exp);
         }
@@ -1534,13 +1542,7 @@ public class LambdaJ {
         throw new LambdaJError("getFunction: not a primitive or lambda: %s", func);
     }
 
-    private static ConsCell list(Object[] a) {
-        ConsCell ret = null;
-        for (Object o: a) {
-            ret = new ConsCell(o, ret);
-        }
-        return ret;
-    }
+
 
     /// JMurmel JSR-223 FFI support - Java calls Murmel with JSR223 eval
 
@@ -1705,7 +1707,7 @@ public class LambdaJ {
             }
 
             try {
-                parser.lineNo = 1;  parser.charNo = 0;
+                parser.lineNo = 0;  parser.charNo = 0;
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF
