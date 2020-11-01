@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.157 2020/10/31 18:37:25 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.158 2020/10/31 22:03:15 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1710,12 +1710,13 @@ public class LambdaJ {
     }
 
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
+
     /** Enter REPL, doesn't return */
     private static void repl(final LambdaJ interpreter, final boolean istty, final boolean echo) {
         final BoolHolder echoHolder = new BoolHolder(echo);
 
         if (!echoHolder.value) {
-            System.out.println("Enter a Lisp expression or :command (or enter :h for command help or :q to exit):");
+            System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
             System.out.println();
         }
 
@@ -1862,8 +1863,8 @@ public class LambdaJ {
     private static void showHelp() {
         System.out.println("Available commands:");
         System.out.println("  :h ........ this help screen");
-        System.out.println("  :echo ..... this help screen");
-        System.out.println("  :noecho ... this help screen");
+        System.out.println("  :echo ..... print forms to screen before eval'ing");
+        System.out.println("  :noecho ... don't print forms");
         System.out.println("  :env ...... list current global environment");
         System.out.println("  :init ..... re-init global environment");
         System.out.println("  :q ........ quit LambdaJ");

@@ -4,7 +4,7 @@ dzt gibts let* und letrec
 -> was ist letrec*
 
 soll bei named letXX das let-symbol in den bindings sichtbar sein?
--> CL hat keine named let
+-> CL hat kein named let
    scheme hat nur named let, kein named let* letrec, body symbol ist in den binding expressions unbound
     -> rausfinden was die nachteile von named let* und letrec sind
     -> rausfinden was die nachteile von named binding in binding expressions sind 
@@ -20,6 +20,11 @@ vielleicht die feature flags nur im repl, sonst file variablen
 -> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
    beim setInput() die featureflags wieder zuruecksetzen
 
+
+umbenennen:
+lispStdout -> lispPrinter
+ObjectReader -> LispReader, #readObj -> #read
+ObjectWriter -> LispPrinter, #printObj -> #print
 
 tests von lis.py verpacken
 
@@ -207,11 +212,6 @@ am besten setf weglassen, weil das macht serious magic
 
 fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
 -> oeffnende Zeile merken und ausgeben
-
-umbenennen:
-lispStdout -> lispPrinter
-ObjectReader -> LispReader, #readObj -> #read
-ObjectWriter -> LispPrinter, #printObj -> #print
 
 format und string-format zusammenziehen:
 -> format t <string> schreibt auf stdout, return wert ist <string>
