@@ -61,6 +61,6 @@ public class ScannerTest {
 
     @Test
     public void testExtraParens() {
-        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:5: unexpected ')'");
+        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:4: unexpected ')'");
     }
 }

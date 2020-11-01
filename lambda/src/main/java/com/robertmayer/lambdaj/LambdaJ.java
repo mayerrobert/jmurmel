@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.158 2020/10/31 22:03:15 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.159 2020/11/01 06:39:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -224,7 +224,7 @@ public class LambdaJ {
         private final WriteConsumer out;  // printObj() and printEol() will write to this
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
-        @Override public void printObj(Object o) { if (o == null && !haveNil()) out.print("()"); else printSEx(out, o); }
+        @Override public void printObj(Object o) { printSEx(out, o); }
         @Override public void printString(String s) { out.print(s); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
@@ -259,7 +259,7 @@ public class LambdaJ {
             int c = in.read();
             if (c == '\n') {
                 lineNo++;
-                charNo = 1;
+                charNo = 0;
             } else if (c != '\r' && c != EOF) charNo++;
             return c;
         }
@@ -384,7 +384,7 @@ public class LambdaJ {
             return ret;
         }
 
-        private Object quote = intern(new LambdaJSymbol("quote"));
+        private final Object quote = intern(new LambdaJSymbol("quote"));
 
         private Object readObject() {
             if (tok == null) {
@@ -409,7 +409,7 @@ public class LambdaJ {
                 if (trace >= TRC_PARSE) tracer.println("*** parse list   " + printSEx(list));
                 return list;
             }
-            if (!tokEscape && haveQuote() && isToken(tok, "'")) {
+            if (!tokEscape && isToken(tok, "'")) {
                 readToken();
                 return cons(quote, cons(readObject(), null));
             }
@@ -718,7 +718,7 @@ public class LambdaJ {
         } catch (LambdaJError e) {
             throw new LambdaJError(e.getMessage(), form);
         } catch (Exception e) {
-            throw e; // convenient breakpoint for errors
+            throw new LambdaJError("eval: internal error - caught exception %s: %s", e.getClass().getSimpleName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
         }
@@ -1110,7 +1110,7 @@ public class LambdaJ {
     /** at least {@code min} args */
     private static void nArgs(String func, Object a, int min, Object exp) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError("%s: expected %d arguments or more but got only %d", func, min, actualLength, exp);
+        if (actualLength < min) throw new LambdaJError("%s: expected %d arguments or more but got only %d", func, min, actualLength);
     }
 
     private static void nArgs(String func, Object a, int min, int max, Object exp) {
@@ -1127,10 +1127,14 @@ public class LambdaJ {
         if (atom(a)) throw new LambdaJError("%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a, exp);
         final ConsCell start = (ConsCell) a;
         for (; a != null; a = cdr(a)) {
-            if (cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list of bindings is not allowed", func, func, exp);
+            if (listp(a) && cdr(a) == start) throw new LambdaJError("%s: malformed %s: circular list of bindings is not allowed", func, func, exp);
             if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
                 throw new LambdaJError("%s: expected a symbol or a list of symbols but got %s", func, printSEx(a), exp);
             notReserved(func, car(a));
+            if (atom(cdr(a))) {
+                notReserved(func, cdr(a));
+                return; // that was the end of a dotted list, everything a-ok, move along
+            }
         }
     }
 
@@ -1499,9 +1503,9 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("mod")),     fmod),
                   env)))));
             env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round((Double)car(args)); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { oneArg("floor",   args); return (long)Math.floor((Double)car(args)); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { oneArg("ceiling", args); return (long)Math.ceil ((Double)car(args)); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round(((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { oneArg("floor",   args); return (long)Math.floor(((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { oneArg("ceiling", args); return (long)Math.ceil (((Number)car(args)).doubleValue()); }),
                   env))));
         }
 
@@ -1608,13 +1612,13 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         nCells = 0; maxEnvLen = 0;
-        Parser parser = new SExpressionParser(in);
+        SExpressionParser parser = new SExpressionParser(in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
         setReaderPrinter(parser, outWriter);
         final ConsCell env = environment(null);
         topEnv = env;
-        final Object exp = parser.readObj();
+        final Object exp = parser.readObj(true);
         long tStart = System.nanoTime();
         final Object result = eval(exp, env, 0, 0);
         traceStats(System.nanoTime() - tStart);
@@ -1748,16 +1752,18 @@ public class LambdaJ {
             }
 
             try {
-                parser.lineNo = 0;  parser.charNo = 0;
+                if (istty) { parser.lineNo = 0;  parser.charNo = 0; }
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF
-                    || ":q"  .equals(exp.toString())) { System.out.println("bye."); System.out.println();  System.exit(0); }
-                if (":h"     .equals(exp.toString())) { showHelp();  continue; }
-                if (":echo"  .equals(exp.toString())) { echoHolder.value = true; continue; }
-                if (":noecho".equals(exp.toString())) { echoHolder.value = false; continue; }
-                if (":env"   .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                if (":init"  .equals(exp.toString())) { isInit = false;  continue; }
+                    || exp != null && ":q"  .equals(exp.toString())) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                if (exp != null) {
+                    if (":h"     .equals(exp.toString())) { showHelp();  continue; }
+                    if (":echo"  .equals(exp.toString())) { echoHolder.value = true; continue; }
+                    if (":noecho".equals(exp.toString())) { echoHolder.value = false; continue; }
+                    if (":env"   .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
+                    if (":init"  .equals(exp.toString())) { isInit = false;  continue; }
+                }
 
                 long tStart = System.nanoTime();
                 final Object result = interpreter.eval(exp, env, 0, 0);

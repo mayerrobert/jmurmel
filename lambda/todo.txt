@@ -1,3 +1,12 @@
+koennt ma namespaces irgendwie so einfuehren:
+namespace xxx biegt topenv woandershin
+define schreibt nicht in topenv sondern ins package
+export schreibt ins topenv
+assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den gestapelten environments zusammen?)
+
+statt reserved=cons(symbol, reserved)
+-> reserved(Symbol)
+
 dzt gibts let* und letrec
 -> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
    braucht man zum macros programmieren

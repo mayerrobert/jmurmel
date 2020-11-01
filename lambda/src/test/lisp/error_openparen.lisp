@@ -1,3 +1,3 @@
-; error: line 4:1: cannot read list. missing ')'
+; error: line 4:0: cannot read list. missing ')'
 
 (

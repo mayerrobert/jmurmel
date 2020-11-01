@@ -6,9 +6,9 @@
 ;;; for Murmel, a single-namespace Lisp dialect.
 ;;;
 ;;; You can read this file or run it with:
-;;; java -jar jmurmel.jar --tty --echo < murmel-langref.lisp
+;;; java -jar jmurmel.jar --repl --echo < murmel-langref.lisp
 ;;; or:
-;;; java -jar jmurmel.jar --tty --echo < murmel-langref.lisp > murmel.txt
+;;; java -jar jmurmel.jar --repl --echo < murmel-langref.lisp > murmel.txt
 ;;;
 ;;; Note that many of these forms, predefined variables, ... can be
 ;;; disabled using commandline arguments if you want to play
@@ -38,15 +38,17 @@
 ;;;
 ;;; In order to understand and make use of this Reference Manual
 ;;; you should probably at least know some Lisp.
-;;; This manual does not attempt to be a tutorial.
+;;; This manual does not attempt to be a Lisp or Murmel tutorial.
 ;;;
 
 
 ;;; == Terminology ====================
 ;;;
+;;; = Murmel vs. JMurmel =
 ;;; Murmel is a programming language and JMurmel is program
 ;;; that consists of I/O functions and a Murmel interpreter.
-;;; 
+;;;
+;;; = S-expressions vs. forms =
 ;;; Murmel is a Lisp dialect. As such the language isn't
 ;;; really defined in terms of program text but in terms
 ;;; of in-memory objects (lists, symbols and other atoms)
@@ -54,12 +56,17 @@
 ;;;
 ;;; That said, JMurmel's default reader turns S-expressions
 ;;; from the input stream into equivalent in-memory objects. So
-;;; for this reference we'll S-expressions to describe
+;;; for this reference we'll use S-expressions to describe
 ;;; programs that are valid Murmel, i.e. are acceptable to eval.
 ;;;
 ;;; In this reference in-memory objects that are valid Murmel
 ;;; (as well as their textual representation as S-expressions)
 ;;; are referred to as "forms".
+;;;
+;;; = Surface representation vs. internal representation =
+;;; This is really the same discussion as "S-expressions vs. forms".
+;;; JMurmel adds S-Expressions as a surface representation
+;;; to Murmel.
 ;;;
 
 
@@ -67,34 +74,40 @@
 
 ;;; The following are S-expressions that JMurmel's reader
 ;;; will accept and transform into in-memory objects.
-;;; They may or may not be "forms".
+;;; Valid S-expressions may or may not be "forms" (eval w/o error),
+;;; see "Terminology" for a discussion of form vs. S-expression.
 
-; atoms
-a-symbol
+; atoms that are not symbols
 1
 1.0
 "a string"
-|a symbol|
-a\ symbol
+
+'(
+
+; atoms that are symbols
+a-symbol
+|a symbol|         ;|a symbol|
+a\ symbol          ;a\ symbol
 
 ; a single quote is a shorthand for (quote an-expression)
-'an-expression
+an-expression
 
 ; a dotted pair
-(a . b)
+(a . b)            ;(a . b)
 
 ; a dotted list
-(a . (b . (c . d)))
+(a . (b . (c . d)));(a . (b . (c . d)))
 
 ; shorthand for dotted list   ==> (a b c . d)
-(a b c . d)
+(a b c . d)        ;(a b c . d)
 
 ; a proper list       ==> (a b c)
-(a . (b . (c . ())))
+(a . (b . (c . ()))) ;(a . (b . (c . ())))
 
 ; shorthand for a proper list ==> (a b c)
-(a b c)
+(a b c)            ;(a b c)
 
+)
 
 ;;; == Basic Special Forms ============
 
@@ -117,7 +130,7 @@ a\ symbol
 ; If paramlist is a dotted list then remaining arguments
 ; will be bound to the last parameter.
 (lambda popt (write popt)) ; no mandatory arguments
-(lambda (p1 p2 . prest))   ; two mandatory arguments
+(lambda (p1 p2 . prest) (write prest)) ; two mandatory arguments
 
 
 ;;; == Data types =====================
@@ -237,12 +250,12 @@ internal-time-units-per-second
 ;;; == Predefined Primitives ==========
 
 ; Note that the number of primitives is not fixed as in other
-Lisps. In embedded use primitives may be added, also Java methods
-created by the primitive :: act as builtins.
-As far as the language is concerned, all primitives are variadic functions.
-The primitives themselves may have parameter checks, tough.
-In case you call them with th wrong type(s) or number of parameters
-the primitives may throw an error.
+; Lisps. In embedded use primitives may be added, also Java methods
+; created by the primitive :: act as builtins.
+; As far as the language is concerned, all primitives are variadic functions.
+; The primitives themselves may have parameter checks, tough.
+; In case you call them with th wrong type(s) or number of parameters
+; the primitives may throw an error.
 
 ; (cons 'a 'b) ==> (a . b)
 (cons 'a 'b)
@@ -349,4 +362,4 @@ the primitives may throw an error.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.7 2020/10/30 08:00:54 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.8 2020/10/30 21:56:15 Robert Exp $
