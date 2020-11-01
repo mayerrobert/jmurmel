@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.159 2020/11/01 06:39:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.160 2020/11/01 09:07:53 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -530,10 +530,7 @@ public class LambdaJ {
 
                     /// eval - (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
-                        nArgs("lambda", arguments, 2, form);
-                        symbolArgs("lambda", car(arguments), form);
-                        if (haveLexC()) return makeClosure(arguments, env);
-                        else return form; // todo makeClosure refact dass es lex und dyn macht
+                        return makeClosureFromForm((ConsCell) form, env);
                     }
 
 
@@ -811,6 +808,17 @@ public class LambdaJ {
             }
         dbgEvalDone("evlis", _forms, head, stack, level);
         return head;
+    }
+
+    /** make a lexical closure (if enabled) or lambda from a lambda-form */
+    private ConsCell makeClosureFromForm(final ConsCell form, ConsCell env) {
+        final ConsCell paramsAndForms = (ConsCell) cdr(form);
+
+        nArgs("lambda", paramsAndForms, 2, form);
+        symbolArgs("lambda", car(paramsAndForms), form);
+
+        if (haveLexC()) return makeClosure(paramsAndForms, env);
+        return form;
     }
 
     /** make a lexical closure (if enabled) or lambda */
