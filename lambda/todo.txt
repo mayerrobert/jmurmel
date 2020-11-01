@@ -1,14 +1,13 @@
+vielleicht die feature flags nur im repl, sonst file variablen
+-> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
+   beim setInput() die featureflags wieder zuruecksetzen
+zumindest --lex ausbauen und --dyn -> --X-dyn mit warning (nicht mehr Murmel, auch kein subset)
+vielleicht alle sprachflags -X-... und --dyn-> -XX-dyn
+
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
+dynamic dokumentieren
 
 tests fuer lambda mit mehreren stmts
-
-koennt ma namespaces irgendwie so einfuehren:
-namespace xxx biegt topenv woandershin
-define schreibt nicht in topenv sondern ins package
-export schreibt ins topenv
-assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den gestapelten environments zusammen?)
--> namespaces nach C oder object files waeren irgendwie C und H files bzw getrennte object files - export schreibt ins .h file
-   bzw exportiert das symbol aus dem object file
 
 statt reserved=cons(symbol, reserved)
 -> reserved(Symbol)
@@ -24,14 +23,44 @@ soll bei named letXX das let-symbol in den bindings sichtbar sein?
     -> rausfinden was die nachteile von named let* und letrec sind
     -> rausfinden was die nachteile von named binding in binding expressions sind 
 
+ConsCell methoden double carAsDouble(), long carAsLong() einfuehren
+-> und DoubleConsCell, LongConsCell, das hat zusaetzlich Java primitive datentypen als car und ueberlaedt die methoden
+
+LambdaJSymbol.equals, equalsIgnoreCase aufraeumen
+
+multivalue let: wenn funktionen mehrere werte zurueckgeben, koennte ein erweitertes letXXX zuweisen:
+(let ((r1 r2 (multivaluefunction)))
+   (print r1)
+   (print r2))
+
+
+koennte makeClosureFromForm beim closen alle (im environment vorhandenen) symbole (die spaeter ein lookup waeren)
+direkt durch die (symbol . value) tupel ersetzen? support dafuer muesste anschliessend in eval eingebaut werden
+-> das wuerd env cache ersparen
+-> nicht einfach ersetzen, sondern ersetzen durch eine neue special form (envref (symbol . value))
+   die ersetzungsroutine (die 1x laeuft) koennte einen cache haben, um mehrfache lookups auf dasselbe symbol zu vermeiden
+-> closure braucht man dann nur mehr fuer den dynamischen lookup der globalen variablen dies beim closen noch nicht gab
+    -> auch solche globalen referenzen koennten beim aufruf der closure beim ersten zugriff auf nunmehr existierende globals umgepatcht werden
+-> nur bei define/ defun machen, ggf. noch bei labels?
+-> soll envref ein reserved word sein, oder darf das bei eval und/ oder macros verwendet werden?
+   -> koennte auch versteckt sein, es gibt ein Object sEnvref, aber nicht "sEnvref = intern("envref")" sondern "sEnvref = new Object()"
+      -> das koennte man spaeter durch umstellen sichtbar machen, ggf. mit anderem symbolnamen
+-> das muesste die schlimmsten performance probleme bei groesseren programmen erledigen ?!?
+
+-> beim aufruf wird derzeit env/ closure mit cons erweitert. man koennte obigen trick auch auf die parameter anwenden 
+   parameter gehoeren nicht zur closure (wuerden sich sonst bei rekursion ueberschreiben).
+   beim aufruf koennte statt environment erweitern eine arraylist mit werten uebergeben werden:
+        - die liste mit parameternamen ist bekannt, im array stehen werte an jenem index, der dem index des symbols in der parameterliste entspricht
+        - index 0 ist ein uplink zur closure
+        - zugriffe auf parameter muessten ersetzt werden durch (paramref idx)
+        - die arraylist bekommt eval als parameter env, eval muss dynamische symbol lookups mit assoc(symbol, env[0]) machen statt assoc(symbol, env) oder assoc wird angepasst
+        - beim environment extenden fuer aufrufe aus einer closure heraus brauchts auch anpassungen -> eigentlich nicht, wenn assoc erweitert wird
+        - es waer einfach, slots in der arraylist fuer selbstrekursive tailcalls wieder zu verwenden
+    
+
 
 printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 der reader sollte wsl ' immer auf (quote... umsetzen, egal ob quote unterstuetzt wird oder nicht
-
-vielleicht die feature flags nur im repl, sonst file variablen
--> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
-   beim setInput() die featureflags wieder zuruecksetzen
-
 
 umbenennen:
 lispStdout -> lispPrinter
@@ -53,6 +82,15 @@ JSR223 vielleicht in ein zweites jar verpacken?
 
 
 
+
+
+koennt ma namespaces irgendwie so einfuehren:
+namespace xxx biegt topenv woandershin
+define schreibt nicht in topenv sondern ins package
+export schreibt ins topenv
+assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den gestapelten environments zusammen?)
+-> namespaces nach C oder object files waeren irgendwie C und H files bzw getrennte object files - export schreibt ins .h file
+   bzw exportiert das symbol aus dem object file
 
 
 Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 1996

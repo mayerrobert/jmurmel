@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.163 2020/11/01 11:48:23 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.164 2020/11/01 12:34:57 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -108,12 +108,11 @@ public class LambdaJ {
 
         private static final long serialVersionUID = 1L;
         public Object car, cdr;
-        private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
         public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        public ConsCell(Object car, Object cdr, ConsCell closure)    { this(car, cdr); this.closure = closure; }
-
         @Override public String toString() { return printObj(this); }
         @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
+
+        public ConsCell closure() { return null; }
     }
 
     public static class SExpConsCell extends ConsCell {
@@ -122,15 +121,25 @@ public class LambdaJ {
         public SExpConsCell(int line, int charNo, Object car, Object cdr)    { super(car, cdr); this.lineNo = line; this.charNo = charNo; }
     }
 
+    public static class ClosureConsCell extends ConsCell {
+        private static final long serialVersionUID = 1L;
+        private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
+        public ClosureConsCell(Object car, Object cdr, ConsCell closure)    { super(car, cdr); this.closure = closure; }
+
+        @Override
+        public ConsCell closure() { return closure; }
+    }
+
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String value;
         public LambdaJSymbol(String value) { this.value = value; }
         @Override public String toString() { return value.toString(); }
+
         @Override public int hashCode() { return value.hashCode(); }
         @Override public boolean equals(Object o) { return o instanceof LambdaJSymbol && value.equals(((LambdaJSymbol)o).value); }
+
         public boolean equalsIgnoreCase(LambdaJSymbol other) { return value.equalsIgnoreCase(other.value); }
-        public boolean equalsIgnoreCase(String other) { return value.equalsIgnoreCase(other); }
     }
 
 
@@ -434,7 +443,7 @@ public class LambdaJ {
         }
 
         private boolean isToken(Object tok, String s) {
-            return tok instanceof LambdaJSymbol && ((LambdaJSymbol)tok).equalsIgnoreCase(s);
+            return tok == null && s == null || tok.toString().equalsIgnoreCase(s);
         }
 
         private ConsCell cons(Object car, Object cdr) {
@@ -686,9 +695,9 @@ public class LambdaJ {
 
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // (params . (forms...))
-                            final ConsCell closure = ((ConsCell)func).closure != null ? ((ConsCell)func).closure : env;  // lexical or dynamic env
                             nArgs("lambda application", lambda, 2, form);
-                            env = zip(form, closure, car(lambda), argList);
+                            final ConsCell closure = ((ConsCell)func).closure();
+                            env = zip(form, closure != null ? closure : env, car(lambda), argList);
 
                             if (trace >= TRC_FUNC)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
                             forms = (ConsCell) cdr(lambda);
@@ -895,7 +904,7 @@ public class LambdaJ {
 
     /// Functions used by interpreter program, a subset is used by interpreted programs as well
     private        ConsCell cons(Object car, Object cdr)                    { nCells++; return new ConsCell(car, cdr); }
-    private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ConsCell(car, cdr, closure); }
+    private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
     private static Object   car(ConsCell c)    { return c == null ? null : c.car; }
     private static Object   car(Object x)      { return x == null ? null : ((ConsCell)x).car; }
