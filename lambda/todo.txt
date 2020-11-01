@@ -28,9 +28,6 @@ soll bei named letXX das let-symbol in den bindings sichtbar sein?
 printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 der reader sollte wsl ' immer auf (quote... umsetzen, egal ob quote unterstuetzt wird oder nicht
 
-vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
--> vielleicht mit self evaluating symbol dynamic (self evaluating weil dann kann man quote oder nicht, ist egal)
-
 vielleicht die feature flags nur im repl, sonst file variablen
 -> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
    beim setInput() die featureflags wieder zuruecksetzen
@@ -1134,5 +1131,8 @@ ueberlegen, was special form und was primitive ist und was in der reserved word 
    special forms funktionieren nicht als let bindings und muessen in die liste
    sprachelemente wie eq, cons, car, cdr koennte man als primitive umsetzen, oder aus performancegruenden als special form
    -> notwendige special forms plus "wichtige" primitives in die liste plus t und nil
+
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
+-> vielleicht mit self evaluating symbol dynamic (self evaluating weil dann kann man quote oder nicht, ist egal)
 
 tests fuer dynamic lambda
