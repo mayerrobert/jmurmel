@@ -1,8 +1,13 @@
+tests fuer dynamic lambda
+tests fuer lambda mit mehreren stmts
+
 koennt ma namespaces irgendwie so einfuehren:
 namespace xxx biegt topenv woandershin
 define schreibt nicht in topenv sondern ins package
 export schreibt ins topenv
 assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den gestapelten environments zusammen?)
+-> namespaces nach C oder object files waeren irgendwie C und H files bzw getrennte object files - export schreibt ins .h file
+   bzw exportiert das symbol aus dem object file
 
 statt reserved=cons(symbol, reserved)
 -> reserved(Symbol)

@@ -8,6 +8,6 @@ public class SingleFileManualTest {
 
     @Test
     public void runFile() throws Exception {
-        LambdaJTest.runTest(Paths.get("src", "test", "lisp", "letrec.lisp"));
+        LambdaJTest.runTest(Paths.get("src", "test", "lisp", "env2.lisp"));
     }
 }

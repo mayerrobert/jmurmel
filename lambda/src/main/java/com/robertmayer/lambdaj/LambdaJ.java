@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.160 2020/11/01 09:07:53 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.161 2020/11/01 09:44:15 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -457,6 +457,8 @@ public class LambdaJ {
 
         // (re-)read the new symtab
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reservedWords = cons(sLambda, null);
+        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reservedWords = cons(sDynamic, reservedWords);
+
         if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reservedWords = cons(sQuote, reservedWords); }
         if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reservedWords = cons(sCond, reservedWords); }
         if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reservedWords = cons(sLabels, reservedWords); }
@@ -475,7 +477,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLetStar, sLetrec, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -530,7 +532,7 @@ public class LambdaJ {
 
                     /// eval - (lambda (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
-                        return makeClosureFromForm((ConsCell) form, env);
+                        return makeClosureFromForm(form, env);
                     }
 
 
@@ -555,8 +557,8 @@ public class LambdaJ {
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, form);
-                        ConsCell newExp = list(sDefine, car(arguments), list(sLambda, cadr(arguments), caddr(arguments)));
-                        return eval(newExp, env, stack, level);
+                        form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
+                        continue tailcall;
                     }
 
 
@@ -810,14 +812,20 @@ public class LambdaJ {
         return head;
     }
 
-    /** make a lexical closure (if enabled) or lambda from a lambda-form */
-    private ConsCell makeClosureFromForm(final ConsCell form, ConsCell env) {
-        final ConsCell paramsAndForms = (ConsCell) cdr(form);
+    /** make a lexical closure (if enabled) or lambda from a lambda-form,
+     *  considering whether or not "dynamic" was specified after "lambda" */
+    private Object makeClosureFromForm(final Object form, ConsCell env) {
+        ConsCell paramsAndForms = (ConsCell) cdr(form);
 
+        boolean lexC = haveLexC();
+        if (car(paramsAndForms) == sDynamic) {
+            lexC = false;
+            paramsAndForms = (ConsCell) cdr(paramsAndForms);
+        }
         nArgs("lambda", paramsAndForms, 2, form);
         symbolArgs("lambda", car(paramsAndForms), form);
 
-        if (haveLexC()) return makeClosure(paramsAndForms, env);
+        if (lexC) return makeClosure(paramsAndForms, env);
         return form;
     }
 
@@ -1529,11 +1537,17 @@ public class LambdaJ {
                   env)));
         }
 
-        env = cons(cons(symtab.intern(new LambdaJSymbol("throw")), (Primitive) a -> { oneArg("throw", a); throw new RuntimeException(car(a).toString()); }),
+        // todo haveXtra?
+        env = cons(cons(symtab.intern(new LambdaJSymbol("fatal")), (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }),
                    env);
 
+        // todo haveXtra?
         env = cons(cons(symtab.intern(new LambdaJSymbol("::")), (Primitive) a -> findJavaMethod(a)),
                 env);
+
+        // todo have???
+        env = cons(cons(sDynamic, sDynamic),
+              env);
 
         return env;
     }

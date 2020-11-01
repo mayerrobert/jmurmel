@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -196,8 +197,13 @@ public class LambdaJTest {
         Path cwd = Paths.get(".").toRealPath();
         System.out.println("cwd: " + cwd.toString());
         Path lispDir = Paths.get("src", "test", "lisp");
-        Files.walk(lispDir).filter(path -> path.toString()
-                .endsWith(".lisp")).forEach(path -> runTest(path));
+        int skipped = Files.walk(lispDir).filter(path -> path.toString()
+                .endsWith(".lisp")).collect(Collectors.summingInt(path -> runTest(path)));
+
+        // files that contain neither "result:" nor "error:" will be skipped
+        // grep -L -E "(result:|error:)" *.lisp
+        // make sure that files won't be skipped because of a typo or extra space or something
+        assertEquals(6, skipped);
     }
 
 
@@ -219,7 +225,7 @@ public class LambdaJTest {
     private static Pattern resultPattern = Pattern.compile("[^;]*; result: (.*)");
     private static Pattern errorPattern = Pattern.compile("[^;]*; error: (.*)");
 
-    static void runTest(Path fileName) {
+    static int runTest(Path fileName) {
         try {
             final String contents = new String(Files.readAllBytes(fileName));
 
@@ -247,10 +253,12 @@ public class LambdaJTest {
                         fail(fileName.toString() + " threw exception " + e.getMessage());
                     }
                 }
+                return 0;
             }
             else {
                 System.out.println("***** skipping " + fileName.toString());
-        }
+                return 1;
+            }
         } catch (LambdaJ.LambdaJError e) {
             throw e;
         } catch (Exception e) {
@@ -261,7 +269,7 @@ public class LambdaJTest {
     private static String findMatch(Pattern pattern, String contents) {
         final Matcher outputMatcher = pattern.matcher(contents);
         if (outputMatcher.find()) {
-            return outputMatcher.group(1);
+            return outputMatcher.group(1).replaceAll(Matcher.quoteReplacement("\\n"), System.lineSeparator());
         }
         else {
             return null;
@@ -271,7 +279,7 @@ public class LambdaJTest {
     private static String transform(String s) {
         if (s == null) return null;
         if ("(empty)".equals(s)) return "";
-        return s.replaceAll("\\\\n", "\n");
+        return s;
     }
 
     static void runErrorTest(String fileName, String prog, String expectedExceptionMsgPfx) {
@@ -295,18 +303,18 @@ public class LambdaJTest {
      * @param expectedOutput    expected contents of stdout, null or "" for no output
      */
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
-        StringBuffer out = new StringBuffer();
+        final StringBuffer out = new StringBuffer();
 
         // turn off long so I don't have to adjust all tests
-        int features = LambdaJ.HAVE_ALL_LEXC & ~LambdaJ.HAVE_LONG | LambdaJ.HAVE_DOUBLE;
-        LambdaJ intp = new LambdaJ(features, LambdaJ.TRC_ENV);
+        final int features = LambdaJ.HAVE_ALL_LEXC & ~LambdaJ.HAVE_LONG | LambdaJ.HAVE_DOUBLE;
+        final LambdaJ intp = new LambdaJ(features, LambdaJ.TRC_ENV);
 
         System.out.println("***** running program '" + fileName + "':");
         System.out.println("-------------------------------------------------------");
         System.out.println(prog);
         System.out.println("-------------------------------------------------------");
 
-        String actualResult;
+        final String actualResult;
         if (fileName.endsWith(".lisp")) {
             actualResult = lispObjectToString(intp, intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
         } else {
@@ -320,7 +328,7 @@ public class LambdaJTest {
         if (expectedOutput == null) {
             assertEquals("program " + fileName + " produced unexpected output", 0, out.length());
         } else {
-            final String outputStr = out.toString().replaceAll("\r", "");
+            final String outputStr = out.toString();
             assertEquals("program " + fileName + " produced unexpected output", expectedOutput, outputStr);
         }
     }
