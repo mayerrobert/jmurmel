@@ -1,4 +1,4 @@
-; In lexical closure mode my interpreter will return (2.0 0.0), in dynamic mode (2.0 2.0)
+; In lexical closure mode JMurmel will eval to (2.0 0.0), in dynamic mode (2.0 2.0)
 
 
 

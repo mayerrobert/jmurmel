@@ -203,7 +203,7 @@ public class LambdaJTest {
         // files that contain neither "result:" nor "error:" will be skipped
         // grep -L -E "(result:|error:)" *.lisp
         // make sure that files won't be skipped because of a typo or extra space or something
-        assertEquals(6, skipped);
+        assertEquals(5, skipped);
     }
 
 

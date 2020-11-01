@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.161 2020/11/01 09:44:15 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.162 2020/11/01 11:27:44 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1774,7 +1774,7 @@ public class LambdaJ {
             }
 
             try {
-                if (istty) { parser.lineNo = 0;  parser.charNo = 0; }
+                if (istty) { parser.lineNo = 1;  parser.charNo = 0; }
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF

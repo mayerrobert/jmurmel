@@ -1,9 +1,11 @@
-; outputt: onetwo
-; resultt: t
+;;; this would fail in --dyn mode with "eval: 'a' is undefined"
 
-;;; das geht nur mit lex closures
+; output: onetwo
+; result: t
+
 (((lambda (a)
-          (lambda (b)
-                  (write a)
-                  (write b))) 'one)
+       (lambda (b)
+            (write a)
+            (write b)))
+          'one)
     'two)
