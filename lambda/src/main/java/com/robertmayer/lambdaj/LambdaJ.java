@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.162 2020/11/01 11:27:44 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.163 2020/11/01 11:48:23 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -530,7 +530,7 @@ public class LambdaJ {
                         return car(arguments);
                     }
 
-                    /// eval - (lambda (params...) forms...) -> lambda or closure
+                    /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         return makeClosureFromForm(form, env);
                     }
@@ -555,6 +555,7 @@ public class LambdaJ {
                     }
 
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
+                    // shortcut for (define symbol (lambda (params...) forms...))
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3, form);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
@@ -685,7 +686,7 @@ public class LambdaJ {
 
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // (params . (forms...))
-                            final ConsCell closure = haveLexC() ? ((ConsCell)func).closure : env;  // lexical or dynamic env
+                            final ConsCell closure = ((ConsCell)func).closure != null ? ((ConsCell)func).closure : env;  // lexical or dynamic env
                             nArgs("lambda application", lambda, 2, form);
                             env = zip(form, closure, car(lambda), argList);
 
@@ -815,17 +816,15 @@ public class LambdaJ {
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
     private Object makeClosureFromForm(final Object form, ConsCell env) {
-        ConsCell paramsAndForms = (ConsCell) cdr(form);
+        final ConsCell paramsAndForms = (ConsCell) cdr(form);
 
-        boolean lexC = haveLexC();
         if (car(paramsAndForms) == sDynamic) {
-            lexC = false;
-            paramsAndForms = (ConsCell) cdr(paramsAndForms);
+            return cons(sLambda, cdr(paramsAndForms));
         }
         nArgs("lambda", paramsAndForms, 2, form);
         symbolArgs("lambda", car(paramsAndForms), form);
 
-        if (lexC) return makeClosure(paramsAndForms, env);
+        if (haveLexC()) return makeClosure(paramsAndForms, env);
         return form;
     }
 

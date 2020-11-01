@@ -1,4 +1,5 @@
-tests fuer dynamic lambda
+global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
+
 tests fuer lambda mit mehreren stmts
 
 koennt ma namespaces irgendwie so einfuehren:
@@ -1133,3 +1134,5 @@ ueberlegen, was special form und was primitive ist und was in der reserved word 
    special forms funktionieren nicht als let bindings und muessen in die liste
    sprachelemente wie eq, cons, car, cdr koennte man als primitive umsetzen, oder aus performancegruenden als special form
    -> notwendige special forms plus "wichtige" primitives in die liste plus t und nil
+
+tests fuer dynamic lambda
