@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.165 2020/11/01 17:26:52 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.166 2020/11/02 16:41:13 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -68,9 +68,8 @@ public class LambdaJ {
         public static final long serialVersionUID = 1L;
 
         public LambdaJError(String msg) { super(msg, null, false, false); }
-        public LambdaJError(String msg, Object... params) {
-            super(String.format(msg, params) + getErrorExp(params), null, false, false);
-        }
+        public LambdaJError(String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), null, false, false); }
+        public LambdaJError(Throwable cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause); }
         @Override public String toString() { return "Error: " + getMessage(); }
 
         private static String getErrorExp(Object[] params) {
@@ -468,25 +467,26 @@ public class LambdaJ {
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reservedWords = cons(sLambda, null);
         sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reservedWords = cons(sDynamic, reservedWords);
 
-        if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reservedWords = cons(sQuote, reservedWords); }
-        if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reservedWords = cons(sCond, reservedWords); }
-        if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reservedWords = cons(sLabels, reservedWords); }
+        if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reservedWords = cons(sQuote,   reservedWords); }
+        if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reservedWords = cons(sCond,    reservedWords); }
+        if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reservedWords = cons(sLabels,  reservedWords); }
 
-        if (haveXtra())   { sEval    = symtab.intern(new LambdaJSymbol("eval"));     reservedWords = cons(sEval, reservedWords); }
-        if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reservedWords = cons(sIf, reservedWords); }
-        if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reservedWords = cons(sDefine, reservedWords); }
-        if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reservedWords = cons(sDefun, reservedWords); }
+        if (haveXtra())   { sEval    = symtab.intern(new LambdaJSymbol("eval"));     reservedWords = cons(sEval,    reservedWords); }
+        if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reservedWords = cons(sIf,      reservedWords); }
+        if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reservedWords = cons(sDefine,  reservedWords); }
+        if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reservedWords = cons(sDefun,   reservedWords); }
+        if (haveXtra())   { sLet     = symtab.intern(new LambdaJSymbol("let"));      reservedWords = cons(sLet,     reservedWords); }
         if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reservedWords = cons(sLetStar, reservedWords); }
-        if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reservedWords = cons(sLetrec, reservedWords); }
+        if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reservedWords = cons(sLetrec,  reservedWords); }
 
-        if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reservedWords = cons(sApply, reservedWords); }
-        if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reservedWords = cons(sProgn, reservedWords); }
+        if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reservedWords = cons(sApply,   reservedWords); }
+        if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reservedWords = cons(sProgn,   reservedWords); }
 
         expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -559,7 +559,7 @@ public class LambdaJ {
                         if (envEntry != null) throw new LambdaJError("%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
                         final Object value = eval(cadr(arguments), env, stack, level);
-                        extendEnv(topEnv, symbol, value);
+                        insertFront(topEnv, symbol, value);
                         return symbol;
                     }
 
@@ -617,46 +617,56 @@ public class LambdaJ {
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, form);
+                        ConsCell extEnv = cons(cons(null, null), env);
                         // stick the functions into the env
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
                                 final ConsCell currentFunc = (ConsCell)binding;
                                 final Object currentSymbol = car(currentFunc);
                                 notReserved("labels", currentSymbol);
-                                final ConsCell lambda = makeClosure(cdr(currentFunc), env);
-                                extendEnv(env, currentSymbol, lambda);
+                                final ConsCell lambda = makeClosure(cdr(currentFunc), extEnv);
+                                insertFront(extEnv, currentSymbol, lambda);
                             }
                         forms = (ConsCell) cdr(arguments);
+                        env = extEnv;
                         // fall through to "eval a list of forms"
 
+                    /// eval - (let optsymbol? (bindings...) forms...) -> object
                     /// eval - (let* optsymbol? (bindings...) forms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) forms...) -> object
-                    } else if (haveXtra() && (operator == sLetrec) || operator == sLetStar) {
-                        final boolean rec = operator == sLetrec;
+                    } else if (haveXtra() && (operator == sLet) || operator == sLetStar || operator == sLetrec) {
+                        final boolean star  = operator == sLetStar;
+                        final boolean rec   = operator == sLetrec;
                         final boolean named = symbolp(car(arguments));
+
                         final String op = (named ? "named " : "") + operator.toString();
-                        final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;
+                        final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyform...)
 
                         if (!consp(car(let))) throw new LambdaJError("%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(let)));
                         final ConsCell bindings = (ConsCell)car(let);
 
+                        ConsCell extEnv = cons(cons(null, null), env);
                         for (Object binding: bindings) {
                             if (!consp(binding))        throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
                             final Object sym = car(binding);
                             if (!symbolp(sym)) throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
                             notReserved(op, sym);
                             if (!listp(cdr(binding)))   throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+
                             ConsCell newBinding = null;
-                            if (rec) newBinding = extendEnv(env, sym, null);
-                            Object val = eval(cadr(binding), env, stack, level);
-                            if (!rec) newBinding = extendEnv(env, sym, null);
-                            newBinding.cdr = val;
+                            if (rec) newBinding = insertFront(extEnv, sym, null);
+                            Object val = eval(cadr(binding), star || rec ? extEnv : env, stack, level);      // todo sollte das cdr(binding) heissen, damit (symbol forms...) gehen wuerde? in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                            if (rec)      newBinding.cdr = val;
+                            else extEnv = extendEnv(extEnv, sym, val);
                         }
                         forms = (ConsCell)cdr(let);
                         if (named) {
+                            ConsCell body = cons(car(arguments), null);
+                            extEnv = cons(body, extEnv);
                             ConsCell bodyParams = extractParamList(op, bindings);
-                            extendEnv(env, car(arguments), makeClosure(cons(bodyParams, forms), env));
+                            body.cdr = makeClosure(cons(bodyParams, forms), extEnv);
                         }
+                        env = extEnv;
                         // fall through to "eval a list of forms"
                     }
 
@@ -727,7 +737,7 @@ public class LambdaJ {
         } catch (LambdaJError e) {
             throw new LambdaJError(e.getMessage(), form);
         } catch (Exception e) {
-            throw new LambdaJError("eval: internal error - caught exception %s: %s", e.getClass().getSimpleName(), e.getMessage(), form); // convenient breakpoint for errors
+            throw new LambdaJError(e, "eval: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
         }
@@ -739,15 +749,22 @@ public class LambdaJ {
             throw new LambdaJError("%s: can't use reserved word %s as a symbol", op, sym.toString());
     }
 
-    /** insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
-     *  returns the newly created (and inserted) symbolentry (symbol . value) */
-    private ConsCell extendEnv(ConsCell env, Object symbol, Object value) {
+    /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
+     *  Returns the newly created (and inserted) symbolentry (symbol . value) */
+    private ConsCell insertFront(ConsCell env, Object symbol, Object value) {
         final ConsCell symbolEntry = cons(symbol, value);
         final Object oldCar = car(env);
         final Object oldCdr = cdr(env);
         env.car = symbolEntry;
         env.cdr = cons(oldCar, oldCdr);
         return symbolEntry;
+    }
+
+    /** Extend env by attaching a new symbolentry at the front of env, env is unchanged.
+     *  Returns the extended list with newly created symbolentry (symbol . value) */
+    private ConsCell extendEnv(ConsCell env, Object symbol, Object value) {
+        final ConsCell symbolEntry = cons(symbol, value);
+        return cons(symbolEntry, env);
     }
 
     private ConsCell extractParamList(String op, final ConsCell bindings) {

@@ -9,8 +9,8 @@
         ; (cons n acc)
         ; (loop (quotient n 10)
               ; (cons (remainder n 10) acc)))))
-              
-;;; Murmel using letrec and lambda              
+
+;;; Murmel using letrec and lambda
 ; (defun number->list (n)
   ; (letrec ((acc '())
            ; (loop (lambda (n acc)
@@ -22,7 +22,7 @@
 
 ;;; Murmel named let
 (defun number->list (n)
-  (let* loop ((n n)
+  (let loop ((n n)
               (acc '()))
              (if (< n 10)
                  (cons (floor n) acc)
