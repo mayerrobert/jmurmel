@@ -1,16 +1,14 @@
-vielleicht die feature flags nur im repl, sonst file variablen
--> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
-   beim setInput() die featureflags wieder zuruecksetzen
-zumindest --lex ausbauen und --dyn -> --X-dyn mit warning (nicht mehr Murmel, auch kein subset)
-vielleicht alle sprachflags -X-... und --dyn-> -XX-dyn
-
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
-dynamic dokumentieren
+lambda parameternamen auch nicht, koennte ein problem sein
 
-tests fuer lambda mit mehreren stmts
+dynamic dokumentieren
 
 statt reserved=cons(symbol, reserved)
 -> reserved(Symbol)
+
+
+Unterscheiden: Symbol gibts nicht vs. hat keinen Wert zugewiesen: not bound vs. undefined
+-> spielt eigentlich bisher nur bei letrec eine Rolle
 
 dzt gibts let* und letrec
 -> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
@@ -23,6 +21,180 @@ soll bei named letXX das let-symbol in den bindings sichtbar sein?
     -> rausfinden was die nachteile von named let* und letrec sind
     -> rausfinden was die nachteile von named binding in binding expressions sind 
 
+
+https://docs.racket-lang.org/reference/let.html
+https://groups.csail.mit.edu/mac/ftpdir/scheme-7.4/doc-html/scheme_3.html#SEC31
+
+LET: Lisp, Scheme, Racket   Murmel hats nicht
+(let ((symbol form)...) bodyform...) -> object
+* form sieht nur umschliessendes environment
+* bodyform sieht umschliessendes environment und symbols
+
+(let ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+((lambda (s1 s2 s3) bodyform)
+  (eval form1)
+  (eval form2)
+  (eval form3))
+
+
+NAMED LET: Scheme, Racket      Murmel hats nicht
+(let bodysymbol ((symbol form)...) (bodyform)...) -> object
+* symbols muessen unique sein
+* form sieht nur umschliessendes environment
+* body sieht umschliessendes environment, symbols und bodysymbol
+
+
+LET*: Scheme, Racket       Murmel hats korrekt und zus NAMED LET*
+(let* ((symbol form)...) (bodyform)...) -> object
+* the symbols need not be distinct; later bindings shadow earlier bindings.
+* form sieht umschliessendes environment und vorangegangene symbols (definiert)
+* body sieht umschliessendes environment und symbols
+
+(let* ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+(let ((s1 form1))
+  (let ((s2 form))
+    (let ((s3 form3))
+       bodyform)))
+->
+((lambda (s1)
+      ((lambda (s2)
+            ((lambda (s3)
+                  bodyform)
+                (eval form3)))
+          (eval form2)))
+    (eval form1))
+
+
+(letrec ((symbol form)...) (bodyform)...) -> object
+* form sieht umschliessendes environment und alle symbols (undefiniert)
+* body sieht umschliessendes environment und symbols
+
+(letrec ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+(let ((s1 *undefined*) (s2 *undefined*) (s3 *undefined*))
+  (let ((_x_ (eval form1)) (_y_ (eval form1)) (_z_ (eval form1)))   ; unique identifiers
+    (set! s1 _x_)
+    (set! s2 _y_)
+    (set! s3 _z_)
+    bodyform))
+
+
+Racket letrec == Scheme letrec*
+(letrec* ((symbol form)...) (bodyform)...) -> object
+* The ids must be distinct according to bound-identifier=?.
+* form sieht umschliessendes environment und alle symbols (vorangegangene definiert, eigens und folgende undefiniert)
+* body sieht umschliessendes environment und symbols
+
+(letrec* ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+(let ((s1 *undefined*) (s2 *undefined*) (s3 *undefined*))
+  (set! s1 (eval form1))
+  (set! s1 (eval form1))
+  (set! s3 (eval form1))
+  bodyform)
+
+
+-> am besten:
+   letrec weg, weil da gibts undefined (sonst nirgends), Lisp hats nicht, und man kanns durch labels ersetzen
+   let und named let dazu (named let koennte man auch durch labels ersetzen aber was solls)
+   let* bleibt inkl. erweiterung named let*
+
+
+
+
+
+Fexpr unterstuetzen, in eigenen Namespace stecken und diesen Namespace nur in define auswerten/ fexpr aufrufen/ aufloesen
+-> sind das dann effektiv macros?
+
+Vielleicht in define den Lisp Code nach Java uebersetzen und mit tools.jar uebersetzen? Und aus dem erzeugten class file
+ein neues primitive basteln?
+-> denkbar waere ein aeusserer und ein innerer compiler. der aeussere uebersetzt nach java/c/..., der innere nach bytecode
+-> vor dem compiler koennten transformationen laufen wie z.b. let->lambda, dann brauchte der compiler und eine allfaellige vm
+   nicht so viele features haben
+   -> oder der (bytecode) compiler erzeugt code der nur weniger vm features braucht
+
+javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
+CompilationTask c = comp.getTask(null,null, null, null, null, Collcetions.singletonList(new JavaSourceFromString(..., "class...");
+Boolean success = c.call();
+ 
+
+
+
+
+das environment ist eine liste von maps:
+-> zip steckt eine neu map vornedran
+-> assoc arbeitet die liste ab, und durchsucht jede map, erster treffer gilt
+
+-> ein lexikalisches environment koennte ALLE werte aller uebergeordneter environments enthalten.
+   das geht, wenn kein set moeglich ist oder
+   wenn die maps nur referenzen auf mutable werte enthalten: entweder mutable Java Objekte oder nicht die values
+   aus dem environment sondern die (symbol . value) conses aus dem environment
+   -> performance wird wohl nur dann besser, wenn solche gesamt-closures nur fuer define/ defun erstellt werden
+   -> closures koennten statt map ein array bekommen, wenn alle symbolreferenzen durch arraylookups ersetzt werden
+      -> in der liste mit dem code des lambda alles symbols ersetzen durch (envref n)
+
+   -> referenzen in lexikalische closures rein aufloesen geht auch ohne maps:
+      symbolreferenzen durch zugriffe auf das (symbol . value) cons ersetzen
+	  vielleicht gemeinsam mit macroexpand?!?
+	  -> cache fuer assoc? jedes scop beginnt mit einer neuen leeren cache-map (oder immer dieselbe, die immer wieder geleert wird),
+         damit waeren mehrfache zugriffe auf das selbe symbol schneller, bei vorabaufloesen UND bei dyn env
+   
+define sollte das aktuelle environment erweitern, nicht das globale
+zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange keine re-definition und kein set -> ja)
+
+
+
+
+
+AND, OR, XOR, NOT
+-> brauchts eigentlich nicht, ist sugar ueber if
+
+
+
+
+
+neuen parser: (evtl while, for (list) umsetzen?)
+program ::= stmt*
+
+stmt ::= exp ';'
+
+exp ::= assignment | lambda | case | block | application
+
+assignment ::= s '=' exp
+-> (define s exp)
+
+case ::= 'case' (exp block)* 'esac'
+-> (cond (exp block))
+
+block ::= '{' stmt* '}'
+-> (progn explist)
+
+lambda ::= function(p1, p2) block   		; implicit symbol 'self' for recursion
+-> (lambda (p1 p2) stmt*)
+
+application ::= builtin | f(exp1*)			; add, sub, ..., pair, list 
+-> (f explist)
+
+(e1, e2)
+-> '(e1 e2)
+
+atomexp ::= atom
+-> atom
+
+
+builtin:
+pair(exp1, exp2)
+-> (exp1 . exp2)
+
+list(exp1, exp2, exp3)			; list(exp*)
+-> (list exp1 exp2 exp3)
+
+add(1, 2)
+-> (+ 1 2)
+
+
 ConsCell methoden double carAsDouble(), long carAsLong() einfuehren
 -> und DoubleConsCell, LongConsCell, das hat zusaetzlich Java primitive datentypen als car und ueberlaedt die methoden
 
@@ -32,6 +204,7 @@ multivalue let: wenn funktionen mehrere werte zurueckgeben, koennte ein erweiter
 (let ((r1 r2 (multivaluefunction)))
    (print r1)
    (print r2))
+-> gibts schon in scheme
 
 
 koennte makeClosureFromForm beim closen alle (im environment vorhandenen) symbole (die spaeter ein lookup waeren)
@@ -1174,3 +1347,12 @@ vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
 -> vielleicht mit self evaluating symbol dynamic (self evaluating weil dann kann man quote oder nicht, ist egal)
 
 tests fuer dynamic lambda
+
+tests fuer lambda mit mehreren stmts
+-> dynamic_lambda.lisp
+
+vielleicht die feature flags nur im repl, sonst file variablen
+-> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
+   beim setInput() die featureflags wieder zuruecksetzen
+zumindest --lex ausbauen und --dyn -> --X-dyn mit warning (nicht mehr Murmel, auch kein subset)
+vielleicht alle sprachflags -X-... und --dyn-> -XX-dyn

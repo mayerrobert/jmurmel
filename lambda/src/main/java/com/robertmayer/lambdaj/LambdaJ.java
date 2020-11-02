@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.164 2020/11/01 12:34:57 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.165 2020/11/01 17:26:52 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1839,8 +1839,7 @@ public class LambdaJ {
 
     private static int features(String[] args) {
         int features = HAVE_ALL_LEXC;
-        if (hasFlag("--dyn", args))         features =  HAVE_ALL_DYN;
-        else if (hasFlag("--lex", args))    features =  HAVE_ALL_LEXC;
+        if (hasFlag("--XX-dyn", args))      features =  HAVE_ALL_DYN;
 
         if (hasFlag("--no-nil", args))      features &= ~HAVE_NIL;
         if (hasFlag("--no-t", args))        features &= ~HAVE_T;
@@ -1912,10 +1911,10 @@ public class LambdaJ {
         System.out.println("Usage:\n"
                 + "\n"
                 + "interactive:\n"
-                + "java -jar lambdaj.jar [commandline arguments]*\n"
+                + "java -jar jmurmel.jar [commandline arguments]*\n"
                 + "\n"
                 + "non-interactive:\n"
-                + "java -jar lambdaj.jar [commandline arguments]* < lisp-source.lisp\n"
+                + "java -jar jmurmel.jar [commandline arguments]* < lisp-source.lisp\n"
                 + "\n"
                 + "Commandline arguments are:\n"
                 + "\n"
@@ -1937,10 +1936,6 @@ public class LambdaJ {
                 + "                 reading/ parsing/ executing programs\n"
                 + "\n"
                 + "Feature flags:\n"
-                + "\n"
-                + "--dyn .........  use dynamic environments\n"
-                + "--lex .........  use lexical closures (with dynamic global environment),\n"
-                + "                 this is the default\n"
                 + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
@@ -1993,6 +1988,16 @@ public class LambdaJ {
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
-                + "                   lambda");
+                + "                   lambda\n"
+                + "\n"
+                + "\n"
+                + "--XX-dyn ......  Use dynamic environments instead of Murmel's\n"
+                + "                 lexical closures with dynamic global environment.\n"
+                + "                 WARNING: This flag is for experimentation purposes only\n"
+                + "                          and may be removed in future versions.\n"
+                + "                          Use at your own discretion.\n"
+                + "                          Using --XX-dyn JMurmel will no longer implement Murmel\n"
+                + "                          and your programs may silently compute different\n"
+                + "                          results!");
     }
 }

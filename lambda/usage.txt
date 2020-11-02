@@ -1,10 +1,10 @@
 Usage:
 
 interactive:
-java -jar lambdaj.jar [commandline arguments]*
+java -jar jmurmel.jar [commandline arguments]*
 
 non-interactive:
-java -jar lambdaj.jar [commandline arguments]* < lisp-source.lisp
+java -jar jmurmel.jar [commandline arguments]* < lisp-source.lisp
 
 Commandline arguments are:
 
@@ -26,10 +26,6 @@ Misc:
                  reading/ parsing/ executing programs
 
 Feature flags:
-
---dyn .........  use dynamic environments
---lex .........  use lexical closures (with dynamic global environment),
-                 this is the default
 
 --no-nil ......  don't predefine symbol nil (hint: use '()' instead)
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
@@ -83,3 +79,13 @@ Feature flags:
                    symbols and cons-cells (i.e. lists)
                    function application
                    lambda
+
+
+--XX-dyn ......  Use dynamic environments instead of Murmel's
+                 lexical closures with dynamic global environment.
+                 WARNING: This flag is for experimentation purposes only
+                          and may be removed in future versions.
+                          Use at your own discretion.
+                          Using --XX-dyn JMurmel will no longer implement Murmel
+                          and your programs may silently compute different
+                          results!
