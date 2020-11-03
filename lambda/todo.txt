@@ -1,17 +1,17 @@
+null? brauchts eigentlich nur in scheme
+
+tabs im scanner richtig zaehlen
+col += tabsize
+col = (col / tabsize) * tabsize
+
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
 lambda parameternamen auch nicht, koennte ein problem sein
-
-dynamic dokumentieren
 
 statt reserved=cons(symbol, reserved)
 -> reserved(Symbol)
 
 cmdlineflags wos let aber nicht letXXX oder named let gibt
 
-
-Unterscheiden: Symbol gibts nicht vs. hat keinen Wert zugewiesen: not bound vs. undefined
--> spielt eigentlich bisher nur bei letrec eine Rolle
-   special forms boundp und definedp, spezialwert "Object undef" einfuehren und in symbol lookup auswerten
 
 
 
@@ -27,7 +27,7 @@ ein neues primitive basteln?
    -> oder der (bytecode) compiler erzeugt code der nur weniger vm features braucht
 
 javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
-CompilationTask c = comp.getTask(null,null, null, null, null, Collcetions.singletonList(new JavaSourceFromString(..., "class...");
+CompilationTask c = comp.getTask(null,null, null, null, null, Collcections.singletonList(new JavaSourceFromString(..., "class...");
 Boolean success = c.call();
  
 
@@ -1359,3 +1359,11 @@ Racket letrec == Scheme letrec*
    let dazu
    let* bleibt
    letrec* ist anders als scheme: in scheme sehen die let forms alles als bound aber folgende als undefined
+
+
+dynamic dokumentieren
+
+Unterscheiden: Symbol gibts nicht vs. hat keinen Wert zugewiesen: not bound vs. undefined
+-> besseres wording: bound/not bound, defined/bound but not defined
+-> spielt eigentlich bisher nur bei letrec eine Rolle
+   special forms boundp und definedp, spezialwert "Object undef" einfuehren und in symbol lookup auswerten

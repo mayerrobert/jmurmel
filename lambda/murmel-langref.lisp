@@ -109,19 +109,39 @@ an-expression
 
 )
 
+
+;;; == Predefined Symbols =============
+
+; "nil" and "t" are pre-defined self-evaluating symbols
+nil
+t
+
+; "dynamic" is a self-evaluating symbol that may be used
+; in the lambda form, see below
+dynamic
+
+; Resolution of the time related functions, see below.
+internal-time-units-per-second
+
+
 ;;; == Basic Special Forms ============
 
 ;;; (quote symbol) -> symbol
 ; quote returns an expression w/o evaluating it
 (quote a-symbol)
 
-;;; (lambda (params...) forms...) -> lambda or closure
-; In --dyn mode no environment is captured,
-; lambdas - when applied - get the dynamic environment.
-; In --lex mode the lexical environment is captured
-; at the time of lambda creation. (Both dynamic as well
-; as lexical lambdas will "see" the dynamic global environment.)
-; arguments to lambda are not evaluated
+;;; (lambda dynamic? (params...) forms...) -> lambda or closure
+; When a lambda is created by the special form "lambda"
+; the lexical environment is captured at the time of lambda creation.
+;
+; Except: when the optional keyword "dynamic" is given then
+; no environment is captured, and lambdas - when applied -
+; get the dynamic environment.
+;
+; Note: both dynamic as well as lexical lambdas will "see"
+; the dynamic global environment.
+;
+; Arguments to the special form "lambda" are not evaluated.
 (lambda (p1 p2) p1)
 
 ; lambda with varargs:
@@ -213,17 +233,40 @@ nil
 
 ;;; (labels ((symbol (params...) forms...)...) forms...) -> object
 
-;;; (let* optsymbol? (bindings...) forms...) -> object
-; works like let* of others Lisps
-; each binding "sees" the previous ones, optsymbol if given will be bound
-; to "forms..." inside forms... for recursive calls
-(let* loop ((x 3) (msg 'hi))
-           (if (= x 0) msg (progn (write (floor x)) (loop (- x 1) msg))))
+;;; (let optsymbol? ((symbol bindingform)...) bodyforms...) -> object
+; Works like you would expect from "let" with the addition
+; of Scheme's "named let".
+; The let-bound variables "symbol" as well as "optsymbol"
+; - if given - are bound inside bodyforms.
+; "optsymbol" will be bound inside "bodyforms" to a lambda
+; whose parameters are the let-variables and whose code is
+; "bodyforms". Therefore "optsymbol" can be used for
+; recursive calls within "bodyforms".
+(let loop ((x 3)
+           (msg "hi"))
+  (if (= x 0)
+      (write msg)
+    (progn (write (floor x)) (loop (- x 1) msg))))
 
-;;; (letrec (bindings...) expr...) -> object
-; works like let and let* of others Lisps
-; except each binding "sees" the previous as well as itself.
-; that way a let-bound variable could be a recursive lambda
+;;; (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
+; Works like let (see above) with the addition:
+; each bindingform "sees" the previous symbols. If multiple
+; let-bindings use the same symbol the last one hides
+; preceeding ones.
+(let* loop ((y 10)
+            (x (+ y 20))
+            (x (floor (/ x 10)))
+            (msg 'hi))
+  (if (= x 0)
+      (write msg)
+    (progn (write (floor x)) (loop 0 0 (- x 1) msg))))
+
+;;; (letrec ((symbol bindingform)...) bodyforms...) -> object
+; works like let and let* except each bindingform "sees"
+; all other let symbols as well as it's own symbol.
+; All symbols are bound, but only the preceeding bindings
+; are defined (have a value) while eval'ing the bindingform.
+; That way a let-bound variable could be a recursive lambda.
 (letrec ((x 1) (y (+ x 1))) (write y))
 
 ;;; (apply form argform) -> object
@@ -236,15 +279,6 @@ nil
 ; applies the operator returned by operatorform to
 ; the eval'd operands
 ; (operatorform operands...)
-
-;;; == Predefined Symbols =============
-
-; nil and t are pre-defined self-evaluating symbols
-nil
-t
-
-; resolution of the time related functions
-internal-time-units-per-second
 
 
 ;;; == Predefined Primitives ==========
@@ -362,4 +396,4 @@ internal-time-units-per-second
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.8 2020/10/30 21:56:15 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.9 2020/11/01 09:07:53 Robert Exp $

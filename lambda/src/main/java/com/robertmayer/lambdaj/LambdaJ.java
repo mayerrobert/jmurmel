@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.166 2020/11/02 16:41:13 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.167 2020/11/02 21:59:34 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -455,6 +455,9 @@ public class LambdaJ {
 
     private ConsCell reservedWords;
 
+    public static final Object VALUE_NOT_DEFINED = new Object();   // only relevant in letrec
+    private static final Object NOT_A_SYMBOL = new Object();       // to avoid matches on pseudo env entries
+
     /** <p>Look up the symbols for special forms only once on first use.
      *  the suppliers below will do a lookup on first use and then replace themselves by another supplier
      *  that simply returns the cached value.
@@ -514,8 +517,12 @@ public class LambdaJ {
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
                     if (form == null) return null;
                     final ConsCell envEntry = assoc(form, env);
-                    if (envEntry != null) return cdr(envEntry);
-                    throw new LambdaJError("%s: '%s' is undefined", "eval", form);
+                    if (envEntry != null) {
+                        final Object value = cdr(envEntry);
+                        if (value == VALUE_NOT_DEFINED) throw new LambdaJError("%s: '%s' is bound but has no assigned value", "eval", form);
+                        return value;
+                    }
+                    throw new LambdaJError("%s: '%s' is not bound", "eval", form);
                 }
 
                 /// eval - atoms that are not symbols eval to themselves
@@ -617,7 +624,7 @@ public class LambdaJ {
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2, form);
-                        ConsCell extEnv = cons(cons(null, null), env);
+                        ConsCell extEnv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
                         // stick the functions into the env
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
@@ -631,21 +638,21 @@ public class LambdaJ {
                         env = extEnv;
                         // fall through to "eval a list of forms"
 
-                    /// eval - (let optsymbol? (bindings...) forms...) -> object
-                    /// eval - (let* optsymbol? (bindings...) forms...) -> object
-                    /// eval - (letrec optsymbol? (bindings...) forms...) -> object
+                    /// eval - (let optsymbol? (bindings...) bodyforms...) -> object
+                    /// eval - (let* optsymbol? (bindings...) bodyforms...) -> object
+                    /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (haveXtra() && (operator == sLet) || operator == sLetStar || operator == sLetrec) {
-                        final boolean star  = operator == sLetStar;
-                        final boolean rec   = operator == sLetrec;
-                        final boolean named = symbolp(car(arguments));
+                        final boolean letStar  = operator == sLetStar;
+                        final boolean letRec   = operator == sLetrec;
+                        final boolean namedLet = /*!star && !rec &&*/ symbolp(car(arguments));
 
-                        final String op = (named ? "named " : "") + operator.toString();
-                        final ConsCell let = named ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyform...)
+                        final String op = (namedLet ? "named " : "") + operator.toString();
+                        final ConsCell bindingsAndBodyForms = namedLet ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
-                        if (!consp(car(let))) throw new LambdaJError("%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(let)));
-                        final ConsCell bindings = (ConsCell)car(let);
+                        final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
+                        if (!consp(bindings)) throw new LambdaJError("%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
 
-                        ConsCell extEnv = cons(cons(null, null), env);
+                        ConsCell extenv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
                         for (Object binding: bindings) {
                             if (!consp(binding))        throw new LambdaJError("%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
                             final Object sym = car(binding);
@@ -654,19 +661,18 @@ public class LambdaJ {
                             if (!listp(cdr(binding)))   throw new LambdaJError("%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
 
                             ConsCell newBinding = null;
-                            if (rec) newBinding = insertFront(extEnv, sym, null);
-                            Object val = eval(cadr(binding), star || rec ? extEnv : env, stack, level);      // todo sollte das cdr(binding) heissen, damit (symbol forms...) gehen wuerde? in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
-                            if (rec)      newBinding.cdr = val;
-                            else extEnv = extendEnv(extEnv, sym, val);
+                            if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
+                            Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level);      // todo sollte das cdr(binding) heissen, damit (symbol forms...) gehen wuerde? in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                            if (letRec)      newBinding.cdr = val;
+                            else extenv = extendEnv(extenv, sym, val);
                         }
-                        forms = (ConsCell)cdr(let);
-                        if (named) {
-                            ConsCell body = cons(car(arguments), null);
-                            extEnv = cons(body, extEnv);
-                            ConsCell bodyParams = extractParamList(op, bindings);
-                            body.cdr = makeClosure(cons(bodyParams, forms), extEnv);
+                        forms = (ConsCell)cdr(bindingsAndBodyForms);
+                        if (namedLet) {
+                            final ConsCell bodyParams = extractParamList(op, bindings);
+                            final Object bodyForms = makeClosure(cons(bodyParams, forms), extenv);   // (optsymbol . (lambda (params bodyforms)))
+                            insertFront(extenv, car(arguments), bodyForms);
                         }
-                        env = extEnv;
+                        env = extenv;
                         // fall through to "eval a list of forms"
                     }
 
@@ -694,7 +700,6 @@ public class LambdaJ {
                             func = eval(operator, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError("%s: expected an argument list but got %s", "function application", printSEx(arguments));
                             argList = evlis(arguments, env, stack, level);
-                            // todo hier gleich z.B. eq inlinen
                             // fall through to "actually perform..."
                         }
 
@@ -767,6 +772,7 @@ public class LambdaJ {
         return cons(symbolEntry, env);
     }
 
+    /** from a list of (symbol form) conses return the symbols as new a list */
     private ConsCell extractParamList(String op, final ConsCell bindings) {
         ConsCell bodyParams = null, insertPos = null;
         if (bindings != null)
@@ -778,6 +784,7 @@ public class LambdaJ {
                     insertPos = bodyParams;
                 } else {
                     insertPos.cdr = cons(symbol, null);
+                    insertPos = (ConsCell) insertPos.cdr;
                 }
             }
         return bodyParams;
@@ -802,11 +809,11 @@ public class LambdaJ {
             }
 
             params = cdr(params);
-            if (params == paramList) throw new LambdaJError("%s: malformed lambda: bindings are a circular list", "function application", exp);
+            if (params == paramList) throw new LambdaJError("%s: malformed lambda: bindings are a circular list", "function application");
 
             args = (ConsCell) cdr(args);
             if (args == null) {
-                if (consp(params)) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params), exp);
+                if (consp(params)) throw new LambdaJError("%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
                 else {
                     // paramList is a dotted list, no argument for vararg parm: assign nil
                     env = cons(cons(params, null), env);
@@ -814,7 +821,7 @@ public class LambdaJ {
                 }
             }
         }
-        if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s", "function application", printSEx(args), exp);
+        if (args != null)   throw new LambdaJError("%s: too many arguments. remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 

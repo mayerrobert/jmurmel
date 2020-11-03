@@ -1,3 +1,3 @@
-; error: 'undef' is undefined
+; error: 'undef' is not bound
 
 (undef (quote (1 2 3)))
