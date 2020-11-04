@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.171 2020/11/04 18:58:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.172 2020/11/04 19:28:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -568,7 +568,7 @@ public class LambdaJ {
 
                     /// eval - (define symbol exp) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefine) {
-                        twoArgs("define", arguments, form);
+                        twoArgs("define", arguments);
                         final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
                                                               // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
                         if (!symbolp(symbol)) throw new LambdaJError("%s: not a symbol: %s", "define", printSEx(symbol));
