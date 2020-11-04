@@ -1,23 +1,63 @@
-null? brauchts eigentlich nur in scheme
+global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
+lambda parameternamen auch nicht, koennte ein problem sein
+
+tests von lis.py verpacken
+
+behandlung von nil beschreiben (Lisp <> Scheme)
+
+in readme.md nur einfache beispiele, rest in features.md
+
+mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
+
+cmdlineflags wos let aber nicht letXXX oder named let gibt
+-> --no-scheme, auch null? und ggf if abdrehen
+
+zus Primitives: https://learnxinyminutes.com/docs/common-lisp/
+(expt x y) -> x hoch y
+(intern string) -> symbol
+-> intern ist case preserving (intern "aaa") -> |aaa|, anscheinend macht der reader uppercase, und symbol lookup ist case sensitive
+AND, OR, XOR, NOT
+-> brauchts eigentlich nicht, ist sugar ueber if
+null? brauchts eigentlich nur in scheme, (null? x) -> (not x)
+
+string-format und format doch zusammenziehen:
+(format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
+(format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
+
+statt reserved=cons(symbol, reserved)
+-> reserved(Symbol)
+
+eval, interpretExprssions & Co aendern:
+- einige init methoden die setzen in, out, environment, symboltable
+- eine methode eval(ConsCell progam), das ist ein wrapper um das bisherige eval, der wrapper schmeisst eine exception falls nicht
+  initialisiert.
+- die sprache ist ja eine liste von ConsCells, mit so einem API waers ggf. einfacher/ natuerlicher einen anderen Parser davor
+  zu schalten
+- das derzeitige eval kann nur eine expression, listen arbeiten repl() bzw. interpretExpressions() ab. Obiger eval wrapper
+  sollte auch listen koenen
+
+
 
 tabs im scanner richtig zaehlen
 col += tabsize
 col = (col / tabsize) * tabsize
 
-global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
-lambda parameternamen auch nicht, koennte ein problem sein
-
-statt reserved=cons(symbol, reserved)
--> reserved(Symbol)
-
-cmdlineflags wos let aber nicht letXXX oder named let gibt
-
-
-
-
-
 Fexpr unterstuetzen, in eigenen Namespace stecken und diesen Namespace nur in define auswerten/ fexpr aufrufen/ aufloesen
 -> sind das dann effektiv macros?
+
+
+koennt ma namespaces irgendwie so einfuehren:
+namespace xxx biegt topenv woandershin
+define schreibt nicht in topenv sondern ins package
+export schreibt ins topenv
+import kopiert (symbol . value) entries aus einem anderen env ins aktuelle
+assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den gestapelten environments zusammen?)
+-> namespaces nach C oder object files waeren irgendwie C und H files bzw getrennte object files - export schreibt ins .h file
+   bzw exportiert das symbol aus dem object file
+
+
+
+
 
 Vielleicht in define den Lisp Code nach Java uebersetzen und mit tools.jar uebersetzen? Und aus dem erzeugten class file
 ein neues primitive basteln?
@@ -57,10 +97,6 @@ zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange kei
 
 
 
-
-
-AND, OR, XOR, NOT
--> brauchts eigentlich nicht, ist sugar ueber if
 
 
 
@@ -151,14 +187,6 @@ lispStdout -> lispPrinter
 ObjectReader -> LispReader, #readObj -> #read
 ObjectWriter -> LispPrinter, #printObj -> #print
 
-tests von lis.py verpacken
-
-behandlung von nil beschreiben (Lisp <> Scheme)
-
-in readme.md nur einfache beispiele, rest in features.md
-
-mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
-
 
 synchronized ueberlegen
 
@@ -167,14 +195,6 @@ JSR223 vielleicht in ein zweites jar verpacken?
 
 
 
-
-koennt ma namespaces irgendwie so einfuehren:
-namespace xxx biegt topenv woandershin
-define schreibt nicht in topenv sondern ins package
-export schreibt ins topenv
-assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den gestapelten environments zusammen?)
--> namespaces nach C oder object files waeren irgendwie C und H files bzw getrennte object files - export schreibt ins .h file
-   bzw exportiert das symbol aus dem object file
 
 
 Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 1996

@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.167 2020/11/02 21:59:34 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.168 2020/11/03 17:45:31 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -852,7 +852,10 @@ public class LambdaJ {
         final ConsCell paramsAndForms = (ConsCell) cdr(form);
 
         if (car(paramsAndForms) == sDynamic) {
-            return cons(sLambda, cdr(paramsAndForms));
+            final Object _paramsAndForms = cdr(paramsAndForms);
+            nArgs("lambda dynamic", _paramsAndForms, 2, form);
+            symbolArgs("lambda dynamic", car(_paramsAndForms), form);
+            return cons(sLambda, _paramsAndForms);
         }
         nArgs("lambda", paramsAndForms, 2, form);
         symbolArgs("lambda", car(paramsAndForms), form);
