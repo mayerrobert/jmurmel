@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.169 2020/11/04 07:02:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.170 2020/11/04 07:22:19 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1244,6 +1244,11 @@ public class LambdaJ {
         }
     }
 
+    private static void numberArgs(String func, ConsCell a, int min, int max) {
+        nArgs(func, a, min, max);
+        numberArgs(func, a);
+    }
+
     private static void oneOrMoreNumbers(String func, ConsCell a) {
         oneOrMoreArgs(func, a);
         numberArgs(func, a);
@@ -1470,6 +1475,11 @@ public class LambdaJ {
             }
         }
 
+        if (haveXtra()) {
+            env = cons(cons(sDynamic, sDynamic),
+                    env);
+        }
+
         if (haveT()) {
             Object sT = symtab.intern(new LambdaJSymbol("t"));
             env = cons(cons(sT, sT),
@@ -1488,14 +1498,14 @@ public class LambdaJ {
             env = cons(cons(symtab.intern(new LambdaJSymbol("consp")),   (Primitive) a -> { oneArg("consp", a);   return boolResult(consp  (car(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("symbolp")), (Primitive) a -> { oneArg("symbolp", a); return boolResult(symbolp(car(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("listp")),   (Primitive) a -> { oneArg("listp", a);   return boolResult(listp  (car(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("null?")),   (Primitive) a -> { oneArg("null?", a);   return boolResult(car(a) == null); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("not")),     (Primitive) a -> { oneArg("not", a);     return boolResult(car(a) == null); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("assoc")),   (Primitive) a -> { twoArgs("assoc", a);  return assoc(car(a), car(cdr(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("list")),    (Primitive) a -> a),
                   env))))));
 
             final Primitive fusertime = a -> { return new Double(getThreadBean("get-internal-run-time").getCurrentThreadUserTime()); };
-            final Primitive fcputime = a -> { return new Double(getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime()); };
-            final Primitive fsleep = a -> {
+            final Primitive fcputime  = a -> { return new Double(getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime()); };
+            final Primitive fsleep    = a -> {
                 oneArg("sleep", a);
                 numberArgs("sleep", a);
                 try {
@@ -1533,6 +1543,13 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("get-universal-time")), fUniversalTime), // seconds since 1.1.1900
                   cons(cons(symtab.intern(new LambdaJSymbol("get-decoded-time")), fDecodedTime),
                   env)))))));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("fatal")), (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }),
+                  env);
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("::")), (Primitive) a -> findJavaMethod(a)),
+                  env);
+
         }
 
         if (haveAtom()) {
@@ -1547,6 +1564,9 @@ public class LambdaJ {
                 return ((Number)car(args)).doubleValue() % ((Number)car(cdr(args))).doubleValue();
             };
 
+            env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
+                  env);
+
             env = cons(cons(symtab.intern(new LambdaJSymbol("=")),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
                   cons(cons(symtab.intern(new LambdaJSymbol(">")),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
                   cons(cons(symtab.intern(new LambdaJSymbol(">=")),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
@@ -1557,13 +1577,23 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("-")),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
                   cons(cons(symtab.intern(new LambdaJSymbol("*")),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
                   cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("mod")),     fmod),
-                  env)))));
-            env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round(((Number)car(args)).doubleValue()); }),
+                  env))));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("mod")),     fmod),
+                  cons(cons(symtab.intern(new LambdaJSymbol("sqrt")),    (Primitive) args -> { numberArgs("sqrt",  args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("log")),     (Primitive) args -> { numberArgs("log",   args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("log10")),   (Primitive) args -> { numberArgs("log10", args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("exp")),     (Primitive) args -> { numberArgs("exp",   args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("expt")),    (Primitive) args -> { numberArgs("expt",  args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); }),
+                  env))))));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { oneArg("round",   args); return (long)Math.round(((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { oneArg("floor",   args); return (long)Math.floor(((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { oneArg("ceiling", args); return (long)Math.ceil (((Number)car(args)).doubleValue()); }),
-                  env))));
+                  env)));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("pi")),      Math.PI),
+                    env);
         }
 
         if (haveEq()) {
@@ -1577,18 +1607,6 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); }),
                   env)));
         }
-
-        // todo haveXtra?
-        env = cons(cons(symtab.intern(new LambdaJSymbol("fatal")), (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }),
-                   env);
-
-        // todo haveXtra?
-        env = cons(cons(symtab.intern(new LambdaJSymbol("::")), (Primitive) a -> findJavaMethod(a)),
-                env);
-
-        // todo have???
-        env = cons(cons(sDynamic, sDynamic),
-              env);
 
         return env;
     }

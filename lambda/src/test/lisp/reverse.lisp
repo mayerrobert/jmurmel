@@ -11,5 +11,5 @@
       (rev rev (quote ()) list))
     (lambda (rev^ a l)
       (cond
-        ((null? l) a)
+        ((not l) a)
         ((quote t) (rev^ rev^ (cons (car l) a) (cdr l ))))))))

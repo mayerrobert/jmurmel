@@ -9,16 +9,24 @@ in readme.md nur einfache beispiele, rest in features.md
 
 mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
 
-cmdlineflags wos let aber nicht letXXX oder named let gibt
+cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
 -> --no-scheme, auch null? und ggf if abdrehen
+-> dann gibts nur mehr not bound, kein undefined value
+
+primitives nach wichtigkeit umsortieren
+
+:: macht im prinzip dasselbe wie CL create-method
+-> ggf parameterreihenfolge anpassen
+   hinweis in murmel-langref.lisp
 
 zus Primitives: https://learnxinyminutes.com/docs/common-lisp/
-(expt x y) -> x hoch y
+(expt x y) -> x hoch y, wurzelziehen? oder ist das (x hoch 1/y)?
 (intern string) -> symbol
 -> intern ist case preserving (intern "aaa") -> |aaa|, anscheinend macht der reader uppercase, und symbol lookup ist case sensitive
 AND, OR, XOR, NOT
 -> brauchts eigentlich nicht, ist sugar ueber if
 null? brauchts eigentlich nur in scheme, (null? x) -> (not x)
+-> umbenamsen
 
 string-format und format doch zusammenziehen:
 (format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
@@ -64,9 +72,9 @@ ein neues primitive basteln?
    -> oder der (bytecode) compiler erzeugt code der nur weniger vm features braucht
 
 javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
-CompilationTask c = comp.getTask(null,null, null, null, null, Collcections.singletonList(new JavaSourceFromString(..., "class...");
+CompilationTask c = comp.getTask(null,null, null, null, null, Collections.singletonList(new JavaSourceFromString(..., "class...");
 Boolean success = c.call();
- 
+
 
 
 
@@ -74,6 +82,9 @@ Boolean success = c.call();
 das environment ist eine liste von maps:
 -> zip steckt eine neu map vornedran
 -> assoc arbeitet die liste ab, und durchsucht jede map, erster treffer gilt
+-> oder eine immutable map machen, vgl. hashmap aus scheme:
+   map.extend(liste von key/values) -> neue map der lookup schaut ggf. rekursiv im parent nach
+-> oder env = newscope(), da wird eine neue hashmap vornedran gepickt, und halt ggf flat closures berücksichtigen
 
 -> ein lexikalisches environment koennte ALLE werte aller uebergeordneter environments enthalten.
    das geht, wenn kein set moeglich ist oder
@@ -91,7 +102,7 @@ das environment ist eine liste von maps:
    
 define sollte das aktuelle environment erweitern, nicht das globale
 zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange keine re-definition und kein set -> ja)
-
+-> oder auch nicht: Scheme define != Old Lisp define
 
 
 

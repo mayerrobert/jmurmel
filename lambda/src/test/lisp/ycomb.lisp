@@ -17,7 +17,7 @@
  (lambda (f)
    (lambda (lst)
      (cond
-       ((null? lst) (quote ()))
+       ((not lst) (quote ()))
        ((eq (car lst) (quote a)) (cons (quote 1) (f (cdr lst))))
        ((eq (car lst) (quote b)) (cons (quote 2) (f (cdr lst))))
        ((eq (car lst) (quote c)) (cons (quote 3) (f (cdr lst))))

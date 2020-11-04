@@ -6,28 +6,28 @@ public class ApplyTest {
 
     @Test
     public void primitiveOneArg() {
-        LambdaJTest.runTest("primitiveOneArg", "(null? nil)", "t", null);
+        LambdaJTest.runTest("primitiveOneArg", "(not nil)", "t", null);
     }
 
     @Test
     public void primitiveOneArgApply() {
-        LambdaJTest.runTest("primitiveOneArg", "(apply null? '(nil))", "t", null);
+        LambdaJTest.runTest("primitiveOneArg", "(apply not '(nil))", "t", null);
     }
 
     @Test
     public void primitiveOneArgApplyError() {
-        LambdaJTest.runErrorTest("primitiveOneArg", "(apply null? 'a)",
+        LambdaJTest.runErrorTest("primitiveOneArg", "(apply not 'a)",
                 "apply: expected an argument list but got a");
     }
 
     @Test
     public void lambdaOneArgApply() {
-        LambdaJTest.runTest("primitiveOneArg", "(apply (lambda (x) (null? x)) '(nil))", "t", null);
+        LambdaJTest.runTest("primitiveOneArg", "(apply (lambda (x) (not x)) '(nil))", "t", null);
     }
 
     @Test
     public void lambdaOneArgApplyError() {
-        LambdaJTest.runErrorTest("lambdaOneArg", "(apply (lambda (x) (null? x)) 'a)",
+        LambdaJTest.runErrorTest("lambdaOneArg", "(apply (lambda (x) (not x)) 'a)",
                 "apply: expected an argument list but got a");
     }
 

@@ -300,15 +300,17 @@ nil
 ; (cdr '(a b c)) ==> (b c)
 (cdr '(a b c))
 
-; eq, atom, consp, listp, symbolp, numberp, stringp, null?
+; eq, atom, consp, listp, symbolp, numberp, stringp
+; not
 
 ; assoc takes a key and a list of key/value tupels (lists or conses)
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
 
-; +, -, *, /, mod
-; The math operators accept numbers only, but otherwise should
-; work as expected, all numeric operators return a double
+; +, -, *, /, mod, sqrt, log, log10, exp, expt
+; The math operators accept numbers only, log only takes 1 argument,
+; but otherwise should work as expected.
+; All numeric operators return a double.
 ; eg. (+ number number) -> double
 (+ 1 1)
 
@@ -396,4 +398,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.9 2020/11/01 09:07:53 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.10 2020/11/03 17:45:31 Robert Exp $
