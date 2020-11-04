@@ -13,8 +13,6 @@ cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
 -> --no-scheme, auch null? und ggf if abdrehen
 -> dann gibts nur mehr not bound, kein undefined value
 
-primitives nach wichtigkeit umsortieren
-
 :: macht im prinzip dasselbe wie CL create-method
 -> ggf parameterreihenfolge anpassen
    hinweis in murmel-langref.lisp
@@ -1398,3 +1396,5 @@ Unterscheiden: Symbol gibts nicht vs. hat keinen Wert zugewiesen: not bound vs. 
 
 statt reserved=cons(symbol, reserved)
 -> reserved(Symbol)
+
+primitives nach haeufigkeit umsortieren
