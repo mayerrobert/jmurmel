@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.168 2020/11/03 17:45:31 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.169 2020/11/04 07:02:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -450,10 +450,21 @@ public class LambdaJ {
         }
     }
 
+
+
+    /// Reserved words may not be used as a symbol
+    private ConsCell reservedWords;
+
+    private void reserve(Object word) { reservedWords = cons(word, reservedWords); }
+
+    /** Throw error if sym is a reserved symbol */
+    private void notReserved(final String op, final Object sym) {
+        if (member(sym, reservedWords)) throw new LambdaJError("%s: can't use reserved word %s as a symbol", op, sym.toString());
+    }
+
+
     /// Symboltable
     private SymbolTable symtab;
-
-    private ConsCell reservedWords;
 
     public static final Object VALUE_NOT_DEFINED = new Object();   // only relevant in letrec
     private static final Object NOT_A_SYMBOL = new Object();       // to avoid matches on pseudo env entries
@@ -467,23 +478,23 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reservedWords = cons(sLambda, null);
-        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reservedWords = cons(sDynamic, reservedWords);
+        sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
+        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);
 
-        if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reservedWords = cons(sQuote,   reservedWords); }
-        if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reservedWords = cons(sCond,    reservedWords); }
-        if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reservedWords = cons(sLabels,  reservedWords); }
+        if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reserve(sQuote); }
+        if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reserve(sCond); }
+        if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reserve(sLabels); }
 
-        if (haveXtra())   { sEval    = symtab.intern(new LambdaJSymbol("eval"));     reservedWords = cons(sEval,    reservedWords); }
-        if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reservedWords = cons(sIf,      reservedWords); }
-        if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reservedWords = cons(sDefine,  reservedWords); }
-        if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reservedWords = cons(sDefun,   reservedWords); }
-        if (haveXtra())   { sLet     = symtab.intern(new LambdaJSymbol("let"));      reservedWords = cons(sLet,     reservedWords); }
-        if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reservedWords = cons(sLetStar, reservedWords); }
-        if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reservedWords = cons(sLetrec,  reservedWords); }
+        if (haveXtra())   { sEval    = symtab.intern(new LambdaJSymbol("eval"));     reserve(sEval); }
+        if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reserve(sIf); }
+        if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reserve(sDefine); }
+        if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reserve(sDefun); }
+        if (haveXtra())   { sLet     = symtab.intern(new LambdaJSymbol("let"));      reserve(sLet); }
+        if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reserve(sLetStar); }
+        if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reserve(sLetrec); }
 
-        if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reservedWords = cons(sApply,   reservedWords); }
-        if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reservedWords = cons(sProgn,   reservedWords); }
+        if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reserve(sApply); }
+        if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reserve(sProgn); }
 
         expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
@@ -748,12 +759,6 @@ public class LambdaJ {
         }
     }
 
-    /** Throw error if sym is a reserved symbol */
-    private void notReserved(final String op, final Object sym) {
-        if (member(sym, reservedWords))
-            throw new LambdaJError("%s: can't use reserved word %s as a symbol", op, sym.toString());
-    }
-
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
      *  Returns the newly created (and inserted) symbolentry (symbol . value) */
     private ConsCell insertFront(ConsCell env, Object symbol, Object value) {
@@ -981,6 +986,7 @@ public class LambdaJ {
         return null;
     }
 
+    /** this method returns true while Lisp member returns the sublist starting at obj */
     private static boolean member(Object obj, ConsCell list) {
         if (obj == null) return false;
         if (list == null) return false;
@@ -1468,14 +1474,14 @@ public class LambdaJ {
             Object sT = symtab.intern(new LambdaJSymbol("t"));
             env = cons(cons(sT, sT),
                   env);
-            reservedWords = cons(sT, reservedWords);
+            reserve(sT);
         }
 
         if (haveNil()) {
             final Object sNil = symtab.intern(new LambdaJSymbol("nil"));
             env = cons(cons(sNil, null),
                   env);
-            reservedWords = cons(sNil, reservedWords);
+            reserve(sNil);
         }
 
         if (haveUtil()) {

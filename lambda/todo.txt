@@ -24,9 +24,6 @@ string-format und format doch zusammenziehen:
 (format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
 (format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
 
-statt reserved=cons(symbol, reserved)
--> reserved(Symbol)
-
 eval, interpretExprssions & Co aendern:
 - einige init methoden die setzen in, out, environment, symboltable
 - eine methode eval(ConsCell progam), das ist ein wrapper um das bisherige eval, der wrapper schmeisst eine exception falls nicht
@@ -1387,3 +1384,6 @@ Unterscheiden: Symbol gibts nicht vs. hat keinen Wert zugewiesen: not bound vs. 
 -> besseres wording: bound/not bound, defined/bound but not defined
 -> spielt eigentlich bisher nur bei letrec eine Rolle
    special forms boundp und definedp, spezialwert "Object undef" einfuehren und in symbol lookup auswerten
+
+statt reserved=cons(symbol, reserved)
+-> reserved(Symbol)
