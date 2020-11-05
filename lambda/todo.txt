@@ -1,4 +1,7 @@
 current-cc ist eigentlich immer cdr(form)
+-> bzw. cons(cdr(form), current_cc)
+   damit koennt ma continuations umsetzen, und eval waer ueberhaupt nicht mehr rekursiv, statt return-> form=current_cc; continue;
+   -> das waer dann "compile with continuations", continuations kann man muss aber nicht in der sprache anbinden
 
 CDI und EJB aehnlich :: integrieren?
 -> dazu brauchts eigentlich einen Lookup im Java-Scope, d.h. BeanProvider.getContextualReference() muss i-wie integriert werden
