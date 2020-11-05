@@ -1,8 +1,12 @@
 # JMurmel
 
-**A lightweight Lisp-1-to-1.5-ish-with-a-side-of-Scheme Interpreter written in Java8+ that can be used standalone as well as embedded.**
+> *These are your father's parentheses*  
+> *Elegant weapons*  
+> *for a more... civilized age.*
 
-Currently weighing in at 41kB (size of compiled .jar file),
+**JMurmel is a lightweight Lisp-1-to-1.5-ish-with-a-side-of-Scheme Interpreter written in Java8+ that can be used standalone as well as embedded.**
+
+Currently weighing in at ~50kB (size of compiled .jar file),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -31,10 +35,10 @@ For a copy, see https://opensource.org/licenses/MIT.
 ## Standalone use
 
     $ java -jar lambdaj-1.0-SNAPSHOT.jar
-    Enter a Lisp expression:
+    Enter a Murmel form or :command (or enter :h for command help or :q to exit):
     LambdaJ>
 
-The command above will wait for you to enter an expression, interpret it and print it's result.
+The command above will wait for you to enter an S-expression, interpret it and print it's result.
 
     C:\> echo (write (quote Hello,\ World!))| java -jar lambdaj-1.0-SNAPSHOT.jar
     Hello, World!
@@ -46,16 +50,16 @@ or
     |Hello, World!|
     $
 
-The commands above will read an expression from stdin and interpret it.
+The commands above will read an S-expression from stdin and interpret it.
 
 Command line parameters in standalone mode:
 
-* `--result` ... print the result to stdout, this is the default when reading an expression from the console 
+* `--result` ... print the result to stdout, this is the default when reading an S-expression from the console 
 * `--help` ..... show all the available commandline parameters and quit
 
 ## Embedded use
 
-JMurmel uses Java8+ only, no third party dependencies are required.
+JMurmel uses Java8+ only.
 It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
@@ -88,7 +92,7 @@ Slightly more advanced example:
 
         String s = "";
         for (Object car: list) { // the iterator will return subsequent car
-                                 // and - if nonnull - the cdr of the last cons cell
+                                 // and - for dotted lists - the cdr of the last cons cell
             s += car.toString();
         }
         assertEquals("ab", s);
@@ -136,7 +140,7 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
 * `cond, if`
-* `lambda`
+* `lambda, lambda dynamic` ... `lambda` creates a lexical closure, `lambda dynamic` creates a lambdy with dynamic environment
 * `labels`
 
 * `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
@@ -144,35 +148,30 @@ The environment contains the symbols `nil` and `t` and the functions
 * `define` ... inserts a (symbol value) pair into the top level environment, returns `value`.
   You can define a symbol only once,
   subsequent redefinitions will fail with an error.
-  No fancy features, just `(define <symbol> <expression>)`, e.g.
+  No fancy features, just `(define <symbol> <form>)`, e.g.
     - `(define *answer* 42)`
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
-* `defun` ... `(<symbol> (<params>*) <bodyexpression>*)`, e.g. `(defun addone (n) (+ n 1))`
-* `let*, letrec, progn`
-* `eq, atom, consp, listp, symbolp, numberp, null?`
+* `defun` ... `(<symbol> (<params>*) <bodyform>*)`, e.g. `(defun addone (n) (+ n 1))`
+* `let, let <symbol>, let*, letrec, progn`
+* `eq, atom, consp, listp, not, numberp, stringp, symbolp`
 
 * `assoc`
 * `read`
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
 
 * `=, <, <=, >, >=, +, -, *, /, mod, round, ceiling, floor`
-* `stringp, string-format, string-format-locale`
-    - `string-format` works like Java `String#format(String format, Object... args)`
-    - `string-format-locale` works like Java `String#format(Locale loc, String format, Object... args)`, e.g. `(string-format-locale "en-US" "Hello Number %g" 1)`
-* `format, format-locale` ... writes to stdout
-* `internal-time-units-per-second, get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time`
 
-For more details on the language supported see `murmel-langref.lisp`.
+For more primitives (including primitives to run Java code) and more details on the language supported see `murmel-langref.lisp`.
 
 Tail calls including tail recursive calls are optimized.
 
-Lambdas can be dynamic or lexical, this can be selected via command line arguments.
+Lambdas can be dynamic or lexical, this can be selected via a keyword parameter to `lambda`.
 
 Variables and functions share one namespace.
 Symbols names must not start with a digit, only the first 2000 characters are significant.
 
 Numbers must start with a digit, a `+` or a `-`.
-E.g. the expression `(/ 1 -0)` is valid and will yield `-Infinity`.
+E.g. the S-expression `(/ 1 -0)` is valid and will yield `-Infinity`.
 
 Math operators are implemented using Java operators for double. This is probably different to Common Lisp
 esp. around +/-NaN, +/-Infinity, division by zero and so on.
@@ -198,7 +197,7 @@ However:
 You could substitute the default parser for reading data and/ or programs by your own parsers that reads e.g. XML or JSON
 instead of S-expressions, and/ or support additional data types.
 
-See `SerializeTest`: this uses Java's serialization to deserialize Lisp objects containing expressions from a stream
+See `SerializeTest`: this uses Java's serialization to deserialize Lisp objects as forms from a stream
 and feeds then to the interpreter instead of parsing S-expressions.
 
 You could extend LambdaJ's environment with your own builtin functions and/ or data types e.g. for supporting BigDecimals
@@ -213,10 +212,10 @@ without any need for change.
 
 ## References
 
-Based on [micro-lisp](https://github.com/carld/micro-lisp)
-with some additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.c2.com/?ImplementingLisp).
+(Very loosely) based on [micro-lisp](https://github.com/carld/micro-lisp)
+with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.c2.com/?ImplementingLisp).
 
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.44 2020/10/27 09:01:12 Robert Exp $
+$Id: README.md,v 1.45 2020/10/27 15:09:26 Robert Exp $

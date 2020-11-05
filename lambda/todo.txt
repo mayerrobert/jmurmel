@@ -1,11 +1,20 @@
+current-cc ist eigentlich immer cdr(form)
+
+CDI und EJB aehnlich :: integrieren?
+-> dazu brauchts eigentlich einen Lookup im Java-Scope, d.h. BeanProvider.getContextualReference() muss i-wie integriert werden
+   -> DeltaSpike so verpacken, dass i-wie ein CustomEnvironmentSupplier uebrigbleibt
+   -> kann man das aufrufen eines CustomEnvironmentSupplier in eine Murmel Funktion verpacken?
+
+lisp eol von cmdline parameter auf lisp global umstellen
+-> oder write uebernimmt keyword/value tupel: (write obj flags...), z.B.
+(write "Hallo" ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t))
+
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
 lambda parameternamen auch nicht, koennte ein problem sein
 
 tests von lis.py verpacken
 
 behandlung von nil beschreiben (Lisp <> Scheme)
-
-in readme.md nur einfache beispiele, rest in features.md
 
 mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
 
@@ -30,7 +39,7 @@ string-format und format doch zusammenziehen:
 (format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
 (format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
 
-eval, interpretExprssions & Co aendern:
+eval, interpretExpressions & Co aendern:
 - einige init methoden die setzen in, out, environment, symboltable
 - eine methode eval(ConsCell progam), das ist ein wrapper um das bisherige eval, der wrapper schmeisst eine exception falls nicht
   initialisiert.
@@ -1398,3 +1407,9 @@ statt reserved=cons(symbol, reserved)
 -> reserved(Symbol)
 
 primitives nach haeufigkeit umsortieren
+
+These are your father's parentheses
+Elegant weapons
+for a more... civilized age.
+
+in readme.md nur einfache beispiele, rest in features.md und verweis auf langref
