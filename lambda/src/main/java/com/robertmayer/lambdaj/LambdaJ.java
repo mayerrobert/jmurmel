@@ -40,7 +40,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.173 2020/11/04 19:51:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.174 2020/11/06 17:35:14 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -587,7 +587,7 @@ public class LambdaJ {
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     // shortcut for (define symbol (lambda (params...) forms...))
                     if (haveXtra() && operator == sDefun) {
-                        nArgs("defun", arguments, 3, form);
+                        nArgs("defun", arguments, 3);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
                         continue tailcall;
                     }
@@ -604,7 +604,7 @@ public class LambdaJ {
 
                     /// eval - (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
-                        nArgs("if", arguments, 2, 3, form);
+                        nArgs("if", arguments, 2, 3);
                         if (eval(car(arguments), env, stack, level) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (cddr(arguments) != null) {
@@ -637,7 +637,7 @@ public class LambdaJ {
 
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
-                        nArgs("labels", arguments, 2, form);
+                        nArgs("labels", arguments, 2);
                         ConsCell extEnv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
                         // stick the functions into the env
                         if (car(arguments) != null)
@@ -700,7 +700,7 @@ public class LambdaJ {
                         /// eval - apply function to list
                         /// eval - (apply form argform) -> object
                         if (haveApply() && operator == sApply) {
-                            twoArgs("apply", arguments, form);
+                            twoArgs("apply", arguments);
 
                             func = eval(car(arguments), env, stack, level);
                             final Object _argList = eval(cadr(arguments), env, stack, level);
@@ -724,9 +724,9 @@ public class LambdaJ {
 
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // (params . (forms...))
-                            nArgs("lambda application", lambda, 2, form);
+                            nArgs("lambda application", lambda, 2);
                             final ConsCell closure = ((ConsCell)func).closure();
-                            env = zip(form, closure != null ? closure : env, car(lambda), argList);
+                            env = zip(closure != null ? closure : env, car(lambda), argList);
 
                             if (trace >= TRC_FUNC)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
                             forms = (ConsCell) cdr(lambda);
@@ -803,7 +803,7 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
-    private ConsCell zip(Object exp, ConsCell env, Object paramList, ConsCell args) {
+    private ConsCell zip(ConsCell env, Object paramList, ConsCell args) {
         if (paramList == null && args == null) return env; // shortcut for no params/ no args
 
         for (Object params = paramList; params != null; ) {
@@ -861,12 +861,12 @@ public class LambdaJ {
 
         if (car(paramsAndForms) == sDynamic) {
             final Object _paramsAndForms = cdr(paramsAndForms);
-            nArgs("lambda dynamic", _paramsAndForms, 2, form);
-            symbolArgs("lambda dynamic", car(_paramsAndForms), form);
+            nArgs("lambda dynamic", _paramsAndForms, 2);
+            symbolArgs("lambda dynamic", car(_paramsAndForms));
             return cons(sLambda, _paramsAndForms);
         }
-        nArgs("lambda", paramsAndForms, 2, form);
-        symbolArgs("lambda", car(paramsAndForms), form);
+        nArgs("lambda", paramsAndForms, 2);
+        symbolArgs("lambda", car(paramsAndForms));
 
         if (haveLexC()) return makeClosure(paramsAndForms, env);
         return form;
@@ -971,7 +971,7 @@ public class LambdaJ {
         return n;
     }
 
-    /** this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw eror instead:
+    /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw eror instead:
      * (nthcdr 3 '(0 . 1))) -> Error: Attempted to take CDR of 1. */
     private static Object nthcdr(int n, Object list) {
         if (list == null) return null;
@@ -1125,11 +1125,6 @@ public class LambdaJ {
         for (char c: s.value.toCharArray()) {
             switch (c) {
             case '|':  ret.append('\\').append('|'); break;
-            /*case '(':  ret.append('\\').append('('); break;
-            case ')':  ret.append('\\').append(')'); break;
-            case ' ':  ret.append('\\').append(' '); break;
-            case '\'': ret.append('\\').append('\''); break;
-            case '\\': ret.append('\\').append('\\'); break;*/
             default: ret.append(c);
             }
         }
@@ -1161,35 +1156,37 @@ public class LambdaJ {
         if (cdr(a) != null) throw new LambdaJError(true, "%s: expected one argument but got extra arg(s) %s", func, printSEx(cdr(a)));
     }
 
-    private static void twoArgs(String func, Object a, Object exp) {
-        if (a == null)       throw new LambdaJError(true, "%s: expected two arguments but no argument was given", func, exp);
-        if (cdr(a) == null)  throw new LambdaJError(true, "%s: expected two arguments but only one argument was given", func, exp);
-        if (cddr(a) != null) throw new LambdaJError(true, "%s: expected two arguments but got extra arg(s) %s", func, printSEx(cddr(a)), exp);
+    /** ecactly two arguments */
+    private static void twoArgs(String func, Object a) {
+        if (a == null)       throw new LambdaJError(true, "%s: expected two arguments but no argument was given", func);
+        if (cdr(a) == null)  throw new LambdaJError(true, "%s: expected two arguments but only one argument was given", func);
+        if (cddr(a) != null) throw new LambdaJError(true, "%s: expected two arguments but got extra arg(s) %s", func, printSEx(cddr(a)));
     }
 
     /** at least {@code min} args */
-    private static void nArgs(String func, Object a, int min, Object exp) {
+    private static void nArgs(String func, Object a, int min) {
         int actualLength = length(a);
         if (actualLength < min) throw new LambdaJError(true, "%s: expected %d arguments or more but got only %d", func, min, actualLength);
     }
 
-    private static void nArgs(String func, Object a, int min, int max, Object exp) {
+    /** between {@code min} and {@code max} args */
+    private static void nArgs(String func, Object a, int min, int max) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(true, "%s: expected %d to %d arguments but got only %d", func, min, max, actualLength, exp);
-        if (actualLength > max) throw new LambdaJError(true, "%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)), exp);
+        if (actualLength < min) throw new LambdaJError(true, "%s: expected %d to %d arguments but got only %d", func, min, max, actualLength);
+        if (actualLength > max) throw new LambdaJError(true, "%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)));
     }
 
     /** 'a' must be a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols. */
-    private void symbolArgs(String func, Object a, Object exp) {
+    private void symbolArgs(String func, Object a) {
         if (a == null) return;
         if (symbolp(a)) return;
-        if (atom(a)) throw new LambdaJError(true, "%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a, exp);
+        if (atom(a)) throw new LambdaJError(true, "%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a);
         final ConsCell start = (ConsCell) a;
         for (; a != null; a = cdr(a)) {
-            if (listp(a) && cdr(a) == start) throw new LambdaJError(true, "%s: malformed %s: circular list of bindings is not allowed", func, func, exp);
+            if (listp(a) && cdr(a) == start) throw new LambdaJError(true, "%s: malformed %s: circular list of bindings is not allowed", func, func);
             if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
-                throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a), exp);
+                throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
             notReserved(func, car(a));
             if (atom(cdr(a))) {
                 notReserved(func, cdr(a));
@@ -1227,10 +1224,6 @@ public class LambdaJ {
         if (a == null) throw new LambdaJError(true, "%s: expected at least one argument but no argument was given", func);
     }
 
-    private static void twoArgs(String func, Object a) {
-        twoArgs(func, a, null);
-    }
-
     private static void onePair(String func, ConsCell a) {
         if (a == null)      throw new LambdaJError(true, "%s: expected one Pair argument but no argument was given", func);
         if (!listp(car(a))) throw new LambdaJError(true, "%s: expected one Pair argument but got %s", func, printSEx(a));
@@ -1247,11 +1240,13 @@ public class LambdaJ {
         }
     }
 
+    /** between {@code min} and {@code max} number args */
     private static void numberArgs(String func, ConsCell a, int min, int max) {
         nArgs(func, a, min, max);
         numberArgs(func, a);
     }
 
+    /** at least one number arg */
     private static void oneOrMoreNumbers(String func, ConsCell a) {
         oneOrMoreArgs(func, a);
         numberArgs(func, a);
@@ -1308,7 +1303,7 @@ public class LambdaJ {
     }
 
     private String format(ConsCell a, String func) {
-        nArgs(func, a, 2, null);
+        nArgs(func, a, 2);
         boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
         stringArg(func, "second argument", a);
@@ -1327,7 +1322,7 @@ public class LambdaJ {
     }
 
     private String formatLocale(ConsCell a, String func) {
-        nArgs(func, a, 3, null);
+        nArgs(func, a, 3);
         boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
 
@@ -1446,7 +1441,7 @@ public class LambdaJ {
             };
 
             final Primitive fwriteln =  a -> {
-                nArgs("writeln", a, 0, 1, null);
+                nArgs("writeln", a, 0, 1);
                 if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
                 if (a == null) {
                     lispPrinter.printEol();
