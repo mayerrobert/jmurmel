@@ -1,4 +1,4 @@
 ; output: eins zwei
-; result: t
+; result: nil
 
-(cond ((= 1 1) (format "eins ") (format "zwei")))
+(cond ((= 1 1) (format t "eins ") (format t "zwei")))

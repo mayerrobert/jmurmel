@@ -3,6 +3,6 @@
 
 (define *answer* 42)
 
-(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))
+(define print-answer (lambda () (write (format nil "%2.2g" *answer*))))
 
 (print-answer)

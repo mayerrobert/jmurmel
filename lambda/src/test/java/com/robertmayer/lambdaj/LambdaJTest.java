@@ -259,7 +259,7 @@ public class LambdaJTest {
                 System.out.println("***** skipping " + fileName.toString());
                 return 1;
             }
-        } catch (LambdaJ.LambdaJError e) {
+        } catch (LambdaJ.LambdaJError | AssertionError e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);

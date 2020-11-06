@@ -355,20 +355,20 @@ nil
 
 ;;; == Additional JMurmel Primitives ==========
 
-; format writes a formatted string to stdout and returns t.
+; format t writes a formatted string to stdout and returns nil.
 ; format's parameters work as java.lang.String.format().
-(format "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+(format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 ; format-locale works similar to format except it has an additional
 ; first string parameter that should be a locale, nil means use Java's
 ; default locale.
-(format-locale
+(format-locale t
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; string-format string-format-locale work similar
+; format nil and format-locale nil work similar
 ; to format and format-locale except they don't write to stdout
 ; but return the string
-(string-format-locale
+(format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
                
 ; (:: classname methodname paramclass...) -> primitive
@@ -398,4 +398,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.10 2020/11/03 17:45:31 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.11 2020/11/04 18:58:30 Robert Exp $
