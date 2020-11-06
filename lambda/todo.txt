@@ -1,5 +1,35 @@
+Objektorientierung: records (default immutable) und "methoden" ala go (wenn eine funktion als ersten parameter einen recordtyp uebernimmt)
+(defrecord mutable? symbol (extends...) symbol...) -> symbol ; eigener namespace fuer records? feldsymbols haben automatisch eigenen namespace, weil sie in einer hashtable des records drinstehen ?
+(make-record mutable? recordsymbol (propertysymbol value)...) -> record
+(get-record recordform propertysymbol) -> value
+-> unions auch reinzwicken? z.B.
+   (defrecord mutable? symbol (extends...) propertysymbol-oder-unionsymbol+(propertysymbol...)...)
+   -> ohne typen fuer die properties wird das wohl zu kompiziert, und java hat auch keine unions
+      ohne typen sind unions auch nicht notwendig, weil man kann einem symbol verschiedene records zuweisen
+
+methoden, also funktionen die nur fuer einen bestimmten recordtyp zutreffen, kann man machen, muss man aber nicht
+
+vielleicht die recordnamen in den selben namespace geben wie double, integer, string?
+
+
+
+vielleicht eval irgendwie umbauen, dass ein symbol nicht den wert sondern den enventry liefert? das waer dann ein lvalue,
+und wuerde ein allfaelliges setf ermoeglichen. (get-record recordsymbol propertysymbol) wuerde dann auch ein (symbol . value)
+tupel liefern, und dann wuerd (setf (get-record my-record propertysymbol) value) gehen
+eigentlich muesste das nur in eval->symbol und zip eingebaut werden
+
+
+eval bekommt einen zus parameter prevenv, dann kann zip bei tailcalls das aktuelle
+scope wiederbenutzen:
+    statt cons -> symbol und wert neu setzen, ist das neue environment laenger ggf. neue entries dranhaengen
+    ist das neue env kuerzer als das alte, erledigt sich das indem der return von zip das neue ende des env ist
+-> kein anwachsen des env bei dynamic, weniger new ConsCell bei lexical
+
 current-cc ist eigentlich immer cdr(form)
--> bzw. cons(cdr(form), current_cc)
+-> bzw. cons(cdr(form), current_cc) oder append?!?
+        -> und wie baut man das environment wieder ab?
+            -> statt cons-> cons3(cons3(cdr(form), current_cc, newScope), env)?
+        -> und wie uebersetzt man das nach java?
    damit koennt ma continuations umsetzen, und eval waer ueberhaupt nicht mehr rekursiv, statt return-> form=current_cc; continue;
    -> das waer dann "compile with continuations", continuations kann man muss aber nicht in der sprache anbinden
 
@@ -451,8 +481,20 @@ primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht e
 double lesbar ist, gibts NaN
 primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
 
-alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mot :l auflisten
+alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mit :l auflisten
 weitere debug gschichten wie zb :env fuer environment auflisten
+-> Scala: https://learnxinyminutes.com/docs/scala/
+// REPL sessions can be saved
+scala> :save /sites/repl-test.scala
+
+// Files can be loaded into the REPL
+scala> :load /sites/repl-test.scala
+Loading /sites/repl-test.scala...
+res2: Int = 4
+res3: Int = 6
+
+-> vielleicht :save und (load <string>)
+
 
 builtin oder special form fuer try/catch:
 try = (lambda (func catch-handler finally) (
