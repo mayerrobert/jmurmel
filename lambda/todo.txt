@@ -1,22 +1,25 @@
-Objektorientierung: records (default immutable) und "methoden" ala go (wenn eine funktion als ersten parameter einen recordtyp uebernimmt)
-(defrecord mutable? symbol (extends...) symbol...) -> symbol ; eigener namespace fuer records? feldsymbols haben automatisch eigenen namespace, weil sie in einer hashtable des records drinstehen ?
-(make-record mutable? recordsymbol (propertysymbol value)...) -> record
-(get-record recordform propertysymbol) -> value
--> unions auch reinzwicken? z.B.
-   (defrecord mutable? symbol (extends...) propertysymbol-oder-unionsymbol+(propertysymbol...)...)
-   -> ohne typen fuer die properties wird das wohl zu kompiziert, und java hat auch keine unions
-      ohne typen sind unions auch nicht notwendig, weil man kann einem symbol verschiedene records zuweisen
+lisp eol von cmdline parameter auf lisp global umstellen
+-> oder write uebernimmt keyword/value tupel: (write obj flags...), z.B.
+(write "Hallo" ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t))
 
-methoden, also funktionen die nur fuer einen bestimmten recordtyp zutreffen, kann man machen, muss man aber nicht
+global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
+lambda parameternamen auch nicht, koennte ein problem sein
 
-vielleicht die recordnamen in den selben namespace geben wie double, integer, string?
+tests von lis.py verpacken
 
+behandlung von nil beschreiben (Lisp <> Scheme)
 
+mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
 
-vielleicht eval irgendwie umbauen, dass ein symbol nicht den wert sondern den enventry liefert? das waer dann ein lvalue,
-und wuerde ein allfaelliges setf ermoeglichen. (get-record recordsymbol propertysymbol) wuerde dann auch ein (symbol . value)
-tupel liefern, und dann wuerd (setf (get-record my-record propertysymbol) value) gehen
-eigentlich muesste das nur in eval->symbol und zip eingebaut werden
+eval, interpretExpressions & Co aendern:
+- einige init methoden die setzen in, out, environment, symboltable
+- eine methode eval(ConsCell progam), das ist ein wrapper um das bisherige eval, der wrapper schmeisst eine exception falls nicht
+  initialisiert.
+- die sprache ist ja eine liste von ConsCells, mit so einem API waers ggf. einfacher/ natuerlicher einen anderen Parser davor
+  zu schalten
+- das derzeitige eval kann nur eine expression, listen arbeiten repl() bzw. interpretExpressions() ab. Obiger eval wrapper
+  sollte auch listen koenen
+
 
 
 eval bekommt einen zus parameter prevenv, dann kann zip bei tailcalls das aktuelle
@@ -33,23 +36,40 @@ current-cc ist eigentlich immer cdr(form)
    damit koennt ma continuations umsetzen, und eval waer ueberhaupt nicht mehr rekursiv, statt return-> form=current_cc; continue;
    -> das waer dann "compile with continuations", continuations kann man muss aber nicht in der sprache anbinden
 
+javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
+CompilationTask c = comp.getTask(null,null, null, null, null, Collections.singletonList(new JavaSourceFromString(..., "class...");
+Boolean success = c.call();
+
+
+
+
+
+vielleicht eval irgendwie umbauen, dass ein symbol nicht den wert sondern den enventry liefert? das waer dann ein lvalue,
+und wuerde ein allfaelliges setf ermoeglichen. (get-record recordsymbol propertysymbol) wuerde dann auch ein (symbol . value)
+tupel liefern, und dann wuerd (setf (get-record my-record propertysymbol) value) gehen
+eigentlich muesste das nur in eval->symbol und zip eingebaut werden
+
+
+
+Objektorientierung: records (default immutable) und "methoden" ala go (wenn eine funktion als ersten parameter einen recordtyp uebernimmt)
+(defrecord mutable? symbol (extends...) symbol...) -> symbol ; eigener namespace fuer records? feldsymbols haben automatisch eigenen namespace, weil sie in einer hashtable des records drinstehen ?
+(make-record mutable? recordsymbol (propertysymbol value)...) -> record
+(get-record recordform propertysymbol) -> value
+-> unions auch reinzwicken? z.B.
+   (defrecord mutable? symbol (extends...) propertysymbol-oder-unionsymbol+(propertysymbol...)...)
+   -> ohne typen fuer die properties wird das wohl zu kompiziert, und java hat auch keine unions
+      ohne typen sind unions auch nicht notwendig, weil man kann einem symbol verschiedene records zuweisen
+
+methoden, also funktionen die nur fuer einen bestimmten recordtyp zutreffen, kann man machen, muss man aber nicht
+
+vielleicht die recordnamen in den selben namespace geben wie double, integer, string (die noch keinen haben)?
+
+
+
 CDI und EJB aehnlich :: integrieren?
 -> dazu brauchts eigentlich einen Lookup im Java-Scope, d.h. BeanProvider.getContextualReference() muss i-wie integriert werden
    -> DeltaSpike so verpacken, dass i-wie ein CustomEnvironmentSupplier uebrigbleibt
    -> kann man das aufrufen eines CustomEnvironmentSupplier in eine Murmel Funktion verpacken?
-
-lisp eol von cmdline parameter auf lisp global umstellen
--> oder write uebernimmt keyword/value tupel: (write obj flags...), z.B.
-(write "Hallo" ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t))
-
-global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
-lambda parameternamen auch nicht, koennte ein problem sein
-
-tests von lis.py verpacken
-
-behandlung von nil beschreiben (Lisp <> Scheme)
-
-mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
 
 cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
 -> --no-scheme, auch null? und ggf if abdrehen
@@ -67,19 +87,6 @@ AND, OR, XOR, NOT
 -> brauchts eigentlich nicht, ist sugar ueber if
 null? brauchts eigentlich nur in scheme, (null? x) -> (not x)
 -> umbenamsen
-
-string-format und format doch zusammenziehen:
-(format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
-(format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
-
-eval, interpretExpressions & Co aendern:
-- einige init methoden die setzen in, out, environment, symboltable
-- eine methode eval(ConsCell progam), das ist ein wrapper um das bisherige eval, der wrapper schmeisst eine exception falls nicht
-  initialisiert.
-- die sprache ist ja eine liste von ConsCells, mit so einem API waers ggf. einfacher/ natuerlicher einen anderen Parser davor
-  zu schalten
-- das derzeitige eval kann nur eine expression, listen arbeiten repl() bzw. interpretExpressions() ab. Obiger eval wrapper
-  sollte auch listen koenen
 
 
 
@@ -110,12 +117,6 @@ ein neues primitive basteln?
 -> vor dem compiler koennten transformationen laufen wie z.b. let->lambda, dann brauchte der compiler und eine allfaellige vm
    nicht so viele features haben
    -> oder der (bytecode) compiler erzeugt code der nur weniger vm features braucht
-
-javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
-CompilationTask c = comp.getTask(null,null, null, null, null, Collections.singletonList(new JavaSourceFromString(..., "class...");
-Boolean success = c.call();
-
-
 
 
 
@@ -190,6 +191,7 @@ add(1, 2)
 -> (+ 1 2)
 
 
+
 ConsCell methoden double carAsDouble(), long carAsLong() einfuehren
 -> und DoubleConsCell, LongConsCell, das hat zusaetzlich Java primitive datentypen als car und ueberlaedt die methoden
 
@@ -247,6 +249,8 @@ JSR223 vielleicht in ein zweites jar verpacken?
 
 Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 1996
 pp73ff: modernes defmacro
+-> besser wie lispy2
+
 
 solange es kein rplaca gibt, koennte man int, float, double und ggf kurze/ lange strings/ symbols in jeweils massgeschneiderte ConsCell stecken
 -> muesste sehr hohe speichereinsparung und performanceverbesserung bringen
@@ -1458,3 +1462,7 @@ Elegant weapons
 for a more... civilized age.
 
 in readme.md nur einfache beispiele, rest in features.md und verweis auf langref
+
+string-format und format doch zusammenziehen:
+(format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
+(format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
