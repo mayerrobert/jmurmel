@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.177 2020/11/07 08:21:19 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.178 2020/11/07 08:47:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1784,9 +1784,7 @@ public class LambdaJ {
             System.exit(1);
         }
 
-        if (repl) {
-            repl(interpreter, istty, echo);
-        }
+        if (repl) repl(interpreter, istty, echo); // repl() doesn't return
 
         try {
             final String result = printSEx(interpreter.interpretExpressions(System.in::read, System.in::read, System.out::print));
