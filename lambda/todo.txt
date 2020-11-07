@@ -54,6 +54,30 @@ Boolean success = c.call();
 
 
 
+in ein jar reinkompilieren:
+void compileWithJSR199() throws IOException {
+    String cpath = "C2.jar";
+    File clientJarFile = new File(cpath);
+    File sourceFileToCompile = new File("C3.java");
+
+
+    javax.tools.JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
+    DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+    StandardJavaFileManager stdFileManager = javac.getStandardFileManager(diagnostics, null, null);
+
+    List<File> files = new ArrayList<>();
+    files.add(clientJarFile);
+
+    stdFileManager.setLocation(StandardLocation.CLASS_PATH, files);
+
+    Iterable<? extends JavaFileObject> sourceFiles = stdFileManager.getJavaFileObjects(sourceFileToCompile);
+
+    if (!javac.getTask(null, stdFileManager, diagnostics, null, null, sourceFiles).call()) {
+        throw new AssertionError("compilation failed");
+    }
+}
+
+
 
 
 vielleicht eval irgendwie umbauen, dass ein symbol nicht den wert sondern den enventry liefert? das waer dann ein lvalue,

@@ -5,7 +5,6 @@ For a copy, see https://opensource.org/licenses/MIT. */
 
 package com.robertmayer.lambdaj;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
@@ -24,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.zone.ZoneRules;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +33,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import javax.tools.JavaCompiler.CompilationTask;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
 
 /** <p>Interpreter for the Lisp-dialect Murmel. Could probably read top-down like a book.
  *
@@ -43,7 +48,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.179 2020/11/07 09:16:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.180 2020/11/07 10:35:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1814,7 +1819,7 @@ public class LambdaJ {
             System.out.println();
         }
 
-        final List<String> history = new ArrayList<>();
+        final List<Object> history = new ArrayList<>();
         boolean isInit = false;
         SExpressionParser parser = null;
         ObjectWriter outWriter = null;
@@ -1856,7 +1861,8 @@ public class LambdaJ {
                     if (":init"  .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"     .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"     .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    history.add(printSEx(exp));
+                    if (":java"  .equals(exp.toString())) { compileJava(history, parser.readObj(false), parser.readObj(false)); continue; }
+                    history.add(exp);
                 }
 
                 long tStart = System.nanoTime();
@@ -1879,11 +1885,13 @@ public class LambdaJ {
         }
     }
 
-    private static void writeHistory(List<String> history, Object filename) {
+    private static void writeHistory(List<Object> history, Object filename) {
         try {
             Path p = Paths.get(filename.toString());
             Path outfile = Files.createFile(p);
-            Files.write(outfile, history);
+            Files.write(outfile, history.stream()
+                                        .map(sexp -> printSEx(sexp))
+                                        .collect(Collectors.toList()));
             System.out.println("wrote file '" + outfile.toString() + '\'');
         }
         catch (Exception e) {
@@ -1891,10 +1899,15 @@ public class LambdaJ {
         }
     }
 
-    private static void listHistory(List<String> history) {
-        for (String s: history) {
-            System.out.println(s);
+    private static void listHistory(List<Object> history) {
+        for (Object sexp: history) {
+            System.out.println(printSEx(sexp));
         }
+    }
+
+    private static void compileJava(List<Object> history, Object className, Object filename) {
+        MurmelJavaCompiler c = new MurmelJavaCompiler();
+        System.out.println(c.murmelFormsToJava(className.toString(), history));
     }
 
     private static void misc(String[] args) {
@@ -2085,5 +2098,154 @@ public class LambdaJ {
                 + "                          Using --XX-dyn JMurmel will no longer implement Murmel\n"
                 + "                          and your programs may silently compute different\n"
                 + "                          results!");
+    }
+
+
+
+    static class MurmelJavaCompiler {
+
+        Class <?> murmelFormsToJvm(String unitName, Iterable<Object> forms) throws Exception {
+            return javaToJvm(unitName, murmelFormsToJava(unitName, forms));
+        }
+
+        String murmelFormsToJava(String unitName, Iterable<Object> forms) {
+            StringBuffer ret = new StringBuffer();
+            ret.append("public class " + unitName + " {\n"
+                    + "    private LambdaJ intp = new LambdaJ();\n\n"
+                    + "    private static void main(String[] args) {\n"
+                    + "        try {\n"
+                    + "            body();\n"
+                    + "            return;\n"
+                    + "        } catch (LambdaJError e) {\n"
+                    + "            System.err.println(e.toString());\n"
+                    + "            System.exit(1);\n"
+                    + "        }\n"
+                    + "    }\n\n");
+
+            environment(ret);
+
+            for (Object form: forms) {
+                if (consp(form) && isSymbol(car(form), "define"))
+                    defineGlobal(ret, (ConsCell) cdr(form));
+            }
+
+            ret.append("\n    private static Object body() {\n        Object result;\n");
+            formsToJava(ret, forms);
+            ret.append("        return result;\n    }\n");
+
+            ret.append("}\n");
+            return ret.toString();
+        }
+
+        boolean isSymbol(Object form, String sym) {
+            return form.toString().equals(sym);
+        }
+
+        void defineGlobal(StringBuffer sb, ConsCell form) {
+            sb.append("    Object ").append(car(form)).append(" = ");
+            formToJava(sb, cadr(form));
+            sb.append(';').append(System.lineSeparator());
+        }
+
+        private void formsToJava(StringBuffer ret, Iterable<Object> forms) {
+            for (Object form: forms) {
+                if (!(consp(form) && isSymbol(car(form), "define"))) {
+                    ret.append("        result = ");
+                    formToJava(ret, form);
+                    ret.append(';').append(System.lineSeparator());
+                }
+            }
+        }
+
+        void formToJava(StringBuffer sb, Object form) {
+            if (atom(form)) {
+                sb.append(printSEx(form));  return;
+            }
+            if (consp(form)) {
+                final Object op = car(form);
+                Object args = cdr(form);
+
+                if (isSymbol(op, "define")) return;
+
+                if (isSymbol(op, "lambda")) {
+                    sb.append("(LambdaJ.Primitive)(arg -> { Object result;\n");
+                    formsToJava(sb, (ConsCell)cdr(args));
+                    sb.append("        return result; })");
+                    return;
+                }
+
+                // function call
+                formToJava(sb, op);
+                sb.append('(');
+                if (args != null) {
+                    formToJava(sb, car(args));
+                    args = cdr(args);
+                    if (args != null)
+                        for (Object arg: (ConsCell)args) {
+                            sb.append(", ");
+                            formToJava(sb, arg);
+                        }
+                }
+                sb.append(')');
+                return;
+            }
+            throw new LambdaJError("compile-to-java: form not implemented: " + printSEx(form));
+        }
+
+        void environment(StringBuffer sb) {
+            sb.append("    Object nil = null;\n"
+                    + "    Object t = true;\n");
+        }
+
+
+
+        Class<?> javaToJvm(String name, String java) throws Exception {
+            javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
+            StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
+            CompilationTask c = comp.getTask(null, fm, null, null, null, Collections.singletonList(new JavaSourceFromString(name, java)));
+            Boolean success = c.call();
+            if (success) {
+                return Class.forName(name, true, new MurmelClassLoader());
+            }
+            return null;
+        }
+    }
+}
+
+class JavaSourceFromString extends SimpleJavaFileObject {
+    /**
+     * The source code of this "file".
+     */
+    final String code;
+
+    /**
+     * Constructs a new JavaSourceFromString.
+     * @param name the name of the compilation unit represented by this file object
+     * @param code the source code for the compilation unit represented by this file object
+     */
+    JavaSourceFromString(String name, String code) {
+        super(java.net.URI.create("string:///" + name.replace('.','/') + Kind.SOURCE.extension),
+                Kind.SOURCE);
+        this.code = code;
+    }
+
+    @Override
+    public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+        return code;
+    }
+}
+
+class MurmelClassLoader extends ClassLoader {
+    @Override
+    public Class<?> findClass(String name) throws ClassNotFoundException {
+        try {
+            Path p = Paths.get(name + ".class");
+            if (!Files.isReadable(p)) return super.findClass(name);
+            byte[] ba = Files.readAllBytes(p);
+            return defineClass(name, ba, 0, ba.length);
+        }
+        catch (IOException e) {
+            throw new ClassNotFoundException(e.getMessage());
+        }
     }
 }
