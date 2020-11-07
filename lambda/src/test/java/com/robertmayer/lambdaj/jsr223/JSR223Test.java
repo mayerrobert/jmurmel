@@ -51,6 +51,18 @@ public class JSR223Test {
     }
 
     @Test
+    public void testScriptEngineManagerTwoExp() throws Exception {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("jmurmel");
+
+        // evaluate Murmel code
+        Object result = engine.eval("(writeln \"Hello, World!\") (writeln \"Hello again, World!\")");
+
+        // result is a LambdaJSymbol, invoke toString() to get the symbol name
+        assertEquals("t", result.toString());
+    }
+
+    @Test
     public void testScriptEngineManagerMurmelName() throws Exception {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("jmurmel");

@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.175 2020/11/06 19:06:13 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.176 2020/11/07 07:48:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1680,8 +1680,12 @@ public class LambdaJ {
         Parser scriptParser = (Parser)symtab;
         scriptParser.setInput(program);
         setReaderPrinter(scriptParser, new SExpressionWriter(out));
-        final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
-        return eval(exp, topEnv, 0, 0);
+        Object result = null;
+        while (true) {
+            final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
+            if (exp != null) result = eval(exp, topEnv, 0, 0);
+            else return result;
+        }
     }
 
 

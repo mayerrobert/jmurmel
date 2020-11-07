@@ -26,6 +26,7 @@ scope wiederbenutzen:
     ist das neue env kuerzer als das alte, erledigt sich das indem der return von zip das neue ende des env ist
 -> kein anwachsen des env bei dynamic, weniger new ConsCell bei lexical
 
+
 current-cc ist eigentlich immer cdr(form)
 -> bzw. cons(cdr(form), current_cc) oder append?!?
         -> und wie baut man das environment wieder ab?
@@ -147,8 +148,6 @@ zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange kei
 
 
 
-
-
 neuen parser: (evtl while, for (list) umsetzen?)
 program ::= stmt*
 
@@ -224,7 +223,7 @@ direkt durch die (symbol . value) tupel ersetzen? support dafuer muesste anschli
         - die arraylist bekommt eval als parameter env, eval muss dynamische symbol lookups mit assoc(symbol, env[0]) machen statt assoc(symbol, env) oder assoc wird angepasst
         - beim environment extenden fuer aufrufe aus einer closure heraus brauchts auch anpassungen -> eigentlich nicht, wenn assoc erweitert wird
         - es waer einfach, slots in der arraylist fuer selbstrekursive tailcalls wieder zu verwenden
-    
+
 
 
 printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
@@ -416,11 +415,6 @@ am besten setf weglassen, weil das macht serious magic
 
 fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
 -> oeffnende Zeile merken und ausgeben
-
-format und string-format zusammenziehen:
--> format t <string> schreibt auf stdout, return wert ist <string>
--> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
--> format-locale und string-format-locale detto
 
 
 
@@ -1460,6 +1454,11 @@ Elegant weapons
 for a more... civilized age.
 
 in readme.md nur einfache beispiele, rest in features.md und verweis auf langref
+
+format und string-format zusammenziehen:
+-> format t <string> schreibt auf stdout, return wert ist <string>
+-> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
+-> format-locale und string-format-locale detto
 
 string-format und format doch zusammenziehen:
 (format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
