@@ -9,21 +9,22 @@ java -jar jmurmel.jar [commandline arguments]* < lisp-source.lisp
 Commandline arguments are:
 
 Misc:
---version .....  show version and exit
---help ........  show this message and exit
+--version ........  show version and exit
+--help ...........  show this message and exit
 
---repl ........  enter REPL even if the input isn't a tty,
-                 i.e. print prompt and results and support :commands.
+--repl ...........  enter REPL even if the input isn't a tty,
+                    i.e. print prompt and results and support :commands.
 
---eol=LISP ....  writeln prints <EOL><argument>< >
---eol=C .......  writeln prints <argument><EOL>
+--eol=LISP .......  writeln prints <EOL><argument>< >
+--eol=C ..........  writeln prints <argument><EOL>
 
---echo ........  echo all input while reading
---trace=stats .  print stack and memory stats at end
---trace=eval ..  print internal interpreter info during executing programs
---trace=env ...  print more internal interpreter info executing programs
---trace .......  print lots of internal interpreter info during
-                 reading/ parsing/ executing programs
+--echo ...........  echo all input while reading
+--trace=stats ....  print stack and memory stats at end
+--trace=envstats .  print stack and memory stats at end
+--trace=eval .....  print internal interpreter info during executing programs
+--trace=env ......  print more internal interpreter info executing programs
+--trace ..........  print lots of internal interpreter info during
+                    reading/ parsing/ executing programs
 
 Feature flags:
 

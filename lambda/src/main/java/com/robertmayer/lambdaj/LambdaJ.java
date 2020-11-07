@@ -39,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.176 2020/11/07 07:48:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.177 2020/11/07 08:21:19 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -151,7 +151,7 @@ public class LambdaJ {
     public static final int TOKEN_MAX = 2000; // max length of string literals
     public static final int SYMBOL_MAX = 30;  // max length of symbols
 
-    public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_EVAL = 2, TRC_ENV = 3, TRC_FUNC = 4, TRC_PARSE = 5, TRC_TOK = 6, TRC_LEX = 7;
+    public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_ENVSTATS = 2, TRC_EVAL = 3, TRC_ENV = 4, TRC_FUNC = 5, TRC_PARSE = 6, TRC_TOK = 7, TRC_LEX = 8;
     private final int trace;
 
     private final Tracer tracer;
@@ -913,7 +913,7 @@ public class LambdaJ {
     }
 
     private void dbgEvalDone(String evFunc, Object exp, Object env, int stack, int level) {
-        if (trace >= TRC_STATS) {
+        if (trace >= TRC_ENVSTATS) {
             final int envLen = length(env);
             if (maxEnvLen < envLen) maxEnvLen = envLen;
             if (trace >= TRC_EVAL) {
@@ -1754,7 +1754,7 @@ public class LambdaJ {
             tracer.println("*** max stack used:    " + maxEvalStack + " ***");
 
             tracer.println("*** total ConsCells:   " + nCells + " ***");
-            tracer.println("*** max env length:    " + maxEnvLen + " ***");
+            if (trace >= TRC_ENVSTATS) tracer.println("*** max env length:    " + maxEnvLen + " ***");
 
             long millis = (long)(nanos * 0.000001D);
             String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
@@ -1888,10 +1888,11 @@ public class LambdaJ {
     }
     private static int trace(String[] args) {
         int trace = TRC_NONE;
-        if (hasFlag("--trace=stats", args)) trace = TRC_STATS;
-        if (hasFlag("--trace=eval", args))  trace = TRC_EVAL;
-        if (hasFlag("--trace=env", args))   trace = TRC_ENV;
-        if (hasFlag("--trace", args))       trace = TRC_LEX;
+        if (hasFlag("--trace=stats", args))    trace = TRC_STATS;
+        if (hasFlag("--trace=envstats", args)) trace = TRC_ENVSTATS;
+        if (hasFlag("--trace=eval", args))     trace = TRC_EVAL;
+        if (hasFlag("--trace=env", args))      trace = TRC_ENV;
+        if (hasFlag("--trace", args))          trace = TRC_LEX;
         return trace;
     }
 
@@ -1977,21 +1978,22 @@ public class LambdaJ {
                 + "Commandline arguments are:\n"
                 + "\n"
                 + "Misc:\n"
-                + "--version .....  show version and exit\n"
-                + "--help ........  show this message and exit\n"
+                + "--version ........  show version and exit\n"
+                + "--help ...........  show this message and exit\n"
                 + "\n"
-                + "--repl ........  enter REPL even if the input isn't a tty,\n"
-                + "                 i.e. print prompt and results and support :commands.\n"
+                + "--repl ...........  enter REPL even if the input isn't a tty,\n"
+                + "                    i.e. print prompt and results and support :commands.\n"
                 + "\n"
-                + "--eol=LISP ....  writeln prints <EOL><argument>< >\n"
-                + "--eol=C .......  writeln prints <argument><EOL>\n"
+                + "--eol=LISP .......  writeln prints <EOL><argument>< >\n"
+                + "--eol=C ..........  writeln prints <argument><EOL>\n"
                 + "\n"
-                + "--echo ........  echo all input while reading\n"
-                + "--trace=stats .  print stack and memory stats at end\n"
-                + "--trace=eval ..  print internal interpreter info during executing programs\n"
-                + "--trace=env ...  print more internal interpreter info executing programs\n"
-                + "--trace .......  print lots of internal interpreter info during\n"
-                + "                 reading/ parsing/ executing programs\n"
+                + "--echo ...........  echo all input while reading\n"
+                + "--trace=stats ....  print stack and memory stats at end\n"
+                + "--trace=envstats .  print stack and memory stats at end\n"
+                + "--trace=eval .....  print internal interpreter info during executing programs\n"
+                + "--trace=env ......  print more internal interpreter info executing programs\n"
+                + "--trace ..........  print lots of internal interpreter info during\n"
+                + "                    reading/ parsing/ executing programs\n"
                 + "\n"
                 + "Feature flags:\n"
                 + "\n"
