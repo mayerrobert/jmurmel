@@ -20,7 +20,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.zone.ZoneRules;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.IllegalFormatConversionException;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
@@ -40,7 +39,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.174 2020/11/06 17:35:14 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.175 2020/11/06 19:06:13 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -68,11 +67,10 @@ public class LambdaJ {
     public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1L;
 
-        public LambdaJError(String msg) { super(msg, null, false, false); }
-        public LambdaJError(boolean format, String msg, Object... params) {
-            super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false);
-        }
+        public LambdaJError(String msg)                                    { super(msg, null, false, false); }
+        public LambdaJError(boolean format,  String msg, Object... params) { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
         public LambdaJError(Throwable cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause); }
+
         @Override public String toString() { return "Error: " + getMessage(); }
 
         private static String getErrorExp(Object[] params) {
@@ -150,7 +148,8 @@ public class LambdaJ {
 
     /// Infrastructure
     public static final int EOF = -1;
-    public static final int TOKEN_MAX = 2000; // max length of symbols and literals
+    public static final int TOKEN_MAX = 2000; // max length of string literals
+    public static final int SYMBOL_MAX = 30;  // max length of symbols
 
     public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_EVAL = 2, TRC_ENV = 3, TRC_FUNC = 4, TRC_PARSE = 5, TRC_TOK = 6, TRC_LEX = 7;
     private final int trace;
@@ -309,7 +308,7 @@ public class LambdaJ {
                 } else if (isBar(look)) {
                     look = getchar();
                     do {
-                        if (index < TOKEN_MAX) token[index++] = look;
+                        if (index < SYMBOL_MAX) token[index++] = look;
                         look = getchar();
                     } while (look != EOF && !isBar(look));
                     if (look == EOF) throw new LambdaJError(true, "line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
@@ -322,6 +321,7 @@ public class LambdaJ {
                 }
             }
             token[index] = '\0';
+
             if (haveDouble() && isNumber()) {
                 try {
                     String s = tokenToString(token);
@@ -336,7 +336,9 @@ public class LambdaJ {
             } else if (token[0] == '\0'){
                 tok = null;
             } else {
-                tok = new LambdaJSymbol(tokenToString(token));
+                String s = tokenToString(token);
+                if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
+                tok = new LambdaJSymbol(s);
             }
             if (trace >= TRC_LEX)
                 tracer.println("*** scan  token  |" + tok + '|');

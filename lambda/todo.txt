@@ -7,8 +7,6 @@ lambda parameternamen auch nicht, koennte ein problem sein
 
 tests von lis.py verpacken
 
-behandlung von nil beschreiben (Lisp <> Scheme)
-
 mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
 
 eval, interpretExpressions & Co aendern:
@@ -1466,3 +1464,5 @@ in readme.md nur einfache beispiele, rest in features.md und verweis auf langref
 string-format und format doch zusammenziehen:
 (format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
 (format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
+
+behandlung von nil beschreiben (Lisp <> Scheme)

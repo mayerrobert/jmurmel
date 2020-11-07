@@ -86,28 +86,28 @@
 
 ; atoms that are symbols
 a-symbol
-|a symbol|         ;|a symbol|
-a\ symbol          ;a\ symbol
-
-; a single quote is a shorthand for (quote an-expression)
-an-expression
-
-; a dotted pair
-(a . b)            ;(a . b)
-
-; a dotted list
-(a . (b . (c . d)));(a . (b . (c . d)))
-
-; shorthand for dotted list   ==> (a b c . d)
-(a b c . d)        ;(a b c . d)
-
-; a proper list       ==> (a b c)
-(a . (b . (c . ()))) ;(a . (b . (c . ())))
-
-; shorthand for a proper list ==> (a b c)
-(a b c)            ;(a b c)
+|a symbol|         ; |a symbol|
+a\ symbol          ; a\ symbol
 
 )
+
+; a single quote is a shorthand for (quote an-expression)
+'an-expression
+
+; a dotted pair
+'(a . b)            ;(a . b)
+
+; a dotted list
+'(a . (b . (c . d)));(a . (b . (c . d)))
+
+; shorthand for dotted list   ==> (a b c . d)
+'(a b c . d)        ;(a b c . d)
+
+; a proper list       ==> (a b c)
+'(a . (b . (c . ()))) ;(a . (b . (c . ())))
+
+; shorthand for a proper list ==> (a b c)
+'(a b c)            ;(a b c)
 
 
 ;;; == Predefined Symbols =============
@@ -163,17 +163,17 @@ internal-time-units-per-second
 ;;; may support additional atoms.
 
 ; A symbol. Murmel treats symbols case-insensitive.
+; Symbol names are of arbitrary length, however only the
+; first 30 chars are significant.
+;
 ; Implementation note: JMurmel preserves the
 ; capitalization of the first encounter of a symbol
 ; for printing, e.g.:
 ; '(AbC . dEf) -> (AbC . dEf)
 ; but
 ; '(AbC . abc) -> (AbC . AbC)
-'*a-sample-symbol*
 
-; Guess (hint: it'a symbol with embedded spaces).
-; Max symbol length is 2000 chars, anything longer
-; will be silently truncated
+'*a-sample-symbol*
 'a\ symbol\ with\ spaces!
 
 ; empty list, printed as "nil"
@@ -195,9 +195,26 @@ nil
 ; a number in scientific notation
 1e3
 
-; strings literals are max length 2000 chars, too
+; strings literals are max length 2000 chars
 "a string literal"
 "another 'literal' \"string literal\""
+
+
+;;; == NIL and T ======================
+
+; Murmel treats the symbols NIL and T almost the same way
+; as Mr. Moon specified them in a Memo (see "The Evolution
+; of Lisp pp 62):
+;
+; "NIL is a symbol, the empty list, and the distinguished
+; "false" value. SYMBOLP, ATOM, and LISTP are true of it;
+; CONSP is not. CAR, CDR,and EVAL of NIL are NIL.
+; NIL may not be used as a function, nor as a variable."
+;
+; "T is a symbol and the default "true" value used by predicates that
+; are not semi-predicates (i.e., that don’t return "meaningful" values
+; when they are true.) EVAL of T is T. T may not be used as a variable.
+; T is a keyword recognized by certainfunctions, such as FORMAT."
 
 
 ;;; == Additional Special Forms =======
@@ -398,4 +415,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.11 2020/11/04 18:58:30 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.12 2020/11/06 17:35:13 Robert Exp $
