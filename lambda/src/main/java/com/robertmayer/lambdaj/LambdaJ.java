@@ -5,12 +5,16 @@ For a copy, see https://opensource.org/licenses/MIT. */
 
 package com.robertmayer.lambdaj;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -39,7 +43,7 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.178 2020/11/07 08:47:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.179 2020/11/07 09:16:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1810,6 +1814,7 @@ public class LambdaJ {
             System.out.println();
         }
 
+        final List<String> history = new ArrayList<>();
         boolean isInit = false;
         SExpressionParser parser = null;
         ObjectWriter outWriter = null;
@@ -1848,7 +1853,10 @@ public class LambdaJ {
                     if (":echo"  .equals(exp.toString())) { echoHolder.value = true; continue; }
                     if (":noecho".equals(exp.toString())) { echoHolder.value = false; continue; }
                     if (":env"   .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                    if (":init"  .equals(exp.toString())) { isInit = false;  continue; }
+                    if (":init"  .equals(exp.toString())) { isInit = false; history.clear();  continue; }
+                    if (":l"     .equals(exp.toString())) { listHistory(history); continue; }
+                    if (":w"     .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
+                    history.add(printSEx(exp));
                 }
 
                 long tStart = System.nanoTime();
@@ -1868,6 +1876,24 @@ public class LambdaJ {
                     System.exit(1);
                 }
             }
+        }
+    }
+
+    private static void writeHistory(List<String> history, Object filename) {
+        try {
+            Path p = Paths.get(filename.toString());
+            Path outfile = Files.createFile(p);
+            Files.write(outfile, history);
+            System.out.println("wrote file '" + outfile.toString() + '\'');
+        }
+        catch (Exception e) {
+            System.out.println("history NOT written - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+    private static void listHistory(List<String> history) {
+        for (String s: history) {
+            System.out.println(s);
         }
     }
 
@@ -1954,12 +1980,14 @@ public class LambdaJ {
 
     private static void showHelp() {
         System.out.println("Available commands:");
-        System.out.println("  :h ........ this help screen");
-        System.out.println("  :echo ..... print forms to screen before eval'ing");
-        System.out.println("  :noecho ... don't print forms");
-        System.out.println("  :env ...... list current global environment");
-        System.out.println("  :init ..... re-init global environment");
-        System.out.println("  :q ........ quit LambdaJ");
+        System.out.println("  :h .............. this help screen");
+        System.out.println("  :echo ........... print forms to screen before eval'ing");
+        System.out.println("  :noecho ......... don't print forms");
+        System.out.println("  :env ............ list current global environment");
+        System.out.println("  :init ........... re-init global environment, clear history");
+        System.out.println("  :l .............. print history to a the screen");
+        System.out.println("  :w <filename> ... write history to a new file with the given filename");
+        System.out.println("  :q .............. quit LambdaJ");
         System.out.println();
     }
 

@@ -1,9 +1,17 @@
+filevariablen statt der gefaehrlichen cmdline args
+
+global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
+lambda parameternamen auch nicht, koennte ein problem sein
+
 lisp eol von cmdline parameter auf lisp global umstellen
 -> oder write uebernimmt keyword/value tupel: (write obj flags...), z.B.
 (write "Hallo" (list ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t)))
 
-global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
-lambda parameternamen auch nicht, koennte ein problem sein
+JSR223 vielleicht in ein zweites jar verpacken?
+
+
+
+
 
 tests von lis.py verpacken
 
@@ -236,8 +244,6 @@ ObjectWriter -> LispPrinter, #printObj -> #print
 
 
 synchronized ueberlegen
-
-JSR223 vielleicht in ein zweites jar verpacken?
 
 
 
