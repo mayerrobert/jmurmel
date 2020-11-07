@@ -1,11 +1,16 @@
+filenamen an der befehlszeile
+
 filevariablen statt der gefaehrlichen cmdline args
 
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
 lambda parameternamen auch nicht, koennte ein problem sein
 
 lisp eol von cmdline parameter auf lisp global umstellen
--> oder write uebernimmt keyword/value tupel: (write obj flags...), z.B.
-(write "Hallo" (list ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t)))
+-> oder write uebernimmt liste mit keyword/value tupel: (write obj flags...), z.B.
+   (write "Hallo" (list ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t)))
+-> oder write uebernimmt *optionale* liste, fallback ist eine globale variable *print-environment* mit soner liste
+   (write "Hallo") ; write benutzt *print-environment*
+   (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
 
 JSR223 vielleicht in ein zweites jar verpacken?
 
