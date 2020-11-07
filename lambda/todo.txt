@@ -483,12 +483,6 @@ primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht e
 double lesbar ist, gibts NaN
 primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
 
-alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mit :l auflisten
-weitere debug gschichten wie zb :env fuer environment auflisten
--> Scala: https://learnxinyminutes.com/docs/scala/
-// REPL sessions can be saved
-scala> :save /sites/repl-test.scala
-
 // Files can be loaded into the REPL
 scala> :load /sites/repl-test.scala
 Loading /sites/repl-test.scala...
@@ -1471,3 +1465,9 @@ string-format und format doch zusammenziehen:
 (format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
 
 behandlung von nil beschreiben (Lisp <> Scheme)
+
+alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mit :l auflisten
+weitere debug gschichten wie zb :env fuer environment auflisten
+-> Scala: https://learnxinyminutes.com/docs/scala/
+// REPL sessions can be saved
+scala> :save /sites/repl-test.scala
