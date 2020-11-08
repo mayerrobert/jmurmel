@@ -68,7 +68,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.184 2020/11/08 15:11:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.185 2020/11/08 17:45:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -190,57 +190,61 @@ public class LambdaJ {
 
     private final Tracer tracer;
 
-    public static final int
-    HAVE_LABELS = 1,                   // use Y-combinator instead
-    HAVE_NIL    = 1<<2, HAVE_T = 1<<3, // use () and (quote t) instead. printObj will print nil regardless
-    HAVE_XTRA   = 1<<4,                // extra special forms such as if
-    HAVE_DOUBLE = 1<<5,                // numbers, +-<>..., numberp, remaining datatypes are symbls and cons-cells (lists)
-    HAVE_LONG   = 1<<6,                // turns on only Long support in the reader, you'll want DOUBLE as well
-    HAVE_STRING = 1<<7,                // strings, string literals of string related functions
-    HAVE_IO     = 1<<8,                // read/ write, result only
-    HAVE_UTIL   = 1<<9,                // null?, consp, listp, symbolp, assoc
-    HAVE_APPLY  = 1<<10,               // McCarthy didn't list apply
-    HAVE_CONS   = 1<<11,
-    HAVE_COND   = 1<<12,
-    HAVE_ATOM   = 1<<13,
-    HAVE_EQ     = 1<<14,
-    HAVE_QUOTE  = 1<<15,
+    public enum Features {
+        HAVE_LAMBDA,         // untyped lambda calculus with dynamic environments, S-expressions, that's all
 
-    HAVE_LEXC   = 1<<16,
+        HAVE_LABELS,         // without labels: use Z-combinator (imperative version of the Y-combinator)
+        HAVE_NIL, HAVE_T,    // use () and (quote t) instead. printObj will print nil regardless
+        HAVE_XTRA,           // extra special forms such as if
+        HAVE_DOUBLE,         // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
+        HAVE_LONG,           // turns on only Long support in the reader, you'll want DOUBLE as well
+        HAVE_STRING,         // strings, string literals and string related functions
+        HAVE_IO,             // read/ write, without it only the result will be printed
+        HAVE_UTIL,           // not, consp, listp, symbolp, assoc
+        HAVE_APPLY,          // McCarthy didn't list apply, he probalby implied eval, tough
+        HAVE_CONS,
+        HAVE_COND,
+        HAVE_ATOM,
+        HAVE_EQ,
+        HAVE_QUOTE,
 
-    HAVE_LISPEOL = 1 << 17,
+        HAVE_LEXC,           // use lexical environments with dynamic global environment
 
+        HAVE_LISPEOL,        // default for writeln is "<obj>\n", with this flag it's "\n<obj> "
 
-    HAVE_LAMBDA     = 0,
-    HAVE_LAMBDAPLUS = HAVE_LAMBDA | HAVE_ATOM | HAVE_QUOTE | HAVE_EQ,
-    HAVE_MIN        = HAVE_LAMBDAPLUS | HAVE_CONS | HAVE_COND,
-    HAVE_MINPLUS    = HAVE_MIN | HAVE_APPLY | HAVE_LABELS,
-    HAVE_ALL_DYN    = HAVE_MINPLUS | HAVE_NIL | HAVE_T | HAVE_XTRA | HAVE_DOUBLE | HAVE_LONG | HAVE_STRING | HAVE_IO | HAVE_UTIL,
+        HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
+        HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
+        HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits(); } },
+        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_XTRA.bits() | HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_UTIL.bits(); } },
 
-    HAVE_ALL_LEXC   = HAVE_ALL_DYN | HAVE_LEXC;
-    ;
+        HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
+        ;
+
+        public int bits() { return 1 << ordinal(); }
+    }
+
     private final int features;
 
-    private boolean haveLabels()  { return (features & HAVE_LABELS)  != 0; }
-    private boolean haveNil()     { return (features & HAVE_NIL)     != 0; }
-    private boolean haveT()       { return (features & HAVE_T)       != 0; }
-    private boolean haveXtra()    { return (features & HAVE_XTRA)    != 0; }
-    private boolean haveDouble()  { return (features & HAVE_DOUBLE)  != 0; }
-    private boolean haveLong()    { return (features & HAVE_LONG)    != 0; }
-    private boolean haveString()  { return (features & HAVE_STRING)  != 0; }
-    private boolean haveIO()      { return (features & HAVE_IO)      != 0; }
-    private boolean haveUtil()    { return (features & HAVE_UTIL)    != 0; }
-    private boolean haveApply()   { return (features & HAVE_APPLY)   != 0; }
-    private boolean haveCons()    { return (features & HAVE_CONS)    != 0; }
-    private boolean haveCond()    { return (features & HAVE_COND)    != 0; }
-    private boolean haveAtom()    { return (features & HAVE_ATOM)    != 0; }
-    private boolean haveEq()      { return (features & HAVE_EQ)      != 0; }
-    private boolean haveQuote()   { return (features & HAVE_QUOTE)   != 0; }
-    private boolean haveLexC()    { return (features & HAVE_LEXC)    != 0; }
-    private boolean haveLispEOL() { return (features & HAVE_LISPEOL) != 0; }
+    private boolean haveLabels()  { return (features & Features.HAVE_LABELS.bits())  != 0; }
+    private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
+    private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
+    private boolean haveXtra()    { return (features & Features.HAVE_XTRA.bits())    != 0; }
+    private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
+    private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
+    private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
+    private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
+    private boolean haveUtil()    { return (features & Features.HAVE_UTIL.bits())    != 0; }
+    private boolean haveApply()   { return (features & Features.HAVE_APPLY.bits())   != 0; }
+    private boolean haveCons()    { return (features & Features.HAVE_CONS.bits())    != 0; }
+    private boolean haveCond()    { return (features & Features.HAVE_COND.bits())    != 0; }
+    private boolean haveAtom()    { return (features & Features.HAVE_ATOM.bits())    != 0; }
+    private boolean haveEq()      { return (features & Features.HAVE_EQ.bits())      != 0; }
+    private boolean haveQuote()   { return (features & Features.HAVE_QUOTE.bits())   != 0; }
+    private boolean haveLexC()    { return (features & Features.HAVE_LEXC.bits())    != 0; }
+    private boolean haveLispEOL() { return (features & Features.HAVE_LISPEOL.bits()) != 0; }
 
     public LambdaJ() {
-        this(HAVE_ALL_LEXC, TraceLevel.TRC_NONE, null);
+        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null);
     }
 
     public LambdaJ(int features, TraceLevel trace, Tracer tracer) {
@@ -1979,33 +1983,33 @@ public class LambdaJ {
     }
 
     private static int features(String[] args) {
-        int features = HAVE_ALL_LEXC;
-        if (hasFlag("--XX-dyn", args))      features =  HAVE_ALL_DYN;
+        int features = Features.HAVE_ALL_LEXC.bits();
+        if (hasFlag("--XX-dyn", args))      features =  Features.HAVE_ALL_DYN.bits();
 
-        if (hasFlag("--no-nil", args))      features &= ~HAVE_NIL;
-        if (hasFlag("--no-t", args))        features &= ~HAVE_T;
-        if (hasFlag("--no-extra", args))    features &= ~HAVE_XTRA;
-        if (hasFlag("--no-number", args))   features &= ~(HAVE_DOUBLE | HAVE_LONG);
-        if (hasFlag("--no-string", args))   features &= ~HAVE_STRING;
-        if (hasFlag("--no-io", args))       features &= ~HAVE_IO;
-        if (hasFlag("--no-util", args))     features &= ~HAVE_UTIL;
+        if (hasFlag("--no-nil", args))      features &= ~Features.HAVE_NIL.bits();
+        if (hasFlag("--no-t", args))        features &= ~Features.HAVE_T.bits();
+        if (hasFlag("--no-extra", args))    features &= ~Features.HAVE_XTRA.bits();
+        if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
+        if (hasFlag("--no-string", args))   features &= ~Features.HAVE_STRING.bits();
+        if (hasFlag("--no-io", args))       features &= ~Features.HAVE_IO.bits();
+        if (hasFlag("--no-util", args))     features &= ~Features.HAVE_UTIL.bits();
 
-        if (hasFlag("--no-labels", args))   features &= ~HAVE_LABELS;
-        if (hasFlag("--no-cons", args))     features &= ~HAVE_CONS;
-        if (hasFlag("--no-cond", args))     features &= ~HAVE_COND;
-        if (hasFlag("--no-apply", args))    features &= ~HAVE_APPLY;
+        if (hasFlag("--no-labels", args))   features &= ~Features.HAVE_LABELS.bits();
+        if (hasFlag("--no-cons", args))     features &= ~Features.HAVE_CONS.bits();
+        if (hasFlag("--no-cond", args))     features &= ~Features.HAVE_COND.bits();
+        if (hasFlag("--no-apply", args))    features &= ~Features.HAVE_APPLY.bits();
 
-        if (hasFlag("--no-atom", args))     features &= ~HAVE_ATOM;
-        if (hasFlag("--no-eq", args))       features &= ~HAVE_EQ;
-        if (hasFlag("--no-quote", args))    features &= ~HAVE_QUOTE;
+        if (hasFlag("--no-atom", args))     features &= ~Features.HAVE_ATOM.bits();
+        if (hasFlag("--no-eq", args))       features &= ~Features.HAVE_EQ.bits();
+        if (hasFlag("--no-quote", args))    features &= ~Features.HAVE_QUOTE.bits();
 
-        if (hasFlag("--min+", args))        features =  HAVE_MINPLUS;
-        if (hasFlag("--min", args))         features =  HAVE_MIN;
-        if (hasFlag("--lambda+", args))     features =  HAVE_LAMBDAPLUS;
-        if (hasFlag("--lambda", args))      features =  HAVE_LAMBDA;
+        if (hasFlag("--min+", args))        features =  Features.HAVE_MINPLUS.bits();
+        if (hasFlag("--min", args))         features =  Features.HAVE_MIN.bits();
+        if (hasFlag("--lambda+", args))     features =  Features.HAVE_LAMBDAPLUS.bits();
+        if (hasFlag("--lambda", args))      features =  Features.HAVE_LAMBDA.bits();
 
-        if (hasFlag("--eol=C", args))       features &= ~HAVE_LISPEOL;
-        if (hasFlag("--eol=LISP", args))    features |= HAVE_LISPEOL;
+        if (hasFlag("--eol=C", args))       features &= ~Features.HAVE_LISPEOL.bits();
+        if (hasFlag("--eol=LISP", args))    features |= Features.HAVE_LISPEOL.bits();
         return features;
     }
 
