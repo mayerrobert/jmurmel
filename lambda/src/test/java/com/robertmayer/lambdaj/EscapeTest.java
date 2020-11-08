@@ -15,8 +15,8 @@ public class EscapeTest {
         assertEquals("(he\"lo)", cell.toString());
 
         // SExpressionWriter#printObj() should write ("he\"lo")
-        StringBuffer sExp = new StringBuffer();
-        new LambdaJ().new SExpressionWriter(sExp::append).printObj(cell);
+        StringBuilder sExp = new StringBuilder();
+        new LambdaJ.SExpressionWriter(sExp::append).printObj(cell);
         assertEquals("(\"he\\\"lo\")", sExp.toString());
     }
 
@@ -29,8 +29,8 @@ public class EscapeTest {
         assertEquals("(he\\lo)", cell.toString());
 
         // SExpressionWriter#printObj() should write ("he\\lo")
-        StringBuffer sExp = new StringBuffer();
-        new LambdaJ().new SExpressionWriter(sExp::append).printObj(cell);
+        StringBuilder sExp = new StringBuilder();
+        new LambdaJ.SExpressionWriter(sExp::append).printObj(cell);
         assertEquals("(\"he\\\\lo\")", sExp.toString());
     }
 
@@ -43,8 +43,8 @@ public class EscapeTest {
         assertEquals("(he lo)", cell.toString());
 
         // SExpressionWriter#printObj() should write (|he lo|)
-        StringBuffer sExp = new StringBuffer();
-        new LambdaJ().new SExpressionWriter(sExp::append).printObj(cell);
+        StringBuilder sExp = new StringBuilder();
+        new LambdaJ.SExpressionWriter(sExp::append).printObj(cell);
         assertEquals("(|he lo|)", sExp.toString());
     }
 
@@ -57,8 +57,8 @@ public class EscapeTest {
         assertEquals("(he(lo)", cell.toString());
 
         // SExpressionWriter#printObj() should write (|he(lo|)
-        StringBuffer sExp = new StringBuffer();
-        new LambdaJ().new SExpressionWriter(sExp::append).printObj(cell);
+        StringBuilder sExp = new StringBuilder();
+        new LambdaJ.SExpressionWriter(sExp::append).printObj(cell);
         assertEquals("(|he(lo|)", sExp.toString());
     }
 }

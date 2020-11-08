@@ -14,7 +14,7 @@ public class EmbeddedConsTest {
     @Test
     public void testCons() {
         final LambdaJ interpreter = new LambdaJ();
-        final StringBuffer out = new StringBuffer();
+        final StringBuilder out = new StringBuilder();
         final Object result = interpreter.interpretExpression(new StringReader("(cons 'a 'b)")::read, out::append);
 
         assertEquals("(a . b)", result.toString());

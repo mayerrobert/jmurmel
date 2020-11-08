@@ -14,7 +14,7 @@ public class EmbeddedListTest {
     @Test
     public void testList() {
         final LambdaJ interpreter = new LambdaJ();
-        final StringBuffer out = new StringBuffer();
+        final StringBuilder out = new StringBuilder();
         final Object result = interpreter.interpretExpression(new StringReader("(cons 'a (cons 'b nil))")::read, out::append);
 
         assertEquals("(a b)", result.toString());

@@ -303,7 +303,7 @@ public class LambdaJTest {
      * @param expectedOutput    expected contents of stdout, null or "" for no output
      */
     static void runTest(String fileName, String prog, String expectedResult, String expectedOutput) {
-        final StringBuffer out = new StringBuffer();
+        final StringBuilder out = new StringBuilder();
 
         // turn off long so I don't have to adjust all tests
         final int features = LambdaJ.HAVE_ALL_LEXC & ~LambdaJ.HAVE_LONG | LambdaJ.HAVE_DOUBLE;
@@ -342,8 +342,8 @@ public class LambdaJTest {
         // or an Atom which really is a Java Object such as String (Lisp symbols) or Double (Lisp numbers)
         return exp.toString();
         */
-        StringBuffer sExp = new StringBuffer();
-        intp.new SExpressionWriter(sExp::append).printObj(exp);
+        StringBuilder sExp = new StringBuilder();
+        new LambdaJ.SExpressionWriter(sExp::append).printObj(exp);
         return sExp.toString();
     }
 }

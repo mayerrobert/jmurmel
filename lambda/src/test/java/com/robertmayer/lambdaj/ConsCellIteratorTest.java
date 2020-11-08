@@ -22,7 +22,7 @@ public class ConsCellIteratorTest {
         }
         assertEquals(3, n);
 
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         list.forEach(car -> b.append(car));
         assertEquals("abc", b.toString());
     }
@@ -39,7 +39,7 @@ public class ConsCellIteratorTest {
         }
         assertEquals(2, n);
 
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         cell.forEach(car -> b.append(car));
         assertEquals("ab", b.toString());
     }

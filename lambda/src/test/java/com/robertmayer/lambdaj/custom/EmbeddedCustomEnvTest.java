@@ -13,7 +13,6 @@ import com.robertmayer.lambdaj.LambdaJ.ObjectReader;
 import com.robertmayer.lambdaj.LambdaJ.ObjectWriter;
 import com.robertmayer.lambdaj.LambdaJ.Parser;
 import com.robertmayer.lambdaj.LambdaJ.Primitive;
-import com.robertmayer.lambdaj.LambdaJ.SExpressionParser;
 
 public class EmbeddedCustomEnvTest {
 
@@ -29,8 +28,8 @@ public class EmbeddedCustomEnvTest {
         // empty "file" for stdin, simply return EOF
         ObjectReader inReader = () -> -1;
 
-        // collect stdout of the Lisp program in a StringBuffer
-        StringBuffer outBuffer = new StringBuffer();
+        // collect stdout of the Lisp program in a StringBuilder
+        StringBuilder outBuffer = new StringBuilder();
         ObjectWriter outWriter = new ObjectWriter() {
             @Override public void printObj(Object o) {
                 outBuffer.append(o); // if a cons cell was to be printed this will invoke it's toString() method
