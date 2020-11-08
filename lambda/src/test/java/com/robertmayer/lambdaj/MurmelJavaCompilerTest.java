@@ -15,7 +15,7 @@ public class MurmelJavaCompilerTest {
     @Test
     public void testSimpleClass() throws Exception {
         MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target"));
-        Class<?> clazz = c.javaToClass("Test", "class Test { int i; }", "target");
+        Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
         assertNotNull(clazz);
     }
 
@@ -43,7 +43,7 @@ public class MurmelJavaCompilerTest {
             program.add(sexp);
         }
 
-        Class<LambdaJ.MurmelJavaRuntime> murmelClass = c.formsToApplicationClass("Test", program, "target");
+        Class<LambdaJ.MurmelJavaRuntime> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
         assertNotNull(murmelClass);
 
         LambdaJ.MurmelJavaRuntime compiled = murmelClass.newInstance();

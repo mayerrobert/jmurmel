@@ -1,6 +1,6 @@
-generierte klassen in ein jar zsammpacken
+Murmel2Java fertigmachen, TCO: wahrscheinlich mit CPS
 
-Murmel2Java fertigmachen
+die generierten programme koennten ein cmd arg "--repl" unterstuetzen: mit dem arg gibts nach body() kein exit() sondern repl()
 
 filenamen an der befehlszeile
 
@@ -1503,3 +1503,5 @@ void compileWithJSR199() throws IOException {
     }
 }
 -> geht so nicht, jar muss man selber zsammpacken
+
+generierte klassen in ein jar zsammpacken: https://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file

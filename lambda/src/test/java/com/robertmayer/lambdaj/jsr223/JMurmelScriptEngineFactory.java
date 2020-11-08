@@ -31,7 +31,7 @@ public class JMurmelScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getEngineName() {
-        return "JMurmel: Java based interpreter for Murmel";
+        return LambdaJ.ENGINE_NAME;
     }
 
     @Override

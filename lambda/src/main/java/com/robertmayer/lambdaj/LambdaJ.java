@@ -7,6 +7,7 @@ package com.robertmayer.lambdaj;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -41,6 +42,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import javax.tools.JavaCompiler;
@@ -59,7 +64,8 @@ public class LambdaJ {
 
     /// Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.181 2020/11/07 16:49:31 Robert Exp $";
+    public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.182 2020/11/08 09:11:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1917,7 +1923,7 @@ public class LambdaJ {
     }
 
     private static void compileToJava(List<Object> history, Object className, Object filename) {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target")); // todo tempdir
+        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         if (null == filename) {
             System.out.println(c.formsToJavaProgram(className.toString(), history));
             return;
@@ -2166,7 +2172,26 @@ public class LambdaJ {
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
         public Class <MurmelJavaRuntime> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
-            return (Class<MurmelJavaRuntime>) javaToClass(unitName, formsToJavaProgram(unitName, forms), jarFile);
+            Class<MurmelJavaRuntime> program = (Class<MurmelJavaRuntime>) javaToClass(unitName, formsToJavaProgram(unitName, forms));
+            if (jarFile == null) return program;
+
+            final Manifest mf = new Manifest();
+            mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
+            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
+            mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, unitName);
+            mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, "jmurmel-1.0-SNAPSHOT.jar"); // todo nicht das jar hier hardcoded, entweder alle jmurmel klassen ins jar stecken oder i-wie konfigurierbar
+            final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFile), mf);
+
+            // todo klassen mit pkg
+            final JarEntry entry = new JarEntry(unitName + ".class");
+            entry.setTime(System.currentTimeMillis());
+            jar.putNextEntry(entry);
+            jar.write(murmelClassLoader.getBytes(unitName));
+            jar.closeEntry();
+
+            jar.close();
+            return program;
         }
 
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
@@ -2186,10 +2211,10 @@ public class LambdaJ {
                     + "        final " + clsName + " program = new " + clsName + "();\n"
                     + "        try {\n"
                     + "            Object result = program.body();\n"
-                    + "            if (result != null) { System.out.print(\"==> \"); program.write.apply(result); System.out.println(); }\n"
+                    + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program.write.apply(result); System.out.println(); }\n"
                     + "            return;\n"
                     + "        } catch (LambdaJ.LambdaJError e) {\n"
-                    + "            System.err.println(e.toString());\n"
+                    + "            System.err.println(e.getMessage());\n"
                     + "            System.exit(1);\n"
                     + "        }\n"
                     + "    }\n\n");
@@ -2269,13 +2294,11 @@ public class LambdaJ {
 
 
         /** Compile Java sourcecode of class {@className} to Java bytecode */
-        public Class<?> javaToClass(String className, String javaSource, String clsDir) throws Exception {
+        public Class<?> javaToClass(String className, String javaSource) throws Exception {
             final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
             final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
             try {
-                if (clsDir != null) {
-                    fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(new File(clsDir)));
-                }
+                fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPathFile()));
                 final CompilationTask c = comp.getTask(null, fm, null, null, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
                 if (c.call()) {
                     return Class.forName(className, true, murmelClassLoader);
@@ -2319,14 +2342,20 @@ class MurmelClassLoader extends ClassLoader {
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
-            Path p = outPath.resolve(Paths.get(name + ".class"));
-            if (!Files.isReadable(p)) return super.findClass(name);
-            byte[] ba = Files.readAllBytes(p);
-            p.toFile().deleteOnExit();
+            byte[] ba = getBytes(name);
+            if (ba == null) return super.findClass(name);
             return defineClass(name, ba, 0, ba.length);
         }
         catch (IOException e) {
             throw new ClassNotFoundException(e.getMessage());
         }
+    }
+
+    File getOutPathFile() { return outPath.toFile(); }
+    byte[] getBytes(String name) throws IOException {
+        Path p = outPath.resolve(Paths.get(name + ".class"));
+        if (!Files.isReadable(p)) return null;
+        p.toFile().deleteOnExit();
+        return Files.readAllBytes(p);
     }
 }
