@@ -55,7 +55,10 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
-/** <p>Interpreter for the Lisp-dialect Murmel. Could probably read top-down like a book.
+/** <p>Implementation of JMurmel, an interpreter for the Lisp-dialect Murmel.
+ *  Can be used as a standalone commandline application as well as embedded in a Java program.
+ *
+ *  <p>The source code for this class could probably be read from top to bottom like a book.
  *
  *  <p>Comments starting with '///' could be considered similar to headings or chapter titles.
  *  You may want to run 'grep " ///" LambdaJ.java' to get something like birds-eye-view
@@ -65,7 +68,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.183 2020/11/08 11:58:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.184 2020/11/08 15:11:00 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -73,7 +76,7 @@ public class LambdaJ {
     @FunctionalInterface public interface Tracer { void println(String msg); }
 
     @FunctionalInterface public interface ObjectReader { Object readObj(); }
-    public interface SymbolTable { Object intern(LambdaJSymbol symbol); }
+    public interface SymbolTable { LambdaJSymbol intern(LambdaJSymbol symbol); }
     public interface Parser extends ObjectReader, SymbolTable {
         default void setInput(ReadSupplier input) {
             throw new UnsupportedOperationException("This parser does not support changing input");
@@ -108,6 +111,8 @@ public class LambdaJ {
 
 
     /// Data types used by interpreter program as well as interpreted programs
+
+    /** Main building block for Lisp-lists */
     public static class ConsCell implements Iterable<Object>, Serializable {
         private static class ConsCellIterator implements Iterator<Object> {
             private final ConsCell coll;
@@ -138,24 +143,25 @@ public class LambdaJ {
         @Override public String toString() { return printObj(this); }
         @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
 
-        public ConsCell closure() { return null; }
+        ConsCell closure() { return null; }
     }
 
-    public static class SExpConsCell extends ConsCell {
+    private static class SExpConsCell extends ConsCell {
         private static final long serialVersionUID = 1L;
         private final int lineNo, charNo;
         public SExpConsCell(int line, int charNo, Object car, Object cdr)    { super(car, cdr); this.lineNo = line; this.charNo = charNo; }
     }
 
-    public static class ClosureConsCell extends ConsCell {
+    private static class ClosureConsCell extends ConsCell {
         private static final long serialVersionUID = 1L;
         private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
         public ClosureConsCell(Object car, Object cdr, ConsCell closure)    { super(car, cdr); this.closure = closure; }
 
         @Override
-        public ConsCell closure() { return closure; }
+        ConsCell closure() { return closure; }
     }
 
+    /** A murmel symbol name */
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String value;
@@ -174,10 +180,12 @@ public class LambdaJ {
 
     /// Infrastructure
     public static final int EOF = -1;
-    public static final int TOKEN_MAX = 2000; // max length of string literals
-    public static final int SYMBOL_MAX = 30;  // max length of symbols
+    /** Max length of string literals */
+    public static final int TOKEN_MAX = 2000;
+    /** Max length of symbols*/
+    public static final int SYMBOL_MAX = 30;
 
-    public static final int TRC_NONE = 0, TRC_STATS = 1, TRC_ENVSTATS = 2, TRC_EVAL = 3, TRC_ENV = 4, TRC_FUNC = 5, TRC_PARSE = 6, TRC_TOK = 7, TRC_LEX = 8;
+    public enum TraceLevel { TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_ENV, TRC_FUNC, TRC_PARSE, TRC_TOK, TRC_LEX; };
     private final int trace;
 
     private final Tracer tracer;
@@ -232,13 +240,13 @@ public class LambdaJ {
     private boolean haveLispEOL() { return (features & HAVE_LISPEOL) != 0; }
 
     public LambdaJ() {
-        this(HAVE_ALL_LEXC, TRC_NONE);
+        this(HAVE_ALL_LEXC, TraceLevel.TRC_NONE, null);
     }
 
-    public LambdaJ(int features, int trace, Tracer... tracer) {
+    public LambdaJ(int features, TraceLevel trace, Tracer tracer) {
         this.features = features;
-        this.trace = trace;
-        this.tracer = tracer != null && tracer.length > 0 ? tracer[0] : System.err::println;
+        this.trace = trace.ordinal();
+        this.tracer = tracer != null ? tracer : System.err::println;
     }
 
 
@@ -366,7 +374,7 @@ public class LambdaJ {
                 if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                 tok = new LambdaJSymbol(s);
             }
-            if (trace >= TRC_LEX)
+            if (trace >= TraceLevel.TRC_LEX.ordinal())
                 tracer.println("*** scan  token  |" + tok + '|');
         }
 
@@ -391,11 +399,11 @@ public class LambdaJ {
 
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
-        public Object intern(LambdaJSymbol sym) {
+        public LambdaJSymbol intern(LambdaJSymbol sym) {
             if (symbols != null)
                 for (Object symbol: symbols) {
                     if (((LambdaJSymbol) symbol).equalsIgnoreCase(sym)) {
-                        return symbol;
+                        return (LambdaJSymbol)symbol;
                     }
                 }
             symbols = cons(sym, symbols);
@@ -427,7 +435,7 @@ public class LambdaJ {
 
         private Object readObject() {
             if (tok == null) {
-                if (trace >= TRC_PARSE) tracer.println("*** parse list   ()");
+                if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse list   ()");
                 return null;
             }
             if (haveNil() && !tokEscape && tok instanceof LambdaJSymbol && isToken(tok, "nil")) {
@@ -442,10 +450,10 @@ public class LambdaJ {
                     final Object cdr = readList();
                     if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
                     final Object cons = combine(list, car(cdr));
-                    if (trace >= TRC_PARSE) tracer.println("*** parse cons   " + printSEx(cons));
+                    if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse cons   " + printSEx(cons));
                     return cons;
                 }
-                if (trace >= TRC_PARSE) tracer.println("*** parse list   " + printSEx(list));
+                if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse list   " + printSEx(list));
                 return list;
             }
             if (!tokEscape && isToken(tok, "'")) {
@@ -453,10 +461,10 @@ public class LambdaJ {
                 return cons(quote, cons(readObject(), null));
             }
             if (symbolp(tok)) {
-                if (trace >= TRC_TOK) tracer.println("*** parse symbol " + tok);
+                if (trace >= TraceLevel.TRC_TOK.ordinal()) tracer.println("*** parse symbol " + tok);
                 return intern((LambdaJSymbol)tok);
             }
-            if (trace >= TRC_TOK) tracer.println("*** parse value  " + tok.toString());
+            if (trace >= TraceLevel.TRC_TOK.ordinal()) tracer.println("*** parse value  " + tok.toString());
             return tok;
         }
 
@@ -756,7 +764,7 @@ public class LambdaJ {
                             final ConsCell closure = ((ConsCell)func).closure();
                             env = zip(closure != null ? closure : env, car(lambda), argList);
 
-                            if (trace >= TRC_FUNC)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
+                            if (trace >= TraceLevel.TRC_FUNC.ordinal())  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
                             forms = (ConsCell) cdr(lambda);
                             // fall through to "eval a list of forms"
 
@@ -906,7 +914,7 @@ public class LambdaJ {
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
-        if (trace >= TRC_FUNC) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
+        if (trace >= TraceLevel.TRC_FUNC.ordinal()) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.apply(args); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
@@ -923,15 +931,15 @@ public class LambdaJ {
     /** spaces printed to the left indicate java stack usage, spaces+asterisks indicate Lisp call hierarchy depth.
      *  due to tail call optimization Java stack usage should be less than Lisp call hierarchy depth. */
     private void dbgEvalStart(String evFunc, Object exp, ConsCell env, int stack, int level) {
-        if (trace >= TRC_STATS) {
+        if (trace >= TraceLevel.TRC_STATS.ordinal()) {
             if (maxEvalStack < stack) maxEvalStack = stack;
             if (maxEvalLevel < level) maxEvalLevel = level;
-            if (trace >= TRC_EVAL) {
+            if (trace >= TraceLevel.TRC_EVAL.ordinal()) {
                 evFunc = fmtEvFunc(evFunc);
 
                 final String pfx = pfx(stack, level);
                 tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + "), exp:          " + printSEx(exp));
-                if (trace >= TRC_ENV) {
+                if (trace >= TraceLevel.TRC_ENV.ordinal()) {
                     tracer.println(pfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
                 }
             }
@@ -939,10 +947,10 @@ public class LambdaJ {
     }
 
     private void dbgEvalDone(String evFunc, Object exp, Object env, int stack, int level) {
-        if (trace >= TRC_ENVSTATS) {
+        if (trace >= TraceLevel.TRC_ENVSTATS.ordinal()) {
             final int envLen = length(env);
             if (maxEnvLen < envLen) maxEnvLen = envLen;
-            if (trace >= TRC_EVAL) {
+            if (trace >= TraceLevel.TRC_EVAL.ordinal()) {
                 evFunc = fmtEvFunc(evFunc);
                 final String pfx = pfx(stack, level);
                 tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
@@ -1445,8 +1453,11 @@ public class LambdaJ {
 
 
 
-    public ObjectReader lispReader;
-    public ObjectWriter lispPrinter;
+    private ObjectReader lispReader;
+    private ObjectWriter lispPrinter;
+
+    public ObjectReader getLispReader()  { return lispReader; }
+    public ObjectWriter getLispPrinter() { return lispPrinter; }
 
     public void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) {
         this.lispReader = lispStdin;
@@ -1644,7 +1655,7 @@ public class LambdaJ {
 
     /// JMurmel native FFI: Java calls Murmel with getValue() and getFunction()
 
-    /** Return the value of {@code globalSymbol} in the interpreter's current global environment */
+    /** FFI: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
         final ConsCell envEntry = assoc(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
@@ -1652,7 +1663,7 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: '%s' is undefined", "getValue", globalSymbol);
     }
 
-    /** interface for compiled lambdas as well as primitives, used for FFI as well as compiled Murmel */
+    /** FFI: interface for compiled lambdas as well as primitives, used for FFI as well as compiled Murmel */
     public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
 
     private class CallPrimitive implements MurmelFunction {
@@ -1672,22 +1683,24 @@ public class LambdaJ {
         }
     }
 
-    /** Function objects of Lambdas will be usable until the interpreter's environment is rebuilt
+    /** <p>FFI: Return the function {@code funcName}
+     *
+     *  <p>Function objects of Lambdas will be usable until the interpreter's environment is rebuilt
      *  by a call to interpretExpression/s, eg.<pre>
      *  MurmelFunction f = getFunction("my-function");
      *  interpreter.interpretExpressions("...");
      *  f.apply(1, 2, 3);  // this will throw a "stale function..." Exception
      *  </pre>
      */
-    public MurmelFunction getFunction(String func) {
-        final Object maybeFunction = getValue(func);
+    public MurmelFunction getFunction(String funcName) {
+        final Object maybeFunction = getValue(funcName);
         if (maybeFunction instanceof Primitive) {
             return new CallPrimitive((Primitive)maybeFunction);
         }
         if (maybeFunction instanceof ConsCell && car((ConsCell)maybeFunction) == sLambda) {
             return new CallLambda((ConsCell)maybeFunction);
         }
-        throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
+        throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName);
     }
 
 
@@ -1776,12 +1789,12 @@ public class LambdaJ {
 
     /** print and reset interpreter stats */
     private void traceStats(long nanos) {
-        if (trace >= TRC_STATS) {
+        if (trace >= TraceLevel.TRC_STATS.ordinal()) {
             tracer.println("*** max eval nesting:  " + maxEvalLevel + " ***");
             tracer.println("*** max stack used:    " + maxEvalStack + " ***");
 
             tracer.println("*** total ConsCells:   " + nCells + " ***");
-            if (trace >= TRC_ENVSTATS) tracer.println("*** max env length:    " + maxEnvLen + " ***");
+            if (trace >= TraceLevel.TRC_ENVSTATS.ordinal()) tracer.println("*** max env length:    " + maxEnvLen + " ***");
 
             long millis = (long)(nanos * 0.000001D);
             String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
@@ -1797,9 +1810,9 @@ public class LambdaJ {
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String args[]) {
         misc(args);
-        int trace = trace(args);
+        TraceLevel trace = trace(args);
         int features = features(args);
-        final LambdaJ interpreter = new LambdaJ(features, trace);
+        final LambdaJ interpreter = new LambdaJ(features, trace, null);
 
         final boolean istty = null != System.console();
         final boolean repl        = hasFlag("--repl", args) || istty;
@@ -1955,13 +1968,13 @@ public class LambdaJ {
             System.exit(0);
         }
     }
-    private static int trace(String[] args) {
-        int trace = TRC_NONE;
-        if (hasFlag("--trace=stats", args))    trace = TRC_STATS;
-        if (hasFlag("--trace=envstats", args)) trace = TRC_ENVSTATS;
-        if (hasFlag("--trace=eval", args))     trace = TRC_EVAL;
-        if (hasFlag("--trace=env", args))      trace = TRC_ENV;
-        if (hasFlag("--trace", args))          trace = TRC_LEX;
+    private static TraceLevel trace(String[] args) {
+        TraceLevel trace = TraceLevel.TRC_NONE;
+        if (hasFlag("--trace=stats", args))    trace = TraceLevel.TRC_STATS;
+        if (hasFlag("--trace=envstats", args)) trace = TraceLevel.TRC_ENVSTATS;
+        if (hasFlag("--trace=eval", args))     trace = TraceLevel.TRC_EVAL;
+        if (hasFlag("--trace=env", args))      trace = TraceLevel.TRC_ENV;
+        if (hasFlag("--trace", args))          trace = TraceLevel.TRC_LEX;
         return trace;
     }
 
@@ -2136,7 +2149,7 @@ public class LambdaJ {
 
 
 
-    /** Base class for compiled Murmel programs, contains Murmel runtime. */
+    /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaRuntime {
 
         protected final LambdaJ intp = new LambdaJ();
@@ -2153,6 +2166,7 @@ public class LambdaJ {
         }
 
         public abstract Object body();
+
         public abstract Object getValue(String globalSymbol);
 
         public MurmelFunction getFunction(String func) {

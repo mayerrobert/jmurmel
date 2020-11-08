@@ -1,3 +1,7 @@
+define nur toplevel zulassen (wg. kompilieren), closures NICHT dynamisches global env
+
+Tracer bei JSR-223 nutzen.
+
 der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
 -> dann funktioniert (fast) dasselbe FFI fuer interpretierte und kompilierte programme
 

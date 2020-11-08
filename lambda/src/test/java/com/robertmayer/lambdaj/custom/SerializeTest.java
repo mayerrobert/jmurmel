@@ -45,8 +45,8 @@ public class SerializeTest {
         }
 
         @Override
-        public Object intern(LambdaJSymbol symbol) {
-            Object prev = symbols.putIfAbsent(symbol, symbol);
+        public LambdaJSymbol intern(LambdaJSymbol symbol) {
+            LambdaJSymbol prev = symbols.putIfAbsent(symbol, symbol);
             if (prev != null) return prev;
             return symbol;
         }

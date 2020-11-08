@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
+import com.robertmayer.lambdaj.LambdaJ.TraceLevel;
+
 public class LambdaJTest {
 
     private static final String[][] tests = {
@@ -307,7 +309,7 @@ public class LambdaJTest {
 
         // turn off long so I don't have to adjust all tests
         final int features = LambdaJ.HAVE_ALL_LEXC & ~LambdaJ.HAVE_LONG | LambdaJ.HAVE_DOUBLE;
-        final LambdaJ intp = new LambdaJ(features, LambdaJ.TRC_ENV);
+        final LambdaJ intp = new LambdaJ(features, LambdaJ.TraceLevel.TRC_ENV, null);
 
         System.out.println("***** running program '" + fileName + "':");
         System.out.println("-------------------------------------------------------");

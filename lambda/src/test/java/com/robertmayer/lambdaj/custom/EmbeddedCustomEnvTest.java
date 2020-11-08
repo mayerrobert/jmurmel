@@ -13,13 +13,14 @@ import com.robertmayer.lambdaj.LambdaJ.ObjectReader;
 import com.robertmayer.lambdaj.LambdaJ.ObjectWriter;
 import com.robertmayer.lambdaj.LambdaJ.Parser;
 import com.robertmayer.lambdaj.LambdaJ.Primitive;
+import com.robertmayer.lambdaj.LambdaJ.TraceLevel;
 
 public class EmbeddedCustomEnvTest {
 
     @Test
     public void testCustomEnv() {
         // "create a Lisp"
-        final LambdaJ interpreter = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TRC_FUNC); // turn on logging of eval and function invocations
+        final LambdaJ interpreter = new LambdaJ(LambdaJ.HAVE_ALL_LEXC, LambdaJ.TraceLevel.TRC_FUNC, null); // turn on logging of eval and function invocations
 
         // our Lisp "program"
         StringReader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
@@ -63,8 +64,8 @@ public class EmbeddedCustomEnvTest {
     private static Object greet(ConsCell a, LambdaJ intp) {
         if (a == null) throw new RuntimeException("expected 1 parameter, got none, so there!");
         final String msg = "Hello, " + car(a) + '!';
-        intp.lispPrinter.printObj(msg);
-        intp.lispPrinter.printEol();
+        intp.getLispPrinter().printObj(msg);
+        intp.getLispPrinter().printEol();
         return null;
     };
 
