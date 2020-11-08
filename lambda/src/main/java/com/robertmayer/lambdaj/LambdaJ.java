@@ -65,7 +65,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.182 2020/11/08 09:11:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.183 2020/11/08 11:58:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1652,6 +1652,7 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: '%s' is undefined", "getValue", globalSymbol);
     }
 
+    /** interface for compiled lambdas as well as primitives, used for FFI as well as compiled Murmel */
     public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
 
     private class CallPrimitive implements MurmelFunction {
@@ -1793,7 +1794,7 @@ public class LambdaJ {
 
 
 
-    /** main() for commandline use */
+    /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String args[]) {
         misc(args);
         int trace = trace(args);
@@ -2135,28 +2136,32 @@ public class LambdaJ {
 
 
 
-    /** interface for compiled lambdas as well as primitives */
-    public interface MurmelJavaNative {
-        public Object apply(Object... args);
-    }
-
     /** Base class for compiled Murmel programs, contains Murmel runtime. */
     public abstract static class MurmelJavaRuntime {
 
         protected final LambdaJ intp = new LambdaJ();
 
-        protected Object nil = null;
-        protected Object t = true;
-        protected MurmelJavaNative write = args -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
+        protected final Object nil = null;
+        protected final Object t = true;
+        protected final MurmelFunction write = args -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
 
         protected MurmelJavaRuntime() { intp.interpretExpression(() -> -1, System.out::print); }
 
         protected Object apply(Object fn, Object... args) {
-            MurmelJavaNative f = (MurmelJavaNative)fn;
+            MurmelFunction f = (MurmelFunction)fn;
             return f.apply(args);
         }
 
         public abstract Object body();
+        public abstract Object getValue(String globalSymbol);
+
+        public MurmelFunction getFunction(String func) {
+            final Object maybeFunction = getValue(func);
+            if (maybeFunction instanceof MurmelFunction) {
+                return (MurmelFunction)maybeFunction;
+            }
+            throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
+        }
     }
 
     public static class MurmelJavaCompiler {
@@ -2222,6 +2227,17 @@ public class LambdaJ {
             for (Object form: forms)
                 if (consp(form) && isSymbol(car(form), "define")) defineGlobal(ret, (ConsCell) cdr(form));
 
+            // generate getValue() and getFunction()
+            ret.append("\n    public Object getValue(String symbol) {\n"
+                     + "        switch (symbol) {\n");
+            for (Object form: forms)
+                if (consp(form) && isSymbol(car(form), "define"))
+                    ret.append("        case \"").append(cadr(form)).append("\": return ").append(cadr(form)).append(";\n");
+
+            ret.append("        default: throw new LambdaJ.LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
+                     + "        }\n"
+                     + "    }\n\n");
+
             ret.append("\n    public Object body() {\n        Object result = null;\n");
             formsToJava(ret, forms);
             ret.append("        return result;\n    }\n");
@@ -2261,7 +2277,7 @@ public class LambdaJ {
                 if (isSymbol(op, "define")) return;
 
                 if (isSymbol(op, "lambda")) {
-                    sb.append("(LambdaJ.MurmelJavaNative)(args -> {\n        Object result;\n");
+                    sb.append("(LambdaJ.MurmelFunction)(args -> {\n        Object result;\n");
                     params(sb, car(args));
                     formsToJava(sb, (ConsCell)cdr(args));
                     sb.append("        return result; })");
@@ -2293,7 +2309,7 @@ public class LambdaJ {
 
 
 
-        /** Compile Java sourcecode of class {@className} to Java bytecode */
+        /** Compile Java sourcecode of class {@code className} to Java bytecode */
         public Class<?> javaToClass(String className, String javaSource) throws Exception {
             final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
             final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);

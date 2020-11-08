@@ -49,5 +49,8 @@ public class MurmelJavaCompilerTest {
         LambdaJ.MurmelJavaRuntime compiled = murmelClass.newInstance();
         Object result = compiled.body();
         assertEquals("t", result.toString());
+
+        LambdaJ.MurmelFunction f = compiled.getFunction("f");
+        f.apply("The answer is: ", 42);
     }
 }

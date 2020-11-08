@@ -1,3 +1,15 @@
+der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
+-> dann funktioniert (fast) dasselbe FFI fuer interpretierte und kompilierte programme
+
+irgendwie mit maven von Murmel nach Java uebersetzen, dann kann man einen teil einer app in murmel schreiben und fast nahtlos von Java aufrufen
+
+in C gibts #pragma line, das schreibt debug infos ins Object file. gibts in Java annotations und einen processor, der dasselbe macht?
+-> debuggen von kompilierten murmel programmen
+
+anstatt letXX, cond im compiler auszuprogrammieren, kann man auch desugar programmieren, idealerweise als macroexpander
+-> desugar ist macroexpand mit zus. macros fuer let-> lambda usw.
+-> stattdessen kann man ggf. cons, car, cdr, +, - usw inlinen (aber erst schauen ob das was bringt)
+
 Murmel2Java fertigmachen, TCO: wahrscheinlich mit CPS
 
 die generierten programme koennten ein cmd arg "--repl" unterstuetzen: mit dem arg gibts nach body() kein exit() sondern repl()
