@@ -58,7 +58,21 @@ import javax.tools.ToolProvider;
 /** <p>Implementation of JMurmel, an interpreter for the Lisp-dialect Murmel.
  *  Can be used as a standalone commandline application as well as embedded in a Java program.
  *
- *  <p>The source code for this class could probably be read from top to bottom like a book.
+ *  <p><b>Embedded use in interpreting mode:</b>
+ *  <p>Important methods for embedded use of the interpeter are:
+ *  <ul><li>{@link LambdaJ#LambdaJ()} - construktor
+ *      <li>{@link LambdaJ#interpretExpressions(ReadSupplier, ReadSupplier, WriteConsumer)}
+ *          - interpret a Murmel program in S-expression surface representation
+ *      <li>{@link #getFunction(String)} - after interpreting a Murmel program getFunction() can be used to get a handle
+ *          on a Murmel function defined previously. See also {@link MurmelJavaRuntime#getFunction(String)} which does
+ *          the same for compiled Murmel programs.
+ *  </ul>
+ *
+ *  <p><b>Embedded use in compiling mode:</b>
+ *  <p>For compiling Murmel programs to Java or Java-classes see {@link MurmelJavaCompiler}
+ *
+ *  <p><b>How to learn the inner workings of the interpreter and compiler:</b>
+ *  <p>The source code for the class {@code LambdaJ} could probably be read from top to bottom like a book.
  *
  *  <p>Comments starting with '///' could be considered similar to headings or chapter titles.
  *  You may want to run 'grep " ///" LambdaJ.java' to get something like birds-eye-view
@@ -68,7 +82,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.185 2020/11/08 17:45:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.186 2020/11/08 18:49:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -164,14 +178,14 @@ public class LambdaJ {
     /** A murmel symbol name */
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
-        private final String value;
-        public LambdaJSymbol(String value) { this.value = value; }
-        @Override public String toString() { return value.toString(); }
+        private final String name;
+        public LambdaJSymbol(String symbolName) { name = symbolName; }
+        @Override public String toString() { return name.toString(); }
 
-        @Override public int hashCode() { return value.hashCode(); }
-        @Override public boolean equals(Object o) { return o instanceof LambdaJSymbol && value.equals(((LambdaJSymbol)o).value); }
+        @Override public int hashCode() { return name.hashCode(); }
+        @Override public boolean equals(Object o) { return o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
 
-        public boolean equalsIgnoreCase(LambdaJSymbol other) { return value.equalsIgnoreCase(other.value); }
+        public boolean equalsIgnoreCase(LambdaJSymbol other) { return name.equalsIgnoreCase(other.name); }
     }
 
 
@@ -191,31 +205,38 @@ public class LambdaJ {
     private final Tracer tracer;
 
     public enum Features {
-        HAVE_LAMBDA,         // untyped lambda calculus with dynamic environments, S-expressions, that's all
+        HAVE_QUOTE,          // quote will allow to distinguish code and data.
+        HAVE_ATOM,
+        HAVE_EQ,
 
+        HAVE_CONS,           // cons, car, cdr
+        HAVE_COND,
+
+        HAVE_APPLY,          // McCarthy didn't list apply, he probably implied eval, tough
         HAVE_LABELS,         // without labels: use Z-combinator (imperative version of the Y-combinator)
+
         HAVE_NIL, HAVE_T,    // use () and (quote t) instead. printObj will print nil regardless
+
         HAVE_XTRA,           // extra special forms such as if
+
         HAVE_DOUBLE,         // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
         HAVE_LONG,           // turns on only Long support in the reader, you'll want DOUBLE as well
         HAVE_STRING,         // strings, string literals and string related functions
+
         HAVE_IO,             // read/ write, without it only the result will be printed
         HAVE_UTIL,           // not, consp, listp, symbolp, assoc
-        HAVE_APPLY,          // McCarthy didn't list apply, he probalby implied eval, tough
-        HAVE_CONS,
-        HAVE_COND,
-        HAVE_ATOM,
-        HAVE_EQ,
-        HAVE_QUOTE,
 
         HAVE_LEXC,           // use lexical environments with dynamic global environment
 
         HAVE_LISPEOL,        // default for writeln is "<obj>\n", with this flag it's "\n<obj> "
 
+        /** untyped lambda calculus with dynamic environments, S-expressions, that's all */
+        HAVE_LAMBDA     { @Override public int bits() { return 0; } },
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
         HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits(); } },
-        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_XTRA.bits() | HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_UTIL.bits(); } },
+        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_XTRA.bits() | HAVE_DOUBLE.bits() | HAVE_LONG.bits()
+                                                               | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_UTIL.bits(); } },
 
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
         ;
@@ -512,17 +533,13 @@ public class LambdaJ {
     public static final Object VALUE_NOT_DEFINED = new Object();   // only relevant in letrec
     private static final Object NOT_A_SYMBOL = new Object();       // to avoid matches on pseudo env entries
 
-    /** <p>Look up the symbols for special forms only once on first use.
-     *  the suppliers below will do a lookup on first use and then replace themselves by another supplier
-     *  that simply returns the cached value.
-     *
-     *  <p>Also start to build the table of reserved words. */
+    /** Look up the symbols for special forms only once. Also start to build the table of reserved words. */
     private void setSymtab(SymbolTable symtab) {
         this.symtab = symtab;
 
         // (re-)read the new symtab
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
-        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);
+        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);  // todo dynamic ist nicht Murmel sondern JMurmel interpreter erweiterung
 
         if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reserve(sQuote); }
         if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reserve(sCond); }
@@ -539,7 +556,9 @@ public class LambdaJ {
         if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reserve(sApply); }
         if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reserve(sProgn); }
 
-        expTrue = () -> { Object s = makeExpTrue(); expTrue = () -> s; return s; };
+        // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
+        // by another supplier that simply returns the cached value.
+        expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
     /** well known symbols for special forms */
@@ -636,7 +655,7 @@ public class LambdaJ {
 
                     /// eval - special forms that run expressions
 
-                    /// eval - (eval form) -> object
+                    /// eval - (eval form) -> object ; this is not really a special form but is handle here for TCO todo feature flag
                     if (operator == sEval) {
                         oneArg("eval", arguments);
                         form = eval(car(arguments), env, stack, level); isTc = true; continue tailcall;
@@ -1158,11 +1177,11 @@ public class LambdaJ {
     }
 
     private static String escapeSymbol(LambdaJSymbol s) {
-        if (s.value == null) return null;
-        if (s.value.length() == 0) return "";
+        if (s.name == null) return null;
+        if (s.name.length() == 0) return "";
 
         final StringBuilder ret = new StringBuilder();
-        for (char c: s.value.toCharArray()) {
+        for (char c: s.name.toCharArray()) {
             switch (c) {
             case '|':  ret.append('\\').append('|'); break;
             default: ret.append(c);
