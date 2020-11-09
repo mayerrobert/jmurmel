@@ -1,11 +1,34 @@
+das main von compilierten programmen sollte am ende ggf alles abbauen. vielleicht eine methode dazu, die auch exposed ist? interpreter auch?
+oder macht das der gc, wenns keine referenz auf das kompilierte programm/ den interpreter mehr gibt?
+
+sind NACH dem let die let variablen wieder weg? sollte so sein -> test schreiben
+-> falls nicht: waere durch naechsten punkt erledigt
+
+compiler:
+-> irgendwie alles (lambdas, letXXX, labels, ...) in eine funktion (Object[] args, var Function next) -> Object verpacken
+-> next kann ggf. von der funktion woanders hin gebogen werden (fuer continuations)
+-> ohne continuations: lambda ggf. vorerst nicht aendern sondern per apply(Function, params, next) ausfuehren lassen
+-> mit continuations: eine continuation ist statt normalem lambda: (Function continuation, Object[] args, var Function next) -> Object
+    -> die continuation kann "continuation" in next reinstecken, dann wird "continuation" als naechstes ausgefuehrt statt "next"
+-> body hat dann einen loop, der die funktionen der reihe nach aufruft, jeweils das gelieferte "next" ist die naechste funktion
+-> statt var parameter koennen funktionen auch ein tupel (Object, Function) als result liefern
+
+-> kann man eigentlich im interpreter gleich machen
+
+cl hat with-open-file
+
+scope und extent:
+https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
+https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
+
 define nur toplevel zulassen (wg. kompilieren), closures NICHT dynamisches global env
 
 Tracer bei JSR-223 nutzen.
 
 der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
--> dann funktioniert (fast) dasselbe FFI fuer interpretierte und kompilierte programme
 
 irgendwie mit maven von Murmel nach Java uebersetzen, dann kann man einen teil einer app in murmel schreiben und fast nahtlos von Java aufrufen
+-> https://stackoverflow.com/questions/2147115/generating-sources-by-running-a-projects-java-class-in-maven
 
 in C gibts #pragma line, das schreibt debug infos ins Object file. gibts in Java annotations und einen processor, der dasselbe macht?
 -> debuggen von kompilierten murmel programmen

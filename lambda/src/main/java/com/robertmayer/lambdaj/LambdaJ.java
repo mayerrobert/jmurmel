@@ -58,18 +58,34 @@ import javax.tools.ToolProvider;
 /** <p>Implementation of JMurmel, an interpreter for the Lisp-dialect Murmel.
  *  Can be used as a standalone commandline application as well as embedded in a Java program.
  *
- *  <p><b>Embedded use in interpreting mode:</b>
+ *  <p><b>Embedded use in interpreter mode:</b>
  *  <p>Important methods for embedded use of the interpeter are:
- *  <ul><li>{@link LambdaJ#LambdaJ()} - construktor
+ *  <ul><li>{@link LambdaJ#LambdaJ()} - constructor
  *      <li>{@link LambdaJ#interpretExpressions(ReadSupplier, ReadSupplier, WriteConsumer)}
  *          - interpret a Murmel program in S-expression surface representation
  *      <li>{@link #getFunction(String)} - after interpreting a Murmel program getFunction() can be used to get a handle
- *          on a Murmel function defined previously. See also {@link MurmelJavaRuntime#getFunction(String)} which does
+ *          on a Murmel function defined previously. See also {@link MurmelJavaProgram#getFunction(String)} which does
  *          the same for compiled Murmel programs.
  *  </ul>
  *
- *  <p><b>Embedded use in compiling mode:</b>
- *  <p>For compiling Murmel programs to Java or Java-classes see {@link MurmelJavaCompiler}
+ *  <p><b>Embedded use in compiler mode:</b>
+ *  <p>For compiling Murmel programs to Java or Java-classes see {@link MurmelJavaCompiler}.
+ *
+ *  <p><b>Connecting I/O of an embedded Murmel program</b>
+ *  <p>Interpreted as well as compiled programs read using {@link ObjectReader}s
+ *  and print using {@link ObjectWriter}s.
+ *
+ *  <p>Defaults for reading/ printing:
+ *  <ul><li>{@code lispReader} is an {@link LambdaJ.SExpressionParser} that reads using a {@link ReadSupplier} (which defaults to {@link System#in})
+ *      <li>{@code lispPrinter} is an {@link LambdaJ.SExpressionWriter} that prints using a {@link WriteConsumer} (which defaults to {@link System#out})
+ *  </ul>
+ *
+ *  If you want to read/ write S-expressions from streams other than {@link System#in}/ {@link System#out} then do something like<pre>
+ *  intp.setReaderPrinter(intp.new SExpressionParser(() -&gt; myReader::myFunctionThatReturnsCharsAsInt), intp.getLispPrinter());</pre>
+ *
+ *  If you want to read/ write a surface representation other than S-expressions then do something like<pre>
+ *  ObjectReader myReader = new MyReader(...);
+ *  intp.setReaderPrinter(myReader, intp.getLispPrinter());</pre>
  *
  *  <p><b>How to learn the inner workings of the interpreter and compiler:</b>
  *  <p>The source code for the class {@code LambdaJ} could probably be read from top to bottom like a book.
@@ -82,12 +98,12 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.186 2020/11/08 18:49:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.187 2020/11/08 20:37:24 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
-    @FunctionalInterface public interface Tracer { void println(String msg); }
+    @FunctionalInterface public interface TraceConsumer { void println(String msg); }
 
     @FunctionalInterface public interface ObjectReader { Object readObj(); }
     public interface SymbolTable { LambdaJSymbol intern(LambdaJSymbol symbol); }
@@ -202,7 +218,7 @@ public class LambdaJ {
     public enum TraceLevel { TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_ENV, TRC_FUNC, TRC_PARSE, TRC_TOK, TRC_LEX; };
     private final int trace;
 
-    private final Tracer tracer;
+    private final TraceConsumer tracer;
 
     public enum Features {
         HAVE_QUOTE,          // quote will allow to distinguish code and data.
@@ -268,7 +284,7 @@ public class LambdaJ {
         this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null);
     }
 
-    public LambdaJ(int features, TraceLevel trace, Tracer tracer) {
+    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
         this.features = features;
         this.trace = trace.ordinal();
         this.tracer = tracer != null ? tracer : System.err::println;
@@ -530,8 +546,8 @@ public class LambdaJ {
     /// Symboltable
     private SymbolTable symtab;
 
-    public static final Object VALUE_NOT_DEFINED = new Object();   // only relevant in letrec
-    private static final Object NOT_A_SYMBOL = new Object();       // to avoid matches on pseudo env entries
+    public static final Object VALUE_NOT_DEFINED = "value is not assigned";  // only relevant in letrec
+    private static final Object NOT_A_SYMBOL = "non existant pseudo symbol";         // to avoid matches on pseudo env entries
 
     /** Look up the symbols for special forms only once. Also start to build the table of reserved words. */
     private void setSymtab(SymbolTable symtab) {
@@ -676,7 +692,7 @@ public class LambdaJ {
 
                     /// eval - (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
-                        if (!consp(arguments)) throw new LambdaJError(true, "%s: malformed cond. expected a list of forms but got %s", "progn", printSEx(arguments));
+                        if (!consp(arguments)) throw new LambdaJError(true, "%s: malformed progn. expected a list of forms but got %s", "progn", printSEx(arguments));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
@@ -2173,7 +2189,7 @@ public class LambdaJ {
 
 
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
-    public abstract static class MurmelJavaRuntime {
+    public abstract static class MurmelJavaProgram {
 
         protected final LambdaJ intp = new LambdaJ();
 
@@ -2181,7 +2197,17 @@ public class LambdaJ {
         protected final Object t = true;
         protected final MurmelFunction write = args -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
 
-        protected MurmelJavaRuntime() { intp.interpretExpression(() -> -1, System.out::print); }
+        protected MurmelJavaProgram() {
+            intp.interpretExpression(() -> -1, System.out::print);
+            intp.setReaderPrinter(intp.new SExpressionParser(System.in::read), intp.getLispPrinter());
+        }
+
+        public ObjectReader getLispReader()  { return intp.getLispReader(); }
+        public ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
+
+        public void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) {
+            intp.setReaderPrinter(lispStdin, lispStdout);
+        }
 
         protected Object apply(Object fn, Object... args) {
             MurmelFunction f = (MurmelFunction)fn;
@@ -2213,8 +2239,8 @@ public class LambdaJ {
 
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
-        public Class <MurmelJavaRuntime> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
-            Class<MurmelJavaRuntime> program = (Class<MurmelJavaRuntime>) javaToClass(unitName, formsToJavaProgram(unitName, forms));
+        public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
+            Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, formsToJavaProgram(unitName, forms));
             if (jarFile == null) return program;
 
             final Manifest mf = new Manifest();
@@ -2248,7 +2274,7 @@ public class LambdaJ {
                 clsName = unitName.substring(dotpos+1);
             }
             ret.append("import com.robertmayer.lambdaj.LambdaJ;\n\n"
-                    + "public class " + clsName + " extends LambdaJ.MurmelJavaRuntime {\n"
+                    + "public class " + clsName + " extends LambdaJ.MurmelJavaProgram {\n"
                     + "    public static void main(String[] args) {\n"
                     + "        final " + clsName + " program = new " + clsName + "();\n"
                     + "        try {\n"

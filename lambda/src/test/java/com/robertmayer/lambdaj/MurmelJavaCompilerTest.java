@@ -43,10 +43,10 @@ public class MurmelJavaCompilerTest {
             program.add(sexp);
         }
 
-        Class<LambdaJ.MurmelJavaRuntime> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
+        Class<LambdaJ.MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
         assertNotNull(murmelClass);
 
-        LambdaJ.MurmelJavaRuntime compiled = murmelClass.newInstance();
+        LambdaJ.MurmelJavaProgram compiled = murmelClass.newInstance();
         Object result = compiled.body();
         assertEquals("t", result.toString());
 
