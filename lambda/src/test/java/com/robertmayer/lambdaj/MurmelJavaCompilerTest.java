@@ -44,7 +44,7 @@ public class MurmelJavaCompilerTest {
         }
 
         Class<LambdaJ.MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
-        assertNotNull(murmelClass);
+        assertNotNull("class to be compiled is null", murmelClass);
 
         LambdaJ.MurmelJavaProgram compiled = murmelClass.newInstance();
         Object result = compiled.body();

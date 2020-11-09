@@ -98,7 +98,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.187 2020/11/08 20:37:24 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.188 2020/11/09 17:13:10 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2309,8 +2309,9 @@ public class LambdaJ {
             return ret.toString();
         }
 
+        /** return true if form matches any of the symbols */
         private boolean isSymbol(Object form, String sym) {
-            return form.toString().equals(sym);
+            return form.toString().equalsIgnoreCase(sym);
         }
 
         private void defineGlobal(StringBuilder sb, ConsCell form) {
@@ -2338,6 +2339,11 @@ public class LambdaJ {
                 Object args = cdr(form);
 
                 if (isSymbol(op, "define")) return;
+
+                if (isSymbol(op, "+")) { addOp(sb, op, 0.0, args); return; }
+                if (isSymbol(op, "*")) { addOp(sb, op, 1.0, args); return; }
+                if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args); return; }
+                if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args); return; }
 
                 if (isSymbol(op, "lambda")) {
                     sb.append("(LambdaJ.MurmelFunction)(args -> {\n        Object result;\n");
@@ -2368,6 +2374,26 @@ public class LambdaJ {
                 sb.append("\n        final Object ").append(param.toString()).append(" = args[").append(n++).append("];");
             }
             sb.append("\n");
+        }
+
+        /** generate operator for zero or more args */
+        private void addOp(StringBuilder sb, Object _op, double start, Object args) {
+            String op = _op.toString();
+            sb.append('(').append(start);
+            if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); formToJava(sb, arg); }
+            sb.append(')');
+        }
+
+        /** generate operator for one or more args */
+        private void subOp(StringBuilder sb, Object _op, double start, Object args) {
+            String op = _op.toString();
+            sb.append('(');
+            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); formToJava(sb, car(args)); }
+            else {
+                sb.append("(double)"); formToJava(sb, car(args));
+                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); formToJava(sb, arg); }
+            }
+            sb.append(')');
         }
 
 
