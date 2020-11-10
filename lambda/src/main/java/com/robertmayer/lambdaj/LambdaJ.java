@@ -98,7 +98,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.188 2020/11/09 17:13:10 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.189 2020/11/09 20:52:01 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1023,6 +1023,7 @@ public class LambdaJ {
     private static Object   cadr(Object c)     { return c == null ? null : car(cdr(c)); }
     private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdr(car(c))); }
     private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
+    private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
 
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr; }
     private static Object   cdr(Object x)      { return x == null ? null : ((ConsCell)x).cdr; }
@@ -2274,14 +2275,15 @@ public class LambdaJ {
                 clsName = unitName.substring(dotpos+1);
             }
             ret.append("import com.robertmayer.lambdaj.LambdaJ;\n\n"
-                    + "public class " + clsName + " extends LambdaJ.MurmelJavaProgram {\n"
+                    + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
+                    + "public class " + clsName + " extends MurmelJavaProgram {\n"
                     + "    public static void main(String[] args) {\n"
                     + "        final " + clsName + " program = new " + clsName + "();\n"
                     + "        try {\n"
                     + "            Object result = program.body();\n"
                     + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program.write.apply(result); System.out.println(); }\n"
                     + "            return;\n"
-                    + "        } catch (LambdaJ.LambdaJError e) {\n"
+                    + "        } catch (LambdaJError e) {\n"
                     + "            System.err.println(e.getMessage());\n"
                     + "            System.exit(1);\n"
                     + "        }\n"
@@ -2297,7 +2299,7 @@ public class LambdaJ {
                 if (consp(form) && isSymbol(car(form), "define"))
                     ret.append("        case \"").append(cadr(form)).append("\": return ").append(cadr(form)).append(";\n");
 
-            ret.append("        default: throw new LambdaJ.LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
+            ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
                      + "        }\n"
                      + "    }\n\n");
 
@@ -2338,20 +2340,31 @@ public class LambdaJ {
                 final Object op = car(form);
                 Object args = cdr(form);
 
-                if (isSymbol(op, "define")) return;
-
                 if (isSymbol(op, "+")) { addOp(sb, op, 0.0, args); return; }
                 if (isSymbol(op, "*")) { addOp(sb, op, 1.0, args); return; }
                 if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args); return; }
                 if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args); return; }
 
+                if (isSymbol(op, "car")) { sb.append("((ConsCell)"); formToJava(sb, car(args)); sb.append(").car"); return; }
+                if (isSymbol(op, "cdr")) { sb.append("((ConsCell)"); formToJava(sb, car(args)); sb.append(").cdr"); return; }
+                if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args)); sb.append(", "); formToJava(sb, cadr(args)); sb.append(')'); return; }
+
+                if (isSymbol(op, "not")) { sb.append("!(null != "); formToJava(sb, car(args)); sb.append(')'); return; }
+                if (isSymbol(op, "if"))  {
+                    formToJava(sb, car(args)); sb.append(" ? "); formToJava(sb, cadr(args));
+                    if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args)); }
+                    return;
+                }
+
                 if (isSymbol(op, "lambda")) {
-                    sb.append("(LambdaJ.MurmelFunction)(args -> {\n        Object result;\n");
+                    sb.append("(MurmelFunction)(args -> {\n        Object result;\n");
                     params(sb, car(args));
                     formsToJava(sb, (ConsCell)cdr(args));
                     sb.append("        return result; })");
                     return;
                 }
+
+                if (isSymbol(op, "define")) return;
 
                 // function call
                 sb.append("apply(");
@@ -2370,7 +2383,7 @@ public class LambdaJ {
         private void params(StringBuilder sb, Object paramList) {
             sb.append("        final Object ").append(car(paramList).toString()).append(" = args[0];");
             int n = 1;
-            for (Object param: (ConsCell)cdr(paramList)) {
+            if (cdr(paramList) != null) for (Object param: (ConsCell)cdr(paramList)) {
                 sb.append("\n        final Object ").append(param.toString()).append(" = args[").append(n++).append("];");
             }
             sb.append("\n");

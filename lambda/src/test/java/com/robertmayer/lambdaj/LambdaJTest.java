@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import com.robertmayer.lambdaj.LambdaJ.TraceLevel;
-
 public class LambdaJTest {
 
     private static final String[][] tests = {

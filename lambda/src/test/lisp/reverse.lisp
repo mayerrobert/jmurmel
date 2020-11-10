@@ -12,4 +12,4 @@
     (lambda (rev^ a l)
       (cond
         ((not l) a)
-        ((quote t) (rev^ rev^ (cons (car l) a) (cdr l ))))))))
+        ((quote t) (rev^ rev^ (cons (car l) a) (cdr l))))))))
