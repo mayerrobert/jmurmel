@@ -14,17 +14,18 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testSimpleClass() throws Exception {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target"));
+        MurmelJavaCompiler c = new MurmelJavaCompiler(null, Paths.get("target"));
         Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
         assertNotNull("failed to compile Java to class", clazz);
     }
 
     @Test
     public void testForm() throws Exception {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target"));
         StringReader reader = new StringReader("(define a 2)");
-        final SExpressionParser parser = new LambdaJ().new SExpressionParser(reader::read);
+        final SExpressionParser parser = new SExpressionParser(reader::read);
         Object sexp = parser.readObj();
+
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         String java = c.formsToJavaProgram("Test", Collections.singletonList(sexp));
         assertNotNull("failed to compile Murmel to Java", java);
     }
@@ -34,16 +35,16 @@ public class MurmelJavaCompilerTest {
         String source = "(define f (lambda (a b) (write a) (write b)))"
                 + "(f \"Hello, \" \"World!\")";
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target"));
         StringReader reader = new StringReader(source);
-        final SExpressionParser parser = new LambdaJ().new SExpressionParser(reader::read);
+        final SExpressionParser parser = new SExpressionParser(reader::read);
         final ArrayList<Object> program = new ArrayList<>();
         while (true) {
-            Object sexp = parser.readObj();
+            Object sexp = parser.readObj(true);
             if (sexp == null) break;
             program.add(sexp);
         }
 
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
@@ -70,7 +71,7 @@ public class MurmelJavaCompilerTest {
         assertEquals("cons produced wrong result", 1, program.body());
     }
 
-    // todo @Test
+    //@Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\r\n"
                 + "    (reverse (quote (1 2 3 4 5 6 7 8 9))))\r\n"
@@ -83,16 +84,15 @@ public class MurmelJavaCompilerTest {
                 + "        (not l) a\r\n"
                 + "        (rev_ rev_ (cons (car l) a) (cdr l )))))))";
         MurmelJavaProgram program = compile(source);
-        assertNotNull("failed to compile reverse to class", program);
+        assertNotNull("failed to compile reverse to class:", program);
         //assertEquals("reverse produced wrong result", 1, program.body());
     }
 
 
 
     private MurmelJavaProgram compile(String source) throws Exception {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target"));
         StringReader reader = new StringReader(source);
-        final SExpressionParser parser = new LambdaJ().new SExpressionParser(reader::read);
+        final SExpressionParser parser = new SExpressionParser(reader::read);
         final ArrayList<Object> program = new ArrayList<>();
         while (true) {
             Object sexp = parser.readObj();
@@ -100,8 +100,9 @@ public class MurmelJavaCompilerTest {
             program.add(sexp);
         }
 
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, null);
-        assertNotNull("failed to compile Murmel to class", murmelClass);
+        assertNotNull("failed to compile Murmel to class:\n\n" + c.formsToJavaProgram("Test", program), murmelClass);
 
         return murmelClass.newInstance();
     }

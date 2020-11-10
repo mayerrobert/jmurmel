@@ -98,7 +98,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.189 2020/11/09 20:52:01 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.190 2020/11/10 07:56:44 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -317,7 +317,11 @@ public class LambdaJ {
     /// Scanner, symboltable and S-expression parser
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
-    public class SExpressionParser implements Parser {
+    public static class SExpressionParser implements Parser {
+        private final int features;
+        private final int trace;
+        private final TraceConsumer tracer;
+
         private ReadSupplier in;    // readObj() will read from this
         private boolean init;
 
@@ -329,7 +333,15 @@ public class LambdaJ {
         private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
-        public SExpressionParser(ReadSupplier in) { this.in = in; }
+        public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), 0, null, in); }
+        public SExpressionParser(int features, int trace, TraceConsumer tracer, ReadSupplier in) { this.features = features; this.trace = trace; this.tracer = tracer; this.in = in; }
+
+        private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
+        private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
+        private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
+        private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
+        private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
+
         @Override public void setInput(ReadSupplier input) { in = input; init = false; }
 
         /// Scanner
@@ -465,6 +477,7 @@ public class LambdaJ {
             return readObject();
         }
 
+        /** Record line and char numbers in the conses */
         public Object readObj(boolean pos) {
             this.pos = true;
             Object ret = readObj();
@@ -527,6 +540,29 @@ public class LambdaJ {
 
         private ConsCell cons(Object car, Object cdr) {
             return pos ? new SExpConsCell(lineNo, charNo, car, cdr) : new ConsCell(car, cdr);
+        }
+        /** Append rest at the end of first. If first is a list it will be modified. */
+        private ConsCell combine(Object first, Object rest) {
+            if (consp(first)) return appendToList((ConsCell)first, rest);
+            else return cons(first, rest);
+        }
+
+        /** Append rest at the end of first, modifying first in the process.
+         *  Returns a dotted list unless rest is a proper list. */
+        // todo ist das nconc (destructive concatenate) ?
+        private ConsCell appendToList(ConsCell first, Object rest) {
+            for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
+                if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
+                if (cdr(last) == null) {
+                    last.cdr = rest;
+                    return first;
+                }
+                if (!consp(cdr(last))) {
+                    last.cdr = cons(last.cdr, rest);
+                    return first;
+                }
+            }
+            throw new LambdaJError(true, "%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
         }
     }
 
@@ -1087,30 +1123,6 @@ public class LambdaJ {
             }
         }
         return ret;
-    }
-
-    /** Append rest at the end of first. If first is a list it will be modified. */
-    private ConsCell combine(Object first, Object rest) {
-        if (consp(first)) return appendToList((ConsCell)first, rest);
-        else return cons(first, rest);
-    }
-
-    /** Append rest at the end of first, modifying first in the process.
-     *  Returns a dotted list unless rest is a proper list. */
-    // todo ist das nconc (destructive concatenate)
-    private ConsCell appendToList(ConsCell first, Object rest) {
-        for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
-            if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
-            if (cdr(last) == null) {
-                last.cdr = rest;
-                return first;
-            }
-            if (!consp(cdr(last))) {
-                last.cdr = cons(last.cdr, rest);
-                return first;
-            }
-        }
-        throw new LambdaJError(true, "%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
     }
 
     private static Object[] listToArray(Object maybeList) {
@@ -1752,7 +1764,7 @@ public class LambdaJ {
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
         if (symtab == null) {
-            Parser scriptParser = new SExpressionParser(in);
+            Parser scriptParser = new SExpressionParser(features, trace, tracer, in);
             setSymtab(scriptParser);
             final ConsCell env = environment(null);
             topEnv = env;
@@ -1780,7 +1792,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         nCells = 0; maxEnvLen = 0;
-        SExpressionParser parser = new SExpressionParser(in);
+        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in);
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
         setReaderPrinter(parser, outWriter);
@@ -1799,8 +1811,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        Parser parser = new SExpressionParser(program);
-        ObjectReader inReader = new SExpressionParser(in);
+        Parser parser = new SExpressionParser(features, trace, tracer, program);
+        ObjectReader inReader = new SExpressionParser(features, 0, null, in);
         ObjectWriter outWriter = new SExpressionWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
@@ -1898,7 +1910,7 @@ public class LambdaJ {
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-                parser = interpreter.new SExpressionParser(() -> {
+                parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer, () -> {
                     int c = System.in.read();
                     if (echoHolder.value && c != EOF)
                         if (istty && c == '\r') System.out.print(System.lineSeparator());
@@ -1932,7 +1944,7 @@ public class LambdaJ {
                     if (":init"  .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"     .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"     .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"  .equals(exp.toString())) { compileToJava(history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":java"  .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
                     history.add(exp);
                 }
 
@@ -1976,8 +1988,8 @@ public class LambdaJ {
         }
     }
 
-    private static void compileToJava(List<Object> history, Object className, Object filename) {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
+    private static void compileToJava(SymbolTable symtab, List<Object> history, Object className, Object filename) {
+        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         if (null == filename) {
             System.out.println(c.formsToJavaProgram(className.toString(), history));
             return;
@@ -2200,7 +2212,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
-            intp.setReaderPrinter(intp.new SExpressionParser(System.in::read), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), 0, null, System.in::read), intp.getLispPrinter());
         }
 
         public ObjectReader getLispReader()  { return intp.getLispReader(); }
@@ -2229,9 +2241,12 @@ public class LambdaJ {
     }
 
     public static class MurmelJavaCompiler {
+        private final LambdaJ.SymbolTable st;
+
         private MurmelClassLoader murmelClassLoader;
 
-        public MurmelJavaCompiler(Path outPath) {
+        public MurmelJavaCompiler(SymbolTable st, Path outPath) {
+            this.st = st;
             AccessController.doPrivileged((PrivilegedAction<?>) () -> {
                 murmelClassLoader = new MurmelClassLoader(outPath);
                 return null;
@@ -2265,6 +2280,10 @@ public class LambdaJ {
 
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
         public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
+            ConsCell env = extenv("nil", 0, null);
+            env = extenv("t", 0, env);
+            env = extenv("write", 0, env);
+
             final StringBuilder ret = new StringBuilder();
             final String clsName;
             final int dotpos = unitName.lastIndexOf('.');
@@ -2290,7 +2309,7 @@ public class LambdaJ {
                     + "    }\n\n");
 
             for (Object form: forms)
-                if (consp(form) && isSymbol(car(form), "define")) defineGlobal(ret, (ConsCell) cdr(form));
+                if (consp(form) && isSymbol(car(form), "define")) env = defineGlobal(ret, (ConsCell) cdr(form), env);
 
             // generate getValue() and getFunction()
             ret.append("\n    public Object getValue(String symbol) {\n"
@@ -2303,12 +2322,17 @@ public class LambdaJ {
                      + "        }\n"
                      + "    }\n\n");
 
-            ret.append("\n    public Object body() {\n        Object result = null;\n");
-            formsToJava(ret, forms);
-            ret.append("        return result;\n    }\n");
+            ret.append("\n    public Object body() {\n        Object result0 = null;\n");
+            formsToJava(ret, forms, env, 0);
+            ret.append("        return result0;\n    }\n");
 
             ret.append("}\n");
             return ret.toString();
+        }
+
+        ConsCell extenv(String symname, int sfx, ConsCell prev) {
+            LambdaJSymbol sym = st.intern(new LambdaJSymbol(symname));
+            return cons(cons(sym, symname + (sfx == 0 ? "" : sfx)), prev);
         }
 
         /** return true if form matches any of the symbols */
@@ -2316,23 +2340,32 @@ public class LambdaJ {
             return form.toString().equalsIgnoreCase(sym);
         }
 
-        private void defineGlobal(StringBuilder sb, ConsCell form) {
+        private ConsCell defineGlobal(StringBuilder sb, ConsCell form, ConsCell env) {
+            env = extenv(car(form).toString(), 0, env);
             sb.append("    private final Object ").append(car(form)).append(" = ");
-            formToJava(sb, cadr(form));
+            formToJava(sb, cadr(form), env, 0);
             sb.append(';').append(System.lineSeparator());
+            return env;
         }
 
-        private void formsToJava(StringBuilder ret, Iterable<Object> forms) {
+        private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
                 if (!(consp(form) && isSymbol(car(form), "define"))) {
-                    ret.append("        result = ");
-                    formToJava(ret, form);
+                    ret.append("        result").append(rsfx).append(" = ");
+                    formToJava(ret, form, env, rsfx);
                     ret.append(';').append(System.lineSeparator());
                 }
             }
         }
 
-        private void formToJava(StringBuilder sb, Object form) {
+        private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
+            try {
+            if (symbolp(form)) {
+                ConsCell symentry = assoc(form, env);
+                if (symentry == null)
+                    throw new LambdaJError(true, "undefined symbol %s", form.toString());
+                sb.append(cdr(symentry).toString());  return;
+            }
             if (atom(form)) {
                 sb.append(printSEx(form));  return;
             }
@@ -2340,27 +2373,28 @@ public class LambdaJ {
                 final Object op = car(form);
                 Object args = cdr(form);
 
-                if (isSymbol(op, "+")) { addOp(sb, op, 0.0, args); return; }
-                if (isSymbol(op, "*")) { addOp(sb, op, 1.0, args); return; }
-                if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args); return; }
-                if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args); return; }
+                if (isSymbol(op, "+")) { addOp(sb, op, 0.0, args, env, rsfx); return; }
+                if (isSymbol(op, "*")) { addOp(sb, op, 1.0, args, env, rsfx); return; }
+                if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args, env, rsfx); return; }
+                if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args, env, rsfx); return; }
 
-                if (isSymbol(op, "car")) { sb.append("((ConsCell)"); formToJava(sb, car(args)); sb.append(").car"); return; }
-                if (isSymbol(op, "cdr")) { sb.append("((ConsCell)"); formToJava(sb, car(args)); sb.append(").cdr"); return; }
-                if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args)); sb.append(", "); formToJava(sb, cadr(args)); sb.append(')'); return; }
+                if (isSymbol(op, "car")) { sb.append("((ConsCell)"); formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
+                if (isSymbol(op, "cdr")) { sb.append("((ConsCell)"); formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
+                if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
-                if (isSymbol(op, "not")) { sb.append("!(null != "); formToJava(sb, car(args)); sb.append(')'); return; }
+                if (isSymbol(op, "not")) { sb.append("!(null != "); formToJava(sb, car(args), env, rsfx); sb.append(')'); return; }
                 if (isSymbol(op, "if"))  {
-                    formToJava(sb, car(args)); sb.append(" ? "); formToJava(sb, cadr(args));
-                    if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args)); }
+                    formToJava(sb, car(args), env, rsfx); sb.append(" ? "); formToJava(sb, cadr(args), env, rsfx);
+                    if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
                     return;
                 }
 
                 if (isSymbol(op, "lambda")) {
-                    sb.append("(MurmelFunction)(args -> {\n        Object result;\n");
-                    params(sb, car(args));
-                    formsToJava(sb, (ConsCell)cdr(args));
-                    sb.append("        return result; })");
+                    rsfx++;
+                    sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
+                    env = params(sb, car(args), env, rsfx);
+                    formsToJava(sb, (ConsCell)cdr(args), env, rsfx);
+                    sb.append("        return result").append(rsfx).append("; })");
                     return;
                 }
 
@@ -2368,43 +2402,52 @@ public class LambdaJ {
 
                 // function call
                 sb.append("apply(");
-                formToJava(sb, op);
+                formToJava(sb, op, env, rsfx);
                 if (args != null)
                     for (Object arg: (ConsCell)args) {
                         sb.append(", ");
-                        formToJava(sb, arg);
+                        formToJava(sb, arg, env, rsfx);
                     }
                 sb.append(')');
                 return;
             }
             throw new LambdaJError("compile-to-java: form not implemented: " + printSEx(form));
+            }
+            catch (LambdaJError e) {
+                if (form instanceof SExpConsCell) throw new LambdaJError(true, e.getMessage(), form);
+                throw e;
+            }
         }
 
-        private void params(StringBuilder sb, Object paramList) {
-            sb.append("        final Object ").append(car(paramList).toString()).append(" = args[0];");
+        private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
+            sb.append("        final Object ").append(car(paramList).toString()).append(rsfx).append(" = args").append(rsfx).append("[0];");
+            env = extenv(car(paramList).toString(), rsfx, env);
+
             int n = 1;
             if (cdr(paramList) != null) for (Object param: (ConsCell)cdr(paramList)) {
-                sb.append("\n        final Object ").append(param.toString()).append(" = args[").append(n++).append("];");
+                sb.append("\n        final Object ").append(param.toString()).append(rsfx).append(" = args").append(rsfx).append("[").append(n++).append("];");
+                env = extenv(param.toString(), rsfx, env);
             }
             sb.append("\n");
+            return env;
         }
 
         /** generate operator for zero or more args */
-        private void addOp(StringBuilder sb, Object _op, double start, Object args) {
+        private void addOp(StringBuilder sb, Object _op, double start, Object args, ConsCell env, int rsfx) {
             String op = _op.toString();
             sb.append('(').append(start);
-            if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); formToJava(sb, arg); }
+            if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); formToJava(sb, arg, env, rsfx); }
             sb.append(')');
         }
 
         /** generate operator for one or more args */
-        private void subOp(StringBuilder sb, Object _op, double start, Object args) {
+        private void subOp(StringBuilder sb, Object _op, double start, Object args, ConsCell env, int rsfx) {
             String op = _op.toString();
             sb.append('(');
-            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); formToJava(sb, car(args)); }
+            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); formToJava(sb, car(args), env, rsfx); }
             else {
-                sb.append("(double)"); formToJava(sb, car(args));
-                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); formToJava(sb, arg); }
+                sb.append("(double)"); formToJava(sb, car(args), env, rsfx);
+                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); formToJava(sb, arg, env, rsfx); }
             }
             sb.append(')');
         }
@@ -2421,11 +2464,17 @@ public class LambdaJ {
                 if (c.call()) {
                     return Class.forName(className, true, murmelClassLoader);
                 }
-                return null;
+                throw new LambdaJError(true, "compilation of class %s failed", className);
             }
             finally {
                 fm.close();
             }
+        }
+
+
+
+        private ConsCell cons(Object car, Object cdr) {
+            return new ConsCell(car, cdr);
         }
     }
 }
