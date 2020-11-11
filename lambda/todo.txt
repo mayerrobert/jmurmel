@@ -1,3 +1,6 @@
+der interpreter sollte haveNumbers haben, der scanner haveDouble und haveLong
+-> enumwert HAVE_NUMBERS zusaetzlich, have methoden geeignet verteilen
+
 im environment des compilers koennt man den typ der symbole mitfuehren, das wuerde compiletime typchecks ermoeglichen.
 
 das main von compilierten programmen sollte am ende ggf alles abbauen. vielleicht eine methode dazu, die auch exposed ist? interpreter auch?

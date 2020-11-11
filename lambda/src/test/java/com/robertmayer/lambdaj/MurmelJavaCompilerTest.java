@@ -71,21 +71,28 @@ public class MurmelJavaCompilerTest {
         assertEquals("cons produced wrong result", 1, program.body());
     }
 
-    //@Test
+    @Test
+    public void testEq() throws Exception {
+        MurmelJavaProgram program = compile("(eq 1 1)");
+        assertNotNull("failed to compile eq to class", program);
+        assertEquals("eq produced wrong result", Boolean.TRUE, program.body());
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\r\n"
-                + "    (reverse (quote (1 2 3 4 5 6 7 8 9))))\r\n"
+                + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\r\n"
                 + "\r\n"
                 + " (lambda (list)\r\n"
                 + "   ((lambda (rev)\r\n"
-                + "      (rev rev (quote ()) list))\r\n"
+                + "      (rev rev nil list))\r\n"
                 + "    (lambda (rev_ a l)\r\n"
                 + "      (if\r\n"
                 + "        (not l) a\r\n"
                 + "        (rev_ rev_ (cons (car l) a) (cdr l )))))))";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile reverse to class:", program);
-        //assertEquals("reverse produced wrong result", 1, program.body());
+        assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", sexp(program.body()));
     }
 
 
@@ -105,5 +112,11 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile Murmel to class:\n\n" + c.formsToJavaProgram("Test", program), murmelClass);
 
         return murmelClass.newInstance();
+    }
+
+    private String sexp(Object obj) {
+        StringBuilder b = new StringBuilder();
+        new LambdaJ.SExpressionWriter(b::append).printObj(obj);;
+        return b.toString();
     }
 }

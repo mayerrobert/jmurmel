@@ -98,7 +98,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.191 2020/11/10 21:59:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.192 2020/11/11 11:50:41 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -221,7 +221,7 @@ public class LambdaJ {
     private final TraceConsumer tracer;
 
     public enum Features {
-        HAVE_QUOTE,          // quote will allow to distinguish code and data.
+        HAVE_QUOTE,          // quote will allow to distinguish code and data. without quote use cons.
         HAVE_ATOM,
         HAVE_EQ,
 
@@ -2343,6 +2343,7 @@ public class LambdaJ {
         }
 
         private String javasym(Object form, ConsCell env) {
+            if (form == null) form = st.intern(new LambdaJSymbol("nil"));
             ConsCell symentry = assoc(form, env);
             if (symentry == null)
                 throw new LambdaJError(true, "undefined symbol %s", form.toString());
@@ -2376,6 +2377,7 @@ public class LambdaJ {
 
         private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
             try {
+                // todo if (form == null) null und if (form eq nil) null
             if (symbolp(form)) {
                 sb.append(javasym(form, env));  return;
             }
@@ -2391,11 +2393,20 @@ public class LambdaJ {
                 if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args, env, rsfx); return; }
                 if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args, env, rsfx); return; }
 
-                if (isSymbol(op, "car")) { sb.append("((ConsCell)"); formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
-                if (isSymbol(op, "cdr")) { sb.append("((ConsCell)"); formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
+                // todo compareop
+
+                if (isSymbol(op, "car"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
+                if (isSymbol(op, "cdr"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
                 if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
-                if (isSymbol(op, "not")) { sb.append("!(null != "); formToJava(sb, car(args), env, rsfx); sb.append(')'); return; }
+                // todo quote
+
+                // todo eq und not umbauen auf (... == ... ? _t : _nil) oder null statt _nil, oder printSEx() schreibt t/nil fuer Boolean (aber dann waer interpreter/compiler unterschiedlich
+                if (isSymbol(op, "eq")) { sb.append('('); formToJava(sb, car(args), env, rsfx); sb.append(" == "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
+                if (isSymbol(op, "not")) { sb.append("(null == "); formToJava(sb, car(args), env, rsfx); sb.append(')'); return; }
+
+                // todo cond
+
                 if (isSymbol(op, "if"))  {
                     formToJava(sb, car(args), env, rsfx); sb.append(" ? "); formToJava(sb, cadr(args), env, rsfx);
                     if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
@@ -2412,6 +2423,13 @@ public class LambdaJ {
                 }
 
                 if (isSymbol(op, "define")) return;
+
+                // todo apply
+                // todo eval: dafuer muss das env des interpreter mitgefuehrt werden
+
+                // todo progn, labels
+
+                // todo letxxx
 
                 // function call
                 sb.append("apply(");
