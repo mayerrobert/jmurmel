@@ -13,8 +13,16 @@
     <artifactId>jmurmel</artifactId>
     <packaging>jar</packaging>
 
-	<properties>
-		<javac.target>1.8</javac.target>
+    <description>JMurmel - an interpreter/ compiler for the Lisp dialect Murmel</description>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>LICENSE</url>
+        </license>
+    </licenses>
+    
+    <properties>
+        <javac.target>1.8</javac.target>
 
         <!-- report maven-plugins -->
         <maven-reports-plugin.version>2.7</maven-reports-plugin.version>
@@ -30,6 +38,7 @@
         <maven-surefire-report-plugin.version>2.18.1</maven-surefire-report-plugin.version>
         <jacoco-plugin.version>0.7.3.201502191951</jacoco-plugin.version>
         <versions-plugin.version>2.1</versions-plugin.version>
+        <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
 	</properties>
 
 	<build>
@@ -125,6 +134,12 @@
                     <quiet>true</quiet>
                     <show>public</show>
                     <linksource>true</linksource>
+	                <additionalparam>-Xdoclint:all -Xdoclint:-missing</additionalparam>
+	                <additionalOptions>-Xdoclint:all -Xdoclint:-missing</additionalOptions>
+	                <additionalJOptions>
+	                    <additionalJOption>-Xdoclint:all</additionalJOption>
+	                    <additionalJOption>-Xdoclint:-missing</additionalJOption>
+	                </additionalJOptions>
                 </configuration>
                 <reportSets>
                     <reportSet>
