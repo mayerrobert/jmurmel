@@ -98,7 +98,7 @@ public class LambdaJ {
     /// Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.190 2020/11/10 07:56:44 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.191 2020/11/10 21:59:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2206,9 +2206,9 @@ public class LambdaJ {
 
         protected final LambdaJ intp = new LambdaJ();
 
-        protected final Object nil = null;
-        protected final Object t = true;
-        protected final MurmelFunction write = args -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
+        protected final Object _nil = null;
+        protected final Object _t = true;
+        protected final MurmelFunction _write = args -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
@@ -2293,14 +2293,14 @@ public class LambdaJ {
                 ret.append("package " + unitName.substring(0, dotpos)).append(";\n\n");
                 clsName = unitName.substring(dotpos+1);
             }
-            ret.append("import com.robertmayer.lambdaj.LambdaJ;\n\n"
+            ret.append("import com.robertmayer.lambdaj.LambdaJ;\n"
                     + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
                     + "public class " + clsName + " extends MurmelJavaProgram {\n"
                     + "    public static void main(String[] args) {\n"
                     + "        final " + clsName + " program = new " + clsName + "();\n"
                     + "        try {\n"
                     + "            Object result = program.body();\n"
-                    + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program.write.apply(result); System.out.println(); }\n"
+                    + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program._write.apply(result); System.out.println(); }\n"
                     + "            return;\n"
                     + "        } catch (LambdaJError e) {\n"
                     + "            System.err.println(e.getMessage());\n"
@@ -2316,7 +2316,7 @@ public class LambdaJ {
                      + "        switch (symbol) {\n");
             for (Object form: forms)
                 if (consp(form) && isSymbol(car(form), "define"))
-                    ret.append("        case \"").append(cadr(form)).append("\": return ").append(cadr(form)).append(";\n");
+                    ret.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
 
             ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
                      + "        }\n"
@@ -2327,27 +2327,43 @@ public class LambdaJ {
             ret.append("        return result0;\n    }\n");
 
             ret.append("}\n");
+            //System.err.print(ret.toString());
             return ret.toString();
         }
 
-        ConsCell extenv(String symname, int sfx, ConsCell prev) {
+        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
+        private ConsCell extenv(String symname, int sfx, ConsCell prev) {
             LambdaJSymbol sym = st.intern(new LambdaJSymbol(symname));
-            return cons(cons(sym, symname + (sfx == 0 ? "" : sfx)), prev);
+            return cons(cons(sym, mangle(symname, sfx)), prev);
         }
 
-        /** return true if form matches any of the symbols */
+        // todo replace chars that are invalid in Java identifiers
+        private static String mangle(String symname, int sfx) {
+            return '_' + symname + (sfx == 0 ? "" : sfx);
+        }
+
+        private String javasym(Object form, ConsCell env) {
+            ConsCell symentry = assoc(form, env);
+            if (symentry == null)
+                throw new LambdaJError(true, "undefined symbol %s", form.toString());
+            final String javasym = cdr(symentry).toString();
+            return javasym;
+        }
+
+        /** return true if {@code form} matches the symbol {@code sym} */
         private boolean isSymbol(Object form, String sym) {
             return form.toString().equalsIgnoreCase(sym);
         }
 
         private ConsCell defineGlobal(StringBuilder sb, ConsCell form, ConsCell env) {
             env = extenv(car(form).toString(), 0, env);
-            sb.append("    private final Object ").append(car(form)).append(" = ");
+            sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
             formToJava(sb, cadr(form), env, 0);
             sb.append(';').append(System.lineSeparator());
             return env;
         }
 
+        /** generate Java code for a list of forms */
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
                 if (!(consp(form) && isSymbol(car(form), "define"))) {
@@ -2361,10 +2377,7 @@ public class LambdaJ {
         private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
             try {
             if (symbolp(form)) {
-                ConsCell symentry = assoc(form, env);
-                if (symentry == null)
-                    throw new LambdaJError(true, "undefined symbol %s", form.toString());
-                sb.append(cdr(symentry).toString());  return;
+                sb.append(javasym(form, env));  return;
             }
             if (atom(form)) {
                 sb.append(printSEx(form));  return;
@@ -2420,12 +2433,13 @@ public class LambdaJ {
         }
 
         private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
-            sb.append("        final Object ").append(car(paramList).toString()).append(rsfx).append(" = args").append(rsfx).append("[0];");
             env = extenv(car(paramList).toString(), rsfx, env);
+            sb.append("        final Object ").append(javasym(car(paramList), env)).append(" = args").append(rsfx).append("[0];");
 
             int n = 1;
             if (cdr(paramList) != null) for (Object param: (ConsCell)cdr(paramList)) {
-                sb.append("\n        final Object ").append(param.toString()).append(rsfx).append(" = args").append(rsfx).append("[").append(n++).append("];");
+                env = extenv(param.toString(), rsfx, env);
+                sb.append("\n        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];");
                 env = extenv(param.toString(), rsfx, env);
             }
             sb.append("\n");
