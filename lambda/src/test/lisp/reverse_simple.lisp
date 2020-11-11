@@ -4,11 +4,11 @@
 ; result: (9.0 8.0 7.0 6.0 5.0 4.0 3.0 2.0 1.0)
 
 ((lambda (reverse)
-    (reverse (quote (1 2 3 4 5 6 7 8 9))))
+    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))
 
  (lambda (list)
    ((lambda (rev)
-      (rev rev (quote ()) list))
+      (rev rev nil list))
     (lambda (rev_ a l)
       (if (not l)
             a
