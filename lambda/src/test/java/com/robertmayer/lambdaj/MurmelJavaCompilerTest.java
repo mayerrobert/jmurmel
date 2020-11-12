@@ -79,6 +79,34 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testQuoteSymbol() throws Exception {
+        MurmelJavaProgram program = compile("'a");
+        assertNotNull("failed to compile quoteSymbol to class", program);
+        assertEquals("quoteSymbol produced wrong result", "a", sexp(program.body()));
+    }
+
+    @Test
+    public void testQuoteAtom() throws Exception {
+        MurmelJavaProgram program = compile("'1");
+        assertNotNull("failed to compile quoteSymbol to class", program);
+        assertEquals("quoteSymbol produced wrong result", "1", sexp(program.body()));
+    }
+
+    @Test
+    public void testQuoteList() throws Exception {
+        MurmelJavaProgram program = compile("'(1 2 3)");
+        assertNotNull("failed to compile quoteList to class", program);
+        assertEquals("quoteList produced wrong result", "(1 2 3)", sexp(program.body()));
+    }
+
+    @Test
+    public void testQuoteNil() throws Exception {
+        MurmelJavaProgram program = compile("'()");
+        assertNotNull("failed to compile quoteSymbol to class", program);
+        assertEquals("quoteSymbol produced wrong result", "nil", sexp(program.body()));
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\r\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\r\n"

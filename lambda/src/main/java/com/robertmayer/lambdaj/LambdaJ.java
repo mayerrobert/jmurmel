@@ -55,6 +55,8 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+/// # JMurmel - Murmel interpreter/ compiler
+
 /** <p>Implementation of JMurmel, an interpreter for the Lisp-dialect Murmel.
  *  Can be used as a standalone commandline application as well as embedded in a Java program.
  *
@@ -95,10 +97,10 @@ import javax.tools.ToolProvider;
  *  or sort of a table-of-contents of the interpreter implementation. */
 public class LambdaJ {
 
-    /// Public interfaces and an exception class to use the interpreter from Java
+    /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.192 2020/11/11 11:50:41 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.193 2020/11/11 23:21:25 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -140,7 +142,7 @@ public class LambdaJ {
 
 
 
-    /// Data types used by interpreter program as well as interpreted programs
+    /// ## Data types used by interpreter program as well as interpreted programs
 
     /** Main building block for Lisp-lists */
     public static class ConsCell implements Iterable<Object>, Serializable {
@@ -208,7 +210,7 @@ public class LambdaJ {
 
 
 
-    /// Infrastructure
+    /// ## Infrastructure
     public static final int EOF = -1;
     /** Max length of string literals */
     public static final int TOKEN_MAX = 2000;
@@ -306,7 +308,7 @@ public class LambdaJ {
 
     /** This class will write objects as S-expressions to the given {@link WriteConsumer} */
     public static class SExpressionWriter implements ObjectWriter {
-        private final WriteConsumer out;  // printObj() and printEol() will write to this
+        private final WriteConsumer out;
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
         @Override public void printObj(Object o) { printSEx(out, o); }
@@ -314,7 +316,7 @@ public class LambdaJ {
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
-    /// Scanner, symboltable and S-expression parser
+    /// ##  Scanner, symboltable and S-expression parser
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     public static class SExpressionParser implements Parser {
@@ -625,7 +627,7 @@ public class LambdaJ {
 
 
 
-    /// eval - the heart of most if not all Lisp interpreters
+    /// ##  eval - the heart of most if not all Lisp interpreters
     private ConsCell topEnv;
 
     private Object eval(Object form, ConsCell env, int stack, int level) {
@@ -859,8 +861,7 @@ public class LambdaJ {
 
                 }
 
-                /// eval - not a symbol/atom/cons - something is really wrong here.
-                /// eval - let's sprinkle some crack on him and get out of here, Dave.
+                /// eval - Not a symbol/atom/cons - something is really wrong here. Let's sprinkle some crack on him and get out of here, Dave.
                 throw new LambdaJError("eval: cannot eval expression");
             }
 
@@ -997,7 +998,7 @@ public class LambdaJ {
 
 
 
-    /// Stats during eval and at the end
+    /// ##  Stats during eval and at the end
     private int nCells;
     private int maxEnvLen;
     private int maxEvalStack;
@@ -1048,7 +1049,7 @@ public class LambdaJ {
 
 
 
-    /// Functions used by interpreter program, a subset is used by interpreted programs as well
+    /// ##  Functions used by interpreter program, a subset is used by interpreted programs as well
     private        ConsCell cons(Object car, Object cdr)                    { nCells++; return new ConsCell(car, cdr); }
     private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
@@ -1237,7 +1238,7 @@ public class LambdaJ {
 
 
 
-    /// Error checking functions, used by interpreter and primitives
+    /// ##  Error checking functions, used by interpreter and primitives
     /** ecactly one argument */
     private static void oneArg(String func, Object a) {
         if (a == null)      throw new LambdaJError(true, "%s: expected one argument but no argument was given", func);
@@ -1290,6 +1291,7 @@ public class LambdaJ {
     }
 
     ///
+    /// ## Summary
     /// That's (almost) all, folks.
     ///
     /// At this point we have reached the end of the Murmel interpreter core, i.e. we have everything needed
@@ -1301,7 +1303,7 @@ public class LambdaJ {
 
 
 
-    /// Additional error checking functions used by primitives only.
+    /// ##  Additional error checking functions used by primitives only.
 
     /** a must be the empty list */
     private static void noArgs(String func, ConsCell a) {
@@ -2201,14 +2203,15 @@ public class LambdaJ {
 
 
 
+    ///
+    /// ## class MurmelJavaProgram
+    /// class MurmelJavaProgram - base class for copiled Murmel programs
+    ///
+
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram {
 
         protected final LambdaJ intp = new LambdaJ();
-
-        protected final Object _nil = null;
-        protected final Object _t = true;
-        protected final MurmelFunction _write = args -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
@@ -2222,11 +2225,6 @@ public class LambdaJ {
             intp.setReaderPrinter(lispStdin, lispStdout);
         }
 
-        protected Object apply(Object fn, Object... args) {
-            MurmelFunction f = (MurmelFunction)fn;
-            return f.apply(args);
-        }
-
         public abstract Object body();
 
         public abstract Object getValue(String globalSymbol);
@@ -2238,8 +2236,31 @@ public class LambdaJ {
             }
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
         }
+
+
+
+        protected final Object _nil = null;
+        protected final Object _t = true;
+        protected final MurmelFunction _write = args  -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
+        protected final MurmelFunction _intern = args -> { return intern((String)args[0]); };
+
+        // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
+        protected LambdaJSymbol intern(String sym) {
+            return intp.symtab.intern(new LambdaJSymbol(sym));
+        }
+
+        protected Object apply(Object fn, Object... args) {
+            MurmelFunction f = (MurmelFunction)fn;
+            return f.apply(args);
+        }
     }
 
+
+
+    ///
+    /// ## class MurmelJavaCompiler
+    /// class MurmelJavaCompiler - compile Murmel to Java or to a .jar file
+    ///
     public static class MurmelJavaCompiler {
         private final LambdaJ.SymbolTable st;
 
@@ -2283,6 +2304,7 @@ public class LambdaJ {
             ConsCell env = extenv("nil", 0, null);
             env = extenv("t", 0, env);
             env = extenv("write", 0, env);
+            env = extenv("intern", 0, env);
 
             final StringBuilder ret = new StringBuilder();
             final String clsName;
@@ -2333,8 +2355,12 @@ public class LambdaJ {
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
         private ConsCell extenv(String symname, int sfx, ConsCell prev) {
-            LambdaJSymbol sym = st.intern(new LambdaJSymbol(symname));
+            LambdaJSymbol sym = intern(symname);
             return cons(cons(sym, mangle(symname, sfx)), prev);
+        }
+
+        private LambdaJSymbol intern(String symname) {
+            return st.intern(new LambdaJSymbol(symname));
         }
 
         // todo replace chars that are invalid in Java identifiers
@@ -2343,7 +2369,7 @@ public class LambdaJ {
         }
 
         private String javasym(Object form, ConsCell env) {
-            if (form == null) form = st.intern(new LambdaJSymbol("nil"));
+            if (form == null) form = intern("nil");
             ConsCell symentry = assoc(form, env);
             if (symentry == null)
                 throw new LambdaJError(true, "undefined symbol %s", form.toString());
@@ -2375,9 +2401,11 @@ public class LambdaJ {
             }
         }
 
+        /// compiler - compile a Murmel form to Java code. Note how this is somehow similar to eval.
         private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
             try {
-                // todo if (form == null) null und if (form eq nil) null
+
+            // todo if (form == null) null und if (form eq nil) null
             if (symbolp(form)) {
                 sb.append(javasym(form, env));  return;
             }
@@ -2388,6 +2416,7 @@ public class LambdaJ {
                 final Object op = car(form);
                 Object args = cdr(form);
 
+                /// compiler - number operators
                 if (isSymbol(op, "+")) { addOp(sb, op, 0.0, args, env, rsfx); return; }
                 if (isSymbol(op, "*")) { addOp(sb, op, 1.0, args, env, rsfx); return; }
                 if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args, env, rsfx); return; }
@@ -2399,7 +2428,8 @@ public class LambdaJ {
                 if (isSymbol(op, "cdr"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
                 if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
-                // todo quote
+                /// compiler - quote
+                if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
 
                 // todo eq und not umbauen auf (... == ... ? _t : _nil) oder null statt _nil, oder printSEx() schreibt t/nil fuer Boolean (aber dann waer interpreter/compiler unterschiedlich
                 if (isSymbol(op, "eq")) { sb.append('('); formToJava(sb, car(args), env, rsfx); sb.append(" == "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
@@ -2407,12 +2437,14 @@ public class LambdaJ {
 
                 // todo cond
 
+                /// compiler - if
                 if (isSymbol(op, "if"))  {
                     formToJava(sb, car(args), env, rsfx); sb.append(" ? "); formToJava(sb, cadr(args), env, rsfx);
                     if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
                     return;
                 }
 
+                /// compiler - lambda
                 if (isSymbol(op, "lambda")) {
                     rsfx++;
                     sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
@@ -2431,7 +2463,7 @@ public class LambdaJ {
 
                 // todo letxxx
 
-                // function call
+                /// compiler - function call
                 sb.append("apply(");
                 formToJava(sb, op, env, rsfx);
                 if (args != null)
@@ -2443,6 +2475,7 @@ public class LambdaJ {
                 return;
             }
             throw new LambdaJError("compile-to-java: form not implemented: " + printSEx(form));
+
             }
             catch (LambdaJError e) {
                 if (form instanceof SExpConsCell) throw new LambdaJError(true, e.getMessage(), form);
@@ -2482,6 +2515,16 @@ public class LambdaJ {
                 for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); formToJava(sb, arg, env, rsfx); }
             }
             sb.append(')');
+        }
+
+        private void quotedFormToJava(StringBuilder sb, Object form) {
+            if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
+
+            if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); return; }
+            if (atom(form))    { sb.append(form.toString()); return; }
+            if (consp(form))   { sb.append("new ConsCell("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
+
+            throw new LambdaJError("quote: internal error");
         }
 
 
