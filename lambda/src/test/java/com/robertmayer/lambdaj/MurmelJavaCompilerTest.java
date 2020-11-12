@@ -75,7 +75,15 @@ public class MurmelJavaCompilerTest {
     public void testEq() throws Exception {
         MurmelJavaProgram program = compile("(eq 1 1)");
         assertNotNull("failed to compile eq to class", program);
-        assertEquals("eq produced wrong result", Boolean.TRUE, program.body());
+        assertEquals("eq produced wrong result", "t", program.body());
+    }
+
+    @Test
+    public void testNumberEq() throws Exception {
+        MurmelJavaProgram program = compile("(= 1 1)");
+        assertNotNull("failed to compile numberEq to class", program);
+        final Object result = program.body();
+        assertEquals("numberEq produced wrong result", "t", result);
     }
 
     @Test
@@ -114,15 +122,37 @@ public class MurmelJavaCompilerTest {
                 + " (lambda (list)\r\n"
                 + "   ((lambda (rev)\r\n"
                 + "      (rev rev nil list))\r\n"
-                + "    (lambda (rev_ a l)\r\n"
+                + "    (lambda (rev^ a l)\r\n"
                 + "      (if\r\n"
                 + "        (not l) a\r\n"
-                + "        (rev_ rev_ (cons (car l) a) (cdr l )))))))";
+                + "        (rev^ rev^ (cons (car l) a) (cdr l )))))))";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile reverse to class:", program);
         assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", sexp(program.body()));
     }
 
+    // todo apply geht noch nicht @Test
+    public void testAckermannZ() throws Exception {
+        String source = "(define Z^\r\n"
+                + "  (lambda (f)\r\n"
+                + "    ((lambda (g)\r\n"
+                + "       (f (lambda args (apply (g g) args))))\r\n"
+                + "     (lambda (g)\r\n"
+                + "       (f (lambda args (apply (g g) args)))))))\r\n"
+                + "\r\n"
+                + "((Z^ (lambda (ackermann)\r\n"
+                + "       (lambda (m n)\r\n"
+                + "         (if (= m 0)\r\n"
+                + "               (+ n 1)\r\n"
+                + "           (if (= n 0)\r\n"
+                + "                 (ackermann (- m 1) 1)\r\n"
+                + "             (ackermann (- m 1) (ackermann m (- n 1))))))))\r\n"
+                + " 3\r\n"
+                + " 6) ; ==> 509";
+        MurmelJavaProgram program = compile(source);
+        assertNotNull("failed to compile ackermann to class:", program);
+        assertEquals("ackermann produced wrong result", "509", sexp(program.body()));
+    }
 
 
     private MurmelJavaProgram compile(String source) throws Exception {

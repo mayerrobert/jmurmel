@@ -18,19 +18,21 @@
 
 
 
-; Y-combinator
+; Y-combinator, only works with lazy evaluation
 
 (define Y
   (lambda (f)
-    ((lambda (g) (g g))
-     (lambda (g) (f (g g))))))
+    ((lambda (g)
+       (g g))
+     (lambda (g)
+       (f (g g))))))
 
 ;((Y (lambda (ackermann)
 ;      (lambda (m n)
 ;        (cond
-;        ((= m 0) (+ n 1))
-;        ((= n 0) (ackermann (- m 1) 1))
-;        (t (ackermann (- m 1) (ackermann m (- n 1))))))))
+;          ((= m 0) (+ n 1))
+;          ((= n 0) (ackermann (- m 1) 1))
+;          (t (ackermann (- m 1) (ackermann m (- n 1))))))))
 ; 3
 ; 6) ; ==> 509; stackoverflow
 
@@ -40,16 +42,17 @@
 
 (define Z
   (lambda (f)
-    ((lambda (g) (g g))
+    ((lambda (g)
+       (g g))
      (lambda (g)
        (f (lambda args (apply (g g) args)))))))
 
 ((Z (lambda (ackermann)
       (lambda (m n)
         (cond
-        ((= m 0) (+ n 1))
-        ((= n 0) (ackermann (- m 1) 1))
-        (t (ackermann (- m 1) (ackermann m (- n 1))))))))
+          ((= m 0) (+ n 1))
+          ((= n 0) (ackermann (- m 1) 1))
+          (t (ackermann (- m 1) (ackermann m (- n 1))))))))
  3
  6) ; ==> 509
 
@@ -63,10 +66,10 @@
        (f (lambda args (apply (g g) args)))))))
 
 ((Z^ (lambda (ackermann)
-      (lambda (m n)
-        (cond
-        ((= m 0) (+ n 1))
-        ((= n 0) (ackermann (- m 1) 1))
-        (t (ackermann (- m 1) (ackermann m (- n 1))))))))
+       (lambda (m n)
+         (cond
+           ((= m 0) (+ n 1))
+           ((= n 0) (ackermann (- m 1) 1))
+           (t (ackermann (- m 1) (ackermann m (- n 1))))))))
  3
  6) ; ==> 509

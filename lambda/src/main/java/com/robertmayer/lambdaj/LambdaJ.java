@@ -46,6 +46,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import javax.tools.JavaCompiler;
@@ -94,13 +95,15 @@ import javax.tools.ToolProvider;
  *
  *  <p>Comments starting with '///' could be considered similar to headings or chapter titles.
  *  You may want to run 'grep " ///" LambdaJ.java' to get something like birds-eye-view
- *  or sort of a table-of-contents of the interpreter implementation. */
+ *  or sort of a table-of-contents of the interpreter implementation. Or run<pre>
+ *  sed -nf src\main\shell\litprog.sed src\main\java\com\robertmayer\lambdaj\LambdaJ.java &gt; jmurmel-doc.md</pre>
+ *   */
 public class LambdaJ {
 
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.193 2020/11/11 23:21:25 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.194 2020/11/12 08:03:57 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -237,9 +240,11 @@ public class LambdaJ {
 
         HAVE_XTRA,           // extra special forms such as if
 
-        HAVE_DOUBLE,         // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
-        HAVE_LONG,           // turns on only Long support in the reader, you'll want DOUBLE as well
-        HAVE_STRING,         // strings, string literals and string related functions
+        HAVE_NUMBERS,        // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
+
+        HAVE_DOUBLE,         // turns on Double support in the reader, you'll want NUMBERS as well
+        HAVE_LONG,           // turns on Long support in the reader, you'll want NUMBERS as well
+        HAVE_STRING,         // turns on String support in the reader and string literals and string related functions in the interpreter
 
         HAVE_IO,             // read/ write, without it only the result will be printed
         HAVE_UTIL,           // not, consp, listp, symbolp, assoc
@@ -253,9 +258,9 @@ public class LambdaJ {
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
         HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits(); } },
-        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_XTRA.bits() | HAVE_DOUBLE.bits() | HAVE_LONG.bits()
+        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_XTRA.bits()
+                                                               | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits()
                                                                | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_UTIL.bits(); } },
-
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
         ;
 
@@ -268,8 +273,7 @@ public class LambdaJ {
     private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
     private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
     private boolean haveXtra()    { return (features & Features.HAVE_XTRA.bits())    != 0; }
-    private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
-    private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
+    private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits())  != 0; }
     private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
     private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
     private boolean haveUtil()    { return (features & Features.HAVE_UTIL.bits())    != 0; }
@@ -295,17 +299,18 @@ public class LambdaJ {
 
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private static boolean isSExSyntaxChar(int x) { return x == '(' || x == ')' || x == '\''; }
+    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '\''; }
 
-    private static boolean containsSExSyntaxOrBlank(String s) {
+    private static boolean containsSExSyntaxOrWhiteSpace(String s) {
         for (int i = 0; i < s.length(); i++) {
             char c;
-            if (isSExSyntaxChar(c = s.charAt(i))) return true;
+            if (isSExSyntax(c = s.charAt(i))) return true;
             if (isWhiteSpace(c)) return true;
         }
         return false;
     }
 
+    /// ## Printer
     /** This class will write objects as S-expressions to the given {@link WriteConsumer} */
     public static class SExpressionWriter implements ObjectWriter {
         private final WriteConsumer out;
@@ -316,7 +321,7 @@ public class LambdaJ {
         @Override public void printEol() { out.print(System.lineSeparator()); }
     }
 
-    /// ##  Scanner, symboltable and S-expression parser
+    /// ## Scanner, symboltable and S-expression parser
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     public static class SExpressionParser implements Parser {
@@ -338,8 +343,6 @@ public class LambdaJ {
         public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), 0, null, in); }
         public SExpressionParser(int features, int trace, TraceConsumer tracer, ReadSupplier in) { this.features = features; this.trace = trace; this.tracer = tracer; this.in = in; }
 
-        private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
-        private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
         private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
         private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
@@ -352,7 +355,7 @@ public class LambdaJ {
         private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isBar(int x)    { return !escape && x == '|'; }
 
-        private boolean isSyntax(int x) { return !escape && isSExSyntaxChar(x); }
+        private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
 
         private int readchar() throws IOException {
             int c = in.read();
@@ -494,7 +497,7 @@ public class LambdaJ {
                 if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse list   ()");
                 return null;
             }
-            if (haveNil() && !tokEscape && tok instanceof LambdaJSymbol && isToken(tok, "nil")) {
+            if (!tokEscape && tok instanceof LambdaJSymbol && isToken(tok, "nil")) {
                 return null;
             }
             if (!tokEscape && isToken(tok, ")")) {
@@ -570,6 +573,10 @@ public class LambdaJ {
 
 
 
+    ///
+    /// ## Murmel interpreter
+    ///
+
     /// Reserved words may not be used as a symbol
     private ConsCell reservedWords;
 
@@ -627,7 +634,7 @@ public class LambdaJ {
 
 
 
-    /// ##  eval - the heart of most if not all Lisp interpreters
+    /// ###  eval - the heart of most if not all Lisp interpreters
     private ConsCell topEnv;
 
     private Object eval(Object form, ConsCell env, int stack, int level) {
@@ -998,7 +1005,7 @@ public class LambdaJ {
 
 
 
-    /// ##  Stats during eval and at the end
+    /// ###  Stats during eval and at the end
     private int nCells;
     private int maxEnvLen;
     private int maxEvalStack;
@@ -1049,7 +1056,7 @@ public class LambdaJ {
 
 
 
-    /// ##  Functions used by interpreter program, a subset is used by interpreted programs as well
+    /// ###  Functions used by interpreter program, a subset is used by interpreted programs as well
     private        ConsCell cons(Object car, Object cdr)                    { nCells++; return new ConsCell(car, cdr); }
     private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
@@ -1189,7 +1196,7 @@ public class LambdaJ {
                     return;
                 }
             } else if (escapeAtoms && symbolp(obj)) {
-                if (containsSExSyntaxOrBlank(obj.toString())) {
+                if (containsSExSyntaxOrWhiteSpace(obj.toString())) {
                     sb.print("|"); sb.print(escapeSymbol((LambdaJSymbol) obj)); sb.print("|");
                     return;
                 }
@@ -1299,11 +1306,14 @@ public class LambdaJ {
     ///
     /// The rest of this file contains Murmel primitives and driver functions such as interpretExpression/s and main
     /// for interactive use.
+
+
+
+    ///
+    /// ## Murmel runtime
     ///
 
-
-
-    /// ##  Additional error checking functions used by primitives only.
+    /// Additional error checking functions used by primitives only.
 
     /** a must be the empty list */
     private static void noArgs(String func, ConsCell a) {
@@ -1370,8 +1380,8 @@ public class LambdaJ {
         numberArgs(opName, args);
         final Number lhs = (Number)car(args);
         final Number rhs = (Number)cadr(args);
-        if (lhs instanceof Long && rhs instanceof Long) return boolResult(pred.test(Long.compare(lhs.longValue(),  rhs.longValue())));
-        else                                            return boolResult(pred.test(Double.compare(lhs.doubleValue(),  rhs.doubleValue())));
+        if (lhs instanceof Long && rhs instanceof Long) return boolResult(pred.test(Long.compare(lhs.longValue(),     rhs.longValue())));
+        else                                            return boolResult(pred.test(Double.compare(lhs.doubleValue(), rhs.doubleValue())));
     }
 
     /** generate operator for zero or more args */
@@ -1651,7 +1661,7 @@ public class LambdaJ {
                        env);
         }
 
-        if (haveDouble()) {
+        if (haveNumbers()) {
             final Primitive fmod = args -> {
                 twoArgs("mod", args);
                 numberArgs("mod", args);
@@ -1707,6 +1717,10 @@ public class LambdaJ {
 
 
 
+    ///
+    /// ## Invoking the interpreter
+    ///
+
     /// JMurmel native FFI: Java calls Murmel with getValue() and getFunction()
 
     /** FFI: Return the value of {@code globalSymbol} in the interpreter's current global environment */
@@ -1759,7 +1773,7 @@ public class LambdaJ {
 
 
 
-    /// JMurmel JSR-223 FFI support - Java calls Murmel with JSR223 eval
+    /// JMurmel JSR-223 FFI - Java calls Murmel with JSR223 eval
 
     /** <p>evalScript is for JSR-223 support.
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
@@ -1784,8 +1798,7 @@ public class LambdaJ {
 
 
 
-    /// Public driver methods and functions to use the interpreter from Java (embedded)
-    /// or from the command prompt (interactive)
+    /// JMurmel native FFI - Java calls Murmel
 
     /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
      *
@@ -1860,6 +1873,8 @@ public class LambdaJ {
     }
 
 
+
+    /// static void main() - run JMurmel from the command prompt (interactive)
 
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String args[]) {
@@ -2039,7 +2054,7 @@ public class LambdaJ {
         if (hasFlag("--no-nil", args))      features &= ~Features.HAVE_NIL.bits();
         if (hasFlag("--no-t", args))        features &= ~Features.HAVE_T.bits();
         if (hasFlag("--no-extra", args))    features &= ~Features.HAVE_XTRA.bits();
-        if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
+        if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_NUMBERS.bits() | Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
         if (hasFlag("--no-string", args))   features &= ~Features.HAVE_STRING.bits();
         if (hasFlag("--no-io", args))       features &= ~Features.HAVE_IO.bits();
         if (hasFlag("--no-util", args))     features &= ~Features.HAVE_UTIL.bits();
@@ -2205,8 +2220,7 @@ public class LambdaJ {
 
     ///
     /// ## class MurmelJavaProgram
-    /// class MurmelJavaProgram - base class for copiled Murmel programs
-    ///
+    /// class MurmelJavaProgram - base class for compiled Murmel programs
 
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram {
@@ -2240,7 +2254,7 @@ public class LambdaJ {
 
 
         protected final Object _nil = null;
-        protected final Object _t = true;
+        protected final Object _t = "t";
         protected final MurmelFunction _write = args  -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
         protected final MurmelFunction _intern = args -> { return intern((String)args[0]); };
 
@@ -2259,7 +2273,7 @@ public class LambdaJ {
 
     ///
     /// ## class MurmelJavaCompiler
-    /// class MurmelJavaCompiler - compile Murmel to Java or to a .jar file
+    /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
         private final LambdaJ.SymbolTable st;
@@ -2274,6 +2288,7 @@ public class LambdaJ {
             });
         }
 
+        /// wrapper to compile Murmel to a Java class and optionally a .jar
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
         public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
@@ -2299,6 +2314,7 @@ public class LambdaJ {
             return program;
         }
 
+        /// wrapper to compile Murmel to Java source
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
         public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
             ConsCell env = extenv("nil", 0, null);
@@ -2316,19 +2332,19 @@ public class LambdaJ {
                 clsName = unitName.substring(dotpos+1);
             }
             ret.append("import com.robertmayer.lambdaj.LambdaJ;\n"
-                    + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
-                    + "public class " + clsName + " extends MurmelJavaProgram {\n"
-                    + "    public static void main(String[] args) {\n"
-                    + "        final " + clsName + " program = new " + clsName + "();\n"
-                    + "        try {\n"
-                    + "            Object result = program.body();\n"
-                    + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program._write.apply(result); System.out.println(); }\n"
-                    + "            return;\n"
-                    + "        } catch (LambdaJError e) {\n"
-                    + "            System.err.println(e.getMessage());\n"
-                    + "            System.exit(1);\n"
-                    + "        }\n"
-                    + "    }\n\n");
+                     + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
+                     + "public class " + clsName + " extends MurmelJavaProgram {\n"
+                     + "    public static void main(String[] args) {\n"
+                     + "        final " + clsName + " program = new " + clsName + "();\n"
+                     + "        try {\n"
+                     + "            Object result = program.body();\n"
+                     + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program._write.apply(result); System.out.println(); }\n"
+                     + "            return;\n"
+                     + "        } catch (LambdaJError e) {\n"
+                     + "            System.err.println(e.getMessage());\n"
+                     + "            System.exit(1);\n"
+                     + "        }\n"
+                     + "    }\n\n");
 
             for (Object form: forms)
                 if (consp(form) && isSymbol(car(form), "define")) env = defineGlobal(ret, (ConsCell) cdr(form), env);
@@ -2365,6 +2381,8 @@ public class LambdaJ {
 
         // todo replace chars that are invalid in Java identifiers
         private static String mangle(String symname, int sfx) {
+            symname = symname.replaceAll("circ", "_circ").replaceAll("\\^", "circ");
+            symname = symname.replaceAll("bang", "_bang").replaceAll("!", "bang");
             return '_' + symname + (sfx == 0 ? "" : sfx);
         }
 
@@ -2390,6 +2408,7 @@ public class LambdaJ {
             return env;
         }
 
+        /// compiler - compile Murmel forms to Java code.
         /** generate Java code for a list of forms */
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
@@ -2423,23 +2442,30 @@ public class LambdaJ {
                 if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args, env, rsfx); return; }
 
                 // todo compareop
+                if (isSymbol(op, "="))  { compareOp(sb, "==", args, env, rsfx); return; }
+                if (isSymbol(op, "<"))  { compareOp(sb, "<", args,  env, rsfx); return; }
+                if (isSymbol(op, "<=")) { compareOp(sb, "<=", args, env, rsfx); return; }
+                if (isSymbol(op, ">=")) { compareOp(sb, ">=", args, env, rsfx); return; }
+                if (isSymbol(op, ">"))  { compareOp(sb, ">", args,  env, rsfx); return; }
 
+                /// compiler - cons, car, cdr
                 if (isSymbol(op, "car"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
                 if (isSymbol(op, "cdr"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
                 if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
                 /// compiler - quote
+                // todo list muesste quotedFormToJava(cdr(args)) sein? WTF
                 if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
 
-                // todo eq und not umbauen auf (... == ... ? _t : _nil) oder null statt _nil, oder printSEx() schreibt t/nil fuer Boolean (aber dann waer interpreter/compiler unterschiedlich
-                if (isSymbol(op, "eq")) { sb.append('('); formToJava(sb, car(args), env, rsfx); sb.append(" == "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
-                if (isSymbol(op, "not")) { sb.append("(null == "); formToJava(sb, car(args), env, rsfx); sb.append(')'); return; }
+                /// compiler - eq and not
+                if (isSymbol(op, "eq")) { sb.append('('); formToJava(sb, car(args), env, rsfx); sb.append(" == "); formToJava(sb, cadr(args), env, rsfx); sb.append(" ? _t : null)"); return; }
+                if (isSymbol(op, "not")) { sb.append("(null == "); formToJava(sb, car(args), env, rsfx); sb.append(" ? _t : null)"); return; }
 
                 // todo cond
 
                 /// compiler - if
                 if (isSymbol(op, "if"))  {
-                    formToJava(sb, car(args), env, rsfx); sb.append(" ? "); formToJava(sb, cadr(args), env, rsfx);
+                    formToJava(sb, car(args), env, rsfx); sb.append(" != null ? "); formToJava(sb, cadr(args), env, rsfx);
                     if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
                     return;
                 }
@@ -2484,15 +2510,20 @@ public class LambdaJ {
         }
 
         private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
-            env = extenv(car(paramList).toString(), rsfx, env);
-            sb.append("        final Object ").append(javasym(car(paramList), env)).append(" = args").append(rsfx).append("[0];");
-
-            int n = 1;
-            if (cdr(paramList) != null) for (Object param: (ConsCell)cdr(paramList)) {
-                env = extenv(param.toString(), rsfx, env);
-                sb.append("\n        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];");
-                env = extenv(param.toString(), rsfx, env);
+            if (symbolp(paramList)) {
+                env = extenv(paramList.toString(), rsfx, env);
+                sb.append("        final Object ").append(javasym(paramList, env)).append(" = args").append(rsfx).append("[0];");
+                sb.append("\n");
+                return env;
             }
+
+            int n = 0;
+            if (paramList != null)
+                for (Object param: (ConsCell)paramList) {
+                    env = extenv(param.toString(), rsfx, env);
+                    sb.append("\n        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];");
+                    env = extenv(param.toString(), rsfx, env);
+                }
             sb.append("\n");
             return env;
         }
@@ -2515,6 +2546,12 @@ public class LambdaJ {
                 for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); formToJava(sb, arg, env, rsfx); }
             }
             sb.append(')');
+        }
+
+        // todo der interpreter macht ggf Long.compare(), vielleicht nicht inline sondern funktionen eq, le, lt usw. und die machen instanceof wie der interpreter
+        private void compareOp(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
+            sb.append("(Double.compare(((Number)"); formToJava(sb, car(args), env, rsfx); sb.append(").doubleValue(),"
+                                  + " ((Number)"); formToJava(sb, cadr(args), env, rsfx); sb.append(").doubleValue()) ").append(pred).append(" 0 ? _t : null)");
         }
 
         private void quotedFormToJava(StringBuilder sb, Object form) {

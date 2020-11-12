@@ -1,5 +1,9 @@
-der interpreter sollte haveNumbers haben, der scanner haveDouble und haveLong
--> enumwert HAVE_NUMBERS zusaetzlich, have methoden geeignet verteilen
+der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
+
+refactor: alles was zum interpreter gehoert in eine neue Klasse LambdaJ.MurmelInterpreter heben
+-> auf gleichem Level wie LambdaJ.MurmelJavaCompiler und LambdaJ.MurmelJavaProgram
+-> dann koennten Interpreter und Program das gleiche Interface fuer getValue(), getFunction() haben
+-> runtime aussen vor lassen?oder es gibt methoden die implementieren z.B. write, und getrennte wrapper fuer interpreter und kompilierte programme
 
 im environment des compilers koennt man den typ der symbole mitfuehren, das wuerde compiletime typchecks ermoeglichen.
 
@@ -23,11 +27,9 @@ scope und extent:
 https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
 https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
 
-define nur toplevel zulassen (wg. kompilieren), closures NICHT dynamisches global env
+define nur toplevel zulassen (wg. kompilieren)
 
 Tracer bei JSR-223 nutzen.
-
-der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
 
 irgendwie mit maven von Murmel nach Java uebersetzen, dann kann man einen teil einer app in murmel schreiben und fast nahtlos von Java aufrufen
 -> https://stackoverflow.com/questions/2147115/generating-sources-by-running-a-projects-java-class-in-maven
@@ -1549,3 +1551,9 @@ generierte klassen in ein jar zsammpacken: https://stackoverflow.com/questions/1
 
 sind NACH dem let die let variablen wieder weg? sollte so sein -> test schreiben
 -> falls nicht: waere durch naechsten punkt erledigt
+
+der interpreter sollte haveNumbers haben, der scanner haveDouble und haveLong
+-> enumwert HAVE_NUMBERS zusaetzlich, have methoden geeignet verteilen
+
+closures NICHT dynamisches global env
+-> ist doch kein problem, interpretiert gehts, und kompiliert: zur runtime sind die globals eh alle da
