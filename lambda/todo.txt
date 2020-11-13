@@ -1,5 +1,4 @@
 defun kompilieren
-subOp auf asDouble umstellen
 asDouble sollte ggf. eine function dbl() aufrufen statt so viel inline
 main von MurmelProgram refaktorn: main(new Test())
 compareOp auf interpreter angleichen
@@ -1565,3 +1564,5 @@ der interpreter sollte haveNumbers haben, der scanner haveDouble und haveLong
 
 closures NICHT dynamisches global env
 -> ist doch kein problem, interpretiert gehts, und kompiliert: zur runtime sind die globals eh alle da
+
+subOp auf asDouble umstellen

@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.197 2020/11/13 19:00:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.198 2020/11/13 20:02:07 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2293,6 +2293,21 @@ public class LambdaJ {
         protected final MurmelFunction _write = args  -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
         protected final MurmelFunction _intern = args -> { return intern((String)args[0]); };
 
+        protected static void main(MurmelJavaProgram program) {
+            try {
+                Object result = program.body();
+                if (result != null) {
+                    System.out.println();
+                    System.out.print("==> "); program._write.apply(result);
+                    System.out.println();
+                    System.exit(0);
+                }
+            } catch (LambdaJError e) {
+                System.err.println(e.getMessage());
+                System.exit(1);
+            }
+        }
+
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
         protected LambdaJSymbol intern(String sym) {
             return intp.symtab.intern(new LambdaJSymbol(sym));
@@ -2370,15 +2385,7 @@ public class LambdaJ {
                      + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
                      + "public class " + clsName + " extends MurmelJavaProgram {\n"
                      + "    public static void main(String[] args) {\n"
-                     + "        final " + clsName + " program = new " + clsName + "();\n"
-                     + "        try {\n"
-                     + "            Object result = program.body();\n"
-                     + "            if (result != null) { System.out.println(); System.out.print(\"==> \"); program._write.apply(result); System.out.println(); }\n"
-                     + "            return;\n"
-                     + "        } catch (LambdaJError e) {\n"
-                     + "            System.err.println(e.getMessage());\n"
-                     + "            System.exit(1);\n"
-                     + "        }\n"
+                     + "        main(new " + clsName + "());\n"
                      + "    }\n\n");
 
             for (Object form: forms)
@@ -2410,10 +2417,9 @@ public class LambdaJ {
             return cons(cons(sym, mangle(symname, sfx)), prev);
         }
 
-        /** extend the environment by putting (symbol self) in front of {@code prev} */
-        private ConsCell extenvself(String symname, int sfx, ConsCell prev) {
+        /** for compiling possibly recursive functions: extend the environment by putting (symbol this::f_symname) in front of {@code prev} */
+        private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
             LambdaJSymbol sym = intern(symname);
-            //return cons(cons(sym, "((MurmelFunction)this::f)" + mangle(symname, sfx)), prev);
             return cons(cons(sym, "((MurmelFunction)this::f" + mangle(symname, sfx) + ')'), prev);
         }
 
@@ -2466,7 +2472,7 @@ public class LambdaJ {
             String fname = "f" + javasym(sym, retenv);
 
             sb.append("    Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-            ConsCell extenv = extenvself(sym.toString(), 0, env);
+            ConsCell extenv = extenvfunc(sym.toString(), 0, env);
             extenv = params(sb, params, extenv, rsfx);
             sb.append("\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx);
@@ -2621,8 +2627,8 @@ public class LambdaJ {
 
         // todo der interpreter macht ggf Long.compare(), vielleicht nicht inline sondern funktionen eq, le, lt usw. und die machen instanceof wie der interpreter
         private void compareOp(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
-            sb.append("(Double.compare(((Number)"); formToJava(sb, car(args), env, rsfx); sb.append(").doubleValue(),"
-                                  + " ((Number)"); formToJava(sb, cadr(args), env, rsfx); sb.append(").doubleValue()) ").append(pred).append(" 0 ? _t : null)");
+            sb.append("(Double.compare("); asDouble(sb, car(args), env, rsfx); sb.append(", ");
+                                           asDouble(sb, cadr(args), env, rsfx); sb.append(") ").append(pred).append(" 0 ? _t : null)");
         }
 
         private void asDouble(StringBuilder sb, Object o, ConsCell env, int rsfx) {
