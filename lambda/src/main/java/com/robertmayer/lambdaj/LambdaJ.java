@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.199 2020/11/13 20:43:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.200 2020/11/13 21:23:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2392,6 +2392,7 @@ public class LambdaJ {
                      + "        main(new " + clsName + "());\n"
                      + "    }\n\n");
 
+            // todo defun
             for (Object form: forms)
                 if (consp(form) && isSymbol(car(form), "define")) env = defineGlobal(ret, (ConsCell) cdr(form), env);
 
@@ -2424,7 +2425,7 @@ public class LambdaJ {
         /** for compiling possibly recursive functions: extend the environment by putting (symbol this::f_symname) in front of {@code prev} */
         private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
             LambdaJSymbol sym = intern(symname);
-            return cons(cons(sym, "((MurmelFunction)this::f" + mangle(symname, sfx) + ')'), prev);
+            return cons(cons(sym, "((MurmelFunction)this::" + mangle(symname, sfx) + ')'), prev);
         }
 
         private LambdaJSymbol intern(String symname) {
@@ -2472,19 +2473,16 @@ public class LambdaJ {
             Object params = car(cdr(car(cdr(form))));
             Object body = cdr(cdr(car(cdr(form))));
 
-            ConsCell retenv = extenv(sym.toString(), 0, env);
-            String fname = "f" + javasym(sym, retenv);
+            String fname = javasym(sym, extenv(sym.toString(), 0, env));
+            env = extenvfunc(sym.toString(), 0, env);
 
             sb.append("    Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-            ConsCell extenv = extenvfunc(sym.toString(), 0, env);
-            extenv = params(sb, params, extenv, rsfx);
+            ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx);
             sb.append("        return result").append(rsfx).append(";\n    }\n\n");
 
-            sb.append("    private final MurmelFunction ").append(javasym(sym, retenv)).append(" = this::").append(fname).append(";\n\n");
-
-            return retenv;
+            return extenv;
         }
 
         /// compiler - compile Murmel forms to Java code.
