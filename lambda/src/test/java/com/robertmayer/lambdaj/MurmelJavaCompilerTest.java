@@ -132,6 +132,7 @@ public class MurmelJavaCompilerTest {
     }
 
     // todo defun geht nicht, define von rekursion geht nicht, + generiert code: Object + 1
+    @Test
     public void testFibonacci() throws Exception {
         String source = "(define iterative-fib-tr (lambda (n i previous current)\r\n"
                 + "       (if (>= i n)\r\n"

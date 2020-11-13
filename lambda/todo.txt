@@ -1,3 +1,7 @@
+subOp auf asDouble umstellen
+asDouble sollte ggf. eine function dbl() aufrufen statt so viel inline
+main von MurmelProgram refaktorn: main(new Test())
+
 der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
 
 refactor: alles was zum interpreter gehoert in eine neue Klasse LambdaJ.MurmelInterpreter heben

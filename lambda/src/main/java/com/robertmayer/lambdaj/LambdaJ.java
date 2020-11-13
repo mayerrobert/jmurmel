@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.195 2020/11/12 19:37:25 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.196 2020/11/13 08:06:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1065,6 +1065,7 @@ public class LambdaJ {
     private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
     private static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
     private static Object   cadr(Object c)     { return c == null ? null : car(cdr(c)); }
+    private static Object   caadr(ConsCell c)  { return c == null ? null : car(car(cdr(c))); }
     private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdr(car(c))); }
     private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
     private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
@@ -2404,15 +2405,22 @@ public class LambdaJ {
             return cons(cons(sym, mangle(symname, sfx)), prev);
         }
 
+        /** extend the environment by putting (symbol self) in front of {@code prev} */
+        private ConsCell extenvself(String symname, int sfx, ConsCell prev) {
+            LambdaJSymbol sym = intern(symname);
+            //return cons(cons(sym, "((MurmelFunction)this::f)" + mangle(symname, sfx)), prev);
+            return cons(cons(sym, "((MurmelFunction)this::f" + mangle(symname, sfx) + ')'), prev);
+        }
+
         private LambdaJSymbol intern(String symname) {
             return st.intern(new LambdaJSymbol(symname));
         }
 
         // todo replace chars that are invalid in Java identifiers
         private static String mangle(String symname, int sfx) {
-            symname = symname.replaceAll("circ", "_circ").replaceAll("\\^", "circ");
-            symname = symname.replaceAll("bang", "_bang").replaceAll("!", "bang");
-            symname = symname.replaceAll("dash", "_dash").replaceAll("-", "dash");
+            symname = symname.replaceAll("circ", "_circ").replaceAll("\\^", "_circ_");
+            symname = symname.replaceAll("bang", "_bang").replaceAll("!", "_bang_");
+            symname = symname.replaceAll("dash", "_dash").replaceAll("-", "_dash_");
             return '_' + symname + (sfx == 0 ? "" : sfx);
         }
 
@@ -2430,12 +2438,38 @@ public class LambdaJ {
             return form.toString().equalsIgnoreCase(sym);
         }
 
+        /** form is a list (symbol forms...) */
         private ConsCell defineGlobal(StringBuilder sb, ConsCell form, ConsCell env) {
-            env = extenv(car(form).toString(), 0, env);
-            sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
-            formToJava(sb, cadr(form), env, 0);
-            sb.append(';').append(System.lineSeparator());
-            return env;
+            if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
+            else {
+                env = extenv(car(form).toString(), 0, env);
+                sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
+                formToJava(sb, cadr(form), env, 0);
+                sb.append(';').append(System.lineSeparator());
+                return env;
+            }
+        }
+
+        /** form is a list (symbol ((symbol...) forms...)) */
+        private ConsCell funcToJava(StringBuilder sb, ConsCell form, ConsCell env) {
+            int rsfx = 0;
+            Object sym = car(form);
+            Object params = car(cdr(car(cdr(form))));
+            Object body = cdr(cdr(car(cdr(form))));
+
+            ConsCell retenv = extenv(sym.toString(), 0, env);
+            String fname = "f" + javasym(sym, retenv);
+
+            sb.append("    Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
+            ConsCell extenv = extenvself(sym.toString(), 0, env);
+            extenv = params(sb, params, extenv, rsfx);
+            sb.append("\n");
+            formsToJava(sb, (ConsCell)body, extenv, rsfx);
+            sb.append("        return result").append(rsfx).append(";\n    }\n\n");
+
+            sb.append("    private final MurmelFunction ").append(javasym(sym, retenv)).append(" = this::").append(fname).append(";\n\n");
+
+            return retenv;
         }
 
         /// compiler - compile Murmel forms to Java code.
@@ -2485,7 +2519,7 @@ public class LambdaJ {
 
                     /// compiler - quote
                     if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
-                    // todo list muesste quotedFormToJava(args) sein? WTF
+                    /// compiler - list
                     if (isSymbol(op, "list"))  { quotedFormToJava(sb, args); return; }
 
                     /// compiler - eq and not
@@ -2564,7 +2598,7 @@ public class LambdaJ {
         private void addOp(StringBuilder sb, Object _op, double start, Object args, ConsCell env, int rsfx) {
             String op = _op.toString();
             sb.append('(').append(start);
-            if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); formToJava(sb, arg, env, rsfx); }
+            if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
             sb.append(')');
         }
 
@@ -2584,6 +2618,10 @@ public class LambdaJ {
         private void compareOp(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
             sb.append("(Double.compare(((Number)"); formToJava(sb, car(args), env, rsfx); sb.append(").doubleValue(),"
                                   + " ((Number)"); formToJava(sb, cadr(args), env, rsfx); sb.append(").doubleValue()) ").append(pred).append(" 0 ? _t : null)");
+        }
+
+        private void asDouble(StringBuilder sb, Object o, ConsCell env, int rsfx) {
+            sb.append("((Number)"); formToJava(sb, o, env, rsfx); sb.append(").doubleValue()");
         }
 
         private void quotedFormToJava(StringBuilder sb, Object form) {
