@@ -65,6 +65,20 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testSub() throws Exception {
+        MurmelJavaProgram program = compile("((lambda (n) (- n 1)) 1)");
+        assertNotNull("failed to compile sub to class", program);
+        assertEquals("sub produced wrong result", 0.0, program.body());
+    }
+
+    @Test
+    public void testCompare() throws Exception {
+        MurmelJavaProgram program = compile("((lambda (n) (<= n 1)) 2)");
+        assertNotNull("failed to compile compare to class", program);
+        assertEquals("compare produced wrong result", null, program.body());
+    }
+
+    @Test
     public void testCons() throws Exception {
         MurmelJavaProgram program = compile("(car (cons 1 2))");
         assertNotNull("failed to compile cons to class", program);
@@ -84,6 +98,20 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile numberEq to class", program);
         final Object result = program.body();
         assertEquals("numberEq produced wrong result", "t", result);
+    }
+
+    @Test
+    public void testLe() throws Exception {
+        MurmelJavaProgram program = compile("((lambda (n) (<= n 1)) 2)");
+        assertNotNull("failed to compile le to class", program);
+        assertEquals("le produced wrong result", null, program.body());
+    }
+
+    @Test
+    public void testNumberEq2() throws Exception {
+        MurmelJavaProgram program = compile("((lambda (n) (= n 1)) 1)");
+        assertNotNull("failed to compile compare to class", program);
+        assertEquals("compare produced wrong result", "t", program.body());
     }
 
     @Test
@@ -131,7 +159,6 @@ public class MurmelJavaCompilerTest {
         assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", sexp(program.body()));
     }
 
-    // todo defun geht nicht, define von rekursion geht nicht, + generiert code: Object + 1
     @Test
     public void testFibonacci() throws Exception {
         String source = "(define iterative-fib-tr (lambda (n i previous current)\r\n"

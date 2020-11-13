@@ -1,6 +1,10 @@
+defun kompilieren
 subOp auf asDouble umstellen
 asDouble sollte ggf. eine function dbl() aufrufen statt so viel inline
 main von MurmelProgram refaktorn: main(new Test())
+compareOp auf interpreter angleichen
+
+vielleicht doch nil=null und t=Boolean.TRUE? Interpreter ggf. angleichen
 
 der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
 

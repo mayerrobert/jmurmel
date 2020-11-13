@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.196 2020/11/13 08:06:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.197 2020/11/13 19:00:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2048,8 +2048,13 @@ public class LambdaJ {
             interpreter.traceJavaStats(tEnd - tStart);
             System.out.print("==> ");  outWriter.printObj(result); System.out.println();
         }
-        catch (Exception e) {
+        catch (LambdaJError e) {
             System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        catch (Exception e) {
+            //System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.out.println("history NOT run as Java - error:");
+            e.printStackTrace(System.out);
         }
     }
 
@@ -2606,10 +2611,10 @@ public class LambdaJ {
         private void subOp(StringBuilder sb, Object _op, double start, Object args, ConsCell env, int rsfx) {
             String op = _op.toString();
             sb.append('(');
-            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); formToJava(sb, car(args), env, rsfx); }
+            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, rsfx); }
             else {
-                sb.append("(double)"); formToJava(sb, car(args), env, rsfx);
-                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); formToJava(sb, arg, env, rsfx); }
+                asDouble(sb, car(args), env, rsfx);
+                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
             }
             sb.append(')');
         }
