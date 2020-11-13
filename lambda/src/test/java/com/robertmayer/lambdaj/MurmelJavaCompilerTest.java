@@ -131,6 +131,21 @@ public class MurmelJavaCompilerTest {
         assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", sexp(program.body()));
     }
 
+    // todo defun geht nicht, define von rekursion geht nicht, + generiert code: Object + 1
+    public void testFibonacci() throws Exception {
+        String source = "(define iterative-fib-tr (lambda (n i previous current)\r\n"
+                + "       (if (>= i n)\r\n"
+                + "           current\r\n"
+                + "           (iterative-fib-tr n (+ i 1) current (+ previous current)))))\r\n"
+                + "\r\n"
+                + "(define iterative-fib (lambda (n) (iterative-fib-tr n 1 1 1)))\r\n"
+                + "\r\n"
+                + "(iterative-fib 30)";
+        MurmelJavaProgram program = compile(source);
+        assertNotNull("failed to compile fibonacci to class:", program);
+        assertEquals("fibonacci produced wrong result", "1346269.0", sexp(program.body()));
+    }
+
     // todo apply geht noch nicht @Test
     public void testAckermannZ() throws Exception {
         String source = "(define Z^\r\n"
