@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.198 2020/11/13 20:02:07 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.199 2020/11/13 20:43:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2317,6 +2317,10 @@ public class LambdaJ {
             MurmelFunction f = (MurmelFunction)fn;
             return f.apply(args);
         }
+
+        protected double dbl(Object n) {
+            return ((Number)n).doubleValue();
+        }
     }
 
 
@@ -2632,7 +2636,8 @@ public class LambdaJ {
         }
 
         private void asDouble(StringBuilder sb, Object o, ConsCell env, int rsfx) {
-            sb.append("((Number)"); formToJava(sb, o, env, rsfx); sb.append(").doubleValue()");
+            //sb.append("((Number)"); formToJava(sb, o, env, rsfx); sb.append(").doubleValue()");
+            sb.append("dbl("); formToJava(sb, o, env, rsfx); sb.append(')');
         }
 
         private void quotedFormToJava(StringBuilder sb, Object form) {
