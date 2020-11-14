@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.204 2020/11/14 07:26:02 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.205 2020/11/14 08:10:40 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2285,6 +2285,7 @@ public class LambdaJ {
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
             intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), 0, null, System.in::read), intp.getLispPrinter());
+            _t = intern("t");
         }
 
         public ObjectReader getLispReader()  { return intp.getLispReader(); }
@@ -2309,7 +2310,7 @@ public class LambdaJ {
 
 
         protected final Object _nil = null;
-        protected final Object _t = "t";
+        protected final Object _t;
         protected final MurmelFunction _write = args  -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
         protected final MurmelFunction _intern = args -> { return intern((String)args[0]); };
 
@@ -2340,6 +2341,31 @@ public class LambdaJ {
 
         protected double dbl(Object n) {
             return ((Number)n).doubleValue();
+        }
+
+        protected Object eq(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
+        }
+
+        protected Object lt(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <  0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
+        }
+
+        protected Object le(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <= 0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
+        }
+
+        protected Object ge(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >= 0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
+        }
+
+        protected Object gt(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >  0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
         }
     }
 
@@ -2550,12 +2576,12 @@ public class LambdaJ {
                     if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, rsfx); return; }
                     if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, rsfx); return; }
 
-                    // todo compareop
-                    if (isSymbol(op, "="))  { compareDbl(sb, "==", args, env, rsfx); return; }
-                    if (isSymbol(op, "<"))  { compareDbl(sb, "<", args,  env, rsfx); return; }
-                    if (isSymbol(op, "<=")) { compareDbl(sb, "<=", args, env, rsfx); return; }
-                    if (isSymbol(op, ">=")) { compareDbl(sb, ">=", args, env, rsfx); return; }
-                    if (isSymbol(op, ">"))  { compareDbl(sb, ">", args,  env, rsfx); return; }
+                    /// compiler - number compare operators
+                    if (isSymbol(op, "="))  { compareNum(sb, "==", args, env, rsfx); return; }
+                    if (isSymbol(op, "<"))  { compareNum(sb, "<",  args,  env, rsfx); return; }
+                    if (isSymbol(op, "<=")) { compareNum(sb, "<=", args, env, rsfx); return; }
+                    if (isSymbol(op, ">=")) { compareNum(sb, ">=", args, env, rsfx); return; }
+                    if (isSymbol(op, ">"))  { compareNum(sb, ">",  args,  env, rsfx); return; }
 
                     /// compiler - cons, car, cdr
                     if (isSymbol(op, "car"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
@@ -2647,10 +2673,20 @@ public class LambdaJ {
             sb.append(") ").append(" ? _t : null)");
         }
 
-        // todo der interpreter macht ggf Long.compare(), vielleicht nicht inline sondern funktionen eq, le, lt usw. und die machen instanceof wie der interpreter
-        private void compareDbl(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
+        /** compare two numbers */
+        private void compareNum(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
+            /*
             sb.append("(Double.compare("); asDouble(sb, car(args), env, rsfx); sb.append(", ");
                                            asDouble(sb, cadr(args), env, rsfx); sb.append(") ").append(pred).append(" 0 ? _t : null)");
+            */
+            switch (pred) {
+            case "==": sb.append("eq("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case "<=": sb.append("le("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case "<":  sb.append("lt("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case ">=": sb.append("ge("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case ">":  sb.append("gt("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            default: throw new LambdaJError(true, "internal error: operator %s not implemented", pred);
+            }
         }
 
         /** generate double operator for zero or more number args */
@@ -2671,9 +2707,10 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        private void asDouble(StringBuilder sb, Object o, ConsCell env, int rsfx) {
+        /** eval form and change to double */
+        private void asDouble(StringBuilder sb, Object form, ConsCell env, int rsfx) {
             //sb.append("((Number)"); formToJava(sb, o, env, rsfx); sb.append(").doubleValue()");
-            sb.append("dbl("); formToJava(sb, o, env, rsfx); sb.append(')');
+            sb.append("dbl("); formToJava(sb, form, env, rsfx); sb.append(')');
         }
 
         private void quotedFormToJava(StringBuilder sb, Object form) {

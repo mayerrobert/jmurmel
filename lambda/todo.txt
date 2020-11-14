@@ -1,3 +1,7 @@
+wenns namespaces gibt, sollte :: wahrscheinlich i-wie mit import verheiratet werden
+
+usage gibt keine --no-XXX aus, nur mit parameter --help-features
+
 defun kompilieren
 asDouble sollte ggf. eine function dbl() aufrufen statt so viel inline
 main von MurmelProgram refaktorn: main(new Test())

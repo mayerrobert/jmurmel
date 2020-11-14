@@ -89,7 +89,7 @@ public class MurmelJavaCompilerTest {
     public void testEq() throws Exception {
         MurmelJavaProgram program = compile("(eq 1 1)");
         assertNotNull("failed to compile eq to class", program);
-        assertEquals("eq produced wrong result", "t", program.body());
+        assertEquals("eq produced wrong result", "t", sexp(program.body()));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class MurmelJavaCompilerTest {
         MurmelJavaProgram program = compile("(= 1 1)");
         assertNotNull("failed to compile numberEq to class", program);
         final Object result = program.body();
-        assertEquals("numberEq produced wrong result", "t", result);
+        assertEquals("numberEq produced wrong result", "t", sexp(result));
     }
 
     @Test
@@ -111,7 +111,7 @@ public class MurmelJavaCompilerTest {
     public void testNumberEq2() throws Exception {
         MurmelJavaProgram program = compile("((lambda (n) (= n 1)) 1)");
         assertNotNull("failed to compile compare to class", program);
-        assertEquals("compare produced wrong result", "t", program.body());
+        assertEquals("compare produced wrong result", "t", sexp(program.body()));
     }
 
     @Test
