@@ -5,4 +5,4 @@
 # usage:
 # sed -nf src\main\shell\litprog.sed src\main\java\com\robertmayer\lambdaj\LambdaJ.java
 
-s@^[ ]*/// *\(.*\)$@\1  @p
+s@^[ ]*/// \?\(.*\)$@\1  @p
