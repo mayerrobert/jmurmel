@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.203 2020/11/14 07:20:08 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.204 2020/11/14 07:26:02 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1974,6 +1974,7 @@ public class LambdaJ {
                     if (":java"   .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
                     if (":runjava".equals(exp.toString())) { runJava(parser, history, parser.readObj(false), interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
+                    //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
                 }
 
@@ -2373,10 +2374,9 @@ public class LambdaJ {
             mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
             mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
             mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, unitName);
-            mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, "jmurmel-1.0-SNAPSHOT.jar"); // todo nicht das jar hier hardcoded, entweder alle jmurmel klassen ins jar stecken oder i-wie konfigurierbar
+            mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
             final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFile), mf);
 
-            // todo klassen mit pkg
             String[] dirs = unitName.split("\\.");
             String path = "";
             for (int i = 0; i < dirs.length; i++) {
@@ -2462,12 +2462,14 @@ public class LambdaJ {
             return st.intern(new LambdaJSymbol(symname));
         }
 
-        // todo replace chars that are invalid in Java identifiers
+        // replace chars that are not letters
         private static String mangle(String symname, int sfx) {
-            symname = symname.replaceAll("circ", "_circ").replaceAll("\\^", "_circ_");
-            symname = symname.replaceAll("bang", "_bang").replaceAll("!", "_bang_");
-            symname = symname.replaceAll("dash", "_dash").replaceAll("-", "_dash_");
-            return '_' + symname + (sfx == 0 ? "" : sfx);
+            final StringBuilder mangled = new StringBuilder();
+            for (char c: symname.toCharArray()) {
+                if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
+                else mangled.append('_').append((int)c).append('_');
+            }
+            return '_' + mangled.toString() + (sfx == 0 ? "" : sfx);
         }
 
         private String javasym(Object form, ConsCell env) {
