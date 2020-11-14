@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.200 2020/11/13 21:23:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.201 2020/11/13 21:49:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2513,17 +2513,17 @@ public class LambdaJ {
                     Object args = cdr(form);
 
                     /// compiler - number operators
-                    if (isSymbol(op, "+")) { addOp(sb, op, 0.0, args, env, rsfx); return; }
-                    if (isSymbol(op, "*")) { addOp(sb, op, 1.0, args, env, rsfx); return; }
-                    if (isSymbol(op, "-")) { subOp(sb, op, 0.0, args, env, rsfx); return; }
-                    if (isSymbol(op, "/")) { subOp(sb, op, 1.0, args, env, rsfx); return; }
+                    if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, rsfx); return; }
+                    if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, rsfx); return; }
+                    if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, rsfx); return; }
+                    if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, rsfx); return; }
 
                     // todo compareop
-                    if (isSymbol(op, "="))  { compareOp(sb, "==", args, env, rsfx); return; }
-                    if (isSymbol(op, "<"))  { compareOp(sb, "<", args,  env, rsfx); return; }
-                    if (isSymbol(op, "<=")) { compareOp(sb, "<=", args, env, rsfx); return; }
-                    if (isSymbol(op, ">=")) { compareOp(sb, ">=", args, env, rsfx); return; }
-                    if (isSymbol(op, ">"))  { compareOp(sb, ">", args,  env, rsfx); return; }
+                    if (isSymbol(op, "="))  { compareDbl(sb, "==", args, env, rsfx); return; }
+                    if (isSymbol(op, "<"))  { compareDbl(sb, "<", args,  env, rsfx); return; }
+                    if (isSymbol(op, "<=")) { compareDbl(sb, "<=", args, env, rsfx); return; }
+                    if (isSymbol(op, ">=")) { compareDbl(sb, ">=", args, env, rsfx); return; }
+                    if (isSymbol(op, ">"))  { compareDbl(sb, ">", args,  env, rsfx); return; }
 
                     /// compiler - cons, car, cdr
                     if (isSymbol(op, "car"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
@@ -2535,11 +2535,8 @@ public class LambdaJ {
                     /// compiler - list
                     if (isSymbol(op, "list"))  { quotedFormToJava(sb, args); return; }
 
-                    /// compiler - eq and not
-                    if (isSymbol(op, "eq")) { sb.append('('); formToJava(sb, car(args), env, rsfx); sb.append(" == "); formToJava(sb, cadr(args), env, rsfx); sb.append(" ? _t : null)"); return; }
-                    if (isSymbol(op, "not")) { sb.append("(null == "); formToJava(sb, car(args), env, rsfx); sb.append(" ? _t : null)"); return; }
-
-                    // todo cond
+                    /// compiler - eq, not
+                    if (isSymbol(op, "eq") || isSymbol(op, "not")) { compareOp(sb, "==", args, env, rsfx); return; }
 
                     /// compiler - if
                     if (isSymbol(op, "if"))  {
@@ -2547,6 +2544,8 @@ public class LambdaJ {
                         if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
                         return;
                     }
+
+                    // todo cond
 
                     /// compiler - lambda
                     if (isSymbol(op, "lambda")) {
@@ -2607,17 +2606,30 @@ public class LambdaJ {
             return env;
         }
 
-        /** generate operator for zero or more args */
-        private void addOp(StringBuilder sb, Object _op, double start, Object args, ConsCell env, int rsfx) {
-            String op = _op.toString();
+        /** generate boolean op for one or two args */
+        private void compareOp(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
+            sb.append('(').append('(');
+            formToJava(sb, car(args), env, rsfx);
+            sb.append(' ').append(pred).append(' ');
+            if (cdr(args) == null) sb.append("null"); else formToJava(sb, cadr(args), env, rsfx);
+            sb.append(") ").append(" ? _t : null)");
+        }
+
+        // todo der interpreter macht ggf Long.compare(), vielleicht nicht inline sondern funktionen eq, le, lt usw. und die machen instanceof wie der interpreter
+        private void compareDbl(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
+            sb.append("(Double.compare("); asDouble(sb, car(args), env, rsfx); sb.append(", ");
+                                           asDouble(sb, cadr(args), env, rsfx); sb.append(") ").append(pred).append(" 0 ? _t : null)");
+        }
+
+        /** generate double operator for zero or more number args */
+        private void addDbl(StringBuilder sb, String op, double start, Object args, ConsCell env, int rsfx) {
             sb.append('(').append(start);
             if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
             sb.append(')');
         }
 
-        /** generate operator for one or more args */
-        private void subOp(StringBuilder sb, Object _op, double start, Object args, ConsCell env, int rsfx) {
-            String op = _op.toString();
+        /** generate double operator for one or more number args */
+        private void subDbl(StringBuilder sb, String op, double start, Object args, ConsCell env, int rsfx) {
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, rsfx); }
             else {
@@ -2625,12 +2637,6 @@ public class LambdaJ {
                 for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
             }
             sb.append(')');
-        }
-
-        // todo der interpreter macht ggf Long.compare(), vielleicht nicht inline sondern funktionen eq, le, lt usw. und die machen instanceof wie der interpreter
-        private void compareOp(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
-            sb.append("(Double.compare("); asDouble(sb, car(args), env, rsfx); sb.append(", ");
-                                           asDouble(sb, cadr(args), env, rsfx); sb.append(") ").append(pred).append(" 0 ? _t : null)");
         }
 
         private void asDouble(StringBuilder sb, Object o, ConsCell env, int rsfx) {
