@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.206 2020/11/14 09:08:20 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.207 2020/11/14 10:35:23 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2317,12 +2317,14 @@ public class LambdaJ {
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
             intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), 0, null, System.in::read), intp.getLispPrinter());
-            _t = intern("t");
+            _t = _intern("t");
         }
 
+
+
+        /// JMurmel native FFI - Java calls compiled Murmel
         public ObjectReader getLispReader()  { return intp.getLispReader(); }
         public ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
-
         public void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) {
             intp.setReaderPrinter(lispStdin, lispStdout);
         }
@@ -2341,17 +2343,32 @@ public class LambdaJ {
 
 
 
+        /// Environment for compiled Murmel:
+        /// * nil, t
+        /// * intern, write, todo writeln
+        /// * todo atom, consp, listp, symbolp, numberp, stringp
+        /// * todo assoc, round, floor, ceiling
+        /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
+        /// * todo format, format-locale
+        /// * todo ::
+        ///
         protected final Object _nil = null;
         protected final Object _t;
-        protected final MurmelFunction _write = args  -> { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); };
-        protected final MurmelFunction _intern = args -> { return intern((String)args[0]); };
 
+        // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
+        protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
+
+        protected Object _write(Object... args) { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); }; // todo sollte wsl return _t sein
+
+
+
+        /// Helpers that the Java code compiled from Murmel will use
         protected static void main(MurmelJavaProgram program) {
             try {
                 Object result = program.body();
                 if (result != null) {
                     System.out.println();
-                    System.out.print("==> "); program._write.apply(result);
+                    System.out.print("==> "); program._write(result);
                     System.out.println();
                     System.exit(0);
                 }
@@ -2359,11 +2376,6 @@ public class LambdaJ {
                 System.err.println(e.getMessage());
                 System.exit(1);
             }
-        }
-
-        // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
-        protected LambdaJSymbol intern(String sym) {
-            return intp.symtab.intern(new LambdaJSymbol(sym));
         }
 
         protected Object apply(Object fn, Object... args) {
@@ -2420,7 +2432,7 @@ public class LambdaJ {
             });
         }
 
-        /// wrapper to compile Murmel to a Java class and optionally a .jar
+        /// Wrapper to compile Murmel to a Java class and optionally a .jar
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
         public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
@@ -2456,13 +2468,14 @@ public class LambdaJ {
             return program;
         }
 
-        /// wrapper to compile Murmel to Java source
+        /// Wrapper to compile Murmel to Java source
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
         public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
-            ConsCell env = extenv("nil", 0, null);
+            ConsCell env;
+            env = extenv("nil", 0, null);
             env = extenv("t", 0, env);
-            env = extenv("write", 0, env);
-            env = extenv("intern", 0, env);
+            env = extenvfunc("write", 0, env);
+            env = extenvfunc("intern", 0, env);
 
             final StringBuilder ret = new StringBuilder();
             final String clsName;
@@ -2520,7 +2533,7 @@ public class LambdaJ {
             return st.intern(new LambdaJSymbol(symname));
         }
 
-        // replace chars that are not letters
+        /** replace chars that are not letters*/
         private static String mangle(String symname, int sfx) {
             final StringBuilder mangled = new StringBuilder();
             for (char c: symname.toCharArray()) {
@@ -2575,7 +2588,7 @@ public class LambdaJ {
             return extenv;
         }
 
-        /// compiler - compile Murmel forms to Java code.
+        /// formsToJava - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms */
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
@@ -2587,14 +2600,16 @@ public class LambdaJ {
             }
         }
 
-        /// compiler - compile a Murmel form to Java code. Note how this is somehow similar to eval.
+        /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
         private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
             try {
 
                 // todo if (form == null) null und if (form eq nil) null
+                /// * symbols
                 if (symbolp(form)) {
                     sb.append(javasym(form, env));  return;
                 }
+                /// * atoms that are not symbols
                 if (atom(form)) {
                     sb.append(printSEx(form));  return;
                 }
@@ -2602,42 +2617,43 @@ public class LambdaJ {
                     final Object op = car(form);
                     Object args = cdr(form);
 
-                    /// compiler - number operators
+                    /// * special forms:
+                    ///     - number operators
                     if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, rsfx); return; }
                     if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, rsfx); return; }
                     if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, rsfx); return; }
                     if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, rsfx); return; }
 
-                    /// compiler - number compare operators
+                    ///     - number compare operators
                     if (isSymbol(op, "="))  { compareNum(sb, "==", args, env, rsfx); return; }
                     if (isSymbol(op, "<"))  { compareNum(sb, "<",  args,  env, rsfx); return; }
                     if (isSymbol(op, "<=")) { compareNum(sb, "<=", args, env, rsfx); return; }
                     if (isSymbol(op, ">=")) { compareNum(sb, ">=", args, env, rsfx); return; }
                     if (isSymbol(op, ">"))  { compareNum(sb, ">",  args,  env, rsfx); return; }
 
-                    /// compiler - cons, car, cdr
+                    ///     - cons, car, cdr
                     if (isSymbol(op, "car"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
                     if (isSymbol(op, "cdr"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
                     if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
-                    /// compiler - quote
+                    ///     - quote
                     if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
-                    /// compiler - list
+                    ///     - list
                     if (isSymbol(op, "list"))  { quotedFormToJava(sb, args); return; }
 
-                    /// compiler - eq, not
+                    ///     - eq, not
                     if (isSymbol(op, "eq") || isSymbol(op, "not")) { compareOp(sb, "==", args, env, rsfx); return; }
 
-                    /// compiler - if
+                    ///     - if
                     if (isSymbol(op, "if"))  {
                         formToJava(sb, car(args), env, rsfx); sb.append(" != null ? "); formToJava(sb, cadr(args), env, rsfx);
                         if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
                         return;
                     }
 
-                    // todo cond
+                    ///     - todo cond
 
-                    /// compiler - lambda
+                    ///     - lambda
                     if (isSymbol(op, "lambda")) {
                         rsfx++;
                         sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
@@ -2649,14 +2665,14 @@ public class LambdaJ {
 
                     if (isSymbol(op, "define")) return;
 
-                    // todo apply
-                    // todo eval: dafuer muss das env des interpreter mitgefuehrt werden
+                    ///     - todo apply
+                    ///     - todo eval: dafuer muss das env des interpreter mitgefuehrt werden
 
-                    // todo progn, labels
+                    ///     - todo progn, labels
 
-                    // todo letxxx
+                    ///     - todo letxxx
 
-                    /// compiler - function call
+                    /// * function call
                     sb.append("apply(");
                     formToJava(sb, op, env, rsfx);
                     if (args != null)
@@ -2748,7 +2764,7 @@ public class LambdaJ {
         private void quotedFormToJava(StringBuilder sb, Object form) {
             if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
 
-            if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); return; }
+            if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
             if (atom(form))    { sb.append(form.toString()); return; }
             if (consp(form))   { sb.append("new ConsCell("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
 

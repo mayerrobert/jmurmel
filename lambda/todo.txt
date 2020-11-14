@@ -1,3 +1,6 @@
+ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version
+-> https://franz.com/support/documentation/9.0/ansicl/dictentr/lisp-imp.htm
+
 define nur toplevel zulassen (wg. kompilieren)
 -> oder kann man die variable im ersten lauf mit UNDEF belegen und der zweite lauf setzt einen wert? was ist mit functions?
     oder das globale symbol wuerde erst im zweiten lauf des compilers an geeigneter stelle ins environment des compilers gesteckt?
