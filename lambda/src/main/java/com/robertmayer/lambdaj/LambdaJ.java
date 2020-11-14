@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.205 2020/11/14 08:10:40 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.206 2020/11/14 09:08:20 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1971,7 +1971,7 @@ public class LambdaJ {
                     if (":init"   .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":java"   .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     if (":runjava".equals(exp.toString())) { runJava(parser, history, parser.readObj(false), interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
@@ -2018,30 +2018,55 @@ public class LambdaJ {
         }
     }
 
-    private static void compileToJava(SymbolTable symtab, List<Object> history, Object className, Object filename) {
+    /** compile history to Java source and print or write to a file.
+     *  if className is null "MurmelProgram" will be the class' name.
+     *  if filename is t the compiled Java code will be printed to the screen.
+     *  if filename is null the filename will be derived from the className
+     *  if filename ends with a / then filename is interpreted as a base directory and the classname (with packages) will be appended */
+    private static void compileToJava(SymbolTable symtab, List<Object> history, Object className, Object filename, LambdaJ interpreter) {
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren
-        if (null == filename) {
-            System.out.println(c.formsToJavaProgram(className.toString(), history));
+        String clsName = className == null ? "MurmelProgram" : className.toString();
+        if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
+            System.out.println(c.formsToJavaProgram(clsName, history));
             return;
         }
 
-        final Path p = Paths.get(filename.toString());
-        final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-        try (final OutputStream os = Files.newOutputStream(Files.createFile(p));
-             final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, encoder))) {
-            writer.append(c.formsToJavaProgram(className.toString(), history));
-            System.out.println("compiled history to Java file '" + p.toString() + '\'');
+        final Path p;
+        if (null == filename) p = Paths.get(clsName.replace('.', '/') + ".java");
+        else if (filename.toString().endsWith("/")) p = Paths.get(filename.toString() + clsName.replace('.', '/') + ".java");
+        else p = Paths.get(filename.toString());
+
+        try {
+            if (p.getParent() != null) Files.createDirectories(p.getParent());
         }
         catch (Exception e) {
+            System.out.println("history NOT compiled to Java - error:");
+            e.printStackTrace(System.out);
+        }
+
+        final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+        try (final OutputStream os = Files.newOutputStream(p);
+             final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, encoder))) {
+            writer.append(c.formsToJavaProgram(clsName, history));
+            System.out.println("compiled history to Java file '" + p.toString() + '\'');
+        }
+        catch (LambdaJError e) {
             System.out.println("history NOT compiled to Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        catch (Exception e) {
+            System.out.println("history NOT compiled to Java - error:");
+            e.printStackTrace(System.out);
         }
     }
 
+    /** compile history to a class and run compiled class.
+     *  if className is null "MurmelProgram" will be the class' name */
     private static void runJava(SymbolTable symtab, List<Object> history, Object className, LambdaJ interpreter) {
         ObjectWriter outWriter = interpreter.lispPrinter;
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
-            Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass(className.toString(), history, null);
+            String clsName = className == null ? "MurmelProgram" : className.toString();
+            Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass(clsName.toString(), history, null);
             MurmelJavaProgram prg = murmelClass.newInstance();
             long tStart = System.nanoTime();
             Object result = prg.body();
@@ -2164,13 +2189,20 @@ public class LambdaJ {
         System.out.println("  :noecho ........................ don't print forms");
         System.out.println("  :env ........................... list current global environment");
         System.out.println("  :init .......................... re-init global environment, clear history");
-        System.out.println("  :l ............................. print history to a the screen");
-        System.out.println("  :w <filename> .................. write history to a new file with the given filename");
-        System.out.println("  :java <classname> nil .......... compile history to Java class 'classname' and print to the screen");
-        System.out.println("  :java <classname> <filename> ... compile history to Java class 'classname' and write to a new file with the given filename");
-        System.out.println("  :runjava <classname> ........... compile history to Java class 'classname' and run it");
-        System.out.println("  :jar <jarfile> <classname> ..... compile history to jarfile 'jarfile' containing Java class 'classname'");
+        System.out.println("  :l ............................. print history to the screen");
+        System.out.println("  :w filename .................... write history to a new file with the given filename");
+        System.out.println();
+        System.out.println("  :java classname t .............. compile history to Java class 'classname' and print to the screen");
+        System.out.println("  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'");
+        System.out.println("  :java classname directory/ ..... compile history to Java class 'classname' and print to a file based on classname in directory 'directory'");
+        System.out.println("  :java classname filename ....... compile history to Java class 'classname' and write to a file with the given filename");
+        System.out.println();
+        System.out.println("  :runjava classname ............. compile history to Java class 'classname' and run it");
+        System.out.println("  :jar jarfile classname ......... compile history to jarfile 'jarfile' containing Java class 'classname'");
         System.out.println("                                   the generated jar needs jmurmel.jar in the same directory to run");
+        System.out.println();
+        System.out.println("  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).");
+        System.out.println();
         System.out.println("  :q ............................. quit JMurmel");
         System.out.println();
     }
@@ -2205,7 +2237,7 @@ public class LambdaJ {
                 + "--trace ..........  print lots of internal interpreter info during\n"
                 + "                    reading/ parsing/ executing programs\n"
                 + "\n"
-                + "Feature flags:\n"
+                + "Feature flags (only supported by JMurmel in interpreted code):\n"
                 + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
@@ -2228,7 +2260,7 @@ public class LambdaJ {
                 + "                   atom, eq, cons, car, cdr, lambda, apply, cond, labels\n"
                 + "\n"
                 + "--no-apply ....  no special form 'apply'\n"
-                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
+                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead, or actually: Z-combinator)\n"
                 + "\n"
                 + "--min .........  turn off all above features, leaving a Lisp with\n"
                 + "                 8 special forms/ primitives:\n"

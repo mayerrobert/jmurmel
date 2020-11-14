@@ -1,3 +1,5 @@
+:java sollte filename aus classname ableiten . -> /
+
 wenns namespaces gibt, sollte :: wahrscheinlich i-wie mit import verheiratet werden
 
 usage gibt keine --no-XXX aus, nur mit parameter --help-features
