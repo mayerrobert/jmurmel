@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.202 2020/11/14 06:33:38 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.203 2020/11/14 07:20:08 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2061,9 +2061,10 @@ public class LambdaJ {
     private static void compileToJar(SymbolTable symtab, List<Object> history, Object jarFile, Object className, LambdaJ interpreter) {
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
+            String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             String clsName = className == null ? "MurmelProgram" : className.toString();
-            c.formsToApplicationClass(clsName, history, jarFile.toString());
-            System.out.println("compiled history to .jar file '" + jarFile.toString() + '\'');
+            c.formsToApplicationClass(clsName, history, jarFileName);
+            System.out.println("compiled history to .jar file '" + jarFileName + '\'');
         }
         catch (LambdaJError e) {
             System.out.println("history NOT compiled to .jar - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
