@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.201 2020/11/13 21:49:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.202 2020/11/14 06:33:38 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1973,6 +1973,7 @@ public class LambdaJ {
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
                     if (":java"   .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
                     if (":runjava".equals(exp.toString())) { runJava(parser, history, parser.readObj(false), interpreter); continue; }
+                    if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     history.add(exp);
                 }
 
@@ -2017,7 +2018,7 @@ public class LambdaJ {
     }
 
     private static void compileToJava(SymbolTable symtab, List<Object> history, Object className, Object filename) {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
+        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren
         if (null == filename) {
             System.out.println(c.formsToJavaProgram(className.toString(), history));
             return;
@@ -2039,7 +2040,7 @@ public class LambdaJ {
         ObjectWriter outWriter = interpreter.lispPrinter;
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
-            Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", history, null);
+            Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass(className.toString(), history, null);
             MurmelJavaProgram prg = murmelClass.newInstance();
             long tStart = System.nanoTime();
             Object result = prg.body();
@@ -2052,8 +2053,23 @@ public class LambdaJ {
             System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
         catch (Exception e) {
-            //System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             System.out.println("history NOT run as Java - error:");
+            e.printStackTrace(System.out);
+        }
+    }
+
+    private static void compileToJar(SymbolTable symtab, List<Object> history, Object jarFile, Object className, LambdaJ interpreter) {
+        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
+        try {
+            String clsName = className == null ? "MurmelProgram" : className.toString();
+            c.formsToApplicationClass(clsName, history, jarFile.toString());
+            System.out.println("compiled history to .jar file '" + jarFile.toString() + '\'');
+        }
+        catch (LambdaJError e) {
+            System.out.println("history NOT compiled to .jar - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        catch (Exception e) {
+            System.out.println("history NOT compiled to .jar - error:");
             e.printStackTrace(System.out);
         }
     }
@@ -2151,6 +2167,8 @@ public class LambdaJ {
         System.out.println("  :java <classname> nil .......... compile history to Java class 'classname' and print to the screen");
         System.out.println("  :java <classname> <filename> ... compile history to Java class 'classname' and write to a new file with the given filename");
         System.out.println("  :runjava <classname> ........... compile history to Java class 'classname' and run it");
+        System.out.println("  :jar <jarfile> <classname> ..... compile history to jarfile 'jarfile' containing Java class 'classname'");
+        System.out.println("                                   the generated jar needs jmurmel.jar in the same directory to run");
         System.out.println("  :q ............................. quit JMurmel");
         System.out.println();
     }
@@ -2358,11 +2376,22 @@ public class LambdaJ {
             final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFile), mf);
 
             // todo klassen mit pkg
-            final JarEntry entry = new JarEntry(unitName + ".class");
-            entry.setTime(System.currentTimeMillis());
-            jar.putNextEntry(entry);
-            jar.write(murmelClassLoader.getBytes(unitName));
-            jar.closeEntry();
+            String[] dirs = unitName.split("\\.");
+            String path = "";
+            for (int i = 0; i < dirs.length; i++) {
+                path = path + dirs[i];
+                if (i == dirs.length - 1) {
+                    final JarEntry entry = new JarEntry(path + ".class");
+                    jar.putNextEntry(entry);
+                    jar.write(murmelClassLoader.getBytes(unitName));
+                }
+                else {
+                    path = path + '/';
+                    final JarEntry entry = new JarEntry(path);
+                    jar.putNextEntry(entry);
+                }
+                jar.closeEntry();
+            }
 
             jar.close();
             return program;
@@ -2722,7 +2751,8 @@ class MurmelClassLoader extends ClassLoader {
 
     File getOutPathFile() { return outPath.toFile(); }
     byte[] getBytes(String name) throws IOException {
-        Path p = outPath.resolve(Paths.get(name + ".class"));
+        String path = name.replace('.', '/');
+        Path p = outPath.resolve(Paths.get(path + ".class"));
         if (!Files.isReadable(p)) return null;
         p.toFile().deleteOnExit();
         return Files.readAllBytes(p);
