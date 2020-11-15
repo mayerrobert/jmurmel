@@ -532,12 +532,6 @@ LambdaJ> (write (read)) "Hello, World!"
 
 
 
-script fuer den aufruf
--> default parameter
--> files oeffnen und dann von console lesen
-
-
-
 
 
 Generic S-Expression reader/ writer: (<n>:<octets>)
@@ -1587,3 +1581,8 @@ subOp auf asDouble umstellen
 asDouble sollte ggf. eine function dbl() aufrufen statt so viel inline
 main von MurmelProgram refaktorn: main(new Test())
 compareOp auf interpreter angleichen
+
+
+script fuer den aufruf
+-> default parameter
+-> files oeffnen und dann von console lesen

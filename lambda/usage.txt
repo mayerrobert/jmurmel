@@ -4,7 +4,7 @@ interactive:
 java -jar jmurmel.jar [commandline arguments]*
 
 non-interactive:
-java -jar jmurmel.jar [commandline arguments]* < lisp-source.lisp
+java -jar jmurmel.jar [commandline arguments]* lisp-source.lisp+
 
 Commandline arguments are:
 
@@ -12,6 +12,8 @@ Misc:
 --version ........  show version and exit
 --help ...........  show this message and exit
 
+--compile ........  compile input files to a.jar
+                    (a.jar will need jmurmel.jar in the same directory)
 --repl ...........  enter REPL even if the input isn't a tty,
                     i.e. print prompt and results and support :commands.
 

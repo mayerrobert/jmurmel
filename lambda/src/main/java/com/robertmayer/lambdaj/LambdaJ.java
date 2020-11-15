@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
-
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
@@ -104,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.209 2020/11/15 05:59:19 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.210 2020/11/15 07:16:40 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1914,6 +1913,7 @@ public class LambdaJ {
         final boolean repl        = hasFlag("--repl", args);
         final boolean echo        = hasFlag("--echo", args);    // used only in repl
         final boolean printResult = hasFlag("--result", args);  // used only in filemode
+        final boolean compile     = hasFlag("--compile", args);
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");
@@ -1923,7 +1923,11 @@ public class LambdaJ {
         final List<String> files = args(args);
 
         if (!files.isEmpty()) {
-            for (String fileName: files) {
+            if (compile) {
+                compileFiles(files, interpreter);
+            }
+            else for (String fileName: files) {
+                if ("--".equals(fileName)) continue;
                 Path p = Paths.get(fileName);
                 try (Reader r = Files.newBufferedReader(p)) {
                     interpretStream(interpreter, r::read, printResult);
@@ -1940,6 +1944,33 @@ public class LambdaJ {
         if (files.isEmpty()) {
             interpretStream(interpreter, System.in::read, printResult);
         }
+    }
+
+    private static void compileFiles(final List<String> files, LambdaJ interpreter) {
+        SExpressionParser parser = null;
+        final List<Object> program = new ArrayList<>();
+        for (String fileName: files) {
+            if ("--".equals(fileName)) continue;
+            Path p = Paths.get(fileName);
+            System.out.println("parsing " + fileName + "...");
+            try (Reader reader = Files.newBufferedReader(p)) {
+                if (parser == null) parser = new SExpressionParser(reader::read);
+                else parser.setInput(reader::read);
+                while (true) {
+                    Object sexp = parser.readObj();
+                    if (sexp == null) break;
+                    program.add(sexp);
+                }
+            } catch (IOException e) {
+                System.err.println();
+                System.err.println(e.toString());
+                System.exit(1);
+            }
+        }
+        System.out.println("compiling...");
+        String outFile = "a.jar";
+        boolean success = compileToJar(parser, program, outFile, "MurmelProgram", interpreter);
+        if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
     }
 
     private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult) {
@@ -2122,20 +2153,23 @@ public class LambdaJ {
         }
     }
 
-    private static void compileToJar(SymbolTable symtab, List<Object> history, Object jarFile, Object className, LambdaJ interpreter) {
+    private static boolean compileToJar(SymbolTable symtab, List<Object> history, Object jarFile, Object className, LambdaJ interpreter) {
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
             String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             String clsName = className == null ? "MurmelProgram" : className.toString();
             c.formsToApplicationClass(clsName, history, jarFileName);
-            System.out.println("compiled history to .jar file '" + jarFileName + '\'');
+            System.out.println("compiled to .jar file '" + jarFileName + '\'');
+            return true;
         }
         catch (LambdaJError e) {
-            System.out.println("history NOT compiled to .jar - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.out.println("NOT compiled to .jar - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return false;
         }
         catch (Exception e) {
-            System.out.println("history NOT compiled to .jar - error:");
+            System.out.println("NOT compiled to .jar - error:");
             e.printStackTrace(System.out);
+            return false;
         }
     }
 
@@ -2222,7 +2256,7 @@ public class LambdaJ {
         ArrayList<String> ret = new ArrayList<>();
         for (String arg: args) {
             if ("--".equals(arg)) continue;
-            ret.add(arg);
+            if (arg != null) ret.add(arg);
         }
         return ret;
     }
@@ -2264,7 +2298,7 @@ public class LambdaJ {
                 + "java -jar jmurmel.jar [commandline arguments]*\n"
                 + "\n"
                 + "non-interactive:\n"
-                + "java -jar jmurmel.jar [commandline arguments]* < lisp-source.lisp\n"
+                + "java -jar jmurmel.jar [commandline arguments]* lisp-source.lisp+\n"
                 + "\n"
                 + "Commandline arguments are:\n"
                 + "\n"
@@ -2272,6 +2306,8 @@ public class LambdaJ {
                 + "--version ........  show version and exit\n"
                 + "--help ...........  show this message and exit\n"
                 + "\n"
+                + "--compile ........  compile input files to a.jar\n"
+                + "                    (a.jar will need jmurmel.jar in the same directory)\n"
                 + "--repl ...........  enter REPL even if the input isn't a tty,\n"
                 + "                    i.e. print prompt and results and support :commands.\n"
                 + "\n"
@@ -2286,7 +2322,7 @@ public class LambdaJ {
                 + "--trace ..........  print lots of internal interpreter info during\n"
                 + "                    reading/ parsing/ executing programs\n"
                 + "\n"
-                + "Feature flags (only supported by JMurmel in interpreted code):\n"
+                + "Feature flags:\n"
                 + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
@@ -2309,7 +2345,7 @@ public class LambdaJ {
                 + "                   atom, eq, cons, car, cdr, lambda, apply, cond, labels\n"
                 + "\n"
                 + "--no-apply ....  no special form 'apply'\n"
-                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead, or actually: Z-combinator)\n"
+                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
                 + "\n"
                 + "--min .........  turn off all above features, leaving a Lisp with\n"
                 + "                 8 special forms/ primitives:\n"
