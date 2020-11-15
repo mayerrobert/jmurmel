@@ -1,3 +1,5 @@
+compilexx returned einen string. koennte stattdessen einen writer uebernehmen
+
 ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version
 -> https://franz.com/support/documentation/9.0/ansicl/dictentr/lisp-imp.htm
 

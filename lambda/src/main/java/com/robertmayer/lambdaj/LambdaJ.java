@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -103,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.208 2020/11/14 17:53:57 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.209 2020/11/15 05:59:19 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1069,29 +1070,31 @@ public class LambdaJ {
     private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
     private static Object   car(ConsCell c)    { return c == null ? null : c.car; }
-    private static Object   car(Object x)      { return x == null ? null : ((ConsCell)x).car; }
+    private static Object   car(Object o)      { return o == null ? null : ((ConsCell)o).car; }
+
     private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
+    private static Object   caadr(ConsCell c)  { return c == null ? null : car(cadr(c)); }
     private static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
-    private static Object   cadr(Object c)     { return c == null ? null : car(cdr(c)); }
-    private static Object   caadr(ConsCell c)  { return c == null ? null : car(car(cdr(c))); }
-    private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdr(car(c))); }
+    private static Object   cadr(Object o)     { return o == null ? null : car(cdr(o)); }
+    private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
     private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
     private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
 
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr; }
-    private static Object   cdr(Object x)      { return x == null ? null : ((ConsCell)x).cdr; }
-    private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(c.car); }
-    private static Object   cdar(Object x)     { return x == null ? null : cdr(car(x)); }
-    private static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
-    private static Object   cddr(Object x)     { return x == null ? null : cdr(cdr(x)); }
+    private static Object   cdr(Object o)      { return o == null ? null : ((ConsCell)o).cdr; }
 
-    private static boolean  consp(Object x)    { return x instanceof ConsCell; }
-    private static boolean  atom(Object x)     { return !(x instanceof ConsCell); }                // ! consp(x)
-    private static boolean  symbolp(Object x)  { return x == null || x instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
-    private static boolean  listp(Object x)    { return x == null || x instanceof ConsCell; }      // null (aka nil) is a list too
-    private static boolean  primp(Object x)    { return x instanceof Primitive; }
-    private static boolean  numberp(Object x)  { return x instanceof Number; }
-    private static boolean  stringp(Object x)  { return x instanceof String; }
+    private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
+    private static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
+    private static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
+    private static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
+
+    private static boolean  consp(Object o)    { return o instanceof ConsCell; }
+    private static boolean  atom(Object o)     { return !(o instanceof ConsCell); }                // ! consp(x)
+    private static boolean  symbolp(Object o)  { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+    private static boolean  listp(Object o)    { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+    private static boolean  primp(Object o)    { return o instanceof Primitive; }
+    private static boolean  numberp(Object o)  { return o instanceof Number; }
+    private static boolean  stringp(Object o)  { return o instanceof String; }
 
     private static int length(Object list) {
         if (list == null) return 0;
@@ -1447,7 +1450,7 @@ public class LambdaJ {
             locString = (String) car(a);
         } else locString = null;
 
-        stringArg(func, "thrid argument", cdr(a));
+        stringArg(func, "third argument", cdr(a));
         String s = (String) cadr(a);
         final Object[] args = listToArray(cddr(a));
         try {
@@ -1908,7 +1911,7 @@ public class LambdaJ {
         final LambdaJ interpreter = new LambdaJ(features, trace, null);
 
         final boolean istty = null != System.console();
-        final boolean repl        = hasFlag("--repl", args) || istty;
+        final boolean repl        = hasFlag("--repl", args);
         final boolean echo        = hasFlag("--echo", args);    // used only in repl
         final boolean printResult = hasFlag("--result", args);  // used only in filemode
 
@@ -1917,10 +1920,31 @@ public class LambdaJ {
             System.exit(1);
         }
 
-        if (repl) repl(interpreter, istty, echo); // repl() doesn't return
+        final List<String> files = args(args);
 
+        if (!files.isEmpty()) {
+            for (String fileName: files) {
+                Path p = Paths.get(fileName);
+                try (Reader r = Files.newBufferedReader(p)) {
+                    interpretStream(interpreter, r::read, printResult);
+                } catch (IOException e) {
+                    System.err.println();
+                    System.err.println(e.toString());
+                    System.exit(1);
+                }
+            }
+        }
+
+        if (repl || (files.isEmpty() && istty)) repl(interpreter, istty, echo); // repl() doesn't return
+
+        if (files.isEmpty()) {
+            interpretStream(interpreter, System.in::read, printResult);
+        }
+    }
+
+    private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult) {
         try {
-            final String result = printSEx(interpreter.interpretExpressions(System.in::read, System.in::read, System.out::print));
+            final String result = printSEx(interpreter.interpretExpressions(prog, System.in::read, System.out::print));
             if (printResult) {
                 System.out.println();
                 System.out.println("==> " + result);
@@ -2172,6 +2196,7 @@ public class LambdaJ {
     private static boolean hasFlag(String flag, String[] args) {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
+            if ("--".equals(arg)) return false;
             if (flag.equals(arg)) {
                 args[i] = null; // consume the arg
                 return true;
@@ -2183,6 +2208,7 @@ public class LambdaJ {
     private static boolean argError(String[] args) {
         boolean err = false;
         for (String arg: args) {
+            if (arg != null && arg.equals("--")) return err;
             if (arg != null && arg.startsWith("-")) {
                 System.err.println("LambdaJ: unknown commandline argument " + arg);
                 System.err.println("use '--help' to show available commandline arguments");
@@ -2190,6 +2216,15 @@ public class LambdaJ {
             }
         }
         return err;
+    }
+
+    private static List<String> args(String[] args) {
+        ArrayList<String> ret = new ArrayList<>();
+        for (String arg: args) {
+            if ("--".equals(arg)) continue;
+            ret.add(arg);
+        }
+        return ret;
     }
 
     private static void showVersion() {
