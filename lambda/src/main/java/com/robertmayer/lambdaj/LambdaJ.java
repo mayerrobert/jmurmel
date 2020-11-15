@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.207 2020/11/14 10:35:23 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.208 2020/11/14 17:53:57 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -357,8 +357,16 @@ public class LambdaJ {
 
         private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
 
+        /*java.io.PrintWriter debug;
+        {
+            try {
+                debug = new java.io.PrintWriter(Files.newBufferedWriter(Paths.get("scanner.log")));
+            } catch (IOException e) { }
+        }*/
+
         private int readchar() throws IOException {
             int c = in.read();
+            //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
             if (c == '\n') {
                 lineNo++;
                 charNo = 0;
@@ -1269,8 +1277,14 @@ public class LambdaJ {
     /** between {@code min} and {@code max} args */
     private static void nArgs(String func, Object a, int min, int max) {
         int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(true, "%s: expected %d to %d arguments but got only %d", func, min, max, actualLength);
-        if (actualLength > max) throw new LambdaJError(true, "%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)));
+        if (actualLength < min) {
+            if (min == max) throw new LambdaJError(true, "%s: expected %d argument but got only %d", func, min, actualLength);
+            throw new LambdaJError(true, "%s: expected %d to %d arguments but got only %d", func, min, max, actualLength);
+        }
+        if (actualLength > max) {
+            if (min == max) throw new LambdaJError(true, "%s: expected %d argument but got extra arg(s) %s", func, min, printSEx(nthcdr(max, a)));
+            throw new LambdaJError(true, "%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)));
+        }
     }
 
     /** 'a' must be a symbol or a proper or dotted list of only symbols (empty list is fine, too).
@@ -1958,7 +1972,7 @@ public class LambdaJ {
             }
 
             try {
-                if (istty) { parser.lineNo = 1;  parser.charNo = 0; }
+                if (istty) { parser.lineNo = parser.charNo == 0 ? 1 : 0;  parser.charNo = 0; } // if parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF
@@ -2348,6 +2362,7 @@ public class LambdaJ {
         /// * intern, write, todo writeln
         /// * todo atom, consp, listp, symbolp, numberp, stringp
         /// * todo assoc, round, floor, ceiling
+        /// * todo mod, sqrt, log, log10, exp, expt
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * todo format, format-locale
         /// * todo ::
