@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.210 2020/11/15 07:16:40 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.211 2020/11/15 08:19:10 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2579,11 +2579,20 @@ public class LambdaJ {
                      + "        main(new " + clsName + "());\n"
                      + "    }\n\n");
 
-            // todo defun
-            for (Object form: forms)
-                if (consp(form) && isSymbol(car(form), "define")) env = defineGlobal(ret, (ConsCell) cdr(form), env);
+            Object result = null;
+            for (Object form: forms) {
+                if (consp(form) && isSymbol(car(form), "define")) {
+                    env = defineGlobal(ret, (ConsCell) cdr(form), env);
+                    result = cadr(form); // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
+                }
+                if (consp(form) && isSymbol(car(form), "defun")) {
+                    env = defineGlobal(ret, cons(cadr(form), cons(cons(intern("lambda"), cddr(form)), null)), env);
+                    result = cadr(form); // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
+                }
+            }
+            if (result != null) result = "_intern(\"" + result.toString() + "\")";
 
-            // generate getValue() and getFunction()
+            // generate getValue() for FFI
             ret.append("\n    public Object getValue(String symbol) {\n"
                      + "        switch (symbol) {\n");
             for (Object form: forms)
@@ -2594,7 +2603,7 @@ public class LambdaJ {
                      + "        }\n"
                      + "    }\n\n");
 
-            ret.append("\n    public Object body() {\n        Object result0 = null;\n");
+            ret.append("\n    public Object body() {\n        Object result0 = " + result + ";\n");
             formsToJava(ret, forms, env, 0);
             ret.append("        return result0;\n    }\n");
 
@@ -2678,7 +2687,7 @@ public class LambdaJ {
         /** generate Java code for a list of forms */
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
-                if (!(consp(form) && isSymbol(car(form), "define"))) {
+                if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
                     ret.append("        result").append(rsfx).append(" = ");
                     formToJava(ret, form, env, rsfx);
                     ret.append(';').append(System.lineSeparator());
@@ -2750,6 +2759,7 @@ public class LambdaJ {
                     }
 
                     if (isSymbol(op, "define")) return;
+                    if (isSymbol(op, "defun")) return;
 
                     ///     - todo apply
                     ///     - todo eval: dafuer muss das env des interpreter mitgefuehrt werden

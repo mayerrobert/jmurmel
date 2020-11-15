@@ -18,8 +18,6 @@ wenns namespaces gibt, sollte :: wahrscheinlich i-wie mit import verheiratet wer
 
 usage gibt keine --no-XXX aus, nur mit parameter --help-features
 
-defun kompilieren
-
 vielleicht doch nil=null und t=Boolean.TRUE? Interpreter ggf. angleichen
 
 der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
@@ -1586,3 +1584,5 @@ compareOp auf interpreter angleichen
 script fuer den aufruf
 -> default parameter
 -> files oeffnen und dann von console lesen
+
+defun kompilieren

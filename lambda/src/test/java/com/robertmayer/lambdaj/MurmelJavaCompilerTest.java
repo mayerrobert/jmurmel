@@ -50,11 +50,18 @@ public class MurmelJavaCompilerTest {
 
         MurmelJavaProgram compiled = murmelClass.newInstance();
         Object result = compiled.body();
-        assertEquals("wrong result", "t", result.toString());
+        assertEquals("wrong result", "t", sexp(result));
 
         MurmelFunction f = compiled.getFunction("f");
         result = f.apply("The answer is: ", 42);
-        assertEquals("wrong result", "t", result.toString());
+        assertEquals("wrong result", "t", sexp(result));
+    }
+
+    @Test
+    public void testDefun() throws Exception {
+        MurmelJavaProgram program = compile("(define f1 (lambda (a) a)) (defun f2 (a) a)");
+        assertNotNull("failed to compile defun to class", program);
+        assertEquals("defun produced wrong result", "f2", sexp(program.body()));
     }
 
     @Test
