@@ -1,3 +1,7 @@
+statt --compile -> --to-java und --to-jar
+
+compiler varargs geht wsl nicht
+
 compilexx returned einen string. koennte stattdessen einen writer uebernehmen
 
 ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version

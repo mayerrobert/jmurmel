@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.212 2020/11/15 09:18:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.213 2020/11/15 10:05:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1966,7 +1966,7 @@ public class LambdaJ {
                 if (parser == null) parser = new SExpressionParser(reader::read);
                 else parser.setInput(reader::read);
                 while (true) {
-                    Object sexp = parser.readObj();
+                    Object sexp = parser.readObj(true);
                     if (sexp == null) break;
                     program.add(sexp);
                 }
@@ -2081,8 +2081,8 @@ public class LambdaJ {
             Path p = Paths.get(filename.toString());
             Files.createFile(p);
             Files.write(p, history.stream()
-                                        .map(sexp -> printSEx(sexp))
-                                        .collect(Collectors.toList()));
+                    .map(sexp -> printSEx(sexp))
+                    .collect(Collectors.toList()));
             System.out.println("wrote history to file '" + p.toString() + '\'');
         }
         catch (Exception e) {
@@ -2439,8 +2439,9 @@ public class LambdaJ {
 
         /// Environment for compiled Murmel:
         /// * nil, t
-        /// * intern, write, writeln
-        /// * atom, consp, listp, symbolp, numberp, stringp, assoc
+        /// * eq, intern, write, writeln
+        /// * atom, consp, listp, symbolp, numberp, stringp, assoc, list
+        /// * =, <, <=, >=, > are handled as special forms and are primitives as well (for apply)
         /// * todo mod, sqrt, log, log10, exp, expt, round, floor, ceiling
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * todo format, format-locale
@@ -2448,13 +2449,16 @@ public class LambdaJ {
         ///
         protected static final String[] globalvars = new String[] { "nil", "t" };
         protected static final String[] primitives = new String[] {
-                "intern", "write", "writeln",
+                "eq", "not", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp",
-                "assoc",
+                "assoc", "list"
         };
 
         protected final Object _nil = null;
         protected final Object _t;
+
+        protected Object _eq(Object... args)  { return args[0] == args[1] ? _t : null; }
+        protected Object _not(Object... args) { return args[0] != args[1] ? _t : null; }
 
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
         protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
@@ -2470,6 +2474,44 @@ public class LambdaJ {
         protected Object _stringp(Object... args)  { return stringp(args[0]) ? _t : null; }
 
         protected Object _assoc  (Object... args)  { return assoc(args[0], args[1]); }
+        protected Object _list   (Object... args)  { return intp.list(args); }
+
+        protected static final String[][] aliasedPrimitives = new String[][] {
+            {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
+            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
+        };
+
+        protected double _add(Object... args) {
+            double ret = 0.0;
+            if (args != null) for (Object arg: args) ret += dbl(arg);
+            return ret;
+        }
+
+        protected double _mul(Object... args) {
+            double ret = 1.0;
+            if (args != null) for (Object arg: args) ret *= dbl(arg);
+            return ret;
+        }
+
+        protected double _sub(Object... args) {
+            if (args.length == 0) return 0.0 - dbl(args[0]);
+            double ret = dbl(args[0]);
+            for (int i = 1; i < args.length; i++) ret -= dbl(args[i]);
+            return ret;
+        }
+
+        protected double _quot(Object... args) {
+            if (args.length == 0) return 1.0 / dbl(args[0]);
+            double ret = dbl(args[0]);
+            for (int i = 1; i < args.length; i++) ret /= dbl(args[i]);
+            return ret;
+        }
+
+        protected Object _numbereq(Object[] args) { return numbereq(args[0], args[1]); }
+        protected Object _lt(Object[] args) { return lt(args[0], args[1]); }
+        protected Object _le(Object[] args) { return le(args[0], args[1]); }
+        protected Object _ge(Object[] args) { return ge(args[0], args[1]); }
+        protected Object _gt(Object[] args) { return gt(args[0], args[1]); }
 
 
 
@@ -2494,11 +2536,16 @@ public class LambdaJ {
             return f.apply(args);
         }
 
+        protected Object applyList(Object fn, ConsCell argList) {
+            MurmelFunction f = (MurmelFunction)fn;
+            return f.apply(listToArray(argList));
+        }
+
         protected double dbl(Object n) {
             return ((Number)n).doubleValue();
         }
 
-        protected Object eq(Object lhs, Object rhs) {
+        protected Object numbereq(Object lhs, Object rhs) {
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
         }
@@ -2583,12 +2630,12 @@ public class LambdaJ {
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
         public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
             ConsCell env = null;
-            for (String global: MurmelJavaProgram.globalvars) {
-                env = extenv(global, 0, env);
-            }
-            for (String prim: MurmelJavaProgram.primitives) {
-                env = extenvfunc(prim, 0, env);
-            }
+            for (String global: MurmelJavaProgram.globalvars)  env = extenv(global, 0, env);
+            for (String prim: MurmelJavaProgram.primitives)    env = extenvfunc(prim, 0, env);
+
+            // symbols that are implemented as special forms get into the environment too in order for apply to work
+            for (String[] special: MurmelJavaProgram.aliasedPrimitives)
+                env = cons(cons(intern(special[0]), "(MurmelFunction)this::_" + special[1]), env);
 
             final StringBuilder ret = new StringBuilder();
             final String clsName;
@@ -2641,21 +2688,19 @@ public class LambdaJ {
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
         private ConsCell extenv(String symname, int sfx, ConsCell prev) {
-            LambdaJSymbol sym = intern(symname);
-            return cons(cons(sym, mangle(symname, sfx)), prev);
+            return cons(cons(intern(symname), mangle(symname, sfx)), prev);
         }
 
-        /** for compiling possibly recursive functions: extend the environment by putting (symbol this::f_symname) in front of {@code prev} */
+        /** for compiling possibly recursive functions: extend the environment by putting (symbol this::_symname) in front of {@code prev} */
         private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
-            LambdaJSymbol sym = intern(symname);
-            return cons(cons(sym, "((MurmelFunction)this::" + mangle(symname, sfx) + ')'), prev);
+            return cons(cons(intern(symname), "((MurmelFunction)this::" + mangle(symname, sfx) + ')'), prev);
         }
 
         private LambdaJSymbol intern(String symname) {
             return st.intern(new LambdaJSymbol(symname));
         }
 
-        /** replace chars that are not letters*/
+        /** replace chars that are not letters */
         private static String mangle(String symname, int sfx) {
             final StringBuilder mangled = new StringBuilder();
             for (char c: symname.toCharArray()) {
@@ -2788,7 +2833,18 @@ public class LambdaJ {
                     if (isSymbol(op, "define")) return;
                     if (isSymbol(op, "defun")) return;
 
-                    ///     - todo apply
+                    ///     - apply
+                    if (isSymbol(op, "apply")) {
+                        //formToJava(sb, cons(car(args), cadr(args)), env, rsfx);
+                        sb.append("applyList(");
+                        formToJava(sb, car(args), env, rsfx);
+                        sb.append(", ");
+                        formToJava(sb, cadr(args), env, rsfx);
+                        sb.append(')');
+                        return;
+                    }
+
+
                     ///     - todo eval: dafuer muss das env des interpreter mitgefuehrt werden
 
                     ///     - todo progn, labels
@@ -2810,8 +2866,10 @@ public class LambdaJ {
 
             }
             catch (LambdaJError e) {
-                if (form instanceof SExpConsCell) throw new LambdaJError(true, e.getMessage(), form);
-                throw e;
+                throw new LambdaJError(false, e.getMessage(), form);
+            }
+            catch (Exception e) {
+                throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
             }
         }
 
@@ -2851,11 +2909,11 @@ public class LambdaJ {
                                            asDouble(sb, cadr(args), env, rsfx); sb.append(") ").append(pred).append(" 0 ? _t : null)");
             */
             switch (pred) {
-            case "==": sb.append("eq("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case "<=": sb.append("le("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case "<":  sb.append("lt("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case ">=": sb.append("ge("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case ">":  sb.append("gt("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case "==": sb.append("numbereq("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case "<=": sb.append("le(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case "<":  sb.append("lt(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case ">=": sb.append("ge(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
+            case ">":  sb.append("gt(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
             default: throw new LambdaJError(true, "internal error: operator %s not implemented", pred);
             }
         }

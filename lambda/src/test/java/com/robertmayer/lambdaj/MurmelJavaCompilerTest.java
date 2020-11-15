@@ -150,6 +150,13 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testApply() throws Exception {
+        MurmelJavaProgram program = compile("(apply + '(1 2 3))");
+        assertNotNull("failed to compile apply to class", program);
+        assertEquals("apply produced wrong result", 6.0, program.body());
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\r\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\r\n"
