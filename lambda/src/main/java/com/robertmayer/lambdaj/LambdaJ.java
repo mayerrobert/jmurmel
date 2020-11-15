@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.211 2020/11/15 08:19:10 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.212 2020/11/15 09:18:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1419,6 +1419,27 @@ public class LambdaJ {
         return result;
     }
 
+    private void write(final Object arg) {
+        if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
+        lispPrinter.printObj(arg);
+    }
+
+    private void writeln(final Object arg) {
+        if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
+        if (arg == null) {
+            lispPrinter.printEol();
+        }
+        else if (haveLispEOL()) {
+            lispPrinter.printEol();
+            lispPrinter.printObj(arg);
+            lispPrinter.printString(" ");
+        }
+        else {
+            lispPrinter.printObj(arg);
+            lispPrinter.printEol();
+        }
+    }
+
     private String format(ConsCell a, String func) {
         nArgs(func, a, 2);
         boolean toString = car(a) == null;
@@ -1556,25 +1577,13 @@ public class LambdaJ {
             };
             final Primitive fwriteobj = a -> {
                 oneArg("write", a);
-                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
-                lispPrinter.printObj(car(a)); return expTrue.get();
+                write(car(a));
+                return expTrue.get();
             };
 
             final Primitive fwriteln =  a -> {
                 nArgs("writeln", a, 0, 1);
-                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
-                if (a == null) {
-                    lispPrinter.printEol();
-                    return expTrue.get();
-                }
-                if (haveLispEOL()) {
-                    lispPrinter.printEol();
-                    lispPrinter.printObj(car(a));
-                    lispPrinter.printString(" ");
-                } else {
-                    lispPrinter.printObj(car(a));
-                    lispPrinter.printEol();
-                }
+                writeln(car(a));
                 return expTrue.get();
             };
 
@@ -2430,21 +2439,37 @@ public class LambdaJ {
 
         /// Environment for compiled Murmel:
         /// * nil, t
-        /// * intern, write, todo writeln
-        /// * todo atom, consp, listp, symbolp, numberp, stringp
-        /// * todo assoc, round, floor, ceiling
-        /// * todo mod, sqrt, log, log10, exp, expt
+        /// * intern, write, writeln
+        /// * atom, consp, listp, symbolp, numberp, stringp, assoc
+        /// * todo mod, sqrt, log, log10, exp, expt, round, floor, ceiling
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * todo format, format-locale
         /// * todo ::
         ///
+        protected static final String[] globalvars = new String[] { "nil", "t" };
+        protected static final String[] primitives = new String[] {
+                "intern", "write", "writeln",
+                "atom", "consp", "listp", "symbolp", "numberp", "stringp",
+                "assoc",
+        };
+
         protected final Object _nil = null;
         protected final Object _t;
 
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
         protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
 
-        protected Object _write(Object... args) { intp.lispPrinter.printObj(args[0]); return intp.expTrue.get(); }; // todo sollte wsl return _t sein
+        protected Object _write(Object... args)    { intp.write(args[0]); return _t; };
+        protected Object _writeln(Object... args)  { intp.write(args == null ? null : args[0]); return _t; };
+
+        protected Object _atom   (Object... args)  { return atom   (args[0]) ? _t : null; }
+        protected Object _consp  (Object... args)  { return consp  (args[0]) ? _t : null; }
+        protected Object _listp  (Object... args)  { return listp  (args[0]) ? _t : null; }
+        protected Object _symbolp(Object... args)  { return symbolp(args[0]) ? _t : null; }
+        protected Object _numberp(Object... args)  { return numberp(args[0]) ? _t : null; }
+        protected Object _stringp(Object... args)  { return stringp(args[0]) ? _t : null; }
+
+        protected Object _assoc  (Object... args)  { return assoc(args[0], args[1]); }
 
 
 
@@ -2557,11 +2582,13 @@ public class LambdaJ {
         /// Wrapper to compile Murmel to Java source
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
         public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
-            ConsCell env;
-            env = extenv("nil", 0, null);
-            env = extenv("t", 0, env);
-            env = extenvfunc("write", 0, env);
-            env = extenvfunc("intern", 0, env);
+            ConsCell env = null;
+            for (String global: MurmelJavaProgram.globalvars) {
+                env = extenv(global, 0, env);
+            }
+            for (String prim: MurmelJavaProgram.primitives) {
+                env = extenvfunc(prim, 0, env);
+            }
 
             final StringBuilder ret = new StringBuilder();
             final String clsName;
