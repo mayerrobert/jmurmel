@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.213 2020/11/15 10:05:26 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.214 2020/11/15 14:03:02 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -745,7 +745,7 @@ public class LambdaJ {
 
                     /// eval - (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
-                        if (!consp(arguments)) throw new LambdaJError(true, "%s: malformed progn. expected a list of forms but got %s", "progn", printSEx(arguments));
+                        if (!listp(arguments)) throw new LambdaJError(true, "%s: malformed progn. expected a list of forms but got %s", "progn", printSEx(arguments));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
@@ -2294,6 +2294,7 @@ public class LambdaJ {
         System.out.println("                                   the generated jar needs jmurmel.jar in the same directory to run");
         System.out.println();
         System.out.println("  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).");
+        System.out.println("  classname and filename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")");
         System.out.println();
         System.out.println("  :q ............................. quit JMurmel");
         System.out.println();
@@ -2439,6 +2440,7 @@ public class LambdaJ {
 
         /// Environment for compiled Murmel:
         /// * nil, t
+        /// * car, cdr, cons
         /// * eq, intern, write, writeln
         /// * atom, consp, listp, symbolp, numberp, stringp, assoc, list
         /// * =, <, <=, >=, > are handled as special forms and are primitives as well (for apply)
@@ -2449,6 +2451,7 @@ public class LambdaJ {
         ///
         protected static final String[] globalvars = new String[] { "nil", "t" };
         protected static final String[] primitives = new String[] {
+                "car", "cdr", "cons",
                 "eq", "not", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp",
                 "assoc", "list"
@@ -2456,6 +2459,10 @@ public class LambdaJ {
 
         protected final Object _nil = null;
         protected final Object _t;
+
+        protected Object _car (Object... args)  { return car(args[0]); }
+        protected Object _cdr (Object... args)  { return cdr(args[0]); }
+        protected ConsCell _cons(Object... args)  { return cons(args[0], args[1]); }
 
         protected Object _eq(Object... args)  { return args[0] == args[1] ? _t : null; }
         protected Object _not(Object... args) { return args[0] != args[1] ? _t : null; }
@@ -2473,45 +2480,27 @@ public class LambdaJ {
         protected Object _numberp(Object... args)  { return numberp(args[0]) ? _t : null; }
         protected Object _stringp(Object... args)  { return stringp(args[0]) ? _t : null; }
 
-        protected Object _assoc  (Object... args)  { return assoc(args[0], args[1]); }
-        protected Object _list   (Object... args)  { return intp.list(args); }
+        protected ConsCell _assoc  (Object... args)  { return assoc(args[0], args[1]); }
+        protected ConsCell _list   (Object... args)  { return intp.list(args); }
 
         protected static final String[][] aliasedPrimitives = new String[][] {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
         };
 
-        protected double _add(Object... args) {
-            double ret = 0.0;
-            if (args != null) for (Object arg: args) ret += dbl(arg);
-            return ret;
-        }
+        protected double _add    (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
+        protected double _mul    (Object... args) { double ret = 1.0; if (args != null) for (Object arg: args) ret *= dbl(arg); return ret; }
 
-        protected double _mul(Object... args) {
-            double ret = 1.0;
-            if (args != null) for (Object arg: args) ret *= dbl(arg);
-            return ret;
-        }
-
-        protected double _sub(Object... args) {
-            if (args.length == 0) return 0.0 - dbl(args[0]);
-            double ret = dbl(args[0]);
-            for (int i = 1; i < args.length; i++) ret -= dbl(args[i]);
-            return ret;
-        }
-
-        protected double _quot(Object... args) {
-            if (args.length == 0) return 1.0 / dbl(args[0]);
-            double ret = dbl(args[0]);
-            for (int i = 1; i < args.length; i++) ret /= dbl(args[i]);
-            return ret;
-        }
+        protected double _sub    (Object... args) { if (args.length == 0) return 0.0 - dbl(args[0]);
+                                                    double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
+        protected double _quot   (Object... args) { if (args.length == 0) return 1.0 / dbl(args[0]);
+                                                    double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
         protected Object _numbereq(Object[] args) { return numbereq(args[0], args[1]); }
-        protected Object _lt(Object[] args) { return lt(args[0], args[1]); }
-        protected Object _le(Object[] args) { return le(args[0], args[1]); }
-        protected Object _ge(Object[] args) { return ge(args[0], args[1]); }
-        protected Object _gt(Object[] args) { return gt(args[0], args[1]); }
+        protected Object _lt      (Object[] args) { return lt(args[0], args[1]); }
+        protected Object _le      (Object[] args) { return le(args[0], args[1]); }
+        protected Object _ge      (Object[] args) { return ge(args[0], args[1]); }
+        protected Object _gt      (Object[] args) { return gt(args[0], args[1]); }
 
 
 
@@ -2531,9 +2520,17 @@ public class LambdaJ {
             }
         }
 
+        protected Object car (Object l)  { return l == null ? null : ((ConsCell)l).car; }
+        protected Object cdr (Object l)  { return l == null ? null : ((ConsCell)l).cdr; }
+        protected ConsCell cons(Object car, Object cdr)  { return new ConsCell(car, cdr); }
+
         protected Object apply(Object fn, Object... args) {
             MurmelFunction f = (MurmelFunction)fn;
             return f.apply(args);
+        }
+
+        protected Object eval(Object form, Object env) {
+            return intp.eval(form, intp.topEnv, 0, 0);
         }
 
         protected Object applyList(Object fn, ConsCell argList) {
@@ -2799,16 +2796,14 @@ public class LambdaJ {
                     if (isSymbol(op, ">"))  { compareNum(sb, ">",  args,  env, rsfx); return; }
 
                     ///     - cons, car, cdr
-                    if (isSymbol(op, "car"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").car"); return; }
-                    if (isSymbol(op, "cdr"))  { sb.append("((ConsCell)");   formToJava(sb, car(args), env, rsfx); sb.append(").cdr"); return; }
-                    if (isSymbol(op, "cons")) { sb.append("new ConsCell("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
+                    if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
+                    if (isSymbol(op, "cdr"))  { sb.append("cdr(");   formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
+                    if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
                     ///     - quote
                     if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
-                    ///     - list
-                    if (isSymbol(op, "list"))  { quotedFormToJava(sb, args); return; }
 
-                    ///     - eq, not
+                    ///     - eq, not todo compareOp NICHT fuer beides benutzen: so wuerde (eq 1) stillschweigend in (eq 1 nil) uebersetzt, sollte aber fehler geben
                     if (isSymbol(op, "eq") || isSymbol(op, "not")) { compareOp(sb, "==", args, env, rsfx); return; }
 
                     ///     - if
@@ -2835,7 +2830,6 @@ public class LambdaJ {
 
                     ///     - apply
                     if (isSymbol(op, "apply")) {
-                        //formToJava(sb, cons(car(args), cadr(args)), env, rsfx);
                         sb.append("applyList(");
                         formToJava(sb, car(args), env, rsfx);
                         sb.append(", ");
@@ -2844,8 +2838,16 @@ public class LambdaJ {
                         return;
                     }
 
-
-                    ///     - todo eval: dafuer muss das env des interpreter mitgefuehrt werden
+                    ///     - eval todo env klaeren, muss das env des interpreter mitgefuehrt werden
+                    // CLHS sagt: null lexical env, aktuelles dyn env
+                    if (isSymbol(op, "eval")) {
+                        sb.append("eval(");
+                        formToJava(sb, car(args), env, rsfx);
+                        sb.append(", ");
+                        sb.append(" null");
+                        sb.append(')');
+                        return;
+                    }
 
                     ///     - todo progn, labels
 
@@ -2946,8 +2948,8 @@ public class LambdaJ {
             if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
 
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
-            if (atom(form))    { sb.append(form.toString()); return; }
-            if (consp(form))   { sb.append("new ConsCell("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
+            if (atom(form))    { sb.append(printSEx(form)); return; }
+            if (consp(form))   { sb.append("cons("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
 
             throw new LambdaJError("quote: internal error");
         }

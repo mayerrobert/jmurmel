@@ -4,7 +4,7 @@ interactive:
 java -jar jmurmel.jar [commandline arguments]*
 
 non-interactive:
-java -jar jmurmel.jar [commandline arguments]* lisp-source.lisp+
+java -jar jmurmel.jar [commandline arguments]* lisp-source.lisp*
 
 Commandline arguments are:
 
