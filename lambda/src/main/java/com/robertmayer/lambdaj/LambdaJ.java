@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.215 2020/11/15 22:14:34 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.216 2020/11/16 17:05:27 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2450,15 +2450,18 @@ public class LambdaJ {
         /// * todo ::
         ///
         protected static final String[] globalvars = new String[] { "nil", "t" };
+
+        protected final Object _nil = null;
+        protected final Object _t;
+
+
+
         protected static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
                 "eval", "eq", "not", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp",
                 "assoc", "list"
         };
-
-        protected final Object _nil = null;
-        protected final Object _t;
 
         protected Object _car (Object... args)   { return car(args[0]); }
         protected Object _cdr (Object... args)   { return cdr(args[0]); }
@@ -2486,6 +2489,8 @@ public class LambdaJ {
 
         protected ConsCell _assoc  (Object... args)  { return assoc(args[0], args[1]); }
         protected ConsCell _list   (Object... args)  { return intp.list(args); }
+
+
 
         protected static final String[][] aliasedPrimitives = new String[][] {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
@@ -2631,10 +2636,7 @@ public class LambdaJ {
             ConsCell env = null;
             for (String global: MurmelJavaProgram.globalvars)  env = extenv(global, 0, env);
             for (String prim: MurmelJavaProgram.primitives)    env = extenvfunc(prim, 0, env);
-
-            // symbols that are implemented as special forms get into the environment too in order for apply to work
-            for (String[] special: MurmelJavaProgram.aliasedPrimitives)
-                env = cons(cons(intern(special[0]), "(MurmelFunction)this::_" + special[1]), env);
+            for (String[] alias: MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::_" + alias[1]), env);
 
             final StringBuilder ret = new StringBuilder();
             final String clsName;
@@ -2755,6 +2757,8 @@ public class LambdaJ {
             return extenv;
         }
 
+
+
         /// formsToJava - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms */
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
@@ -2784,7 +2788,7 @@ public class LambdaJ {
                     final Object op = car(form);
                     Object args = cdr(form);
 
-                    /// * special forms:
+                    /// * some functions and operators are compiled inline:
                     ///     - number operators
                     if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, rsfx); return; }
                     if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, rsfx); return; }
@@ -2792,22 +2796,25 @@ public class LambdaJ {
                     if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, rsfx); return; }
 
                     ///     - number compare operators
-                    if (isSymbol(op, "="))  { compareNum(sb, "==", args, env, rsfx); return; }
-                    if (isSymbol(op, "<"))  { compareNum(sb, "<",  args,  env, rsfx); return; }
-                    if (isSymbol(op, "<=")) { compareNum(sb, "<=", args, env, rsfx); return; }
-                    if (isSymbol(op, ">=")) { compareNum(sb, ">=", args, env, rsfx); return; }
-                    if (isSymbol(op, ">"))  { compareNum(sb, ">",  args,  env, rsfx); return; }
+                    if (isSymbol(op, "="))  { compareNum(sb, "numbereq", args, env, rsfx); return; }
+                    if (isSymbol(op, "<"))  { compareNum(sb, "lt",  args,  env, rsfx); return; }
+                    if (isSymbol(op, "<=")) { compareNum(sb, "le", args, env, rsfx); return; }
+                    if (isSymbol(op, ">=")) { compareNum(sb, "ge", args, env, rsfx); return; }
+                    if (isSymbol(op, ">"))  { compareNum(sb, "gt",  args,  env, rsfx); return; }
 
                     ///     - cons, car, cdr
                     if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
                     if (isSymbol(op, "cdr"))  { sb.append("cdr(");   formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
                     if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
-                    ///     - quote
-                    if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
-
                     ///     - eq, not todo compareOp NICHT fuer beides benutzen: so wuerde (eq 1) stillschweigend in (eq 1 nil) uebersetzt, sollte aber fehler geben
                     if (isSymbol(op, "eq") || isSymbol(op, "not")) { compareOp(sb, "==", args, env, rsfx); return; }
+
+
+
+                    /// * special forms:
+                    ///     - quote
+                    if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
 
                     ///     - if
                     if (isSymbol(op, "if"))  {
@@ -2898,14 +2905,7 @@ public class LambdaJ {
 
         /** compare two numbers */
         private void compareNum(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
-            switch (pred) {
-            case "==": sb.append("numbereq("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case "<=": sb.append("le(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case "<":  sb.append("lt(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case ">=": sb.append("ge(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            case ">":  sb.append("gt(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
-            default: throw new LambdaJError(true, "internal error: operator %s not implemented", pred);
-            }
+            sb.append(pred).append('('); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')');
         }
 
         /** generate double operator for zero or more number args */
