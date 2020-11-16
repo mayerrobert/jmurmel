@@ -157,6 +157,13 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testEval() throws Exception {
+        MurmelJavaProgram program = compile("(eval (list 'cdr (car '((quote (a . b)) c))))");
+        assertNotNull("failed to compile eval to class", program);
+        assertEquals("eval produced wrong result", "b", sexp(program.body()));
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\r\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\r\n"
