@@ -170,7 +170,21 @@ public class MurmelJavaCompilerTest {
         assertEquals("cond produced wrong result", "s3", sexp(program.body()));
     }
 
-    // @Test todo varargs gehen nicht
+    @Test
+    public void testProgn1() throws Exception {
+        MurmelJavaProgram program = compile("(progn)");
+        assertNotNull("failed to compile progn1 to class", program);
+        assertEquals("progn produced wrong result", "nil", sexp(program.body()));
+    }
+
+    @Test
+    public void testProgn2() throws Exception {
+        MurmelJavaProgram program = compile("(progn 1 2 3)");
+        assertNotNull("failed to compile progn2 to class", program);
+        assertEquals("progn2 produced wrong result", "3", sexp(program.body()));
+    }
+
+    @Test
     public void testVarargs() throws Exception {
         MurmelJavaProgram program = compile("((lambda a (apply + a)) 2 3)");
         assertNotNull("failed to compile varargs to class", program);
@@ -209,7 +223,7 @@ public class MurmelJavaCompilerTest {
         assertEquals("fibonacci produced wrong result", "1346269.0", sexp(program.body()));
     }
 
-    // todo apply geht noch nicht @Test
+    @Test
     public void testAckermannZ() throws Exception {
         String source = "(define Z^\r\n"
                 + "  (lambda (f)\r\n"
@@ -229,7 +243,7 @@ public class MurmelJavaCompilerTest {
                 + " 6) ; ==> 509";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile ackermann to class:", program);
-        assertEquals("ackermann produced wrong result", "509", sexp(program.body()));
+        assertEquals("ackermann produced wrong result", "509.0", sexp(program.body()));
     }
 
 

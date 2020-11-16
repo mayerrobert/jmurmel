@@ -1,3 +1,10 @@
+eval im interpreter sollte ggf. auch eine funktion sein
+eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
+wuerde sich beim umstellen auf funktion angleichen lassen
+-> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
+
+funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFuncttion umstellen
+
 muss der compiler auch reserved words handeln?
 
 statt --compile -> --to-java und --to-jar

@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.217 2020/11/16 17:27:29 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.218 2020/11/16 20:02:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2544,6 +2544,7 @@ public class LambdaJ {
         /** used for (apply sym form) */
         protected Object applyList(Object fn, Object argList) {
             MurmelFunction f = (MurmelFunction)fn;
+            if (argList instanceof Object[]) return f.apply((Object[])argList);
             return f.apply(listToArray(argList));
         }
 
@@ -2825,14 +2826,12 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - todo cond
+                    ///     - cond
                     if (isSymbol(op, "cond"))  {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
                             sb.append("        : ("); formToJava(sb, car(cond), env, rsfx); sb.append(" != null)\n        ? ");
-                            sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx+1).append(" = null;\n");
-                            formsToJava(sb, (ConsCell)cdr(cond), env, rsfx+1);
-                            sb.append("        return result").append(rsfx+1).append(";\n        }).call()\n");
+                            prognToJava(sb, (ConsCell)cdr(cond), env, rsfx+1);
                         }
                         sb.append("        : null");
                         return;
@@ -2861,11 +2860,18 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - todo progn, labels
+                    ///     - progn
+                    if (isSymbol(op, "progn")) {
+                        if (args == null) sb.append("null");
+                        else prognToJava(sb, (ConsCell)args, env, rsfx+1);
+                        return;
+                    }
+
+                    ///     - todo labels
 
                     ///     - todo letxxx
 
-                    /// * function call
+                    /// * function call todo teilw. vargargs mit dotted list gehen nicht, car/cdr eines vararg arguments geht nicht
                     sb.append("apply(");
                     formToJava(sb, op, env, rsfx);
                     if (args != null)
@@ -2887,12 +2893,18 @@ public class LambdaJ {
             }
         }
 
+        private void prognToJava(StringBuilder sb, ConsCell cond, ConsCell env, int rsfx) {
+            sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx).append(" = null;\n");
+            formsToJava(sb, cond, env, rsfx);
+            sb.append("        return result").append(rsfx).append(";\n        }).call()\n");
+        }
+
         private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
 
-            if (symbolp(paramList)) {
+            if (symbolp(paramList)) { // das sollte (lambda x forms) handlen, aber es wird nur das erste arg weiterverwendet
                 env = extenv(paramList.toString(), rsfx, env);
-                sb.append("        final Object ").append(javasym(paramList, env)).append(" = args").append(rsfx).append("[0];");
+                sb.append("        final Object ").append(javasym(paramList, env)).append(" = args").append(rsfx).append(";");
                 sb.append("\n");
                 return env;
             }
