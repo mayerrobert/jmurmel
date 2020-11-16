@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.216 2020/11/16 17:05:27 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.217 2020/11/16 17:27:29 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2407,6 +2407,8 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram {
 
+        protected interface MurmelProgn { Object call(); }
+
         protected final LambdaJ intp = new LambdaJ();
 
         protected MurmelJavaProgram() {
@@ -2540,7 +2542,7 @@ public class LambdaJ {
         }
 
         /** used for (apply sym form) */
-        protected Object applyList(Object fn, ConsCell argList) {
+        protected Object applyList(Object fn, Object argList) {
             MurmelFunction f = (MurmelFunction)fn;
             return f.apply(listToArray(argList));
         }
@@ -2748,7 +2750,7 @@ public class LambdaJ {
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
             env = extenvfunc(sym.toString(), 0, env);
 
-            sb.append("    Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
+            sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx);
@@ -2824,6 +2826,17 @@ public class LambdaJ {
                     }
 
                     ///     - todo cond
+                    if (isSymbol(op, "cond"))  {
+                        sb.append("false ? null\n");
+                        for (Object cond: (ConsCell)args) {
+                            sb.append("        : ("); formToJava(sb, car(cond), env, rsfx); sb.append(" != null)\n        ? ");
+                            sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx+1).append(" = null;\n");
+                            formsToJava(sb, (ConsCell)cdr(cond), env, rsfx+1);
+                            sb.append("        return result").append(rsfx+1).append(";\n        }).call()\n");
+                        }
+                        sb.append("        : null");
+                        return;
+                    }
 
                     ///     - lambda
                     if (isSymbol(op, "lambda")) {
@@ -2948,9 +2961,11 @@ public class LambdaJ {
         public Class<?> javaToClass(String className, String javaSource) throws Exception {
             final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
             final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
+            final List<String> options = Collections.singletonList("-g");
             try {
                 fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPathFile()));
-                final CompilationTask c = comp.getTask(null, fm, null, null, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
+                //                                     out       diag  opt      classes
+                final CompilationTask c = comp.getTask(null, fm, null, options, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
                 if (c.call()) {
                     return Class.forName(className, true, murmelClassLoader);
                 }

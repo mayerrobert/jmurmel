@@ -164,6 +164,20 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testCond() throws Exception {
+        MurmelJavaProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");
+        assertNotNull("failed to compile cond to class", program);
+        assertEquals("cond produced wrong result", "s3", sexp(program.body()));
+    }
+
+    // @Test todo varargs gehen nicht
+    public void testVarargs() throws Exception {
+        MurmelJavaProgram program = compile("((lambda a (apply + a)) 2 3)");
+        assertNotNull("failed to compile varargs to class", program);
+        assertEquals("varargs produced wrong result", 5.0, program.body());
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\r\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\r\n"
