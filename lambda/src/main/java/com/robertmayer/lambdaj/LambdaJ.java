@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.214 2020/11/15 14:03:02 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.215 2020/11/15 22:14:34 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2452,7 +2452,7 @@ public class LambdaJ {
         protected static final String[] globalvars = new String[] { "nil", "t" };
         protected static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
-                "eq", "not", "intern", "write", "writeln",
+                "eval", "eq", "not", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp",
                 "assoc", "list"
         };
@@ -2460,12 +2460,16 @@ public class LambdaJ {
         protected final Object _nil = null;
         protected final Object _t;
 
-        protected Object _car (Object... args)  { return car(args[0]); }
-        protected Object _cdr (Object... args)  { return cdr(args[0]); }
-        protected ConsCell _cons(Object... args)  { return cons(args[0], args[1]); }
+        protected Object _car (Object... args)   { return car(args[0]); }
+        protected Object _cdr (Object... args)   { return cdr(args[0]); }
+        protected ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
 
-        protected Object _eq(Object... args)  { return args[0] == args[1] ? _t : null; }
-        protected Object _not(Object... args) { return args[0] != args[1] ? _t : null; }
+        // todo env klaeren, muss das env des interpreter mitgefuehrt werden
+        // CLHS sagt: null lexical env, aktuelles dyn env
+        // scheme eval hat nicht automatisch das current dyn env https://docs.racket-lang.org/guide/eval.html
+        protected Object _eval(Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
+        protected Object _eq(Object... args)   { return args[0] == args[1] ? _t : null; }
+        protected Object _not(Object... args)  { return args[0] != args[1] ? _t : null; }
 
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
         protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
@@ -2524,15 +2528,13 @@ public class LambdaJ {
         protected Object cdr (Object l)  { return l == null ? null : ((ConsCell)l).cdr; }
         protected ConsCell cons(Object car, Object cdr)  { return new ConsCell(car, cdr); }
 
+        /** used for function calls */
         protected Object apply(Object fn, Object... args) {
             MurmelFunction f = (MurmelFunction)fn;
             return f.apply(args);
         }
 
-        protected Object eval(Object form, Object env) {
-            return intp.eval(form, intp.topEnv, 0, 0);
-        }
-
+        /** used for (apply sym form) */
         protected Object applyList(Object fn, ConsCell argList) {
             MurmelFunction f = (MurmelFunction)fn;
             return f.apply(listToArray(argList));
@@ -2654,13 +2656,14 @@ public class LambdaJ {
             for (Object form: forms) {
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineGlobal(ret, (ConsCell) cdr(form), env);
-                    result = cadr(form); // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
+                    result = cadr(form);
                 }
                 if (consp(form) && isSymbol(car(form), "defun")) {
                     env = defineGlobal(ret, cons(cadr(form), cons(cons(intern("lambda"), cddr(form)), null)), env);
-                    result = cadr(form); // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
+                    result = cadr(form);
                 }
             }
+            // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
             if (result != null) result = "_intern(\"" + result.toString() + "\")";
 
             // generate getValue() for FFI
@@ -2838,17 +2841,6 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - eval todo env klaeren, muss das env des interpreter mitgefuehrt werden
-                    // CLHS sagt: null lexical env, aktuelles dyn env
-                    if (isSymbol(op, "eval")) {
-                        sb.append("eval(");
-                        formToJava(sb, car(args), env, rsfx);
-                        sb.append(", ");
-                        sb.append(" null");
-                        sb.append(')');
-                        return;
-                    }
-
                     ///     - todo progn, labels
 
                     ///     - todo letxxx
@@ -2906,10 +2898,6 @@ public class LambdaJ {
 
         /** compare two numbers */
         private void compareNum(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
-            /*
-            sb.append("(Double.compare("); asDouble(sb, car(args), env, rsfx); sb.append(", ");
-                                           asDouble(sb, cadr(args), env, rsfx); sb.append(") ").append(pred).append(" 0 ? _t : null)");
-            */
             switch (pred) {
             case "==": sb.append("numbereq("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
             case "<=": sb.append("le(");       formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); break;
