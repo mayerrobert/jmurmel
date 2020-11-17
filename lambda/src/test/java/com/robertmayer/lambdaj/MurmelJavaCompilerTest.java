@@ -33,7 +33,7 @@ public class MurmelJavaCompilerTest {
     @Test
     public void testNativeHelloWorld() throws Exception {
         String source = "(define f (lambda (a b) (write a) (write b)))"
-                + "(f \"Hello, \" \"World!\")";
+                      + "(f \"Hello, \" \"World!\")";
 
         StringReader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
@@ -48,11 +48,11 @@ public class MurmelJavaCompilerTest {
         Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
-        MurmelJavaProgram compiled = murmelClass.newInstance();
-        Object result = compiled.body();
+        MurmelJavaProgram instance = murmelClass.newInstance();
+        Object result = instance.body();
         assertEquals("wrong result", "t", sexp(result));
 
-        MurmelFunction f = compiled.getFunction("f");
+        MurmelFunction f = instance.getFunction("f");
         result = f.apply("The answer is: ", 42);
         assertEquals("wrong result", "t", sexp(result));
     }
@@ -103,8 +103,7 @@ public class MurmelJavaCompilerTest {
     public void testNumberEq() throws Exception {
         MurmelJavaProgram program = compile("(= 1 1)");
         assertNotNull("failed to compile numberEq to class", program);
-        final Object result = program.body();
-        assertEquals("numberEq produced wrong result", "t", sexp(result));
+        assertEquals("numberEq produced wrong result", "t", sexp(program.body()));
     }
 
     @Test
@@ -193,15 +192,15 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testReverse() throws Exception {
-        String source = "((lambda (reverse)\r\n"
-                + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\r\n"
-                + "\r\n"
-                + " (lambda (list)\r\n"
-                + "   ((lambda (rev)\r\n"
-                + "      (rev rev nil list))\r\n"
-                + "    (lambda (rev^ a l)\r\n"
-                + "      (if\r\n"
-                + "        (not l) a\r\n"
+        String source = "((lambda (reverse)\n"
+                + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\n"
+                + "\n"
+                + " (lambda (list)\n"
+                + "   ((lambda (rev)\n"
+                + "      (rev rev nil list))\n"
+                + "    (lambda (rev^ a l)\n"
+                + "      (if\n"
+                + "        (not l) a\n"
                 + "        (rev^ rev^ (cons (car l) a) (cdr l )))))))";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile reverse to class:", program);
@@ -210,41 +209,42 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testFibonacci() throws Exception {
-        String source = "(define iterative-fib-tr (lambda (n i previous current)\r\n"
-                + "       (if (>= i n)\r\n"
-                + "           current\r\n"
-                + "           (iterative-fib-tr n (+ i 1) current (+ previous current)))))\r\n"
-                + "\r\n"
-                + "(define iterative-fib (lambda (n) (iterative-fib-tr n 1 1 1)))\r\n"
-                + "\r\n"
+        String source = "(define iterative-fib-tr (lambda (n i previous current)\n"
+                + "       (if (>= i n)\n"
+                + "           current\n"
+                + "           (iterative-fib-tr n (+ i 1) current (+ previous current)))))\n"
+                + "\n"
+                + "(define iterative-fib (lambda (n) (iterative-fib-tr n 1 1 1)))\n"
+                + "\n"
                 + "(iterative-fib 30)";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile fibonacci to class:", program);
-        assertEquals("fibonacci produced wrong result", "1346269.0", sexp(program.body()));
+        assertEquals("fibonacci produced wrong result", 1346269.0, program.body());
     }
 
     @Test
     public void testAckermannZ() throws Exception {
-        String source = "(define Z^\r\n"
-                + "  (lambda (f)\r\n"
-                + "    ((lambda (g)\r\n"
-                + "       (f (lambda args (apply (g g) args))))\r\n"
-                + "     (lambda (g)\r\n"
-                + "       (f (lambda args (apply (g g) args)))))))\r\n"
-                + "\r\n"
-                + "((Z^ (lambda (ackermann)\r\n"
-                + "       (lambda (m n)\r\n"
-                + "         (if (= m 0)\r\n"
-                + "               (+ n 1)\r\n"
-                + "           (if (= n 0)\r\n"
-                + "                 (ackermann (- m 1) 1)\r\n"
-                + "             (ackermann (- m 1) (ackermann m (- n 1))))))))\r\n"
-                + " 3\r\n"
+        String source = "(define Z^\n"
+                + "  (lambda (f)\n"
+                + "    ((lambda (g)\n"
+                + "       (f (lambda args (apply (g g) args))))\n"
+                + "     (lambda (g)\n"
+                + "       (f (lambda args (apply (g g) args)))))))\n"
+                + "\n"
+                + "((Z^ (lambda (ackermann)\n"
+                + "       (lambda (m n)\n"
+                + "         (if (= m 0)\n"
+                + "               (+ n 1)\n"
+                + "           (if (= n 0)\n"
+                + "                 (ackermann (- m 1) 1)\n"
+                + "             (ackermann (- m 1) (ackermann m (- n 1))))))))\n"
+                + " 3\n"
                 + " 6) ; ==> 509";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile ackermann to class:", program);
-        assertEquals("ackermann produced wrong result", "509.0", sexp(program.body()));
+        assertEquals("ackermann produced wrong result", 509.0, program.body());
     }
+
 
 
     private MurmelJavaProgram compile(String source) throws Exception {
