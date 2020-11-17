@@ -1,34 +1,42 @@
 Usage:
 
-interactive:
-java -jar jmurmel.jar [commandline arguments]*
+java -jar jmurmel.jar <commandline flags>... <source files>...
 
-non-interactive:
-java -jar jmurmel.jar [commandline arguments]* lisp-source.lisp*
+Commandline flags are:
 
-Commandline arguments are:
+Misc flags:
 
-Misc:
---version ........  show version and exit
---help ...........  show this message and exit
+-- ...............  '--' can be used to indicate:
+                    'no commandline arguments after this'
 
---compile ........  compile input files to a.jar
-                    (a.jar will need jmurmel.jar in the same directory)
---repl ...........  enter REPL even if the input isn't a tty,
+--version ........  Show version and exit
+--help ...........  Show this message and exit
+
+--java ...........  Compile input files to Java source 'MurmelProgram.java'
+--jar ............  Compile input files to jarfile 'a.jar' containing
+                    the class MurmelProgram. The generated jar needs
+                    jmurmel.jar in the same directory to run.
+
+--result .........  Print the result of the last form.
+--repl ...........  By default JMurmel will enter REPL only if there
+                    are no filenames given on the commandline and
+                    stdin is a tty.
+                    --repl will make JMurmel enter REPL anyways,
                     i.e. print prompt and results and support :commands.
 
---eol=LISP .......  writeln prints <EOL><argument>< >
---eol=C ..........  writeln prints <argument><EOL>
-
---echo ...........  echo all input while reading
---trace=stats ....  print stack and memory stats at end
---trace=envstats .  print stack and memory stats at end
---trace=eval .....  print internal interpreter info during executing programs
---trace=env ......  print more internal interpreter info executing programs
---trace ..........  print lots of internal interpreter info during
+Flags for REPL:
+--echo ...........  Echo all input while reading
+--trace=stats ....  Print stack and memory stats at end
+--trace=envstats .  Print stack and memory stats at end
+--trace=eval .....  Print internal interpreter info during executing programs
+--trace=env ......  Print more internal interpreter info executing programs
+--trace ..........  Print lots of internal interpreter info during
                     reading/ parsing/ executing programs
 
 Feature flags:
+
+--eol=LISP ....  'writeln' prints <EOL><argument>< >
+--eol=C .......  'writeln' prints <argument><EOL>
 
 --no-nil ......  don't predefine symbol nil (hint: use '()' instead)
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)

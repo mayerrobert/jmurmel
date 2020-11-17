@@ -1,13 +1,14 @@
+anzahl parameter duerfen begrenzt werden, auch bei varargs
+-> hilft bei cdr(arg) im compiler, umsetzen, dokumentieren, global mit dem wert erfinden, vgl. http://...
+
 eval im interpreter sollte ggf. auch eine funktion sein
 eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
 wuerde sich beim umstellen auf funktion angleichen lassen
 -> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
 
-funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFuncttion umstellen
+funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFunction umstellen
 
 muss der compiler auch reserved words handeln?
-
-statt --compile -> --to-java und --to-jar
 
 compiler varargs geht wsl nicht
 
@@ -1599,3 +1600,5 @@ script fuer den aufruf
 -> files oeffnen und dann von console lesen
 
 defun kompilieren
+
+statt --compile -> --to-java und --to-jar
