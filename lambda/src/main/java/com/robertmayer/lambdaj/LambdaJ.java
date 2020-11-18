@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.220 2020/11/17 22:16:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.221 2020/11/18 06:35:25 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1705,9 +1705,9 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
                   env))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { numberArgs("round",   args, 1, 1); return (long)Math.round(((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return (long)Math.floor(((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return (long)Math.ceil (((Number)car(args)).doubleValue()); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { numberArgs("round",   args, 1, 1); return Math.round(((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); }),
                   env)));
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("sqrt")),    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); }),
@@ -2495,7 +2495,7 @@ public class LambdaJ {
         /// * eq, intern, write, writeln
         /// * atom, consp, listp, symbolp, numberp, stringp, assoc, list
         /// * =, <, <=, >=, > are handled as special forms and are primitives as well (for apply)
-        /// * todo mod, sqrt, log, log10, exp, expt, round, floor, ceiling
+        /// * todo round, floor, ceiling, sqrt, log, log10, exp, expt, mod
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * todo format, format-locale
         /// * todo ::
