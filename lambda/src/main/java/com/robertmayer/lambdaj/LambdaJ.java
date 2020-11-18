@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.221 2020/11/18 06:35:25 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.222 2020/11/18 06:46:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1693,17 +1693,8 @@ public class LambdaJ {
             env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
                   env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("=")),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol(">")),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol(">=")),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("<")),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("<=")),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
-                  env)))));
-            env = cons(cons(symtab.intern(new LambdaJSymbol("+")),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("-")),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("*")),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
-                  env))));
+            env = cons(cons(symtab.intern(new LambdaJSymbol("pi")),      Math.PI),
+                    env);
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { numberArgs("round",   args, 1, 1); return Math.round(((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); }),
@@ -1715,22 +1706,32 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("log10")),   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("exp")),     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("expt")),    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("mod")),     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return ((Number)car(args)).doubleValue() % ((Number)car(cdr(args))).doubleValue(); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("mod")),     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); }),
                   env))))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("pi")),      Math.PI),
-                    env);
+            env = cons(cons(symtab.intern(new LambdaJSymbol("=")),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol(">")),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol(">=")),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("<")),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("<=")),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
+                  env)))));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("+")),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("-")),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("*")),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
+                  env))));
         }
 
         if (haveEq()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("eq")), (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == car(cdr(a))); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("eq")), (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); }),
                        env);
         }
 
         if (haveCons()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdr(car(a)); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdar(a); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("car")),     (Primitive) a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), car(cdr(a))); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), cadr(a)); }),
                   env)));
         }
 
@@ -2494,8 +2495,8 @@ public class LambdaJ {
         /// * car, cdr, cons
         /// * eq, intern, write, writeln
         /// * atom, consp, listp, symbolp, numberp, stringp, assoc, list
+        /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
         /// * =, <, <=, >=, > are handled as special forms and are primitives as well (for apply)
-        /// * todo round, floor, ceiling, sqrt, log, log10, exp, expt, mod
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * todo format, format-locale
         /// * todo ::
@@ -2512,7 +2513,8 @@ public class LambdaJ {
                 "car", "cdr", "cons",
                 "eval", "eq", "not", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp",
-                "assoc", "list"
+                "assoc", "list",
+                "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
         };
 
         protected Object _car (Object... args)   { return car(args[0]); }
@@ -2542,6 +2544,17 @@ public class LambdaJ {
         protected ConsCell _assoc  (Object... args)  { return assoc(args[0], args[1]); }
         protected ConsCell _list   (Object... args)  { return intp.list(args); }
 
+        protected long     _round  (Object... args)  { return Math.round(dbl(args[0])); }
+        protected double   _floor  (Object... args)  { return Math.floor(dbl(args[0])); }
+        protected double   _ceiling(Object... args)  { return Math.ceil (dbl(args[0])); }
+
+
+        protected double   _sqrt   (Object... args)  { return Math.sqrt (dbl(args[0])); }
+        protected double   _log    (Object... args)  { return Math.log  (dbl(args[0])); }
+        protected double   _log10  (Object... args)  { return Math.log10(dbl(args[0])); }
+        protected double   _exp    (Object... args)  { return Math.exp  (dbl(args[0])); }
+        protected double   _expt   (Object... args)  { return Math.pow  (dbl(args[0]), dbl(args[1])); }
+        protected double   _mod    (Object... args)  { return dbl(args[0]) % dbl(args[1]); }
 
 
         protected static final String[][] aliasedPrimitives = new String[][] {
