@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.223 2020/11/18 07:12:07 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.224 2020/11/18 07:44:13 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -220,8 +220,11 @@ public class LambdaJ {
     /** Max length of symbols*/
     public static final int SYMBOL_MAX = 30;
 
-    public enum TraceLevel { TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_ENV, TRC_FUNC, TRC_PARSE, TRC_TOK, TRC_LEX; };
-    private final int trace;
+    public enum TraceLevel {
+        TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_ENV, TRC_FUNC, TRC_PARSE, TRC_TOK, TRC_LEX;
+        public boolean ge(TraceLevel l) { return ordinal() >= l.ordinal(); }
+    };
+    private final TraceLevel trace;
 
     private final TraceConsumer tracer;
 
@@ -292,7 +295,7 @@ public class LambdaJ {
 
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
         this.features = features;
-        this.trace = trace.ordinal();
+        this.trace = trace;
         this.tracer = tracer != null ? tracer : System.err::println;
     }
 
@@ -326,7 +329,7 @@ public class LambdaJ {
      *  from the given {@link ReadSupplier} */
     public static class SExpressionParser implements Parser {
         private final int features;
-        private final int trace;
+        private final TraceLevel trace;
         private final TraceConsumer tracer;
 
         private ReadSupplier in;    // readObj() will read from this
@@ -340,8 +343,8 @@ public class LambdaJ {
         private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
         private Object tok;
 
-        public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), 0, null, in); }
-        public SExpressionParser(int features, int trace, TraceConsumer tracer, ReadSupplier in) { this.features = features; this.trace = trace; this.tracer = tracer; this.in = in; }
+        public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in); }
+        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in) { this.features = features; this.trace = trace; this.tracer = tracer; this.in = in; }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
         private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
@@ -440,7 +443,7 @@ public class LambdaJ {
                 if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                 tok = new LambdaJSymbol(s);
             }
-            if (trace >= TraceLevel.TRC_LEX.ordinal())
+            if (trace.ge(TraceLevel.TRC_LEX))
                 tracer.println("*** scan  token  |" + tok + '|');
         }
 
@@ -502,7 +505,7 @@ public class LambdaJ {
 
         private Object readObject() {
             if (tok == null) {
-                if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse list   ()");
+                if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return null;
             }
             if (!tokEscape && tok instanceof LambdaJSymbol && isToken(tok, "nil")) {
@@ -517,10 +520,10 @@ public class LambdaJ {
                     final Object cdr = readList();
                     if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
                     final Object cons = combine(list, car(cdr));
-                    if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse cons   " + printSEx(cons));
+                    if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
                     return cons;
                 }
-                if (trace >= TraceLevel.TRC_PARSE.ordinal()) tracer.println("*** parse list   " + printSEx(list));
+                if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
                 return list;
             }
             if (!tokEscape && isToken(tok, "'")) {
@@ -528,10 +531,10 @@ public class LambdaJ {
                 return cons(quote, cons(readObject(), null));
             }
             if (symbolp(tok)) {
-                if (trace >= TraceLevel.TRC_TOK.ordinal()) tracer.println("*** parse symbol " + tok);
+                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
                 return intern((LambdaJSymbol)tok);
             }
-            if (trace >= TraceLevel.TRC_TOK.ordinal()) tracer.println("*** parse value  " + tok.toString());
+            if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok.toString());
             return tok;
         }
 
@@ -856,7 +859,7 @@ public class LambdaJ {
                             final ConsCell closure = ((ConsCell)func).closure();
                             env = zip(closure != null ? closure : env, car(lambda), argList);
 
-                            if (trace >= TraceLevel.TRC_FUNC.ordinal())  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
+                            if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
                             forms = (ConsCell) cdr(lambda);
                             // fall through to "eval a list of forms"
 
@@ -1005,7 +1008,7 @@ public class LambdaJ {
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
-        if (trace >= TraceLevel.TRC_FUNC.ordinal()) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
+        if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.apply(args); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
@@ -1022,15 +1025,15 @@ public class LambdaJ {
     /** spaces printed to the left indicate java stack usage, spaces+asterisks indicate Lisp call hierarchy depth.
      *  due to tail call optimization Java stack usage should be less than Lisp call hierarchy depth. */
     private void dbgEvalStart(String evFunc, Object exp, ConsCell env, int stack, int level) {
-        if (trace >= TraceLevel.TRC_STATS.ordinal()) {
+        if (trace.ge(TraceLevel.TRC_STATS)) {
             if (maxEvalStack < stack) maxEvalStack = stack;
             if (maxEvalLevel < level) maxEvalLevel = level;
-            if (trace >= TraceLevel.TRC_EVAL.ordinal()) {
+            if (trace.ge(TraceLevel.TRC_EVAL)) {
                 evFunc = fmtEvFunc(evFunc);
 
                 final String pfx = pfx(stack, level);
                 tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + "), exp:          " + printSEx(exp));
-                if (trace >= TraceLevel.TRC_ENV.ordinal()) {
+                if (trace.ge(TraceLevel.TRC_ENV)) {
                     tracer.println(pfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
                 }
             }
@@ -1038,10 +1041,10 @@ public class LambdaJ {
     }
 
     private void dbgEvalDone(String evFunc, Object exp, Object env, int stack, int level) {
-        if (trace >= TraceLevel.TRC_ENVSTATS.ordinal()) {
+        if (trace.ge(TraceLevel.TRC_ENVSTATS)) {
             final int envLen = length(env);
             if (maxEnvLen < envLen) maxEnvLen = envLen;
-            if (trace >= TraceLevel.TRC_EVAL.ordinal()) {
+            if (trace.ge(TraceLevel.TRC_EVAL)) {
                 evFunc = fmtEvFunc(evFunc);
                 final String pfx = pfx(stack, level);
                 tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
@@ -1879,7 +1882,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
         Parser parser = new SExpressionParser(features, trace, tracer, program);
-        ObjectReader inReader = new SExpressionParser(features, 0, null, in);
+        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in);
         ObjectWriter outWriter = new SExpressionWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
@@ -1908,12 +1911,12 @@ public class LambdaJ {
 
     /** print and reset interpreter stats */
     private void traceStats(long nanos) {
-        if (trace >= TraceLevel.TRC_STATS.ordinal()) {
+        if (trace.ge(TraceLevel.TRC_STATS)) {
             tracer.println("*** max eval nesting:  " + maxEvalLevel + " ***");
             tracer.println("*** max stack used:    " + maxEvalStack + " ***");
 
             tracer.println("*** total ConsCells:   " + nCells + " ***");
-            if (trace >= TraceLevel.TRC_ENVSTATS.ordinal()) tracer.println("*** max env length:    " + maxEnvLen + " ***");
+            if (trace.ge(TraceLevel.TRC_ENVSTATS)) tracer.println("*** max env length:    " + maxEnvLen + " ***");
 
             long millis = (long)(nanos * 0.000001D);
             String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
@@ -1925,7 +1928,7 @@ public class LambdaJ {
     }
 
     private void traceJavaStats(long nanos) {
-        if (trace >= TraceLevel.TRC_STATS.ordinal()) {
+        if (trace.ge(TraceLevel.TRC_STATS)) {
             long millis = (long)(nanos * 0.000001D);
             String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
             tracer.println("*** elapsed wall time: " + ms + "ms ***");
@@ -2466,7 +2469,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), 0, null, System.in::read), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read), intp.getLispPrinter());
             _t = _intern("t");
         }
 
