@@ -1,3 +1,4 @@
+
 ConsCell.iterator() ueberladen: iterator(typ) liefert verschiedene iteratoren:
 circular list liefert nach der ersten runde hasNext() == false
                                             fehler
