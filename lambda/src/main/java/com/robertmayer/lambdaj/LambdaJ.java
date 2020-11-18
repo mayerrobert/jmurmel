@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.219 2020/11/16 21:22:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.220 2020/11/17 22:16:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1690,12 +1690,6 @@ public class LambdaJ {
         }
 
         if (haveNumbers()) {
-            final Primitive fmod = args -> {
-                twoArgs("mod", args);
-                numberArgs("mod", args);
-                return ((Number)car(args)).doubleValue() % ((Number)car(cdr(args))).doubleValue();
-            };
-
             env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
                   env);
 
@@ -1711,18 +1705,18 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
                   env))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("mod")),     fmod),
-                  cons(cons(symtab.intern(new LambdaJSymbol("sqrt")),    (Primitive) args -> { numberArgs("sqrt",  args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("log")),     (Primitive) args -> { numberArgs("log",   args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("log10")),   (Primitive) args -> { numberArgs("log10", args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("exp")),     (Primitive) args -> { numberArgs("exp",   args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("expt")),    (Primitive) args -> { numberArgs("expt",  args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); }),
-                  env))))));
-
             env = cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { numberArgs("round",   args, 1, 1); return (long)Math.round(((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return (long)Math.floor(((Number)car(args)).doubleValue()); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return (long)Math.ceil (((Number)car(args)).doubleValue()); }),
                   env)));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("sqrt")),    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("log")),     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("log10")),   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("exp")),     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("expt")),    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("mod")),     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return ((Number)car(args)).doubleValue() % ((Number)car(cdr(args))).doubleValue(); }),
+                  env))))));
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("pi")),      Math.PI),
                     env);
@@ -1821,7 +1815,7 @@ public class LambdaJ {
             @Override public Object getValue(String globalSymbol) { return intp.getValue(globalSymbol); }
             @Override public MurmelFunction getFunction(String funcName) { return intp.getFunction(funcName); }
 
-            @Override public Object body() { return null; } // todo
+            @Override public Object body() { return null; }
             @Override public ObjectReader getLispReader() { return intp.getLispReader(); }
             @Override public ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
             @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { intp.setReaderPrinter(reader, writer); }
@@ -2506,10 +2500,11 @@ public class LambdaJ {
         /// * todo format, format-locale
         /// * todo ::
         ///
-        protected static final String[] globalvars = new String[] { "nil", "t" };
+        protected static final String[] globalvars = new String[] { "nil", "t", "pi" };
 
         protected final Object _nil = null;
         protected final Object _t;
+        protected final Object _pi = Math.PI;
 
 
 
