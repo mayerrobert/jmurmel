@@ -1,27 +1,29 @@
-anzahl parameter duerfen begrenzt werden, auch bei varargs
--> hilft bei cdr(arg) im compiler, umsetzen, dokumentieren, global mit dem wert erfinden, vgl. http://...
-
-eval im interpreter sollte ggf. auch eine funktion sein
-eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
-wuerde sich beim umstellen auf funktion angleichen lassen
--> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
-
-funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFunction umstellen
-
-muss der compiler auch reserved words handeln?
-
 compiler varargs geht wsl nicht
 
-compilexx returned einen string. koennte stattdessen einen writer uebernehmen
-
-ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version
--> https://franz.com/support/documentation/9.0/ansicl/dictentr/lisp-imp.htm
+anzahl parameter duerfen begrenzt werden, auch bei varargs
+-> hilft bei cdr(arg) im compiler, umsetzen, dokumentieren, global mit dem wert erfinden, vgl. http://...
 
 define nur toplevel zulassen (wg. kompilieren)
 -> oder kann man die variable im ersten lauf mit UNDEF belegen und der zweite lauf setzt einen wert? was ist mit functions?
     oder das globale symbol wuerde erst im zweiten lauf des compilers an geeigneter stelle ins environment des compilers gesteckt?
     -> dann muesste der compiler auch globales/ lokales environment haben
 -> mehraufwand lohnt wsl nicht
+
+eval im interpreter sollte ggf. auch eine funktion sein
+-> geht nicht wg. TCO
+eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
+wuerde sich beim umstellen auf funktion angleichen lassen
+-> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
+
+funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFunction umstellen
+-> erst CPS im compiler umsetzen
+
+muss der compiler auch reserved words handeln?
+
+compilexx returned einen string. koennte stattdessen einen writer uebernehmen
+
+ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version
+-> https://franz.com/support/documentation/9.0/ansicl/dictentr/lisp-imp.htm
 
 zeilentabellen lisp->java mitfuehren und ins java verpacken? dann koennte ein catch im main() den stacktrace umschluesseln
 -> javacode sollte mehr linefeeds bekommen

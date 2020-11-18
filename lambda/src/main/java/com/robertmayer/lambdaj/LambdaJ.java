@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.222 2020/11/18 06:46:26 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.223 2020/11/18 07:12:07 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2491,12 +2491,13 @@ public class LambdaJ {
 
 
         /// Environment for compiled Murmel:
-        /// * nil, t
+        /// * nil, t, pi
         /// * car, cdr, cons
         /// * eq, intern, write, writeln
         /// * atom, consp, listp, symbolp, numberp, stringp, assoc, list
         /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
-        /// * =, <, <=, >=, > are handled as special forms and are primitives as well (for apply)
+        /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
+        /// * todo internal-time-units-per-second
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * todo format, format-locale
         /// * todo ::

@@ -387,7 +387,7 @@ nil
 ; but return the string
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-               
+
 ; (:: classname methodname paramclass...) -> primitive
 ; The primitive "::" will return a newly created primitive
 ; that is implemented by the method "methodname" of the Java class
@@ -402,8 +402,8 @@ nil
 (ctm nil)
 
 ; invoke method on an object
-(define my-hash ((:: "java.util.HashMap" "new")))
-(write ((:: "java.util.HashMap" "toString") my-hash))
+(define create-hash ((:: "java.util.HashMap" "new")))
+(write ((:: "java.util.HashMap" "toString") create-hash))
 
 
 ;;; == Copyright ======================
@@ -415,4 +415,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.12 2020/11/06 17:35:13 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.13 2020/11/07 07:48:27 Robert Exp $
