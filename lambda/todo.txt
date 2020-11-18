@@ -1,3 +1,10 @@
+ConsCell.iterator() ueberladen: iterator(typ) liefert verschiedene iteratoren:
+circular list liefert nach der ersten runde hasNext() == false
+                                            fehler
+dotted list liefert beim zugriff auf letztes element letztes element das element
+                                                                     hasNext() == false, hasNext(true) liefert das letzte element
+                                                                     fehler
+
 trace und features refactoren:
 nicht int features sondern Set<Features>
 statt trace >= TRC_XXX.ordinal -> methode TraceLevel.ge(TraceLevel)

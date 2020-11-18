@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.224 2020/11/18 07:44:13 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.225 2020/11/18 16:42:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1072,7 +1072,10 @@ public class LambdaJ {
     private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
     private static Object   car(ConsCell c)    { return c == null ? null : c.car; }
-    private static Object   car(Object o)      { return o == null ? null : ((ConsCell)o).car; }
+    private static Object   car(Object o)      { return o == null ? null
+                                                 : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
+                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.charAt(0)
+                                                 : ((ConsCell)o).car; }
 
     private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
     private static Object   caadr(ConsCell c)  { return c == null ? null : car(cadr(c)); }
@@ -1083,7 +1086,10 @@ public class LambdaJ {
     private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
 
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr; }
-    private static Object   cdr(Object o)      { return o == null ? null : ((ConsCell)o).cdr; }
+    private static Object   cdr(Object o)      { return o == null ? null
+                                                 : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).substring(1))
+                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.substring(1)
+                                                 : ((ConsCell)o).cdr; }
 
     private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
     private static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
@@ -1346,10 +1352,12 @@ public class LambdaJ {
         if (a == null) throw new LambdaJError(true, "%s: expected at least one argument but no argument was given", func);
     }
 
-    private static void onePair(String func, ConsCell a) {
-        if (a == null)      throw new LambdaJError(true, "%s: expected one Pair argument but no argument was given", func);
-        if (!listp(car(a))) throw new LambdaJError(true, "%s: expected one Pair argument but got %s", func, printSEx(a));
-        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected one Pair argument but got extra arg(s) %s", func, printSEx(cdr(a)));
+    private static void carArgument(String func, ConsCell a) {
+        final String s = "Pair or Symbol or String";
+        if (a == null)      throw new LambdaJError(true, "%s: expected one %s argument but no argument was given", func, s);
+        final Object arg = car(a);
+        if (!listp(arg) && !symbolp(arg) && !stringp(arg)) throw new LambdaJError(true, "%s: expected one %s argument but got %s", func, s, printSEx(a));
+        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected one %s argument but got extra arg(s) %s", func, s, printSEx(cdr(a)));
     }
 
     /** a must be a proper list of only numbers (empty list is fine, too) */
@@ -1732,8 +1740,8 @@ public class LambdaJ {
         }
 
         if (haveCons()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { onePair("cdr", a);    if (car(a) == null) return null; return cdar(a); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("car")),     (Primitive) a -> { onePair("car", a);    if (car(a) == null) return null; return caar(a); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { carArgument("cdr", a);    if (car(a) == null) return null; return cdar(a); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("car")),     (Primitive) a -> { carArgument("car", a);    if (car(a) == null) return null; return caar(a); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);   if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), cadr(a)); }),
                   env)));
         }
@@ -2598,8 +2606,10 @@ public class LambdaJ {
             }
         }
 
-        protected Object car (Object l)  { return l == null ? null : ((ConsCell)l).car; }
-        protected Object cdr (Object l)  { return l == null ? null : ((ConsCell)l).cdr; }
+        //protected Object car (Object l)  { return l == null ? null : ((ConsCell)l).car; }
+        //protected Object cdr (Object l)  { return l == null ? null : ((ConsCell)l).cdr; }
+        protected Object car (Object l)  { return LambdaJ.car(l); }
+        protected Object cdr (Object l)  { return LambdaJ.cdr(l); }
         protected ConsCell cons(Object car, Object cdr)  { return new ConsCell(car, cdr); }
 
         /** used for function calls */
