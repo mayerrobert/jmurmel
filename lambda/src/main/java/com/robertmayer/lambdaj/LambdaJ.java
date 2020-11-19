@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.227 2020/11/18 18:46:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.228 2020/11/19 17:30:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1145,6 +1145,7 @@ public class LambdaJ {
     private static boolean  primp(Object o)    { return o instanceof Primitive; }
     private static boolean  numberp(Object o)  { return o instanceof Number; }
     private static boolean  stringp(Object o)  { return o instanceof String; }
+    private static boolean  characterp(Object o) { return o instanceof Character; }
 
     private static int length(Object list) {
         if (list == null) return 0;
@@ -1267,6 +1268,8 @@ public class LambdaJ {
                 sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
                 sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
+            } else if (escapeAtoms && characterp(obj)) {
+                sb.print("'"); sb.print(((Character)obj) == '\'' ? "\\'" : String.valueOf(obj)); sb.print("'"); return;
             } else if (obj instanceof ArraySlice) {
                 sb.print(((ArraySlice)obj).printSEx(escapeAtoms)); return;
             } else if (atom(obj)) {
@@ -1644,8 +1647,9 @@ public class LambdaJ {
         }
 
         if (haveString()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("stringp")), (Primitive) a -> { oneArg("stringp", a); return boolResult(stringp(car(a))); }),
-                  env);
+            env = cons(cons(symtab.intern(new LambdaJSymbol("stringp")),    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("characterp")), (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); }),
+                  env));
 
             if (haveUtil()) {
                 env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        (Primitive) a -> format(a, "format")),
@@ -2541,7 +2545,7 @@ public class LambdaJ {
         /// * nil, t, pi
         /// * car, cdr, cons
         /// * eq, intern, write, writeln
-        /// * atom, consp, listp, symbolp, numberp, stringp, assoc, list
+        /// * atom, consp, listp, symbolp, numberp, stringp, characterp, assoc, list
         /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * todo internal-time-units-per-second
@@ -2560,7 +2564,7 @@ public class LambdaJ {
         protected static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
                 "eval", "eq", "not", "intern", "write", "writeln",
-                "atom", "consp", "listp", "symbolp", "numberp", "stringp",
+                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list",
                 "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
         };
@@ -2572,37 +2576,38 @@ public class LambdaJ {
         // todo env klaeren, muss das env des interpreter mitgefuehrt werden
         // CLHS sagt: null lexical env, aktuelles dyn env
         // scheme eval hat nicht automatisch das current dyn env https://docs.racket-lang.org/guide/eval.html
-        protected Object _eval(Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
-        protected Object _eq(Object... args)   { return args[0] == args[1] ? _t : null; }
-        protected Object _not(Object... args)  { return args[0] != args[1] ? _t : null; }
+        protected Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
+        protected Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
+        protected Object _not       (Object... args) { return args[0] != args[1] ? _t : null; }
 
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
         protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
 
-        protected Object _write(Object... args)    { intp.write(args[0]); return _t; };
-        protected Object _writeln(Object... args)  { intp.write(args == null ? null : args[0]); return _t; };
+        protected Object _write     (Object... args) { intp.write(args[0]); return _t; };
+        protected Object _writeln   (Object... args) { intp.write(args == null ? null : args[0]); return _t; };
 
-        protected Object _atom   (Object... args)  { return atom   (args[0]) ? _t : null; }
-        protected Object _consp  (Object... args)  { return consp  (args[0]) ? _t : null; }
-        protected Object _listp  (Object... args)  { return listp  (args[0]) ? _t : null; }
-        protected Object _symbolp(Object... args)  { return symbolp(args[0]) ? _t : null; }
-        protected Object _numberp(Object... args)  { return numberp(args[0]) ? _t : null; }
-        protected Object _stringp(Object... args)  { return stringp(args[0]) ? _t : null; }
+        protected Object _atom      (Object... args) { return atom   (args[0]) ? _t : null; }
+        protected Object _consp     (Object... args) { return consp  (args[0]) ? _t : null; }
+        protected Object _listp     (Object... args) { return listp  (args[0]) ? _t : null; }
+        protected Object _symbolp   (Object... args) { return symbolp(args[0]) ? _t : null; }
+        protected Object _numberp   (Object... args) { return numberp(args[0]) ? _t : null; }
+        protected Object _stringp   (Object... args) { return stringp(args[0]) ? _t : null; }
+        protected Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
 
-        protected ConsCell _assoc  (Object... args)  { return assoc(args[0], args[1]); }
-        protected ConsCell _list   (Object... args)  { return intp.list(args); }
+        protected ConsCell _assoc   (Object... args)  { return assoc(args[0], args[1]); }
+        protected ConsCell _list    (Object... args)  { return intp.list(args); }
 
-        protected long     _round  (Object... args)  { return Math.round(dbl(args[0])); }
-        protected double   _floor  (Object... args)  { return Math.floor(dbl(args[0])); }
-        protected double   _ceiling(Object... args)  { return Math.ceil (dbl(args[0])); }
+        protected long     _round   (Object... args)  { return Math.round(dbl(args[0])); }
+        protected double   _floor   (Object... args)  { return Math.floor(dbl(args[0])); }
+        protected double   _ceiling (Object... args)  { return Math.ceil (dbl(args[0])); }
 
 
-        protected double   _sqrt   (Object... args)  { return Math.sqrt (dbl(args[0])); }
-        protected double   _log    (Object... args)  { return Math.log  (dbl(args[0])); }
-        protected double   _log10  (Object... args)  { return Math.log10(dbl(args[0])); }
-        protected double   _exp    (Object... args)  { return Math.exp  (dbl(args[0])); }
-        protected double   _expt   (Object... args)  { return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        protected double   _mod    (Object... args)  { return dbl(args[0]) % dbl(args[1]); }
+        protected double   _sqrt    (Object... args)  { return Math.sqrt (dbl(args[0])); }
+        protected double   _log     (Object... args)  { return Math.log  (dbl(args[0])); }
+        protected double   _log10   (Object... args)  { return Math.log10(dbl(args[0])); }
+        protected double   _exp     (Object... args)  { return Math.exp  (dbl(args[0])); }
+        protected double   _expt    (Object... args)  { return Math.pow  (dbl(args[0]), dbl(args[1])); }
+        protected double   _mod     (Object... args)  { return dbl(args[0]) % dbl(args[1]); }
 
 
         protected static final String[][] aliasedPrimitives = new String[][] {

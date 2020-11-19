@@ -1,6 +1,6 @@
 ;;; implement map using Y-combinator and apply it to "car '(the rain in spain)"
 
-; result: (t r i s)
+; result: ('t' 'r' 'i' 's')
 ; output: (empty)
 
 ((lambda (f n) ; this lambda is defining MAP

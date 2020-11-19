@@ -214,7 +214,7 @@ nil
 ; "T is a symbol and the default "true" value used by predicates that
 ; are not semi-predicates (i.e., that don’t return "meaningful" values
 ; when they are true.) EVAL of T is T. T may not be used as a variable.
-; T is a keyword recognized by certainfunctions, such as FORMAT."
+; T is a keyword recognized by certain functions, such as FORMAT."
 
 
 ;;; == Additional Special Forms =======
@@ -313,11 +313,13 @@ nil
 
 ; (car '(a b c)) ==> a
 (car '(a b c))
+(car "abc") ; ==> 'a'
 
 ; (cdr '(a b c)) ==> (b c)
 (cdr '(a b c))
+(cdr "abc") ; ==> "bc"
 
-; eq, atom, consp, listp, symbolp, numberp, stringp
+; eq, atom, consp, listp, symbolp, numberp, stringp, characterp,
 ; not
 
 ; assoc takes a key and a list of key/value tupels (lists or conses)
@@ -415,4 +417,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.13 2020/11/07 07:48:27 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.14 2020/11/18 07:44:13 Robert Exp $
