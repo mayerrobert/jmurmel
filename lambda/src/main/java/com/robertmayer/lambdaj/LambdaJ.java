@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.226 2020/11/18 18:02:13 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.227 2020/11/18 18:46:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1071,9 +1071,45 @@ public class LambdaJ {
     private        ConsCell cons(Object car, Object cdr)                    { nCells++; return new ConsCell(car, cdr); }
     private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
+    private static class ArraySlice {
+        private final Object[] arry;
+        private final int offset;
+        private ArraySlice(Object[] arry) {
+            if (arry != null && arry.length > 1) { this.arry = arry; offset = 1; }
+            else { this.arry = null; offset = -1; }
+        }
+        private ArraySlice(ArraySlice slice) {
+            if (slice.arry != null && slice.arry.length > slice.offset) { this.arry = slice.arry; offset = slice.offset + 1; }
+            else { this.arry = null; offset = -1; }
+            }
+        private Object car() { return arry == null ? null : arry[offset]; }
+        private ArraySlice cdr() { return arry == null ? null : new ArraySlice(this); }
+        @Override
+        public String toString() { return printSEx(false); }
+
+        private String printSEx(boolean escapeAtoms) {
+            if (arry.length - offset == 0) return LambdaJ.printSEx(null);
+            else {
+                StringBuffer ret = new StringBuffer();
+                ret.append('(');
+                boolean first = true;
+                for (int i = offset; i < arry.length; i++) {
+                    Object o = arry[i];
+                    if (first) first = false;
+                    else ret.append(' ');
+                    LambdaJ._printSEx(ret::append, arry, o, true, escapeAtoms);
+                }
+                ret.append(')');
+                return ret.toString();
+            }
+        }
+    }
+
     private static Object   car(ConsCell c)    { return c == null ? null : c.car; }
     private static Object   car(Object o)      { return o == null ? null
                                                  : o instanceof ConsCell ? ((ConsCell)o).car
+                                                 : o instanceof ArraySlice ? ((ArraySlice)o).car()
+                                                 : o instanceof Object[] ? (((Object[])o).length == 0 ? null : ((Object[])o)[0])
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.charAt(0)
                                                  : carCdrError("car", o); }
@@ -1091,6 +1127,8 @@ public class LambdaJ {
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr; }
     private static Object   cdr(Object o)      { return o == null ? null
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr
+                                                 : o instanceof ArraySlice ? ((ArraySlice)o).cdr()
+                                                 : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).substring(1))
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.substring(1)
                                                  : carCdrError("cdr", o); }
@@ -1229,6 +1267,8 @@ public class LambdaJ {
                 sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
                 sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
+            } else if (obj instanceof ArraySlice) {
+                sb.print(((ArraySlice)obj).printSEx(escapeAtoms)); return;
             } else if (atom(obj)) {
                 sb.print(obj.toString()); return;
             } else {

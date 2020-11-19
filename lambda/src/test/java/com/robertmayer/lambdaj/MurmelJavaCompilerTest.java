@@ -191,6 +191,27 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testVarargsCar() throws Exception {
+        MurmelJavaProgram program = compile("((lambda args (car args)) 'a 'b 'c)");
+        assertNotNull("failed to compile varargscar to class", program);
+        assertEquals("varargscar produced wrong result", "a", sexp(program.body()));
+    }
+
+    @Test
+    public void testVarargsCdr() throws Exception {
+        MurmelJavaProgram program = compile("((lambda args (cdr args)) 'a 'b 'c)");
+        assertNotNull("failed to compile varargscdr to class", program);
+        assertEquals("varargscdr produced wrong result", "(b c)", sexp(program.body()));
+    }
+
+    @Test
+    public void testVarargsCdddr() throws Exception {
+        MurmelJavaProgram program = compile("((lambda args (cdr (cdr (cdr args)))) 'a 'b 'c)");
+        assertNotNull("failed to compile varargscdddr to class", program);
+        assertEquals("varargscdddr produced wrong result", "nil", sexp(program.body()));
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\n"
