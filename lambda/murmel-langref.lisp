@@ -14,6 +14,8 @@
 ;;; disabled using commandline arguments if you want to play
 ;;; with an even more reduced Lisp.
 ;;;
+;;; Note the section "Known issues" at the end of this files.
+;;;
 ;;; See also:
 ;;; java -jar jmurmel.jar --help ... will print usage information
 ;;;
@@ -408,6 +410,36 @@ nil
 (write ((:: "java.util.HashMap" "toString") create-hash))
 
 
+;;; == Known issues ===================
+;
+; Compiler issues:
+; - There are pretty much no compile- or runtime checks
+; - letXXX and labels are currently not implemented
+; - define/ defun only work as top level forms
+; - Varargs with a dotted parameter list is not implemented
+; - The functions
+;     internal-time-units-per-second
+;     get-internal-real-time, get-internal-run-time,
+;     get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
+;     format, format-locale
+;     ::
+;   are not implemented
+; - TCO is not implemented
+; - Reserved words are not handled correctly
+;
+; Interpreter:
+; - Interpreted eval has the current dynamic environment,
+;   compiled eval has the global environment only. This
+;   will probably change so that both have global environment.
+;
+; FFI:
+; - Method signatures for embedded use will probably change.
+; - The commandline flags --eol=XX will probably be removed
+;   and maybe replaced by file-variables.
+;
+; The Todo list is way too long.
+
+
 ;;; == Copyright ======================
 ;;;
 ;;; Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
@@ -417,4 +449,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.14 2020/11/18 07:44:13 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.15 2020/11/19 19:04:17 Robert Exp $

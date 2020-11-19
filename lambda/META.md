@@ -1,6 +1,8 @@
 # Meta-circular or meta-spheric?
 Or is it meta-circular recursively applied which then generates unlimited dimensions of meta?
 
+What follows are just some random thoughts, don't continue reading. If you do read on: you have been warned.
+
 Around the time during development of JMurmel when I had an almost complete interpreter and started coding the compiler,
 actually when I coded the compiler part that handles "quote",
 things started getting weird.

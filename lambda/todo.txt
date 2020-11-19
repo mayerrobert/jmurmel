@@ -69,7 +69,7 @@ der interpreter und kompilierte programme unterstuetze beide getValue() und getF
 refactor: alles was zum interpreter gehoert in eine neue Klasse LambdaJ.MurmelInterpreter heben
 -> auf gleichem Level wie LambdaJ.MurmelJavaCompiler und LambdaJ.MurmelJavaProgram
 -> dann koennten Interpreter und Program das gleiche Interface fuer getValue(), getFunction() haben
--> runtime aussen vor lassen?oder es gibt methoden die implementieren z.B. write, und getrennte wrapper fuer interpreter und kompilierte programme
+-> runtime aussen vor lassen? oder es gibt methoden die implementieren z.B. write, und getrennte wrapper fuer interpreter und kompilierte programme
 
 im environment des compilers koennt man den typ der symbole mitfuehren, das wuerde compiletime typchecks ermoeglichen.
 
