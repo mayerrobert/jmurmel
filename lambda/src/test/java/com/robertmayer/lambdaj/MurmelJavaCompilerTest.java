@@ -212,6 +212,13 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testFormat() throws Exception {
+        MurmelJavaProgram program = compile("(format-locale nil \"de-DE\" \"Hello, World!\")");
+        assertNotNull("failed to compile format to class", program);
+        assertEquals("format produced wrong result", "\"Hello, World!\"", sexp(program.body()));
+    }
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\n"

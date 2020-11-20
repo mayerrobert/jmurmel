@@ -5,13 +5,15 @@ import static junit.framework.Assert.*;
 import org.junit.Test;
 
 import com.robertmayer.lambdaj.LambdaJ.ConsCell;
+import com.robertmayer.lambdaj.LambdaJ.ListConsCell;
+
 import static com.robertmayer.lambdaj.PrintObjTest.cdr;
 
 public class ConsCellIteratorTest {
 
     @Test
     public void circularList() {
-        ConsCell list = new ConsCell("a", new ConsCell("b", new ConsCell("c", null)));
+        ListConsCell list = ConsCell.cons("a", ConsCell.cons("b", ConsCell.cons("c", null)));
         cdr(cdr(list)).cdr = list;
         assertEquals("(a b c #<circular list>)", list.toString());
 
@@ -29,7 +31,7 @@ public class ConsCellIteratorTest {
 
     @Test
     public void consCell() {
-        ConsCell cell = new ConsCell("a", "b");
+        ConsCell cell = ConsCell.cons("a", "b");
         assertEquals("(a . b)", cell.toString());
 
         int n = 0;

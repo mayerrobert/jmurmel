@@ -70,10 +70,10 @@ public class EmbeddedCustomEnvTest {
 
 
     private static ConsCell cons(Object car, Object cdr) {
-        return new ConsCell(car, cdr);
+        return ConsCell.cons(car, cdr);
     }
 
     private static Object car(Object l) {
-        return ((ConsCell)l).car;
+        return ((ConsCell)l).car();
     }
 }

@@ -3,13 +3,14 @@ package com.robertmayer.lambdaj;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+import com.robertmayer.lambdaj.LambdaJ.ConsCell;
 
 public class EscapeTest {
 
     @Test
     public void testStringDQuote() {
         // create a list that contains the string literal he"lo
-        LambdaJ.ConsCell cell = new LambdaJ.ConsCell("he\"lo", null);
+        LambdaJ.ConsCell cell = ConsCell.cons("he\"lo", null);
 
         // ConsCell#toString() should return (he"lo)
         assertEquals("(he\"lo)", cell.toString());
@@ -23,7 +24,7 @@ public class EscapeTest {
     @Test
     public void testStringBSlash() {
         // create a list that contains the string literal he\lo
-        LambdaJ.ConsCell cell = new LambdaJ.ConsCell("he\\lo", null);
+        LambdaJ.ConsCell cell = ConsCell.cons("he\\lo", null);
 
         // ConsCell#toString() should return (he\lo)
         assertEquals("(he\\lo)", cell.toString());
@@ -37,7 +38,7 @@ public class EscapeTest {
     @Test // todo
     public void testSymbolSpace() {
         // create a list that contains a symbol with a space
-        LambdaJ.ConsCell cell = new LambdaJ.ConsCell(new LambdaJ.LambdaJSymbol("he lo"), null);
+        LambdaJ.ConsCell cell = ConsCell.cons(new LambdaJ.LambdaJSymbol("he lo"), null);
 
         // ConsCell#toString() should return (he lo)
         assertEquals("(he lo)", cell.toString());
@@ -51,7 +52,7 @@ public class EscapeTest {
     @Test
     public void testSymbolParen() {
         // create a list that contains a symbol with a (
-        LambdaJ.ConsCell cell = new LambdaJ.ConsCell(new LambdaJ.LambdaJSymbol("he(lo"), null);
+        LambdaJ.ConsCell cell = ConsCell.cons(new LambdaJ.LambdaJSymbol("he(lo"), null);
 
         // ConsCell#toString() should return (he(lo)
         assertEquals("(he(lo)", cell.toString());

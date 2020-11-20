@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.231 2020/11/20 07:25:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.232 2020/11/20 08:21:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -148,19 +148,28 @@ public class LambdaJ {
     /// ## Data types used by interpreter program as well as interpreted programs
 
     /** Main building block for Lisp-lists */
-    public static class ConsCell implements Iterable<Object>, Serializable {
-        private static class ConsCellIterator implements Iterator<Object> {
-            private final ConsCell coll;
+    public static abstract class ConsCell implements Iterable<Object>, Serializable {
+        private static final long serialVersionUID = 1L;
+
+        public static ListConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
+        public abstract Object car();
+        public abstract Object cdr();
+        ConsCell closure() { return null; }
+    }
+
+    public static class ListConsCell extends ConsCell {
+        private static class ListConsCellIterator implements Iterator<Object> {
+            private final ListConsCell coll;
             private Object cursor;
 
-            private ConsCellIterator(ConsCell coll) { this.coll = coll; this.cursor = coll; }
+            private ListConsCellIterator(ListConsCell coll) { this.coll = coll; this.cursor = coll; }
             @Override public boolean hasNext() { return cursor != null; }
 
             @Override
             public Object next() {
                 if (cursor == null) throw new NoSuchElementException();
-                if (cursor instanceof ConsCell) {
-                    final ConsCell list = (ConsCell)cursor;
+                if (cursor instanceof ListConsCell) {
+                    final ListConsCell list = (ListConsCell)cursor;
                     final Object ret = list.car;
                     if (list.cdr == coll) cursor = null; // circle detected, stop here
                     else cursor = list.cdr;
@@ -173,27 +182,29 @@ public class LambdaJ {
         }
 
         private static final long serialVersionUID = 1L;
-        public Object car, cdr;
-        public ConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        @Override public String toString() { return printObj(this); }
-        @Override public Iterator<Object> iterator() { return new ConsCellIterator(this); }
 
-        ConsCell closure() { return null; }
+        public Object car, cdr;
+
+        private ListConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+        @Override public String toString() { return printObj(this); }
+        @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
+
+        @Override public Object car() { return car; }
+        @Override public Object cdr() { return cdr; }
     }
 
-    private static class SExpConsCell extends ConsCell {
+    private static class SExpConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
         private final int lineNo, charNo;
-        public SExpConsCell(int line, int charNo, Object car, Object cdr)    { super(car, cdr); this.lineNo = line; this.charNo = charNo; }
+        private SExpConsCell(int line, int charNo, Object car, Object cdr)    { super(car, cdr); this.lineNo = line; this.charNo = charNo; }
     }
 
-    private static class ClosureConsCell extends ConsCell {
+    private static class ClosureConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
         private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
-        public ClosureConsCell(Object car, Object cdr, ConsCell closure)    { super(car, cdr); this.closure = closure; }
+        private ClosureConsCell(Object car, Object cdr, ConsCell closure)    { super(car, cdr); this.closure = closure; }
 
-        @Override
-        ConsCell closure() { return closure; }
+        @Override ConsCell closure() { return closure; }
     }
 
     /** A murmel symbol name */
@@ -554,20 +565,21 @@ public class LambdaJ {
             return tok == null && s == null || tok != null && tok.toString().equalsIgnoreCase(s);
         }
 
-        private ConsCell cons(Object car, Object cdr) {
-            return pos ? new SExpConsCell(lineNo, charNo, car, cdr) : new ConsCell(car, cdr);
+        private ListConsCell cons(Object car, Object cdr) {
+            return pos ? new SExpConsCell(lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
         }
+
         /** Append rest at the end of first. If first is a list it will be modified. */
-        private ConsCell combine(Object first, Object rest) {
-            if (consp(first)) return appendToList((ConsCell)first, rest);
+        private ListConsCell combine(Object first, Object rest) {
+            if (consp(first)) return appendToList((ListConsCell)first, rest);
             else return cons(first, rest);
         }
 
         /** Append rest at the end of first, modifying first in the process.
          *  Returns a dotted list unless rest is a proper list. */
         // todo ist das nconc (destructive concatenate) ?
-        private ConsCell appendToList(ConsCell first, Object rest) {
-            for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
+        private ListConsCell appendToList(ListConsCell first, Object rest) {
+            for (ListConsCell last = first; last != null; last = (ListConsCell) cdr(last)) {
                 if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.cdr = rest;
@@ -645,7 +657,7 @@ public class LambdaJ {
 
 
     /// ### Global environment - define'd symbols go into this list
-    private ConsCell topEnv;
+    private ListConsCell topEnv;
 
     /// ###  eval - the heart of most if not all Lisp interpreters
     private Object eval(Object form, ConsCell env, int stack, int level) {
@@ -769,7 +781,7 @@ public class LambdaJ {
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2);
-                        ConsCell extEnv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
+                        ListConsCell extEnv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
                         // stick the functions into the env
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
@@ -797,7 +809,7 @@ public class LambdaJ {
                         final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
                         if (!consp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
 
-                        ConsCell extenv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
+                        ListConsCell extenv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
                         for (Object binding: bindings) {
                             if (!consp(binding))        throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
                             final Object sym = car(binding);
@@ -805,7 +817,7 @@ public class LambdaJ {
                             notReserved(op, sym);
                             if (!listp(cdr(binding)))   throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
 
-                            ConsCell newBinding = null;
+                            ListConsCell newBinding = null;
                             if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
                             Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level);      // todo sollte das cdr(binding) heissen, damit (symbol forms...) gehen wuerde? in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
                             if (letRec)      newBinding.cdr = val;
@@ -894,8 +906,8 @@ public class LambdaJ {
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
      *  Returns the newly created (and inserted) symbolentry (symbol . value) */
-    private ConsCell insertFront(ConsCell env, Object symbol, Object value) {
-        final ConsCell symbolEntry = cons(symbol, value);
+    private ListConsCell insertFront(ListConsCell env, Object symbol, Object value) {
+        final ListConsCell symbolEntry = cons(symbol, value);
         final Object oldCar = car(env);
         final Object oldCdr = cdr(env);
         env.car = symbolEntry;
@@ -905,14 +917,14 @@ public class LambdaJ {
 
     /** Extend env by attaching a new symbolentry at the front of env, env is unchanged.
      *  Returns the extended list with newly created symbolentry (symbol . value) */
-    private ConsCell extendEnv(ConsCell env, Object symbol, Object value) {
-        final ConsCell symbolEntry = cons(symbol, value);
+    private ListConsCell extendEnv(ConsCell env, Object symbol, Object value) {
+        final ListConsCell symbolEntry = cons(symbol, value);
         return cons(symbolEntry, env);
     }
 
     /** from a list of (symbol form) conses return the symbols as new a list */
     private ConsCell extractParamList(String op, final ConsCell bindings) {
-        ConsCell bodyParams = null, insertPos = null;
+        ListConsCell bodyParams = null, insertPos = null;
         if (bindings != null)
             for (Object binding: bindings) {
                 final Object symbol = car(binding);
@@ -922,7 +934,7 @@ public class LambdaJ {
                     insertPos = bodyParams;
                 } else {
                     insertPos.cdr = cons(symbol, null);
-                    insertPos = (ConsCell) insertPos.cdr;
+                    insertPos = (ListConsCell) insertPos.cdr;
                 }
             }
         return bodyParams;
@@ -966,11 +978,12 @@ public class LambdaJ {
     /** eval a list of forms and return a list of results */
     private ConsCell evlis(ConsCell _forms, ConsCell env, int stack, int level) {
         dbgEvalStart("evlis", _forms, env, stack, level);
-        ConsCell head = null, insertPos = null;
+        ListConsCell head = null;
+        ListConsCell insertPos = null;
         ConsCell forms = _forms;
         if (forms != null)
             for (Object form: forms) {
-                ConsCell currentArg = cons(eval(form, env, stack, level), null);
+                ListConsCell currentArg = cons(eval(form, env, stack, level), null);
                 if (head == null) {
                     head = currentArg;
                     insertPos = head;
@@ -1068,10 +1081,28 @@ public class LambdaJ {
 
 
     /// ###  Functions used by interpreter program, a subset is used by interpreted programs as well
-    private        ConsCell cons(Object car, Object cdr)                    { nCells++; return new ConsCell(car, cdr); }
-    private        ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
+    private ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
+    private ListConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
 
-    private static class ArraySlice {
+    private static class ArraySlice extends ConsCell {
+        private static class ArraySliceIterator implements Iterator<Object> {
+            private final ArraySlice coll;
+            private int cursor;
+
+            private ArraySliceIterator(ArraySlice coll) { this.coll = coll; this.cursor = coll.offset; }
+            @Override public boolean hasNext() { return cursor != -1; }
+
+            @Override
+            public Object next() {
+                if (cursor == -1) throw new NoSuchElementException();
+                Object ret = coll.arry[cursor++];
+                if (cursor == coll.arry.length)  cursor = -1;
+                return ret;
+            }
+        }
+
+        private static final long serialVersionUID = 1L;
+
         private final Object[] arry;
         private final int offset;
 
@@ -1090,10 +1121,10 @@ public class LambdaJ {
             else { this.arry = null; offset = -1; }
         }
 
-        private Object car() { return arry == null ? null : arry[offset]; }
-        private ArraySlice cdr() { return arry == null ? null : new ArraySlice(this); }
-        @Override
-        public String toString() { return printSEx(false); }
+        @Override public Object car() { return arry == null ? null : arry[offset]; }
+        @Override public ArraySlice cdr() { return arry == null ? null : new ArraySlice(this); }
+        @Override public String toString() { return printSEx(false); }
+        @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
         private String printSEx(boolean escapeAtoms) {
             if (arry.length - offset == 0) return LambdaJ.printSEx(null);
@@ -1113,9 +1144,9 @@ public class LambdaJ {
         }
     }
 
-    private static Object   car(ConsCell c)    { return c == null ? null : c.car; }
+    private static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     private static Object   car(Object o)      { return o == null ? null
-                                                 : o instanceof ConsCell ? ((ConsCell)o).car
+                                                 : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof ArraySlice ? ((ArraySlice)o).car()
                                                  : o instanceof Object[] ? (((Object[])o).length == 0 ? null : ((Object[])o)[0])
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
@@ -1132,9 +1163,9 @@ public class LambdaJ {
     private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
     private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
 
-    private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr; }
+    private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     private static Object   cdr(Object o)      { return o == null ? null
-                                                 : o instanceof ConsCell ? ((ConsCell)o).cdr
+                                                 : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof ArraySlice ? ((ArraySlice)o).cdr()
                                                  : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).substring(1))
@@ -1190,7 +1221,7 @@ public class LambdaJ {
 
     private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
-        ConsCell ret = null, insertPos = null;
+        ListConsCell ret = null, insertPos = null;
         for (Object o: a) {
             if (ret == null) {
                 ret = cons(o, null);
@@ -1198,7 +1229,7 @@ public class LambdaJ {
             }
             else {
                 insertPos.cdr = cons(o, null);
-                insertPos = (ConsCell) insertPos.cdr;
+                insertPos = (ListConsCell) insertPos.cdr;
             }
         }
         return ret;
@@ -1505,7 +1536,8 @@ public class LambdaJ {
         }
     }
 
-    private String format(String func, ConsCell a) {
+    private String format(ConsCell a) {
+        String func = "format";
         nArgs(func, a, 2);
         boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
@@ -1524,7 +1556,8 @@ public class LambdaJ {
         }
     }
 
-    private String formatLocale(String func, ConsCell a) {
+    private String formatLocale(ConsCell a) {
+        String func = "format-locale";
         nArgs(func, a, 3);
         boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
@@ -1633,7 +1666,7 @@ public class LambdaJ {
 
     /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
-    private ConsCell environment(ConsCell env) {
+    private ListConsCell environment(ListConsCell env) {
         if (haveIO()) {
             final Primitive freadobj =  a -> {
                 noArgs("read", a);
@@ -1665,8 +1698,8 @@ public class LambdaJ {
                   env));
 
             if (haveUtil()) {
-                env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        (Primitive) a -> format("format", a)),
-                      cons(cons(symtab.intern(new LambdaJSymbol("format-locale")), (Primitive) a -> formatLocale("format-locale", a)),
+                env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        (Primitive) a -> format(a)),
+                      cons(cons(symtab.intern(new LambdaJSymbol("format-locale")), (Primitive) a -> formatLocale(a)),
                       env));
             }
         }
@@ -1852,7 +1885,7 @@ public class LambdaJ {
         if (maybeFunction instanceof Primitive) {
             return new CallPrimitive((Primitive)maybeFunction);
         }
-        if (maybeFunction instanceof ConsCell && car((ConsCell)maybeFunction) == sLambda) {
+        if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) {
             return new CallLambda((ConsCell)maybeFunction);
         }
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName);
@@ -1898,7 +1931,7 @@ public class LambdaJ {
         if (symtab == null) {
             Parser scriptParser = new SExpressionParser(features, trace, tracer, in);
             setSymtab(scriptParser);
-            final ConsCell env = environment(null);
+            final ListConsCell env = environment(null);
             topEnv = env;
         }
         Parser scriptParser = (Parser)symtab;
@@ -1927,7 +1960,7 @@ public class LambdaJ {
         setSymtab(parser);
         ObjectWriter outWriter = new SExpressionWriter(out);
         setReaderPrinter(parser, outWriter);
-        final ConsCell env = environment(null);
+        final ListConsCell env = environment(null);
         topEnv = env;
         final Object exp = parser.readObj(true);
         long tStart = System.nanoTime();
@@ -1958,7 +1991,7 @@ public class LambdaJ {
         setSymtab(parser);
         setReaderPrinter(parser, outWriter);
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser);
-        final ConsCell env = environment(customEnvironment);
+        final ListConsCell env = environment((ListConsCell) customEnvironment); // todo dieser cast ist fishy -> customEnvironment umstellen dass es nicht ConsCell liefert
         topEnv = env;
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
@@ -2113,7 +2146,7 @@ public class LambdaJ {
         boolean isInit = false;
         SExpressionParser parser = null;
         ObjectWriter outWriter = null;
-        ConsCell env = null;
+        ListConsCell env = null;
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
@@ -2563,7 +2596,7 @@ public class LambdaJ {
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * todo internal-time-units-per-second
         /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-        /// * todo format, format-locale
+        /// * format, format-locale
         /// * todo ::
         ///
         private static final String[] globalvars = new String[] { "nil", "t", "pi" };
@@ -2626,6 +2659,7 @@ public class LambdaJ {
         private static final String[][] aliasedPrimitives = new String[][] {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
+            {"format", "format"}, {"format-locale", "formatLocale" },
         };
 
         protected double _add    (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
@@ -2642,6 +2676,8 @@ public class LambdaJ {
         protected Object _ge      (Object[] args) { return ge(args[0], args[1]); }
         protected Object _gt      (Object[] args) { return gt(args[0], args[1]); }
 
+        protected Object _format        (Object[] args) { return intp.format(new ArraySlice(args, true)); }
+        protected Object _formatLocale (Object[] args) { return intp.formatLocale(new ArraySlice(args, true)); }
 
 
         /// Helpers that the Java code compiled from Murmel will use
@@ -2662,7 +2698,7 @@ public class LambdaJ {
 
         protected Object car (Object l)  { return LambdaJ.car(l); }
         protected Object cdr (Object l)  { return LambdaJ.cdr(l); }
-        protected ConsCell cons(Object car, Object cdr)  { return new ConsCell(car, cdr); }
+        protected ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
         // todo ArraySlice extends ConsCell und dann den returntyp dieser Methode auf ConsCell umstellen
         protected ArraySlice arraySlice(Object[] o, boolean noOffset) {
@@ -3124,7 +3160,7 @@ public class LambdaJ {
 
 
         private ConsCell cons(Object car, Object cdr) {
-            return new ConsCell(car, cdr);
+            return new ListConsCell(car, cdr);
         }
     }
 }

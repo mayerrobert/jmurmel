@@ -1,8 +1,3 @@
-ArraySlice sollte von ConsCell erben, wg. FFI (funktion gibt ArraySlice zurueck)
-ConsCell.car/cdr sollten nicht public sein, nur getter
--> car/cdr aus ConsCell weg, damit Vererbung auf ArraySlice passt
--> vielleicht iwie Sequence in die Hierarchie reinbringen?
-
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2
 
 https://github.com/phoe/cafe-latte
@@ -1632,3 +1627,8 @@ statt --compile -> --to-java und --to-jar
 
 :run braucht eigentlich keinen Parameter
 -> :r
+
+ArraySlice sollte von ConsCell erben, wg. FFI (funktion gibt ArraySlice zurueck)
+ConsCell.car/cdr sollten nicht public sein, nur getter
+-> car/cdr aus ConsCell weg, damit Vererbung auf ArraySlice passt
+-> vielleicht iwie Sequence in die Hierarchie reinbringen?

@@ -353,28 +353,26 @@ nil
 (writeln)
 (writeln "World!")
 
-; walltime in internal time units, relative to an arbitrary time base
+; Walltime in internal time units, relative to an arbitrary time base
 (get-internal-real-time)
 
-; user cpu time in internal time units
+; User cpu time in internal time units
 (get-internal-run-time)
 
-; user + system cpu time in internal time units
+; User + system cpu time in internal time units
 (get-internal-cpu-time)
 
-; pause execution for x internal time units, returns actually slept
-; wall time in internal time units
+; Pause execution for x internal time units, returns actually slept
+; wall time in internal time units.
+; This example code will pause execution for approx. 1 second.
 (sleep (* 1 internal-time-units-per-second))
 
 ; get-universal-time <no arguments> => seconds since 1.1.1900 00:00:00 UTC
-; this will return approx. years since 1.1.1900
+; This example code will return approx. years since 1.1.1900
 (/ (get-universal-time) 60 60 24 365)
 
 ; get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
 (get-decoded-time)
-
-
-;;; == Additional JMurmel Primitives ==========
 
 ; format t writes a formatted string to stdout and returns nil.
 ; format's parameters work as java.lang.String.format().
@@ -391,6 +389,9 @@ nil
 ; but return the string
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+
+;;; == Additional JMurmel Primitives ==========
 
 ; (:: classname methodname paramclass...) -> primitive
 ; The primitive "::" will return a newly created primitive
@@ -421,11 +422,10 @@ nil
 ;     internal-time-units-per-second
 ;     get-internal-real-time, get-internal-run-time,
 ;     get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-;     format, format-locale
 ;     ::
 ;   are not implemented
 ; - TCO is not implemented
-; - Reserved words are not handled correctly
+; - Reserved words if used are not reported as errors
 ;
 ; Interpreter:
 ; - Interpreted eval has the current dynamic environment,
@@ -437,7 +437,7 @@ nil
 ; - The commandline flags --eol=XX will probably be removed
 ;   and maybe replaced by file-variables.
 ;
-; The Todo list is way too long.
+; The Todo list for features is way too long.
 
 
 ;;; == Copyright ======================
@@ -449,4 +449,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.15 2020/11/19 19:04:17 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.16 2020/11/19 20:21:00 Robert Exp $
