@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.233 2020/11/20 20:39:44 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.234 2020/11/20 20:45:56 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -577,7 +577,7 @@ public class LambdaJ {
 
         /** Append rest at the end of first, modifying first in the process.
          *  Returns a dotted list unless rest is a proper list. */
-        // todo ist das nconc (destructive concatenate) ?
+        // ist das nconc (destructive concatenate) ?
         private ListConsCell appendToList(ListConsCell first, Object rest) {
             for (ListConsCell last = first; last != null; last = (ListConsCell) cdr(last)) {
                 if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
@@ -715,8 +715,7 @@ public class LambdaJ {
                     /// eval - (define symbol exp) -> symbol with a side of global environment extension
                     if (haveXtra() && operator == sDefine) {
                         twoArgs("define", arguments);
-                        final Object symbol = car(arguments); // todo ob statt symbol eine expression erlaubt sein sollte? expression koennte symbol errechnen
-                                                              // ggf. symbol UND expression zulassen: if (symbolp(cdr(exp))...
+                        final Object symbol = car(arguments);
                         if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "define", printSEx(symbol));
                         notReserved("define", symbol);
                         final ConsCell envEntry = assoc(symbol, env);
@@ -819,7 +818,7 @@ public class LambdaJ {
 
                             ListConsCell newBinding = null;
                             if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
-                            Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level);      // todo sollte das cdr(binding) heissen, damit (symbol forms...) gehen wuerde? in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                            Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
                             if (letRec)      newBinding.cdr = val;
                             else extenv = extendEnv(extenv, sym, val);
                         }
@@ -1121,13 +1120,13 @@ public class LambdaJ {
             else { this.arry = null; offset = -1; }
         }
 
-        @Override public Object car() { return arry == null ? null : arry[offset]; }
-        @Override public ArraySlice cdr() { return arry == null ? null : new ArraySlice(this); }
+        @Override public Object     car() { return (arry == null || arry.length <= offset) ? null : arry[offset]; }
+        @Override public ArraySlice cdr() { return (arry == null || arry.length <= offset) ? null : new ArraySlice(this); }
         @Override public String toString() { return printSEx(false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
         private String printSEx(boolean escapeAtoms) {
-            if (arry.length - offset == 0) return LambdaJ.printSEx(null);
+            if (arry == null || arry.length <= offset) return LambdaJ.printSEx(null);
             else {
                 StringBuffer ret = new StringBuffer();
                 ret.append('(');
@@ -1147,7 +1146,6 @@ public class LambdaJ {
     private static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     private static Object   car(Object o)      { return o == null ? null
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                 : o instanceof ArraySlice ? ((ArraySlice)o).car()
                                                  : o instanceof Object[] ? (((Object[])o).length == 0 ? null : ((Object[])o)[0])
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.charAt(0)
@@ -1166,7 +1164,6 @@ public class LambdaJ {
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     private static Object   cdr(Object o)      { return o == null ? null
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
-                                                 : o instanceof ArraySlice ? ((ArraySlice)o).cdr()
                                                  : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).substring(1))
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.substring(1)
@@ -1272,6 +1269,8 @@ public class LambdaJ {
         while (true) {
             if (obj == null) {
                 sb.print("nil"); return;
+            } else if (obj instanceof ArraySlice) {
+                sb.print(((ArraySlice)obj).printSEx(escapeAtoms)); return;
             } else if (listp(obj)) {
                 if (headOfList) sb.print("(");
                 if (car(obj) == list) {
@@ -1314,8 +1313,6 @@ public class LambdaJ {
                 sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
             } else if (escapeAtoms && characterp(obj)) {
                 sb.print("'"); sb.print(((Character)obj) == '\'' ? "\\'" : String.valueOf(obj)); sb.print("'"); return;
-            } else if (obj instanceof ArraySlice) {
-                sb.print(((ArraySlice)obj).printSEx(escapeAtoms)); return;
             } else if (atom(obj)) {
                 sb.print(obj.toString()); return;
             } else {
@@ -2700,8 +2697,7 @@ public class LambdaJ {
         protected Object cdr (Object l)  { return LambdaJ.cdr(l); }
         protected ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
-        // todo ArraySlice extends ConsCell und dann den returntyp dieser Methode auf ConsCell umstellen
-        protected ArraySlice arraySlice(Object[] o, boolean noOffset) {
+        protected ConsCell arraySlice(Object[] o, boolean noOffset) {
             if (noOffset) return new ArraySlice(o, true);
             return new ArraySlice(o);
         }

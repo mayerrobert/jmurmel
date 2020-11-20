@@ -432,11 +432,6 @@ nil
 ;   compiled eval has the global environment only. This
 ;   will probably change so that both have global environment.
 ;
-; FFI:
-; - Method signatures for embedded use will probably change.
-; - The commandline flags --eol=XX will probably be removed
-;   and maybe replaced by file-variables.
-;
 ; The Todo list for features is way too long.
 
 
@@ -449,4 +444,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.16 2020/11/19 20:21:00 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.17 2020/11/20 20:39:44 Robert Exp $
