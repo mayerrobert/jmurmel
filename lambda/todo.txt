@@ -5,9 +5,6 @@ ConsCell.car/cdr sollten nicht public sein, nur getter
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2
 
-:run braucht eigentlich keinen Parameter
--> :r
-
 https://github.com/phoe/cafe-latte
 CL conditions
 dynamic variables
@@ -1632,3 +1629,6 @@ script fuer den aufruf
 defun kompilieren
 
 statt --compile -> --to-java und --to-jar
+
+:run braucht eigentlich keinen Parameter
+-> :r

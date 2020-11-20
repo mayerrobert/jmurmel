@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.229 2020/11/19 19:04:18 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.230 2020/11/20 07:16:55 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2152,7 +2152,7 @@ public class LambdaJ {
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
                     if (":java"   .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
-                    if (":run"    .equals(exp.toString())) { runForms(parser, history, parser.readObj(false), interpreter); continue; }
+                    if (":run"    .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
@@ -2200,11 +2200,11 @@ public class LambdaJ {
 
     /** compile history to a class and run compiled class.
      *  if className is null "MurmelProgram" will be the class' name */
-    private static void runForms(SymbolTable symtab, List<Object> history, Object className, LambdaJ interpreter) {
+    private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter) {
         ObjectWriter outWriter = interpreter.lispPrinter;
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
-            String clsName = className == null ? "MurmelProgram" : className.toString();
+            String clsName = "MurmelProgram";
             Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass(clsName.toString(), history, null);
             MurmelJavaProgram prg = murmelClass.newInstance();
             long tStart = System.nanoTime();
@@ -2393,7 +2393,7 @@ public class LambdaJ {
         System.out.println("  :l ............................. print history to the screen");
         System.out.println("  :w filename .................... write history to a new file with the given filename");
         System.out.println();
-        System.out.println("  :run classname ................. compile history to Java class 'classname' and run it");
+        System.out.println("  :run ........................... compile history to Java class 'MurmelProgram' and run it");
         System.out.println();
         System.out.println("  :java classname t .............. compile history to Java class 'classname' and print to the screen");
         System.out.println("  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'");
