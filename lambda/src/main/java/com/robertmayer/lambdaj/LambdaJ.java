@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.230 2020/11/20 07:16:55 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.231 2020/11/20 07:25:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2566,7 +2566,7 @@ public class LambdaJ {
         /// * todo format, format-locale
         /// * todo ::
         ///
-        protected static final String[] globalvars = new String[] { "nil", "t", "pi" };
+        private static final String[] globalvars = new String[] { "nil", "t", "pi" };
 
         protected final Object _nil = null;
         protected final Object _t;
@@ -2574,7 +2574,7 @@ public class LambdaJ {
 
 
 
-        protected static final String[] primitives = new String[] {
+        private static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
                 "eval", "eq", "not", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
@@ -2623,7 +2623,7 @@ public class LambdaJ {
         protected double   _mod     (Object... args)  { return dbl(args[0]) % dbl(args[1]); }
 
 
-        protected static final String[][] aliasedPrimitives = new String[][] {
+        private static final String[][] aliasedPrimitives = new String[][] {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
         };
@@ -2748,17 +2748,17 @@ public class LambdaJ {
             final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFile), mf);
 
             String[] dirs = unitName.split("\\.");
-            String path = "";
+            StringBuilder path = new StringBuilder();
             for (int i = 0; i < dirs.length; i++) {
-                path = path + dirs[i];
+                path.append(dirs[i]);
                 if (i == dirs.length - 1) {
-                    final JarEntry entry = new JarEntry(path + ".class");
+                    final JarEntry entry = new JarEntry(path.toString() + ".class");
                     jar.putNextEntry(entry);
                     jar.write(murmelClassLoader.getBytes(unitName));
                 }
                 else {
-                    path = path + '/';
-                    final JarEntry entry = new JarEntry(path);
+                    path.append('/');
+                    final JarEntry entry = new JarEntry(path.toString());
                     jar.putNextEntry(entry);
                 }
                 jar.closeEntry();
