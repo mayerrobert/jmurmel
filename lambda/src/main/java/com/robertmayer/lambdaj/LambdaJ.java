@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.228 2020/11/19 17:30:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.229 2020/11/19 19:04:18 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1074,14 +1074,22 @@ public class LambdaJ {
     private static class ArraySlice {
         private final Object[] arry;
         private final int offset;
+
         private ArraySlice(Object[] arry) {
             if (arry != null && arry.length > 1) { this.arry = arry; offset = 1; }
             else { this.arry = null; offset = -1; }
         }
+
+        private ArraySlice(Object[] arry, boolean noOffset) {
+            if (arry != null && arry.length > 0) { this.arry = arry; offset = 0; }
+            else { this.arry = null; offset = -1; }
+        }
+
         private ArraySlice(ArraySlice slice) {
             if (slice.arry != null && slice.arry.length > slice.offset) { this.arry = slice.arry; offset = slice.offset + 1; }
             else { this.arry = null; offset = -1; }
-            }
+        }
+
         private Object car() { return arry == null ? null : arry[offset]; }
         private ArraySlice cdr() { return arry == null ? null : new ArraySlice(this); }
         @Override
@@ -1198,6 +1206,11 @@ public class LambdaJ {
 
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return null;
+        if (maybeList instanceof ArraySlice) {
+            ArraySlice slice = (ArraySlice)maybeList;
+            if (slice.offset == 0) return slice.arry;
+            return Arrays.copyOfRange(slice.arry, slice.offset, slice.arry.length);
+        }
         if (!listp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a List but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add);
@@ -1492,7 +1505,7 @@ public class LambdaJ {
         }
     }
 
-    private String format(ConsCell a, String func) {
+    private String format(String func, ConsCell a) {
         nArgs(func, a, 2);
         boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
@@ -1511,7 +1524,7 @@ public class LambdaJ {
         }
     }
 
-    private String formatLocale(ConsCell a, String func) {
+    private String formatLocale(String func, ConsCell a) {
         nArgs(func, a, 3);
         boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
@@ -1652,8 +1665,8 @@ public class LambdaJ {
                   env));
 
             if (haveUtil()) {
-                env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        (Primitive) a -> format(a, "format")),
-                      cons(cons(symtab.intern(new LambdaJSymbol("format-locale")), (Primitive) a -> formatLocale(a, "format-locale")),
+                env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        (Primitive) a -> format("format", a)),
+                      cons(cons(symtab.intern(new LambdaJSymbol("format-locale")), (Primitive) a -> formatLocale("format-locale", a)),
                       env));
             }
         }
@@ -2647,11 +2660,15 @@ public class LambdaJ {
             }
         }
 
-        //protected Object car (Object l)  { return l == null ? null : ((ConsCell)l).car; }
-        //protected Object cdr (Object l)  { return l == null ? null : ((ConsCell)l).cdr; }
         protected Object car (Object l)  { return LambdaJ.car(l); }
         protected Object cdr (Object l)  { return LambdaJ.cdr(l); }
         protected ConsCell cons(Object car, Object cdr)  { return new ConsCell(car, cdr); }
+
+        // todo ArraySlice extends ConsCell und dann den returntyp dieser Methode auf ConsCell umstellen
+        protected ArraySlice arraySlice(Object[] o, boolean noOffset) {
+            if (noOffset) return new ArraySlice(o, true);
+            return new ArraySlice(o);
+        }
 
         /** used for function calls */
         protected Object apply(Object fn, Object... args) {
@@ -3022,7 +3039,7 @@ public class LambdaJ {
 
             if (symbolp(paramList)) { // das sollte (lambda x forms) handlen, aber es wird nur das erste arg weiterverwendet
                 env = extenv(paramList.toString(), rsfx, env);
-                sb.append("        final Object ").append(javasym(paramList, env)).append(" = args").append(rsfx).append(";\n");
+                sb.append("        final Object ").append(javasym(paramList, env)).append(" = arraySlice(args").append(rsfx).append(", true);\n");
                 return env;
             }
 
