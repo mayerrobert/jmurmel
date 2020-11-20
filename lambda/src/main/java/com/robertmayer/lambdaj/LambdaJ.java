@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.232 2020/11/20 08:21:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.233 2020/11/20 20:39:44 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2432,7 +2432,7 @@ public class LambdaJ {
         System.out.println("  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'");
         System.out.println("  :java classname directory/ ..... compile history to Java class 'classname' and print to a file based on classname in directory 'directory'");
         System.out.println("  :java classname filename ....... compile history to Java class 'classname' and write to a file with the given filename");
-        System.out.println("  :jar jarfile classname ......... compile history to jarfile 'jarfile' containing Java class 'classname'");
+        System.out.println("  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'");
         System.out.println("                                   the generated jar needs jmurmel.jar in the same directory to run");
         System.out.println();
         System.out.println("  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).");
