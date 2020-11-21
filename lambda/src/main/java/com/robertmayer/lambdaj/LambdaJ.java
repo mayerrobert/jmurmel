@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.234 2020/11/20 20:45:56 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.235 2020/11/20 21:34:09 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1587,6 +1587,51 @@ public class LambdaJ {
         }
     }
 
+    private static long getInternalRealTime() {
+        return System.nanoTime();
+    }
+
+    private static long getInternalRunTime() {
+        return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
+    }
+
+    private static long getInternalCpuTime() {
+        return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
+    }
+
+    private static long sleep(ConsCell a) {
+        oneArg("sleep", a);
+        numberArgs("sleep", a);
+        try {
+            long startNanos = System.nanoTime();
+            long nanos = ((Double)car(a)).longValue();
+            long millis = TimeUnit.NANOSECONDS.toMillis(nanos);
+            Thread.sleep(millis);
+            return System.nanoTime() - startNanos;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new LambdaJError("sleep: got interrupted");
+        }
+    }
+
+    private static long getUniversalTime() {
+        ZoneId utc = ZoneId.of("UTC");
+        ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
+        return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
+    }
+
+    private Object getDecodedTime() {
+        final Instant now = Clock.systemDefaultZone().instant();
+        final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
+        final ZoneRules rules = n.getZone().getRules();
+        boolean daylightSavings = rules.isDaylightSavings(now);
+        double offset = rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
+        //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+        return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
+               cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(),
+               cons(boolResult(daylightSavings), cons(offset, null))))))));
+    }
+
     private static ThreadMXBean getThreadBean(final String func) {
         final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         if (threadBean == null)
@@ -1729,45 +1774,13 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("list")),    (Primitive) a -> a),
                   env))))));
 
-            final Primitive fusertime = a -> { return new Double(getThreadBean("get-internal-run-time").getCurrentThreadUserTime()); };
-            final Primitive fcputime  = a -> { return new Double(getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime()); };
-            final Primitive fsleep    = a -> {
-                oneArg("sleep", a);
-                numberArgs("sleep", a);
-                try {
-                    long startNanos = System.nanoTime();
-                    long nanos = ((Double)car(a)).longValue();
-                    long millis = TimeUnit.NANOSECONDS.toMillis(nanos);
-                    Thread.sleep(millis);
-                    return new Double(System.nanoTime() - startNanos);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new LambdaJError("sleep: got interrupted");
-                }
-            };
-            final Primitive fUniversalTime = a -> {
-                ZoneId utc = ZoneId.of("UTC");
-                ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
-                return new Double(ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS));
-            };
-            final Primitive fDecodedTime = a -> {
-                final Instant now = Clock.systemDefaultZone().instant();
-                final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
-                final ZoneRules rules = n.getZone().getRules();
-                boolean daylightSavings = rules.isDaylightSavings(now);
-                double offset = rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
-                //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
-                return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
-                       cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(),
-                       cons(boolResult(daylightSavings), cons(offset, null))))))));
-            };
             env = cons(cons(symtab.intern(new LambdaJSymbol("internal-time-units-per-second")), new Double(1e9)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-real-time")), (Primitive)a -> new Double(System.nanoTime())),
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-run-time")), fusertime), // user
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-cpu-time")), fcputime), // user + system
-                  cons(cons(symtab.intern(new LambdaJSymbol("sleep")), fsleep),
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-universal-time")), fUniversalTime), // seconds since 1.1.1900
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-decoded-time")), fDecodedTime),
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-real-time")), (Primitive) a -> getInternalRealTime()),
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-run-time")),  (Primitive) a -> getInternalRunTime()), // user
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-cpu-time")),  (Primitive) a -> getInternalCpuTime()), // user + system
+                  cons(cons(symtab.intern(new LambdaJSymbol("sleep")),                  (Primitive) a -> sleep(a)),
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-universal-time")),     (Primitive) a -> getUniversalTime()), // seconds since 1.1.1900
+                  cons(cons(symtab.intern(new LambdaJSymbol("get-decoded-time")),       (Primitive) a -> getDecodedTime()),
                   env)))))));
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("fatal")), (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }),
@@ -2587,12 +2600,12 @@ public class LambdaJ {
         /// Environment for compiled Murmel:
         /// * nil, t, pi
         /// * car, cdr, cons
-        /// * eq, intern, write, writeln
+        /// * eval, eq, intern, write, writeln
         /// * atom, consp, listp, symbolp, numberp, stringp, characterp, assoc, list
         /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
-        /// * todo internal-time-units-per-second
-        /// * todo get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
+        /// * internal-time-units-per-second
+        /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * format, format-locale
         /// * todo ::
         ///
@@ -2601,6 +2614,12 @@ public class LambdaJ {
         protected final Object _nil = null;
         protected final Object _t;
         protected final Object _pi = Math.PI;
+
+        private static final String[][] aliasedGlobals = new String[][] {
+                { "internal-time-units-per-second", "itups" },
+        };
+
+        protected final Object _itups = 1e9;
 
 
 
@@ -2653,10 +2672,13 @@ public class LambdaJ {
         protected double   _mod     (Object... args)  { return dbl(args[0]) % dbl(args[1]); }
 
 
+
         private static final String[][] aliasedPrimitives = new String[][] {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
             {"format", "format"}, {"format-locale", "formatLocale" },
+            {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
+            {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
         };
 
         protected double _add    (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
@@ -2676,6 +2698,12 @@ public class LambdaJ {
         protected Object _format        (Object[] args) { return intp.format(new ArraySlice(args, true)); }
         protected Object _formatLocale (Object[] args) { return intp.formatLocale(new ArraySlice(args, true)); }
 
+        protected Object _getInternalRealTime(Object... args) { return getInternalRealTime(); }
+        protected Object _getInternalRunTime (Object... args) { return getInternalRunTime(); }
+        protected Object _getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
+        protected Object _sleep              (Object... args) { return sleep(new ArraySlice(args, true)); }
+        protected Object _getUniversalTime   (Object... args) { return getUniversalTime(); }
+        protected Object _getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
         /// Helpers that the Java code compiled from Murmel will use
         protected static void main(MurmelJavaProgram program) {
@@ -2804,8 +2832,9 @@ public class LambdaJ {
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
         public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
             ConsCell env = null;
-            for (String global: MurmelJavaProgram.globalvars)  env = extenv(global, 0, env);
-            for (String prim: MurmelJavaProgram.primitives)    env = extenvfunc(prim, 0, env);
+            for (String global: MurmelJavaProgram.globalvars)         env = extenv(global, 0, env);
+            for (String[] alias: MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), "_" + alias[1]), env);
+            for (String prim: MurmelJavaProgram.primitives)           env = extenvfunc(prim, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::_" + alias[1]), env);
 
             final StringBuilder ret = new StringBuilder();

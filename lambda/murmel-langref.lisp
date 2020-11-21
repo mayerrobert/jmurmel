@@ -418,12 +418,7 @@ nil
 ; - letXXX and labels are currently not implemented
 ; - define/ defun only work as top level forms
 ; - Varargs with a dotted parameter list is not implemented
-; - The functions
-;     internal-time-units-per-second
-;     get-internal-real-time, get-internal-run-time,
-;     get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-;     ::
-;   are not implemented
+; - The function :: is not implemented
 ; - TCO is not implemented
 ; - Reserved words if used are not reported as errors
 ;
@@ -444,4 +439,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.17 2020/11/20 20:39:44 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.18 2020/11/20 21:34:09 Robert Exp $
