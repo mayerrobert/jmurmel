@@ -407,8 +407,8 @@ nil
 (ctm nil)
 
 ; invoke method on an object
-(define create-hash ((:: "java.util.HashMap" "new")))
-(write ((:: "java.util.HashMap" "toString") create-hash))
+(define my-hash ((:: "java.util.HashMap" "new")))
+(write ((:: "java.util.HashMap" "toString") my-hash))
 
 
 ;;; == Known issues ===================
@@ -439,4 +439,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.18 2020/11/20 21:34:09 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.19 2020/11/21 08:10:11 Robert Exp $
