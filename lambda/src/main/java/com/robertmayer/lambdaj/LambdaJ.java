@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.235 2020/11/20 21:34:09 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.236 2020/11/21 08:10:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2657,7 +2657,7 @@ public class LambdaJ {
         protected Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
 
         protected ConsCell _assoc   (Object... args)  { return assoc(args[0], args[1]); }
-        protected ConsCell _list    (Object... args)  { return intp.list(args); }
+        protected ConsCell _list    (Object... args)  { return new ArraySlice(args, true); }
 
         protected long     _round   (Object... args)  { return Math.round(dbl(args[0])); }
         protected double   _floor   (Object... args)  { return Math.floor(dbl(args[0])); }
