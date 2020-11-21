@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.236 2020/11/21 08:10:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.237 2020/11/21 08:20:47 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2868,17 +2868,18 @@ public class LambdaJ {
             if (result != null) result = "_intern(\"" + result.toString() + "\")";
 
             // generate getValue() for FFI
-            ret.append("\n    public Object getValue(String symbol) {\n"
+            ret.append("    public Object getValue(String symbol) {\n"
                      + "        switch (symbol) {\n");
             for (Object form: forms)
-                if (consp(form) && isSymbol(car(form), "define"))
+                if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
                     ret.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
 
             ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
                      + "        }\n"
                      + "    }\n\n");
 
-            ret.append("\n    public Object body() {\n        Object result0 = " + result + ";\n");
+            ret.append("    // toplevel forms\n");
+            ret.append("    public Object body() {\n        Object result0 = " + result + ";\n");
             formsToJava(ret, forms, env, 0);
             ret.append("        return result0;\n    }\n");
 
@@ -2905,7 +2906,7 @@ public class LambdaJ {
         private static String mangle(String symname, int sfx) {
             final StringBuilder mangled = new StringBuilder();
             for (char c: symname.toCharArray()) {
-                if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
+                if (c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
                 else mangled.append('_').append((int)c).append('_');
             }
             return '_' + mangled.toString() + (sfx == 0 ? "" : sfx);
@@ -2930,9 +2931,10 @@ public class LambdaJ {
             if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
             else {
                 env = extenv(car(form).toString(), 0, env);
+                sb.append("    // (define ").append(car(form)).append(" form)").append(System.lineSeparator());
                 sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
                 formToJava(sb, cadr(form), env, 0);
-                sb.append(';').append(System.lineSeparator());
+                sb.append(';').append(System.lineSeparator()).append(System.lineSeparator());
                 return env;
             }
         }
@@ -2947,6 +2949,7 @@ public class LambdaJ {
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
             env = extenvfunc(sym.toString(), 0, env);
 
+            sb.append("    // (defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)").append(System.lineSeparator());
             sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
@@ -2963,6 +2966,7 @@ public class LambdaJ {
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
                 if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
+                    ret.append("        // ").append(printSEx(form)).append(System.lineSeparator());
                     ret.append("        result").append(rsfx).append(" = ");
                     formToJava(ret, form, env, rsfx);
                     ret.append(';').append(System.lineSeparator());
