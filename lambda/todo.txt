@@ -31,6 +31,7 @@ define nur toplevel zulassen (wg. kompilieren)
 
 eval im interpreter sollte ggf. auch eine funktion sein
 -> geht nicht wg. TCO
+    -> ein lambda ins environment reinstecken? eigentlich: ein closure, closure ist topenv
 eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
 wuerde sich beim umstellen auf funktion angleichen lassen
 -> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
