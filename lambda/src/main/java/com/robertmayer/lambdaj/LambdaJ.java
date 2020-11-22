@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.241 2020/11/22 07:03:01 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.242 2020/11/22 08:04:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -738,7 +738,7 @@ public class LambdaJ {
 
                     /// eval - special forms that run expressions
 
-                    /// eval - (eval form) -> object ; this is not really a special form but is handle here for TCO todo feature flag
+                    /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                     if (operator == sEval) {
                         oneArg("eval", arguments);
                         form = eval(car(arguments), env, stack, level); isTc = true; continue tailcall;
