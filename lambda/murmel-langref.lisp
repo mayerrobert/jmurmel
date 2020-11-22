@@ -413,7 +413,9 @@ nil
 ;;; == Known issues ===================
 ;
 ; Compiler issues:
-; - There are pretty much no compile- or runtime checks
+; - There are pretty much no compile- or runtime checks,
+    actually: most compile- and runtime errors will result in
+    ClassCastExceptions and NullpointerExceptions
 ; - letXXX and labels are currently not implemented
 ; - define/ defun only work as top level forms
 ; - Varargs with a dotted parameter list is not implemented
@@ -438,4 +440,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.20 2020/11/21 11:09:54 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.21 2020/11/22 05:58:41 Robert Exp $

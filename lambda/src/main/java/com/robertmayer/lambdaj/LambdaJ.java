@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.239 2020/11/22 05:42:32 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.240 2020/11/22 05:58:42 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2241,12 +2241,20 @@ public class LambdaJ {
         }
     }
 
+    private static Path tmpDir;
+    private static Path getTmpDir() throws IOException {
+        if (tmpDir == null) {
+            tmpDir = Files.createTempDirectory("jmurmel");
+            tmpDir.toFile().deleteOnExit();
+        }
+        return tmpDir;
+    }
+
     /** compile history to a class and run compiled class.
      *  if className is null "MurmelProgram" will be the class' name */
     private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter) {
-        ObjectWriter outWriter = interpreter.lispPrinter;
-        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
+            MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
             String clsName = "MurmelProgram";
             Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass(clsName.toString(), history, null);
             MurmelJavaProgram prg = murmelClass.newInstance();
@@ -2255,7 +2263,7 @@ public class LambdaJ {
             long tEnd = System.nanoTime();
             System.out.println();
             interpreter.traceJavaStats(tEnd - tStart);
-            System.out.print("==> ");  outWriter.printObj(result); System.out.println();
+            System.out.print("==> ");  interpreter.lispPrinter.printObj(result); System.out.println();
         }
         catch (LambdaJError e) {
             System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -2272,7 +2280,7 @@ public class LambdaJ {
      *  if filename is null the filename will be derived from the className
      *  if filename ends with a / then filename is interpreted as a base directory and the classname (with packages) will be appended */
     private static boolean compileToJava(SymbolTable symtab, List<Object> history, Object className, Object filename, LambdaJ interpreter) {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren
+        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, null); // todo ggf compiler nur 1x instanzieren
         String clsName = className == null ? "MurmelProgram" : className.toString();
         //if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
@@ -2313,8 +2321,8 @@ public class LambdaJ {
     }
 
     private static boolean compileToJar(SymbolTable symtab, List<Object> history, Object className, Object jarFile, LambdaJ interpreter) {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, Paths.get("target")); // todo tempdir, ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
         try {
+            MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
             String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             String clsName = className == null ? "MurmelProgram" : className.toString();
             c.formsToApplicationClass(clsName, history, jarFileName);
@@ -3073,7 +3081,7 @@ public class LambdaJ {
 
                     ///     - todo letxxx
 
-                    /// * function call todo teilw. vargargs mit dotted list gehen nicht, car/cdr eines vararg arguments geht nicht
+                    /// * function call todo teilw. vargargs mit dotted list gehen nicht
                     sb.append("funcall(");
                     formToJava(sb, op, env, rsfx);
                     if (args != null)
