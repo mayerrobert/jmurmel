@@ -15,7 +15,7 @@
                     (write (cons fn (evlist evlist args (quote ())))))
                   (lambda (evlist^ ea evargs)
                     (cond
-                      ((not ea)  (quote ()))
+                      ((null ea)  (quote ()))
                       ((quote t) (cons (car ea)
                                     (evlist^ evlist^ (cdr ea) evargs)))))))
               (cdr expa)))))

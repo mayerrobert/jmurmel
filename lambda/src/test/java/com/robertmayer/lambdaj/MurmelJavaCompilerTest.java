@@ -228,7 +228,7 @@ public class MurmelJavaCompilerTest {
                 + "      (rev rev nil list))\n"
                 + "    (lambda (rev^ a l)\n"
                 + "      (if\n"
-                + "        (not l) a\n"
+                + "        (null l) a\n"
                 + "        (rev^ rev^ (cons (car l) a) (cdr l )))))))";
         MurmelJavaProgram program = compile(source);
         assertNotNull("failed to compile reverse to class:", program);

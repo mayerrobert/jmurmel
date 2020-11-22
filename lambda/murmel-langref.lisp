@@ -321,8 +321,7 @@ nil
 (cdr '(a b c))
 (cdr "abc") ; ==> "bc"
 
-; eq, atom, consp, listp, symbolp, numberp, stringp, characterp,
-; not
+; eq, null, atom, consp, listp, symbolp, numberp, stringp, characterp,
 
 ; assoc takes a key and a list of key/value tupels (lists or conses)
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
@@ -439,4 +438,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.19 2020/11/21 08:10:11 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.20 2020/11/21 11:09:54 Robert Exp $

@@ -10,6 +10,6 @@
    ((lambda (rev)
       (rev rev nil list))
     (lambda (rev_ a l)
-      (if (not l)
+      (if (null l)
             a
         (rev_ rev_ (cons (car l) a) (cdr l)))))))

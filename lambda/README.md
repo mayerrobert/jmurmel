@@ -165,7 +165,7 @@ The environment contains the symbols `nil` and `t` and the functions
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `defun` ... `(<symbol> (<params>*) <bodyform>*)`, e.g. `(defun addone (n) (+ n 1))`
 * `let, let <symbol>, let*, letrec, progn`
-* `eq, atom, consp, listp, not, numberp, stringp, symbolp`
+* `eq, atom, consp, listp, null, numberp, stringp, symbolp`
 
 * `assoc`
 * `read`
@@ -230,4 +230,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.46 2020/11/05 06:48:33 Robert Exp $
+$Id: README.md,v 1.47 2020/11/19 20:21:00 Robert Exp $

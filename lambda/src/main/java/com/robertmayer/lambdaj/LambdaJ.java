@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.238 2020/11/21 09:24:38 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.239 2020/11/22 05:42:32 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1769,7 +1769,7 @@ public class LambdaJ {
             env = cons(cons(symtab.intern(new LambdaJSymbol("consp")),   (Primitive) a -> { oneArg("consp",   a);  return boolResult(consp  (car(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("symbolp")), (Primitive) a -> { oneArg("symbolp", a);  return boolResult(symbolp(car(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("listp")),   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("not")),     (Primitive) a -> { oneArg("not",     a);  return boolResult(car(a) == null); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("null")),    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("assoc")),   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), car(cdr(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("list")),    (Primitive) a -> a),
                   env))))));
@@ -2600,7 +2600,7 @@ public class LambdaJ {
         /// Environment for compiled Murmel:
         /// * nil, t, pi
         /// * car, cdr, cons
-        /// * eval, eq, intern, write, writeln
+        /// * eval, eq, null, intern, write, writeln
         /// * atom, consp, listp, symbolp, numberp, stringp, characterp, assoc, list
         /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
@@ -2625,7 +2625,7 @@ public class LambdaJ {
 
         private static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
-                "eval", "eq", "not", "intern", "write", "writeln",
+                "eval", "eq", "null", "intern", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list",
                 "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
@@ -2640,20 +2640,20 @@ public class LambdaJ {
         // scheme eval hat nicht automatisch das current dyn env https://docs.racket-lang.org/guide/eval.html
         protected Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
         protected Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
-        protected Object _not       (Object... args) { return args[0] != args[1] ? _t : null; }
+        protected Object _null      (Object... args) { return args[0] != args[1] ? _t : null; }
 
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
         protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
 
         protected Object _write     (Object... args) { intp.write(args[0]); return _t; };
-        protected Object _writeln   (Object... args) { intp.write(args == null ? null : args[0]); return _t; };
+        protected Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
 
-        protected Object _atom      (Object... args) { return atom   (args[0]) ? _t : null; }
-        protected Object _consp     (Object... args) { return consp  (args[0]) ? _t : null; }
-        protected Object _listp     (Object... args) { return listp  (args[0]) ? _t : null; }
-        protected Object _symbolp   (Object... args) { return symbolp(args[0]) ? _t : null; }
-        protected Object _numberp   (Object... args) { return numberp(args[0]) ? _t : null; }
-        protected Object _stringp   (Object... args) { return stringp(args[0]) ? _t : null; }
+        protected Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
+        protected Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
+        protected Object _listp     (Object... args) { return listp     (args[0]) ? _t : null; }
+        protected Object _symbolp   (Object... args) { return symbolp   (args[0]) ? _t : null; }
+        protected Object _numberp   (Object... args) { return numberp   (args[0]) ? _t : null; }
+        protected Object _stringp   (Object... args) { return stringp   (args[0]) ? _t : null; }
         protected Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
 
         protected ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
@@ -2980,7 +2980,6 @@ public class LambdaJ {
         private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
             try {
 
-                // todo if (form == null) null und if (form eq nil) null
                 /// * symbols
                 if (symbolp(form)) {
                     sb.append(javasym(form, env));  return;
@@ -3013,8 +3012,8 @@ public class LambdaJ {
                     if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
                     ///     - eq, not
-                    if (isSymbol(op, "eq"))  { compareOp(sb, "==", car(args), cadr(args), env, rsfx); return; }
-                    if (isSymbol(op, "not")) { compareOp(sb, "==", car(args), null, env, rsfx); return; }
+                    if (isSymbol(op, "eq"))   { compareOp(sb, "==", car(args), cadr(args), env, rsfx); return; }
+                    if (isSymbol(op, "null")) { compareOp(sb, "==", car(args), null, env, rsfx); return; }
 
 
 
