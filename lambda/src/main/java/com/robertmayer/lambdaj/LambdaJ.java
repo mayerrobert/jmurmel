@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.243 2020/11/22 08:37:43 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.244 2020/11/22 13:06:35 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -195,8 +195,11 @@ public class LambdaJ {
 
     private static class SExpConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
-        private final int lineNo, charNo;
-        private SExpConsCell(int line, int charNo, Object car, Object cdr)    { super(car, cdr); this.lineNo = line; this.charNo = charNo; }
+        private final int startLineNo, startCharNo, lineNo, charNo;
+        private SExpConsCell(int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
+            super(car, cdr);
+            this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
+        }
     }
 
     private static class ClosureConsCell extends ListConsCell {
@@ -411,9 +414,11 @@ public class LambdaJ {
             }
         }
 
+        private void skipWs() { while (isSpace(look)) { look = getchar(); } }
+
         private void readToken() {
             int index = 0;
-            while (isSpace(look)) { look = getchar(); }
+            skipWs();
             if (look != EOF) {
                 if (isSyntax(look)) {
                     token[index++] = look;  look = getchar();
@@ -491,24 +496,13 @@ public class LambdaJ {
                         return (LambdaJSymbol)symbol;
                     }
                 }
-            symbols = cons(sym, symbols);
+            symbols = cons(0, 0, sym, symbols);
             return sym;
         }
 
 
 
         /// S-expression parser
-        @Override
-        public Object readObj() {
-            if (!init) {
-                lineNo = 1; charNo = 0;
-                look = getchar();
-                init = true;
-            }
-            readToken();
-            return readObject();
-        }
-
         /** Record line and char numbers in the conses */
         public Object readObj(boolean pos) {
             this.pos = true;
@@ -517,9 +511,22 @@ public class LambdaJ {
             return ret;
         }
 
+        @Override
+        public Object readObj() {
+            if (!init) {
+                lineNo = 1; charNo = 0;
+                look = getchar();
+                init = true;
+            }
+            skipWs();
+            int startLine = lineNo, startChar = charNo;
+            readToken();
+            return readObject(startLine, startChar);
+        }
+
         private final Object quote = intern(new LambdaJSymbol("quote"));
 
-        private Object readObject() {
+        private Object readObject(int startLine, int startChar) {
             if (tok == null) {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return null;
@@ -531,26 +538,28 @@ public class LambdaJ {
                 throw new LambdaJError(true, "line %d:%d: unexpected ')'", lineNo, charNo);
             }
             if (!tokEscape && isToken(tok, "(")) {
-                int startLine = lineNo, startChar = charNo;
                 try {
-                final Object list = readList();
-                if (!tokEscape && isToken(tok, ".")) {
-                    final Object cdr = readList();
-                    if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
-                    final Object cons = combine(list, car(cdr));
-                    if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
-                    return cons;
-                }
-                if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
-                return list;
+                    final Object list = readList(startLine, startChar);
+                    if (!tokEscape && isToken(tok, ".")) {
+                        skipWs();
+                        final Object cdr = readList(lineNo, charNo);
+                        if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
+                        final Object cons = combine(startLine, startChar, list, car(cdr));
+                        if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
+                        return cons;
+                    }
+                    if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
+                    return list;
                 }
                 catch (ParseError e) {
-                    throw new LambdaJError(e.getMessage() + "\nerror occurred in S-expression starting after line " + startLine + ':' + startChar);
+                    throw new LambdaJError(e.getMessage() + "\nerror occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 }
             }
             if (!tokEscape && isToken(tok, "'")) {
+                skipWs();
+                int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                return cons(quote, cons(readObject(), null));
+                return cons(startLine, startChar, quote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
             }
             if (symbolp(tok)) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
@@ -560,36 +569,38 @@ public class LambdaJ {
             return tok;
         }
 
-        private Object readList() {
+        private Object readList(int startLine, int startChar) {
+            skipWs();
+            int _startLine = lineNo, _startChar = charNo;
             readToken();
             if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
             if (!tokEscape) {
                 if (isToken(tok, ")")) return null;
                 if (isToken(tok, ".")) return null;
             }
-            final Object tmp = readObject();
-            if (symbolp(tmp)) return cons(tmp, readList());
-            else return cons(tmp, readList());
+            final Object tmp = readObject(_startLine, _startChar);
+            skipWs();
+            return cons(startLine, startChar, tmp, readList(lineNo, charNo));
         }
 
         private boolean isToken(Object tok, String s) {
             return tok == null && s == null || tok != null && tok.toString().equalsIgnoreCase(s);
         }
 
-        private ListConsCell cons(Object car, Object cdr) {
-            return pos ? new SExpConsCell(lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
+        private ListConsCell cons(int startLine, int startChar, Object car, Object cdr) {
+            return pos ? new SExpConsCell(startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
         }
 
         /** Append rest at the end of first. If first is a list it will be modified. */
-        private ListConsCell combine(Object first, Object rest) {
-            if (consp(first)) return appendToList((ListConsCell)first, rest);
-            else return cons(first, rest);
+        private ListConsCell combine(int startLine, int startChar, Object first, Object rest) {
+            if (consp(first)) return appendToList(startLine, startChar, (ListConsCell)first, rest);
+            else return cons(startLine, startChar, first, rest);
         }
 
         /** Append rest at the end of first, modifying first in the process.
          *  Returns a dotted list unless rest is a proper list. */
         // ist das nconc (destructive concatenate) ?
-        private ListConsCell appendToList(ListConsCell first, Object rest) {
+        private ListConsCell appendToList(int startLine, int startChar, ListConsCell first, Object rest) {
             for (ListConsCell last = first; last != null; last = (ListConsCell) cdr(last)) {
                 if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
@@ -597,7 +608,7 @@ public class LambdaJ {
                     return first;
                 }
                 if (!consp(cdr(last))) {
-                    last.cdr = cons(last.cdr, rest);
+                    last.cdr = cons(startLine, startChar, last.cdr, rest);
                     return first;
                 }
             }
@@ -2964,12 +2975,18 @@ public class LambdaJ {
             return form.toString().equalsIgnoreCase(sym);
         }
 
+        private String lineInfo(Object form) {
+            if (!(form instanceof SExpConsCell)) return "";
+            SExpConsCell f = (SExpConsCell)form;
+            return "line " + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
+        }
+
         /** form is a list (symbol forms...) */
         private ConsCell defineGlobal(StringBuilder sb, ConsCell form, ConsCell env) {
             if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
             else {
                 env = extenv(car(form).toString(), 0, env);
-                sb.append("    // (define ").append(car(form)).append(" form)").append(System.lineSeparator());
+                sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)").append(System.lineSeparator());
                 sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
                 formToJava(sb, cadr(form), env, 0);
                 sb.append(';').append(System.lineSeparator()).append(System.lineSeparator());
@@ -2987,7 +3004,7 @@ public class LambdaJ {
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
             env = extenvfunc(sym.toString(), 0, env);
 
-            sb.append("    // (defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)").append(System.lineSeparator());
+            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)").append(System.lineSeparator());
             sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
@@ -3004,7 +3021,7 @@ public class LambdaJ {
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
                 if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
-                    ret.append("        // ").append(printSEx(form)).append(System.lineSeparator());
+                    ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append(System.lineSeparator());
                     ret.append("        result").append(rsfx).append(" = ");
                     formToJava(ret, form, env, rsfx);
                     ret.append(';').append(System.lineSeparator());

@@ -23,8 +23,6 @@ cdddr sollte als nthcdr(3) umgesetzt werden, caaar als nth(3), caddr als car(nth
 readObj koennte ArraySlice liefern, wenn eine sexpression mehr als X member hat, vielleicht als pratt parser umsetzen?
 -> dann gibts aber keinen platz fuer zeilennummern, also ggf einen gesonderten reader zum lesen von stdin basteln
 
-Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit der zeilennummer des beginns einer form? auch fuer "missing ) started at..."
-
 
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
@@ -1670,3 +1668,5 @@ CL hat die funktion null, Murmel hat not
 Parser Interface refactoren: aufteilen in FormProducer und Symboltable
 -> compiler- und interpreter-methoden koennen entweder einen Parser oder symtab/formproducer uebernehmen
 -> gibt aber eh schon ObjectReader und symboltable, muss man nur nutzen
+
+Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit der zeilennummer des beginns einer form? auch fuer "missing ) started at..."
