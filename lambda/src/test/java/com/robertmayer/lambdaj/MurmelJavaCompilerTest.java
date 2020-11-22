@@ -23,10 +23,9 @@ public class MurmelJavaCompilerTest {
     public void testForm() throws Exception {
         StringReader reader = new StringReader("(define a 2)");
         final SExpressionParser parser = new SExpressionParser(reader::read);
-        Object sexp = parser.readObj();
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
-        String java = c.formsToJavaProgram("Test", Collections.singletonList(sexp));
+        String java = c.formsToJavaProgram("Test", parser);
         assertNotNull("failed to compile Murmel to Java", java);
     }
 
@@ -37,15 +36,9 @@ public class MurmelJavaCompilerTest {
 
         StringReader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
-        final ArrayList<Object> program = new ArrayList<>();
-        while (true) {
-            Object sexp = parser.readObj(true);
-            if (sexp == null) break;
-            program.add(sexp);
-        }
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
-        Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, "target/test-1.0.zip");
+        Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
         MurmelJavaProgram instance = murmelClass.newInstance();
@@ -278,16 +271,10 @@ public class MurmelJavaCompilerTest {
     private MurmelJavaProgram compile(String source) throws Exception {
         StringReader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
-        final ArrayList<Object> program = new ArrayList<>();
-        while (true) {
-            Object sexp = parser.readObj();
-            if (sexp == null) break;
-            program.add(sexp);
-        }
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
-        Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", program, null);
-        assertNotNull("failed to compile Murmel to class:\n\n" + c.formsToJavaProgram("Test", program), murmelClass);
+        Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, null);
+        assertNotNull("failed to compile Murmel to class:\n\n" + c.formsToJavaProgram("Test", parser), murmelClass);
 
         return murmelClass.newInstance();
     }

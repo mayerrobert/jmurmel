@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.240 2020/11/22 05:58:42 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.241 2020/11/22 07:03:01 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2092,6 +2092,7 @@ public class LambdaJ {
         }
     }
 
+    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist
     private static void compileFiles(final List<String> files, LambdaJ interpreter, boolean toJar) {
         SExpressionParser parser = null;
         final List<Object> program = new ArrayList<>();
@@ -2802,11 +2803,23 @@ public class LambdaJ {
             });
         }
 
-        /// Wrapper to compile Murmel to a Java class and optionally a .jar
+        /// Wrappers to compile Murmel to a Java class and optionally a .jar
+        public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
+            Iterator<Object> i = forms.iterator();
+            ObjectReader r = () -> i.hasNext() ? i.next() : null;
+            return formsToApplicationClass(unitName, r, jarFile);
+        }
+
+        public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
+            Iterator<Object> i = forms.iterator();
+            ObjectReader r = () -> i.hasNext() ? i.next() : null;
+            return formsToJavaProgram(unitName, r);
+        }
+
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
-        public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
-            Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, formsToJavaProgram(unitName, forms));
+        public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
+            Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, formsToJavaProgram(unitName, unit));
             if (jarFile == null) return program;
 
             final Manifest mf = new Manifest();
@@ -2840,7 +2853,7 @@ public class LambdaJ {
 
         /// Wrapper to compile Murmel to Java source
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
-        public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
+        public String formsToJavaProgram(String unitName, ObjectReader unit) {
             ConsCell env = null;
             for (String global: MurmelJavaProgram.globalvars)         env = extenv(global, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), "_" + alias[1]), env);
@@ -2863,16 +2876,23 @@ public class LambdaJ {
                      + "        main(new " + clsName + "());\n"
                      + "    }\n\n");
 
+            ArrayList<Object> bodyForms = new ArrayList<>();
+            StringBuilder globals = new StringBuilder();
             Object result = null;
-            for (Object form: forms) {
+            Object form;
+            while (null != (form = unit.readObj())) {
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineGlobal(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
                 }
-                if (consp(form) && isSymbol(car(form), "defun")) {
+                else if (consp(form) && isSymbol(car(form), "defun")) {
                     env = defineGlobal(ret, cons(cadr(form), cons(cons(intern("lambda"), cddr(form)), null)), env);
                     result = cadr(form);
                 }
+                else bodyForms.add(form);
+
+                if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
+                    globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
             }
             // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
             if (result != null) result = "_intern(\"" + result.toString() + "\")";
@@ -2880,17 +2900,14 @@ public class LambdaJ {
             // generate getValue() for FFI
             ret.append("    public Object getValue(String symbol) {\n"
                      + "        switch (symbol) {\n");
-            for (Object form: forms)
-                if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
-                    ret.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
-
+            ret.append(globals);
             ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
                      + "        }\n"
                      + "    }\n\n");
 
             ret.append("    // toplevel forms\n");
             ret.append("    public Object body() {\n        Object result0 = " + result + ";\n");
-            formsToJava(ret, forms, env, 0);
+            formsToJava(ret, bodyForms, env, 0);
             ret.append("        return result0;\n    }\n");
 
             ret.append("}\n");

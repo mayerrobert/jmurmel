@@ -13,10 +13,6 @@ Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei dup
     -> damit koennte insertFront einfach arg ins environment stecken
 
 
-Parser Interface refactoren: aufteilen in FormProducer und Symboltable
--> compiler- und interpreter-methoden koennen entweder einen Parser oder symtab/formproducer uebernehmen
--> gibt aber eh schon ObjectReader und symboltable, muss man nur nutzen
-
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
 
@@ -1669,3 +1665,7 @@ ConsCell.car/cdr sollten nicht public sein, nur getter
 
 CL hat die funktion null, Murmel hat not
 -> doch wieder umbenamsen, null ist viel haeufiger sprechend als not
+
+Parser Interface refactoren: aufteilen in FormProducer und Symboltable
+-> compiler- und interpreter-methoden koennen entweder einen Parser oder symtab/formproducer uebernehmen
+-> gibt aber eh schon ObjectReader und symboltable, muss man nur nutzen
