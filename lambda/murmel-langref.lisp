@@ -222,13 +222,12 @@ nil
 ;;; == Additional Special Forms =======
 
 ;;; (define symbol object) -> symbol
-; define associates symbols in the global environment
-; with a value.
+; define associates symbols in the global environment with a value.
+; Murmel's define is somewhat similar to Common Lisp's defvar.
 ; Redefining already defined symbols is an error.
-; Redefining special forms is undefined
-; behaviour, i.e. it won't work as expected and may
-; throw an error in future versions. Same goes for
-; names of function parameters, let-bound variables,
+; Redefining special forms is undefined behaviour, i.e. it won't work
+; as expected and may throw an error in future versions.
+; Same goes for names of function parameters, let-bound variables,
 ; all symbol names really.
 ; The first argument is not evaluated, the second is
 (define *global-var* 42)
@@ -238,10 +237,6 @@ nil
 ; defun is a shorthand for defining functions
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
-
-;;; (eval form) -> object
-; form will be eval'd, it must return a form
-(eval '(+ 1 2))
 
 ;;; (if condform form optionalform) -> object
 
@@ -320,6 +315,10 @@ nil
 ; (cdr '(a b c)) ==> (b c)
 (cdr '(a b c))
 (cdr "abc") ; ==> "bc"
+
+;;; (eval form) -> object
+; form will be eval'd, it must return a form
+(eval '(+ 1 2))
 
 ; eq, null, atom, consp, listp, symbolp, numberp, stringp, characterp,
 
@@ -412,6 +411,9 @@ nil
 
 ;;; == Known issues ===================
 ;
+; Murmel language:
+; - apply probably shouldn't be a special form but a function.
+;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks,
     actually: most compile- and runtime errors will result in
@@ -424,6 +426,9 @@ nil
 ; - Reserved words if used are not reported as errors
 ;
 ; Interpreter:
+; - Interpreted eval is a special form that behaves like a function
+;   but should be really be a function.
+;   I.e. (apply eval '(+ 1 2)) won't work.
 ; - Interpreted eval has the current dynamic environment,
 ;   compiled eval has the global environment only. This
 ;   will probably change so that both have global environment.
@@ -440,4 +445,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.21 2020/11/22 05:58:41 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.22 2020/11/22 07:03:01 Robert Exp $
