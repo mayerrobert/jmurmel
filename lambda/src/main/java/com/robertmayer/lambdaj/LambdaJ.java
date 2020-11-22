@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.242 2020/11/22 08:04:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.243 2020/11/22 08:37:43 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -339,6 +339,11 @@ public class LambdaJ {
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     public static class SExpressionParser implements Parser {
+        private static class ParseError extends LambdaJError {
+            private static final long serialVersionUID = 1L;
+
+            ParseError(String msg, Object... args) { super(true, msg, args); }
+        }
         private final int features;
         private final TraceLevel trace;
         private final TraceConsumer tracer;
@@ -417,7 +422,7 @@ public class LambdaJ {
                         if (index < TOKEN_MAX) token[index++] = look;
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
-                    if (look == EOF) throw new LambdaJError(true, "line %d:%d: string literal is missing closing \"", lineNo, charNo);
+                    if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else if (isBar(look)) {
                     look = getchar();
@@ -425,7 +430,7 @@ public class LambdaJ {
                         if (index < SYMBOL_MAX) token[index++] = look;
                         look = getchar();
                     } while (look != EOF && !isBar(look));
-                    if (look == EOF) throw new LambdaJError(true, "line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
+                    if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
@@ -443,7 +448,7 @@ public class LambdaJ {
                     else tok = Long.valueOf(s);
                 }
                 catch (NumberFormatException e) {
-                    throw new LambdaJError(true, "line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token));
+                    throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token));
                 }
             } else if (haveString() && token[0] == '"') {
                 tok = tokenToString(token).substring(1);
@@ -526,6 +531,8 @@ public class LambdaJ {
                 throw new LambdaJError(true, "line %d:%d: unexpected ')'", lineNo, charNo);
             }
             if (!tokEscape && isToken(tok, "(")) {
+                int startLine = lineNo, startChar = charNo;
+                try {
                 final Object list = readList();
                 if (!tokEscape && isToken(tok, ".")) {
                     final Object cdr = readList();
@@ -536,6 +543,10 @@ public class LambdaJ {
                 }
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
                 return list;
+                }
+                catch (ParseError e) {
+                    throw new LambdaJError(e.getMessage() + "\nerror occurred in S-expression starting after line " + startLine + ':' + startChar);
+                }
             }
             if (!tokEscape && isToken(tok, "'")) {
                 readToken();
@@ -551,7 +562,7 @@ public class LambdaJ {
 
         private Object readList() {
             readToken();
-            if (tok == null) throw new LambdaJError(true, "line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
+            if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
             if (!tokEscape) {
                 if (isToken(tok, ")")) return null;
                 if (isToken(tok, ".")) return null;
