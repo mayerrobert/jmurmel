@@ -1,4 +1,39 @@
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2
+packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
+laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
+
+https://people.eecs.berkeley.edu/~bh/ssch27/appendix-cl.html
+beschreibt unterschiede zw. scheme und CL und ist damit ein guter ueberblick ueber CL, auch file open/ close
+
+Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
+-> umbenennen?
+-> frueher gabs anscheinend define mit einem parameter:
+    in LISP geht define so: (vgl. ABOUT LISP)
+    -> (define (first (lambda (x) (car x))))
+           first
+    -> damit koennte insertFront einfach arg ins environment stecken
+
+
+CL hat die funktion null, Murmel hat not
+-> doch wieder umbenamsen, null ist viel haeufiger sprechend als not
+
+Parser Interface refactoren: aufteilen in FormProducer und Symboltable
+-> compiler- und interpreter-methoden koennen entweder einen Parser oder symtab/formproducer uebernehmen
+-> gibt aber eh schon ObjectReader und symboltable, muss man nur nutzen
+
+ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
+-> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
+
+IntArraySlice, CharArraySlice, ...
+string->array koennte so ein CharArraySlice liefern, readbytes koennte ein ByteArraySlice liefern
+nth und nthcdr in ConsCell rein, fuer alle subklassen geeignet umsetzen
+cdddr sollte als nthcdr(3) umgesetzt werden, caaar als nth(3), caddr als car(nth(2)) usw., dann waeren die ArraySlices effizienter
+readObj koennte ArraySlice liefern, wenn eine sexpression mehr als X member hat, viellleicht als pratt parser umsetzen?
+
+Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit der zeilennummer des beginns einer form? auch fuer "missing ) started at..."
+
+
+
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
 
 https://github.com/phoe/cafe-latte
 CL conditions
@@ -13,6 +48,7 @@ circular list liefert nach der ersten runde hasNext() == false
 dotted list liefert beim zugriff auf letztes element letztes element das element
                                                                      hasNext() == false, hasNext(true) liefert das letzte element
                                                                      fehler
+sowohl mapcar wie auch maplist zulassen: der iterator liefert entweder nth(cursor++) oder nthcdr(cursor++)
 
 trace und features refactoren:
 nicht int features sondern Set<Features>
