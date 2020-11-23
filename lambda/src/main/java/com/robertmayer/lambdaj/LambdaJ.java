@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.244 2020/11/22 13:06:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.245 2020/11/22 17:55:55 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1132,9 +1132,9 @@ public class LambdaJ {
             else { this.arry = null; offset = -1; }
         }
 
-        private ArraySlice(Object[] arry, boolean noOffset) {
-            if (arry != null && arry.length > 0) { this.arry = arry; offset = 0; }
-            else { this.arry = null; offset = -1; }
+        private ArraySlice(Object[] arry, int offset) {
+            if (arry != null && arry.length > offset) { this.arry = arry; this.offset = offset; }
+            else { this.arry = null; this.offset = -1; }
         }
 
         private ArraySlice(ArraySlice slice) {
@@ -2688,7 +2688,7 @@ public class LambdaJ {
         protected Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
 
         protected ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
-        protected ConsCell _list    (Object... args) { return new ArraySlice(args, true); }
+        protected ConsCell _list    (Object... args) { return new ArraySlice(args, 0); }
 
         protected long     _round   (Object... args) { return Math.round(dbl(args[0])); }
         protected double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
@@ -2726,13 +2726,13 @@ public class LambdaJ {
         protected Object _ge      (Object... args) { return ge(args[0], args[1]); }
         protected Object _gt      (Object... args) { return gt(args[0], args[1]); }
 
-        protected Object _format             (Object... args) { return intp.format(new ArraySlice(args, true)); }
-        protected Object _formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, true)); }
+        protected Object _format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
+        protected Object _formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
 
         protected Object _getInternalRealTime(Object... args) { return getInternalRealTime(); }
         protected Object _getInternalRunTime (Object... args) { return getInternalRunTime(); }
         protected Object _getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
-        protected Object _sleep              (Object... args) { return sleep(new ArraySlice(args, true)); }
+        protected Object _sleep              (Object... args) { return sleep(new ArraySlice(args, 0)); }
         protected Object _getUniversalTime   (Object... args) { return getUniversalTime(); }
         protected Object _getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
@@ -2758,9 +2758,8 @@ public class LambdaJ {
         protected Object cdr (Object l)  { return LambdaJ.cdr(l); }
         protected ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
-        protected ConsCell arraySlice(Object[] o, boolean noOffset) {
-            if (noOffset) return new ArraySlice(o, true);
-            return new ArraySlice(o);
+        protected ConsCell arraySlice(Object[] o, int offset) {
+            return new ArraySlice(o, offset);
         }
 
         /** used for function calls */
@@ -2944,7 +2943,11 @@ public class LambdaJ {
 
         /** for compiling possibly recursive functions: extend the environment by putting (symbol this::_symname) in front of {@code prev} */
         private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
-            return cons(cons(intern(symname), "((MurmelFunction)this::" + mangle(symname, sfx) + ')'), prev);
+            return cons(cons(intern(symname), cons("((MurmelFunction)this::" + mangle(symname, sfx) + ')', null)), prev);
+        }
+
+        private ConsCell extenvfunc(String symname, ConsCell params, int sfx, ConsCell prev) {
+            return cons(cons(intern(symname), cons("((MurmelFunction)this::" + mangle(symname, sfx) + ')', params)), prev);
         }
 
         private LambdaJSymbol intern(String symname) {
@@ -2966,7 +2969,9 @@ public class LambdaJ {
             ConsCell symentry = assoc(form, env);
             if (symentry == null)
                 throw new LambdaJError(true, "undefined symbol %s", form.toString());
-            final String javasym = cdr(symentry).toString();
+            final String javasym;
+            if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
+            else javasym = (String)cdr(symentry);
             return javasym;
         }
 
@@ -2975,6 +2980,7 @@ public class LambdaJ {
             return form.toString().equalsIgnoreCase(sym);
         }
 
+        // todo nach LambdaJ verschieben und in errorExp nutzen
         private String lineInfo(Object form) {
             if (!(form instanceof SExpConsCell)) return "";
             SExpConsCell f = (SExpConsCell)form;
@@ -3002,7 +3008,7 @@ public class LambdaJ {
             Object body = cdr(cdr(car(cdr(form))));
 
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
-            env = extenvfunc(sym.toString(), 0, env);
+            env = extenvfunc(sym.toString(), 0, env); // todo auch die parameter ins env speichern, damit das bei applikation ausgewertet werden kann
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)").append(System.lineSeparator());
             sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
@@ -3011,7 +3017,7 @@ public class LambdaJ {
             formsToJava(sb, (ConsCell)body, extenv, rsfx);
             sb.append("        return result").append(rsfx).append(";\n    }\n\n");
 
-            return extenv;
+            return env;
         }
 
 
@@ -3129,11 +3135,12 @@ public class LambdaJ {
                     /// * function call todo teilw. vargargs mit dotted list gehen nicht
                     sb.append("funcall(");
                     formToJava(sb, op, env, rsfx);
-                    if (args != null)
-                        for (Object arg: (ConsCell)args) {
+                    if (args != null) {
+                        for (Object arg: (ConsCell)args) { // todo parameter aus env auslesen, varargs beruecksichtigen
                             sb.append(", ");
                             formToJava(sb, arg, env, rsfx);
                         }
+                    }
                     sb.append(')');
                     return;
                 }
@@ -3154,20 +3161,25 @@ public class LambdaJ {
             sb.append("        return result").append(rsfx).append(";\n        }).call()\n");
         }
 
+        // todo checks vgl zip
         private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
 
-            if (symbolp(paramList)) {
-                env = extenv(paramList.toString(), rsfx, env);
-                sb.append("        final Object ").append(javasym(paramList, env)).append(" = arraySlice(args").append(rsfx).append(", true);\n");
-                return env;
-            }
-
             int n = 0;
-            for (Object param: (ConsCell)paramList) {
-                env = extenv(param.toString(), rsfx, env);
-                sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
-                env = extenv(param.toString(), rsfx, env);
+            for (Object params = paramList; params != null; ) {
+                if (consp(params)) {
+                    Object param = car(params);
+                    env = extenv(param.toString(), rsfx, env);
+                    sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
+                }
+
+                else if (symbolp(params)) {
+                    env = extenv(params.toString(), rsfx, env);
+                    sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
+                    return env;
+                }
+
+                params = cdr(params);
             }
             return env;
         }

@@ -1,8 +1,13 @@
+ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
+-> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
+
+compiler varargs geht wsl nicht
+
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
-https://people.eecs.berkeley.edu/~bh/ssch27/appendix-cl.html
-beschreibt unterschiede zw. scheme und CL und ist damit ein guter ueberblick ueber CL, auch file open/ close
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
+
 
 Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
 -> umbenennen?
@@ -12,27 +17,9 @@ Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei dup
            first
     -> damit koennte insertFront einfach arg ins environment stecken
 
-
-ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
--> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
-
-IntArraySlice, CharArraySlice, ...
-string->array koennte so ein CharArraySlice liefern, readbytes koennte ein ByteArraySlice liefern
-nth und nthcdr in ConsCell rein, fuer alle subklassen geeignet umsetzen
-cdddr sollte als nthcdr(3) umgesetzt werden, caaar als nth(3), caddr als car(nth(2)) usw., dann waeren die ArraySlices effizienter
-readObj koennte ArraySlice liefern, wenn eine sexpression mehr als X member hat, vielleicht als pratt parser umsetzen?
--> dann gibts aber keinen platz fuer zeilennummern, also ggf einen gesonderten reader zum lesen von stdin basteln
+compilexx returned einen string. koennte stattdessen einen writer uebernehmen
 
 
-
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
-
-https://github.com/phoe/cafe-latte
-CL conditions
-dynamic variables
-tagbody go
-block/return-from
-restart
 
 ConsCell.iterator() ueberladen: iterator(typ) liefert verschiedene iteratoren:
 circular list liefert nach der ersten runde hasNext() == false
@@ -42,11 +29,11 @@ dotted list liefert beim zugriff auf letztes element letztes element das element
                                                                      fehler
 sowohl mapcar wie auch maplist zulassen: der iterator liefert entweder nth(cursor++) oder nthcdr(cursor++)
 
+
+
 trace und features refactoren:
 nicht int features sondern Set<Features>
 statt trace >= TRC_XXX.ordinal -> methode TraceLevel.ge(TraceLevel)
-
-compiler varargs geht wsl nicht
 
 anzahl parameter duerfen begrenzt werden, auch bei varargs
 -> hilft bei cdr(arg) im compiler, umsetzen, dokumentieren, global mit dem wert erfinden, vgl. http://...
@@ -69,7 +56,24 @@ funktion compile, und dem interpreter beibringen, wie kompilierte funktionen auf
 
 muss der compiler auch reserved words handeln?
 
-compilexx returned einen string. koennte stattdessen einen writer uebernehmen
+IntArraySlice, CharArraySlice, ...
+string->array koennte so ein CharArraySlice liefern, readbytes koennte ein ByteArraySlice liefern
+nth und nthcdr in ConsCell rein, fuer alle subklassen geeignet umsetzen
+cdddr sollte als nthcdr(3) umgesetzt werden, caaar als nth(3), caddr als car(nth(2)) usw., dann waeren die ArraySlices effizienter
+readObj koennte ArraySlice liefern, wenn eine sexpression mehr als X member hat, vielleicht als pratt parser umsetzen?
+-> dann gibts aber keinen platz fuer zeilennummern, also ggf einen gesonderten reader zum lesen von stdin basteln
+
+
+
+https://people.eecs.berkeley.edu/~bh/ssch27/appendix-cl.html
+beschreibt unterschiede zw. scheme und CL und ist damit ein guter ueberblick ueber CL, auch file open/ close
+
+https://github.com/phoe/cafe-latte
+CL conditions
+dynamic variables
+tagbody go
+block/return-from
+restart
 
 ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version
 -> https://franz.com/support/documentation/9.0/ansicl/dictentr/lisp-imp.htm
