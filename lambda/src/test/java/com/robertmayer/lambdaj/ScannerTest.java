@@ -4,6 +4,10 @@ import org.junit.Test;
 
 public class ScannerTest {
     @Test
+    public void testEmptyList() {
+        LambdaJTest.runTest("cons", "'()", "nil", null);
+    }
+    @Test
     public void testEscapedParens() {
         LambdaJTest.runTest("cons", "'(\\( b)", "(|(| b)", null);
     }

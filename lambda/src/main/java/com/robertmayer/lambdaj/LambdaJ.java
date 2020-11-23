@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.247 2020/11/23 06:51:46 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.248 2020/11/23 17:23:47 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -543,7 +543,7 @@ public class LambdaJ {
                     if (!tokEscape && isToken(tok, ".")) {
                         skipWs();
                         final Object cdr = readList(cons(lineNo, charNo));
-                        if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
+                        if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr)); // todo ParseError statt LambdaJError
                         final Object cons = combine(startLine, startChar, list, car(cdr));
                         if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
                         return cons;
@@ -570,18 +570,28 @@ public class LambdaJ {
         }
 
         private Object readList(ListConsCell cell) {
-            skipWs();
-            int carStartLine = lineNo, carStartChar = charNo;
-            readToken();
-            if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
-            if (!tokEscape) {
-                if (isToken(tok, ")")) return null;
-                if (isToken(tok, ".")) return null;
+            return readList(null, null, cell);
+        }
+
+        private Object readList(ListConsCell first, ListConsCell appendTo, ListConsCell newCell) {
+            for (;;) {
+                skipWs();
+                int carStartLine = lineNo, carStartChar = charNo;
+                readToken();
+                if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
+                if (!tokEscape) {
+                    if (isToken(tok, ")")) return first;
+                    if (isToken(tok, ".")) return first;
+                }
+                // todo cons sollte hier passieren, nicht beim aufrufer. zeilennummern plus unnoetige cons
+                if (first == null) first = newCell;
+                if (appendTo != null) appendTo.cdr = newCell;
+                appendTo = newCell;
+
+                newCell.car = readObject(carStartLine, carStartChar);
+                skipWs();
+                newCell = cons(lineNo, charNo);
             }
-            cell.car = readObject(carStartLine, carStartChar);
-            skipWs();
-            cell.cdr = readList(cons(lineNo, charNo));
-            return cell;
         }
 
         private boolean isToken(Object tok, String s) {
