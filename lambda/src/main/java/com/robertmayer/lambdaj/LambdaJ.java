@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.246 2020/11/23 06:50:10 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.247 2020/11/23 06:51:46 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -539,10 +539,10 @@ public class LambdaJ {
             }
             if (!tokEscape && isToken(tok, "(")) {
                 try {
-                    final Object list = readList(startLine, startChar);
+                    final Object list = readList(cons(startLine, startChar));
                     if (!tokEscape && isToken(tok, ".")) {
                         skipWs();
-                        final Object cdr = readList(lineNo, charNo);
+                        final Object cdr = readList(cons(lineNo, charNo));
                         if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
                         final Object cons = combine(startLine, startChar, list, car(cdr));
                         if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
@@ -569,18 +569,19 @@ public class LambdaJ {
             return tok;
         }
 
-        private Object readList(int startLine, int startChar) {
+        private Object readList(ListConsCell cell) {
             skipWs();
-            int _startLine = lineNo, _startChar = charNo;
+            int carStartLine = lineNo, carStartChar = charNo;
             readToken();
             if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
             if (!tokEscape) {
                 if (isToken(tok, ")")) return null;
                 if (isToken(tok, ".")) return null;
             }
-            final Object tmp = readObject(_startLine, _startChar);
+            cell.car = readObject(carStartLine, carStartChar);
             skipWs();
-            return cons(startLine, startChar, tmp, readList(lineNo, charNo));
+            cell.cdr = readList(cons(lineNo, charNo));
+            return cell;
         }
 
         private boolean isToken(Object tok, String s) {
@@ -589,6 +590,10 @@ public class LambdaJ {
 
         private ListConsCell cons(int startLine, int startChar, Object car, Object cdr) {
             return pos ? new SExpConsCell(startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
+        }
+
+        private ListConsCell cons(int startLine, int startChar) {
+            return pos ? new SExpConsCell(startLine, startChar, lineNo, charNo, null, null) : new ListConsCell(null, null);
         }
 
         /** Append rest at the end of first. If first is a list it will be modified. */
