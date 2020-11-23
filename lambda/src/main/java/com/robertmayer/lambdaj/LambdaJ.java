@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.248 2020/11/23 17:23:47 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.249 2020/11/23 18:45:40 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -539,11 +539,11 @@ public class LambdaJ {
             }
             if (!tokEscape && isToken(tok, "(")) {
                 try {
-                    final Object list = readList(cons(startLine, startChar));
+                    final Object list = readList(startLine, startChar);
                     if (!tokEscape && isToken(tok, ".")) {
                         skipWs();
-                        final Object cdr = readList(cons(lineNo, charNo));
-                        if (cdr(cdr) != null) throw new LambdaJError(true, "line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr)); // todo ParseError statt LambdaJError
+                        final Object cdr = readList(lineNo, charNo);
+                        if (cdr(cdr) != null) throw new ParseError("line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
                         final Object cons = combine(startLine, startChar, list, car(cdr));
                         if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
                         return cons;
@@ -569,11 +569,11 @@ public class LambdaJ {
             return tok;
         }
 
-        private Object readList(ListConsCell cell) {
-            return readList(null, null, cell);
+        private Object readList(int listStartLine, int listStartChar) {
+            return readList(listStartLine, listStartChar, null, null, null);
         }
 
-        private Object readList(ListConsCell first, ListConsCell appendTo, ListConsCell newCell) {
+        private Object readList(int listStartLine, int listStartChar, ListConsCell first, ListConsCell appendTo, ListConsCell newCell) {
             for (;;) {
                 skipWs();
                 int carStartLine = lineNo, carStartChar = charNo;
@@ -583,14 +583,14 @@ public class LambdaJ {
                     if (isToken(tok, ")")) return first;
                     if (isToken(tok, ".")) return first;
                 }
-                // todo cons sollte hier passieren, nicht beim aufrufer. zeilennummern plus unnoetige cons
+                newCell = cons(listStartLine, listStartChar);
                 if (first == null) first = newCell;
                 if (appendTo != null) appendTo.cdr = newCell;
                 appendTo = newCell;
 
                 newCell.car = readObject(carStartLine, carStartChar);
                 skipWs();
-                newCell = cons(lineNo, charNo);
+                listStartLine = lineNo; listStartChar = charNo;
             }
         }
 

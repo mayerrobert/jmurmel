@@ -288,7 +288,9 @@ public class LambdaJTest {
             fail("was expecting error: " + expectedExceptionMsgPfx);
         }
         catch (LambdaJ.LambdaJError e) {
-            assertTrue("got wrong exception message: " + e.getMessage(), e.getMessage().startsWith(expectedExceptionMsgPfx));
+            String msg = e.getMessage().replace("\\r", "");
+            String expected = expectedExceptionMsgPfx.replace("\\r", "");
+            assertTrue("got wrong exception message: " + e.getMessage(), msg.startsWith(expected));
         }
     }
 

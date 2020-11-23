@@ -10,8 +10,6 @@ Object f(p1, p2) {
   } while (false);
 }
 vgl. PROGITER aus "A Lisp Machine with Very Compact Programs, L.Peter Deutsch, 1973"
-
-Anatomy of LISP hat einen reader ohne rekursion
   
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
@@ -1689,3 +1687,5 @@ Parser Interface refactoren: aufteilen in FormProducer und Symboltable
 -> gibt aber eh schon ObjectReader und symboltable, muss man nur nutzen
 
 Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit der zeilennummer des beginns einer form? auch fuer "missing ) started at..."
+
+Anatomy of LISP hat einen reader ohne rekursion

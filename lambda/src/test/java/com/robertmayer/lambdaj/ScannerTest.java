@@ -67,4 +67,14 @@ public class ScannerTest {
     public void testExtraParens() {
         LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:4: unexpected ')'");
     }
+
+    @Test
+    public void testMissingParens() {
+        LambdaJTest.runErrorTest("openparen", "(1\n"
+                + "(2\n"
+                + "\n"
+                + "(3\n"
+                + "\n"
+                + "  )", "line 6:3: cannot read list. missing ')'?\nerror occurred in S-expression line 2:1..6:3");
+    }
 }
