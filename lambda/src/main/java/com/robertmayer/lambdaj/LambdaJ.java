@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.245 2020/11/22 17:55:55 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.246 2020/11/23 06:50:10 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3162,6 +3162,9 @@ public class LambdaJ {
         }
 
         // todo checks vgl zip
+        // unterschiede int/comp:
+        // (defun f (a b c . d) (writeln a) (writeln b) (writeln c) (writeln d))
+        // (f 1 2 3)
         private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
 
