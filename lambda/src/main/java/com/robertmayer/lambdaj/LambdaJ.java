@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.250 2020/11/23 19:20:46 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.251 2020/11/24 06:26:27 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2137,7 +2137,7 @@ public class LambdaJ {
         }
     }
 
-    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist
+    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
     private static void compileFiles(final List<String> files, LambdaJ interpreter, boolean toJar) {
         SExpressionParser parser = null;
         final List<Object> program = new ArrayList<>();
@@ -2782,7 +2782,7 @@ public class LambdaJ {
         protected ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
         protected ConsCell arraySlice(Object[] o, int offset) {
-            return new ArraySlice(o, offset);
+            return offset >= o.length ? null : new ArraySlice(o, offset);
         }
 
         /** used for function calls */
@@ -3185,9 +3185,6 @@ public class LambdaJ {
         }
 
         // todo checks vgl zip
-        // unterschiede int/comp:
-        // (defun f (a b c . d) (writeln a) (writeln b) (writeln c) (writeln d))
-        // (f 1 2 3)
         private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
 
