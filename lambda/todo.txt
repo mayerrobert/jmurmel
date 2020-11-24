@@ -13,6 +13,7 @@ vgl. PROGITER aus "A Lisp Machine with Very Compact Programs, L.Peter Deutsch, 1
   
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
+-> und nth und nthcdr, anschliessend caaar, cdddr, ... mit nth bzw. nthcdr implementieren
 
 compiler varargs geht wsl nicht
 
@@ -20,6 +21,10 @@ packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ 
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
+
+Den Compiler retargetable machen: methoden die Code ausspucken nach emit... umbenamsen und in eine klasse zusammenfassen, es koennte mehrere solche klassen
+fuer mehrere zielsprachen geben, formsTo... bekommen so eine instanz als parameter
+oder visitor pattern?
 
 
 Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)

@@ -27,13 +27,13 @@ public class SerializeTest {
         }
 
         private void internSymbols(Object o) {
-            if (o instanceof ListConsCell) {
-                final ListConsCell c = (ListConsCell) o;
+            if (o instanceof ConsCell) {
+                final ConsCell c = (ConsCell) o;
                 if (c.car() instanceof ConsCell) internSymbols(c.car());
-                else if (c.car() instanceof LambdaJSymbol) c.car = intern((LambdaJSymbol)c.car());
+                else if (c.car() instanceof LambdaJSymbol) c.rplaca(intern((LambdaJSymbol)c.car()));
 
                 if (c.cdr() instanceof ConsCell) internSymbols(c.cdr());
-                else if (c.cdr() instanceof LambdaJSymbol) c.cdr = intern((LambdaJSymbol)c.cdr);
+                else if (c.cdr() instanceof LambdaJSymbol) c.rplacd(intern((LambdaJSymbol)c.cdr()));
             }
         }
 

@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static junit.framework.Assert.*;
 
-import static com.robertmayer.lambdaj.LambdaJ.*;
+import static com.robertmayer.lambdaj.LambdaJ.ConsCell;
 
 public class PrintObjTest {
 
@@ -47,33 +47,33 @@ public class PrintObjTest {
     @Test
     public void listContainsSelf() {
         ConsCell l = ConsCell.cons("a", ConsCell.cons("b", ConsCell.cons("c", null)));
-        cdr(l).car = l;
+        cdr(l).rplaca(l);
         assertEquals("(a #<this list> c)", l.toString());
     }
 
     @Test
     public void circularList() {
         ConsCell l = ConsCell.cons("a", ConsCell.cons("b", ConsCell.cons("c", null)));
-        cdr(cdr(l)).cdr = l;
+        cdr(cdr(l)).rplacd(l);
         assertEquals("(a b c #<circular list>)", l.toString());
     }
 
     @Test
     public void consContainsSelfCar() {
-        ListConsCell c = ConsCell.cons("a", "b");
-        c.car = c;
+        ConsCell c = ConsCell.cons("a", "b");
+        c.rplaca(c);
         assertEquals("(#<this cons> . b)", c.toString());
     }
 
     @Test
     public void consContainsSelfCdr() {
-        ListConsCell c = ConsCell.cons("a", "b");
-        c.cdr = c;
+        ConsCell c = ConsCell.cons("a", "b");
+        c.rplacd(c);
         // if cdr is a cons then it's really a list
         assertEquals("(a #<circular list>)", c.toString());
     }
 
-    static ListConsCell cdr(Object l) {
-        return (ListConsCell)((ListConsCell)l).cdr;
+    static ConsCell cdr(Object l) {
+        return (ConsCell)((ConsCell)l).cdr();
     }
 }
