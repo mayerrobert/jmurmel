@@ -25,8 +25,10 @@ public class RecursionManualTest {
         assertEquals(5, f(5, 0));
     }
 
+
+
     interface MurmelProgn { Object call(); }
-    /*
+    /* geht nicht weil im lambda ist das label nicht sichtbar
     Object fProgn(Object... args) {
         Object a, n;
         recur:
@@ -45,6 +47,9 @@ public class RecursionManualTest {
     }
     */
 
+
+
+    // rekursion geht nicht im lambda
     Object fProgn(Object... args) {
         Object a, n;
         recur:
@@ -64,6 +69,39 @@ public class RecursionManualTest {
 
     @Test
     public void testEndRecursionProgn() {
+        assertEquals(5, fProgn(5, 0));
+    }
+
+
+
+    private static class Recursion extends RuntimeException { public static final long serialVersionUID = 1L; Recursion() { super("recursion", null, false, false); } }
+    private static final Recursion recursion = new Recursion();
+
+    Object fPrognThrow(Object... args) {
+        //Object a, n;
+        recur:
+        for (;;) {
+            //a = args[0];
+            //n = args[1];
+            for (;;) {
+                Object result = null;
+                try {
+                    result = ((MurmelProgn) () -> {
+                        if ((Integer)(args[0]) == 0) return args[1];
+                        else {
+                            args[0] = (Integer)(args[0])-1; args[1] = (Integer)(args[1])+1;
+                            throw recursion;
+                        }
+                    }).call();
+                }
+                catch (Recursion r) { continue recur; }
+                return result;
+            }
+        }
+    }
+
+    @Test
+    public void testEndRecursionPrognThrow() {
         assertEquals(5, fProgn(5, 0));
     }
 }
