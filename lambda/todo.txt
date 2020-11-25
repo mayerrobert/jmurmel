@@ -1,3 +1,11 @@
+LispPrinter soll linesep in strings umsetzen, ggf. waehlbar, falls waehlbar -> dokumentieren
+
+REPL muss teilw. noch linesep umsetzen
+
+erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
+
+
+
 funcToJava koennte selbstrekursive calls erkennen und statt call die parameter ersetzen und zum beginn springen:
 Object f(p1, p2) {
   recur:

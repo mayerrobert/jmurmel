@@ -104,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.253 2020/11/25 05:21:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.254 2020/11/25 08:27:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3353,7 +3353,7 @@ class NlUtil {
     /**
      * <p>From https://stackoverflow.com/questions/3776923/how-can-i-normalize-the-eol-character-in-java/27930311
      *
-     * <p>Accepts a non-null string and returns the string with all end-of-lines
+     * <p>Accepts a string and returns the string with all end-of-lines
      * normalized to a \n.  This means \r\n and \r will both be normalized to \n.
      * <p>
      *     Impl Notes:  Although regex would have been easier to code, this approach
