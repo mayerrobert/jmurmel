@@ -42,6 +42,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -103,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.252 2020/11/24 19:10:19 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.253 2020/11/25 05:21:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -342,8 +343,8 @@ public class LambdaJ {
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
         @Override public void printObj(Object o) { printSEx(out, o); }
-        @Override public void printString(String s) { out.print(s); }
         @Override public void printEol() { out.print(System.lineSeparator()); }
+        @Override public void printString(String s) { out.print(s); }
     }
 
     /// ## Scanner, symboltable and S-expression parser
@@ -394,13 +395,29 @@ public class LambdaJ {
             } catch (IOException e) { }
         }*/
 
+        /** Translate the various line end sequences \r, \r\n and \n all to \n */
+        private int prev = -1;
         private int readchar() throws IOException {
             int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
-            if (c == '\n') {
+            if (c == '\r') {
+                prev = c;
                 lineNo++;
                 charNo = 0;
-            } else if (c != '\r' && c != EOF) charNo++;
+                return '\n';
+            }
+            if (c == '\n' && prev == '\r') {
+                prev = c;
+                return readchar();
+            }
+            if (c == '\n') {
+                prev = c;
+                lineNo++;
+                charNo = 0;
+                return '\n';
+            }
+            prev = c;
+            if (c != EOF) charNo++;
             return c;
         }
 
@@ -522,6 +539,7 @@ public class LambdaJ {
         @Override
         public Object readObj() {
             if (!init) {
+                prev = -1;
                 lineNo = 1; charNo = 0;
                 look = getchar();
                 init = true;
@@ -2206,13 +2224,9 @@ public class LambdaJ {
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-                parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer, () -> {
-                    int c = System.in.read();
-                    if (echoHolder.value && c != EOF)
-                        if (istty && c == '\r') System.out.print(System.lineSeparator());
-                        else System.out.print((char)c);
-                    return c;
-                });
+                NlNormalizer read = new NlNormalizer();
+                parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
+                                               () -> { return read.read(echoHolder.value); });
                 interpreter.setSymtab(parser);
                 outWriter = new SExpressionWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
@@ -3016,10 +3030,10 @@ public class LambdaJ {
             if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
             else {
                 env = extenv(car(form).toString(), 0, env);
-                sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)").append(System.lineSeparator());
+                sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n");
                 sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
                 formToJava(sb, cadr(form), env, 0);
-                sb.append(';').append(System.lineSeparator()).append(System.lineSeparator());
+                sb.append(";\n\n");
                 return env;
             }
         }
@@ -3034,7 +3048,7 @@ public class LambdaJ {
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
             env = extenvfunc(sym.toString(), 0, env);
 
-            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)").append(System.lineSeparator());
+            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
             sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
@@ -3051,10 +3065,10 @@ public class LambdaJ {
         private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
                 if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
-                    ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append(System.lineSeparator());
+                    ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
                     ret.append("        result").append(rsfx).append(" = ");
                     formToJava(ret, form, env, rsfx);
-                    ret.append(';').append(System.lineSeparator());
+                    ret.append(';').append('\n');
                 }
             }
         }
@@ -3331,5 +3345,82 @@ class MurmelClassLoader extends ClassLoader {
         if (!Files.isReadable(p)) return null;
         p.toFile().deleteOnExit();
         return Files.readAllBytes(p);
+    }
+}
+
+class NlUtil {
+
+    /**
+     * <p>From https://stackoverflow.com/questions/3776923/how-can-i-normalize-the-eol-character-in-java/27930311
+     *
+     * <p>Accepts a non-null string and returns the string with all end-of-lines
+     * normalized to a \n.  This means \r\n and \r will both be normalized to \n.
+     * <p>
+     *     Impl Notes:  Although regex would have been easier to code, this approach
+     *     will be more efficient since it's purpose built for this use case.  Note we only
+     *     construct a new StringBuilder and start appending to it if there are new end-of-lines
+     *     to be normalized found in the string.  If there are no end-of-lines to be replaced
+     *     found in the string, this will simply return the input value.
+     *
+     * @param inputValue input value that may or may not contain new lines
+     * @return the input value that has new lines normalized
+     */
+    static String normalizeNewLines(String inputValue){
+        if (inputValue == null) return null;
+        if (inputValue.length() == 0) return "";
+
+        StringBuilder stringBuilder = null;
+        int index = 0;
+        int len = inputValue.length();
+        while (index < len) {
+            char c = inputValue.charAt(index);
+            if (c == '\r') {
+                if (stringBuilder == null) {
+                    stringBuilder = new StringBuilder();
+                    // build up the string builder so it contains all the prior characters
+                    stringBuilder.append(inputValue.substring(0, index));
+                }
+                if ((index + 1 < len) &&
+                    inputValue.charAt(index + 1) == '\n') {
+                    // this means we encountered a \r\n  ... move index forward one more character
+                    index++;
+                }
+                stringBuilder.append('\n');
+            } else {
+                if (stringBuilder != null){
+                    stringBuilder.append(c);
+                }
+            }
+            index++;
+        }
+        return stringBuilder == null ? inputValue : stringBuilder.toString();
+    }
+}
+
+/** A producer that reads from System.in. Various lineendings will all be translated to '\n'.
+ *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
+class NlNormalizer {
+
+    private int prev = -1;
+
+    public int read(boolean echo) throws IOException {
+        int c = System.in.read();
+        if (c == '\r') {
+            prev = c;
+            if (echo) System.out.print(System.lineSeparator());
+            return '\n';
+        }
+        if (c == '\n' && prev == '\r') {
+            prev = c;
+            return read(echo);
+        }
+        if (c == '\n') {
+            prev = c;
+            if (echo) System.out.print(System.lineSeparator());
+            return '\n';
+        }
+        prev = c;
+        if (echo && c != -1) System.out.print((char)c);
+        return c;
     }
 }

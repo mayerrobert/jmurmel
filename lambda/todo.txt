@@ -40,7 +40,6 @@ Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei dup
     -> damit koennte insertFront einfach arg ins environment stecken
 
 compilexx returned einen string. koennte stattdessen einen writer uebernehmen
-der compiler soll generell '\n' schreiben, derzeit ists eine mischung
 
 
 ConsCell.iterator() ueberladen: iterator(typ) liefert verschiedene iteratoren:
@@ -1702,3 +1701,5 @@ Parser Interface refactoren: aufteilen in FormProducer und Symboltable
 Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit der zeilennummer des beginns einer form? auch fuer "missing ) started at..."
 
 Anatomy of LISP hat einen reader ohne rekursion
+
+der compiler soll generell '\n' schreiben, derzeit ists eine mischung
