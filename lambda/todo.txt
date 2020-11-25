@@ -26,8 +26,6 @@ ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umset
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
 -> und nth und nthcdr, anschliessend caaar, cdddr, ... mit nth bzw. nthcdr implementieren
 
-compiler varargs geht wsl nicht
-
 statt environment als liste:
 environment als hashmap, fuer jedes symbol gibts eine liste von values
 -> aber das environment nach funktionsende abbauen ist aufwaendig
@@ -1713,3 +1711,5 @@ der compiler soll generell '\n' schreiben, derzeit ists eine mischung
 LispPrinter soll linesep in strings umsetzen, ggf. waehlbar, falls waehlbar -> dokumentieren
 
 REPL muss teilw. noch linesep umsetzen
+
+compiler varargs geht wsl nicht
