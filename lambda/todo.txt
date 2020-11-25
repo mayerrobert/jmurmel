@@ -1,6 +1,9 @@
-LispPrinter soll linesep in strings umsetzen, ggf. waehlbar, falls waehlbar -> dokumentieren
+letXXX und labels im compiler
 
-REPL muss teilw. noch linesep umsetzen
+packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
+laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
+
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
 
 erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
 
@@ -28,11 +31,6 @@ compiler varargs geht wsl nicht
 statt environment als liste:
 environment als hashmap, fuer jedes symbol gibts eine liste von values
 -> aber das environment nach funktionsende abbauen ist aufwaendig
-
-packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
-laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
-
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
 
 Den Compiler retargetable machen: methoden die Code ausspucken nach emit... umbenamsen und in eine klasse zusammenfassen, es koennte mehrere solche klassen
 fuer mehrere zielsprachen geben, formsTo... bekommen so eine instanz als parameter
@@ -1711,3 +1709,7 @@ Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit de
 Anatomy of LISP hat einen reader ohne rekursion
 
 der compiler soll generell '\n' schreiben, derzeit ists eine mischung
+
+LispPrinter soll linesep in strings umsetzen, ggf. waehlbar, falls waehlbar -> dokumentieren
+
+REPL muss teilw. noch linesep umsetzen
