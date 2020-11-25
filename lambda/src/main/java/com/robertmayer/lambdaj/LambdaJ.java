@@ -42,7 +42,6 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -104,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.254 2020/11/25 08:27:26 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.255 2020/11/25 09:52:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -141,6 +140,12 @@ public class LambdaJ {
         private static String getErrorExp(Object[] params) {
             if (params != null && params.length > 0 && params[params.length-1] instanceof ConsCell) return errorExp(params[params.length-1]);
             return "";
+        }
+
+        private static String errorExp(Object exp) {
+            if (exp == null) return "";
+            final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
+            return System.lineSeparator() + "error occurred in expression " + l + printSEx(exp);
         }
     }
 
@@ -337,13 +342,27 @@ public class LambdaJ {
     }
 
     /// ## Printer
-    /** This class will write objects as S-expressions to the given {@link WriteConsumer} */
+
+    /** return an ObjectWriter that transforms \n to the platform default line separator */
+    public static ObjectWriter makeWriter(WriteConsumer out) {
+        return makeWriter(out, System.lineSeparator());
+    }
+
+    /** return an ObjectWriter that transforms \n to the given {@code lineSeparator} */
+    public static ObjectWriter makeWriter(WriteConsumer out, String lineSeparator) {
+        if ("\r\n".equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r\n"));
+        if ("\r"  .equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r"));
+
+        return new SExpressionWriter(out);
+    }
+
+    /** This class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
     public static class SExpressionWriter implements ObjectWriter {
         private final WriteConsumer out;
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
         @Override public void printObj(Object o) { printSEx(out, o); }
-        @Override public void printEol() { out.print(System.lineSeparator()); }
+        @Override public void printEol() { out.print("\n"); }
         @Override public void printString(String s) { out.print(s); }
     }
 
@@ -578,7 +597,7 @@ public class LambdaJ {
                     return list;
                 }
                 catch (ParseError e) {
-                    throw new LambdaJError(e.getMessage() + "\nerror occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                    throw new LambdaJError(e.getMessage() + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 }
             }
             if (!tokEscape && isToken(tok, "'")) {
@@ -1468,12 +1487,6 @@ public class LambdaJ {
         }
     }
 
-    private static String errorExp(Object exp) {
-        if (exp == null) return "";
-        final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
-        return System.lineSeparator() + "error occurred in expression " + l + printSEx(exp);
-    }
-
     ///
     /// ## Summary
     /// That's (almost) all, folks.
@@ -1605,14 +1618,13 @@ public class LambdaJ {
         final String s = (String) car(a);
         final Object[] args = listToArray(cdr(a));
         try {
-            if (toString) return String.format(s, args);
+            if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
             if (!haveIO()) throw new LambdaJError(true, "%s: I/O is disabled", func);
             if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
-            lispPrinter.printString(String.format(s, args));
+            lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
             return null;
         } catch (IllegalFormatException e) {
-            throw new LambdaJError(true,
-                                   "%s: illegal format string and/ or arguments: %s\nerror ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+            throw new LambdaJError(true, "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
         }
     }
 
@@ -1633,20 +1645,20 @@ public class LambdaJ {
         final Object[] args = listToArray(cddr(a));
         try {
             if (locString == null) {
-                if (toString) return String.format(s, args);
+                if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
                 if (!haveIO()) throw new LambdaJError(true, "%s: I/O is disabled", func);
                 if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
-                lispPrinter.printString(String.format(s, args));
+                lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
                 return null;
             }
             Locale loc = Locale.forLanguageTag(locString);
-            if (toString) return String.format(loc, s, args);
+            if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args));
             if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
-            lispPrinter.printString(String.format(loc, s, args));
+            lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
             return null;
         } catch (IllegalFormatException e) {
             throw new LambdaJError(true,
-                    "%s: illegal format string and/ or arguments: %s\nerror ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+                    "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
         }
     }
 
@@ -2031,7 +2043,7 @@ public class LambdaJ {
         nCells = 0; maxEnvLen = 0;
         SExpressionParser parser = new SExpressionParser(features, trace, tracer, in);
         setSymtab(parser);
-        ObjectWriter outWriter = new SExpressionWriter(out);
+        ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
         final ConsCell env = environment(null);
         topEnv = env;
@@ -2050,7 +2062,7 @@ public class LambdaJ {
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
         Parser parser = new SExpressionParser(features, trace, tracer, program);
         ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in);
-        ObjectWriter outWriter = new SExpressionWriter(out);
+        ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
 
@@ -2224,11 +2236,11 @@ public class LambdaJ {
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-                NlNormalizer read = new NlNormalizer();
+                AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
                                                () -> { return read.read(echoHolder.value); });
                 interpreter.setSymtab(parser);
-                outWriter = new SExpressionWriter(System.out::print);
+                outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 env = interpreter.environment(null);
                 interpreter.topEnv = env;
@@ -3348,7 +3360,7 @@ class MurmelClassLoader extends ClassLoader {
     }
 }
 
-class NlUtil {
+class EolUtil {
 
     /**
      * <p>From https://stackoverflow.com/questions/3776923/how-can-i-normalize-the-eol-character-in-java/27930311
@@ -3365,7 +3377,7 @@ class NlUtil {
      * @param inputValue input value that may or may not contain new lines
      * @return the input value that has new lines normalized
      */
-    static String normalizeNewLines(String inputValue){
+    static String anyToUnixEol(String inputValue){
         if (inputValue == null) return null;
         if (inputValue.length() == 0) return "";
 
@@ -3399,7 +3411,7 @@ class NlUtil {
 
 /** A producer that reads from System.in. Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
-class NlNormalizer {
+class AnyToUnixEol {
 
     private int prev = -1;
 
@@ -3422,5 +3434,26 @@ class NlNormalizer {
         prev = c;
         if (echo && c != -1) System.out.print((char)c);
         return c;
+    }
+}
+
+class UnixToAnyEol implements LambdaJ.WriteConsumer {
+    final LambdaJ.WriteConsumer wrapped;
+    final String eol;
+
+    public UnixToAnyEol(LambdaJ.WriteConsumer wrapped, String eol) {
+        this.wrapped = wrapped;
+        this.eol = eol;
+    }
+
+    @Override
+    public void print(String s) {
+        if (s.indexOf('\n') == -1) { wrapped.print(s); return; }
+        int len = s.length();
+        for (int index = 0; index < len; index++) {
+            char c = s.charAt(index);
+            if (c == '\n') wrapped.print(eol);
+            else wrapped.print(String.valueOf(c));
+        }
     }
 }

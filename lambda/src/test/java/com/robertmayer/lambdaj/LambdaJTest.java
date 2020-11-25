@@ -288,8 +288,8 @@ public class LambdaJTest {
             fail("was expecting error: " + expectedExceptionMsgPfx);
         }
         catch (LambdaJ.LambdaJError e) {
-            String msg = e.getMessage().replace("\\r", "");
-            String expected = expectedExceptionMsgPfx.replace("\\r", "");
+            String msg = EolUtil.anyToUnixEol(e.getMessage());
+            String expected = EolUtil.anyToUnixEol(expectedExceptionMsgPfx);
             assertTrue("got wrong exception message: " + e.getMessage(), msg.startsWith(expected));
         }
     }
@@ -345,7 +345,7 @@ public class LambdaJTest {
         return exp.toString();
         */
         StringBuilder sExp = new StringBuilder();
-        new LambdaJ.SExpressionWriter(sExp::append).printObj(exp);
+        LambdaJ.makeWriter(sExp::append).printObj(exp);
         return sExp.toString();
     }
 }

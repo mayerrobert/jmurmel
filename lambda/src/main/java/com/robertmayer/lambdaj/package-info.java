@@ -16,6 +16,12 @@ and for compiling and using interpreted or compiled Murmel programs from within 
 
 
 <p><b>Line separators</b></p>
+
+<p>The internal representation of line separators is Unix-style, i.e. a character with the value 10.
+The external representation of line line separators is platform dependent,
+i.e. Java's System.lineSeparator will be used.
+(Except: generated Java source, see below.)
+
 <p>In the surface representation of Murmel any of "\n", "\r\n", "\r" are acceptable line separators.
 Note that line separators in Murmel source files only play a role inside multiline string literals and in counting lines for error messages,
 otherwise they are just whitespace.
@@ -30,6 +36,7 @@ This means that Murmel programs will only see "\n" as a line separator.
 
 <p>The compiler writes Java files with '\n' line separators.
 
+<p>Exception message texts will use the platform default line separator.
 
 
 <p><b>Copyright</b></p>
