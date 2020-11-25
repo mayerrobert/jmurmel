@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.251 2020/11/24 06:26:27 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.252 2020/11/24 19:10:19 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2969,6 +2969,7 @@ public class LambdaJ {
             return cons(cons(intern(symname), cons("((MurmelFunction)this::" + mangle(symname, sfx) + ')', null)), prev);
         }
 
+        // todo diese funktion steckt auf params ins env -> verwenden
         private ConsCell extenvfunc(String symname, ConsCell params, int sfx, ConsCell prev) {
             return cons(cons(intern(symname), cons("((MurmelFunction)this::" + mangle(symname, sfx) + ')', params)), prev);
         }
@@ -3031,7 +3032,7 @@ public class LambdaJ {
             Object body = cdr(cdr(car(cdr(form))));
 
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
-            env = extenvfunc(sym.toString(), 0, env); // todo auch die parameter ins env speichern, damit das bei applikation ausgewertet werden kann
+            env = extenvfunc(sym.toString(), 0, env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)").append(System.lineSeparator());
             sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
@@ -3155,11 +3156,11 @@ public class LambdaJ {
 
                     ///     - todo letxxx
 
-                    /// * function call todo teilw. vargargs mit dotted list gehen nicht
+                    /// * function call
                     sb.append("funcall(");
                     formToJava(sb, op, env, rsfx);
                     if (args != null) {
-                        for (Object arg: (ConsCell)args) { // todo parameter aus env auslesen, varargs beruecksichtigen
+                        for (Object arg: (ConsCell)args) {
                             sb.append(", ");
                             formToJava(sb, arg, env, rsfx);
                         }
