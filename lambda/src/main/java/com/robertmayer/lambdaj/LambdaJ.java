@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.257 2020/11/26 06:34:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.258 2020/11/26 07:18:55 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3111,9 +3111,10 @@ public class LambdaJ {
                 if (atom(form)) {
                     sb.append(printSEx(form));  return;
                 }
+
                 if (consp(form)) {
                     final Object op = car(form);
-                    Object args = cdr(form);
+                    final Object args = cdr(form);
 
                     /// * some functions and operators are compiled inline:
                     ///     - number operators
@@ -3124,14 +3125,14 @@ public class LambdaJ {
 
                     ///     - number compare operators
                     if (isSymbol(op, "="))  { compareNum(sb, "numbereq", args, env, rsfx); return; }
-                    if (isSymbol(op, "<"))  { compareNum(sb, "lt",  args,  env, rsfx); return; }
-                    if (isSymbol(op, "<=")) { compareNum(sb, "le", args, env, rsfx); return; }
-                    if (isSymbol(op, ">=")) { compareNum(sb, "ge", args, env, rsfx); return; }
-                    if (isSymbol(op, ">"))  { compareNum(sb, "gt",  args,  env, rsfx); return; }
+                    if (isSymbol(op, "<"))  { compareNum(sb, "lt",       args, env, rsfx); return; }
+                    if (isSymbol(op, "<=")) { compareNum(sb, "le",       args, env, rsfx); return; }
+                    if (isSymbol(op, ">=")) { compareNum(sb, "ge",       args, env, rsfx); return; }
+                    if (isSymbol(op, ">"))  { compareNum(sb, "gt",       args, env, rsfx); return; }
 
                     ///     - cons, car, cdr
                     if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
-                    if (isSymbol(op, "cdr"))  { sb.append("cdr(");   formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
+                    if (isSymbol(op, "cdr"))  { sb.append("cdr(");  formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
                     if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
 
                     ///     - eq, not
