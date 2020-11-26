@@ -3,7 +3,7 @@ letXXX und labels im compiler
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er ist
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
 
 erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
 

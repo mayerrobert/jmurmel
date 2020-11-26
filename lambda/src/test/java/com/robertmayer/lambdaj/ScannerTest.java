@@ -47,11 +47,6 @@ public class ScannerTest {
         LambdaJTest.runTest("dotted list short", "'((a b) . (c d))", "((a b) c d)", null);
     }
 
-    @Test
-    public void testListDotListShort2() {
-        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "line 1:12: illegal end of dotted list: (c d)");
-    }
-
 
     @Test
     public void testTwoElemList() {
@@ -76,5 +71,11 @@ public class ScannerTest {
                 + "(3\n"
                 + "\n"
                 + "  )", "line 6:3: cannot read list. missing ')'?\nerror occurred in S-expression line 2:1..6:3");
+    }
+
+
+    @Test
+    public void testListDotListShort2() {
+        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "line 1:12: illegal end of dotted list: (c d)");
     }
 }

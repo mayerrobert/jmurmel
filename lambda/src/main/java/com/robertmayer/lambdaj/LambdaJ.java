@@ -103,7 +103,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.255 2020/11/25 09:52:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.256 2020/11/25 17:10:42 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -144,7 +144,8 @@ public class LambdaJ {
 
         private static String errorExp(Object exp) {
             if (exp == null) return "";
-            final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
+            //final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
+            final String l = lineInfo(exp);
             return System.lineSeparator() + "error occurred in expression " + l + printSEx(exp);
         }
     }
@@ -209,7 +210,7 @@ public class LambdaJ {
 
     private static class SExpConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
-        private final int startLineNo, startCharNo, lineNo, charNo;
+        private int startLineNo, startCharNo, lineNo, charNo;
         private SExpConsCell(int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
             super(car, cdr);
             this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
@@ -384,6 +385,7 @@ public class LambdaJ {
 
         private boolean pos = false;
         private int lineNo = 1, charNo = 0;
+        private int prevLineNo = 1, prevCharNo = 0;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int look;
@@ -415,12 +417,14 @@ public class LambdaJ {
         }*/
 
         /** Translate the various line end sequences \r, \r\n and \n all to \n */
+        private void savePrevPos() { prevLineNo = lineNo; prevCharNo = charNo; }
         private int prev = -1;
         private int readchar() throws IOException {
             int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
             if (c == '\r') {
                 prev = c;
+                savePrevPos();
                 lineNo++;
                 charNo = 0;
                 return '\n';
@@ -431,12 +435,14 @@ public class LambdaJ {
             }
             if (c == '\n') {
                 prev = c;
+                savePrevPos();
                 lineNo++;
                 charNo = 0;
                 return '\n';
             }
             prev = c;
-            if (c != EOF) charNo++;
+            savePrevPos();
+            if (c != EOF) { charNo++; }
             return c;
         }
 
@@ -544,6 +550,10 @@ public class LambdaJ {
             return sym;
         }
 
+        private boolean isToken(Object tok, String s) {
+            return tok == null && s == null || tok != null && tok.toString().equalsIgnoreCase(s);
+        }
+
 
 
         /// S-expression parser
@@ -624,9 +634,9 @@ public class LambdaJ {
                 int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
                 if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
-                if (!tokEscape) {
-                    if (isToken(tok, ")")) return first;
-                    if (isToken(tok, ".")) return first;
+                if (!tokEscape && (isToken(tok, ")") || isToken(tok, "."))) {
+                    adjustEnd(first);
+                    return first;
                 }
                 newCell = cons(listStartLine, listStartChar);
                 if (first == null) first = newCell;
@@ -639,8 +649,12 @@ public class LambdaJ {
             }
         }
 
-        private boolean isToken(Object tok, String s) {
-            return tok == null && s == null || tok != null && tok.toString().equalsIgnoreCase(s);
+        private void adjustEnd(ConsCell c) {
+            if (c instanceof SExpConsCell) {
+                SExpConsCell lc = (SExpConsCell)c;
+                lc.lineNo = prevLineNo;
+                lc.charNo = prevCharNo;
+            }
         }
 
         private ListConsCell cons(int startLine, int startChar, Object car, Object cdr) {
@@ -1265,6 +1279,12 @@ public class LambdaJ {
     private static boolean  stringp(Object o)  { return o instanceof String; }
     private static boolean  characterp(Object o) { return o instanceof Character; }
 
+    private static String lineInfo(Object form) {
+        if (!(form instanceof SExpConsCell)) return "";
+        SExpConsCell f = (SExpConsCell)form;
+        return "line " + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
+    }
+
     private static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
@@ -1285,7 +1305,8 @@ public class LambdaJ {
         if (atom == null || maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a List but got %s", "assoc", printSEx(maybeList));
         for (Object env: (ConsCell) maybeList) {
-            if (atom == car(env)) return (ConsCell) env;
+            //ConsCell _env = (ConsCell)env;
+            if (atom == car(env)) return (ConsCell)env;
         }
         return null;
     }
@@ -2950,7 +2971,7 @@ public class LambdaJ {
             StringBuilder globals = new StringBuilder();
             Object result = null;
             Object form;
-            while (null != (form = unit.readObj())) {
+            while (null != (form = unit.readObj())) { // todo falls unit instanceof SExpPerser -> readObj(true)
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineGlobal(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
@@ -3028,13 +3049,6 @@ public class LambdaJ {
         /** return true if {@code form} matches the symbol {@code sym} */
         private boolean isSymbol(Object form, String sym) {
             return form.toString().equalsIgnoreCase(sym);
-        }
-
-        // todo nach LambdaJ verschieben und in errorExp nutzen
-        private String lineInfo(Object form) {
-            if (!(form instanceof SExpConsCell)) return "";
-            SExpConsCell f = (SExpConsCell)form;
-            return "line " + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
         }
 
         /** form is a list (symbol forms...) */
