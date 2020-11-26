@@ -1,5 +1,8 @@
 letXXX und labels im compiler
 
+vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
+oder endlich filevariables, die wuerden auch ins kompilierte programm reingepacht
+
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
