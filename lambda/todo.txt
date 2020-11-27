@@ -1,3 +1,5 @@
+compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
+
 letXXX und labels im compiler
 
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
@@ -7,7 +9,7 @@ ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 &
 
 erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
 -> in System.initializeSystemClass() werden die Properties line.separator, sun.stdout.encoding und sun.stderr.encoding ausgewertet
-   -> output muesste also passen
+   -> System.out und err schreiben Strings und chars anhand dieser properties, output muesste also passen
 -> gelesen wird von stdin byte fuer byte (bytes werden als int geliefert), bytes werden auf char gecastet, char ist unicode
    -> umstellen dass gelesene bytes in ein byte array gespeichert werden,
       und tokenToString wandelt dieses bytearray anschliessend mittels new String(b, Charset.getDefault())
