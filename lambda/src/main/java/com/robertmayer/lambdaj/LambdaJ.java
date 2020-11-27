@@ -104,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.260 2020/11/27 08:33:53 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.261 2020/11/27 15:04:53 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -390,10 +390,11 @@ public class LambdaJ {
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int look;
-        private int token[] = new int[TOKEN_MAX + 1]; // provide for trailing '\0'
+        private byte token[] = new byte[TOKEN_MAX * 2]; // "* 2" is in case all characters are 2-byte sequences
         private Object tok;
 
         public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in); }
+
         public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in) {
             this.features = features; this.trace = trace; this.tracer = tracer; this.in = in;
             this.charSet = Charset.defaultCharset();
@@ -475,10 +476,10 @@ public class LambdaJ {
             skipWs();
             if (look != EOF) {
                 if (isSyntax(look)) {
-                    token[index++] = look;  look = getchar();
+                    token[index++] = (byte) (0xff & look);  look = getchar();
                 } else if (haveString() && isDQuote(look)) {
                     do {
-                        if (index < TOKEN_MAX) token[index++] = look;
+                        if (index < TOKEN_MAX) token[index++] = (byte) (0xff & look);
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
                     if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
@@ -486,21 +487,23 @@ public class LambdaJ {
                 } else if (isBar(look)) {
                     look = getchar();
                     do {
-                        if (index < SYMBOL_MAX) token[index++] = look;
+                        if (index < SYMBOL_MAX) token[index++] = (byte) (0xff & look);
                         look = getchar();
                     } while (look != EOF && !isBar(look));
                     if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
-                        if (index < TOKEN_MAX) token[index++] = look;
+                        if (index < TOKEN_MAX) token[index++] = (byte) (0xff & look);
                         look = getchar();
                     }
                 }
             }
-            token[index] = '\0';
+            //token[index] = '\0';
 
-            if (haveDouble() && isNumber()) {
+            if (index == 0) {
+                tok = null;
+            } else if (haveDouble() && isNumber(token, index)) {
                 try {
                     String s = tokenToString(token, 0, index);
                     if (!haveLong() || s.indexOf('.') != -1 || s.indexOf('e') != -1 || s.indexOf('E') != -1) tok = Double.valueOf(s);
@@ -509,10 +512,8 @@ public class LambdaJ {
                 catch (NumberFormatException e) {
                     throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token, 0, index));
                 }
-            } else if (haveString() && token[0] == '"') {
+            } else if (haveString() && (token[0] & 0xff) == '"') {
                 tok = tokenToString(token, 1, index);
-            } else if (index == 0) {
-                tok = null;
             } else {
                 String s = tokenToString(token, 0, index);
                 if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
@@ -522,18 +523,15 @@ public class LambdaJ {
                 tracer.println("*** scan  token  |" + tok + '|');
         }
 
-        private boolean isNumber() {
-            final int first = token[0];
+        private boolean isNumber(byte[] tok, int len) {
+            final int first = 0xff & tok[0];
             if (isDigit(first)) return true;
-            return ((first == '-' || first == '+') && isDigit(token[1]));
+            return (len > 1 && (first == '-' || first == '+') && isDigit(0xff & tok[1]));
         }
 
         private final Charset charSet;
-        private String tokenToString(int[] s, int first, int end) {
-            byte[] b = new byte[end - first + 1];
-            for (int i = 0; i < end - first; i++)
-                b[i] = (byte)(0xff & s[i + first]);
-            return new String(b, 0, end - first, charSet);
+        private String tokenToString(byte[] b, int first, int end) {
+            return new String(b, first, end - first, charSet);
         }
 
 
