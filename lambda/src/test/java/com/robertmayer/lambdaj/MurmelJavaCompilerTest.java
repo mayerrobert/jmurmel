@@ -22,7 +22,7 @@ public class MurmelJavaCompilerTest {
     @Test
     public void testForm() throws Exception {
         StringReader reader = new StringReader("(define a 2)");
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         String java = c.formsToJavaProgram("Test", parser);
@@ -35,7 +35,7 @@ public class MurmelJavaCompilerTest {
                       + "(f \"Hello, \" \"World!\")";
 
         StringReader reader = new StringReader(source);
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, "target/test-1.0.zip");
@@ -270,7 +270,7 @@ public class MurmelJavaCompilerTest {
 
     private MurmelJavaProgram compile(String source) throws Exception {
         StringReader reader = new StringReader(source);
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, null);

@@ -104,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.261 2020/11/27 15:04:53 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.262 2020/11/27 17:14:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -393,11 +393,12 @@ public class LambdaJ {
         private byte token[] = new byte[TOKEN_MAX * 2]; // "* 2" is in case all characters are 2-byte sequences
         private Object tok;
 
-        public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in); }
+        /** Create an S-expression parser (==reader) with all features, no tracing and Java's default charset */
+        public SExpressionParser(ReadSupplier in, Charset charset) { this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, null); }
 
-        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in) {
+        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, Charset charset) {
             this.features = features; this.trace = trace; this.tracer = tracer; this.in = in;
-            this.charSet = Charset.defaultCharset();
+            this.charset = charset == null ? Charset.defaultCharset() : charset;
         }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
@@ -529,9 +530,9 @@ public class LambdaJ {
             return (len > 1 && (first == '-' || first == '+') && isDigit(0xff & tok[1]));
         }
 
-        private final Charset charSet;
+        private final Charset charset;
         private String tokenToString(byte[] b, int first, int end) {
-            return new String(b, first, end - first, charSet);
+            return new String(b, first, end - first, charset);
         }
 
 
@@ -2037,7 +2038,7 @@ public class LambdaJ {
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
         if (symtab == null) {
-            Parser scriptParser = new SExpressionParser(features, trace, tracer, in);
+            Parser scriptParser = new SExpressionParser(features, trace, tracer, in, null);
             setSymtab(scriptParser);
             final ConsCell env = environment(null);
             topEnv = env;
@@ -2064,7 +2065,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         nCells = 0; maxEnvLen = 0;
-        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in);
+        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null);
         setSymtab(parser);
         ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
@@ -2083,8 +2084,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        Parser parser = new SExpressionParser(features, trace, tracer, program);
-        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in);
+        Parser parser = new SExpressionParser(features, trace, tracer, program, null);
+        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null);
         ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
@@ -2199,7 +2200,7 @@ public class LambdaJ {
             Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
             try (Reader reader = Files.newBufferedReader(p)) {
-                if (parser == null) parser = new SExpressionParser(reader::read);
+                if (parser == null) parser = new SExpressionParser(reader::read, null);
                 else parser.setInput(reader::read);
                 while (true) {
                     Object sexp = parser.readObj(true);
@@ -2261,7 +2262,7 @@ public class LambdaJ {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                               () -> { return read.read(echoHolder.value); });
+                                               () -> { return read.read(echoHolder.value); }, null);
                 interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
@@ -2676,7 +2677,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, null), intp.getLispPrinter());
             _t = _intern("t");
         }
 

@@ -1,14 +1,17 @@
+charset als param fuer den scanner (null ist java default), programmcode sollte immer als utf-8 gelesen werden
+-> param "charset" einbauen und bei Parsern auf utf8 setzen (StandardCharsets.UTF_8)
+    -> ausser im REPL, weil dort kommt der Programmcode von der Konsole
+-> nur im Repl den gleichen Parser fuer program und read verwenden, sonst getrennte mit passender EOL konvertierung und charset
+
+AnyToUnixEol an diversen Stellen einhaengen, derzeit liest nur repl() richtig
+
+SExpReader liest bytes, das funktioniert so nicht mit StringReader(der liefert nicht bytes sondern unicode chars als ints)
+-> umstellen auf new ByteArrayInputStream(StandardCharsets.UTF_8, "...")
+
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
-erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
--> in System.initializeSystemClass() werden die Properties line.separator, sun.stdout.encoding und sun.stderr.encoding ausgewertet
-   -> System.out und err schreiben Strings und chars anhand dieser properties, output muesste also passen
--> gelesen wird von stdin byte fuer byte (bytes werden als int geliefert), bytes werden auf char gecastet, char ist unicode
-   -> umstellen dass gelesene bytes in ein byte array gespeichert werden,
-      und tokenToString wandelt dieses bytearray anschliessend mittels new String(b, Charset.getDefault())
-      Charset.getDefault liefert das Charset aus property file.encoding
-
 letXXX und labels im compiler
+named let in loop uebersetzen
 
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
@@ -1725,3 +1728,11 @@ LispPrinter soll linesep in strings umsetzen, ggf. waehlbar, falls waehlbar -> d
 REPL muss teilw. noch linesep umsetzen
 
 compiler varargs geht wsl nicht
+
+erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
+-> in System.initializeSystemClass() werden die Properties line.separator, sun.stdout.encoding und sun.stderr.encoding ausgewertet
+   -> System.out und err schreiben Strings und chars anhand dieser properties, output muesste also passen
+-> gelesen wird von stdin byte fuer byte (bytes werden als int geliefert), bytes werden auf char gecastet, char ist unicode
+   -> umstellen dass gelesene bytes in ein byte array gespeichert werden,
+      und tokenToString wandelt dieses bytearray anschliessend mittels new String(b, Charset.getDefault())
+      Charset.getDefault liefert das Charset aus property file.encoding

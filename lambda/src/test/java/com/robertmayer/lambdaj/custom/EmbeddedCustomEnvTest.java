@@ -23,7 +23,7 @@ public class EmbeddedCustomEnvTest {
 
         // our Lisp "program"
         StringReader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
-        Parser parser = new LambdaJ.SExpressionParser(program::read);
+        Parser parser = new LambdaJ.SExpressionParser(program::read, null);
 
         // empty "file" for stdin, simply return EOF
         ObjectReader inReader = () -> -1;
