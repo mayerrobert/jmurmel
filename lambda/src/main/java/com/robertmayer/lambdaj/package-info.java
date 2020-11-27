@@ -15,6 +15,17 @@ and for compiling and using interpreted or compiled Murmel programs from within 
 {@link com.robertmayer.lambdaj.LambdaJ.MurmelJavaProgram LambdaJ.MurmelJavaProgram} is the base class of compiled Murmel programs.
 
 
+<p><b>Character sets</b></p>
+<p>JMurmel internally uses Unicode characters.
+
+<p>The Lisp reader reads bytes from input,
+interprets these bytes according to the system default charset which can be configured using the Java system property 'file.encoding'
+and subsequently transforms bytes to strings.
+
+<p>The Lisp writer sends Unicode strings to Java's System.out which in turn writes bytes to the console.
+System.out does this translation according to the character set specified by the Java system property 'sun.stdout.encoding'.
+
+
 <p><b>Line separators</b></p>
 
 <p>The internal representation of line separators is Unix-style, i.e. a character with the value 10.

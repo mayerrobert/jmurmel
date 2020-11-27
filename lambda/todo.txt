@@ -1,12 +1,5 @@
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
-letXXX und labels im compiler
-
-packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
-laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
-
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
-
 erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
 -> in System.initializeSystemClass() werden die Properties line.separator, sun.stdout.encoding und sun.stderr.encoding ausgewertet
    -> System.out und err schreiben Strings und chars anhand dieser properties, output muesste also passen
@@ -15,8 +8,16 @@ erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren,
       und tokenToString wandelt dieses bytearray anschliessend mittels new String(b, Charset.getDefault())
       Charset.getDefault liefert das Charset aus property file.encoding
 
+letXXX und labels im compiler
+
+packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
+laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
+
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
+
 vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
 oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
+-> oder so lassen, weil interpreter, compiler und kompilate die System proterty line.separator auswerten
 
 
 

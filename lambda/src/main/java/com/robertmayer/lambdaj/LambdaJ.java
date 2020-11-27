@@ -17,6 +17,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -103,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.259 2020/11/26 07:28:05 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.260 2020/11/27 08:33:53 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -393,7 +394,10 @@ public class LambdaJ {
         private Object tok;
 
         public SExpressionParser(ReadSupplier in) { this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in); }
-        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in) { this.features = features; this.trace = trace; this.tracer = tracer; this.in = in; }
+        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in) {
+            this.features = features; this.trace = trace; this.tracer = tracer; this.in = in;
+            this.charSet = Charset.defaultCharset();
+        }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
         private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
@@ -498,19 +502,19 @@ public class LambdaJ {
 
             if (haveDouble() && isNumber()) {
                 try {
-                    String s = tokenToString(token);
+                    String s = tokenToString(token, 0, index);
                     if (!haveLong() || s.indexOf('.') != -1 || s.indexOf('e') != -1 || s.indexOf('E') != -1) tok = Double.valueOf(s);
                     else tok = Long.valueOf(s);
                 }
                 catch (NumberFormatException e) {
-                    throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token));
+                    throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token, 0, index));
                 }
             } else if (haveString() && token[0] == '"') {
-                tok = tokenToString(token).substring(1);
-            } else if (token[0] == '\0'){
+                tok = tokenToString(token, 1, index);
+            } else if (index == 0) {
                 tok = null;
             } else {
-                String s = tokenToString(token);
+                String s = tokenToString(token, 0, index);
                 if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                 tok = new LambdaJSymbol(s);
             }
@@ -524,12 +528,12 @@ public class LambdaJ {
             return ((first == '-' || first == '+') && isDigit(token[1]));
         }
 
-        private String tokenToString(int[] s) {
-            final StringBuilder ret = new StringBuilder(32);
-            int len = s.length, c;
-            for (int i = 0; i < len && (c = s[i++]) != '\0'; )
-                ret.append((char)c);
-            return ret.toString();
+        private final Charset charSet;
+        private String tokenToString(int[] s, int first, int end) {
+            byte[] b = new byte[end - first + 1];
+            for (int i = 0; i < end - first; i++)
+                b[i] = (byte)(0xff & s[i + first]);
+            return new String(b, 0, end - first, charSet);
         }
 
 
