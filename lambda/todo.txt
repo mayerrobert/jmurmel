@@ -3,8 +3,9 @@ StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
 -> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
 -> ausserdem sollte LispReader fuer JSR233 Programme von einem Reader lesen, nicht bytes als file.encoding interpretieren
 
-der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.getDefault() geschrieben
--> in ein UTF-8 file schreiben
+der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
+-> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
+-> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
@@ -68,8 +69,6 @@ Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei dup
     -> (define (first (lambda (x) (car x))))
            first
     -> damit koennte insertFront einfach arg ins environment stecken
-
-compilexx returned einen string. koennte stattdessen einen writer uebernehmen
 
 
 ConsCell.iterator() ueberladen: iterator(typ) liefert verschiedene iteratoren:
@@ -1761,3 +1760,7 @@ nur im Repl den gleichen Parser fuer program und read verwenden, sonst getrennte
 
 bytes mit charsetdecoder nach strings wandeln, mit CodingErrorAction.REPORT erzeugt unlesbarer input eine exception:
 https://www.baeldung.com/java-char-encoding
+
+der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.getDefault() geschrieben
+-> in ein UTF-8 file schreiben
+-> oder: compilexx returned einen string. koennte stattdessen einen writer uebernehmen

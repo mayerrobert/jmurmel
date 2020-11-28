@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
@@ -112,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.264 2020/11/28 10:30:11 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.265 2020/11/28 11:59:35 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2429,7 +2431,9 @@ public class LambdaJ {
         String clsName = className == null ? "MurmelProgram" : className.toString();
         //if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
-            System.out.println(c.formsToJavaProgram(clsName, history));
+            final WrappingWriter w = new WrappingWriter(new OutputStreamWriter(System.out));
+            c.formsToJavaProgram(w, clsName, history);
+            w.flush(); // flush but don't close System.out
             return true;
         }
 
@@ -2449,8 +2453,8 @@ public class LambdaJ {
 
         final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
         try (final OutputStream os = Files.newOutputStream(p);
-             final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, encoder))) {
-            writer.append(c.formsToJavaProgram(clsName, history));
+             final WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
+            c.formsToJavaProgram(writer, clsName, history);
             System.out.println("compiled to Java file '" + p.toString() + '\'');
             return true;
         }
@@ -2953,16 +2957,19 @@ public class LambdaJ {
             return formsToApplicationClass(unitName, r, jarFile);
         }
 
-        public String formsToJavaProgram(String unitName, Iterable<Object> forms) {
+        public WrappingWriter formsToJavaProgram(WrappingWriter ret, String unitName, Iterable<Object> forms) {
             Iterator<Object> i = forms.iterator();
             ObjectReader r = () -> i.hasNext() ? i.next() : null;
-            return formsToJavaProgram(unitName, r);
+            return formsToJavaProgram(ret, unitName, r);
         }
 
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
         public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
-            Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, formsToJavaProgram(unitName, unit));
+            final StringWriter w = new StringWriter();
+            final WrappingWriter ret = new WrappingWriter(w);
+            formsToJavaProgram(ret, unitName, unit);
+            final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
             if (jarFile == null) return program;
 
             final Manifest mf = new Manifest();
@@ -2996,27 +3003,26 @@ public class LambdaJ {
 
         /// Wrapper to compile Murmel to Java source
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
-        public String formsToJavaProgram(String unitName, ObjectReader unit) {
+        public WrappingWriter formsToJavaProgram(WrappingWriter ret, String unitName, ObjectReader unit) {
             ConsCell env = null;
             for (String global: MurmelJavaProgram.globalvars)         env = extenv(global, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), "_" + alias[1]), env);
             for (String prim: MurmelJavaProgram.primitives)           env = extenvfunc(prim, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::_" + alias[1]), env);
 
-            final StringBuilder ret = new StringBuilder();
             final String clsName;
             final int dotpos = unitName.lastIndexOf('.');
             if (dotpos == -1) {
                 clsName = unitName;
             } else {
-                ret.append("package " + unitName.substring(0, dotpos)).append(";\n\n");
+                ret.append("package ").append(unitName.substring(0, dotpos)).append(";\n\n");
                 clsName = unitName.substring(dotpos+1);
             }
             ret.append("import com.robertmayer.lambdaj.LambdaJ;\n"
                      + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
-                     + "public class " + clsName + " extends MurmelJavaProgram {\n"
+                     + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                      + "    public static void main(String[] args) {\n"
-                     + "        main(new " + clsName + "());\n"
+                     + "        main(new ").append(clsName).append("());\n"
                      + "    }\n\n");
 
             ArrayList<Object> bodyForms = new ArrayList<>();
@@ -3049,13 +3055,13 @@ public class LambdaJ {
                      + "    }\n\n");
 
             ret.append("    // toplevel forms\n");
-            ret.append("    public Object body() {\n        Object result0 = " + result + ";\n");
+            ret.append("    public Object body() {\n        Object result0 = ").append(result).append(";\n");
             formsToJava(ret, bodyForms, env, 0);
             ret.append("        return result0;\n    }\n");
 
             ret.append("}\n");
             //System.err.print(ret.toString());
-            return ret.toString();
+            return ret;
         }
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
@@ -3104,7 +3110,7 @@ public class LambdaJ {
         }
 
         /** form is a list (symbol forms...) */
-        private ConsCell defineGlobal(StringBuilder sb, ConsCell form, ConsCell env) {
+        private ConsCell defineGlobal(WrappingWriter sb, ConsCell form, ConsCell env) {
             if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
             else {
                 env = extenv(car(form).toString(), 0, env);
@@ -3117,7 +3123,7 @@ public class LambdaJ {
         }
 
         /** form is a list (symbol ((symbol...) forms...)) */
-        private ConsCell funcToJava(StringBuilder sb, ConsCell form, ConsCell env) {
+        private ConsCell funcToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             int rsfx = 0;
             Object sym = car(form);
             Object params = car(cdr(car(cdr(form))));
@@ -3140,7 +3146,7 @@ public class LambdaJ {
 
         /// formsToJava - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms */
-        private void formsToJava(StringBuilder ret, Iterable<Object> forms, ConsCell env, int rsfx) {
+        private void formsToJava(WrappingWriter ret, Iterable<Object> forms, ConsCell env, int rsfx) {
             for (Object form: forms) {
                 if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
                     ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
@@ -3152,7 +3158,7 @@ public class LambdaJ {
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
-        private void formToJava(StringBuilder sb, Object form, ConsCell env, int rsfx) {
+        private void formToJava(WrappingWriter sb, Object form, ConsCell env, int rsfx) {
             try {
 
                 /// * symbols
@@ -3273,14 +3279,14 @@ public class LambdaJ {
             }
         }
 
-        private void prognToJava(StringBuilder sb, ConsCell cond, ConsCell env, int rsfx) {
+        private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx) {
             sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, cond, env, rsfx);
             sb.append("        return result").append(rsfx).append(";\n        }).call()\n");
         }
 
         // todo checks vgl zip
-        private ConsCell params(StringBuilder sb, Object paramList, ConsCell env, int rsfx) {
+        private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
 
             int n = 0;
@@ -3304,7 +3310,7 @@ public class LambdaJ {
         }
 
         /** generate boolean op for one or two args */
-        private void compareOp(StringBuilder sb, String pred, Object lhs, Object rhs, ConsCell env, int rsfx) {
+        private void compareOp(WrappingWriter sb, String pred, Object lhs, Object rhs, ConsCell env, int rsfx) {
             sb.append('(').append('(');
             formToJava(sb, lhs, env, rsfx);
             sb.append(' ').append(pred).append(' ');
@@ -3313,19 +3319,19 @@ public class LambdaJ {
         }
 
         /** compare two numbers */
-        private void compareNum(StringBuilder sb, String pred, Object args, ConsCell env, int rsfx) {
+        private void compareNum(WrappingWriter sb, String pred, Object args, ConsCell env, int rsfx) {
             sb.append(pred).append('('); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')');
         }
 
         /** generate double operator for zero or more number args */
-        private void addDbl(StringBuilder sb, String op, double start, Object args, ConsCell env, int rsfx) {
+        private void addDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, int rsfx) {
             sb.append('(').append(start);
             if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
             sb.append(')');
         }
 
         /** generate double operator for one or more number args */
-        private void subDbl(StringBuilder sb, String op, double start, Object args, ConsCell env, int rsfx) {
+        private void subDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, int rsfx) {
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, rsfx); }
             else {
@@ -3336,12 +3342,12 @@ public class LambdaJ {
         }
 
         /** eval form and change to double */
-        private void asDouble(StringBuilder sb, Object form, ConsCell env, int rsfx) {
+        private void asDouble(WrappingWriter sb, Object form, ConsCell env, int rsfx) {
             //sb.append("((Number)"); formToJava(sb, o, env, rsfx); sb.append(").doubleValue()");
             sb.append("dbl("); formToJava(sb, form, env, rsfx); sb.append(')');
         }
 
-        private void quotedFormToJava(StringBuilder sb, Object form) {
+        private void quotedFormToJava(WrappingWriter sb, Object form) {
             if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
 
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
@@ -3530,5 +3536,43 @@ class UnixToAnyEol implements LambdaJ.WriteConsumer {
             if (c == '\n') wrapped.print(eol);
             else wrapped.print(String.valueOf(c));
         }
+    }
+}
+
+class WrappingWriter extends Writer {
+    private final Writer wrapped;
+
+    WrappingWriter(Writer w) { wrapped = w; }
+
+    @Override public WrappingWriter append(CharSequence cs) { String s = cs.toString(); write(s, 0, s.length()); return this; }
+    @Override public WrappingWriter append(char c)          { String s = String.valueOf(c); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(int n)           { String s = String.valueOf(n); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(double d)        { String s = String.valueOf(d); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(Object o)        { String s = String.valueOf(o); write(s, 0, s.length()); return this; }
+
+
+
+    @Override
+    public void write(String s, int off, int len) {
+        try { wrapped.write(s, off, len); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+    }
+
+    @Override
+    public void write(char[] cbuf, int off, int len) {
+        try { wrapped.write(cbuf, off, len); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+    }
+
+    @Override
+    public void flush() {
+        try { wrapped.flush(); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+    }
+
+    @Override
+    public void close() {
+        try { wrapped.close(); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
     }
 }

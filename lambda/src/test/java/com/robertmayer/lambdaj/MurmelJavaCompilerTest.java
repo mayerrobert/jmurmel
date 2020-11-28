@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
@@ -25,7 +26,9 @@ public class MurmelJavaCompilerTest {
         final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
-        String java = c.formsToJavaProgram("Test", parser);
+        StringWriter w = new StringWriter();
+        c.formsToJavaProgram(new WrappingWriter(w), "Test", parser);
+        String java = w.toString();
         assertNotNull("failed to compile Murmel to Java", java);
     }
 
@@ -274,7 +277,10 @@ public class MurmelJavaCompilerTest {
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, null);
-        assertNotNull("failed to compile Murmel to class:\n\n" + c.formsToJavaProgram("Test", parser), murmelClass);
+        StringWriter w = new StringWriter();
+        c.formsToJavaProgram(new WrappingWriter(w), "Test", parser);
+        String s = w.toString();
+        assertNotNull("failed to compile Murmel to class:\n\n" + s, murmelClass);
 
         return murmelClass.newInstance();
     }
