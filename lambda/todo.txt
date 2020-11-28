@@ -1,6 +1,7 @@
-JSR223: evalScript will einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
+JSR223: evalScript will fuer den Code einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
 StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
 -> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
+-> ausserdem sollte LispReader fuer JSR233 Programme von einem Reader lesen, nicht bytes als file.encoding interpretieren
 
 der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.getDefault() geschrieben
 -> in ein UTF-8 file schreiben
@@ -8,15 +9,19 @@ der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.g
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
 letXXX und labels im compiler
-named let in loop uebersetzen
+named let in einen Java loop uebersetzen. damits in generierten lambdas funkt, muss fuer den rekursiven aufruf wohl eine exception missbraucht werden
+recurs:
+for (;;) {
+  try {
+    // args neu belegen
+    throw RecursionException();
+  } catch (RecursionException e) { continue recurs; }
+}
 
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
-
-bytes mit charsetdecoder nach strings wandeln, mit CodingErrorAction.REPORT erzeugt unlesbarer input eine exception:
-https://www.baeldung.com/java-char-encoding
 
 vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
 oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
@@ -1753,3 +1758,6 @@ charset als param fuer den scanner (null ist java default), programmcode sollte 
 AnyToUnixEol an diversen Stellen einhaengen, derzeit liest nur repl() richtig
 
 nur im Repl den gleichen Parser fuer program und read verwenden, sonst getrennte mit passender EOL konvertierung und charset
+
+bytes mit charsetdecoder nach strings wandeln, mit CodingErrorAction.REPORT erzeugt unlesbarer input eine exception:
+https://www.baeldung.com/java-char-encoding
