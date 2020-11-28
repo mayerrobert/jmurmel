@@ -17,9 +17,17 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnmappableCharacterException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -104,7 +112,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.263 2020/11/27 21:11:24 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.264 2020/11/28 10:30:11 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -547,7 +555,31 @@ public class LambdaJ {
 
         private final Charset charset;
         private String tokenToString(byte[] b, int first, int end) {
-            return new String(b, first, end - first, charset);
+            //return new String(b, first, end - first, charset);
+
+            // based on StringCoding.StringDecoder.decode()
+            CharsetDecoder cd = charset.newDecoder();
+            cd.onMalformedInput(CodingErrorAction.REPORT)
+              .onUnmappableCharacter(CodingErrorAction.REPORT)
+              .reset();
+            ByteBuffer bb = ByteBuffer.wrap(b, first, end - first);
+            char[] ca = new char[TOKEN_MAX];
+            CharBuffer cb = CharBuffer.wrap(ca);
+            try {
+                CoderResult cr = cd.decode(bb, cb, true);
+                if (!cr.isUnderflow())
+                    cr.throwException();
+                cr = cd.flush(cb);
+                if (!cr.isUnderflow())
+                    cr.throwException();
+            } catch (MalformedInputException x) {
+                throw new ParseError("error converting token %s to charset %s: malformed input", new String(b, first, end - first, charset), charset.displayName());
+            } catch (UnmappableCharacterException x) {
+                throw new ParseError("error converting token %s to charset %s: unmappable character", new String(b, first, end - first, charset), charset.displayName());
+            } catch (CharacterCodingException x) {
+                throw new ParseError("error converting token %s to charset %s", new String(b, first, end - first, charset), charset.displayName());
+            }
+            return new String(ca, 0, cb.position());
         }
 
 
@@ -2261,6 +2293,8 @@ public class LambdaJ {
     /** Enter REPL, doesn't return */
     private static void repl(final LambdaJ interpreter, final boolean istty, final boolean echo) {
         final BoolHolder echoHolder = new BoolHolder(echo);
+        String consoleCharsetName = System.getProperty("sun.stdout.encoding");
+        Charset consoleCharset = Charset.forName(consoleCharsetName);
 
         if (!echoHolder.value) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
@@ -2277,7 +2311,7 @@ public class LambdaJ {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                               () -> { return read.read(echoHolder.value); }, Charset.defaultCharset(), true);
+                                               () -> { return read.read(echoHolder.value); }, consoleCharset, true);
                 interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;

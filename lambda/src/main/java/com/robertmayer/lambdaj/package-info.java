@@ -25,12 +25,14 @@ The translation from "external" to "internal" is somewhat messy and involved:
 interprets these bytes according to the UTF-8 characterset
 and subsequently transforms bytes to Unicode strings.
 
-<p>EXCEPT: the Repl interprets input according to Java's default characterset (which can be configured using the Java system property 'file.encoding').
-Note that e.g. on Windows the default value of file.encoding is 'Cp1252' but input read from System.in is encoded in 'cp850'
+<p>EXCEPT: the Repl interprets input according to the characterset specified by the Java system property 'sun.stdout.encoding').
 
 <p>The default Lisp writer {@link LambdaJ.SExpressionWriter} sends Unicode strings to Java's System.out
 which in turn writes bytes to the console or a redirected file.
 Java's System.out does this translation according to Java's system default characterset (which can be configured by the Java system property 'sun.stdout.encoding').
+
+<p>JMurmel does not use the system property 'file.encoding'. TODO except LispReader for JSR223 programs.
+Note that e.g. on Windows the default value of file.encoding is 'Cp1252' but input read from System.in is encoded in 'cp850'.
 
 
 <p><b>Line separators</b></p>
