@@ -1,12 +1,9 @@
-charset als param fuer den scanner (null ist java default), programmcode sollte immer als utf-8 gelesen werden
--> param "charset" einbauen und bei Parsern auf utf8 setzen (StandardCharsets.UTF_8)
-    -> ausser im REPL, weil dort kommt der Programmcode von der Konsole
--> nur im Repl den gleichen Parser fuer program und read verwenden, sonst getrennte mit passender EOL konvertierung und charset
+JSR223: evalScript will einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
+StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
+-> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
 
-AnyToUnixEol an diversen Stellen einhaengen, derzeit liest nur repl() richtig
-
-SExpReader liest bytes, das funktioniert so nicht mit StringReader(der liefert nicht bytes sondern unicode chars als ints)
--> umstellen auf new ByteArrayInputStream(StandardCharsets.UTF_8, "...")
+der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.getDefault() geschrieben
+-> in ein UTF-8 file schreiben
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
@@ -17,6 +14,9 @@ packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ 
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
+
+bytes mit charsetdecoder nach strings wandeln, mit CodingErrorAction.REPORT erzeugt unlesbarer input eine exception:
+https://www.baeldung.com/java-char-encoding
 
 vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
 oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
@@ -40,6 +40,12 @@ vgl. PROGITER aus "A Lisp Machine with Very Compact Programs, L.Peter Deutsch, 1
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
 -> und nth und nthcdr, anschliessend caaar, cdddr, ... mit nth bzw. nthcdr implementieren
+-> achtung: es koennten mehrere ArraySlices auf das selbe array zeigen.
+   -> Vor naiv implementiertem rplacd: alle ArraySlices zeigen auf die gleichen daten,
+      aenderung ueber ein slice ist in den anderen sichtbar
+   -> nachdem ein ArraySlice das array durch ein anderes ersetzt hat: slices zeigen auf verschiedene daten,
+      anderungen ueber ein slice sind NICHT mehr in anderen sichtbar-> FEHLER
+   -> rplacd ist nur fuer ListConsCell umsetzbar, nicht fuer ArraySlice, rplaca wuerd wsl gehen
 
 statt environment als liste:
 environment als hashmap, fuer jedes symbol gibts eine liste von values
@@ -1736,3 +1742,14 @@ erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren,
    -> umstellen dass gelesene bytes in ein byte array gespeichert werden,
       und tokenToString wandelt dieses bytearray anschliessend mittels new String(b, Charset.getDefault())
       Charset.getDefault liefert das Charset aus property file.encoding
+
+SExpReader liest bytes, das funktioniert so nicht mit StringReader(der liefert nicht bytes sondern unicode chars als ints)
+-> umstellen auf new ByteArrayInputStream(StandardCharsets.UTF_8, "...")
+
+charset als param fuer den scanner (null ist java default), programmcode sollte immer als utf-8 gelesen werden
+-> param "charset" einbauen und bei Parsern auf utf8 setzen (StandardCharsets.UTF_8)
+    -> ausser im REPL, weil dort kommt der Programmcode von der Konsole
+
+AnyToUnixEol an diversen Stellen einhaengen, derzeit liest nur repl() richtig
+
+nur im Repl den gleichen Parser fuer program und read verwenden, sonst getrennte mit passender EOL konvertierung und charset

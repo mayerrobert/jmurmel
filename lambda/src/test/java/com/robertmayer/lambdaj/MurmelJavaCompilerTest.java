@@ -2,10 +2,10 @@ package com.robertmayer.lambdaj;
 
 import static org.junit.Assert.*;
 
-import java.io.StringReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 
 import org.junit.Test;
 import com.robertmayer.lambdaj.LambdaJ.*;
@@ -21,7 +21,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testForm() throws Exception {
-        StringReader reader = new StringReader("(define a 2)");
+        InputStream reader = new ByteArrayInputStream("(define a 2)".getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
@@ -34,7 +34,7 @@ public class MurmelJavaCompilerTest {
         String source = "(define f (lambda (a b) (write a) (write b)))"
                       + "(f \"Hello, \" \"World!\")";
 
-        StringReader reader = new StringReader(source);
+        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
@@ -269,7 +269,7 @@ public class MurmelJavaCompilerTest {
 
 
     private MurmelJavaProgram compile(String source) throws Exception {
-        StringReader reader = new StringReader(source);
+        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));

@@ -8,8 +8,12 @@ public class Echo {
 
     public static void main(String[] args) throws IOException {
         System.out.print("file.encoding:       ");  System.out.println(System.getProperty("file.encoding"));
+        System.out.print("sun.jnu.encoding:    ");  System.out.println(System.getProperty("sun.jnu.encoding"));
         System.out.print("sun.stdout.encoding: ");  System.out.println(System.getProperty("sun.stdout.encoding"));
         System.out.print("sun.stderr.encoding: ");  System.out.println(System.getProperty("sun.stderr.encoding"));
+
+        // doesn't exist, or rather: Java doesn't set/ use this property
+        System.out.print("sun.stdin.encoding:  ");  System.out.println(System.getProperty("sun.stdin.encoding"));
 
         System.out.print("This is a string with an embedded '\n' and trailing newline character\n");
         String s = "";

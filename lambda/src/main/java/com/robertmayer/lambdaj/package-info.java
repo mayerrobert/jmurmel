@@ -17,10 +17,16 @@ and for compiling and using interpreted or compiled Murmel programs from within 
 
 <p><b>Charactersets</b></p>
 <p>JMurmel internally uses Unicode strings and characters.
+The translation from "external" to "internal" is somewhat messy and involved:
+
+<p>"Outside" can be ...tbd
 
 <p>The default Lisp reader {@link LambdaJ.SExpressionParser} reads bytes from input,
-interprets these bytes according to Java's system default characterset (which can be configured using the Java system property 'file.encoding')
+interprets these bytes according to the UTF-8 characterset
 and subsequently transforms bytes to Unicode strings.
+
+<p>EXCEPT: the Repl interprets input according to Java's default characterset (which can be configured using the Java system property 'file.encoding').
+Note that e.g. on Windows the default value of file.encoding is 'Cp1252' but input read from System.in is encoded in 'cp850'
 
 <p>The default Lisp writer {@link LambdaJ.SExpressionWriter} sends Unicode strings to Java's System.out
 which in turn writes bytes to the console or a redirected file.

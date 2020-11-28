@@ -9,9 +9,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -104,7 +104,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.262 2020/11/27 17:14:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.263 2020/11/27 21:11:24 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -393,12 +393,26 @@ public class LambdaJ {
         private byte token[] = new byte[TOKEN_MAX * 2]; // "* 2" is in case all characters are 2-byte sequences
         private Object tok;
 
-        /** Create an S-expression parser (==reader) with all features, no tracing and Java's default charset */
-        public SExpressionParser(ReadSupplier in, Charset charset) { this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, null); }
+        /** Create an S-expression parser (==reader) with all features, no tracing,
+         *  characterset {@code charset} (if {@code charset == null} then UTF-8 will be used) and EOL conversion.
+         *
+         *  @param in a {@link ReadSupplier} that supplies bytes in charset {@code charset}, {@code InputStream::read} will work,
+         *            {@code Reader::read} won't work because that doesn't supply bytes but (Unicode-) characters
+         */
+        public SExpressionParser(ReadSupplier in, Charset charset) {
+            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, null, true);
+        }
 
-        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, Charset charset) {
-            this.features = features; this.trace = trace; this.tracer = tracer; this.in = in;
-            this.charset = charset == null ? Charset.defaultCharset() : charset;
+        /** Create an S-expression parser (==reader), if {@code charset == null} UTF-8 will be used
+         *
+         * @param in a {@link ReadSupplier} that supplies bytes in charset {@code charset}, {@code InputStream::read} will work,
+         *            {@code Reader::read} won't work because that doesn't supply bytes but (Unicode-) characters
+         * @param eolConversion if true then any EOL will be converted to Unix EOL
+         */
+        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, Charset charset, boolean eolConversion) {
+            this.features = features; this.trace = trace; this.tracer = tracer;
+            this.in = eolConversion ? new AnyToUnixEol(in)::read : in;
+            this.charset = charset == null ? StandardCharsets.UTF_8 : charset;
         }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
@@ -428,6 +442,7 @@ public class LambdaJ {
         private int readchar() throws IOException {
             int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
+            if (c != EOF && ((c & 0xff) != c)) { throw new ParseError("invalid input: ReadSupplier didn't supply a byte but 0x%04X", c); }
             if (c == '\r') {
                 prev = c;
                 savePrevPos();
@@ -2038,14 +2053,14 @@ public class LambdaJ {
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
         if (symtab == null) {
-            Parser scriptParser = new SExpressionParser(features, trace, tracer, in, null);
+            final Parser scriptParser = new SExpressionParser(features, trace, tracer, in, null, true);
             setSymtab(scriptParser);
             final ConsCell env = environment(null);
             topEnv = env;
         }
-        Parser scriptParser = (Parser)symtab;
+        final Parser scriptParser = (Parser)symtab;
         scriptParser.setInput(program);
-        setReaderPrinter(scriptParser, new SExpressionWriter(out));
+        setReaderPrinter(new SExpressionParser(in, Charset.defaultCharset()), new SExpressionWriter(out));
         Object result = null;
         while (true) {
             final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
@@ -2065,7 +2080,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         nCells = 0; maxEnvLen = 0;
-        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null);
+        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
         setSymtab(parser);
         ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
@@ -2084,8 +2099,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        Parser parser = new SExpressionParser(features, trace, tracer, program, null);
-        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null);
+        Parser parser = new SExpressionParser(features, trace, tracer, program, null, true);
+        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null, true);
         ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
@@ -2174,7 +2189,7 @@ public class LambdaJ {
             else for (String fileName: files) {
                 if ("--".equals(fileName)) continue;
                 Path p = Paths.get(fileName);
-                try (Reader r = Files.newBufferedReader(p)) {
+                try (InputStream r = Files.newInputStream(p)) {
                     interpretStream(interpreter, r::read, printResult);
                 } catch (IOException e) {
                     System.err.println();
@@ -2199,7 +2214,7 @@ public class LambdaJ {
             if ("--".equals(fileName)) continue;
             Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
-            try (Reader reader = Files.newBufferedReader(p)) {
+            try (InputStream reader = Files.newInputStream(p)) {
                 if (parser == null) parser = new SExpressionParser(reader::read, null);
                 else parser.setInput(reader::read);
                 while (true) {
@@ -2262,7 +2277,7 @@ public class LambdaJ {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                               () -> { return read.read(echoHolder.value); }, null);
+                                               () -> { return read.read(echoHolder.value); }, Charset.defaultCharset(), true);
                 interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
@@ -2677,7 +2692,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, null), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, null, true), intp.getLispPrinter());
             _t = _intern("t");
         }
 
@@ -3431,12 +3446,18 @@ class EolUtil {
 
 /** A producer that reads from System.in. Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
-class AnyToUnixEol {
+class AnyToUnixEol implements LambdaJ.ReadSupplier {
 
+    private final LambdaJ.ReadSupplier in;
     private int prev = -1;
 
+    AnyToUnixEol() { in = System.in::read; }
+    AnyToUnixEol(LambdaJ.ReadSupplier in) { this.in = in; }
+
+    @Override
+    public int read() throws IOException { return read(false); }
     public int read(boolean echo) throws IOException {
-        int c = System.in.read();
+        int c = in.read();
         if (c == '\r') {
             prev = c;
             if (echo) System.out.print(System.lineSeparator());

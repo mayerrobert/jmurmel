@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import org.junit.Test;
@@ -78,7 +78,7 @@ public class SerializeTest {
     }
 
     private byte[] sExpToByteArray(LambdaJ interp, String sExp) throws IOException {
-        ObjectReader parser = new SExpressionParser(new StringReader(sExp)::read, null);
+        ObjectReader parser = new SExpressionParser(new ByteArrayInputStream(sExp.getBytes(StandardCharsets.UTF_8))::read, null);
         ByteArrayOutputStream s = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(s);
         os.writeObject(parser.readObj());
