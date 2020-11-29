@@ -9,17 +9,46 @@ For a copy, see https://opensource.org/licenses/MIT. */
 these API-docs are for using JMurmel as an embedded interpreter and/ or compiler (as-is or customized),
 and for compiling and using interpreted or compiled Murmel programs from within another Java application.
 
-<p>{@link com.robertmayer.lambdaj.LambdaJ LambdaJ} is the main class for embedding interpreted murmel programs.
+<p>{@link com.robertmayer.lambdaj.LambdaJ LambdaJ} is the main class for
+<ul>
+<li>standalone commandline use
+<li>embedding a Murmel interpreter
+<li>embedding interpreted Murmel programs.
+</ul>
 
 <p>{@link com.robertmayer.lambdaj.LambdaJ.MurmelJavaCompiler LambdaJ.MurmelJavaCompiler} is the main class for compiling Murmel programs,
 {@link com.robertmayer.lambdaj.LambdaJ.MurmelJavaProgram LambdaJ.MurmelJavaProgram} is the base class of compiled Murmel programs.
 
 
+<p><b>Characterset and line separator summary</b>
+
+<p>Murmel and JMurmel internally use Unicode strings and characters.
+
+<p>Murmel's surface representation is S-expressions in UTF-8 files,
+any of "\n", "\r\n", "\r" are acceptable line separators.
+However, when JMurmel's REPL reads and prints from/ to the console then the console characterset will be used.
+
+<p>Murmel files given as arguments on JMurmel's commandline will be read as UTF-8,
+any line separator.
+
+<p>S-expressions written to files will be UTF-8 with platform line separators.
+
+<p>JMurmel's REPL reads and prints in the console characterset with OS-dependent line separators.
+Note that this goes for input that is typed on the keyboard as well as input redirected from a file.
+I.e.<pre>    jmurmel < program.lisp
+is different from
+    jmurmel --repl < program.lisp</pre>
+The former command (no REPL involved) will read UTF-8,
+the latter command (which forces REPL and is not too useful anyways) will read console characterset.
+
+<p>JMurmel writes Java sourcefiles as UTF-8 with Unix-style "\n" line separators.
+
+
 <p><b>Charactersets</b></p>
 <p>JMurmel internally uses Unicode strings and characters.
-The translation from "external" to "internal" is somewhat messy and involved:
+The translation from "external" to "internal" is somewhat messy and involved.
 
-<p>"Outside" can be ...tbd
+<p>"External" can be ...tbd
 
 <p>The default Lisp reader {@link LambdaJ.SExpressionParser} reads bytes from input,
 interprets these bytes according to the UTF-8 characterset
@@ -33,6 +62,8 @@ Java's System.out does this translation according to Java's system default chara
 
 <p>JMurmel does not use the system property 'file.encoding'. TODO except LispReader for JSR223 programs.
 Note that e.g. on Windows the default value of file.encoding is 'Cp1252' but input read from System.in is encoded in 'cp850'.
+
+<p>The compiler writes files in the UTF-8 characterset.
 
 
 <p><b>Line separators</b></p>
