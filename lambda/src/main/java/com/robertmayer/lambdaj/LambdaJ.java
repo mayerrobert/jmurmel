@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.265 2020/11/28 11:59:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.266 2020/11/28 23:59:20 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2062,7 +2062,7 @@ public class LambdaJ {
 
     /** Turn {@code forms} into an interpreted Murmel program: define/ defun will be interpreted once,
      *  the remains will be wrapped in the method {@body} that can be run multiple times.
-     *  Note how this is somewhat similar to {@link MurmelJavaCompiler#formsToApplicationClass(String, Iterable, String)}.
+     *  Note how this is somewhat similar to {@link MurmelJavaCompiler#formsToJavaClass(String, Iterable, String)}.
      *  All interpreted programs created from one LambdaJ instance will share the same global environment (global variables and functions). */
     public MurmelProgram formsToInterpretedProgram(Iterable<Object> forms) {
         final LambdaJ intp = LambdaJ.this;
@@ -2271,7 +2271,7 @@ public class LambdaJ {
         }
         else {
             outFile = "MurmelProgram.java";
-            success = compileToJava(parser, program, null, outFile, interpreter);
+            success = compileToJava(StandardCharsets.UTF_8, parser, program, null, outFile, interpreter);
         }
         if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
     }
@@ -2341,7 +2341,7 @@ public class LambdaJ {
                     if (":init"   .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equals(exp.toString())) { compileToJava(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
+                    if (":java"   .equals(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     if (":run"    .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
@@ -2403,7 +2403,7 @@ public class LambdaJ {
         try {
             MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
             String clsName = "MurmelProgram";
-            Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass(clsName.toString(), history, null);
+            Class<MurmelJavaProgram> murmelClass = c.formsToJavaClass(clsName.toString(), history, null);
             MurmelJavaProgram prg = murmelClass.newInstance();
             long tStart = System.nanoTime();
             Object result = prg.body();
@@ -2426,14 +2426,12 @@ public class LambdaJ {
      *  if filename is t the compiled Java code will be printed to the screen.
      *  if filename is null the filename will be derived from the className
      *  if filename ends with a / then filename is interpreted as a base directory and the classname (with packages) will be appended */
-    private static boolean compileToJava(SymbolTable symtab, List<Object> history, Object className, Object filename, LambdaJ interpreter) {
+    private static boolean compileToJava(Charset charset, SymbolTable symtab, List<Object> history, Object className, Object filename, LambdaJ interpreter) {
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, null); // todo ggf compiler nur 1x instanzieren
         String clsName = className == null ? "MurmelProgram" : className.toString();
         //if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
-            final WrappingWriter w = new WrappingWriter(new OutputStreamWriter(System.out));
-            c.formsToJavaProgram(w, clsName, history);
-            w.flush(); // flush but don't close System.out
+            c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
             return true;
         }
 
@@ -2454,7 +2452,7 @@ public class LambdaJ {
         final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
         try (final OutputStream os = Files.newOutputStream(p);
              final WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
-            c.formsToJavaProgram(writer, clsName, history);
+            c.formsToJavaSource(writer, clsName, history);
             System.out.println("compiled to Java file '" + p.toString() + '\'');
             return true;
         }
@@ -2474,7 +2472,7 @@ public class LambdaJ {
             MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
             String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             String clsName = className == null ? "MurmelProgram" : className.toString();
-            c.formsToApplicationClass(clsName, history, jarFileName);
+            c.formsToJavaClass(clsName, history, jarFileName);
             System.out.println("compiled to .jar file '" + jarFileName + '\'');
             return true;
         }
@@ -2951,24 +2949,24 @@ public class LambdaJ {
         }
 
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
-        public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
+        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
             Iterator<Object> i = forms.iterator();
             ObjectReader r = () -> i.hasNext() ? i.next() : null;
-            return formsToApplicationClass(unitName, r, jarFile);
+            return formsToJavaClass(unitName, r, jarFile);
         }
 
-        public WrappingWriter formsToJavaProgram(WrappingWriter ret, String unitName, Iterable<Object> forms) {
+        public Writer formsToJavaSource(Writer ret, String unitName, Iterable<Object> forms) {
             Iterator<Object> i = forms.iterator();
             ObjectReader r = () -> i.hasNext() ? i.next() : null;
-            return formsToJavaProgram(ret, unitName, r);
+            formsToJavaSource(ret, unitName, r);
+            return ret;
         }
 
         /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
         @SuppressWarnings("unchecked")
-        public Class <MurmelJavaProgram> formsToApplicationClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
+        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
             final StringWriter w = new StringWriter();
-            final WrappingWriter ret = new WrappingWriter(w);
-            formsToJavaProgram(ret, unitName, unit);
+            formsToJavaSource(w, unitName, unit);
             final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
             if (jarFile == null) return program;
 
@@ -3003,12 +3001,14 @@ public class LambdaJ {
 
         /// Wrapper to compile Murmel to Java source
         /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
-        public WrappingWriter formsToJavaProgram(WrappingWriter ret, String unitName, ObjectReader unit) {
+        public Writer formsToJavaSource(Writer w, String unitName, ObjectReader unit) {
             ConsCell env = null;
             for (String global: MurmelJavaProgram.globalvars)         env = extenv(global, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), "_" + alias[1]), env);
             for (String prim: MurmelJavaProgram.primitives)           env = extenvfunc(prim, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::_" + alias[1]), env);
+
+            WrappingWriter ret = new WrappingWriter(w);
 
             final String clsName;
             final int dotpos = unitName.lastIndexOf('.');
@@ -3061,6 +3061,7 @@ public class LambdaJ {
 
             ret.append("}\n");
             //System.err.print(ret.toString());
+            ret.flush();
             return ret;
         }
 
@@ -3539,16 +3540,18 @@ class UnixToAnyEol implements LambdaJ.WriteConsumer {
     }
 }
 
+/** Wrap a java.io.Writer, methods throw unchecked LambdaJError, also add {@code append()} methods for basic data types. */
 class WrappingWriter extends Writer {
     private final Writer wrapped;
 
     WrappingWriter(Writer w) { wrapped = w; }
 
-    @Override public WrappingWriter append(CharSequence cs) { String s = cs.toString(); write(s, 0, s.length()); return this; }
-    @Override public WrappingWriter append(char c)          { String s = String.valueOf(c); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(int n)           { String s = String.valueOf(n); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(double d)        { String s = String.valueOf(d); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(Object o)        { String s = String.valueOf(o); write(s, 0, s.length()); return this; }
+    @Override public WrappingWriter append(CharSequence c) { String s = String.valueOf(c); write(s, 0, s.length()); return this; }
+    @Override public WrappingWriter append(char c)         { String s = String.valueOf(c); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(int n)          { String s = String.valueOf(n); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(long l)         { String s = String.valueOf(l); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(double d)       { String s = String.valueOf(d); write(s, 0, s.length()); return this; }
+    public           WrappingWriter append(Object o)       { String s = String.valueOf(o); write(s, 0, s.length()); return this; }
 
 
 

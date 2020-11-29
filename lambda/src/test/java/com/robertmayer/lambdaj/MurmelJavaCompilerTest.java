@@ -27,7 +27,7 @@ public class MurmelJavaCompilerTest {
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         StringWriter w = new StringWriter();
-        c.formsToJavaProgram(new WrappingWriter(w), "Test", parser);
+        c.formsToJavaSource(w, "Test", parser);
         String java = w.toString();
         assertNotNull("failed to compile Murmel to Java", java);
     }
@@ -41,7 +41,7 @@ public class MurmelJavaCompilerTest {
         final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
-        Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, "target/test-1.0.zip");
+        Class<MurmelJavaProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
         MurmelJavaProgram instance = murmelClass.newInstance();
@@ -276,9 +276,9 @@ public class MurmelJavaCompilerTest {
         final SExpressionParser parser = new SExpressionParser(reader::read, null);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
-        Class<MurmelJavaProgram> murmelClass = c.formsToApplicationClass("Test", parser, null);
+        Class<MurmelJavaProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
         StringWriter w = new StringWriter();
-        c.formsToJavaProgram(new WrappingWriter(w), "Test", parser);
+        c.formsToJavaSource(w, "Test", parser);
         String s = w.toString();
         assertNotNull("failed to compile Murmel to class:\n\n" + s, murmelClass);
 

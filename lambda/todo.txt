@@ -1,3 +1,4 @@
+
 JSR223: evalScript will fuer den Code einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
 StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
 -> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
@@ -6,6 +7,7 @@ StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
 der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
 -> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
 -> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
+
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
@@ -22,13 +24,14 @@ for (;;) {
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
-
 vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
 oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
 -> oder so lassen, weil interpreter, compiler und kompilate die System proterty line.separator auswerten
 
 
+
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
+-> gibt probleme wg. aliasing, sobalds rplacX gibt, gibts noch mehr proleme
 
 funcToJava koennte selbstrekursive calls erkennen und statt call die parameter ersetzen und zum beginn springen:
 Object f(p1, p2) {
