@@ -23,6 +23,14 @@ class Trampoline<T> {
 }
 
 public class Factorial {
+    /*
+      (defun factorial (n product)
+        (if (<= n 1)
+              product
+          (factorial (- n 1) (* product n))))
+
+      (factorial 5 1) ; ==> 120
+     */
     public static Trampoline<BigInteger> factorial(final int n, final BigInteger product) {
         if(n <= 1) {
             return new Trampoline<BigInteger>() {
