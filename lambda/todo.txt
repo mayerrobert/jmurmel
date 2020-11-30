@@ -1,14 +1,3 @@
-
-JSR223: evalScript will fuer den Code einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
-StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
--> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
--> ausserdem sollte LispReader fuer JSR233 Programme von einem Reader lesen, nicht bytes als file.encoding interpretieren
-
-der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
--> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
--> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
-
-
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
 letXXX und labels im compiler
@@ -1767,3 +1756,12 @@ https://www.baeldung.com/java-char-encoding
 der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.getDefault() geschrieben
 -> in ein UTF-8 file schreiben
 -> oder: compilexx returned einen string. koennte stattdessen einen writer uebernehmen
+
+JSR223: evalScript will fuer den Code einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
+StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
+-> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
+-> ausserdem sollte LispReader fuer JSR233 Programme von einem Reader lesen, nicht bytes als file.encoding interpretieren
+
+der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
+-> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
+-> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
