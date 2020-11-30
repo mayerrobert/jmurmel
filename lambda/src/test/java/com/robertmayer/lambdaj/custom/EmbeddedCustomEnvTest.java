@@ -25,7 +25,7 @@ public class EmbeddedCustomEnvTest {
 
         // our Lisp "program"
         InputStream program = new ByteArrayInputStream("(writeln *answer*)(greet \"Robert\")".getBytes(StandardCharsets.UTF_8));
-        Parser parser = new LambdaJ.SExpressionParser(program::read, null);
+        Parser parser = new LambdaJ.SExpressionParser(program::read);
 
         // empty "file" for stdin, simply return EOF
         ObjectReader inReader = () -> -1;

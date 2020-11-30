@@ -78,7 +78,7 @@ public class SerializeTest {
     }
 
     private byte[] sExpToByteArray(LambdaJ interp, String sExp) throws IOException {
-        ObjectReader parser = new SExpressionParser(new ByteArrayInputStream(sExp.getBytes(StandardCharsets.UTF_8))::read, null);
+        ObjectReader parser = new SExpressionParser(new ByteArrayInputStream(sExp.getBytes(StandardCharsets.UTF_8))::read);
         ByteArrayOutputStream s = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(s);
         os.writeObject(parser.readObj());

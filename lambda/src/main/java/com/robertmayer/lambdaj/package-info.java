@@ -9,15 +9,15 @@ For a copy, see https://opensource.org/licenses/MIT. */
 these API-docs are for using JMurmel as an embedded interpreter and/ or compiler (as-is or customized),
 and for compiling and using interpreted or compiled Murmel programs from within another Java application.
 
-<p>{@link com.robertmayer.lambdaj.LambdaJ LambdaJ} is the main class for
+<p>{@link LambdaJ} is the main class for
 <ul>
 <li>standalone commandline use
 <li>embedding a Murmel interpreter
 <li>embedding interpreted Murmel programs.
 </ul>
 
-<p>{@link com.robertmayer.lambdaj.LambdaJ.MurmelJavaCompiler LambdaJ.MurmelJavaCompiler} is the main class for compiling Murmel programs,
-{@link com.robertmayer.lambdaj.LambdaJ.MurmelJavaProgram LambdaJ.MurmelJavaProgram} is the base class of compiled Murmel programs.
+<p>{@link LambdaJ.MurmelJavaCompiler} is the main class for compiling Murmel programs,
+{@link LambdaJ.MurmelJavaProgram} is the base class of compiled Murmel programs.
 
 
 <p><b>Characterset and line separator summary</b>

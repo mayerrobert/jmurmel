@@ -23,7 +23,7 @@ public class MurmelJavaCompilerTest {
     @Test
     public void testForm() throws Exception {
         InputStream reader = new ByteArrayInputStream("(define a 2)".getBytes(StandardCharsets.UTF_8));
-        final SExpressionParser parser = new SExpressionParser(reader::read, null);
+        final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         StringWriter w = new StringWriter();
@@ -38,7 +38,7 @@ public class MurmelJavaCompilerTest {
                       + "(f \"Hello, \" \"World!\")";
 
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
-        final SExpressionParser parser = new SExpressionParser(reader::read, null);
+        final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
@@ -273,7 +273,7 @@ public class MurmelJavaCompilerTest {
 
     private MurmelJavaProgram compile(String source) throws Exception {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
-        final SExpressionParser parser = new SExpressionParser(reader::read, null);
+        final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
         Class<MurmelJavaProgram> murmelClass = c.formsToJavaClass("Test", parser, null);

@@ -9,9 +9,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -19,17 +20,10 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CoderResult;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnmappableCharacterException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -114,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.267 2020/11/29 06:51:43 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.268 2020/11/30 15:54:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -400,29 +394,28 @@ public class LambdaJ {
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int look;
-        private byte token[] = new byte[TOKEN_MAX * 2]; // "* 2" is in case all characters are 2-byte sequences
+        private char token[] = new char[TOKEN_MAX];
         private Object tok;
 
-        /** Create an S-expression parser (==reader) with all features, no tracing,
-         *  characterset {@code charset} (if {@code charset == null} then UTF-8 will be used) and EOL conversion.
+        /** Create an S-expression parser (==reader) with all features, no tracing.
          *
-         *  @param in a {@link ReadSupplier} that supplies bytes in charset {@code charset}, {@code InputStream::read} will work,
-         *            {@code Reader::read} won't work because that doesn't supply bytes but (Unicode-) characters
+         *  @param in a {@link ReadSupplier} that supplies characters,
+         *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
+         *            {@code Reader::read} will work
          */
-        public SExpressionParser(ReadSupplier in, Charset charset) {
-            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, null, true);
+        public SExpressionParser(ReadSupplier in) {
+            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, true);
         }
 
-        /** Create an S-expression parser (==reader), if {@code charset == null} UTF-8 will be used
-         *
-         * @param in a {@link ReadSupplier} that supplies bytes in charset {@code charset}, {@code InputStream::read} will work,
-         *            {@code Reader::read} won't work because that doesn't supply bytes but (Unicode-) characters
+        /** Create an S-expression parser (==reader).
+         * @param in a {@link ReadSupplier} that supplies characters,
+         *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
+         *            {@code Reader::read} will work
          * @param eolConversion if true then any EOL will be converted to Unix EOL
          */
-        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, Charset charset, boolean eolConversion) {
+        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, boolean eolConversion) {
             this.features = features; this.trace = trace; this.tracer = tracer;
             this.in = eolConversion ? new AnyToUnixEol(in)::read : in;
-            this.charset = charset == null ? StandardCharsets.UTF_8 : charset;
         }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
@@ -452,7 +445,6 @@ public class LambdaJ {
         private int readchar() throws IOException {
             int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
-            if (c != EOF && ((c & 0xff) != c)) { throw new ParseError("invalid input: ReadSupplier didn't supply a byte but 0x%04X", c); }
             if (c == '\r') {
                 prev = c;
                 savePrevPos();
@@ -490,8 +482,10 @@ public class LambdaJ {
                     while ((c = readchar()) != '\n' && c != EOF);
                 }
                 return c;
+            } catch (CharacterCodingException e) {
+                throw new ParseError("line %d:%d: characterset conversion error in SExpressionParser: %s", lineNo, charNo, e.toString());
             } catch (Exception e) {
-                throw new RuntimeException("I/O error reading");
+                throw new ParseError("line %d:%d: I/O error in SExpressionParser: %s", lineNo, charNo, e.toString());
             }
         }
 
@@ -502,10 +496,10 @@ public class LambdaJ {
             skipWs();
             if (look != EOF) {
                 if (isSyntax(look)) {
-                    token[index++] = (byte) (0xff & look);  look = getchar();
+                    token[index++] = (char)look;  look = getchar();
                 } else if (haveString() && isDQuote(look)) {
                     do {
-                        if (index < TOKEN_MAX) token[index++] = (byte) (0xff & look);
+                        if (index < TOKEN_MAX) token[index++] = (char)look;
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
                     if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
@@ -513,14 +507,14 @@ public class LambdaJ {
                 } else if (isBar(look)) {
                     look = getchar();
                     do {
-                        if (index < SYMBOL_MAX) token[index++] = (byte) (0xff & look);
+                        if (index < SYMBOL_MAX) token[index++] = (char)look;
                         look = getchar();
                     } while (look != EOF && !isBar(look));
                     if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
-                        if (index < TOKEN_MAX) token[index++] = (byte) (0xff & look);
+                        if (index < TOKEN_MAX) token[index++] = (char)look;
                         look = getchar();
                     }
                 }
@@ -549,16 +543,16 @@ public class LambdaJ {
                 tracer.println("*** scan  token  |" + tok + '|');
         }
 
-        private boolean isNumber(byte[] tok, int len) {
+        private boolean isNumber(char[] tok, int len) {
             final int first = 0xff & tok[0];
             if (isDigit(first)) return true;
             return (len > 1 && (first == '-' || first == '+') && isDigit(0xff & tok[1]));
         }
 
-        private final Charset charset;
-        private String tokenToString(byte[] b, int first, int end) {
-            //return new String(b, first, end - first, charset);
+        private String tokenToString(char[] b, int first, int end) {
+            return new String(b, first, end - first);
 
+            /*
             // based on StringCoding.StringDecoder.decode()
             CharsetDecoder cd = charset.newDecoder();
             cd.onMalformedInput(CodingErrorAction.REPORT)
@@ -582,6 +576,7 @@ public class LambdaJ {
                 throw new ParseError("error converting token %s to charset %s", new String(b, first, end - first, charset), charset.displayName());
             }
             return new String(ca, 0, cb.position());
+            */
         }
 
 
@@ -2085,16 +2080,17 @@ public class LambdaJ {
     /** <p>evalScript is for JSR-223 support.
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
-    public Object evalScript(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
+    @SuppressWarnings("resource")
+    public Object evalScript(Reader program, Reader in, Writer out) {
         if (symtab == null) {
-            final Parser scriptParser = new SExpressionParser(features, trace, tracer, in, null, true);
+            final Parser scriptParser = new SExpressionParser(features, trace, tracer, in::read, true);
             setSymtab(scriptParser);
             final ConsCell env = environment(null);
             topEnv = env;
         }
         final Parser scriptParser = (Parser)symtab;
-        scriptParser.setInput(program);
-        setReaderPrinter(new SExpressionParser(in, Charset.defaultCharset()), new SExpressionWriter(out));
+        scriptParser.setInput(program::read);
+        setReaderPrinter(new SExpressionParser(in::read), new SExpressionWriter(new WrappingWriter(out)::append));
         Object result = null;
         while (true) {
             final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
@@ -2114,7 +2110,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         nCells = 0; maxEnvLen = 0;
-        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
+        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, true);
         setSymtab(parser);
         ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
@@ -2133,8 +2129,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        Parser parser = new SExpressionParser(features, trace, tracer, program, null, true);
-        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null, true);
+        Parser parser = new SExpressionParser(features, trace, tracer, program, true);
+        ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, true);
         ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
@@ -2223,7 +2219,7 @@ public class LambdaJ {
             else for (String fileName: files) {
                 if ("--".equals(fileName)) continue;
                 Path p = Paths.get(fileName);
-                try (InputStream r = Files.newInputStream(p)) {
+                try (Reader r = Files.newBufferedReader(p)) {
                     interpretStream(interpreter, r::read, printResult);
                 } catch (IOException e) {
                     System.err.println();
@@ -2236,7 +2232,9 @@ public class LambdaJ {
         if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo); // repl() doesn't return
 
         if (files.isEmpty()) {
-            interpretStream(interpreter, System.in::read, printResult);
+            final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
+            final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
+            interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult);
         }
     }
 
@@ -2248,8 +2246,8 @@ public class LambdaJ {
             if ("--".equals(fileName)) continue;
             Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
-            try (InputStream reader = Files.newInputStream(p)) {
-                if (parser == null) parser = new SExpressionParser(reader::read, null);
+            try (Reader reader = Files.newBufferedReader(p)) {
+                if (parser == null) parser = new SExpressionParser(reader::read);
                 else parser.setInput(reader::read);
                 while (true) {
                     Object sexp = parser.readObj(true);
@@ -2295,8 +2293,6 @@ public class LambdaJ {
     /** Enter REPL, doesn't return */
     private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo) {
         final BoolHolder echoHolder = new BoolHolder(echo);
-        String consoleCharsetName = System.getProperty("sun.stdout.encoding");
-        Charset consoleCharset = Charset.forName(consoleCharsetName);
 
         if (!echoHolder.value) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
@@ -2311,7 +2307,7 @@ public class LambdaJ {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
             parser = (SExpressionParser)interpreter.symtab;
             AnyToUnixEol read = new AnyToUnixEol();
-            parser.setInput(() -> { return read.read(echoHolder.value); }); // todo der parser hat noch vom infile das falsche charset
+            parser.setInput(() -> { return read.read(echoHolder.value); });
             outWriter = interpreter.lispPrinter;
             env = interpreter.topEnv;
         }
@@ -2320,7 +2316,7 @@ public class LambdaJ {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                               () -> { return read.read(echoHolder.value); }, consoleCharset, true);
+                                               () -> { return read.read(echoHolder.value); }, true);
                 interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
@@ -2348,7 +2344,7 @@ public class LambdaJ {
                     if (":init"   .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equals(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
+                    if (":java"   .equals(exp.toString())) { compileToJava(null, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     if (":run"    .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
@@ -2735,7 +2731,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, null, true), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, true), intp.getLispPrinter());
             _t = _intern("t");
         }
 
@@ -3495,12 +3491,18 @@ class EolUtil {
 /** A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in. Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
 class AnyToUnixEol implements LambdaJ.ReadSupplier {
+    private static final Charset consoleCharset;
+
+    static {
+        String consoleCharsetName = System.getProperty("sun.stdout.encoding");
+        consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
+    }
 
     private final LambdaJ.ReadSupplier in;
     private int prev = -1;
 
     AnyToUnixEol() { this(null); }
-    AnyToUnixEol(LambdaJ.ReadSupplier in) { this.in = in == null ? System.in::read : in; }
+    AnyToUnixEol(LambdaJ.ReadSupplier in) { this.in = in == null ? new InputStreamReader(System.in, consoleCharset)::read : in; }
 
     @Override
     public int read() throws IOException { return read(false); }

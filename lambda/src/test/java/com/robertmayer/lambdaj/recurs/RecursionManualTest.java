@@ -1,4 +1,4 @@
-package com.robertmayer.lambdaj;
+package com.robertmayer.lambdaj.recurs;
 
 import static org.junit.Assert.assertEquals;
 

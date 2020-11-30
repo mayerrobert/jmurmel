@@ -43,18 +43,13 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
         }
         final Reader stdIn = context.getReader();
         final Writer stdOut = context.getWriter();
-        Object ret = murmel.evalScript(reader::read, stdIn::read, s -> doWrite(stdOut, s));
+        Object ret = murmel.evalScript(reader, stdIn, stdOut);
         try {
             stdOut.flush();
         } catch (IOException e) {
             throw new ScriptException("I/O exception during final flush");
         }
         return ret;
-    }
-
-    private static void doWrite(Writer w, String s) {
-        try { w.write(s); }
-        catch (IOException e) { throw new RuntimeException(e); }
     }
 
     @Override
