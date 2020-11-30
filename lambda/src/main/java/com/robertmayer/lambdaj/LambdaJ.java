@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.266 2020/11/28 23:59:20 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.267 2020/11/29 06:51:43 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2233,7 +2233,7 @@ public class LambdaJ {
             }
         }
 
-        if (repl || (files.isEmpty() && istty)) repl(interpreter, istty, echo); // repl() doesn't return
+        if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo); // repl() doesn't return
 
         if (files.isEmpty()) {
             interpretStream(interpreter, System.in::read, printResult);
@@ -2293,7 +2293,7 @@ public class LambdaJ {
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
 
     /** Enter REPL, doesn't return */
-    private static void repl(final LambdaJ interpreter, final boolean istty, final boolean echo) {
+    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo) {
         final BoolHolder echoHolder = new BoolHolder(echo);
         String consoleCharsetName = System.getProperty("sun.stdout.encoding");
         Charset consoleCharset = Charset.forName(consoleCharsetName);
@@ -2304,10 +2304,17 @@ public class LambdaJ {
         }
 
         final List<Object> history = new ArrayList<>();
-        boolean isInit = false;
         SExpressionParser parser = null;
         ObjectWriter outWriter = null;
         ConsCell env = null;
+        if (isInit) {
+            interpreter.nCells = 0; interpreter.maxEnvLen = 0;
+            parser = (SExpressionParser)interpreter.symtab;
+            AnyToUnixEol read = new AnyToUnixEol();
+            parser.setInput(() -> { return read.read(echoHolder.value); }); // todo der parser hat noch vom infile das falsche charset
+            outWriter = interpreter.lispPrinter;
+            env = interpreter.topEnv;
+        }
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
@@ -3485,18 +3492,19 @@ class EolUtil {
     }
 }
 
-/** A producer that reads from System.in. Various lineendings will all be translated to '\n'.
+/** A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in. Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
 class AnyToUnixEol implements LambdaJ.ReadSupplier {
 
     private final LambdaJ.ReadSupplier in;
     private int prev = -1;
 
-    AnyToUnixEol() { in = System.in::read; }
-    AnyToUnixEol(LambdaJ.ReadSupplier in) { this.in = in; }
+    AnyToUnixEol() { this(null); }
+    AnyToUnixEol(LambdaJ.ReadSupplier in) { this.in = in == null ? System.in::read : in; }
 
     @Override
     public int read() throws IOException { return read(false); }
+
     public int read(boolean echo) throws IOException {
         int c = in.read();
         if (c == '\r') {
@@ -3519,18 +3527,25 @@ class AnyToUnixEol implements LambdaJ.ReadSupplier {
     }
 }
 
+/** A wrapping {@link LambdaJ.WriteConsumer} that translates '\n' to the given line separator {@code eol}. */
 class UnixToAnyEol implements LambdaJ.WriteConsumer {
     final LambdaJ.WriteConsumer wrapped;
     final String eol;
 
-    public UnixToAnyEol(LambdaJ.WriteConsumer wrapped, String eol) {
+    UnixToAnyEol(LambdaJ.WriteConsumer wrapped, String eol) {
         this.wrapped = wrapped;
         this.eol = eol;
     }
 
     @Override
     public void print(String s) {
-        if (s.indexOf('\n') == -1) { wrapped.print(s); return; }
+        if (s == null
+            || s.length() == 0
+            || (s.charAt(0) != '\n' && s.charAt(s.length() - 1) != '\n' && s.indexOf('\n') == -1)) {
+            // fast path for null, empty string or strings w/o '\n'
+            // the check for '\n' also has a fast path for strings beginning or ending with '\n'
+            wrapped.print(s); return;
+        }
         int len = s.length();
         for (int index = 0; index < len; index++) {
             char c = s.charAt(index);
