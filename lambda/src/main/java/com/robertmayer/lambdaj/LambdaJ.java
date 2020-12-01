@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.269 2020/11/30 18:38:45 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.270 2020/12/01 16:42:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2973,6 +2973,7 @@ public class LambdaJ {
         public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, unit);
+            System.err.print(w.toString());
             final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
             if (jarFile == null) return program;
 
@@ -3066,7 +3067,6 @@ public class LambdaJ {
             ret.append("        return result0;\n    }\n");
 
             ret.append("}\n");
-            //System.err.print(ret.toString());
             ret.flush();
             return ret;
         }
@@ -3261,7 +3261,29 @@ public class LambdaJ {
 
                     ///     - todo labels
 
-                    ///     - todo letxxx
+                    ///     - let: (let ((sym form)...) forms)
+                    if (isSymbol(op, "let")) {
+                        sb.append('(');
+                        ConsCell params = null; ConsCell insertPos = null;
+                        for (Object paramTuple: (ConsCell)(car(args))) {
+                            if (params == null) { params = cons(null, null); insertPos = params; }
+                            else { insertPos = cons(null, null); params.rplacd(insertPos); }
+                            insertPos.rplaca(car(paramTuple));
+                        }
+                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1);
+                        sb.append(").apply(");
+                        boolean first = true;
+                        for (Object paramTuple: (ConsCell)(car(args))) {
+                            if (first) first = false;
+                            else sb.append(',').append(' ');
+                            formToJava(sb, cadr(paramTuple), env, rsfx);
+                        }
+                        sb.append(')');
+                        return;
+                    }
+
+                    ///     - todo (named) letxxx
+
 
                     /// * function call
                     sb.append("funcall(");

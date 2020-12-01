@@ -215,6 +215,15 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testLet() throws Exception {
+        MurmelJavaProgram program = compile("(let ((a 1) (b 2)) a)");
+        assertNotNull("failed to compile let to class", program);
+        assertEquals("let produced wrong result", "1", sexp(program.body()));
+    }
+
+
+
+    @Test
     public void testReverse() throws Exception {
         String source = "((lambda (reverse)\n"
                 + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\n"
