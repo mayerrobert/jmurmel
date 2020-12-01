@@ -1,3 +1,8 @@
+der compiler braucht forward deklarationen, der interpreter nicht
+
+files von der befehlszeile sind im environment des repl aber nicht in der history
+-> man kanns zwar interpretieren, aber nicht kompilieren/ mit :run kompilieren und laufen lassen/ mit :l listen
+
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
 letXXX und labels im compiler

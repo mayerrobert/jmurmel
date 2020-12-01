@@ -216,9 +216,9 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testLet() throws Exception {
-        MurmelJavaProgram program = compile("(let ((a 1) (b 2)) a)");
+        MurmelJavaProgram program = compile("(let ((a 1) (b 2) (c 3)) c)");
         assertNotNull("failed to compile let to class", program);
-        assertEquals("let produced wrong result", "1", sexp(program.body()));
+        assertEquals("let produced wrong result", "3", sexp(program.body()));
     }
 
 

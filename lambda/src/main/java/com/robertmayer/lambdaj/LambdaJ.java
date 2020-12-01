@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.270 2020/12/01 16:42:26 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.271 2020/12/01 18:31:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2973,7 +2973,7 @@ public class LambdaJ {
         public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, unit);
-            System.err.print(w.toString());
+            //System.err.print(w.toString());
             final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
             if (jarFile == null) return program;
 
@@ -3266,8 +3266,8 @@ public class LambdaJ {
                         sb.append('(');
                         ConsCell params = null; ConsCell insertPos = null;
                         for (Object paramTuple: (ConsCell)(car(args))) {
-                            if (params == null) { params = cons(null, null); insertPos = params; }
-                            else { insertPos = cons(null, null); params.rplacd(insertPos); }
+                            if (params == null) { params = cons(null, null);          insertPos = params; }
+                            else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
                             insertPos.rplaca(car(paramTuple));
                         }
                         formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1);
