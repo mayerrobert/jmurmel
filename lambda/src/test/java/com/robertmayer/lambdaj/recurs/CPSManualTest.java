@@ -31,7 +31,7 @@ public class CPSManualTest {
         return new Result(result, next, null);
     }
 
-    static Result makeTailRecursion(MurmelCPSFunction func, Object... args) {
+    static Result makeTailCall(MurmelCPSFunction func, Object... args) {
         return new Result(null, func, args);
     }
 
@@ -70,7 +70,7 @@ public class CPSManualTest {
             return makeResult(a);
         }
         else {
-            return makeTailRecursion(this::f1, (Integer)a+1, n);
+            return makeTailCall(this::f1, (Integer)a+1, n);
         }
     }
 
@@ -108,7 +108,7 @@ public class CPSManualTest {
         Object n = args[0];
         Object product = args[1];
         if (dbl(n) <= 1) return makeResult(product);
-        else return makeTailRecursion(this::factorial, dbl(n) - 1, dbl(product) * dbl(n));
+        else return makeTailCall(this::factorial, dbl(n) - 1, dbl(product) * dbl(n));
     }
 
     @Test

@@ -26,6 +26,14 @@
 (defun sub1 (i)
   (- i 1))
 
+; Helper to print the result of hanoi:
+; print a list of lists, each on it's line
+(defun pr-hanoi (l)
+  (if l 
+        (progn (writeln (car l))
+               (pr-hanoi (cdr l)))
+    (format t "Done.")))
+
 ;;; end Murmel additions
 
 

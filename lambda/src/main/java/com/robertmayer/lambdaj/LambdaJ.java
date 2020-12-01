@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.268 2020/11/30 15:54:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.269 2020/11/30 18:38:45 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2299,6 +2299,9 @@ public class LambdaJ {
             System.out.println();
         }
 
+        final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
+        final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
+
         final List<Object> history = new ArrayList<>();
         SExpressionParser parser = null;
         ObjectWriter outWriter = null;
@@ -2344,7 +2347,7 @@ public class LambdaJ {
                     if (":init"   .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equals(exp.toString())) { compileToJava(null, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
+                    if (":java"   .equals(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     if (":run"    .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
