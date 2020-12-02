@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.271 2020/12/01 18:31:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.272 2020/12/01 19:40:45 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2954,12 +2954,54 @@ public class LambdaJ {
             });
         }
 
+
+
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
-        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFile) throws Exception {
+
+        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFileName) throws Exception {
             Iterator<Object> i = forms.iterator();
             ObjectReader r = () -> i.hasNext() ? i.next() : null;
-            return formsToJavaClass(unitName, r, jarFile);
+            return formsToJavaClass(unitName, r, jarFileName);
         }
+
+        /** Compile the Murmel compilation {@code forms} to a Java class for a standalone application with a "public static void main()" */
+        @SuppressWarnings("unchecked")
+        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
+            final StringWriter w = new StringWriter();
+            formsToJavaSource(w, unitName, forms);
+            //System.err.print(w.toString());
+            final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
+            if (jarFileName == null) return program;
+
+            final Manifest mf = new Manifest();
+            mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
+            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
+            mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, unitName);
+            mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
+
+            try (final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
+                final String[] dirs = unitName.split("\\.");
+                final StringBuilder path = new StringBuilder();
+                for (int i = 0; i < dirs.length; i++) {
+                    path.append(dirs[i]);
+                    if (i == dirs.length - 1) {
+                        final JarEntry entry = new JarEntry(path.toString() + ".class");
+                        jar.putNextEntry(entry);
+                        jar.write(murmelClassLoader.getBytes(unitName));
+                    }
+                    else {
+                        path.append('/');
+                        final JarEntry entry = new JarEntry(path.toString());
+                        jar.putNextEntry(entry);
+                    }
+                    jar.closeEntry();
+                }
+            }
+            return program;
+        }
+
+        /// Wrappers to compile Murmel to Java source
 
         public Writer formsToJavaSource(Writer ret, String unitName, Iterable<Object> forms) {
             Iterator<Object> i = forms.iterator();
@@ -2968,54 +3010,16 @@ public class LambdaJ {
             return ret;
         }
 
-        /** Compile a Murmel compilation unit to a Java class for a standalone application with a "public static void main()" */
-        @SuppressWarnings("unchecked")
-        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader unit, String jarFile) throws Exception {
-            final StringWriter w = new StringWriter();
-            formsToJavaSource(w, unitName, unit);
-            //System.err.print(w.toString());
-            final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
-            if (jarFile == null) return program;
-
-            final Manifest mf = new Manifest();
-            mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
-            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
-            mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, unitName);
-            mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
-            final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFile), mf);
-
-            String[] dirs = unitName.split("\\.");
-            StringBuilder path = new StringBuilder();
-            for (int i = 0; i < dirs.length; i++) {
-                path.append(dirs[i]);
-                if (i == dirs.length - 1) {
-                    final JarEntry entry = new JarEntry(path.toString() + ".class");
-                    jar.putNextEntry(entry);
-                    jar.write(murmelClassLoader.getBytes(unitName));
-                }
-                else {
-                    path.append('/');
-                    final JarEntry entry = new JarEntry(path.toString());
-                    jar.putNextEntry(entry);
-                }
-                jar.closeEntry();
-            }
-
-            jar.close();
-            return program;
-        }
-
-        /// Wrapper to compile Murmel to Java source
-        /** Compile a Murmel compilation unit to Java source for a standalone application with a "public static void main()" */
-        public Writer formsToJavaSource(Writer w, String unitName, ObjectReader unit) {
+        /** Compile the Murmel compilation unit to Java source for a standalone application class {@code unitName}
+         *  with a "public static void main()" */
+        public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell env = null;
             for (String global: MurmelJavaProgram.globalvars)         env = extenv(global, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), "_" + alias[1]), env);
             for (String prim: MurmelJavaProgram.primitives)           env = extenvfunc(prim, 0, env);
             for (String[] alias: MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::_" + alias[1]), env);
 
-            WrappingWriter ret = new WrappingWriter(w);
+            final WrappingWriter ret = new WrappingWriter(w);
 
             final String clsName;
             final int dotpos = unitName.lastIndexOf('.');
@@ -3032,11 +3036,11 @@ public class LambdaJ {
                      + "        main(new ").append(clsName).append("());\n"
                      + "    }\n\n");
 
-            ArrayList<Object> bodyForms = new ArrayList<>();
-            StringBuilder globals = new StringBuilder();
+            final ArrayList<Object> bodyForms = new ArrayList<>();
+            final StringBuilder globals = new StringBuilder();
             Object result = null;
             Object form;
-            while (null != (form = unit.readObj())) { // todo falls unit instanceof SExpPerser -> readObj(true)
+            while (null != (form = forms.readObj())) { // todo falls unit instanceof SExpPerser -> readObj(true)
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineGlobal(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
