@@ -1,9 +1,4 @@
-files von der befehlszeile sind im environment des repl aber nicht in der history
--> man kanns zwar interpretieren, aber nicht kompilieren/ mit :run kompilieren und laufen lassen/ mit :l listen
-
-kompilierte jars spucken das letzte result aus, wenns ungleich null ist
-der interpreter (file an der befehlszeile) nur mit --result
--> interpreter sollte sich ohne --result so verhalten wie jars, und mit --result ergebnisse aller toplevel forms ausspucken
+die konstanten fuer symbolnamen von murmelprogram nach compiler
 
 der compiler braucht forward deklarationen, der interpreter nicht
 
@@ -1784,3 +1779,10 @@ StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
 der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
 -> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
 -> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
+
+files von der befehlszeile sind im environment des repl aber nicht in der history
+-> man kanns zwar interpretieren, aber nicht kompilieren/ mit :run kompilieren und laufen lassen/ mit :l listen
+
+kompilierte jars spucken das letzte result aus, wenns ungleich null ist
+der interpreter (file an der befehlszeile) nur mit --result
+-> interpreter sollte sich ohne --result so verhalten wie jars, und mit --result ergebnisse aller toplevel forms ausspucken

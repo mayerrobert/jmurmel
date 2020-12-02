@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.272 2020/12/01 19:40:45 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.273 2020/12/02 07:38:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2207,8 +2207,9 @@ public class LambdaJ {
             System.exit(1);
         }
 
-        final List<String> files = args(args);
+        final List<Object> history = repl ? new ArrayList<>() : null;
 
+        final List<String> files = args(args);
         if (!files.isEmpty()) {
             if (toJar) {
                 compileFiles(files, interpreter, true);
@@ -2216,25 +2217,29 @@ public class LambdaJ {
             else if (toJava) {
                 compileFiles(files, interpreter, false);
             }
-            else for (String fileName: files) {
-                if ("--".equals(fileName)) continue;
-                Path p = Paths.get(fileName);
-                try (Reader r = Files.newBufferedReader(p)) {
-                    interpretStream(interpreter, r::read, printResult);
-                } catch (IOException e) {
-                    System.err.println();
-                    System.err.println(e.toString());
-                    System.exit(1);
+            else {
+                interpreter.interpretExpression(() -> -1, s -> { return; });
+                for (String fileName: files) {
+                    if ("--".equals(fileName)) continue;
+                    Path p = Paths.get(fileName);
+                    try (Reader r = Files.newBufferedReader(p)) {
+                        interpretStream(interpreter, r::read, printResult, history);
+                    } catch (IOException e) {
+                        System.err.println();
+                        System.err.println(e.toString());
+                        System.exit(1);
+                    }
                 }
             }
         }
 
-        if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo); // repl() doesn't return
+        if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo, history); // repl() doesn't return
 
         if (files.isEmpty()) {
+            interpreter.interpretExpression(() -> -1, s -> { return; });
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
             final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
-            interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult);
+            interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
         }
     }
 
@@ -2274,10 +2279,33 @@ public class LambdaJ {
         if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
     }
 
-    private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult) {
+    private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult, List<Object> history) {
         try {
+            // todo einzeln lesen, history abfuellen
+            /*
             final String result = printSEx(interpreter.interpretExpressions(prog, System.in::read, System.out::print));
-            if (printResult) {
+            if (result != null) {
+                System.out.println();
+                System.out.println("==> " + result);
+            }
+            */
+            SExpressionParser parser = (SExpressionParser)interpreter.symtab;
+            parser.setInput(prog);
+            ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, true);
+            ObjectWriter outWriter = makeWriter(System.out::print);
+            interpreter.setReaderPrinter(inReader, outWriter);
+            Object result = null;
+            for (;;) {
+                Object form = parser.readObj(true);
+                if (form == null) break;
+                if (history != null) history.add(form);
+                result = interpreter.eval(form, interpreter.topEnv, 0, 0);
+                if (printResult) {
+                    System.out.println();
+                    System.out.println("==> " + result);
+                }
+            }
+            if (result != null && !printResult) {
                 System.out.println();
                 System.out.println("==> " + result);
             }
@@ -2291,7 +2319,7 @@ public class LambdaJ {
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
 
     /** Enter REPL, doesn't return */
-    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo) {
+    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo, List<Object> prevHistory) {
         final BoolHolder echoHolder = new BoolHolder(echo);
 
         if (!echoHolder.value) {
@@ -2302,7 +2330,7 @@ public class LambdaJ {
         final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
         final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
-        final List<Object> history = new ArrayList<>();
+        final List<Object> history = prevHistory == null ? new ArrayList<>() : prevHistory;
         SExpressionParser parser = null;
         ObjectWriter outWriter = null;
         ConsCell env = null;
@@ -2506,6 +2534,7 @@ public class LambdaJ {
             System.exit(0);
         }
     }
+
     private static TraceLevel trace(String[] args) {
         TraceLevel trace = TraceLevel.TRC_NONE;
         if (hasFlag("--trace=stats", args))    trace = TraceLevel.TRC_STATS;
