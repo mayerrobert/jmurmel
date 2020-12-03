@@ -1,4 +1,4 @@
-die konstanten fuer symbolnamen von murmelprogram nach compiler
+das generierte getVaule() sollte im default ein neues MurmelProgram.getValue aufrufen, das alle vordefinierten globals und primitives liefert
 
 der compiler braucht forward deklarationen, der interpreter nicht
 
@@ -1786,3 +1786,6 @@ files von der befehlszeile sind im environment des repl aber nicht in der histor
 kompilierte jars spucken das letzte result aus, wenns ungleich null ist
 der interpreter (file an der befehlszeile) nur mit --result
 -> interpreter sollte sich ohne --result so verhalten wie jars, und mit --result ergebnisse aller toplevel forms ausspucken
+
+die konstanten fuer symbolnamen von murmelprogram nach compiler
+-> doch nicht damits ein MurmelJavaProgram.getValue() geben kann

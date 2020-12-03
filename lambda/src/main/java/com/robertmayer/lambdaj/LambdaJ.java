@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.273 2020/12/02 07:38:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.274 2020/12/02 08:31:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2800,19 +2800,9 @@ public class LambdaJ {
         /// * todo ::
         ///
         private static final String[] globalvars = new String[] { "nil", "t", "pi" };
-
-        protected final Object _nil = null;
-        protected final Object _t;
-        protected final Object _pi = Math.PI;
-
         private static final String[][] aliasedGlobals = new String[][] {
-                { "internal-time-units-per-second", "itups" },
+            { "internal-time-units-per-second", "itups" },
         };
-
-        protected final Object _itups = 1e9;
-
-
-
         private static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
                 "eval", "eq", "null", "intern", "write", "writeln",
@@ -2820,6 +2810,22 @@ public class LambdaJ {
                 "assoc", "list",
                 "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
         };
+        private static final String[][] aliasedPrimitives = new String[][] {
+            {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
+            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
+            {"format", "format"}, {"format-locale", "formatLocale" },
+            {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
+            {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
+        };
+
+
+
+        protected final Object _nil = null;
+        protected final Object _t;
+        protected final Object _pi = Math.PI;
+
+        // itups doesn't have a leading _ because it is avaliable under an alias name
+        protected final Object itups = 1e9;
 
         protected Object   _car (Object... args) { return car(args[0]); }
         protected Object   _cdr (Object... args) { return cdr(args[0]); }
@@ -2853,7 +2859,6 @@ public class LambdaJ {
         protected double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
         protected double   _ceiling (Object... args) { return Math.ceil (dbl(args[0])); }
 
-
         protected double   _sqrt    (Object... args) { return Math.sqrt (dbl(args[0])); }
         protected double   _log     (Object... args) { return Math.log  (dbl(args[0])); }
         protected double   _log10   (Object... args) { return Math.log10(dbl(args[0])); }
@@ -2861,39 +2866,30 @@ public class LambdaJ {
         protected double   _expt    (Object... args) { return Math.pow  (dbl(args[0]), dbl(args[1])); }
         protected double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
 
+        // the following don't have a leading _ because they are avaliable under alias names
+        protected double add     (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
+        protected double mul     (Object... args) { double ret = 1.0; if (args != null) for (Object arg: args) ret *= dbl(arg); return ret; }
 
-
-        private static final String[][] aliasedPrimitives = new String[][] {
-            {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
-            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
-            {"format", "format"}, {"format-locale", "formatLocale" },
-            {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
-            {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
-        };
-
-        protected double _add     (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
-        protected double _mul     (Object... args) { double ret = 1.0; if (args != null) for (Object arg: args) ret *= dbl(arg); return ret; }
-
-        protected double _sub     (Object... args) { if (args.length == 0) return 0.0 - dbl(args[0]);
+        protected double sub     (Object... args) { if (args.length == 0) return 0.0 - dbl(args[0]);
                                                      double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
-        protected double _quot    (Object... args) { if (args.length == 0) return 1.0 / dbl(args[0]);
+        protected double quot    (Object... args) { if (args.length == 0) return 1.0 / dbl(args[0]);
                                                      double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
-        protected Object _numbereq(Object... args) { return numbereq(args[0], args[1]); }
-        protected Object _lt      (Object... args) { return lt(args[0], args[1]); }
-        protected Object _le      (Object... args) { return le(args[0], args[1]); }
-        protected Object _ge      (Object... args) { return ge(args[0], args[1]); }
-        protected Object _gt      (Object... args) { return gt(args[0], args[1]); }
+        protected Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
+        protected Object lt      (Object... args) { return lt(args[0], args[1]); }
+        protected Object le      (Object... args) { return le(args[0], args[1]); }
+        protected Object ge      (Object... args) { return ge(args[0], args[1]); }
+        protected Object gt      (Object... args) { return gt(args[0], args[1]); }
 
-        protected Object _format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
-        protected Object _formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
+        protected Object format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
+        protected Object formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
 
-        protected Object _getInternalRealTime(Object... args) { return getInternalRealTime(); }
-        protected Object _getInternalRunTime (Object... args) { return getInternalRunTime(); }
-        protected Object _getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
-        protected Object _sleep              (Object... args) { return sleep(new ArraySlice(args, 0)); }
-        protected Object _getUniversalTime   (Object... args) { return getUniversalTime(); }
-        protected Object _getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
+        protected Object getInternalRealTime(Object... args) { return getInternalRealTime(); }
+        protected Object getInternalRunTime (Object... args) { return getInternalRunTime(); }
+        protected Object getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
+        protected Object sleep              (Object... args) { return sleep(new ArraySlice(args, 0)); }
+        protected Object getUniversalTime   (Object... args) { return getUniversalTime(); }
+        protected Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
 
 
@@ -2972,7 +2968,6 @@ public class LambdaJ {
     ///
     public static class MurmelJavaCompiler {
         private final LambdaJ.SymbolTable st;
-
         private MurmelClassLoader murmelClassLoader;
 
         public MurmelJavaCompiler(SymbolTable st, Path outPath) {
@@ -3043,10 +3038,10 @@ public class LambdaJ {
          *  with a "public static void main()" */
         public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell env = null;
-            for (String global: MurmelJavaProgram.globalvars)         env = extenv(global, 0, env);
-            for (String[] alias: MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), "_" + alias[1]), env);
-            for (String prim: MurmelJavaProgram.primitives)           env = extenvfunc(prim, 0, env);
-            for (String[] alias: MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::_" + alias[1]), env);
+            for (String   global: MurmelJavaProgram.globalvars)        env = extenv(global, 0, env);
+            for (String[] alias:  MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), alias[1]), env);
+            for (String   prim:   MurmelJavaProgram.primitives)        env = extenvfunc(prim, 0, env);
+            for (String[] alias:  MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::" + alias[1]), env);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
