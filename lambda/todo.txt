@@ -3,8 +3,6 @@ die basisklasse MurmelJavaProgram sollte besser MurmelRuntime heissen
 
 das generierte getVaule() sollte im default ein neues MurmelProgram.getValue aufrufen, das alle vordefinierten globals und primitives liefert
 
-der compiler braucht forward deklarationen, der interpreter nicht
-
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
 letXXX und labels im compiler
@@ -1792,3 +1790,5 @@ der interpreter (file an der befehlszeile) nur mit --result
 
 die konstanten fuer symbolnamen von murmelprogram nach compiler
 -> doch nicht damits ein MurmelJavaProgram.getValue() geben kann
+
+der compiler braucht forward deklarationen, der interpreter nicht

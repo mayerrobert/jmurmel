@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.274 2020/12/02 08:31:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.275 2020/12/03 07:40:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1264,7 +1264,7 @@ public class LambdaJ {
         }
 
         @Override public Object     car() { return (arry == null || arry.length <= offset) ? null : arry[offset]; }
-        @Override public ArraySlice cdr() { return (arry == null || arry.length <= offset) ? null : new ArraySlice(this); }
+        @Override public ArraySlice cdr() { return (arry == null || arry.length <= offset+1) ? null : new ArraySlice(this); }
         @Override public String toString() { return printSEx(false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
@@ -2820,80 +2820,136 @@ public class LambdaJ {
 
 
 
-        protected final Object _nil = null;
-        protected final Object _t;
-        protected final Object _pi = Math.PI;
+        /// predefined global variables
+        public final Object _nil = null;
+        public final Object _t;
+        public final Object _pi = Math.PI;
 
+        /// preddefined aliased global variables
         // itups doesn't have a leading _ because it is avaliable under an alias name
-        protected final Object itups = 1e9;
+        public final Object itups = 1e9;
 
-        protected Object   _car (Object... args) { return car(args[0]); }
-        protected Object   _cdr (Object... args) { return cdr(args[0]); }
-        protected ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
+        /// predefined primitives
+        public Object   _car (Object... args) { return car(args[0]); }
+        public Object   _cdr (Object... args) { return cdr(args[0]); }
+        public ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
 
         // todo env klaeren, muss das env des interpreter mitgefuehrt werden
         // CLHS sagt: null lexical env, aktuelles dyn env
         // scheme eval hat nicht automatisch das current dyn env https://docs.racket-lang.org/guide/eval.html
-        protected Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
-        protected Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
-        protected Object _null      (Object... args) { return args[0] != args[1] ? _t : null; }
+        public Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
+        public Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
+        public Object _null      (Object... args) { return args[0] != args[1] ? _t : null; }
 
         // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
-        protected LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
+        public LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
 
-        protected Object _write     (Object... args) { intp.write(args[0]); return _t; };
-        protected Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
+        public Object _write     (Object... args) { intp.write(args[0]); return _t; };
+        public Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
 
-        protected Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
-        protected Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
-        protected Object _listp     (Object... args) { return listp     (args[0]) ? _t : null; }
-        protected Object _symbolp   (Object... args) { return symbolp   (args[0]) ? _t : null; }
-        protected Object _numberp   (Object... args) { return numberp   (args[0]) ? _t : null; }
-        protected Object _stringp   (Object... args) { return stringp   (args[0]) ? _t : null; }
-        protected Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
+        public Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
+        public Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
+        public Object _listp     (Object... args) { return listp     (args[0]) ? _t : null; }
+        public Object _symbolp   (Object... args) { return symbolp   (args[0]) ? _t : null; }
+        public Object _numberp   (Object... args) { return numberp   (args[0]) ? _t : null; }
+        public Object _stringp   (Object... args) { return stringp   (args[0]) ? _t : null; }
+        public Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
 
-        protected ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
-        protected ConsCell _list    (Object... args) { return new ArraySlice(args, 0); }
+        public ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
+        public ConsCell _list    (Object... args) { return new ArraySlice(args, 0); }
 
-        protected long     _round   (Object... args) { return Math.round(dbl(args[0])); }
-        protected double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
-        protected double   _ceiling (Object... args) { return Math.ceil (dbl(args[0])); }
+        public long     _round   (Object... args) { return Math.round(dbl(args[0])); }
+        public double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
+        public double   _ceiling (Object... args) { return Math.ceil (dbl(args[0])); }
 
-        protected double   _sqrt    (Object... args) { return Math.sqrt (dbl(args[0])); }
-        protected double   _log     (Object... args) { return Math.log  (dbl(args[0])); }
-        protected double   _log10   (Object... args) { return Math.log10(dbl(args[0])); }
-        protected double   _exp     (Object... args) { return Math.exp  (dbl(args[0])); }
-        protected double   _expt    (Object... args) { return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        protected double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
+        public double   _sqrt    (Object... args) { return Math.sqrt (dbl(args[0])); }
+        public double   _log     (Object... args) { return Math.log  (dbl(args[0])); }
+        public double   _log10   (Object... args) { return Math.log10(dbl(args[0])); }
+        public double   _exp     (Object... args) { return Math.exp  (dbl(args[0])); }
+        public double   _expt    (Object... args) { return Math.pow  (dbl(args[0]), dbl(args[1])); }
+        public double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
 
+        /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable under alias names
-        protected double add     (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
-        protected double mul     (Object... args) { double ret = 1.0; if (args != null) for (Object arg: args) ret *= dbl(arg); return ret; }
+        public double add     (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
+        public double mul     (Object... args) { double ret = 1.0; if (args != null) for (Object arg: args) ret *= dbl(arg); return ret; }
 
-        protected double sub     (Object... args) { if (args.length == 0) return 0.0 - dbl(args[0]);
+        public double sub     (Object... args) { if (args.length == 0) return 0.0 - dbl(args[0]);
                                                      double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
-        protected double quot    (Object... args) { if (args.length == 0) return 1.0 / dbl(args[0]);
+        public double quot    (Object... args) { if (args.length == 0) return 1.0 / dbl(args[0]);
                                                      double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
-        protected Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
-        protected Object lt      (Object... args) { return lt(args[0], args[1]); }
-        protected Object le      (Object... args) { return le(args[0], args[1]); }
-        protected Object ge      (Object... args) { return ge(args[0], args[1]); }
-        protected Object gt      (Object... args) { return gt(args[0], args[1]); }
+        public Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
+        public Object lt      (Object... args) { return lt(args[0], args[1]); }
+        public Object le      (Object... args) { return le(args[0], args[1]); }
+        public Object ge      (Object... args) { return ge(args[0], args[1]); }
+        public Object gt      (Object... args) { return gt(args[0], args[1]); }
 
-        protected Object format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
-        protected Object formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
+        public Object format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
+        public Object formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
 
-        protected Object getInternalRealTime(Object... args) { return getInternalRealTime(); }
-        protected Object getInternalRunTime (Object... args) { return getInternalRunTime(); }
-        protected Object getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
-        protected Object sleep              (Object... args) { return sleep(new ArraySlice(args, 0)); }
-        protected Object getUniversalTime   (Object... args) { return getUniversalTime(); }
-        protected Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
+        public Object getInternalRealTime(Object... args) { return getInternalRealTime(); }
+        public Object getInternalRunTime (Object... args) { return getInternalRunTime(); }
+        public Object getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
+        public Object sleep              (Object... args) { return sleep(new ArraySlice(args, 0)); }
+        public Object getUniversalTime   (Object... args) { return getUniversalTime(); }
+        public Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
 
 
-        /// Helpers that the Java code compiled from Murmel will use
+        /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
+        public Object car (Object l)  { return LambdaJ.car(l); }
+        public Object cdr (Object l)  { return LambdaJ.cdr(l); }
+        public ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
+
+        public ConsCell arraySlice(Object[] o, int offset) {
+            return offset >= o.length ? null : new ArraySlice(o, offset);
+        }
+
+        /** used for function calls */
+        public Object funcall(Object fn, Object... args) {
+            MurmelFunction f = (MurmelFunction)fn;
+            return f.apply(args);
+        }
+
+        /** used for (apply sym form) */
+        public Object applyHelper(Object fn, Object argList) {
+            MurmelFunction f = (MurmelFunction)fn;
+            if (argList instanceof Object[]) return f.apply((Object[])argList);
+            return f.apply(listToArray(argList));
+        }
+
+        public double dbl(Object n) {
+            return ((Number)n).doubleValue();
+        }
+
+        public Object numbereq(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
+        }
+
+        public Object lt(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <  0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
+        }
+
+        public Object le(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <= 0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
+        }
+
+        public Object ge(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >= 0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
+        }
+
+        public Object gt(Object lhs, Object rhs) {
+            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >  0 ? _t : null;
+            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
+        }
+
+
+
         protected static void main(MurmelJavaProgram program) {
             try {
                 Object result = program.body();
@@ -2907,56 +2963,6 @@ public class LambdaJ {
                 System.err.println(e.getMessage());
                 System.exit(1);
             }
-        }
-
-        protected Object car (Object l)  { return LambdaJ.car(l); }
-        protected Object cdr (Object l)  { return LambdaJ.cdr(l); }
-        protected ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
-
-        protected ConsCell arraySlice(Object[] o, int offset) {
-            return offset >= o.length ? null : new ArraySlice(o, offset);
-        }
-
-        /** used for function calls */
-        protected Object funcall(Object fn, Object... args) {
-            MurmelFunction f = (MurmelFunction)fn;
-            return f.apply(args);
-        }
-
-        /** used for (apply sym form) */
-        protected Object apply(Object fn, Object argList) {
-            MurmelFunction f = (MurmelFunction)fn;
-            if (argList instanceof Object[]) return f.apply((Object[])argList);
-            return f.apply(listToArray(argList));
-        }
-
-        protected double dbl(Object n) {
-            return ((Number)n).doubleValue();
-        }
-
-        protected Object numbereq(Object lhs, Object rhs) {
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
-        }
-
-        protected Object lt(Object lhs, Object rhs) {
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <  0 ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
-        }
-
-        protected Object le(Object lhs, Object rhs) {
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <= 0 ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
-        }
-
-        protected Object ge(Object lhs, Object rhs) {
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >= 0 ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
-        }
-
-        protected Object gt(Object lhs, Object rhs) {
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >  0 ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
         }
     }
 
@@ -3041,7 +3047,7 @@ public class LambdaJ {
             for (String   global: MurmelJavaProgram.globalvars)        env = extenv(global, 0, env);
             for (String[] alias:  MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), alias[1]), env);
             for (String   prim:   MurmelJavaProgram.primitives)        env = extenvfunc(prim, 0, env);
-            for (String[] alias:  MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)this::" + alias[1]), env);
+            for (String[] alias:  MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)rt()::" + alias[1]), env);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -3056,15 +3062,18 @@ public class LambdaJ {
             ret.append("import com.robertmayer.lambdaj.LambdaJ;\n"
                      + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
+                     //+ "    public final ").append(clsName).append(" program = new ").append(clsName).append("();\n\n"
+                     + "    protected ").append(clsName).append(" rt() { return this; }\n\n").append(""
                      + "    public static void main(String[] args) {\n"
                      + "        main(new ").append(clsName).append("());\n"
+                     //+ "          main(program);\n"
                      + "    }\n\n");
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
             final StringBuilder globals = new StringBuilder();
             Object result = null;
             Object form;
-            while (null != (form = forms.readObj())) { // todo falls unit instanceof SExpPerser -> readObj(true)
+            while (null != (form = forms.readObj())) { // todo falls unit instanceof SExpParser -> readObj(true)
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineGlobal(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
@@ -3106,12 +3115,12 @@ public class LambdaJ {
 
         /** for compiling possibly recursive functions: extend the environment by putting (symbol this::_symname) in front of {@code prev} */
         private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
-            return cons(cons(intern(symname), cons("((MurmelFunction)this::" + mangle(symname, sfx) + ')', null)), prev);
+            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', null)), prev);
         }
 
-        // todo diese funktion steckt auf params ins env -> verwenden
+        // todo diese funktion steckt auch params ins env -> verwenden
         private ConsCell extenvfunc(String symname, ConsCell params, int sfx, ConsCell prev) {
-            return cons(cons(intern(symname), cons("((MurmelFunction)this::" + mangle(symname, sfx) + ')', params)), prev);
+            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', params)), prev);
         }
 
         private LambdaJSymbol intern(String symname) {
@@ -3131,8 +3140,11 @@ public class LambdaJ {
         private String javasym(Object form, ConsCell env) {
             if (form == null) form = intern("nil");
             ConsCell symentry = assoc(form, env);
-            if (symentry == null)
-                throw new LambdaJError(true, "undefined symbol %s", form.toString());
+            if (symentry == null) {
+                //throw new LambdaJError(true, "undefined symbol %s", form.toString());
+                System.err.println("implicit declaration of " + form.toString());
+                return mangle(form.toString(), 0);
+            }
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
             else javasym = (String)cdr(symentry);
@@ -3165,14 +3177,15 @@ public class LambdaJ {
             Object body = cdr(cdr(car(cdr(form))));
 
             String fname = javasym(sym, extenv(sym.toString(), 0, env));
-            env = extenvfunc(sym.toString(), 0, env);
+            env = extenv(sym.toString(), 0, env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
-            sb.append("    private Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
+            sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
+            sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx);
-            sb.append("        return result").append(rsfx).append(";\n    }\n\n");
+            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
 
             return env;
         }
@@ -3202,6 +3215,8 @@ public class LambdaJ {
                 }
                 /// * atoms that are not symbols
                 if (atom(form)) {
+                    // todo steht im Murmel 1, dann wird das als Long geparst. und hier wird 1 ins Java file geschrieben, das der Java Compiler nach (int)1 uebersetzt
+                    // hier eine extrawurst fuer ganzzahlen einbauen, oder statt printSEx() eine Methode im Compiler die atoms richtig nach Java uebersetzt
                     sb.append(printSEx(form));  return;
                 }
 
@@ -3272,7 +3287,7 @@ public class LambdaJ {
 
                     ///     - apply
                     if (isSymbol(op, "apply")) {
-                        sb.append("apply(");
+                        sb.append("applyHelper(");
                         formToJava(sb, car(args), env, rsfx);
                         sb.append(", ");
                         formToJava(sb, cadr(args), env, rsfx);
@@ -3408,7 +3423,7 @@ public class LambdaJ {
             if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
 
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
-            if (atom(form))    { sb.append(printSEx(form)); return; }
+            if (atom(form))    { sb.append(printSEx(form)); return; } // todo statt printSEx -> atomToJava, vgl. formToJava->atom
             if (consp(form))   { sb.append("cons("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
 
             throw new LambdaJError("quote: internal error");
