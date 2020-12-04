@@ -1,3 +1,6 @@
+die basisklasse MurmelJavaProgram sollte besser MurmelRuntime heissen
+-> im Code und in den Strings umbenamsen
+
 das generierte getVaule() sollte im default ein neues MurmelProgram.getValue aufrufen, das alle vordefinierten globals und primitives liefert
 
 der compiler braucht forward deklarationen, der interpreter nicht
