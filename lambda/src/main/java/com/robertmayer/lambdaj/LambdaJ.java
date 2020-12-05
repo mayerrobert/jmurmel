@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.276 2020/12/04 20:42:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.277 2020/12/05 07:13:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2376,7 +2376,7 @@ public class LambdaJ {
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
                     if (":java"   .equals(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
-                    if (":run"    .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
+                    if (":r"      .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
                     if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
@@ -2626,7 +2626,7 @@ public class LambdaJ {
         System.out.println("  :l ............................. print history to the screen");
         System.out.println("  :w filename .................... write history to a new file with the given filename");
         System.out.println();
-        System.out.println("  :run ........................... compile history to Java class 'MurmelProgram' and run it");
+        System.out.println("  :r ............................. compile history to Java class 'MurmelProgram' and run it");
         System.out.println();
         System.out.println("  :java classname t .............. compile history to Java class 'classname' and print to the screen");
         System.out.println("  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'");
@@ -3220,9 +3220,7 @@ public class LambdaJ {
                 }
                 /// * atoms that are not symbols
                 if (atom(form)) {
-                    // todo steht im Murmel 1, dann wird das als Long geparst. und hier wird 1 ins Java file geschrieben, das der Java Compiler nach (int)1 uebersetzt
-                    // hier eine extrawurst fuer ganzzahlen einbauen, oder statt printSEx() eine Methode im Compiler die atoms richtig nach Java uebersetzt
-                    sb.append(printSEx(form));  return;
+                    atomToJava(sb, form);  return;
                 }
 
                 if (consp(form)) {
@@ -3356,6 +3354,13 @@ public class LambdaJ {
             }
         }
 
+        /** write atoms that are not symbols */
+        private WrappingWriter atomToJava(WrappingWriter sb, Object form) {
+            if (form instanceof Long) sb.append(Long.toString(((Long)form).longValue())).append('L');
+            else sb.append(printSEx(form));
+            return sb;
+        }
+
         private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx) {
             sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, cond, env, rsfx);
@@ -3420,15 +3425,17 @@ public class LambdaJ {
 
         /** eval form and change to double */
         private void asDouble(WrappingWriter sb, Object form, ConsCell env, int rsfx) {
-            //sb.append("((Number)"); formToJava(sb, o, env, rsfx); sb.append(").doubleValue()");
-            sb.append("dbl("); formToJava(sb, form, env, rsfx); sb.append(')');
+            if (form == null) throw new LambdaJError("not a number: nil");
+            if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
+            else if (form instanceof Double) sb.append(form.toString());
+            else { sb.append("dbl("); formToJava(sb, form, env, rsfx); sb.append(')'); }
         }
 
         private void quotedFormToJava(WrappingWriter sb, Object form) {
             if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
 
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
-            if (atom(form))    { sb.append(printSEx(form)); return; } // todo statt printSEx -> atomToJava, vgl. formToJava->atom
+            if (atom(form))    { atomToJava(sb, form); return; }
             if (consp(form))   { sb.append("cons("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
 
             throw new LambdaJError("quote: internal error");
