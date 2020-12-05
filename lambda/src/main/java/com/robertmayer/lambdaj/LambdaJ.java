@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.277 2020/12/05 07:13:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.278 2020/12/05 08:10:00 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2281,22 +2281,14 @@ public class LambdaJ {
 
     private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult, List<Object> history) {
         try {
-            // todo einzeln lesen, history abfuellen
-            /*
-            final String result = printSEx(interpreter.interpretExpressions(prog, System.in::read, System.out::print));
-            if (result != null) {
-                System.out.println();
-                System.out.println("==> " + result);
-            }
-            */
-            SExpressionParser parser = (SExpressionParser)interpreter.symtab;
+            final SExpressionParser parser = (SExpressionParser)interpreter.symtab;
             parser.setInput(prog);
-            ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, true);
-            ObjectWriter outWriter = makeWriter(System.out::print);
+            final ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, true);
+            final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
             Object result = null;
             for (;;) {
-                Object form = parser.readObj(true);
+                final Object form = parser.readObj(true);
                 if (form == null) break;
                 if (history != null) history.add(form);
                 result = interpreter.eval(form, interpreter.topEnv, 0, 0);
@@ -3070,7 +3062,8 @@ public class LambdaJ {
             final StringBuilder globals = new StringBuilder();
             Object result = null;
             Object form;
-            while (null != (form = forms.readObj())) { // todo falls unit instanceof SExpParser -> readObj(true)
+            final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
+            while (null != (form = _forms.readObj())) {
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineGlobal(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
