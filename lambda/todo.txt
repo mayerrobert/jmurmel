@@ -1,3 +1,17 @@
+(let ((nil 42)) nil)   sollte eig wg reserved word nicht gehen, geht aber in interpreter und compiler
+(let ((t 42)) t)       sollte eig wg reserved word nicht gehen, geht aber im compiler
+(let ((cons 42)) cons) geht, sollte das einen fehler wg. reserved geben?
+
+(define t 42)          sollte eig wg reserved word nicht gehen, geht aber im compiler
+(define nil 42)        sollte eig wg reserved word nicht gehen, geht aber im interpreter, NPE im compiler
+
+muss der compiler auch reserved words handeln?
+-> ja, s.o.
+
+
+define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
+
+methode eval sollte eigentlich evalquote heissen
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
@@ -106,8 +120,6 @@ wuerde sich beim umstellen auf funktion angleichen lassen
 
 funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFunction umstellen
 -> erst CPS im compiler umsetzen
-
-muss der compiler auch reserved words handeln?
 
 IntArraySlice, CharArraySlice, ...
 string->array koennte so ein CharArraySlice liefern, readbytes koennte ein ByteArraySlice liefern

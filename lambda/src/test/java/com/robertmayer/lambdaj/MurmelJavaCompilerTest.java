@@ -53,6 +53,24 @@ public class MurmelJavaCompilerTest {
         assertEquals("wrong result", "t", sexp(result));
     }
 
+    // murmel compiler should throw error "reserved word"
+    @Test
+    public void testDefineNil() throws Exception {
+        String msg = compileError("(define nil 42)");
+        assertNotNull("expected error", msg);
+        String expected = "compile: can't use reserved";
+        assertEquals("got wrong error", expected, msg.substring(0, expected.length()));
+    }
+
+    // murmel compiler should throw error "reserved word"
+    @Test
+    public void testDefineT() throws Exception {
+        String msg = compileError("(define t 42)");
+        assertNotNull("expected error", msg);
+        String expected = "compile: can't use reserved";
+        assertEquals("got wrong error", expected, msg.substring(0, expected.length()));
+    }
+
     @Test
     public void testDefun() throws Exception {
         MurmelJavaProgram program = compile("(define f1 (lambda (a) a)) (defun f2 (a) a)");
@@ -292,6 +310,20 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile Murmel to class:\n\n" + s, murmelClass);
 
         return murmelClass.newInstance();
+    }
+
+    private String compileError(String source) throws Exception {
+        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
+        final SExpressionParser parser = new SExpressionParser(reader::read);
+
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
+        try {
+            c.formsToJavaClass("Test", parser, null);
+        }
+        catch (LambdaJError e) {
+            return e.getMessage();
+        }
+        return null;
     }
 
     private String sexp(Object obj) {
