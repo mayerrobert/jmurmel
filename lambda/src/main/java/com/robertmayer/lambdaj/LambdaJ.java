@@ -108,7 +108,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.275 2020/12/03 07:40:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.276 2020/12/04 20:42:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2757,9 +2757,9 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
-        protected interface MurmelProgn { Object call(); }
+        public interface MurmelProgn { Object call(); }
 
-        protected final LambdaJ intp = new LambdaJ();
+        private final LambdaJ intp = new LambdaJ();
 
         protected MurmelJavaProgram() {
             intp.interpretExpression(() -> -1, System.out::print);
@@ -2784,39 +2784,6 @@ public class LambdaJ {
             }
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
         }
-
-
-
-        /// Environment for compiled Murmel:
-        /// * nil, t, pi
-        /// * car, cdr, cons
-        /// * eval, eq, null, intern, write, writeln
-        /// * atom, consp, listp, symbolp, numberp, stringp, characterp, assoc, list
-        /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
-        /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
-        /// * internal-time-units-per-second
-        /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-        /// * format, format-locale
-        /// * todo ::
-        ///
-        private static final String[] globalvars = new String[] { "nil", "t", "pi" };
-        private static final String[][] aliasedGlobals = new String[][] {
-            { "internal-time-units-per-second", "itups" },
-        };
-        private static final String[] primitives = new String[] {
-                "car", "cdr", "cons",
-                "eval", "eq", "null", "intern", "write", "writeln",
-                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
-                "assoc", "list",
-                "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
-        };
-        private static final String[][] aliasedPrimitives = new String[][] {
-            {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
-            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
-            {"format", "format"}, {"format-locale", "formatLocale" },
-            {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
-            {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
-        };
 
 
 
@@ -2986,6 +2953,39 @@ public class LambdaJ {
 
 
 
+        /// Environment for compiled Murmel:
+        /// * nil, t, pi
+        /// * car, cdr, cons
+        /// * eval, eq, null, intern, write, writeln
+        /// * atom, consp, listp, symbolp, numberp, stringp, characterp, assoc, list
+        /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
+        /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
+        /// * internal-time-units-per-second
+        /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
+        /// * format, format-locale
+        /// * todo ::
+        ///
+        private static final String[] globalvars = new String[] { "nil", "t", "pi" };
+        private static final String[][] aliasedGlobals = new String[][] {
+            { "internal-time-units-per-second", "itups" },
+        };
+        private static final String[] primitives = new String[] {
+                "car", "cdr", "cons",
+                "eval", "eq", "null", "intern", "write", "writeln",
+                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
+                "assoc", "list",
+                "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
+        };
+        private static final String[][] aliasedPrimitives = new String[][] {
+            {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
+            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
+            {"format", "format"}, {"format-locale", "formatLocale" },
+            {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
+            {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
+        };
+
+
+
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
 
         public Class <MurmelJavaProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFileName) throws Exception {
@@ -3044,10 +3044,10 @@ public class LambdaJ {
          *  with a "public static void main()" */
         public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell env = null;
-            for (String   global: MurmelJavaProgram.globalvars)        env = extenv(global, 0, env);
-            for (String[] alias:  MurmelJavaProgram.aliasedGlobals)    env = cons(cons(intern(alias[0]), alias[1]), env);
-            for (String   prim:   MurmelJavaProgram.primitives)        env = extenvfunc(prim, 0, env);
-            for (String[] alias:  MurmelJavaProgram.aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)rt()::" + alias[1]), env);
+            for (String   global: globalvars)        env = extenv(global, 0, env);
+            for (String[] alias:  aliasedGlobals)    env = cons(cons(intern(alias[0]), alias[1]), env);
+            for (String   prim:   primitives)        env = extenvfunc(prim, 0, env);
+            for (String[] alias:  aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)rt()::" + alias[1]), env);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -3059,14 +3059,11 @@ public class LambdaJ {
                 ret.append("package ").append(unitName.substring(0, dotpos)).append(";\n\n");
                 clsName = unitName.substring(dotpos+1);
             }
-            ret.append("import com.robertmayer.lambdaj.LambdaJ;\n"
-                     + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
+            ret.append("import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
-                     //+ "    public final ").append(clsName).append(" program = new ").append(clsName).append("();\n\n"
                      + "    protected ").append(clsName).append(" rt() { return this; }\n\n").append(""
                      + "    public static void main(String[] args) {\n"
                      + "        main(new ").append(clsName).append("());\n"
-                     //+ "          main(program);\n"
                      + "    }\n\n");
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
@@ -3091,12 +3088,20 @@ public class LambdaJ {
             if (result != null) result = "_intern(\"" + result.toString() + "\")";
 
             // generate getValue() for FFI
-            ret.append("    public Object getValue(String symbol) {\n"
-                     + "        switch (symbol) {\n");
+            ret.append("    @Override public Object getValue(String symbol) {\n");
+            ret.append("        switch (symbol) {\n");
             ret.append(globals);
-            ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
-                     + "        }\n"
-                     + "    }\n\n");
+            ret.append("        }\n");
+
+            ret.append("        switch (symbol) {\n");
+            for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
+            for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
+            for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (MurmelFunction)rt()::_").append(prim).append(";\n");
+            for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (MurmelFunction)rt()::").append(alias[1]).append(";\n");
+            ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n");
+            ret.append("        }\n");
+
+            ret.append("    }\n\n");
 
             ret.append("    // toplevel forms\n");
             ret.append("    public Object body() {\n        Object result0 = ").append(result).append(";\n");

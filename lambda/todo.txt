@@ -1,7 +1,3 @@
-die basisklasse MurmelJavaProgram sollte besser MurmelRuntime heissen
--> im Code und in den Strings umbenamsen
-
-das generierte getVaule() sollte im default ein neues MurmelProgram.getValue aufrufen, das alle vordefinierten globals und primitives liefert
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
@@ -1792,3 +1788,10 @@ die konstanten fuer symbolnamen von murmelprogram nach compiler
 -> doch nicht damits ein MurmelJavaProgram.getValue() geben kann
 
 der compiler braucht forward deklarationen, der interpreter nicht
+
+die basisklasse MurmelJavaProgram sollte besser MurmelRuntime heissen
+-> im Code und in den Strings umbenamsen
+-> doch nicht
+
+das generierte getValue() sollte im default ein neues MurmelProgram.getValue aufrufen, das alle vordefinierten globals und primitives liefert
+-> stattdessen enthaelt getValue() ein zweites switch mit builtins
