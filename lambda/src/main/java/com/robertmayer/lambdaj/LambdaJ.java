@@ -38,12 +38,14 @@ import java.time.temporal.ChronoUnit;
 import java.time.zone.ZoneRules;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
@@ -108,7 +110,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.278 2020/12/05 08:10:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.279 2020/12/05 08:44:25 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -234,7 +236,7 @@ public class LambdaJ {
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String name;
-        public LambdaJSymbol(String symbolName) { name = symbolName; }
+        public LambdaJSymbol(String symbolName) { name = Objects.requireNonNull(symbolName, "can't use null symbolname"); }
         @Override public String toString() { return name.toString(); }
 
         @Override public int hashCode() { return name.hashCode(); }
@@ -750,7 +752,10 @@ public class LambdaJ {
 
     /** Throw error if sym is a reserved symbol */
     private void notReserved(final String op, final Object sym) {
-        if (member(sym, reservedWords)) throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", op, sym.toString());
+        if (sym == null)
+            throw new LambdaJError(true, "%s: can't use reserved word nil as a symbol", op);
+        if (member(sym, reservedWords))
+            throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", op, sym.toString());
     }
 
     /// Symboltable
@@ -1549,7 +1554,7 @@ public class LambdaJ {
                 throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
             notReserved(func, car(a));
             if (atom(cdr(a))) {
-                notReserved(func, cdr(a));
+                if (cdr(a) != null) notReserved(func, cdr(a));
                 return; // that was the end of a dotted list, everything a-ok, move along
             }
         }
@@ -2941,9 +2946,23 @@ public class LambdaJ {
                 murmelClassLoader = new MurmelClassLoader(outPath);
                 return null;
             });
+
+            if (st != null)
+                for (String s: reservedWords) {
+                    reservedSymbols.add(intern(s));
+                }
         }
 
 
+
+        // todo soll da car, crd, cons, usw auch mit dazu? alle funcs die eine sonderbehandlung in compile haben?
+        private static final String[] reservedWords = new String[] {
+                "nil", "t",
+                "lambda", "dynamic", "quote", "cond", "labels", "eval", "if", "define", "defun", "let", "let*", "letrec",
+                "apply", "progn",
+        };
+
+        private final Collection<LambdaJSymbol> reservedSymbols = new ArrayList<>();
 
         /// Environment for compiled Murmel:
         /// * nil, t, pi
@@ -3036,10 +3055,10 @@ public class LambdaJ {
          *  with a "public static void main()" */
         public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell env = null;
-            for (String   global: globalvars)        env = extenv(global, 0, env);
-            for (String[] alias:  aliasedGlobals)    env = cons(cons(intern(alias[0]), alias[1]), env);
+            for (String   global: globalvars)        env = extenv(intern(global),   '_' + global,   env);
+            for (String[] alias:  aliasedGlobals)    env = extenv(intern(alias[0]), '_' + alias[1], env);
             for (String   prim:   primitives)        env = extenvfunc(prim, 0, env);
-            for (String[] alias:  aliasedPrimitives) env = cons(cons(intern(alias[0]), "(MurmelFunction)rt()::" + alias[1]), env);
+            for (String[] alias:  aliasedPrimitives) env = extenvfunc(alias[0], alias[1], env);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -3106,9 +3125,28 @@ public class LambdaJ {
             return ret;
         }
 
+
+
+        private void notReserved(LambdaJSymbol sym) {
+            if (sym == null)
+                throw new LambdaJError(true, "compile: can't use reserved word nil as a symbol");
+            if (reservedSymbols.contains(sym))
+                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", sym.toString());
+        }
+
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
         private ConsCell extenv(String symname, int sfx, ConsCell prev) {
-            return cons(cons(intern(symname), mangle(symname, sfx)), prev);
+            LambdaJSymbol sym = intern(symname);
+            notReserved(sym);
+            return extenv(sym, mangle(symname, sfx), prev);
+        }
+
+        private ConsCell extenv(Object sym, int sfx, ConsCell prev) {
+            return extenv(sym == null ? null : sym.toString(), sfx, prev);
+        }
+
+        private ConsCell extenv(LambdaJSymbol sym, String javaName, ConsCell env) {
+            return cons(cons(sym, javaName), env);
         }
 
         /** for compiling possibly recursive functions: extend the environment by putting (symbol this::_symname) in front of {@code prev} */
@@ -3121,7 +3159,14 @@ public class LambdaJ {
             return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', params)), prev);
         }
 
+        private ConsCell extenvfunc(String symname, String javaName, ConsCell env) {
+            LambdaJSymbol sym = intern(symname);
+            notReserved(sym);
+            return extenv(sym, "((MurmelFunction)rt()::" + javaName + ')', env);
+        }
+
         private LambdaJSymbol intern(String symname) {
+            if (symname == null) symname = "nil";
             return st.intern(new LambdaJSymbol(symname));
         }
 
@@ -3158,7 +3203,7 @@ public class LambdaJ {
         private ConsCell defineGlobal(WrappingWriter sb, ConsCell form, ConsCell env) {
             if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
             else {
-                env = extenv(car(form).toString(), 0, env);
+                env = extenv(car(form), 0, env);
                 sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n");
                 sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
                 formToJava(sb, cadr(form), env, 0);
@@ -3174,8 +3219,8 @@ public class LambdaJ {
             Object params = car(cdr(car(cdr(form))));
             Object body = cdr(cdr(car(cdr(form))));
 
-            String fname = javasym(sym, extenv(sym.toString(), 0, env));
-            env = extenv(sym.toString(), 0, env);
+            String fname = javasym(sym, extenv(sym, 0, env));
+            env = extenv(sym, 0, env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
             sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
@@ -3368,12 +3413,12 @@ public class LambdaJ {
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
                     Object param = car(params);
-                    env = extenv(param.toString(), rsfx, env);
+                    env = extenv(param, rsfx, env);
                     sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
                 }
 
                 else if (symbolp(params)) {
-                    env = extenv(params.toString(), rsfx, env);
+                    env = extenv(params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = args").append(rsfx).append(";\n");
                     else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
                     return env;

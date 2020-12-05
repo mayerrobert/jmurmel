@@ -413,17 +413,16 @@ nil
 ;
 ; Murmel language:
 ; - apply probably shouldn't be a special form but a function.
+; cons, etc. probably should be reserved words.
 ;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks,
-    actually: most compile- and runtime errors will result in
-    ClassCastExceptions and NullpointerExceptions
+;   actually: most compile- and runtime errors will result in
+;   ClassCastExceptions and NullpointerExceptions
 ; - let works, (named) letXXX and labels are currently not implemented
 ; - define/ defun only work as top level forms
-; - Varargs with a dotted parameter list is not implemented
 ; - The function :: is not implemented
 ; - TCO is not implemented
-; - Reserved words if used are not reported as errors
 ;
 ; Interpreter:
 ; - Interpreted eval is a special form that behaves like a function
@@ -445,4 +444,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.23 2020/11/22 08:22:59 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.24 2020/12/01 18:31:04 Robert Exp $
