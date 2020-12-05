@@ -85,7 +85,7 @@ public class MurmelJavaCompilerTest {
     public void testCons() throws Exception {
         MurmelJavaProgram program = compile("(car (cons 1 2))");
         assertNotNull("failed to compile cons to class", program);
-        assertEquals("cons produced wrong result", 1, program.body());
+        assertEquals("cons produced wrong result", 1L, program.body());
     }
 
     @Test
