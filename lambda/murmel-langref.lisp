@@ -302,7 +302,7 @@ nil
 ; created by the primitive :: act as builtins.
 ; As far as the language is concerned, all primitives are variadic functions.
 ; The primitives themselves may have parameter checks, tough.
-; In case you call them with th wrong type(s) or number of parameters
+; In case you call them with the wrong type(s) or number of parameters
 ; the primitives may throw an error.
 
 ; (cons 'a 'b) ==> (a . b)
@@ -321,7 +321,7 @@ nil
 ; "form" will be eval'd, it must return a form.
 ; The optional argument "env" will be eval'd, it must return a list of (symbol . value).
 ; If the optional argument "env" is omitted or nil
-; then environment for the recursive eval is "all predefined global symbols"
+; then the environment for the recursive eval is "all predefined global symbols"
 ; else it is the concatenation of "env" and all predefined globals
 (eval '(+ 1 2)) ; ==> 3.0
 (eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
@@ -443,4 +443,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.27 2020/12/06 08:56:06 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.28 2020/12/06 10:25:32 Robert Exp $
