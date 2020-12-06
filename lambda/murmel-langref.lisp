@@ -420,7 +420,7 @@ nil
 ;
 ; Murmel language:
 ; - apply probably shouldn't be a special form but a function.
-; cons, etc. probably should be reserved words.
+; - cons, etc. probably should be reserved words.
 ;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks,
@@ -434,7 +434,8 @@ nil
 ; Interpreter:
 ; - Interpreted eval is a special form that behaves like a function
 ;   but should be really be a function.
-;   I.e. (apply eval '(+ 1 2)) won't work.
+;   I.e. (apply eval (list (quote (+ 1 2)))) won't work
+;   (interpreter will give "Error: eval: 'eval' is not bound").
 ;
 ; The Todo list for features is way too long.
 
@@ -448,4 +449,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.25 2020/12/05 18:51:24 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.26 2020/12/06 08:35:12 Robert Exp $

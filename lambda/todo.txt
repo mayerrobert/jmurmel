@@ -1,7 +1,5 @@
 define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 
-methode eval sollte eigentlich evalquote heissen
-
 trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
@@ -1808,3 +1806,5 @@ das generierte getValue() sollte im default ein neues MurmelProgram.getValue auf
 
 muss der compiler auch reserved words handeln?
 -> ja, s.o.
+
+methode eval sollte eigentlich evalquote heissen
