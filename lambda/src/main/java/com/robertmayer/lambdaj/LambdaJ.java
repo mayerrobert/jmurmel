@@ -110,7 +110,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.279 2020/12/05 08:44:25 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.280 2020/12/05 18:51:24 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -808,7 +808,7 @@ public class LambdaJ {
     private ConsCell topEnv;
 
     /// ###  eval - the heart of most if not all Lisp interpreters
-    private Object eval(Object form, ConsCell env, int stack, int level) {
+    private Object evalquote(Object form, ConsCell env, int stack, int level) {
         boolean isTc = false;
         try {
             stack++;
@@ -869,7 +869,7 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
-                        final Object value = eval(cadr(arguments), env, stack, level);
+                        final Object value = evalquote(cadr(arguments), env, stack, level);
                         insertFront(topEnv, symbol, value);
                         return symbol;
                     }
@@ -888,14 +888,16 @@ public class LambdaJ {
 
                     /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                     if (operator == sEval) {
-                        oneArg("eval", arguments);
-                        form = eval(car(arguments), env, stack, level); isTc = true; continue tailcall;
+                        nArgs("eval", arguments, 1, 2);
+                        form = evalquote(car(arguments), env, stack, level);
+                        env = cdr(arguments) == null ? topEnv : append(evalquote(cadr(arguments), env, stack, level), topEnv);
+                        isTc = true; continue tailcall;
                     }
 
                     /// eval - (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3);
-                        if (eval(car(arguments), env, stack, level) != null) {
+                        if (evalquote(car(arguments), env, stack, level) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (cddr(arguments) != null) {
                             form = caddr(arguments); isTc = true; continue tailcall;
@@ -916,7 +918,7 @@ public class LambdaJ {
                         if (arguments != null)
                             for (Object c: arguments) {
                                 if (!listp(c)) throw new LambdaJError(true, "%s: malformed cond. expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
-                                if (eval(car(c), env, stack, level) != null) {
+                                if (evalquote(car(c), env, stack, level) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
                                 }
@@ -966,7 +968,7 @@ public class LambdaJ {
 
                             ConsCell newBinding = null;
                             if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
-                            Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                            Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
                             if (letRec) newBinding.rplacd(val);
                             else        extenv = extendEnv(extenv, sym, val);
                         }
@@ -992,8 +994,8 @@ public class LambdaJ {
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments);
 
-                            func = eval(car(arguments), env, stack, level);
-                            final Object _argList = eval(cadr(arguments), env, stack, level);
+                            func = evalquote(car(arguments), env, stack, level);
+                            final Object _argList = evalquote(cadr(arguments), env, stack, level);
                             if (!listp(_argList)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "apply", printSEx(_argList));
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
@@ -1001,7 +1003,7 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            func = eval(operator, env, stack, level);
+                            func = evalquote(operator, env, stack, level);
                             if (!listp(arguments)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "function application", printSEx(arguments));
                             argList = evlis(arguments, env, stack, level);
                             // fall through to "actually perform..."
@@ -1030,7 +1032,7 @@ public class LambdaJ {
                     /// eval - eval a list of forms
                     // todo dotted list wird cce geben
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                        eval(car(forms), env, stack, level);
+                        evalquote(car(forms), env, stack, level);
                     if (forms != null) {
                         form = car(forms); isTc = true; continue tailcall;
                     }
@@ -1130,7 +1132,7 @@ public class LambdaJ {
         ConsCell forms = _forms;
         if (forms != null)
             for (Object form: forms) {
-                ListConsCell currentArg = cons(eval(form, env, stack, level), null);
+                ListConsCell currentArg = cons(evalquote(form, env, stack, level), null);
                 if (head == null) {
                     head = currentArg;
                     insertPos = head;
@@ -1384,6 +1386,25 @@ public class LambdaJ {
                 insertPos = (ListConsCell) insertPos.cdr();
             }
         }
+        return ret;
+    }
+
+    /** Create a new list by concatenating lhs and rhs. Similar to CL append, CL's append is variadic, this one takes 2 args */
+    private ConsCell append(Object lhs, Object rhs) {
+        if (!consp(lhs))
+            return cons(lhs, consp(rhs) ? rhs : cons(rhs, null));
+        ListConsCell ret = null, insertPos = null;
+        for (Object o: (ConsCell)lhs) {
+            if (ret == null) {
+                ret = cons(o, null);
+                insertPos = ret;
+            }
+            else {
+                insertPos.rplacd(cons(o, null));
+                insertPos = (ListConsCell) insertPos.cdr();
+            }
+        }
+        insertPos.rplacd(consp(rhs) ? rhs : cons(rhs, null));
         return ret;
     }
 
@@ -2025,7 +2046,7 @@ public class LambdaJ {
         @Override
         public Object apply(Object... args) {
             if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-            return eval(cons(lambda, list(args)), env, 0, 0);
+            return evalquote(cons(lambda, list(args)), env, 0, 0);
         }
     }
 
@@ -2099,7 +2120,7 @@ public class LambdaJ {
         Object result = null;
         while (true) {
             final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
-            if (exp != null) result = eval(exp, topEnv, 0, 0);
+            if (exp != null) result = evalquote(exp, topEnv, 0, 0);
             else return result;
         }
     }
@@ -2123,7 +2144,7 @@ public class LambdaJ {
         topEnv = env;
         final Object exp = parser.readObj(true);
         long tStart = System.nanoTime();
-        final Object result = eval(exp, env, 0, 0);
+        final Object result = evalquote(exp, env, 0, 0);
         traceStats(System.nanoTime() - tStart);
         return result;
     }
@@ -2155,7 +2176,7 @@ public class LambdaJ {
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
             long tStart = System.nanoTime();
-            final Object result = eval(exp, env, 0, 0);
+            final Object result = evalquote(exp, env, 0, 0);
             traceStats(System.nanoTime() - tStart);
             exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
@@ -2296,7 +2317,7 @@ public class LambdaJ {
                 final Object form = parser.readObj(true);
                 if (form == null) break;
                 if (history != null) history.add(form);
-                result = interpreter.eval(form, interpreter.topEnv, 0, 0);
+                result = interpreter.evalquote(form, interpreter.topEnv, 0, 0);
                 if (printResult) {
                     System.out.println();
                     System.out.println("==> " + result);
@@ -2380,7 +2401,7 @@ public class LambdaJ {
                 }
 
                 long tStart = System.nanoTime();
-                final Object result = interpreter.eval(exp, env, 0, 0);
+                final Object result = interpreter.evalquote(exp, env, 0, 0);
                 long tEnd = System.nanoTime();
                 System.out.println();
                 interpreter.traceStats(tEnd - tStart);
@@ -2789,7 +2810,7 @@ public class LambdaJ {
         public final Object _t;
         public final Object _pi = Math.PI;
 
-        /// preddefined aliased global variables
+        /// predefined aliased global variables
         // itups doesn't have a leading _ because it is avaliable under an alias name
         public final Object itups = 1e9;
 
@@ -2798,10 +2819,7 @@ public class LambdaJ {
         public Object   _cdr (Object... args) { return cdr(args[0]); }
         public ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
 
-        // todo env klaeren, muss das env des interpreter mitgefuehrt werden
-        // CLHS sagt: null lexical env, aktuelles dyn env
-        // scheme eval hat nicht automatisch das current dyn env https://docs.racket-lang.org/guide/eval.html
-        public Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? (ConsCell)(args[1]) : intp.topEnv, 0, 0); }
+        public Object _eval      (Object... args) { return intp.evalquote(args[0], args.length == 2 ? intp.append((args[1]), intp.topEnv) : intp.topEnv, 0, 0); }
         public Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
         public Object _null      (Object... args) { return args[0] != args[1] ? _t : null; }
 
@@ -2958,8 +2976,8 @@ public class LambdaJ {
         // todo soll da car, crd, cons, usw auch mit dazu? alle funcs die eine sonderbehandlung in compile haben?
         private static final String[] reservedWords = new String[] {
                 "nil", "t",
-                "lambda", "dynamic", "quote", "cond", "labels", "eval", "if", "define", "defun", "let", "let*", "letrec",
-                "apply", "progn",
+                "lambda", "dynamic", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec",
+                "eval", "apply", "progn",
         };
 
         private final Collection<LambdaJSymbol> reservedSymbols = new ArrayList<>();

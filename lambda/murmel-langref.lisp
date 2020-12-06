@@ -317,8 +317,15 @@ nil
 (cdr "abc") ; ==> "bc"
 
 ;;; (eval form) -> object
-; form will be eval'd, it must return a form
-(eval '(+ 1 2))
+;;; (eval form env) -> object
+; "form" will be eval'd, it must return a form.
+; The optional argument "env" will be eval'd, it must return a list of (symbol . value).
+; If the optional argument "env" is omitted or nil
+; then environment for the recursive eval is "all predefined global symbols"
+; else it is the concatenation of "env" and all predefined globals
+(eval '(+ 1 2)) ; ==> 3.0
+(eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
+(eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
 
 ; eq, null, atom, consp, listp, symbolp, numberp, stringp, characterp,
 
@@ -428,9 +435,6 @@ nil
 ; - Interpreted eval is a special form that behaves like a function
 ;   but should be really be a function.
 ;   I.e. (apply eval '(+ 1 2)) won't work.
-; - Interpreted eval has the current dynamic environment,
-;   compiled eval has the global environment only. This
-;   will probably change so that both have global environment.
 ;
 ; The Todo list for features is way too long.
 
@@ -444,4 +448,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.24 2020/12/01 18:31:04 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.25 2020/12/05 18:51:24 Robert Exp $

@@ -2,6 +2,8 @@ define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generie
 
 methode eval sollte eigentlich evalquote heissen
 
+trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
+
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 
 letXXX und labels im compiler
