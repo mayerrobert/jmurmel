@@ -115,6 +115,27 @@ public class ApplyTest {
 
 
 
+    @Test
+    public void applyEval() {
+        LambdaJTest.runTest("String", "(apply eval '(1))", "1.0", null);
+    }
+
+    @Test
+    public void applyEvalAdd() {
+        LambdaJTest.runTest("String", "(apply eval (list (quote (+ 1 2))))", "3.0", null);
+    }
+
+    @Test
+    public void evalEnv() {
+        LambdaJTest.runTest("String", "(eval 'x (list '(x . 2)))", "2.0", null);
+    }
+
+    @Test
+    public void evalEnvError() {
+        LambdaJTest.runErrorTest("String", "(eval 'x '2)", "eval: expected 'env' to be a list but got 2.0");
+    }
+
+
 
     @Test
     public void applyApply() {

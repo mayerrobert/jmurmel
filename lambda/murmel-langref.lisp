@@ -431,12 +431,6 @@ nil
 ; - The function :: is not implemented
 ; - TCO is not implemented
 ;
-; Interpreter:
-; - Interpreted eval is a special form that behaves like a function
-;   but should be really be a function.
-;   I.e. (apply eval (list (quote (+ 1 2)))) won't work
-;   (interpreter will give "Error: eval: 'eval' is not bound").
-;
 ; The Todo list for features is way too long.
 
 
@@ -449,4 +443,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.26 2020/12/06 08:35:12 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.27 2020/12/06 08:56:06 Robert Exp $

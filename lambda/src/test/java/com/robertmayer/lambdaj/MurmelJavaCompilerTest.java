@@ -177,6 +177,13 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testEval2() throws Exception {
+        MurmelJavaProgram program = compile("(apply eval (list (quote (+ 1 2))))");
+        assertNotNull("failed to compile eval2 to class", program);
+        assertEquals("eval2 produced wrong result", 3.0, program.body());
+    }
+
+    @Test
     public void testCond() throws Exception {
         MurmelJavaProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");
         assertNotNull("failed to compile cond to class", program);

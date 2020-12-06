@@ -110,7 +110,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.280 2020/12/05 18:51:24 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.281 2020/12/06 08:35:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -890,7 +890,12 @@ public class LambdaJ {
                     if (operator == sEval) {
                         nArgs("eval", arguments, 1, 2);
                         form = evalquote(car(arguments), env, stack, level);
-                        env = cdr(arguments) == null ? topEnv : append(evalquote(cadr(arguments), env, stack, level), topEnv);
+                        if (cdr(arguments) == null) env = topEnv;
+                        else {
+                            Object additionalEnv = evalquote(cadr(arguments), env, stack, level);
+                            if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
+                            env = append(additionalEnv, topEnv);
+                        }
                         isTc = true; continue tailcall;
                     }
 
@@ -1371,6 +1376,11 @@ public class LambdaJ {
         if (list == null) return false;
         for (Object e: list) if (e == obj) return true;
         return false;
+    }
+
+    private Object eval(Object form, Object env) {
+        if (!listp(env)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", env);
+        return evalquote(form, env != null ? append(env, topEnv) : topEnv, 0, 0);
     }
 
     private ConsCell list(Object... a) {
@@ -1917,7 +1927,10 @@ public class LambdaJ {
 
         if (haveXtra()) {
             env = cons(cons(sDynamic, sDynamic),
-                    env);
+                  env);
+            env = cons(cons(sEval, (Primitive) a -> { nArgs("eval", a, 1, 2);
+                                                      return eval(car(a), cadr(a)); }),
+                  env);
         }
 
         if (haveT()) {
@@ -2819,7 +2832,7 @@ public class LambdaJ {
         public Object   _cdr (Object... args) { return cdr(args[0]); }
         public ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
 
-        public Object _eval      (Object... args) { return intp.evalquote(args[0], args.length == 2 ? intp.append((args[1]), intp.topEnv) : intp.topEnv, 0, 0); }
+        public Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
         public Object _null      (Object... args) { return args[0] != args[1] ? _t : null; }
 
