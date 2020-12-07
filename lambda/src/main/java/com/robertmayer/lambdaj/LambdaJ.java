@@ -7,6 +7,7 @@ package com.robertmayer.lambdaj;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -110,7 +111,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.283 2020/12/07 15:50:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.284 2020/12/07 16:40:06 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2893,10 +2894,6 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public Object car (Object l)  { return LambdaJ.car(l); }
-        public Object cdr (Object l)  { return LambdaJ.cdr(l); }
-        public ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
-
         public ConsCell arraySlice(Object[] o, int offset) {
             return offset >= o.length ? null : new ArraySlice(o, offset);
         }
@@ -2913,6 +2910,11 @@ public class LambdaJ {
             if (argList instanceof Object[]) return f.apply((Object[])argList);
             return f.apply(listToArray(argList));
         }
+
+        // todo car cdr cons koennte man inlinen, vorher warens special forms und der generierte code enthielt aufrufe
+        public Object car (Object l)  { return LambdaJ.car(l); }
+        public Object cdr (Object l)  { return LambdaJ.cdr(l); }
+        public ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
         public double dbl(Object n) {
             return ((Number)n).doubleValue();
@@ -2969,19 +2971,14 @@ public class LambdaJ {
     ///
     public static class MurmelJavaCompiler {
         private final LambdaJ.SymbolTable st;
-        private MurmelClassLoader murmelClassLoader;
+        private final JavaCompilerUtils javaCompiler;
 
         public MurmelJavaCompiler(SymbolTable st, Path outPath) {
             this.st = st;
-            AccessController.doPrivileged((PrivilegedAction<?>) () -> {
-                murmelClassLoader = new MurmelClassLoader(outPath);
-                return null;
-            });
-
-            if (st != null)
-                for (String s: reservedWords) {
-                    reservedSymbols.add(intern(s));
-                }
+            this.javaCompiler = new JavaCompilerUtils(outPath);
+            for (String s: reservedWords) {
+                reservedSymbols.add(intern(s));
+            }
         }
 
 
@@ -3036,41 +3033,14 @@ public class LambdaJ {
         }
 
         /** Compile the Murmel compilation {@code forms} to a Java class for a standalone application with a "public static void main()" */
-        @SuppressWarnings("unchecked")
         public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);
             //System.err.print(w.toString());
-            final Class<MurmelJavaProgram> program = (Class<MurmelJavaProgram>) javaToClass(unitName, w.toString());
-            if (jarFileName == null) return program;
-
-            final Manifest mf = new Manifest();
-            mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
-            mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
-            mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, unitName);
-            mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
-
-            try (final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
-                final String[] dirs = unitName.split("\\.");
-                final StringBuilder path = new StringBuilder();
-                for (int i = 0; i < dirs.length; i++) {
-                    path.append(dirs[i]);
-                    if (i == dirs.length - 1) {
-                        final JarEntry entry = new JarEntry(path.toString() + ".class");
-                        jar.putNextEntry(entry);
-                        jar.write(murmelClassLoader.getBytes(unitName));
-                    }
-                    else {
-                        path.append('/');
-                        final JarEntry entry = new JarEntry(path.toString());
-                        jar.putNextEntry(entry);
-                    }
-                    jar.closeEntry();
-                }
-            }
-            return program;
+            return javaCompiler.javaToClass(unitName, w.toString(), jarFileName);
         }
+
+
 
         /// Wrappers to compile Murmel to Java source
 
@@ -3195,6 +3165,8 @@ public class LambdaJ {
             return extenv(sym, "((MurmelFunction)rt()::" + javaName + ')', env);
         }
 
+
+
         private LambdaJSymbol intern(String symname) {
             if (symname == null) symname = "nil";
             return st.intern(new LambdaJSymbol(symname));
@@ -3228,6 +3200,8 @@ public class LambdaJ {
         private boolean isSymbol(Object form, String sym) {
             return form.toString().equalsIgnoreCase(sym);
         }
+
+
 
         /** form is a list (symbol forms...) */
         private ConsCell defineGlobal(WrappingWriter sb, ConsCell form, ConsCell env) {
@@ -3433,12 +3407,15 @@ public class LambdaJ {
             }
         }
 
-        private ConsCell paramList(final Object args) {
+        /** extract a new list of symbols form a list of bindings, ((symbol1 form1)...) -> (symbol1...) */
+        // todo vgl. LambdaJ.extractParamList()
+        private ConsCell paramList(Object bindings) {
             ConsCell params = null; ConsCell insertPos = null;
-            for (Object paramTuple: (ConsCell)(car(args))) {
+            for (Object binding: (ConsCell)(car(bindings))) {
+                //notReserved(car(binding)); todo
                 if (params == null) { params = cons(null, null);          insertPos = params; }
                 else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
-                insertPos.rplaca(car(paramTuple));
+                insertPos.rplaca(car(binding));
             }
             return params;
         }
@@ -3532,29 +3509,73 @@ public class LambdaJ {
 
 
 
-        /** Compile Java sourcecode of class {@code className} to Java bytecode */
-        public Class<?> javaToClass(String className, String javaSource) throws Exception {
-            final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
-            final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
-            final List<String> options = Collections.singletonList("-g");
-            try {
-                fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPathFile()));
-                //                                     out       diag  opt      classes
-                final CompilationTask c = comp.getTask(null, fm, null, options, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
-                if (c.call()) {
-                    return Class.forName(className, true, murmelClassLoader);
-                }
-                throw new LambdaJError(true, "compilation of class %s failed", className);
-            }
-            finally {
-                fm.close();
-            }
-        }
-
-
-
         private ConsCell cons(Object car, Object cdr) {
             return new ListConsCell(car, cdr);
+        }
+    }
+}
+
+
+
+class JavaCompilerUtils {
+    private MurmelClassLoader murmelClassLoader;
+
+    JavaCompilerUtils(Path outPath) {
+        AccessController.doPrivileged((PrivilegedAction<?>) () -> {
+            murmelClassLoader = new MurmelClassLoader(outPath);
+            return null;
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    Class<LambdaJ.MurmelJavaProgram> javaToClass(String className, String javaSource, String jarFileName) throws Exception {
+        final Class<LambdaJ.MurmelJavaProgram> program = (Class<LambdaJ.MurmelJavaProgram>) javaToClass(className, javaSource);
+        if (jarFileName == null) return program;
+
+        final Manifest mf = new Manifest();
+        mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
+        mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
+        mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
+        mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
+
+        try (final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
+            final String[] dirs = className.split("\\.");
+            final StringBuilder path = new StringBuilder();
+            for (int i = 0; i < dirs.length; i++) {
+                path.append(dirs[i]);
+                if (i == dirs.length - 1) {
+                    final JarEntry entry = new JarEntry(path.toString() + ".class");
+                    jar.putNextEntry(entry);
+                    jar.write(murmelClassLoader.getBytes(className));
+                }
+                else {
+                    path.append('/');
+                    final JarEntry entry = new JarEntry(path.toString());
+                    jar.putNextEntry(entry);
+                }
+                jar.closeEntry();
+            }
+        }
+        return program;
+    }
+
+    /** Compile Java sourcecode of class {@code className} to Java bytecode */
+    Class<?> javaToClass(String className, String javaSource) throws Exception {
+        final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
+        final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
+        final List<String> options = Collections.singletonList("-g");
+        try {
+            fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPathFile()));
+            //                                     out       diag  opt      classes
+            final CompilationTask c = comp.getTask(null, fm, null, options, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
+            if (c.call()) {
+                return Class.forName(className, true, murmelClassLoader);
+            }
+            throw new LambdaJ.LambdaJError(true, "compilation of class %s failed", className);
+        }
+        finally {
+            fm.close();
         }
     }
 }

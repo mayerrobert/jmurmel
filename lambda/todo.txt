@@ -1,3 +1,7 @@
+MurmelJavaProgram implements MurmelProgram
+-> MurmelProgram verwenden
+-> MurmelJavaProgram auf private oder Package umstellen geht nicht weil erzeugte Progamme das extenden
+
 define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 
 trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
