@@ -420,7 +420,6 @@ nil
 ;
 ; Murmel language:
 ; - apply probably shouldn't be a special form but a function.
-; - cons, etc. probably should be reserved words.
 ;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks,
@@ -436,11 +435,12 @@ nil
 
 ;;; == Copyright ======================
 ;;;
-;;; Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
+;;; Murmel and JMurmel are Copyright (C) 2020 Robert Mayer.
+;;; All rights reserved.
 ;;;
 ;;; This work is licensed under the terms of the MIT license.
 ;;; For a copy, see https://opensource.org/licenses/MIT.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.28 2020/12/06 10:25:32 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.29 2020/12/06 10:32:29 Robert Exp $

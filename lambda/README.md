@@ -6,7 +6,7 @@
 
 **JMurmel is a lightweight Lisp-1-to-1.5-ish-with-a-side-of-Scheme Interpreter/ Compiler written in Java8+ that can be used standalone as well as embedded.**
 
-Currently weighing in at ~82kB (size of compiled .jar file),
+Currently weighing in at ~96kB (size of compiled .jar file),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -39,15 +39,29 @@ For a copy, see https://opensource.org/licenses/MIT.
     LambdaJ>
 
 The command above will wait for you to enter an S-expression, interpret it and print it's result.
+Try e.g.
+
+    $ java -jar lambdaj-1.0-SNAPSHOT.jar
+    Enter a Murmel form or :command (or enter :h for command help or :q to exit):
+    LambdaJ> *(+ 1 2)*
+
+    ==> 3.0
+    JMurmel>
+
+JMurmel also can read program text from stdin:
 
     C:\> echo (write (quote Hello,\ World!))| java -jar lambdaj-1.0-SNAPSHOT.jar
-    Hello, World!
+    |Hello, World!|
+    ==> t
+    
     C:\>
 
 or
 
     $ echo "(write (quote Hello,\ World!))" | java -jar lambdaj-1.0-SNAPSHOT.jar
     |Hello, World!|
+    ==> t
+    
     $
 
 The commands above will read an S-expression from stdin and interpret it.
@@ -113,7 +127,7 @@ Slightly more advanced example:
 Java calls JMurmel function:
 
     @Test
-    public void testLambda() {
+    public void testCallMurmelFromJava() {
         LambdaJ interp = new LambdaJ();
         interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, (s) -> { return; });
 
@@ -127,7 +141,7 @@ including an example of how to hook up your own Lisp primitives written in Java.
 
 Or see `JSR223Test.java` for an example on how to use JMurmel through the
 [Java Scripting API](https://docs.oracle.com/javase/8/docs/technotes/guides/scripting/prog_guide/about.html)
-(setting/ accessing Java objects from Murmel code is not supported yet.)
+(setting/ accessing Java objects via JSR223 from Murmel code is not supported yet.)
 
 ## Examples
 write, string-format
@@ -147,7 +161,7 @@ Tail recursion, locale dependent number formatting
     Factorial of 50 is 3.04141e+64
     ==> t
 
-## Features
+## Murmel Features
 The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
@@ -194,7 +208,7 @@ and strings. String literals are 2000 chars max length.
 Most of these features can be disabled using commandline arguments.
 You can disable pretty much everything except S-expressions, symbols, cons cells and lambda.
 If you want to experiment with a bare-bones-Lisp use `--help` for details.
- 
+
 ## Customization
 
 JMurmel comes with:
@@ -230,4 +244,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.47 2020/11/19 20:21:00 Robert Exp $
+$Id: README.md,v 1.48 2020/11/22 05:58:42 Robert Exp $
