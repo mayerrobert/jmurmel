@@ -1,12 +1,5 @@
-MurmelJavaProgram implements MurmelProgram
--> MurmelProgram verwenden
--> MurmelJavaProgram auf private oder Package umstellen geht nicht weil erzeugte Progamme das extenden
-
 define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
-
-trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
-
-compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
+defun nur toplevel zulassen
 
 letXXX und labels im compiler
 named let in einen Java loop uebersetzen. damits in generierten lambdas funkt, muss fuer den rekursiven aufruf wohl eine exception missbraucht werden
@@ -21,10 +14,11 @@ for (;;) {
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
+trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
 
-vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
-oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
--> oder so lassen, weil interpreter, compiler und kompilate die System property line.separator auswerten
+compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
+-> erst mit packages, weil dann brauchts weniger parameter
+
 
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
 -> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
@@ -977,6 +971,10 @@ auswertet
 -> nein, format ruft #printString, write ruft #printObj, format schreibt, was der user im formatstring spezifiziert
    write schreibt entsprechend allfaelliger globalen variablen/ argumenten
 
+vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
+oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
+-> oder so lassen, weil interpreter, compiler und kompilate die System property line.separator auswerten
+
 
 
 
@@ -1812,3 +1810,7 @@ muss der compiler auch reserved words handeln?
 -> ja, s.o.
 
 methode eval sollte eigentlich evalquote heissen
+
+MurmelJavaProgram implements MurmelProgram
+-> MurmelProgram verwenden
+-> MurmelJavaProgram auf private oder Package umstellen geht nicht weil erzeugte Progamme das extenden

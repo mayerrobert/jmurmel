@@ -111,7 +111,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.285 2020/12/07 18:40:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.286 2020/12/07 20:04:05 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2648,30 +2648,29 @@ public class LambdaJ {
     }
 
     private static void showHelp() {
-        System.out.println("Available commands:");
-        System.out.println("  :h ............................. this help screen");
-        System.out.println("  :echo .......................... print forms to screen before eval'ing");
-        System.out.println("  :noecho ........................ don't print forms");
-        System.out.println("  :env ........................... list current global environment");
-        System.out.println("  :init .......................... re-init global environment, clear history");
-        System.out.println();
-        System.out.println("  :l ............................. print history to the screen");
-        System.out.println("  :w filename .................... write history to a new file with the given filename");
-        System.out.println();
-        System.out.println("  :r ............................. compile history to Java class 'MurmelProgram' and run it");
-        System.out.println();
-        System.out.println("  :java classname t .............. compile history to Java class 'classname' and print to the screen");
-        System.out.println("  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'");
-        System.out.println("  :java classname directory/ ..... compile history to Java class 'classname' and print to a file based on classname in directory 'directory'");
-        System.out.println("  :java classname filename ....... compile history to Java class 'classname' and write to a file with the given filename");
-        System.out.println("  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'");
-        System.out.println("                                   the generated jar needs jmurmel.jar in the same directory to run");
-        System.out.println();
-        System.out.println("  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).");
-        System.out.println("  classname and filename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")");
-        System.out.println();
-        System.out.println("  :q ............................. quit JMurmel");
-        System.out.println();
+        System.out.println("Available commands:\n"
+        + "  :h ............................. this help screen\n"
+        + "  :echo .......................... print forms to screen before eval'ing\n"
+        + "  :noecho ........................ don't print forms\n"
+        + "  :env ........................... list current global environment\n"
+        + "  :init .......................... re-init global environment, clear history\n"
+        + "\n"
+        + "  :l ............................. print history to the screen\n"
+        + "  :w filename .................... write history to a new file with the given filename\n"
+        + "\n"
+        + "  :r ............................. compile history to Java class 'MurmelProgram' and run it\n"
+        + "\n"
+        + "  :java classname t .............. compile history to Java class 'classname' and print to the screen\n"
+        + "  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'\n"
+        + "  :java classname directory/ ..... compile history to Java class 'classname' and print to a file based on classname in directory 'directory'\n"
+        + "  :java classname filename ....... compile history to Java class 'classname' and write to a file with the given filename\n"
+        + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
+        + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
+        + "\n"
+        + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
+        + "  classname and filename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
+        + "\n"
+        + "  :q ............................. quit JMurmel\n");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -2911,36 +2910,40 @@ public class LambdaJ {
             return f.apply(listToArray(argList));
         }
 
-        // todo car cdr cons koennte man inlinen, vorher warens special forms und der generierte code enthielt aufrufe
-        public Object car (Object l)  { return LambdaJ.car(l); }
-        public Object cdr (Object l)  { return LambdaJ.cdr(l); }
+        /** used by _cons() and by code generated from quotedFormToJava() */
         public ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
-        public double dbl(Object n) {
+
+
+        // todo car cdr bis gt koennte man inlinen, vorher warens special forms und der generierte code enthielt aufrufe
+        public Object car (Object l)  { return LambdaJ.car(l); }
+        private Object cdr (Object l)  { return LambdaJ.cdr(l); }
+
+        private double dbl(Object n) {
             return ((Number)n).doubleValue();
         }
 
-        public Object numbereq(Object lhs, Object rhs) {
+        private Object numbereq(Object lhs, Object rhs) {
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
         }
 
-        public Object lt(Object lhs, Object rhs) {
+        private Object lt(Object lhs, Object rhs) {
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <  0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
         }
 
-        public Object le(Object lhs, Object rhs) {
+        private Object le(Object lhs, Object rhs) {
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <= 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
         }
 
-        public Object ge(Object lhs, Object rhs) {
+        private Object ge(Object lhs, Object rhs) {
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >= 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
         }
 
-        public Object gt(Object lhs, Object rhs) {
+        private Object gt(Object lhs, Object rhs) {
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >  0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
         }
@@ -3502,6 +3505,7 @@ public class LambdaJ {
 
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
             if (atom(form))    { atomToJava(sb, form); return; }
+            // todo die naechste zeile von rekursiv auf loop umstellen UND den generierten code ggf auch auf nichtrekursiv umstellen
             if (consp(form))   { sb.append("cons("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
 
             throw new LambdaJError("quote: internal error");
