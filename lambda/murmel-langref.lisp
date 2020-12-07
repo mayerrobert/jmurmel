@@ -419,7 +419,8 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - apply probably shouldn't be a special form but a function.
+; - apply maybe shouldn't be a special form but a function.
+; - support for packages is currently not implemented
 ;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks,
@@ -443,4 +444,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.30 2020/12/07 15:50:12 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.31 2020/12/07 16:40:06 Robert Exp $
