@@ -246,6 +246,16 @@ public class MurmelJavaCompilerTest {
         assertEquals("let produced wrong result", "3", sexp(program.body()));
     }
 
+    @Test
+    public void testLabels() throws Exception {
+        MurmelJavaProgram program = compile("(labels ((a (p1 p2 p3) (+ p1 p2 p3))"
+                                                  + " (b (p1 p2 p3) (* p1 p2 p3))"
+                                                  + " (c (p1 p2 p3) (- p1 p2 p3)))"
+                                                  + "(b 2 3 4))");
+        assertNotNull("failed to compile labels to class", program);
+        assertEquals("labels produced wrong result", 24.0, program.body());
+    }
+
 
 
     @Test

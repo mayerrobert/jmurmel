@@ -425,7 +425,7 @@ nil
 ; - There are pretty much no compile- or runtime checks,
 ;   actually: most compile- and runtime errors will result in
 ;   ClassCastExceptions and NullpointerExceptions
-; - let works, (named) letXXX and labels are currently not implemented
+; - let works, named let, let* and letrec are currently not implemented
 ; - define/ defun only work as top level forms
 ; - The function :: is not implemented
 ; - TCO is not implemented
@@ -443,4 +443,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.29 2020/12/06 10:32:29 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.30 2020/12/07 15:50:12 Robert Exp $

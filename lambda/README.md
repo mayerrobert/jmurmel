@@ -19,6 +19,8 @@ For more details on the language supported see `murmel-langref.lisp`.)
 JMurmel features tail call optimization, dynamic as well as lexical environments,
 and has garbage collection c/o Java.
 
+The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
+
 Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
@@ -161,7 +163,7 @@ Tail recursion, locale dependent number formatting
     Factorial of 50 is 3.04141e+64
     ==> t
 
-## Murmel Features
+## Features
 The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
@@ -244,4 +246,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.48 2020/11/22 05:58:42 Robert Exp $
+$Id: README.md,v 1.49 2020/12/07 15:50:12 Robert Exp $

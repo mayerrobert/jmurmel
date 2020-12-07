@@ -110,7 +110,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.282 2020/12/06 10:25:32 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.283 2020/12/07 15:50:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3373,17 +3373,28 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - todo labels
-
-                    ///     - let: (let ((sym form)...) forms)
-                    if (isSymbol(op, "let")) {
+                    ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
+                    // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
+                    if (isSymbol(op, "labels")) {
+                        ConsCell params = paramList(args);
                         sb.append('(');
-                        ConsCell params = null; ConsCell insertPos = null;
+                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1);
+                        sb.append(").apply(");
+                        boolean first = true;
                         for (Object paramTuple: (ConsCell)(car(args))) {
-                            if (params == null) { params = cons(null, null);          insertPos = params; }
-                            else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
-                            insertPos.rplaca(car(paramTuple));
+                            if (first) first = false;
+                            else sb.append(',').append(' ');
+                            // only the next line differs from "let" below
+                            formToJava(sb, cons(intern("lambda"), cons(cadr(paramTuple), cddr(paramTuple))), env, rsfx);
                         }
+                        sb.append(')');
+                        return;
+                    }
+
+                    ///     - let: (let ((sym form)...) forms) -> Object
+                    if (isSymbol(op, "let")) {
+                        ConsCell params = paramList(args);
+                        sb.append('(');
                         formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1);
                         sb.append(").apply(");
                         boolean first = true;
@@ -3396,7 +3407,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - todo (named) letxxx
+                    ///     - todo (named) let* and letrec
 
 
                     /// * function call
@@ -3420,6 +3431,16 @@ public class LambdaJ {
             catch (Exception e) {
                 throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
             }
+        }
+
+        private ConsCell paramList(final Object args) {
+            ConsCell params = null; ConsCell insertPos = null;
+            for (Object paramTuple: (ConsCell)(car(args))) {
+                if (params == null) { params = cons(null, null);          insertPos = params; }
+                else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
+                insertPos.rplaca(car(paramTuple));
+            }
+            return params;
         }
 
         /** write atoms that are not symbols */
