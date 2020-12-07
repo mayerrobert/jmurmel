@@ -111,7 +111,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.284 2020/12/07 16:40:06 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.285 2020/12/07 18:40:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2469,8 +2469,8 @@ public class LambdaJ {
         try {
             MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
             String clsName = "MurmelProgram";
-            Class<MurmelJavaProgram> murmelClass = c.formsToJavaClass(clsName.toString(), history, null);
-            MurmelJavaProgram prg = murmelClass.newInstance();
+            Class<MurmelProgram> murmelClass = c.formsToJavaClass(clsName.toString(), history, null);
+            MurmelProgram prg = murmelClass.newInstance();
             long tStart = System.nanoTime();
             Object result = prg.body();
             long tEnd = System.nanoTime();
@@ -3026,14 +3026,14 @@ public class LambdaJ {
 
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
 
-        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFileName) throws Exception {
+        public Class <MurmelProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFileName) throws Exception {
             Iterator<Object> i = forms.iterator();
             ObjectReader r = () -> i.hasNext() ? i.next() : null;
             return formsToJavaClass(unitName, r, jarFileName);
         }
 
         /** Compile the Murmel compilation {@code forms} to a Java class for a standalone application with a "public static void main()" */
-        public Class <MurmelJavaProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
+        public Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);
             //System.err.print(w.toString());
@@ -3528,8 +3528,8 @@ class JavaCompilerUtils {
     }
 
     @SuppressWarnings("unchecked")
-    Class<LambdaJ.MurmelJavaProgram> javaToClass(String className, String javaSource, String jarFileName) throws Exception {
-        final Class<LambdaJ.MurmelJavaProgram> program = (Class<LambdaJ.MurmelJavaProgram>) javaToClass(className, javaSource);
+    Class<LambdaJ.MurmelProgram> javaToClass(String className, String javaSource, String jarFileName) throws Exception {
+        final Class<LambdaJ.MurmelProgram> program = (Class<LambdaJ.MurmelProgram>) javaToClass(className, javaSource);
         if (jarFileName == null) return program;
 
         final Manifest mf = new Manifest();
