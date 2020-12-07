@@ -26,6 +26,33 @@ Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT.
 
+
+## Getting started
+
+Make sure you have Java 8+ installed. `java -version` will tell:
+
+    C:\> java -version
+    openjdk version "1.8.0_252"
+    OpenJDK Runtime Environment (AdoptOpenJDK)(build 1.8.0_252-b09)
+    OpenJDK 64-Bit Server VM (AdoptOpenJDK)(build 25.252-b09, mixed mode)
+
+With `jmurmel-1.0-SNAPSHOT.jar` in the current directory start JMurmel with the following command
+
+    C:\> java -jar jmurmel-1.0-SNAPSHOT.jar
+
+At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look like this:
+
+D:\robert\Workspace.java\platform\lambda\target>java -jar jmurmel-1.0-SNAPSHOT.jar
+Enter a Murmel form or :command (or enter :h for command help or :q to exit):
+
+    JMurmel> (write "Hello, World!")
+    "Hello, World!"
+    ==> t
+    JMurmel>
+
+You just wrote and ran a Murmel program! Now take it from there.
+
+
 | [Standalone use](#standalone-use)
 | [Embedded use](#embedded-use)
 | [Examples](#examples)
@@ -36,14 +63,14 @@ For a copy, see https://opensource.org/licenses/MIT.
 
 ## Standalone use
 
-    $ java -jar lambdaj-1.0-SNAPSHOT.jar
+    $ java -jar jmurmel-1.0-SNAPSHOT.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
     LambdaJ>
 
 The command above will wait for you to enter an S-expression, interpret it and print it's result.
 Try e.g.
 
-    $ java -jar lambdaj-1.0-SNAPSHOT.jar
+    $ java -jar jmurmel-1.0-SNAPSHOT.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
     LambdaJ> *(+ 1 2)*
 
@@ -52,7 +79,7 @@ Try e.g.
 
 JMurmel also can read program text from stdin:
 
-    C:\> echo (write (quote Hello,\ World!))| java -jar lambdaj-1.0-SNAPSHOT.jar
+    C:\> echo (write (quote Hello,\ World!))| java -jar jmurmel-1.0-SNAPSHOT.jar
     |Hello, World!|
     ==> t
     
@@ -60,7 +87,7 @@ JMurmel also can read program text from stdin:
 
 or
 
-    $ echo "(write (quote Hello,\ World!))" | java -jar lambdaj-1.0-SNAPSHOT.jar
+    $ echo "(write (quote Hello,\ World!))" | java -jar jmurmel-1.0-SNAPSHOT.jar
     |Hello, World!|
     ==> t
     
@@ -246,4 +273,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.49 2020/12/07 15:50:12 Robert Exp $
+$Id: README.md,v 1.50 2020/12/07 16:40:06 Robert Exp $
