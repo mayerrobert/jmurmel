@@ -4,8 +4,9 @@ Getting started
 
 To run your first Murmel program use these steps:
 
-Make sure you have Java 8+ installed. Entering `java -version`
-at a command prompt should produce something like this:
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 15 is preferred
+as it is considerably faster). Entering `java -version` at a command prompt
+should produce something like this:
 (GNU/linux or Unix or Mac users please adjust as appropriate)
 
     C:\> java -version

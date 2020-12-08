@@ -32,9 +32,11 @@ For a copy, see https://opensource.org/licenses/MIT.
 
 ## Getting started
 
-*(This section replicated the contents of `GETTING STARTED.txt`.)*
+*(This section replicates the contents of `GETTING STARTED.txt`.)*
 
-Make sure you have Java 8+ installed. `java -version` will tell:
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 15 is preferred as it is considerably faster).
+
+`java -version` will tell (GNU/linux or Unix or Mac users please adjust as appropriate):
 
     C:\> java -version
     openjdk version "1.8.0_252"
@@ -295,4 +297,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.52 2020/12/08 10:28:59 Robert Exp $
+$Id: README.md,v 1.53 2020/12/08 11:30:27 Robert Exp $
