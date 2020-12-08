@@ -115,7 +115,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.287 2020/12/07 20:48:17 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.288 2020/12/08 10:29:00 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -776,6 +776,8 @@ public class LambdaJ {
         // (re-)read the new symtab
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
         sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);  // todo dynamic ist nicht Murmel sondern JMurmel interpreter erweiterung
+        sTrace =                       symtab.intern(new LambdaJSymbol("trace"));    reserve(sTrace);
+        sUntrace =                     symtab.intern(new LambdaJSymbol("untrace"));  reserve(sUntrace);
 
         if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reserve(sQuote); }
         if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reserve(sCond); }
@@ -798,7 +800,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sTrace, sUntrace, sDynamic, sQuote, sCond, sLabels, sEval, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
@@ -854,10 +856,10 @@ public class LambdaJ {
                     /// eval - special forms
 
                     /// eval - (trace function-name*) -> trace-result
-                    if (operator != null && "trace".equalsIgnoreCase(operator.toString())) return trace(arguments);
+                    if (operator == sTrace) return trace(arguments);
 
                     /// eval - (untrace function-name*) -> untrace-result
-                    if (operator != null && "untrace".equalsIgnoreCase(operator.toString())) return untrace(arguments);
+                    if (operator == sUntrace) return untrace(arguments);
 
 
 
@@ -3091,6 +3093,7 @@ public class LambdaJ {
 
         private static final String[] reservedWords = new String[] {
                 "nil", "t",
+                "trace", "untrace",
                 "lambda", "dynamic", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec",
                 "eval", "apply", "progn",
         };
@@ -3401,6 +3404,12 @@ public class LambdaJ {
 
 
                     /// * special forms:
+                    ///     - trace and untrace are no-ops
+                    if (isSymbol(op, "trace")) return;
+                    if (isSymbol(op, "untrace")) return;
+
+
+
                     ///     - quote
                     if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
 

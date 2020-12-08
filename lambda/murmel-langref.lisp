@@ -400,8 +400,9 @@ nil
 
 ; (trace function-name*) -> trace-result
 ; (untrace function-name*) -> untrace-result
-; These work pretty much like CL's trace/ untrace macros,
+; In interpreted code these work pretty much like CL's trace/ untrace macros,
 ; see http://clhs.lisp.se/Body/m_tracec.htm.
+; In compiled code trace and untrace are no-ops.
 
 ; (:: classname methodname paramclass...) -> primitive
 ; The primitive "::" will return a newly created primitive
@@ -449,4 +450,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.32 2020/12/07 20:50:52 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.33 2020/12/08 10:28:59 Robert Exp $
