@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.291 2020/12/08 18:15:08 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.292 2020/12/08 18:36:13 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -190,15 +190,16 @@ public class LambdaJ {
 
             @Override
             public Object next() {
-                if (cursor == null) throw new NoSuchElementException();
-                if (cursor instanceof ListConsCell) {
-                    final ListConsCell list = (ListConsCell)cursor;
+                Object _cursor;
+                if ((_cursor = cursor) == null) throw new NoSuchElementException();
+                if (_cursor instanceof ListConsCell) {
+                    final ListConsCell list = (ListConsCell)_cursor;
                     final Object ret = list.car();
                     if (list.cdr() == coll) cursor = null; // circle detected, stop here
                     else cursor = list.cdr();
                     return ret;
                 }
-                final Object ret = cursor;  // last element of dotted list
+                final Object ret = _cursor;  // last element of dotted list
                 cursor = null;
                 return ret;
             }
@@ -846,9 +847,10 @@ public class LambdaJ {
 
                 /// eval - the form is enclosed in parentheses, either a special form or a function application
                 else if (consp(form)) {
-                    operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(form))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
-                    final ConsCell arguments = (ConsCell) cdr(form);   // list with remaining atoms/ expressions
+                    final ConsCell formCons = (ConsCell)form;
+                    operator = car(formCons);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                    if (!listp(cdr(formCons))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
+                    final ConsCell arguments = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
 
 
@@ -872,7 +874,7 @@ public class LambdaJ {
                     /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         result = "#<lambda>";
-                        return makeClosureFromForm(form, env);
+                        return makeClosureFromForm(formCons, env);
                     }
 
 
@@ -1085,9 +1087,13 @@ public class LambdaJ {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
             traceLvl = traceExit(operator, result, traceLvl);
             Object s;
-            if (traceStack != null) while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
+            if (traceStack != null) {
+                while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
+                traceStack = null;
+            }
         }
     }
+
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
      *  Returns the newly created (and inserted) symbolentry (symbol . value) */
     private ConsCell insertFront(ConsCell env, Object symbol, Object value) {
@@ -1183,7 +1189,7 @@ public class LambdaJ {
 
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
-    private Object makeClosureFromForm(final Object form, ConsCell env) {
+    private Object makeClosureFromForm(final ConsCell form, ConsCell env) {
         final ConsCell paramsAndForms = (ConsCell) cdr(form);
 
         if (car(paramsAndForms) == sDynamic) {
