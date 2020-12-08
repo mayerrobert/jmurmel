@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.292 2020/12/08 18:36:13 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.293 2020/12/08 20:06:11 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -835,7 +835,7 @@ public class LambdaJ {
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
                         if (value == VALUE_NOT_DEFINED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", form);
-                        return value;
+                        result = value; return value;
                     }
                     throw new LambdaJError(true, "%s: '%s' is not bound", "eval", form);
                 }
@@ -1081,7 +1081,7 @@ public class LambdaJ {
         } catch (LambdaJError e) {
             throw new LambdaJError(false, e.getMessage(), form);
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             throw new LambdaJError(e, "eval: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
@@ -1276,7 +1276,7 @@ public class LambdaJ {
         if (op == null) return level;
         if (traced == null || !traced.contains(op)) return level;
         tracer.println(exit(op, result, level-1));
-        return level - 1;
+        return level < 1 ? 0 : level - 1; // clamp at zero in case a traceEnter() call was lost because of a preceeding exception
     }
 
     private String exit(Object op, Object result, int level) {
