@@ -4,7 +4,7 @@
 > *Elegant weapons*  
 > *for a more... civilized age.*
 
-**JMurmel is a lightweight Lisp-1-to-1.5-ish-with-a-side-of-Scheme Interpreter/ Compiler written in Java8+ that can be used standalone as well as embedded.**
+**JMurmel is a lightweight Lisp-1-ish-with-a-side-of-Scheme interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
 
 Currently weighing in at ~97kB (size of compiled .jar file),
 or one single Java source file.
@@ -12,15 +12,17 @@ or one single Java source file.
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
 why not try JMurmel?
 
-(Murmel is the name of the programming language (which is a Lisp dialect),
-JMurmel is the name of the interpreter that supports Murmel.
-For more details on the language supported see `murmel-langref.lisp`.)
-
-JMurmel features tail call optimization, dynamic as well as lexical environments,
-a trace facility (trace and untrace function calls)
-and has garbage collection c/o Java.
+Murmel is the name of the programming language (which is a Lisp dialect),
+JMurmel is the name of the interpreter/ compiler that implements Murmel.
+For more details on the language see `murmel-langref.lisp`.
 
 The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
+
+JMurmel features a REPL with a trace facility (trace and untrace function calls),
+tail call optimization (interpreter only, compiled code is not yet TCO'd),
+dynamic as well as lexical environments,
+JSR223 support
+and has garbage collection c/o Java.
 
 Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
 
@@ -29,6 +31,8 @@ For a copy, see https://opensource.org/licenses/MIT.
 
 
 ## Getting started
+
+*(This section replicated the contents of `GETTING STARTED.txt`.)*
 
 Make sure you have Java 8+ installed. `java -version` will tell:
 
@@ -51,13 +55,18 @@ At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look
     ==> t
     JMurmel>
 
-You just wrote and ran a Murmel program! Now take it from there.
+You just wrote and ran a Murmel program!
+
+Now take it from there,
+e.g. read `murmel-langref.lisp`.
+Or type `:h` at the REPL prompt.
+Or run `java -jar jmurmel-1.0-SNAPSHOT.jar --help`.
 
 
 | [Standalone use](#standalone-use)
 | [Embedded use](#embedded-use)
 | [Examples](#examples)
-| [Features](#features)
+| [Features](#jmurmel-features)
 | [Customization](#customization)
 | [References](#references)
 | 
@@ -106,12 +115,24 @@ Command line parameters in standalone mode:
 Currently there is no setup.exe or .msi or .rpm or .deb file. Just copy jmurmel-<VERSION>.jar somewhere convenient,
 and maybe create a batchfile along these lines (Windows .cmd-style shown here):
 
+    jm.cmd:
+    --- snip ---
     @echo off
     setlocal
     set JAVA_HOME=C:\Apps\Java\X64\jdk8u252-b09
     set JMURMEL=D:\robert\Workspace.java\platform\lambda\target\jmurmel-1.0-SNAPSHOT.jar
     %JAVA_HOME%\bin\java -jar %JMURMEL% %*
     endlocal
+    --- snip ---
+
+That way to run e.g. the file `hanoi.lisp` I can use the following command:
+
+    C:\> jm hanoi.lisp
+
+or if I want to interpret a file and then go into REPL:
+
+    C:\> jm --repl hanoi.lisp
+
 
 ## Embedded use
 
@@ -191,7 +212,7 @@ Tail recursion, locale dependent number formatting
     Factorial of 50 is 3.04141e+64
     ==> t
 
-## Features
+## JMurmel Features
 The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
@@ -274,4 +295,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.51 2020/12/07 21:25:55 Robert Exp $
+$Id: README.md,v 1.52 2020/12/08 10:28:59 Robert Exp $
