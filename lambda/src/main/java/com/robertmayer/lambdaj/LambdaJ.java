@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.289 2020/12/08 10:41:19 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.290 2020/12/08 17:30:35 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3020,7 +3020,8 @@ public class LambdaJ {
 
 
         // todo car cdr bis gt koennte man inlinen, vorher warens special forms und der generierte code enthielt aufrufe
-        public Object car (Object l)  { return LambdaJ.car(l); }
+        // -> car, cdr, cons usw waren "open coded"
+        private Object car (Object l)  { return LambdaJ.car(l); }
         private Object cdr (Object l)  { return LambdaJ.cdr(l); }
 
         private double dbl(Object n) {
