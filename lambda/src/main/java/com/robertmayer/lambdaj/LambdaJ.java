@@ -7,7 +7,6 @@ package com.robertmayer.lambdaj;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -115,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.288 2020/12/08 10:29:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.289 2020/12/08 10:41:19 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -158,7 +157,7 @@ public class LambdaJ {
             if (exp == null) return "";
             //final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
             final String l = lineInfo(exp);
-            return System.lineSeparator() + "error occurred in expression " + l + printSEx(exp);
+            return System.lineSeparator() + "error occurred in S-expression " + l + printSEx(exp);
         }
     }
 
@@ -939,7 +938,7 @@ public class LambdaJ {
 
                     /// eval - (progn forms...) -> object
                     if (haveXtra() && operator == sProgn) {
-                        if (!listp(arguments)) throw new LambdaJError(true, "%s: malformed progn. expected a list of forms but got %s", "progn", printSEx(arguments));
+                        if (!listp(arguments)) throw new LambdaJError(true, "%s: malformed progn: expected a list of forms but got %s", "progn", printSEx(arguments));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
@@ -947,7 +946,7 @@ public class LambdaJ {
                     } else if (haveCond() && operator == sCond) {
                         if (arguments != null)
                             for (Object c: arguments) {
-                                if (!listp(c)) throw new LambdaJError(true, "%s: malformed cond. expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
+                                if (!listp(c)) throw new LambdaJError(true, "%s: malformed cond: expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
                                 if (evalquote(car(c), env, stack, level, traceLvl) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
@@ -1468,10 +1467,10 @@ public class LambdaJ {
     /** note: searches using object identity, will work for interned symbols, won't work for e.g. numbers */
     private static ConsCell assoc(Object atom, Object maybeList) {
         if (atom == null || maybeList == null) return null;
-        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a List but got %s", "assoc", printSEx(maybeList));
+        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
         for (Object env: (ConsCell) maybeList) {
-            //ConsCell _env = (ConsCell)env;
-            if (atom == car(env)) return (ConsCell)env;
+            ConsCell _env = (ConsCell)env;
+            if (atom == car(_env)) return _env;
         }
         return null;
     }
@@ -2587,7 +2586,7 @@ public class LambdaJ {
             System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
         catch (Exception e) {
-            System.out.println("history NOT run as Java - error:");
+            System.out.println("history NOT run as Java - error: ");
             e.printStackTrace(System.out);
         }
     }
@@ -2615,7 +2614,7 @@ public class LambdaJ {
             if (p.getParent() != null) Files.createDirectories(p.getParent());
         }
         catch (Exception e) {
-            System.out.println("history NOT compiled to Java - error:");
+            System.out.println("NOT compiled to Java - error: ");
             e.printStackTrace(System.out);
             return false;
         }
@@ -2632,7 +2631,7 @@ public class LambdaJ {
             return false;
         }
         catch (Exception e) {
-            System.out.println("NOT compiled to Java - error:");
+            System.out.println("NOT compiled to Java - error: ");
             e.printStackTrace(System.out);
             return false;
         }
@@ -2652,7 +2651,7 @@ public class LambdaJ {
             return false;
         }
         catch (Exception e) {
-            System.out.println("NOT compiled to .jar - error:");
+            System.out.println("NOT compiled to .jar - error: ");
             e.printStackTrace(System.out);
             return false;
         }

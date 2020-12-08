@@ -1,3 +1,7 @@
+java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
+
+funktion fatal dokmentieren, ggf. umbenamsen
+
 define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 defun nur toplevel zulassen
 
