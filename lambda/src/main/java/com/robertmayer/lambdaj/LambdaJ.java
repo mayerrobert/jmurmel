@@ -37,16 +37,20 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.zone.ZoneRules;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
@@ -111,7 +115,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.286 2020/12/07 20:04:05 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.287 2020/12/07 20:48:17 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -809,7 +813,10 @@ public class LambdaJ {
     private ConsCell topEnv;
 
     /// ###  eval - the heart of most if not all Lisp interpreters
-    private Object evalquote(Object form, ConsCell env, int stack, int level) {
+    private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
+        Object operator = null;
+        Object result = null;
+        Deque<Object> traceStack = null;
         boolean isTc = false;
         try {
             stack++;
@@ -832,13 +839,13 @@ public class LambdaJ {
                 }
 
                 /// eval - atoms that are not symbols eval to themselves
-                if (atom(form)) {
+                else if (atom(form)) {
                     return form;   // this catches nil as well
                 }
 
                 /// eval - the form is enclosed in parentheses, either a special form or a function application
-                if (consp(form)) {
-                    final Object operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                else if (consp(form)) {
+                    operator = car(form);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     if (!listp(cdr(form))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
                     final ConsCell arguments = (ConsCell) cdr(form);   // list with remaining atoms/ expressions
 
@@ -846,14 +853,24 @@ public class LambdaJ {
 
                     /// eval - special forms
 
+                    /// eval - (trace function-name*) -> trace-result
+                    if (operator != null && "trace".equalsIgnoreCase(operator.toString())) return trace(arguments);
+
+                    /// eval - (untrace function-name*) -> untrace-result
+                    if (operator != null && "untrace".equalsIgnoreCase(operator.toString())) return untrace(arguments);
+
+
+
                     /// eval - (quote exp) -> exp
                     if (haveQuote() && operator == sQuote) {
                         oneArg("quote", arguments);
-                        return car(arguments);
+                        result = car(arguments);
+                        return result;
                     }
 
                     /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
+                        result = "#<lambda>";
                         return makeClosureFromForm(form, env);
                     }
 
@@ -870,9 +887,10 @@ public class LambdaJ {
                         final ConsCell envEntry = assoc(symbol, env);
                         if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
-                        final Object value = evalquote(cadr(arguments), env, stack, level);
+                        final Object value = evalquote(cadr(arguments), env, stack, level, traceLvl);
                         insertFront(topEnv, symbol, value);
-                        return symbol;
+                        result = symbol;
+                        return result;
                     }
 
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
@@ -880,6 +898,7 @@ public class LambdaJ {
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
+                        traceStack = push(operator, traceStack);
                         continue tailcall;
                     }
 
@@ -890,24 +909,27 @@ public class LambdaJ {
                     /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                     if (operator == sEval) {
                         nArgs("eval", arguments, 1, 2);
-                        form = evalquote(car(arguments), env, stack, level);
+                        form = evalquote(car(arguments), env, stack, level, traceLvl);
                         if (cdr(arguments) == null) env = topEnv;
                         else {
-                            Object additionalEnv = evalquote(cadr(arguments), env, stack, level);
+                            Object additionalEnv = evalquote(cadr(arguments), env, stack, level, traceLvl);
                             if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
                             env = append(additionalEnv, topEnv);
                         }
+                        traceStack = push(operator, traceStack);
                         isTc = true; continue tailcall;
                     }
 
                     /// eval - (if condform form optionalform) -> object
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3);
-                        if (evalquote(car(arguments), env, stack, level) != null) {
+                        if (evalquote(car(arguments), env, stack, level, traceLvl) != null) {
+                            traceStack = push(operator, traceStack);
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (cddr(arguments) != null) {
+                            traceStack = push(operator, traceStack);
                             form = caddr(arguments); isTc = true; continue tailcall;
-                        } else return null;
+                        } else { result = null; return null; } // condition eval'd to false, no else form
                     }
 
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
@@ -924,13 +946,13 @@ public class LambdaJ {
                         if (arguments != null)
                             for (Object c: arguments) {
                                 if (!listp(c)) throw new LambdaJError(true, "%s: malformed cond. expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
-                                if (evalquote(car(c), env, stack, level) != null) {
+                                if (evalquote(car(c), env, stack, level, traceLvl) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
                                 }
                             }
 
-                        if (forms == null) return null; // no condition was true
+                        if (forms == null) { result = null; return null; } // no condition was true
                         // fall through to "eval a list of forms"
 
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
@@ -974,7 +996,7 @@ public class LambdaJ {
 
                             ConsCell newBinding = null;
                             if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
-                            Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                            Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
                             if (letRec) newBinding.rplacd(val);
                             else        extenv = extendEnv(extenv, sym, val);
                         }
@@ -1000,8 +1022,8 @@ public class LambdaJ {
                         if (haveApply() && operator == sApply) {
                             twoArgs("apply", arguments);
 
-                            func = evalquote(car(arguments), env, stack, level);
-                            final Object _argList = evalquote(cadr(arguments), env, stack, level);
+                            func = evalquote(car(arguments), env, stack, level, traceLvl);
+                            final Object _argList = evalquote(cadr(arguments), env, stack, level, traceLvl);
                             if (!listp(_argList)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "apply", printSEx(_argList));
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
@@ -1009,18 +1031,20 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            func = evalquote(operator, env, stack, level);
+                            func = evalquote(operator, env, stack, level, traceLvl);
                             if (!listp(arguments)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "function application", printSEx(arguments));
-                            argList = evlis(arguments, env, stack, level);
+                            argList = evlis(arguments, env, stack, level, traceLvl);
                             // fall through to "actually perform..."
                         }
 
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         if (primp(func)) {
-                            try { return applyPrimitive((Primitive) func, argList, stack, level); }
+                            traceLvl = traceEnter(operator, argList, traceLvl);
+                            try { result = applyPrimitive((Primitive) func, argList, stack, level); return result; }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
 
                         } else if (consp(func) && car(func) == sLambda) {
+                            traceLvl = traceEnter(operator, argList, traceLvl);
                             final Object lambda = cdr(func);          // (params . (forms...))
                             nArgs("lambda application", lambda, 2);
                             final ConsCell closure = ((ConsCell)func).closure();
@@ -1038,8 +1062,9 @@ public class LambdaJ {
                     /// eval - eval a list of forms
                     // todo dotted list wird cce geben
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                        evalquote(car(forms), env, stack, level);
+                        evalquote(car(forms), env, stack, level, traceLvl);
                     if (forms != null) {
+                        traceStack = push(operator, traceStack);
                         form = car(forms); isTc = true; continue tailcall;
                     }
                     return null; // lambda/ progn/ labels/... w/o body, shouldn't happen
@@ -1053,12 +1078,15 @@ public class LambdaJ {
         } catch (LambdaJError e) {
             throw new LambdaJError(false, e.getMessage(), form);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new LambdaJError(e, "eval: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
+            traceLvl = traceExit(operator, result, traceLvl);
+            Object s;
+            if (traceStack != null) while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
         }
     }
-
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
      *  Returns the newly created (and inserted) symbolentry (symbol . value) */
     private ConsCell insertFront(ConsCell env, Object symbol, Object value) {
@@ -1131,14 +1159,14 @@ public class LambdaJ {
     }
 
     /** eval a list of forms and return a list of results */
-    private ConsCell evlis(ConsCell _forms, ConsCell env, int stack, int level) {
+    private ConsCell evlis(ConsCell _forms, ConsCell env, int stack, int level, int traceLvl) {
         dbgEvalStart("evlis", _forms, env, stack, level);
         ListConsCell head = null;
         ListConsCell insertPos = null;
         ConsCell forms = _forms;
         if (forms != null)
             for (Object form: forms) {
-                ListConsCell currentArg = cons(evalquote(form, env, stack, level), null);
+                ListConsCell currentArg = cons(evalquote(form, env, stack, level, traceLvl), null);
                 if (head == null) {
                     head = currentArg;
                     insertPos = head;
@@ -1180,6 +1208,81 @@ public class LambdaJ {
         try { return primfn.apply(args); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
+    }
+
+
+
+    /// ### debug support - trace and untrace
+    private Set<LambdaJSymbol> traced = null;
+
+    private Object trace(Object symbols) {
+        if (symbols == null) return traced == null ? null : new ArraySlice(traced.toArray(), 0);
+        if (traced == null) traced = new HashSet<>();
+        for (Object sym: (ConsCell)symbols) {
+            if (!symbolp(sym)) throw new LambdaJError(true, "trace: can't trace %s: not a symbol", printSEx(sym));
+            traced.add((LambdaJSymbol) sym);
+        }
+        return symbols;
+    }
+
+    private Object untrace(Object symbols) {
+        if (symbols == null) { traced = null; return null; }
+        ConsCell ret = null;
+        if (traced != null) {
+            for (Object sym: (ConsCell) symbols) {
+                boolean wasTraced = traced.remove(sym);
+                if (wasTraced) ret = cons(sym, ret);
+            }
+            if (traced.isEmpty()) traced = null;
+        }
+        return ret;
+    }
+
+    /** stack of tco'd function calls */
+    private Deque<Object> push(Object op, Deque<Object> traceStack) {
+        if (traced == null || !traced.contains(op)) return traceStack;
+        if (traceStack == null) traceStack = new ArrayDeque<>();
+        traceStack.addLast(op);
+        return traceStack;
+    }
+
+    private int traceEnter(Object op, Object args, int level) {
+        if (traced == null || !traced.contains(op)) return level;
+        tracer.println(enter(op, args, level));
+        return level + 1;
+    }
+
+    private String enter(Object op, Object args, int level) {
+        final StringBuilder sb = new StringBuilder();
+
+        final char[] cpfx = new char[level * 2];
+        Arrays.fill(cpfx, ' ');
+        sb.append(cpfx);
+
+        sb.append('(').append(level+1).append(" enter ").append(op.toString()).append(':').append(' ');
+        printSEx(sb::append, args);
+        sb.append(')');
+        return sb.toString();
+    }
+
+    private int traceExit(Object op, Object result, int level) {
+        if (op == null) return level;
+        if (traced == null || !traced.contains(op)) return level;
+        tracer.println(exit(op, result, level-1));
+        return level - 1;
+    }
+
+    private String exit(Object op, Object result, int level) {
+        final StringBuilder sb = new StringBuilder();
+
+        final char[] cpfx = new char[level * 2];
+        Arrays.fill(cpfx, ' ');
+        sb.append(cpfx);
+
+        sb.append('(').append(level+1).append(" exit ").append(op.toString()).append(':').append(' ');
+        printSEx(sb::append, result);
+        sb.append(')');
+        return sb.toString();
     }
 
 
@@ -1381,7 +1484,7 @@ public class LambdaJ {
 
     private Object eval(Object form, Object env) {
         if (!listp(env)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", env);
-        return evalquote(form, env != null ? append(env, topEnv) : topEnv, 0, 0);
+        return evalquote(form, env != null ? append(env, topEnv) : topEnv, 0, 0, 0);
     }
 
     private ConsCell list(Object... a) {
@@ -2060,7 +2163,7 @@ public class LambdaJ {
         @Override
         public Object apply(Object... args) {
             if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-            return evalquote(cons(lambda, list(args)), env, 0, 0);
+            return evalquote(cons(lambda, list(args)), env, 0, 0, 0);
         }
     }
 
@@ -2134,7 +2237,7 @@ public class LambdaJ {
         Object result = null;
         while (true) {
             final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
-            if (exp != null) result = evalquote(exp, topEnv, 0, 0);
+            if (exp != null) result = evalquote(exp, topEnv, 0, 0, 0);
             else return result;
         }
     }
@@ -2158,7 +2261,7 @@ public class LambdaJ {
         topEnv = env;
         final Object exp = parser.readObj(true);
         long tStart = System.nanoTime();
-        final Object result = evalquote(exp, env, 0, 0);
+        final Object result = evalquote(exp, env, 0, 0, 0);
         traceStats(System.nanoTime() - tStart);
         return result;
     }
@@ -2190,7 +2293,7 @@ public class LambdaJ {
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
             long tStart = System.nanoTime();
-            final Object result = evalquote(exp, env, 0, 0);
+            final Object result = evalquote(exp, env, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
             exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
@@ -2331,7 +2434,7 @@ public class LambdaJ {
                 final Object form = parser.readObj(true);
                 if (form == null) break;
                 if (history != null) history.add(form);
-                result = interpreter.evalquote(form, interpreter.topEnv, 0, 0);
+                result = interpreter.evalquote(form, interpreter.topEnv, 0, 0, 0);
                 if (printResult) {
                     System.out.println();
                     System.out.println("==> " + result);
@@ -2415,7 +2518,7 @@ public class LambdaJ {
                 }
 
                 long tStart = System.nanoTime();
-                final Object result = interpreter.evalquote(exp, env, 0, 0);
+                final Object result = interpreter.evalquote(exp, env, 0, 0, 0);
                 long tEnd = System.nanoTime();
                 System.out.println();
                 interpreter.traceStats(tEnd - tStart);

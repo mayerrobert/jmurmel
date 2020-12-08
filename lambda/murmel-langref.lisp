@@ -396,7 +396,12 @@ nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 
-;;; == Additional JMurmel Primitives ==========
+;;; == Additional JMurmel special forms and primitives ==========
+
+; (trace function-name*) -> trace-result
+; (untrace function-name*) -> untrace-result
+; These work pretty much like CL's trace/ untrace macros,
+; see http://clhs.lisp.se/Body/m_tracec.htm.
 
 ; (:: classname methodname paramclass...) -> primitive
 ; The primitive "::" will return a newly created primitive
@@ -444,4 +449,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.31 2020/12/07 16:40:06 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.32 2020/12/07 20:50:52 Robert Exp $

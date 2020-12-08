@@ -14,11 +14,11 @@ for (;;) {
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
-trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
-
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 -> erst mit packages, weil dann brauchts weniger parameter
 
+
+in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
 
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
 -> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
@@ -1814,3 +1814,5 @@ methode eval sollte eigentlich evalquote heissen
 MurmelJavaProgram implements MurmelProgram
 -> MurmelProgram verwenden
 -> MurmelJavaProgram auf private oder Package umstellen geht nicht weil erzeugte Progamme das extenden
+
+trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md

@@ -6,7 +6,7 @@
 
 **JMurmel is a lightweight Lisp-1-to-1.5-ish-with-a-side-of-Scheme Interpreter/ Compiler written in Java8+ that can be used standalone as well as embedded.**
 
-Currently weighing in at ~96kB (size of compiled .jar file),
+Currently weighing in at ~97kB (size of compiled .jar file),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -17,6 +17,7 @@ JMurmel is the name of the interpreter that supports Murmel.
 For more details on the language supported see `murmel-langref.lisp`.)
 
 JMurmel features tail call optimization, dynamic as well as lexical environments,
+a trace facility (trace and untrace function calls)
 and has garbage collection c/o Java.
 
 The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
@@ -42,8 +43,8 @@ With `jmurmel-1.0-SNAPSHOT.jar` in the current directory start JMurmel with the 
 
 At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look like this:
 
-D:\robert\Workspace.java\platform\lambda\target>java -jar jmurmel-1.0-SNAPSHOT.jar
-Enter a Murmel form or :command (or enter :h for command help or :q to exit):
+    D:\robert\Workspace.java\platform\lambda\target>java -jar jmurmel-1.0-SNAPSHOT.jar
+    Enter a Murmel form or :command (or enter :h for command help or :q to exit):
 
     JMurmel> (write "Hello, World!")
     "Hello, World!"
@@ -72,7 +73,7 @@ Try e.g.
 
     $ java -jar jmurmel-1.0-SNAPSHOT.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
-    LambdaJ> *(+ 1 2)*
+    LambdaJ> (+ 1 2)
 
     ==> 3.0
     JMurmel>
@@ -273,4 +274,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.50 2020/12/07 16:40:06 Robert Exp $
+$Id: README.md,v 1.51 2020/12/07 21:25:55 Robert Exp $
