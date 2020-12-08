@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.290 2020/12/08 17:30:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.291 2020/12/08 18:15:08 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3181,7 +3181,7 @@ public class LambdaJ {
             }
             ret.append("import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
-                     + "    protected ").append(clsName).append(" rt() { return this; }\n\n").append(""
+                     + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                      + "    public static void main(String[] args) {\n"
                      + "        main(new ").append(clsName).append("());\n"
                      + "    }\n\n");
@@ -3209,27 +3209,24 @@ public class LambdaJ {
             if (result != null) result = "_intern(\"" + result.toString() + "\")";
 
             // generate getValue() for FFI
-            ret.append("    @Override public Object getValue(String symbol) {\n");
-            ret.append("        switch (symbol) {\n");
-            ret.append(globals);
-            ret.append("        }\n");
+            ret.append("    @Override public Object getValue(String symbol) {\n"
+                     + "        switch (symbol) {\n")
+               .append(globals)
+               .append("        }\n");
 
             ret.append("        switch (symbol) {\n");
             for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
             for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
             for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (MurmelFunction)rt()::_").append(prim).append(";\n");
             for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (MurmelFunction)rt()::").append(alias[1]).append(";\n");
-            ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n");
-            ret.append("        }\n");
-
-            ret.append("    }\n\n");
-
-            ret.append("    // toplevel forms\n");
-            ret.append("    public Object body() {\n        Object result0 = ").append(result).append(";\n");
+            ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
+                     + "        }\n"
+                     + "    }\n\n"
+                     + "    // toplevel forms\n"
+                     + "    public Object body() {\n        Object result0 = ").append(result).append(";\n");
             formsToJava(ret, bodyForms, env, 0);
-            ret.append("        return result0;\n    }\n");
-
-            ret.append("}\n");
+            ret.append("        return result0;\n    }\n"
+                     + "}\n");
             ret.flush();
             return ret;
         }
@@ -3317,8 +3314,8 @@ public class LambdaJ {
             if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
             else {
                 env = extenv(car(form), 0, env);
-                sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n");
-                sb.append("    private final Object ").append(javasym(car(form), env)).append(" = ");
+                sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
+                        + "    private final Object ").append(javasym(car(form), env)).append(" = ");
                 formToJava(sb, cadr(form), env, 0);
                 sb.append(";\n\n");
                 return env;
