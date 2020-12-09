@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.293 2020/12/08 20:06:11 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.294 2020/12/08 22:38:34 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1070,7 +1070,8 @@ public class LambdaJ {
                         traceStack = push(operator, traceStack);
                         form = car(forms); isTc = true; continue tailcall;
                     }
-                    return null; // lambda/ progn/ labels/... w/o body, shouldn't happen
+
+                    result = null; return null; // lambda/ progn/ labels/... w/o body
 
                 }
 
