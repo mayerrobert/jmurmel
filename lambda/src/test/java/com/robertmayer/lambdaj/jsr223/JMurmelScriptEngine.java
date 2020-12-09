@@ -39,7 +39,7 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
         if (!isInit) {
             isInit = true;
-            murmel.interpretExpression(() -> -1, s -> { return; });
+            murmel.init(() -> -1, s -> { return; });
         }
         final Reader stdIn = context.getReader();
         final Writer stdOut = context.getWriter();

@@ -1,4 +1,4 @@
-der reader gibt einen kommentarblock als gesondertes objekt
+--jar packt nur MurmelProgram.class, die lambdas MurmelProgram$1.class usw gehen verschuett
 
 java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
 
@@ -1828,3 +1828,6 @@ trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/
 
 --java liest nicht von stdin
 --trace=stats gibt nur stats der ersten exp aus
+
+der reader gibt einen kommentarblock als gesondertes objekt
+-> nein, --trace=stats schreibt auch die initialisierung mit "() -> -1"

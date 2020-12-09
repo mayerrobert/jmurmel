@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.296 2020/12/09 06:51:03 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.297 2020/12/09 18:02:58 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2254,22 +2254,29 @@ public class LambdaJ {
 
     /// JMurmel native FFI - Java calls Murmel
 
-    /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
-     *
-     *  <p>After the expression was read from {@code in}, the primitive function {@code read} (if used)
-     *  will read S-expressions from {@code in} as well,
-     *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
-    public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        nCells = 0; maxEnvLen = 0;
+    /** Build environment, setup symbol table, Lisp reader and writer.
+     *  Needs to be called once before evalQuote() and evalScript(), not needed before interpretExpression/s  */
+    public SExpressionParser init(ReadSupplier in, WriteConsumer out) {
         SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, true);
         setSymtab(parser);
         ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
         final ConsCell env = environment(null);
         topEnv = env;
-        final Object exp = parser.readObj(true);
+        nCells = 0; maxEnvLen = 0;
+        return parser;
+    }
+
+    /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
+     *
+     *  <p>After the expression was read from {@code in}, the primitive function {@code read} (if used)
+     *  will read S-expressions from {@code in} as well,
+     *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
+    public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
+        SExpressionParser parser = init(in, out);
+        final Object exp = parser.readObj();
         long tStart = System.nanoTime();
-        final Object result = evalquote(exp, env, 0, 0, 0);
+        final Object result = evalquote(exp, topEnv, 0, 0, 0);
         traceStats(System.nanoTime() - tStart);
         return result;
     }
@@ -2363,14 +2370,11 @@ public class LambdaJ {
 
         final List<String> files = args(args);
         if (!files.isEmpty()) {
-            if (toJar) {
-                compileFiles(files, interpreter, true);
-            }
-            else if (toJava) {
-                compileFiles(files, interpreter, false);
+            if (toJar || toJava) {
+                compileFiles(files, interpreter, toJar);
             }
             else {
-                interpreter.interpretExpression(() -> -1, s -> { return; });
+                interpreter.init(() -> -1, s -> { return; });
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
                     Path p = Paths.get(fileName);
@@ -2390,7 +2394,6 @@ public class LambdaJ {
         if (files.isEmpty()) {
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
             final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
-            interpreter.interpretExpression(() -> -1, s -> { return; });
 
             if (toJar || toJava) {
                 final SExpressionParser parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
@@ -2417,6 +2420,7 @@ public class LambdaJ {
                 if (success) System.out.println("compiled stdin to " + outFile);
             }
             else {
+                interpreter.init(() -> -1, s -> { return; });
                 interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
             }
         }
@@ -2934,7 +2938,7 @@ public class LambdaJ {
         private final LambdaJ intp = new LambdaJ();
 
         protected MurmelJavaProgram() {
-            intp.interpretExpression(() -> -1, System.out::print);
+            intp.init(() -> -1, System.out::print);
             intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, true), intp.getLispPrinter());
             _t = _intern("t");
         }
