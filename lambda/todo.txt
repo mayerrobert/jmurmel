@@ -1,4 +1,4 @@
---java liest nicht von stdin
+der reader gibt einen kommentarblock als gesondertes objekt
 
 java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
 
@@ -1825,3 +1825,6 @@ MurmelJavaProgram implements MurmelProgram
 -> MurmelJavaProgram auf private oder Package umstellen geht nicht weil erzeugte Progamme das extenden
 
 trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
+
+--java liest nicht von stdin
+--trace=stats gibt nur stats der ersten exp aus

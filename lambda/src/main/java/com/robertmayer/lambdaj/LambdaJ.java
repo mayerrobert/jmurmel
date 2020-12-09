@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.295 2020/12/09 05:33:27 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.296 2020/12/09 06:51:03 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2311,6 +2311,7 @@ public class LambdaJ {
     /** print and reset interpreter stats */
     private void traceStats(long nanos) {
         if (trace.ge(TraceLevel.TRC_STATS)) {
+            tracer.println("");
             tracer.println("*** max eval nesting:  " + maxEvalLevel + " ***");
             tracer.println("*** max stack used:    " + maxEvalStack + " ***");
 
@@ -2387,10 +2388,37 @@ public class LambdaJ {
         if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo, history); // repl() doesn't return
 
         if (files.isEmpty()) {
-            interpreter.interpretExpression(() -> -1, s -> { return; });
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
             final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
-            interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
+            interpreter.interpretExpression(() -> -1, s -> { return; });
+
+            if (toJar || toJava) {
+                final SExpressionParser parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
+                                                                       new InputStreamReader(System.in, consoleCharset)::read, true);
+
+                final List<Object> program = new ArrayList<>();
+                while (true) {
+                    Object sexp = parser.readObj(true);
+                    if (sexp == null) break;
+                    program.add(sexp);
+                }
+
+                System.out.println("compiling...");
+                final String outFile;
+                final boolean success;
+                if (toJar) {
+                    outFile = "a.jar";
+                    success = compileToJar(parser, program, "MurmelProgram", outFile, interpreter);
+                }
+                else {
+                    outFile = "MurmelProgram.java";
+                    success = compileToJava(StandardCharsets.UTF_8, parser, program, null, outFile, interpreter);
+                }
+                if (success) System.out.println("compiled stdin to " + outFile);
+            }
+            else {
+                interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
+            }
         }
     }
 
@@ -2442,10 +2470,13 @@ public class LambdaJ {
                 final Object form = parser.readObj(true);
                 if (form == null) break;
                 if (history != null) history.add(form);
+
+                long tStart = System.nanoTime();
                 result = interpreter.evalquote(form, interpreter.topEnv, 0, 0, 0);
+                long tEnd = System.nanoTime();
+                interpreter.traceStats(tEnd - tStart);
                 if (printResult) {
-                    System.out.println();
-                    System.out.println("==> " + result);
+                    System.out.print("==> "); outWriter.printObj(result); System.out.println();
                 }
             }
             if (result != null && !printResult) {
@@ -2490,7 +2521,7 @@ public class LambdaJ {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                               () -> { return read.read(echoHolder.value); }, true);
+                                               () -> { return read.read(echoHolder.value); }, false);
                 interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
@@ -2528,7 +2559,6 @@ public class LambdaJ {
                 long tStart = System.nanoTime();
                 final Object result = interpreter.evalquote(exp, env, 0, 0, 0);
                 long tEnd = System.nanoTime();
-                System.out.println();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.print("==> "); outWriter.printObj(result); System.out.println();
             } catch (LambdaJError e) {
@@ -3828,7 +3858,9 @@ class EolUtil {
     }
 }
 
-/** A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in. Various lineendings will all be translated to '\n'.
+/** A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in.
+ *  When reading from System.in sun.stdout.encoding will be used.
+ *  Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
 class AnyToUnixEol implements LambdaJ.ReadSupplier {
     private static final Charset consoleCharset;

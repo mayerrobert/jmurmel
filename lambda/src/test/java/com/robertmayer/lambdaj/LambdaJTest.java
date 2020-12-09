@@ -309,7 +309,7 @@ public class LambdaJTest {
 
         // turn off long so I don't have to adjust all tests
         final int features = LambdaJ.Features.HAVE_ALL_LEXC.bits() & ~LambdaJ.Features.HAVE_LONG.bits() | LambdaJ.Features.HAVE_DOUBLE.bits();
-        final LambdaJ intp = new LambdaJ(features, LambdaJ.TraceLevel.TRC_ENV, null);
+        final LambdaJ intp = new LambdaJ(features, LambdaJ.TraceLevel.TRC_NONE /*TRC_ENV*/, null);
 
         System.out.println("***** running program '" + fileName + "':");
         System.out.println("-------------------------------------------------------");
