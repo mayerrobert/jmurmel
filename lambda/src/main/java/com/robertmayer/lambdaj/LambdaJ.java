@@ -114,7 +114,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.294 2020/12/08 22:38:34 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.295 2020/12/09 05:33:27 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3621,8 +3621,38 @@ public class LambdaJ {
 
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
             if (atom(form))    { atomToJava(sb, form); return; }
-            // todo die naechste zeile von rekursiv auf loop umstellen UND den generierten code ggf auch auf nichtrekursiv umstellen
-            if (consp(form))   { sb.append("cons("); quotedFormToJava(sb, car(form)); sb.append(", "); quotedFormToJava(sb, cdr(form)); sb.append(')'); return; }
+
+            // todo die naechste zeile von rekursiv auf loop umstellen UND den generierten code ggf auch auf nichtrekursiv umstellen -> mit new und rplacd
+            if (consp(form)) {
+                int parens = 0;
+                boolean first = true;
+                for (Object o = form; ; o = cdr(o)) {
+                    if (o == null) break;
+                    if (first) first = false;
+                    else sb.append(',').append(' ');
+
+                    if (cdr(o) != null) {
+                        sb.append("cons(");
+                        parens++;
+                        quotedFormToJava(sb, car(o));
+                        if (!consp(cdr(o))) {
+                            sb.append(',').append(' ');
+                            quotedFormToJava(sb, cdr(o));
+                            break;
+                        }
+                    }
+                    else {
+                        sb.append("cons(");
+                        parens++;
+                        quotedFormToJava(sb, car(o));
+                        sb.append(',').append(' ');
+                        quotedFormToJava(sb, cdr(o));
+                        break;
+                    }
+                }
+                for (int i = 0; i < parens; i++) sb.append(')');
+                return;
+            }
 
             throw new LambdaJError("quote: internal error");
         }

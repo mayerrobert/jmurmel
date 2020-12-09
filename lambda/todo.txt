@@ -1,3 +1,5 @@
+--java liest nicht von stdin
+
 java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
 
 funktion fatal dokmentieren, ggf. umbenamsen

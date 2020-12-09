@@ -107,6 +107,36 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testCons2() throws Exception {
+        MurmelProgram program = compile("'((1 2) 3 4 5)");
+        assertNotNull("failed to compile cons2 to class", program);
+        assertEquals("cons2 produced wrong result", "((1 2) 3 4 5)", sexp(program.body()));
+    }
+
+    @Test
+    public void testCons3() throws Exception {
+        MurmelProgram program = compile("'(1 . 2)");
+        assertNotNull("failed to compile cons3 to class", program);
+        assertEquals("cons3 produced wrong result", "(1 . 2)", sexp(program.body()));
+    }
+
+    @Test
+    public void testCons4() throws Exception {
+        MurmelProgram program = compile("'a");
+        assertNotNull("failed to compile cons4 to class", program);
+        assertEquals("cons4 produced wrong result", "a", sexp(program.body()));
+    }
+
+    @Test
+    public void testCons5() throws Exception {
+        MurmelProgram program = compile("'((1 . 2) 3 4 . 5)");
+        assertNotNull("failed to compile cons5 to class", program);
+        assertEquals("cons5 produced wrong result", "((1 . 2) 3 4 . 5)", sexp(program.body()));
+    }
+
+
+
+    @Test
     public void testEq() throws Exception {
         MurmelProgram program = compile("(eq 1 1)");
         assertNotNull("failed to compile eq to class", program);
