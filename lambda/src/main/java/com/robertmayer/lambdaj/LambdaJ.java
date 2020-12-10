@@ -15,15 +15,19 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.IllegalFormatException;
@@ -59,6 +64,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
@@ -114,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.297 2020/12/09 18:02:58 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.298 2020/12/09 22:36:15 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2599,12 +2605,20 @@ public class LambdaJ {
         }
     }
 
+    /*
     private static Path tmpDir;
     private static Path getTmpDir() throws IOException {
         if (tmpDir == null) {
             tmpDir = Files.createTempDirectory("jmurmel");
             tmpDir.toFile().deleteOnExit();
         }
+        return tmpDir;
+    }
+    */
+
+    private static Path getTmpDir() throws IOException {
+        Path tmpDir = Files.createTempDirectory("jmurmel");
+        tmpDir.toFile().deleteOnExit();
         return tmpDir;
     }
 
@@ -3702,6 +3716,7 @@ public class LambdaJ {
 
 
 class JavaCompilerUtils {
+    private static final java.util.Map<String, String> ENV = Collections.singletonMap("create", "true");
     private MurmelClassLoader murmelClassLoader;
 
     JavaCompilerUtils(Path outPath) {
@@ -3723,6 +3738,7 @@ class JavaCompilerUtils {
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
         mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
 
+        /*
         try (final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
             final String[] dirs = className.split("\\.");
             final StringBuilder path = new StringBuilder();
@@ -3732,6 +3748,12 @@ class JavaCompilerUtils {
                     final JarEntry entry = new JarEntry(path.toString() + ".class");
                     jar.putNextEntry(entry);
                     jar.write(murmelClassLoader.getBytes(className));
+
+                    // add classes for Murmel lambdas
+                    Class<?>[] nestedClasses = program.getClasses();
+                    for (Class<?> clazz: nestedClasses) {
+                        jar.write(murmelClassLoader.getBytes(clazz.getName()));
+                    }
                 }
                 else {
                     path.append('/');
@@ -3741,7 +3763,48 @@ class JavaCompilerUtils {
                 jar.closeEntry();
             }
         }
+        */
+        final Path zipPath = Paths.get(jarFileName);
+        final URI uri = URI.create("jar:" + zipPath.toUri());
+
+        Files.deleteIfExists(zipPath);
+
+        try (final FileSystem zipfs = FileSystems.newFileSystem(uri, ENV)) {
+            Files.createDirectory(zipfs.getPath("META-INF/"));
+
+            try (final OutputStream out = Files.newOutputStream(zipfs.getPath("META-INF/MANIFEST.MF"))) {
+                mf.write(out);
+            }
+            copyFolder(murmelClassLoader.getOutPath(), zipfs.getPath("/"));
+            // todo deleteonexit
+            try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
+
+                // delete directory including files and sub-folders
+                files.sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        //.peek(f -> System.out.println("delete " + f.toString()))
+                        .forEach(File::deleteOnExit);
+            }
+        }
+
         return program;
+    }
+
+    private void copyFolder(Path src, Path dest) throws IOException {
+        try (Stream<Path> stream = Files.walk(src)) {
+            stream.forEachOrdered(sourcePath -> {
+                try {
+                    Path subSource = src.relativize(sourcePath);
+                    Path dst = dest.resolve(subSource.toString());
+                    //System.out.println(sourcePath.toString() + " -> " + dst.toString());
+                    if (!sourcePath.equals(src)) {
+                        Files.copy(sourcePath, dst);
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
     }
 
     /** Compile Java sourcecode of class {@code className} to Java bytecode */
@@ -3750,7 +3813,7 @@ class JavaCompilerUtils {
         final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
         final List<String> options = Collections.singletonList("-g");
         try {
-            fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPathFile()));
+            fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));
             //                                     out       diag  opt      classes
             final CompilationTask c = comp.getTask(null, fm, null, options, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
             if (c.call()) {
@@ -3803,12 +3866,13 @@ class MurmelClassLoader extends ClassLoader {
         }
     }
 
-    File getOutPathFile() { return outPath.toFile(); }
+    Path getOutPath() { return outPath; }
+
     byte[] getBytes(String name) throws IOException {
         String path = name.replace('.', '/');
         Path p = outPath.resolve(Paths.get(path + ".class"));
         if (!Files.isReadable(p)) return null;
-        p.toFile().deleteOnExit();
+        //p.toFile().deleteOnExit();
         return Files.readAllBytes(p);
     }
 }
