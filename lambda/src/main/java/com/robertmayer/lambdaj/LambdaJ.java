@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.299 2020/12/10 07:31:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.300 2020/12/10 07:42:57 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2321,7 +2321,7 @@ public class LambdaJ {
         }
     }
 
-    /** print and reset interpreter stats */
+    /** print and reset interpreter stats and wall time. preceeded and followed by a newline. */
     private void traceStats(long nanos) {
         if (trace.ge(TraceLevel.TRC_STATS)) {
             tracer.println("");
@@ -2340,8 +2340,10 @@ public class LambdaJ {
         }
     }
 
+    /** print stats (wall time) of compiled program. preceeded and followed by a newline. */
     private void traceJavaStats(long nanos) {
         if (trace.ge(TraceLevel.TRC_STATS)) {
+            tracer.println("");
             long millis = (long)(nanos * 0.000001D);
             String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
             tracer.println("*** elapsed wall time: " + ms + "ms ***");
@@ -2486,6 +2488,7 @@ public class LambdaJ {
                 long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 if (printResult) {
+                    System.out.println();
                     System.out.print("==> "); outWriter.printObj(result); System.out.println();
                 }
             }
@@ -2570,6 +2573,7 @@ public class LambdaJ {
                 final Object result = interpreter.evalquote(exp, env, 0, 0, 0);
                 long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
+                System.out.println();
                 System.out.print("==> "); outWriter.printObj(result); System.out.println();
             } catch (LambdaJError e) {
                 if (istty) {
@@ -2633,8 +2637,8 @@ public class LambdaJ {
             long tStart = System.nanoTime();
             Object result = prg.body();
             long tEnd = System.nanoTime();
-            System.out.println();
             interpreter.traceJavaStats(tEnd - tStart);
+            System.out.println();
             System.out.print("==> ");  interpreter.lispPrinter.printObj(result); System.out.println();
         }
         catch (LambdaJError e) {
