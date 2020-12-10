@@ -5,8 +5,7 @@ import static junit.framework.Assert.*;
 import org.junit.Test;
 
 import com.robertmayer.lambdaj.LambdaJ.ConsCell;
-
-import static com.robertmayer.lambdaj.PrintObjTest.cdr;
+import static com.robertmayer.lambdaj.TestUtils.cdr;
 
 public class ConsCellIteratorTest {
 

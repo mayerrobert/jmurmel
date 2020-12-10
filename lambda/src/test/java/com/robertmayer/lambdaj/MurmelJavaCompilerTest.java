@@ -46,11 +46,11 @@ public class MurmelJavaCompilerTest {
 
         MurmelProgram instance = murmelClass.newInstance();
         Object result = instance.body();
-        assertEquals("wrong result", "t", sexp(result));
+        assertEquals("wrong result", "t", TestUtils.sexp(result));
 
         MurmelFunction f = instance.getFunction("f");
         result = f.apply("The answer is: ", 42);
-        assertEquals("wrong result", "t", sexp(result));
+        assertEquals("wrong result", "t", TestUtils.sexp(result));
     }
 
     // murmel compiler should throw error "reserved word"
@@ -75,7 +75,7 @@ public class MurmelJavaCompilerTest {
     public void testDefun() throws Exception {
         MurmelProgram program = compile("(define f1 (lambda (a) a)) (defun f2 (a) a)");
         assertNotNull("failed to compile defun to class", program);
-        assertEquals("defun produced wrong result", "f2", sexp(program.body()));
+        assertEquals("defun produced wrong result", "f2", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -110,28 +110,28 @@ public class MurmelJavaCompilerTest {
     public void testCons2() throws Exception {
         MurmelProgram program = compile("'((1 2) 3 4 5)");
         assertNotNull("failed to compile cons2 to class", program);
-        assertEquals("cons2 produced wrong result", "((1 2) 3 4 5)", sexp(program.body()));
+        assertEquals("cons2 produced wrong result", "((1 2) 3 4 5)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCons3() throws Exception {
         MurmelProgram program = compile("'(1 . 2)");
         assertNotNull("failed to compile cons3 to class", program);
-        assertEquals("cons3 produced wrong result", "(1 . 2)", sexp(program.body()));
+        assertEquals("cons3 produced wrong result", "(1 . 2)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCons4() throws Exception {
         MurmelProgram program = compile("'a");
         assertNotNull("failed to compile cons4 to class", program);
-        assertEquals("cons4 produced wrong result", "a", sexp(program.body()));
+        assertEquals("cons4 produced wrong result", "a", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCons5() throws Exception {
         MurmelProgram program = compile("'((1 . 2) 3 4 . 5)");
         assertNotNull("failed to compile cons5 to class", program);
-        assertEquals("cons5 produced wrong result", "((1 . 2) 3 4 . 5)", sexp(program.body()));
+        assertEquals("cons5 produced wrong result", "((1 . 2) 3 4 . 5)", TestUtils.sexp(program.body()));
     }
 
 
@@ -140,14 +140,14 @@ public class MurmelJavaCompilerTest {
     public void testEq() throws Exception {
         MurmelProgram program = compile("(eq 1 1)");
         assertNotNull("failed to compile eq to class", program);
-        assertEquals("eq produced wrong result", "t", sexp(program.body()));
+        assertEquals("eq produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testNumberEq() throws Exception {
         MurmelProgram program = compile("(= 1 1)");
         assertNotNull("failed to compile numberEq to class", program);
-        assertEquals("numberEq produced wrong result", "t", sexp(program.body()));
+        assertEquals("numberEq produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -161,35 +161,35 @@ public class MurmelJavaCompilerTest {
     public void testNumberEq2() throws Exception {
         MurmelProgram program = compile("((lambda (n) (= n 1)) 1)");
         assertNotNull("failed to compile compare to class", program);
-        assertEquals("compare produced wrong result", "t", sexp(program.body()));
+        assertEquals("compare produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteSymbol() throws Exception {
         MurmelProgram program = compile("'a");
         assertNotNull("failed to compile quoteSymbol to class", program);
-        assertEquals("quoteSymbol produced wrong result", "a", sexp(program.body()));
+        assertEquals("quoteSymbol produced wrong result", "a", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteAtom() throws Exception {
         MurmelProgram program = compile("'1");
         assertNotNull("failed to compile quoteSymbol to class", program);
-        assertEquals("quoteSymbol produced wrong result", "1", sexp(program.body()));
+        assertEquals("quoteSymbol produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteList() throws Exception {
         MurmelProgram program = compile("'(1 2 3)");
         assertNotNull("failed to compile quoteList to class", program);
-        assertEquals("quoteList produced wrong result", "(1 2 3)", sexp(program.body()));
+        assertEquals("quoteList produced wrong result", "(1 2 3)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteNil() throws Exception {
         MurmelProgram program = compile("'()");
         assertNotNull("failed to compile quoteSymbol to class", program);
-        assertEquals("quoteSymbol produced wrong result", "nil", sexp(program.body()));
+        assertEquals("quoteSymbol produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -203,7 +203,7 @@ public class MurmelJavaCompilerTest {
     public void testEval() throws Exception {
         MurmelProgram program = compile("(eval (list 'cdr (car '((quote (a . b)) c))))");
         assertNotNull("failed to compile eval to class", program);
-        assertEquals("eval produced wrong result", "b", sexp(program.body()));
+        assertEquals("eval produced wrong result", "b", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -217,21 +217,21 @@ public class MurmelJavaCompilerTest {
     public void testCond() throws Exception {
         MurmelProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");
         assertNotNull("failed to compile cond to class", program);
-        assertEquals("cond produced wrong result", "s3", sexp(program.body()));
+        assertEquals("cond produced wrong result", "s3", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testProgn1() throws Exception {
         MurmelProgram program = compile("(progn)");
         assertNotNull("failed to compile progn1 to class", program);
-        assertEquals("progn produced wrong result", "nil", sexp(program.body()));
+        assertEquals("progn produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testProgn2() throws Exception {
         MurmelProgram program = compile("(progn 1 2 3)");
         assertNotNull("failed to compile progn2 to class", program);
-        assertEquals("progn2 produced wrong result", "3", sexp(program.body()));
+        assertEquals("progn2 produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -245,35 +245,35 @@ public class MurmelJavaCompilerTest {
     public void testVarargsCar() throws Exception {
         MurmelProgram program = compile("((lambda args (car args)) 'a 'b 'c)");
         assertNotNull("failed to compile varargscar to class", program);
-        assertEquals("varargscar produced wrong result", "a", sexp(program.body()));
+        assertEquals("varargscar produced wrong result", "a", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testVarargsCdr() throws Exception {
         MurmelProgram program = compile("((lambda args (cdr args)) 'a 'b 'c)");
         assertNotNull("failed to compile varargscdr to class", program);
-        assertEquals("varargscdr produced wrong result", "(b c)", sexp(program.body()));
+        assertEquals("varargscdr produced wrong result", "(b c)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testVarargsCdddr() throws Exception {
         MurmelProgram program = compile("((lambda args (cdr (cdr (cdr args)))) 'a 'b 'c)");
         assertNotNull("failed to compile varargscdddr to class", program);
-        assertEquals("varargscdddr produced wrong result", "nil", sexp(program.body()));
+        assertEquals("varargscdddr produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testFormat() throws Exception {
         MurmelProgram program = compile("(format-locale nil \"de-DE\" \"Hello, World!\")");
         assertNotNull("failed to compile format to class", program);
-        assertEquals("format produced wrong result", "\"Hello, World!\"", sexp(program.body()));
+        assertEquals("format produced wrong result", "\"Hello, World!\"", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testLet() throws Exception {
         MurmelProgram program = compile("(let ((a 1) (b 2) (c 3)) c)");
         assertNotNull("failed to compile let to class", program);
-        assertEquals("let produced wrong result", "3", sexp(program.body()));
+        assertEquals("let produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -302,7 +302,7 @@ public class MurmelJavaCompilerTest {
                 + "        (rev^ rev^ (cons (car l) a) (cdr l )))))))";
         MurmelProgram program = compile(source);
         assertNotNull("failed to compile reverse to class:", program);
-        assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", sexp(program.body()));
+        assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -371,11 +371,5 @@ public class MurmelJavaCompilerTest {
             return e.getMessage();
         }
         return null;
-    }
-
-    private String sexp(Object obj) {
-        StringBuilder b = new StringBuilder();
-        new LambdaJ.SExpressionWriter(b::append).printObj(obj);;
-        return b.toString();
     }
 }

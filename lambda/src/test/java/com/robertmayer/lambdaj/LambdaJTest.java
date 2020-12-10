@@ -1,9 +1,5 @@
 package com.robertmayer.lambdaj;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +9,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static com.robertmayer.lambdaj.TestUtils.sexp;
 
 public class LambdaJTest {
 
@@ -318,9 +319,9 @@ public class LambdaJTest {
 
         final String actualResult;
         if (fileName.endsWith(".lisp")) {
-            actualResult = lispObjectToString(intp, intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
+            actualResult = sexp(intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
         } else {
-            actualResult = lispObjectToString(intp, intp.interpretExpression(new StringReader(prog)::read, out::append));
+            actualResult = sexp(intp.interpretExpression(new StringReader(prog)::read, out::append));
         }
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
@@ -333,19 +334,5 @@ public class LambdaJTest {
             final String outputStr = out.toString();
             assertEquals("program " + fileName + " produced unexpected output", expectedOutput, outputStr);
         }
-    }
-
-    private static String lispObjectToString(LambdaJ intp, Object exp) {
-        /*
-        if (exp == null) return "nil";
-        if (exp instanceof LambdaJ.Primitive) return "#<primitive>";
-
-        // else it's either a ConsCell which has an appropriate toString() method
-        // or an Atom which really is a Java Object such as String (Lisp symbols) or Double (Lisp numbers)
-        return exp.toString();
-        */
-        StringBuilder sExp = new StringBuilder();
-        LambdaJ.makeWriter(sExp::append).printObj(exp);
-        return sExp.toString();
     }
 }

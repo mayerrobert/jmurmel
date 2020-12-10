@@ -3,8 +3,8 @@ package com.robertmayer.lambdaj;
 import org.junit.Test;
 
 import static junit.framework.Assert.*;
-
 import static com.robertmayer.lambdaj.LambdaJ.ConsCell;
+import static com.robertmayer.lambdaj.TestUtils.cdr;
 
 public class PrintObjTest {
 
@@ -71,9 +71,5 @@ public class PrintObjTest {
         c.rplacd(c);
         // if cdr is a cons then it's really a list
         assertEquals("(a #<circular list>)", c.toString());
-    }
-
-    static ConsCell cdr(Object l) {
-        return (ConsCell)((ConsCell)l).cdr();
     }
 }
