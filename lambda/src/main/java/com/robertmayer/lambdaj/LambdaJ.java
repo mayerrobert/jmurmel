@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.298 2020/12/09 22:36:15 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.299 2020/12/10 07:31:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2626,7 +2626,7 @@ public class LambdaJ {
      *  if className is null "MurmelProgram" will be the class' name */
     private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter) {
         try {
-            MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
+            MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir());
             String clsName = "MurmelProgram";
             Class<MurmelProgram> murmelClass = c.formsToJavaClass(clsName.toString(), history, null);
             MurmelProgram prg = murmelClass.newInstance();
@@ -2652,7 +2652,7 @@ public class LambdaJ {
      *  if filename is null the filename will be derived from the className
      *  if filename ends with a / then filename is interpreted as a base directory and the classname (with packages) will be appended */
     private static boolean compileToJava(Charset charset, SymbolTable symtab, List<Object> history, Object className, Object filename, LambdaJ interpreter) {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, null); // todo ggf compiler nur 1x instanzieren
+        MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, null);
         String clsName = className == null ? "MurmelProgram" : className.toString();
         //if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
@@ -2694,9 +2694,10 @@ public class LambdaJ {
 
     private static boolean compileToJar(SymbolTable symtab, List<Object> history, Object className, Object jarFile, LambdaJ interpreter) {
         try {
-            MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir()); // todo ggf compiler nur 1x instanzieren, damits nicht so viele murmelclassloader gibt
+            MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir());
             String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             String clsName = className == null ? "MurmelProgram" : className.toString();
+            System.out.println("compiling...");
             c.formsToJavaClass(clsName, history, jarFileName);
             System.out.println("compiled to .jar file '" + jarFileName + '\'');
             return true;
@@ -3776,9 +3777,8 @@ class JavaCompilerUtils {
                 mf.write(out);
             }
             copyFolder(murmelClassLoader.getOutPath(), zipfs.getPath("/"));
-            // todo deleteonexit
-            try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
 
+            try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
                 // delete directory including files and sub-folders
                 files.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
