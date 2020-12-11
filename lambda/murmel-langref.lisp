@@ -377,6 +377,9 @@ nil
 (/ (get-universal-time) 60 60 24 365)
 
 ; get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+: NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
+        offset from Greenwich Mean Time.
+        In Murmel zome is given as a double, e.g. Vienna in winter is -1.0
 (get-decoded-time)
 
 ; format t writes a formatted string to stdout and returns nil.
@@ -450,4 +453,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.33 2020/12/08 10:28:59 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.34 2020/12/08 10:41:19 Robert Exp $

@@ -1833,3 +1833,7 @@ der reader gibt einen kommentarblock als gesondertes objekt
 -> nein, --trace=stats schreibt auch die initialisierung mit "() -> -1"
 
 --jar packt nur MurmelProgram.class, die lambdas MurmelProgram$1.class usw gehen verschuett
+
+bei get-decoded-time fehlt der wochentag: ... jahr wochentag "Daylight saving time flag" timezone
+timezone hat das falsche vorzeichen: oestlich von greenwich ists negativ
+timezone ist ein double, sollte ein "a rational multiple of 1/3600 between -24 (inclusive) and 24 (inclusive)" sein

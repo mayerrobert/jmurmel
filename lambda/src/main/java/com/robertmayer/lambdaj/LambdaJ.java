@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.300 2020/12/10 07:42:57 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.301 2020/12/10 11:45:43 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1922,11 +1922,11 @@ public class LambdaJ {
         final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
         final ZoneRules rules = n.getZone().getRules();
         boolean daylightSavings = rules.isDaylightSavings(now);
-        double offset = rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
+        double offset = -rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
         //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
         return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
-               cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(),
-               cons(boolResult(daylightSavings), cons(offset, null))))))));
+               cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
+               cons(boolResult(daylightSavings), cons(offset, null)))))))));
     }
 
     private static ThreadMXBean getThreadBean(final String func) {
