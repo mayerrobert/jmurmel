@@ -1,3 +1,5 @@
+apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
+
 --java schreibt 1x compiling..., --jar schreibt 2x compiling...
 
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
