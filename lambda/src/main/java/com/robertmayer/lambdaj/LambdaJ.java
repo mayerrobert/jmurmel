@@ -7,7 +7,6 @@ package com.robertmayer.lambdaj;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -60,14 +59,13 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
+
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
@@ -120,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.303 2020/12/12 10:58:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.304 2020/12/12 20:42:51 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2954,6 +2952,16 @@ public class LambdaJ {
 
         public interface MurmelProgn { Object call(); }
 
+        public static class MurmelFunctionCall {
+            MurmelFunction next;
+            Object[] args;
+
+            MurmelFunctionCall(MurmelFunction next, Object[] args) {
+                this.next = next;
+                this.args = args;
+            }
+        }
+
         private final LambdaJ intp = new LambdaJ();
 
         protected MurmelJavaProgram() {
@@ -2975,7 +2983,8 @@ public class LambdaJ {
         public MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
             if (maybeFunction instanceof MurmelFunction) {
-                return (MurmelFunction)maybeFunction;
+                //return (MurmelFunction)maybeFunction;
+                return args -> funcall(maybeFunction, args);
             }
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
         }
@@ -3062,13 +3071,30 @@ public class LambdaJ {
         }
 
         /** used for function calls */
+        /*
         public Object funcall(Object fn, Object... args) {
             MurmelFunction f = (MurmelFunction)fn;
             return f.apply(args);
         }
+        */
+
+        public static Object funcall(Object fn, Object... args) {
+            final MurmelFunction f = (MurmelFunction)fn;
+            Object r = f.apply(args);
+            while (r instanceof MurmelFunctionCall) {
+                MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
+                r = functionCall.next.apply(functionCall.args);
+            }
+            return r;
+        }
+
+        public static MurmelFunctionCall tailcall(Object fn, Object... args) {
+            final MurmelFunction f = (MurmelFunction)fn;
+            return new MurmelFunctionCall(f, args);
+        }
 
         /** used for (apply sym form) */
-        public Object applyHelper(Object fn, Object argList) {
+        public static Object applyHelper(Object fn, Object argList) {
             MurmelFunction f = (MurmelFunction)fn;
             if (argList instanceof Object[]) return funcall(f, (Object[])argList);
             return funcall(f, listToArray(argList));
@@ -3284,7 +3310,7 @@ public class LambdaJ {
                      + "    }\n\n"
                      + "    // toplevel forms\n"
                      + "    public Object body() {\n        Object result0 = ").append(result).append(";\n");
-            formsToJava(ret, bodyForms, env, 0);
+            formsToJava(ret, bodyForms, env, 0, true);
             ret.append("        return result0;\n    }\n"
                      + "}\n");
             ret.flush();
@@ -3376,7 +3402,7 @@ public class LambdaJ {
                 env = extenv(car(form), 0, env);
                 sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
                         + "    private final Object ").append(javasym(car(form), env)).append(" = ");
-                formToJava(sb, cadr(form), env, 0);
+                formToJava(sb, cadr(form), env, 0, true);
                 sb.append(";\n\n");
                 return env;
             }
@@ -3397,7 +3423,7 @@ public class LambdaJ {
             sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
-            formsToJava(sb, (ConsCell)body, extenv, rsfx);
+            formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
 
             return env;
@@ -3407,19 +3433,21 @@ public class LambdaJ {
 
         /// formsToJava - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms */
-        private void formsToJava(WrappingWriter ret, Iterable<Object> forms, ConsCell env, int rsfx) {
-            for (Object form: forms) {
+        private void formsToJava(WrappingWriter ret, Iterable<Object> forms, ConsCell env, int rsfx, boolean topLevel) {
+            final Iterator<Object> it = forms.iterator();
+            while (it.hasNext()) {
+                Object form = it.next();
                 if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
                     ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
                     ret.append("        result").append(rsfx).append(" = ");
-                    formToJava(ret, form, env, rsfx);
+                    formToJava(ret, form, env, rsfx, !topLevel && !it.hasNext());
                     ret.append(';').append('\n');
                 }
             }
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
-        private void formToJava(WrappingWriter sb, Object form, ConsCell env, int rsfx) {
+        private void formToJava(WrappingWriter sb, Object form, ConsCell env, int rsfx, boolean isLast) {
             try {
 
                 /// * symbols
@@ -3472,8 +3500,8 @@ public class LambdaJ {
 
                     ///     - if
                     if (isSymbol(op, "if"))  {
-                        formToJava(sb, car(args), env, rsfx); sb.append(" != null\n        ? "); formToJava(sb, cadr(args), env, rsfx);
-                        if (caddr(args) != null) { sb.append("\n        : "); formToJava(sb, caddr(args), env, rsfx); }
+                        formToJava(sb, car(args), env, rsfx, false); sb.append(" != null\n        ? "); formToJava(sb, cadr(args), env, rsfx, isLast);
+                        if (caddr(args) != null) { sb.append("\n        : "); formToJava(sb, caddr(args), env, rsfx, isLast); }
                         else sb.append("\n        : null");
                         return;
                     }
@@ -3482,7 +3510,7 @@ public class LambdaJ {
                     if (isSymbol(op, "cond"))  {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
-                            sb.append("        : ("); formToJava(sb, car(cond), env, rsfx); sb.append(" != null)\n        ? ");
+                            sb.append("        : ("); formToJava(sb, car(cond), env, rsfx, false); sb.append(" != null)\n        ? ");
                             prognToJava(sb, (ConsCell)cdr(cond), env, rsfx+1);
                         }
                         sb.append("\n        : null");
@@ -3494,7 +3522,7 @@ public class LambdaJ {
                         rsfx++;
                         sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
                         env = params(sb, car(args), env, rsfx);
-                        formsToJava(sb, (ConsCell)cdr(args), env, rsfx);
+                        formsToJava(sb, (ConsCell)cdr(args), env, rsfx, false);
                         sb.append("        return result").append(rsfx).append("; })");
                         return;
                     }
@@ -3505,9 +3533,9 @@ public class LambdaJ {
                     ///     - apply
                     if (isSymbol(op, "apply")) {
                         sb.append("applyHelper(");
-                        formToJava(sb, car(args), env, rsfx);
+                        formToJava(sb, car(args), env, rsfx, false);
                         sb.append(", ");
-                        formToJava(sb, cadr(args), env, rsfx);
+                        formToJava(sb, cadr(args), env, rsfx, false);
                         sb.append(')');
                         return;
                     }
@@ -3523,15 +3551,12 @@ public class LambdaJ {
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
                     if (isSymbol(op, "labels")) {
                         ConsCell params = paramList(args);
-                        sb.append('(');
-                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1);
-                        sb.append(").apply(");
-                        boolean first = true;
+                        sb.append("funcall(");
+                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
                         for (Object paramTuple: (ConsCell)(car(args))) {
-                            if (first) first = false;
-                            else sb.append(',').append(' ');
+                            sb.append(',').append(' ');
                             // only the next line differs from "let" below
-                            formToJava(sb, cons(intern("lambda"), cons(cadr(paramTuple), cddr(paramTuple))), env, rsfx);
+                            formToJava(sb, cons(intern("lambda"), cons(cadr(paramTuple), cddr(paramTuple))), env, rsfx, false);
                         }
                         sb.append(')');
                         return;
@@ -3541,13 +3566,13 @@ public class LambdaJ {
                     if (isSymbol(op, "let")) {
                         ConsCell params = paramList(args);
                         sb.append('(');
-                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1);
+                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
                         sb.append(").apply(");
                         boolean first = true;
                         for (Object paramTuple: (ConsCell)(car(args))) {
                             if (first) first = false;
                             else sb.append(',').append(' ');
-                            formToJava(sb, cadr(paramTuple), env, rsfx);
+                            formToJava(sb, cadr(paramTuple), env, rsfx, false);
                         }
                         sb.append(')');
                         return;
@@ -3557,12 +3582,12 @@ public class LambdaJ {
 
 
                     /// * function call
-                    sb.append("funcall(");
-                    formToJava(sb, op, env, rsfx);
+                    sb.append(isLast ? "tailcall(" : "funcall(");
+                    formToJava(sb, op, env, rsfx, false);
                     if (args != null) {
                         for (Object arg: (ConsCell)args) {
                             sb.append(", ");
-                            formToJava(sb, arg, env, rsfx);
+                            formToJava(sb, arg, env, rsfx, false);
                         }
                     }
                     sb.append(')');
@@ -3599,9 +3624,10 @@ public class LambdaJ {
             return sb;
         }
 
+        // todo wenn das TCO mit funcall funktioniert, dann auch fuer progn TCO einbauen
         private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx) {
             sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx).append(" = null;\n");
-            formsToJava(sb, cond, env, rsfx);
+            formsToJava(sb, cond, env, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n        }).call()\n");
         }
 

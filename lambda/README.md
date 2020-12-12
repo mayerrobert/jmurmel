@@ -6,7 +6,7 @@
 
 **JMurmel is a lightweight Lisp-1-ish-with-a-side-of-Scheme interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
 
-Currently weighing in at ~97kB (size of compiled .jar file),
+Currently weighing in at ~100kB (size of compiled .jar file),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -19,10 +19,11 @@ For more details on the language see `murmel-langref.lisp`.
 The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
 
 JMurmel features a REPL with a trace facility (trace and untrace function calls),
-tail call optimization (interpreter only, compiled code is not yet TCO'd),
+tail call optimization,
 dynamic as well as lexical environments,
-JSR223 support
-and has garbage collection c/o Java.
+JSR223 support,
+garbage collection c/o Java,
+and compiled Murmel will be optimized by Java's JIT compiler.
 
 Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
 
@@ -127,11 +128,11 @@ and maybe create a batchfile along these lines (Windows .cmd-style shown here):
     endlocal
     --- snip ---
 
-That way to run e.g. the file `hanoi.lisp` I can use the following command:
+That way to run e.g. the file `hanoi.lisp` you can use the following command:
 
     C:\> jm hanoi.lisp
 
-or if I want to interpret a file and then go into REPL:
+or if you want to interpret a file and then go into REPL:
 
     C:\> jm --repl hanoi.lisp
 
@@ -297,4 +298,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.53 2020/12/08 11:30:27 Robert Exp $
+$Id: README.md,v 1.54 2020/12/08 20:17:05 Robert Exp $

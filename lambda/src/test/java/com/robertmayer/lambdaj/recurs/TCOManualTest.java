@@ -19,15 +19,15 @@ public class TCOManualTest {
     }
 
     private static Object funcall(MurmelFunction f, Object... args) {
-        Object r = new MurmelFunctionCall(f, args);
-        do {
+        Object r = f.apply(args);
+        while (r instanceof MurmelFunctionCall) {
             MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
             r = functionCall.next.apply(functionCall.args);
-        } while (r instanceof MurmelFunctionCall);
+        }
         return r;
     }
 
-    private static MurmelFunctionCall makeTailCall(MurmelFunction func, Object... args) {
+    private static MurmelFunctionCall tailCall(MurmelFunction func, Object... args) {
         return new MurmelFunctionCall(func, args);
     }
 
@@ -50,7 +50,7 @@ public class TCOManualTest {
 
         result = (dbl(n) <= 1)
         ? product
-        : makeTailCall(this::factorial, dbl(n) - 1, dbl(product) * dbl(n));
+        : tailCall(this::factorial, dbl(n) - 1, dbl(product) * dbl(n));
 
         return result;
     }
@@ -79,8 +79,8 @@ public class TCOManualTest {
 
         result = false ? null
         : (dbl(m) == 0.0) ? (dbl(n) + 1)
-        : (dbl(n) == 0.0) ? makeTailCall(this::ackermann, dbl(m) - 1.0, 1.0)
-        : makeTailCall(this::ackermann, dbl(m) - 1, funcall(this::ackermann, m, dbl(n) - 1.0));
+        : (dbl(n) == 0.0) ? tailCall(this::ackermann, dbl(m) - 1.0, 1.0)
+        : tailCall(this::ackermann, dbl(m) - 1, funcall(this::ackermann, m, dbl(n) - 1.0));
 
         return result;
     }

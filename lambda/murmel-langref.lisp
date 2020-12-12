@@ -431,16 +431,18 @@ nil
 ;
 ; Murmel language:
 ; - apply maybe shouldn't be a special form but a function.
+; - functions for writing should be cleaned up
+; - format and format-locale should probably renamed to
+;   printf, they're more similar to printf than to CL format
 ; - support for packages is currently not implemented
 ;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks,
 ;   actually: most compile- and runtime errors will result in
-;   ClassCastExceptions and NullpointerExceptions
+;   Java ClassCastExceptions and NullpointerExceptions
 ; - let works, named let, let* and letrec are currently not implemented
 ; - define/ defun only work as top level forms
 ; - The function :: is not implemented
-; - TCO is not implemented
 ;
 ; The Todo list for features is way too long.
 
@@ -455,4 +457,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.35 2020/12/11 20:06:14 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.36 2020/12/12 07:21:34 Robert Exp $

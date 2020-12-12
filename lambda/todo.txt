@@ -1,3 +1,9 @@
+--java schreibt 1x compiling..., --jar schreibt 2x compiling...
+
+alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
+
+instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
+
 defun koennte eigentlich Methoden ausspucken statt Member + {...}, muss halt den richtigen ausdruck ins environment stecken
 ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
 (define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
