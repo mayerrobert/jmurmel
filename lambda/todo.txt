@@ -1,8 +1,6 @@
---srcjar option: die sourcen dazuzippen? oder extra srcjar?
+nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
-java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
-
-funktion fatal dokmentieren, ggf. umbenamsen
+funktion fatal dokumentieren, ggf. umbenamsen
 
 define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 defun nur toplevel zulassen
@@ -23,6 +21,10 @@ laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 -> erst mit packages, weil dann brauchts weniger parameter
 
+
+--srcjar option: die sourcen dazuzippen? oder extra srcjar?
+
+java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
 
 in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
 -> aber wsl nicht einfach als special form. irgendwie ins environment reinschreiben, dass das open coded werden darf,
