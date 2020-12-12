@@ -6,6 +6,10 @@ import org.junit.Test;
 
 import com.robertmayer.lambdaj.LambdaJ.LambdaJError;
 
+// Das ist weniger CPS als vielmehr TCO.
+// Die statische Methode funcall() ist ein thunk, der die Tailcalls macht (und damit ist TCO umgesetzt),
+// anstatt dass der Tailcall in der Funktion selbst passiert und damit Stack verbraucht.
+// Hier ist vieles umstaendlich und fishy, ggf. falsch, hoffentlich bessere V2 ist "TCOManualTest.java"
 public class CPSManualTest {
 
     interface MurmelCPSFunction { MurmelCPSResult apply(Object... args) throws LambdaJError; }
@@ -149,7 +153,8 @@ public class CPSManualTest {
         : (dbl(m) == 0.0) ? makeResult(dbl(n) + 1)
         : (dbl(n) == 0.0) ? makeTailCall(this::ackermann, dbl(m) - 1.0, 1.0)
         : makeTailCall(this::ackermann, dbl(m) - 1, funcall(this::ackermann, m, dbl(n) - 1.0));
-        if (result.next != null) return result;
+        if (result.next != null) return result; // das ist eigentlich nicht notwendig, weil nur das letze stmt darf
+                                                // makeTailCall() aufrufen, danach MUSS "return result" kommen
 
         return result;
     }

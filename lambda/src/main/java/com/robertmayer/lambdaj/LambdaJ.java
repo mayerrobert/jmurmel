@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.302 2020/12/11 20:06:15 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.303 2020/12/12 10:58:00 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3070,8 +3070,8 @@ public class LambdaJ {
         /** used for (apply sym form) */
         public Object applyHelper(Object fn, Object argList) {
             MurmelFunction f = (MurmelFunction)fn;
-            if (argList instanceof Object[]) return f.apply((Object[])argList);
-            return f.apply(listToArray(argList));
+            if (argList instanceof Object[]) return funcall(f, (Object[])argList);
+            return funcall(f, listToArray(argList));
         }
 
         /** used by _cons() and by code generated from quotedFormToJava() */

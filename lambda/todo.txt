@@ -1,3 +1,19 @@
+defun koennte eigentlich Methoden ausspucken statt Member + {...}, muss halt den richtigen ausdruck ins environment stecken
+ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
+(define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
+-> spaeter mit setq koennte define aenderbar sein, und defun nicht
+
+ueberhaupt: define vs defvar/ defparameter/ defconstant klaeren
+
+assoc beschleunigung xter anlauf:
+-> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. evalquote muesste einen optionalen parameter bekommen,
+   wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in evalquote muesste die map geeignet ausnuetzen wnn != null
+-> oder: in defun werden symbole durch einen platzhalter ersetzt, der lazy aus dem environment befuellt wird
+
+
+die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
+wsl ists zwischen make-symbol und intern angesiedelt
+
 nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
 funktion fatal dokumentieren, ggf. umbenamsen
