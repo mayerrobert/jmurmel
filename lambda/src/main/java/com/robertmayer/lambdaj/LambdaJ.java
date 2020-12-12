@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.301 2020/12/10 11:45:43 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.302 2020/12/11 20:06:15 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3047,11 +3047,11 @@ public class LambdaJ {
         public Object format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
         public Object formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
 
-        public Object getInternalRealTime(Object... args) { return getInternalRealTime(); }
-        public Object getInternalRunTime (Object... args) { return getInternalRunTime(); }
-        public Object getInternalCpuTime (Object... args) { return getInternalCpuTime(); }
-        public Object sleep              (Object... args) { return sleep(new ArraySlice(args, 0)); }
-        public Object getUniversalTime   (Object... args) { return getUniversalTime(); }
+        public Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
+        public Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
+        public Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(); }
+        public Object sleep              (Object... args) { return LambdaJ.sleep(new ArraySlice(args, 0)); }
+        public Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
         public Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
 
@@ -3225,7 +3225,7 @@ public class LambdaJ {
         public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell env = null;
             for (String   global: globalvars)        env = extenv(intern(global),   '_' + global,   env);
-            for (String[] alias:  aliasedGlobals)    env = extenv(intern(alias[0]), '_' + alias[1], env);
+            for (String[] alias:  aliasedGlobals)    env = extenv(intern(alias[0]), alias[1], env);
             for (String   prim:   primitives)        env = extenvfunc(prim, 0, env);
             for (String[] alias:  aliasedPrimitives) env = extenvfunc(alias[0], alias[1], env);
 
@@ -3472,9 +3472,9 @@ public class LambdaJ {
 
                     ///     - if
                     if (isSymbol(op, "if"))  {
-                        formToJava(sb, car(args), env, rsfx); sb.append(" != null ? "); formToJava(sb, cadr(args), env, rsfx);
-                        if (caddr(args) != null) { sb.append(" : "); formToJava(sb, caddr(args), env, rsfx); }
-                        else sb.append(" : null");
+                        formToJava(sb, car(args), env, rsfx); sb.append(" != null\n        ? "); formToJava(sb, cadr(args), env, rsfx);
+                        if (caddr(args) != null) { sb.append("\n        : "); formToJava(sb, caddr(args), env, rsfx); }
+                        else sb.append("\n        : null");
                         return;
                     }
 
@@ -3485,7 +3485,7 @@ public class LambdaJ {
                             sb.append("        : ("); formToJava(sb, car(cond), env, rsfx); sb.append(" != null)\n        ? ");
                             prognToJava(sb, (ConsCell)cdr(cond), env, rsfx+1);
                         }
-                        sb.append("        : null");
+                        sb.append("\n        : null");
                         return;
                     }
 
@@ -3675,7 +3675,7 @@ public class LambdaJ {
             if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
             if (atom(form))    { atomToJava(sb, form); return; }
 
-            // todo die naechste zeile von rekursiv auf loop umstellen UND den generierten code ggf auch auf nichtrekursiv umstellen -> mit new und rplacd
+            // todo den generierten code von rekursiv auf loop umstellen, mit builder vgl. ConsTest
             if (consp(form)) {
                 int parens = 0;
                 boolean first = true;
