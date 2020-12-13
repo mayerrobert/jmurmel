@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.305 2020/12/12 22:25:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.306 2020/12/13 06:45:29 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3095,8 +3095,19 @@ public class LambdaJ {
         /** used for (apply sym form) */
         public static Object applyHelper(Object fn, Object argList) {
             MurmelFunction f = (MurmelFunction)fn;
-            if (argList instanceof Object[]) return funcall(f, (Object[])argList);
-            return funcall(f, listToArray(argList));
+            return funcall(f, toArray(argList));
+        }
+
+        /** used for (apply sym form) */
+        public static Object applyTailcallHelper(Object fn, Object argList) {
+            MurmelFunction f = (MurmelFunction)fn;
+            return tailcall(f, toArray(argList));
+        }
+
+        private static Object[] toArray(Object o) {
+            if (o instanceof Object[])
+                return (Object[])o;
+            return listToArray(o);
         }
 
         /** used by _cons() and by code generated from quotedFormToJava() */
@@ -3531,7 +3542,7 @@ public class LambdaJ {
 
                     ///     - apply
                     if (isSymbol(op, "apply")) {
-                        sb.append("applyHelper(");
+                        sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
                         formToJava(sb, car(args), env, rsfx, false);
                         sb.append(", ");
                         formToJava(sb, cadr(args), env, rsfx, false);

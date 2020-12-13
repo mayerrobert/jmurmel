@@ -1,4 +1,7 @@
 apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
+-> apply ist erledigt
+
+in --help und --Xhelp aufteilen
 
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
 
@@ -19,6 +22,7 @@ assoc beschleunigung xter anlauf:
 
 die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
 wsl ists zwischen make-symbol und intern angesiedelt
+-> ggf. statt _intern -> intern
 
 nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
