@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.304 2020/12/12 20:42:51 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.305 2020/12/12 22:25:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2412,7 +2412,6 @@ public class LambdaJ {
                     program.add(sexp);
                 }
 
-                System.out.println("compiling...");
                 final String outFile;
                 final boolean success;
                 if (toJar) {
@@ -2454,7 +2453,6 @@ public class LambdaJ {
                 System.exit(1);
             }
         }
-        System.out.println("compiling...");
         final String outFile;
         final boolean success;
         if (toJar) {
@@ -2679,6 +2677,7 @@ public class LambdaJ {
         final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
         try (final OutputStream os = Files.newOutputStream(p);
              final WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
+            System.out.println("compiling...");
             c.formsToJavaSource(writer, clsName, history);
             System.out.println("compiled to Java file '" + p.toString() + '\'');
             return true;
