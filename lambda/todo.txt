@@ -1,7 +1,5 @@
 apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
 
---java schreibt 1x compiling..., --jar schreibt 2x compiling...
-
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
@@ -1863,3 +1861,5 @@ der reader gibt einen kommentarblock als gesondertes objekt
 bei get-decoded-time fehlt der wochentag: ... jahr wochentag "Daylight saving time flag" timezone
 timezone hat das falsche vorzeichen: oestlich von greenwich ists negativ
 timezone ist ein double, sollte ein "a rational multiple of 1/3600 between -24 (inclusive) and 24 (inclusive)" sein
+
+--java schreibt 1x compiling..., --jar schreibt 2x compiling...
