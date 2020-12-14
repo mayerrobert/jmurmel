@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.306 2020/12/13 06:45:29 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.307 2020/12/13 08:32:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3038,13 +3038,13 @@ public class LambdaJ {
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable under alias names
-        public double add     (Object... args) { double ret = 0.0; if (args != null) for (Object arg: args) ret += dbl(arg); return ret; }
-        public double mul     (Object... args) { double ret = 1.0; if (args != null) for (Object arg: args) ret *= dbl(arg); return ret; }
+        public double add     (Object... args) { double ret = 0.0; if (args != null) for (int i = 0; i < args.length; i++) ret += dbl(args[i]); return ret; }
+        public double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
 
-        public double sub     (Object... args) { if (args.length == 0) return 0.0 - dbl(args[0]);
-                                                     double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
-        public double quot    (Object... args) { if (args.length == 0) return 1.0 / dbl(args[0]);
-                                                     double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
+        public double sub     (Object... args) { if (args.length == 1) return 0.0 - dbl(args[0]);
+                                                 double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
+        public double quot    (Object... args) { if (args.length == 1) return 1.0 / dbl(args[0]);
+                                                 double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
         public Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
         public Object lt      (Object... args) { return lt(args[0], args[1]); }
@@ -3078,8 +3078,7 @@ public class LambdaJ {
         */
 
         public static Object funcall(Object fn, Object... args) {
-            final MurmelFunction f = (MurmelFunction)fn;
-            Object r = f.apply(args);
+            Object r = ((MurmelFunction)fn).apply(args);
             while (r instanceof MurmelFunctionCall) {
                 MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
                 r = functionCall.next.apply(functionCall.args);
@@ -3088,20 +3087,17 @@ public class LambdaJ {
         }
 
         public static MurmelFunctionCall tailcall(Object fn, Object... args) {
-            final MurmelFunction f = (MurmelFunction)fn;
-            return new MurmelFunctionCall(f, args);
+            return new MurmelFunctionCall((MurmelFunction)fn, args);
         }
 
         /** used for (apply sym form) */
         public static Object applyHelper(Object fn, Object argList) {
-            MurmelFunction f = (MurmelFunction)fn;
-            return funcall(f, toArray(argList));
+            return funcall((MurmelFunction)fn, toArray(argList));
         }
 
         /** used for (apply sym form) */
         public static Object applyTailcallHelper(Object fn, Object argList) {
-            MurmelFunction f = (MurmelFunction)fn;
-            return tailcall(f, toArray(argList));
+            return tailcall((MurmelFunction)fn, toArray(argList));
         }
 
         private static Object[] toArray(Object o) {
