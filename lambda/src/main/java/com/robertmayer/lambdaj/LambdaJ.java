@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.307 2020/12/13 08:32:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.308 2020/12/14 06:13:48 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2991,13 +2991,13 @@ public class LambdaJ {
 
 
         /// predefined global variables
-        public final Object _nil = null;
+        public static final Object _nil = null;
         public final Object _t;
-        public final Object _pi = Math.PI;
+        public static final Object _pi = Math.PI;
 
         /// predefined aliased global variables
         // itups doesn't have a leading _ because it is avaliable under an alias name
-        public final Object itups = 1e9;
+        public static final Object itups = 1e9;
 
         /// predefined primitives
         public Object   _car (Object... args) { return car(args[0]); }
@@ -3113,10 +3113,10 @@ public class LambdaJ {
 
         // todo car cdr bis gt koennte man inlinen, vorher warens special forms und der generierte code enthielt aufrufe
         // -> car, cdr, cons usw waren "open coded"
-        private Object car (Object l)  { return LambdaJ.car(l); }
-        private Object cdr (Object l)  { return LambdaJ.cdr(l); }
+        private static Object car (Object l)  { return LambdaJ.car(l); }
+        private static Object cdr (Object l)  { return LambdaJ.cdr(l); }
 
-        private double dbl(Object n) {
+        private static double dbl(Object n) {
             return ((Number)n).doubleValue();
         }
 
