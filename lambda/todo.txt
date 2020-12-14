@@ -4,6 +4,7 @@ apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO chec
 in --help und --Xhelp aufteilen
 
 wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
+-> wenn nicht mehr cdr(Object...) aufgerufen wird, sollten weniger Object[] erzeugt werden: vorher/ nachher churn rate vergleichen
 -> damit koennten auch eval+apply in interpreter UND compiler ein normales verhalten bekommen: sind funktionen, halt opencoded solangs nicht wer per let ueberschreibt
 
 checken was passiert wenn eval eine kompilierte funktion im environment mitbekommt, oder ein lambda oder primitive returned
