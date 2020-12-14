@@ -213,6 +213,21 @@ public class MurmelJavaCompilerTest {
         assertEquals("eval2 produced wrong result", 3.0, program.body());
     }
 
+    // interpreter runs compiled code
+    @Test
+    public void testEval3() throws Exception {
+        MurmelProgram program = compile("(eval '(f v) (list (cons 'f write) (cons 'v 1)))");
+        assertNotNull("failed to compile eval3 to class", program);
+        assertEquals("eval3 produced wrong result", "t", TestUtils.sexp(program.body()));
+    }
+
+    @Test
+    public void testEval4() throws Exception {
+        MurmelProgram program = compile("(apply (eval 'write) '(1))");
+        assertNotNull("failed to compile eval4 to class", program);
+        assertEquals("eval4 produced wrong result", "t", TestUtils.sexp(program.body()));
+    }
+
     @Test
     public void testCond() throws Exception {
         MurmelProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");

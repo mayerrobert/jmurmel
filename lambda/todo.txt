@@ -1,53 +1,57 @@
+define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
+defun nur toplevel zulassen
+define vs defvar/ defparameter/ defconstant klaeren
+
+Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
+-> umbenennen?
+-> frueher gabs anscheinend define mit einem parameter:
+    in LISP geht define so: (vgl. ABOUT LISP)
+    -> (define (first (lambda (x) (car x))))
+           first
+    -> damit koennte insertFront einfach arg ins environment stecken
+
+die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
+wsl ists zwischen make-symbol und intern angesiedelt
+-> ggf. statt _intern -> intern, also nicht in der sprache anbieten
+
+nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
+
+HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
+-> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
+prin1 object &optional output-stream => object
+
+prin1 produces output suitable for input to read.
+princ is just like prin1 except that the output has no escape characters.
+print is just like prin1 except that the printed representation of object is preceded by a newline and followed by a space.
+pprint is just like print except that the trailing space is omitted and object is printed with the *print-pretty* flag non-nil to produce pretty output.
+
+lisp eol von cmdline parameter auf lisp global umstellen
+-> oder write uebernimmt liste mit keyword/value tupel: (write obj flags...), z.B.
+   (write "Hallo" (list ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t)))
+-> oder write uebernimmt *optionale* liste, fallback ist eine globale variable *print-environment* mit soner liste
+   (write "Hallo") ; write benutzt *print-environment*
+   (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
+
+
+
+
+
+in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
+-> aber wsl nicht einfach als special form. irgendwie ins environment reinschreiben, dass das open coded werden darf,
+   -> wenn jemand eine eigene cons funktion implementiert (mit let oder labels, define/ defun waere dzt. verboten),
+      dann steht nicht mehr "open coded" im environment und es wird die richtige funktion aufgerufen
+
 wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
 -> wenn nicht mehr cdr(Object...) aufgerufen wird, sollten weniger Object[] erzeugt werden: vorher/ nachher churn rate vergleichen
 -> damit koennten auch eval+apply in interpreter UND compiler ein normales verhalten bekommen: sind funktionen, halt opencoded solangs nicht wer per let ueberschreibt
 
-checken was passiert wenn eval eine kompilierte funktion im environment mitbekommt, oder ein lambda oder primitive returned
-    eval returned Interpreter-Primitive write:
-    JMurmel> (apply (eval 'write) '(1))
-    1
-    ==> t
-    JMurmel> :init
-    JMurmel> (apply (eval 'write) '(1))
-    1
-    ==> t
-    JMurmel> :r
-    history NOT run as Java - error:
-    java.lang.ClassCastException: com.robertmayer.lambdaj.LambdaJ$$Lambda$7/396180261 cannot be cast to com.robertmayer.lambdaj.LambdaJ$MurmelFunction
-            at com.robertmayer.lambdaj.LambdaJ$MurmelJavaProgram.applyHelper(LambdaJ.java:3097)
-
-eval bekommt Compiler-Rt-Funktion:
-    JMurmel> (eval '(f v) (list (cons 'f write) (cons 'v 1)))
-    1
-    ==> t
-    JMurmel> :r
-    history NOT run as Java - error: LambdaJError: function application: not a primitive or lambda: MurmelProgram$$Lambda$66/1440621772@4d14b6c2
-    error occurred in S-expression (f v)
-    JMurmel>
-
 
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
+-> nicht alle, nur die ohne interpreter auskommen
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
 
-ueberhaupt: define vs defvar/ defparameter/ defconstant klaeren
-
-assoc beschleunigung xter anlauf:
--> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. evalquote muesste einen optionalen parameter bekommen,
-   wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in evalquote muesste die map geeignet ausnuetzen wnn != null
--> oder: in defun werden symbole durch einen platzhalter ersetzt, der lazy aus dem environment befuellt wird
-
-
-die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
-wsl ists zwischen make-symbol und intern angesiedelt
--> ggf. statt _intern -> intern
-
-nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
-
 funktion fatal dokumentieren, ggf. umbenamsen
-
-define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
-defun nur toplevel zulassen
 
 letXXX und labels im compiler
 named let in einen Java loop uebersetzen. damits in generierten lambdas funkt, muss fuer den rekursiven aufruf wohl eine exception missbraucht werden
@@ -65,26 +69,14 @@ laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 -> erst mit packages, weil dann brauchts weniger parameter
 
+assoc beschleunigung xter anlauf:
+-> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. evalquote muesste einen optionalen parameter bekommen,
+   wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in evalquote muesste die map geeignet ausnuetzen wnn != null
+-> oder: in defun werden symbole durch einen platzhalter ersetzt, der lazy aus dem environment befuellt wird
 
 --srcjar option: die sourcen dazuzippen? oder extra srcjar?
 
 java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
-
-in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
--> aber wsl nicht einfach als special form. irgendwie ins environment reinschreiben, dass das open coded werden darf,
-   -> wenn jemand eine eigene cons funktion implementiert (mit let oder labels, define/ defun waere dzt. verboten),
-      dann steht nicht mehr "open coded" im environment und es wird die richtige funktion aufgerufen
-
-HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
--> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
-prin1 object &optional output-stream => object
-
-prin1 produces output suitable for input to read.
-princ is just like prin1 except that the output has no escape characters.
-print is just like prin1 except that the printed representation of object is preceded by a newline and followed by a space.
-pprint is just like print except that the trailing space is omitted and object is printed with the *print-pretty* flag non-nil to produce pretty output.
-
-
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
 -> gibt probleme wg. aliasing, sobalds rplacX gibt, gibts noch mehr probleme
@@ -121,15 +113,6 @@ fuer mehrere zielsprachen geben, formsTo... bekommen so eine instanz als paramet
 oder visitor pattern?
 
 
-Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
--> umbenennen?
--> frueher gabs anscheinend define mit einem parameter:
-    in LISP geht define so: (vgl. ABOUT LISP)
-    -> (define (first (lambda (x) (car x))))
-           first
-    -> damit koennte insertFront einfach arg ins environment stecken
-
-
 ConsCell.iterator() ueberladen: iterator(typ) liefert verschiedene iteratoren:
 circular list liefert nach der ersten runde hasNext() == false
                                             fehler
@@ -137,7 +120,6 @@ dotted list liefert beim zugriff auf letztes element letztes element das element
                                                                      hasNext() == false, hasNext(true) liefert das letzte element
                                                                      fehler
 sowohl mapcar wie auch maplist zulassen: der iterator liefert entweder nth(cursor++) oder nthcdr(cursor++)
-
 
 
 trace und features refactoren:
@@ -196,8 +178,6 @@ zeilentabellen lisp->java mitfuehren und ins java verpacken? dann koennte ein ca
 
 wenns namespaces gibt, sollte :: wahrscheinlich i-wie mit import verheiratet werden
 
-usage gibt keine --no-XXX aus, nur mit parameter --help-features
-
 vielleicht doch nil=null und t=Boolean.TRUE? Interpreter ggf. angleichen
 
 der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
@@ -248,13 +228,6 @@ filevariablen statt der gefaehrlichen cmdline args
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
 lambda parameternamen auch nicht, koennte ein problem sein
 
-lisp eol von cmdline parameter auf lisp global umstellen
--> oder write uebernimmt liste mit keyword/value tupel: (write obj flags...), z.B.
-   (write "Hallo" (list ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t)))
--> oder write uebernimmt *optionale* liste, fallback ist eine globale variable *print-environment* mit soner liste
-   (write "Hallo") ; write benutzt *print-environment*
-   (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
-
 JSR223 vielleicht in ein zweites jar verpacken?
 
 
@@ -273,7 +246,6 @@ eval, interpretExpressions & Co aendern:
   zu schalten
 - das derzeitige eval kann nur eine expression, listen arbeiten repl() bzw. interpretExpressions() ab. Obiger eval wrapper
   sollte auch listen koenen
-
 
 
 eval bekommt einen zus parameter prevenv, dann kann zip bei tailcalls das aktuelle
@@ -1889,4 +1861,25 @@ defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava mu
 
 apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
 
+usage gibt keine --no-XXX aus, nur mit parameter --help-features
+
 in --help und --Xhelp aufteilen
+
+checken was passiert wenn eval eine kompilierte funktion im environment mitbekommt, oder ein lambda oder primitive returned
+eval returned Interpreter-Primitive write:
+    JMurmel> (apply (eval 'write) '(1))
+    1
+    ==> t
+    JMurmel> :r
+    history NOT run as Java - error:
+    java.lang.ClassCastException: com.robertmayer.lambdaj.LambdaJ$$Lambda$7/396180261 cannot be cast to com.robertmayer.lambdaj.LambdaJ$MurmelFunction
+            at com.robertmayer.lambdaj.LambdaJ$MurmelJavaProgram.applyHelper(LambdaJ.java:3097)
+
+eval bekommt Compiler-Rt-Funktion:
+    JMurmel> (eval '(f v) (list (cons 'f write) (cons 'v 1)))
+    1
+    ==> t
+    JMurmel> :r
+    history NOT run as Java - error: LambdaJError: function application: not a primitive or lambda: MurmelProgram$$Lambda$66/1440621772@4d14b6c2
+    error occurred in S-expression (f v)
+    JMurmel>

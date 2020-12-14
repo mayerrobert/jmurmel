@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.314 2020/12/14 21:38:49 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.315 2020/12/14 22:31:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1050,6 +1050,12 @@ public class LambdaJ {
                             try { result = applyPrimitive((Primitive) func, argList, stack, level); return result; }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
 
+                        } else if (func instanceof MurmelFunction) {
+                            // compiled function or compiler runtime func
+                            traceLvl = traceEnter(operator, argList, traceLvl);
+                            try { result = applyMurmelFunction((MurmelFunction) func, argList, stack, level); return result; }
+                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
+
                         } else if (consp(func) && car(func) == sLambda) {
                             traceLvl = traceEnter(operator, argList, traceLvl);
                             final Object lambda = cdr(func);          // (params . (forms...))
@@ -1222,6 +1228,12 @@ public class LambdaJ {
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
     }
 
+    private Object applyMurmelFunction(MurmelFunction primfn, ConsCell args, int stack, int level) {
+        if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
+        try { return primfn.apply(listToArray(args)); }
+        catch (LambdaJError e) { throw e; }
+        catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws exception: %s", e.getMessage()); }
+    }
 
 
     /// ### debug support - trace and untrace
@@ -3049,13 +3061,13 @@ public class LambdaJ {
         public Object ge      (Object... args) { return ge(args[0], args[1]); }
         public Object gt      (Object... args) { return gt(args[0], args[1]); }
 
-        public Object format             (Object... args) { return intp.format(new ArraySlice(args, 0)); }
-        public Object formatLocale       (Object... args) { return intp.formatLocale(new ArraySlice(args, 0)); }
+        public Object format             (Object... args) { return intp.format(arraySlice(args, 0)); }
+        public Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args, 0)); }
 
         public Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
         public Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
         public Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(); }
-        public Object sleep              (Object... args) { return LambdaJ.sleep(new ArraySlice(args, 0)); }
+        public Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args, 0)); }
         public Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
         public Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
@@ -3068,6 +3080,8 @@ public class LambdaJ {
 
         /** used for function calls */
         public static Object funcall(Object fn, Object... args) {
+            if (fn instanceof Primitive) return applyPrimitive((Primitive)fn, args);
+
             Object r = ((MurmelFunction)fn).apply(args);
             while (r instanceof MurmelFunctionCall) {
                 MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
@@ -3082,12 +3096,16 @@ public class LambdaJ {
 
         /** used for (apply sym form) */
         public static Object applyHelper(Object fn, Object argList) {
-            return funcall((MurmelFunction)fn, toArray(argList));
+            return funcall(fn, toArray(argList));
         }
 
         /** used for (apply sym form) */
         public static Object applyTailcallHelper(Object fn, Object argList) {
-            return tailcall((MurmelFunction)fn, toArray(argList));
+            return tailcall(fn, toArray(argList));
+        }
+
+        private static Object applyPrimitive(Primitive prim, Object... args) {
+            return prim.apply(arraySlice(args, 0));
         }
 
         private static Object[] toArray(Object o) {
