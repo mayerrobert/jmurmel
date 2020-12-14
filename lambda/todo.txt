@@ -1,5 +1,5 @@
 apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
--> apply ist erledigt
+-> apply, let, labels ist erledigt
 
 in --help und --Xhelp aufteilen
 

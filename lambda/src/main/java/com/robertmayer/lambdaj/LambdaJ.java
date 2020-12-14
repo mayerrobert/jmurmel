@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.309 2020/12/14 15:56:49 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.310 2020/12/14 17:46:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3566,7 +3566,7 @@ public class LambdaJ {
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
                     if (isSymbol(op, "labels")) {
                         ConsCell params = paramList(args);
-                        sb.append("funcall(");
+                        sb.append(isLast ? "tailcall(" : "funcall(");
                         formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
                         for (Object paramTuple: (ConsCell)(car(args))) {
                             sb.append("\n        , ");
@@ -3580,13 +3580,10 @@ public class LambdaJ {
                     ///     - let: (let ((sym form)...) forms) -> Object
                     if (isSymbol(op, "let")) {
                         ConsCell params = paramList(args);
-                        sb.append('(');
+                        sb.append(isLast ? "tailcall(" : "funcall(");
                         formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
-                        sb.append(").apply(");
-                        boolean first = true;
                         for (Object paramTuple: (ConsCell)(car(args))) {
-                            if (first) first = false;
-                            else sb.append("\n        , ");
+                            sb.append("\n        , ");
                             formToJava(sb, cadr(paramTuple), env, rsfx, false);
                         }
                         sb.append(')');
