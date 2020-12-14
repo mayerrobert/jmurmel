@@ -210,7 +210,7 @@ nil
 ;
 ; "NIL is a symbol, the empty list, and the distinguished
 ; "false" value. SYMBOLP, ATOM, and LISTP are true of it;
-; CONSP is not. CAR, CDR,and EVAL of NIL are NIL.
+; CONSP is not. CAR, CDR, and EVAL of NIL are NIL.
 ; NIL may not be used as a function, nor as a variable."
 ;
 ; "T is a symbol and the default "true" value used by predicates that
@@ -457,4 +457,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.36 2020/12/12 07:21:34 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.37 2020/12/12 22:25:50 Robert Exp $

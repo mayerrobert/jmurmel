@@ -3,11 +3,39 @@ apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO chec
 
 in --help und --Xhelp aufteilen
 
+wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
+-> damit koennten auch eval+apply in interpreter UND compiler ein normales verhalten bekommen: sind funktionen, halt opencoded solangs nicht wer per let ueberschreibt
+
+checken was passiert wenn eval eine kompilierte funktion im environment mitbekommt, oder ein lambda oder primitive returned
+    eval returned Interpreter-Primitive write:
+    JMurmel> (apply (eval 'write) '(1))
+    1
+    ==> t
+    JMurmel> :init
+    JMurmel> (apply (eval 'write) '(1))
+    1
+    ==> t
+    JMurmel> :r
+    history NOT run as Java - error:
+    java.lang.ClassCastException: com.robertmayer.lambdaj.LambdaJ$$Lambda$7/396180261 cannot be cast to com.robertmayer.lambdaj.LambdaJ$MurmelFunction
+            at com.robertmayer.lambdaj.LambdaJ$MurmelJavaProgram.applyHelper(LambdaJ.java:3097)
+
+eval bekommt Compiler-Rt-Funktion:
+    JMurmel> (eval '(f v) (list (cons 'f write) (cons 'v 1)))
+    1
+    ==> t
+    JMurmel> :r
+    history NOT run as Java - error: LambdaJError: function application: not a primitive or lambda: MurmelProgram$$Lambda$66/1440621772@4d14b6c2
+    error occurred in S-expression (f v)
+    JMurmel>
+
+
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
 
-defun koennte eigentlich Methoden ausspucken statt Member + {...}, muss halt den richtigen ausdruck ins environment stecken
+defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava muss halt den richtigen ausdruck ins environment stecken (und extendfunc verwenden statt extendenv, ggf. auch das "bessere" extendfunc mit parameterliste verwenden)
+
 ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
 (define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
 -> spaeter mit setq koennte define aenderbar sein, und defun nicht
