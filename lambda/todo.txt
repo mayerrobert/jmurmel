@@ -1,5 +1,3 @@
-in --help und --Xhelp aufteilen
-
 wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
 -> wenn nicht mehr cdr(Object...) aufgerufen wird, sollten weniger Object[] erzeugt werden: vorher/ nachher churn rate vergleichen
 -> damit koennten auch eval+apply in interpreter UND compiler ein normales verhalten bekommen: sind funktionen, halt opencoded solangs nicht wer per let ueberschreibt
@@ -1894,3 +1892,5 @@ defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava mu
 -> spaeter mit setq koennte define aenderbar sein, und defun nicht
 
 apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
+
+in --help und --Xhelp aufteilen

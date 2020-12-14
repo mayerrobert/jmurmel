@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.312 2020/12/14 18:45:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.313 2020/12/14 21:19:19 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2726,6 +2726,13 @@ public class LambdaJ {
             showUsage();
             System.exit(0);
         }
+
+        if (hasFlag("--help-features", args)) {
+            showVersion();
+            System.out.println();
+            showFeatureUsage();
+            System.exit(0);
+        }
     }
 
     private static TraceLevel trace(String[] args) {
@@ -2849,6 +2856,8 @@ public class LambdaJ {
                 + "\n"
                 + "--version ........  Show version and exit\n"
                 + "--help ...........  Show this message and exit\n"
+                + "--help-features ..  Show advanced commandline flags to disable various\n"
+                + "                    Murmel language elements (interpreter only)\n"
                 + "\n"
                 + "--java ...........  Compile input files to Java source 'MurmelProgram.java'\n"
                 + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"
@@ -2869,9 +2878,11 @@ public class LambdaJ {
                 + "--trace=eval .....  Print internal interpreter info during executing programs\n"
                 + "--trace=env ......  Print more internal interpreter info executing programs\n"
                 + "--trace ..........  Print lots of internal interpreter info during\n"
-                + "                    reading/ parsing/ executing programs\n"
-                + "\n"
-                + "Feature flags:\n"
+                + "                    reading/ parsing/ executing programs");
+    }
+
+    private static void showFeatureUsage() {
+        System.out.println("Feature flags:\n"
                 + "\n"
                 + "--eol=LISP ....  'writeln' prints <EOL><argument>< >\n"
                 + "--eol=C .......  'writeln' prints <argument><EOL>\n"

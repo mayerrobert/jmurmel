@@ -11,6 +11,8 @@ Misc flags:
 
 --version ........  Show version and exit
 --help ...........  Show this message and exit
+--help-features ..  Show advanced commandline flags to disable various
+                    Murmel language elements (interpreter only)
 
 --java ...........  Compile input files to Java source 'MurmelProgram.java'
 --jar ............  Compile input files to jarfile 'a.jar' containing
