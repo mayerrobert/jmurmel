@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.308 2020/12/14 06:13:48 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.309 2020/12/14 15:56:49 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3285,11 +3285,12 @@ public class LambdaJ {
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
             while (null != (form = _forms.readObj())) {
                 if (consp(form) && isSymbol(car(form), "define")) {
-                    env = defineGlobal(ret, (ConsCell) cdr(form), env);
+                    env = defineToJava(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
                 }
                 else if (consp(form) && isSymbol(car(form), "defun")) {
-                    env = defineGlobal(ret, cons(cadr(form), cons(cons(intern("lambda"), cddr(form)), null)), env);
+                    //env = defineToJava(ret, cons(cadr(form), cons(cons(intern("lambda"), cddr(form)), null)), env);
+                    env = defunToJava(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
                 }
                 else bodyForms.add(form);
@@ -3347,7 +3348,7 @@ public class LambdaJ {
             return cons(cons(sym, javaName), env);
         }
 
-        /** for compiling possibly recursive functions: extend the environment by putting (symbol this::_symname) in front of {@code prev} */
+        /** for compiling possibly recursive functions: extend the environment by putting (symbol rt()::mangle(symname)) in front of {@code prev} */
         private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
             return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', null)), prev);
         }
@@ -3402,35 +3403,43 @@ public class LambdaJ {
 
 
         /** form is a list (symbol forms...) */
-        private ConsCell defineGlobal(WrappingWriter sb, ConsCell form, ConsCell env) {
-            if (consp(cadr(form)) && isSymbol(caadr(form), "lambda")) return funcToJava(sb, form, env);
-            else {
-                env = extenv(car(form), 0, env);
-                sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
-                        + "    private final Object ").append(javasym(car(form), env)).append(" = ");
-                formToJava(sb, cadr(form), env, 0, true);
-                sb.append(";\n\n");
-                return env;
-            }
+        private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+            env = extenv(car(form), 0, env);
+            sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
+                    + "    private Object ").append(javasym(car(form), env)).append(" = null;\n")
+            .append("    { ").append(javasym(car(form), env)).append(" = ");
+            formToJava(sb, cadr(form), env, 0, true);
+            sb.append("; }\n\n");
+            return env;
         }
 
         /** form is a list (symbol ((symbol...) forms...)) */
-        private ConsCell funcToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+        private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             int rsfx = 0;
             Object sym = car(form);
-            Object params = car(cdr(car(cdr(form))));
-            Object body = cdr(cdr(car(cdr(form))));
+            Object params = cadr(form);
+            Object body = cddr(form);
 
-            String fname = javasym(sym, extenv(sym, 0, env));
-            env = extenv(sym, 0, env);
+//            env = extenv(sym, 0, env);
+//            String fname = javasym(sym, env);
+//
+//            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
+//            sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
+//            sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
+//            ConsCell extenv = params(sb, params, env, rsfx);
+//            sb.append("        Object result").append(rsfx).append(" = null;\n");
+//            formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
+//            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
+
+            String fname = mangle(sym.toString(), 0);
+            env = extenvfunc(sym.toString(), fname, env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
-            sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
-            sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
+            sb.append("    public Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
+            sb.append("        return result").append(rsfx).append(";\n    }\n\n");
 
             return env;
         }
@@ -3540,7 +3549,7 @@ public class LambdaJ {
                     if (isSymbol(op, "apply")) {
                         sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
                         formToJava(sb, car(args), env, rsfx, false);
-                        sb.append(", ");
+                        sb.append("\n        , ");
                         formToJava(sb, cadr(args), env, rsfx, false);
                         sb.append(')');
                         return;
@@ -3560,7 +3569,7 @@ public class LambdaJ {
                         sb.append("funcall(");
                         formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
                         for (Object paramTuple: (ConsCell)(car(args))) {
-                            sb.append(',').append(' ');
+                            sb.append("\n        , ");
                             // only the next line differs from "let" below
                             formToJava(sb, cons(intern("lambda"), cons(cadr(paramTuple), cddr(paramTuple))), env, rsfx, false);
                         }
@@ -3577,7 +3586,7 @@ public class LambdaJ {
                         boolean first = true;
                         for (Object paramTuple: (ConsCell)(car(args))) {
                             if (first) first = false;
-                            else sb.append(',').append(' ');
+                            else sb.append("\n        , ");
                             formToJava(sb, cadr(paramTuple), env, rsfx, false);
                         }
                         sb.append(')');
@@ -3592,7 +3601,7 @@ public class LambdaJ {
                     formToJava(sb, op, env, rsfx, false);
                     if (args != null) {
                         for (Object arg: (ConsCell)args) {
-                            sb.append(", ");
+                            sb.append("\n        , ");
                             formToJava(sb, arg, env, rsfx, false);
                         }
                     }

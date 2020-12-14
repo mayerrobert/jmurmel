@@ -35,12 +35,6 @@ alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
 
-defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava muss halt den richtigen ausdruck ins environment stecken (und extendfunc verwenden statt extendenv, ggf. auch das "bessere" extendfunc mit parameterliste verwenden)
-
-ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
-(define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
--> spaeter mit setq koennte define aenderbar sein, und defun nicht
-
 ueberhaupt: define vs defvar/ defparameter/ defconstant klaeren
 
 assoc beschleunigung xter anlauf:
@@ -1896,3 +1890,8 @@ timezone hat das falsche vorzeichen: oestlich von greenwich ists negativ
 timezone ist ein double, sollte ein "a rational multiple of 1/3600 between -24 (inclusive) and 24 (inclusive)" sein
 
 --java schreibt 1x compiling..., --jar schreibt 2x compiling...
+
+defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava muss halt den richtigen ausdruck ins environment stecken (und extendfunc verwenden statt extendenv, ggf. auch das "bessere" extendfunc mit parameterliste verwenden)
+-> ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
+-> (define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
+-> spaeter mit setq koennte define aenderbar sein, und defun nicht
