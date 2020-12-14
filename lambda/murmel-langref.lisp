@@ -440,7 +440,7 @@ nil
 ; - There are pretty much no compile- or runtime checks,
 ;   actually: most compile- and runtime errors will result in
 ;   Java ClassCastExceptions and NullpointerExceptions
-; - let works, named let, let* and letrec are currently not implemented
+; - let works but named let, let* and letrec are currently not implemented
 ; - define/ defun only work as top level forms
 ; - The function :: is not implemented
 ;
@@ -457,4 +457,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.37 2020/12/12 22:25:50 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.38 2020/12/14 06:15:19 Robert Exp $
