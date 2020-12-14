@@ -15,7 +15,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testSimpleClass() throws Exception {
-        JavaCompilerUtils c = new JavaCompilerUtils(Paths.get("target"));
+        JavaCompilerUtils c = new JavaCompilerUtils(TestUtils.getTmpDir());
         Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
         assertNotNull("failed to compile Java to class", clazz);
     }
@@ -25,7 +25,7 @@ public class MurmelJavaCompilerTest {
         InputStream reader = new ByteArrayInputStream("(define a 2)".getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
         String java = w.toString();
@@ -40,7 +40,7 @@ public class MurmelJavaCompilerTest {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
@@ -349,7 +349,7 @@ public class MurmelJavaCompilerTest {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
         StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
@@ -363,7 +363,7 @@ public class MurmelJavaCompilerTest {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, Paths.get("target"));
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         try {
             c.formsToJavaClass("Test", parser, null);
         }

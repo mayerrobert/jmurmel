@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.313 2020/12/14 21:19:19 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.314 2020/12/14 21:38:49 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2605,17 +2605,6 @@ public class LambdaJ {
         }
     }
 
-    /*
-    private static Path tmpDir;
-    private static Path getTmpDir() throws IOException {
-        if (tmpDir == null) {
-            tmpDir = Files.createTempDirectory("jmurmel");
-            tmpDir.toFile().deleteOnExit();
-        }
-        return tmpDir;
-    }
-    */
-
     private static Path getTmpDir() throws IOException {
         Path tmpDir = Files.createTempDirectory("jmurmel");
         tmpDir.toFile().deleteOnExit();
@@ -2991,7 +2980,6 @@ public class LambdaJ {
         public MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
             if (maybeFunction instanceof MurmelFunction) {
-                //return (MurmelFunction)maybeFunction;
                 return args -> funcall(maybeFunction, args);
             }
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
@@ -3074,7 +3062,7 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public ConsCell arraySlice(Object[] o, int offset) {
+        public static ConsCell arraySlice(Object[] o, int offset) {
             return offset >= o.length ? null : new ArraySlice(o, offset);
         }
 
@@ -3109,7 +3097,7 @@ public class LambdaJ {
         }
 
         /** used by _cons() and by code generated from quotedFormToJava() */
-        public ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
+        public static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
 
 
 

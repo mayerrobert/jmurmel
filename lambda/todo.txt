@@ -101,7 +101,7 @@ Object f(p1, p2) {
   } while (false);
 }
 vgl. PROGITER aus "A Lisp Machine with Very Compact Programs, L.Peter Deutsch, 1973"
-  
+
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
 -> und nth und nthcdr, anschliessend caaar, cdddr, ... mit nth bzw. nthcdr implementieren
@@ -241,11 +241,7 @@ anstatt letXX, cond im compiler auszuprogrammieren, kann man auch desugar progra
 -> desugar ist macroexpand mit zus. macros fuer let-> lambda usw.
 -> stattdessen kann man ggf. cons, car, cdr, +, - usw inlinen (aber erst schauen ob das was bringt)
 
-Murmel2Java fertigmachen, TCO: wahrscheinlich mit CPS
-
 die generierten programme koennten ein cmd arg "--repl" unterstuetzen: mit dem arg gibts nach body() kein exit() sondern repl()
-
-filenamen an der befehlszeile
 
 filevariablen statt der gefaehrlichen cmdline args
 
