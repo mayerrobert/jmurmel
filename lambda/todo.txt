@@ -1,7 +1,3 @@
-apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
--> apply, let, labels ist erledigt
--> progn
-
 in --help und --Xhelp aufteilen
 
 wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
@@ -1896,3 +1892,5 @@ defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava mu
 -> ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
 -> (define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
 -> spaeter mit setq koennte define aenderbar sein, und defun nicht
+
+apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken

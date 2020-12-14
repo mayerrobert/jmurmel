@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.311 2020/12/14 18:27:44 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.312 2020/12/14 18:45:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2949,13 +2949,11 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
-        public interface MurmelProgn { Object call(); }
+        private static class MurmelFunctionCall {
+            private final MurmelFunction next;
+            private final Object[] args;
 
-        public static class MurmelFunctionCall {
-            MurmelFunction next;
-            Object[] args;
-
-            MurmelFunctionCall(MurmelFunction next, Object[] args) {
+            private MurmelFunctionCall(MurmelFunction next, Object[] args) {
                 this.next = next;
                 this.args = args;
             }
@@ -3519,7 +3517,7 @@ public class LambdaJ {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
                             sb.append("        : ("); formToJava(sb, car(cond), env, rsfx, false); sb.append(" != null)\n        ? ");
-                            prognToJava(sb, (ConsCell)cdr(cond), env, rsfx+1);
+                            prognToJava(sb, (ConsCell)cdr(cond), env, rsfx+1, isLast);
                         }
                         sb.append("\n        : null");
                         return;
@@ -3551,7 +3549,7 @@ public class LambdaJ {
                     ///     - progn
                     if (isSymbol(op, "progn")) {
                         if (args == null) sb.append("null");
-                        else prognToJava(sb, (ConsCell)args, env, rsfx+1);
+                        else prognToJava(sb, (ConsCell)args, env, rsfx+1, isLast);
                         return;
                     }
 
@@ -3630,10 +3628,11 @@ public class LambdaJ {
         }
 
         // todo wenn das TCO mit funcall funktioniert, dann auch fuer progn TCO einbauen
-        private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx) {
-            sb.append("((MurmelProgn)() -> {\n        Object result").append(rsfx).append(" = null;\n");
+        private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx, boolean isLast) {
+            sb.append(isLast ? "tailcall(" : "funcall(")
+              .append("(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, cond, env, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n        }).call()\n");
+            sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
         }
 
         // todo checks vgl zip
