@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.317 2020/12/15 18:28:59 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.318 2020/12/15 18:42:56 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3011,6 +3011,8 @@ public class LambdaJ {
         /// predefined aliased global variables
         // itups doesn't have a leading _ because it is avaliable under an alias name
         public static final Object itups = 1e9;
+        // *COMMAND-LINE-ARGUMENT-LIST*
+        public ConsCell commandlineArgumentList;
 
         /// predefined primitives
         public Object   _car (Object... args) { return car(args[0]); }
@@ -3047,7 +3049,7 @@ public class LambdaJ {
         public double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
 
         /// predefined aliased primitives
-        // the following don't have a leading _ because they are avaliable under alias names
+        // the following don't have a leading _ because they are avaliable (in the environment) under alias names
         public double add     (Object... args) { double ret = 0.0; if (args != null) for (int i = 0; i < args.length; i++) ret += dbl(args[i]); return ret; }
         public double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
 
@@ -3085,6 +3087,8 @@ public class LambdaJ {
 
 
 
+        /** Primitives are in the environment as (CompilerPrimitive)... . Compiled code that calls primitives will
+         *  actually call this overload and not funcall(Object, Object...) that contains the TCO thunking code. */
         public static Object funcall(CompilerPrimitive fn, Object... args) {
             return fn.applyPrimitive(args);
         }
@@ -3105,7 +3109,7 @@ public class LambdaJ {
 
 
 
-        /** used for function calls */
+        /** used for function calls, and also for let, labels, progn */
         public static Object funcall(Object fn, Object... args) {
             if (fn instanceof Primitive)
                 return ((Primitive)fn).apply(arraySlice(args, 0));
@@ -3118,6 +3122,7 @@ public class LambdaJ {
             return r;
         }
 
+        /** used for function calls */
         public static MurmelFunctionCall tailcall(Object fn, Object... args) {
             return new MurmelFunctionCall((MurmelFunction)fn, args);
         }
@@ -3243,6 +3248,7 @@ public class LambdaJ {
         private static final String[] globalvars = new String[] { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = new String[][] {
             { "internal-time-units-per-second", "itups" },
+            { "*command-line-argument-list*", "commandlineArgumentList" },
         };
         private static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
@@ -3311,7 +3317,9 @@ public class LambdaJ {
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                      + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                      + "    public static void main(String[] args) {\n"
-                     + "        main(new ").append(clsName).append("());\n"
+                     + "        ").append(clsName).append(" program = new ").append(clsName).append("();\n"
+                     + "        program.commandlineArgumentList = arraySlice(args, 0);\n"
+                     + "        main(program);\n"
                      + "    }\n\n");
 
             final ArrayList<Object> bodyForms = new ArrayList<>();

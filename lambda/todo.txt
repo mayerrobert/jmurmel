@@ -29,8 +29,11 @@ lisp eol von cmdline parameter auf lisp global umstellen
    (write "Hallo") ; write benutzt *print-environment*
    (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
 
-
 nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
+
+
+
+
 
 apply langref:      special form
 apply interpreter:  reserved, special form
@@ -38,9 +41,6 @@ apply compiler:     reserved, special form
 eval  langref:      funktion
 eval  interpreter:  reserved, special form
 eval  compiler:     reserved, funktion
-
-
-
 
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
