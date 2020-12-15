@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.318 2020/12/15 18:42:56 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.319 2020/12/15 19:47:17 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3372,7 +3372,7 @@ public class LambdaJ {
 
         private void notReserved(LambdaJSymbol sym) {
             if (sym == null)
-                throw new LambdaJError(true, "compile: can't use reserved word nil as a symbol");
+                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", "nil");
             if (reservedSymbols.contains(sym))
                 throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", sym.toString());
         }
@@ -3668,6 +3668,20 @@ public class LambdaJ {
             }
         }
 
+        /** write atoms that are not symbols */
+        private WrappingWriter atomToJava(WrappingWriter sb, Object form) {
+            if (form instanceof Long) sb.append(Long.toString(((Long)form).longValue())).append('L');
+            else sb.append(printSEx(form));
+            return sb;
+        }
+
+        private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx, boolean isLast) {
+            sb.append(isLast ? "tailcall(" : "funcall(")
+              .append("(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
+            formsToJava(sb, cond, env, rsfx, false);
+            sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
+        }
+
         /** extract a new list of symbols form a list of bindings, ((symbol1 form1)...) -> (symbol1...) */
         // todo vgl. LambdaJ.extractParamList()
         private ConsCell paramList(Object bindings) {
@@ -3681,21 +3695,7 @@ public class LambdaJ {
             return params;
         }
 
-        /** write atoms that are not symbols */
-        private WrappingWriter atomToJava(WrappingWriter sb, Object form) {
-            if (form instanceof Long) sb.append(Long.toString(((Long)form).longValue())).append('L');
-            else sb.append(printSEx(form));
-            return sb;
-        }
-
-        // todo wenn das TCO mit funcall funktioniert, dann auch fuer progn TCO einbauen
-        private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx, boolean isLast) {
-            sb.append(isLast ? "tailcall(" : "funcall(")
-              .append("(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
-            formsToJava(sb, cond, env, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
-        }
-
+        /** gerate variables from arg array */
         // todo checks vgl zip
         private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
