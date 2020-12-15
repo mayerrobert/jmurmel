@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.316 2020/12/14 23:47:10 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.317 2020/12/15 18:28:59 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2980,7 +2980,7 @@ public class LambdaJ {
         protected MurmelJavaProgram() {
             intp.init(() -> -1, System.out::print);
             intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, true), intp.getLispPrinter());
-            _t = _intern("t");
+            _t = intern("t");
         }
 
 
@@ -3020,9 +3020,6 @@ public class LambdaJ {
         public Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
         public Object _null      (Object... args) { return args[0] == null ? _t : null; }
-
-        // todo der interpreter sollte intern(String) haben (inkl sprachbindung), diese methode sollte intp.intern() rufen
-        public LambdaJSymbol _intern(Object... args) { return intp.symtab.intern(new LambdaJSymbol((String)args[0])); }
 
         public Object _write     (Object... args) { intp.write(args[0]); return _t; };
         public Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
@@ -3078,6 +3075,10 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
+        public LambdaJSymbol intern(Object... args) {
+            return intp.symtab.intern(new LambdaJSymbol((String)args[0]));
+        }
+
         public static ConsCell arraySlice(Object[] o, int offset) {
             return offset >= o.length ? null : new ArraySlice(o, offset);
         }
@@ -3245,7 +3246,7 @@ public class LambdaJ {
         };
         private static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
-                "eval", "eq", "null", "intern", "write", "writeln",
+                "eval", "eq", "null", "write", "writeln",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list",
                 "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
@@ -3334,7 +3335,7 @@ public class LambdaJ {
                     globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
             }
             // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
-            if (result != null) result = "_intern(\"" + result.toString() + "\")";
+            if (result != null) result = "intern(\"" + result.toString() + "\")";
 
             // generate getValue() for FFI
             ret.append("    @Override public Object getValue(String symbol) {\n"
@@ -3754,7 +3755,7 @@ public class LambdaJ {
         private void quotedFormToJava(WrappingWriter sb, Object form) {
             if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
 
-            if (symbolp(form)) { sb.append("_intern(\"").append(form.toString()).append("\")"); return; }
+            if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); return; }
             if (atom(form))    { atomToJava(sb, form); return; }
 
             // todo den generierten code von rekursiv auf loop umstellen, mit builder vgl. ConsTest

@@ -1,6 +1,3 @@
-Ggf. sogar mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
-nicht so viele Object[] instanzieren.
-
 define im compiler auch nicht-toplevel zulassen:
 -> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 -> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
@@ -14,12 +11,6 @@ Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei dup
     -> (define (first (lambda (x) (car x))))
            first
     -> damit koennte insertFront einfach arg ins environment stecken
-
-die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
-wsl ists zwischen make-symbol und intern angesiedelt
--> ggf. statt _intern -> intern, also nicht in der sprache anbieten
-
-nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
 -> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
@@ -38,8 +29,14 @@ lisp eol von cmdline parameter auf lisp global umstellen
    (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
 
 
+nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
 
+
+
+
+Ggf. sogar mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
+nicht so viele Object[] instanzieren.
 
 in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
 -> aber wsl nicht einfach als special form. irgendwie ins environment reinschreiben, dass das open coded werden darf,
@@ -1894,3 +1891,7 @@ Compiler primitives stehen als (MurmelFunction)rt():... im Environment.
    muesste dieser overload fuer die compiler primitives verwendet werden, und da faellt "if instanceof MurmelPrimitive" weg.
 -> Noch besser: Compiler primitives nicht auf MurmelFunction casten sondern auf neuen MurmelCompilerPrimitive, dann koennt der passende overload
    ohne die thunking schleife gemacht werden.
+
+die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
+wsl ists zwischen make-symbol und intern angesiedelt
+-> ggf. statt _intern -> intern, also nicht in der sprache anbieten
