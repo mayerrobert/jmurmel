@@ -236,6 +236,8 @@ nil
 ;;; (defun symbol (params...) forms...) -> symbol
 ; defun is a shorthand for defining functions
 ; arguments to defun are not evaluated
+; defun is only allowed as toplevel form (JMurmel currently does not
+; enforce this)
 (defun f2 (p1 p2) (+ p1 p2))
 
 ;;; (if condform form optionalform) -> object
@@ -430,7 +432,7 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - apply maybe shouldn't be a special form but a function.
+; - trace/ untrace are special forms, should be functions
 ; - functions for writing should be cleaned up
 ; - format and format-locale should probably renamed to
 ;   printf, they're more similar to printf than to CL format
@@ -457,4 +459,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.38 2020/12/14 06:15:19 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.39 2020/12/14 18:45:22 Robert Exp $

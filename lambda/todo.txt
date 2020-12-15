@@ -1,8 +1,9 @@
 define im compiler auch nicht-toplevel zulassen:
 -> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 -> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
+-> define vs defvar/ defparameter/ defconstant klaeren
+
 defun nur toplevel zulassen
-define vs defvar/ defparameter/ defconstant klaeren
 
 Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
 -> umbenennen?
@@ -31,9 +32,18 @@ lisp eol von cmdline parameter auf lisp global umstellen
 
 nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
+apply langref:      special form
+apply interpreter:  reserved, special form
+apply compiler:     reserved, special form
+eval  langref:      funktion
+eval  interpreter:  reserved, special form
+eval  compiler:     reserved, funktion
 
 
 
+
+
+instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
 
 Ggf. sogar mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
 nicht so viele Object[] instanzieren.
@@ -50,8 +60,6 @@ wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte 
 
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
 -> nicht alle, nur die ohne interpreter auskommen
-
-instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
 
 funktion fatal dokumentieren, ggf. umbenamsen
 
