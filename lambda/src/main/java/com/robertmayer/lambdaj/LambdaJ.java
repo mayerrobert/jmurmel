@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.315 2020/12/14 22:31:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.316 2020/12/14 23:47:10 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1050,10 +1050,10 @@ public class LambdaJ {
                             try { result = applyPrimitive((Primitive) func, argList, stack, level); return result; }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
 
-                        } else if (func instanceof MurmelFunction) {
+                        } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
                             // compiled function or compiler runtime func
                             traceLvl = traceEnter(operator, argList, traceLvl);
-                            try { result = applyMurmelFunction((MurmelFunction) func, argList, stack, level); return result; }
+                            try { result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level); return result; }
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
 
                         } else if (consp(func) && car(func) == sLambda) {
@@ -1228,9 +1228,9 @@ public class LambdaJ {
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
     }
 
-    private Object applyMurmelFunction(MurmelFunction primfn, ConsCell args, int stack, int level) {
+    private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
         if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
-        try { return primfn.apply(listToArray(args)); }
+        try { return primfn.applyPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws exception: %s", e.getMessage()); }
     }
@@ -2961,6 +2961,10 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
+        public interface CompilerPrimitive {
+            Object applyPrimitive(Object... args);
+        }
+
         private static class MurmelFunctionCall {
             private final MurmelFunction next;
             private final Object[] args;
@@ -3078,9 +3082,32 @@ public class LambdaJ {
             return offset >= o.length ? null : new ArraySlice(o, offset);
         }
 
+
+
+        public static Object funcall(CompilerPrimitive fn, Object... args) {
+            return fn.applyPrimitive(args);
+        }
+
+        public static Object tailcall(CompilerPrimitive fn, Object... args) {
+            return funcall(fn, args);
+        }
+
+        /** used for (apply sym form) */
+        public static Object applyHelper(CompilerPrimitive fn, Object argList) {
+            return funcall(fn, toArray(argList));
+        }
+
+        /** used for (apply sym form) */
+        public static Object applyTailcallHelper(CompilerPrimitive fn, Object argList) {
+            return funcall(fn, toArray(argList));
+        }
+
+
+
         /** used for function calls */
         public static Object funcall(Object fn, Object... args) {
-            if (fn instanceof Primitive) return applyPrimitive((Primitive)fn, args);
+            if (fn instanceof Primitive)
+                return ((Primitive)fn).apply(arraySlice(args, 0));
 
             Object r = ((MurmelFunction)fn).apply(args);
             while (r instanceof MurmelFunctionCall) {
@@ -3104,15 +3131,15 @@ public class LambdaJ {
             return tailcall(fn, toArray(argList));
         }
 
-        private static Object applyPrimitive(Primitive prim, Object... args) {
-            return prim.apply(arraySlice(args, 0));
-        }
+
 
         private static Object[] toArray(Object o) {
             if (o instanceof Object[])
                 return (Object[])o;
             return listToArray(o);
         }
+
+
 
         /** used by _cons() and by code generated from quotedFormToJava() */
         public static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
@@ -3264,10 +3291,10 @@ public class LambdaJ {
          *  with a "public static void main()" */
         public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell env = null;
-            for (String   global: globalvars)        env = extenv(intern(global),   '_' + global,   env);
-            for (String[] alias:  aliasedGlobals)    env = extenv(intern(alias[0]), alias[1], env);
-            for (String   prim:   primitives)        env = extenvfunc(prim, 0, env);
-            for (String[] alias:  aliasedPrimitives) env = extenvfunc(alias[0], alias[1], env);
+            for (String   global: globalvars)        env = extenvIntern(intern(global),   '_' + global,   env);
+            for (String[] alias:  aliasedGlobals)    env = extenvIntern(intern(alias[0]), alias[1], env);
+            for (String   prim:   primitives)        env = extenvprim(prim, mangle(prim, 0), env);
+            for (String[] alias:  aliasedPrimitives) env = extenvprim(alias[0], alias[1], env);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -3318,8 +3345,8 @@ public class LambdaJ {
             ret.append("        switch (symbol) {\n");
             for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
             for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
-            for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (MurmelFunction)rt()::_").append(prim).append(";\n");
-            for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (MurmelFunction)rt()::").append(alias[1]).append(";\n");
+            for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (CompilerPrimitive)rt()::_").append(prim).append(";\n");
+            for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (CompilerPrimitive)rt()::").append(alias[1]).append(";\n");
             ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
                      + "        }\n"
                      + "    }\n\n"
@@ -3341,25 +3368,28 @@ public class LambdaJ {
                 throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", sym.toString());
         }
 
-        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
-        private ConsCell extenv(String symname, int sfx, ConsCell prev) {
-            LambdaJSymbol sym = intern(symname);
-            notReserved(sym);
-            return extenv(sym, mangle(symname, sfx), prev);
-        }
+
 
         private ConsCell extenv(Object sym, int sfx, ConsCell prev) {
             return extenv(sym == null ? null : sym.toString(), sfx, prev);
         }
 
-        private ConsCell extenv(LambdaJSymbol sym, String javaName, ConsCell env) {
+        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
+        private ConsCell extenv(String symname, int sfx, ConsCell prev) {
+            LambdaJSymbol sym = intern(symname);
+            notReserved(sym);
+            return extenvIntern(sym, mangle(symname, sfx), prev);
+        }
+
+        /** extend environment w/o reserved word check */
+        private ConsCell extenvIntern(LambdaJSymbol sym, String javaName, ConsCell env) {
             return cons(cons(sym, javaName), env);
         }
 
         /** for compiling possibly recursive functions: extend the environment by putting (symbol rt()::mangle(symname)) in front of {@code prev} */
-        private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
-            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', null)), prev);
-        }
+//        private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
+//            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', null)), prev);
+//        }
 
 //        // todo diese funktion steckt auch params ins env -> verwenden
 //        private ConsCell extenvfunc(String symname, ConsCell params, int sfx, ConsCell prev) {
@@ -3369,7 +3399,12 @@ public class LambdaJ {
         private ConsCell extenvfunc(String symname, String javaName, ConsCell env) {
             LambdaJSymbol sym = intern(symname);
             notReserved(sym);
-            return extenv(sym, "((MurmelFunction)rt()::" + javaName + ')', env);
+            return extenvIntern(sym, "((MurmelFunction)rt()::" + javaName + ')', env);
+        }
+
+        private ConsCell extenvprim(String symname, String javaName, ConsCell env) {
+            LambdaJSymbol sym = intern(symname);
+            return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
         }
 
 

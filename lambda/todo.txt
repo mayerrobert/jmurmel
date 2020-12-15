@@ -1,4 +1,9 @@
-define im compiler auch nicht-toplevel zulassen: in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
+Ggf. sogar mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
+nicht so viele Object[] instanzieren.
+
+define im compiler auch nicht-toplevel zulassen:
+-> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
+-> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
 defun nur toplevel zulassen
 define vs defvar/ defparameter/ defconstant klaeren
 
@@ -1883,3 +1888,9 @@ eval bekommt Compiler-Rt-Funktion:
     history NOT run as Java - error: LambdaJError: function application: not a primitive or lambda: MurmelProgram$$Lambda$66/1440621772@4d14b6c2
     error occurred in S-expression (f v)
     JMurmel>
+
+Compiler primitives stehen als (MurmelFunction)rt():... im Environment.
+-> Optimierung: Wenn funcall ueberladen wird, dass es zus. zu funcall(Object...) ein funcall(MurmelFunction...) gibt,
+   muesste dieser overload fuer die compiler primitives verwendet werden, und da faellt "if instanceof MurmelPrimitive" weg.
+-> Noch besser: Compiler primitives nicht auf MurmelFunction casten sondern auf neuen MurmelCompilerPrimitive, dann koennt der passende overload
+   ohne die thunking schleife gemacht werden.
