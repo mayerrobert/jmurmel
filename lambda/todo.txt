@@ -1,9 +1,13 @@
+named let, named let*, letrec, ::
+
+defun nur toplevel zulassen: interpreter + compiler
+
+body() im interpreter fertigmachen
+
 define im compiler auch nicht-toplevel zulassen:
 -> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
 -> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
 -> define vs defvar/ defparameter/ defconstant klaeren
-
-defun nur toplevel zulassen
 
 Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
 -> umbenennen?
@@ -28,8 +32,6 @@ lisp eol von cmdline parameter auf lisp global umstellen
 -> oder write uebernimmt *optionale* liste, fallback ist eine globale variable *print-environment* mit soner liste
    (write "Hallo") ; write benutzt *print-environment*
    (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
-
-nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
 
 
 
@@ -1903,3 +1905,5 @@ Compiler primitives stehen als (MurmelFunction)rt():... im Environment.
 die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
 wsl ists zwischen make-symbol und intern angesiedelt
 -> ggf. statt _intern -> intern, also nicht in der sprache anbieten
+
+nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11

@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.319 2020/12/15 19:47:17 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.320 2020/12/15 20:02:46 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2393,6 +2393,7 @@ public class LambdaJ {
             }
             else {
                 interpreter.init(() -> -1, s -> { return; });
+                injectCommandlineArgs(interpreter, args);
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
                     Path p = Paths.get(fileName);
@@ -2407,7 +2408,7 @@ public class LambdaJ {
             }
         }
 
-        if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo, history); // repl() doesn't return
+        if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo, history, args); // repl() doesn't return
 
         if (files.isEmpty()) {
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
@@ -2438,6 +2439,7 @@ public class LambdaJ {
             }
             else {
                 interpreter.init(() -> -1, s -> { return; });
+                injectCommandlineArgs(interpreter, args);
                 interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
             }
         }
@@ -2514,7 +2516,7 @@ public class LambdaJ {
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
 
     /** Enter REPL, doesn't return */
-    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo, List<Object> prevHistory) {
+    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo, List<Object> prevHistory, String[] args) {
         final BoolHolder echoHolder = new BoolHolder(echo);
 
         if (!echoHolder.value) {
@@ -2548,6 +2550,7 @@ public class LambdaJ {
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 env = interpreter.environment(null);
                 interpreter.topEnv = env;
+                injectCommandlineArgs(interpreter, args);
                 isInit = true;
             }
 
@@ -2802,14 +2805,25 @@ public class LambdaJ {
         return err;
     }
 
-    /** extract arguments from the commandline that are not flags */
+    /** extract arguments for JMurmel from the commandline that are not flags,
+     *  arguments before "--" are for JMurmel, arguments after "--" are for the Murmel program. */
     private static List<String> args(String[] args) {
         ArrayList<String> ret = new ArrayList<>();
         for (String arg: args) {
-            if ("--".equals(arg)) continue;
+            if ("--".equals(arg)) return ret;
             if (arg != null) ret.add(arg);
         }
         return ret;
+    }
+
+    private static void injectCommandlineArgs(LambdaJ intp, String[] args) {
+        int n = 0;
+        for (String arg: args) {
+            n++;
+            if ("--".equals(arg)) break;
+        }
+
+        intp.insertFront(intp.topEnv, intp.symtab.intern(new LambdaJSymbol("*command-line-argument-list*")), new ArraySlice(args, n));
     }
 
     private static void showVersion() {
@@ -2846,14 +2860,15 @@ public class LambdaJ {
     private static void showUsage() {
         System.out.println("Usage:\n"
                 + "\n"
-                + "java -jar jmurmel.jar <commandline flags>... <source files>...\n"
+                + "java -jar jmurmel.jar <commandline flags>... <source files>... '--' args-for-program\n"
                 + "\n"
                 + "Commandline flags are:\n"
                 + "\n"
                 + "Misc flags:\n"
                 + "\n"
-                + "-- ...............  '--' can be used to indicate:\n"
-                + "                    'no commandline arguments after this'\n"
+                + "-- ...............  '--' must be used to indicate:\n"
+                + "                    commandline arguments after this will be passed\n"
+                + "                    to the program\n"
                 + "\n"
                 + "--version ........  Show version and exit\n"
                 + "--help ...........  Show this message and exit\n"

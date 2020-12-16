@@ -1,13 +1,14 @@
 Usage:
 
-java -jar jmurmel.jar <commandline flags>... <source files>...
+java -jar jmurmel.jar <commandline flags>... <source files>... '--' args-for-program
 
 Commandline flags are:
 
 Misc flags:
 
--- ...............  '--' can be used to indicate:
-                    'no commandline arguments after this'
+-- ...............  '--' must be used to indicate:
+                    commandline arguments after this will be passed
+                    to the program
 
 --version ........  Show version and exit
 --help ...........  Show this message and exit
