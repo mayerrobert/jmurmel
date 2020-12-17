@@ -291,12 +291,19 @@ public class MurmelJavaCompilerTest {
         assertEquals("let produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
-    // todo geht nicht weil named let wird in labels + let transformiert und labels geht noch nicht s.u.
-    //@Test
+    @Test
     public void testNamedLet() throws Exception {
         MurmelProgram program = compile("(let loop ((n 0) (max 3)) (if (< n max) (loop (+ n 1) max) n))");
         assertNotNull("failed to compile named let to class", program);
         assertEquals("named let produced wrong result", 3.0, program.body());
+    }
+
+    // todo funktioniert nicht
+    //@Test
+    public void testLetrec() throws Exception {
+        MurmelProgram program = compile("(letrec ((a 1) (b 2)) (+ a b))");
+        assertNotNull("failed to compile letrec to class", program);
+        assertEquals("letrec produced wrong result", 3.0, program.body());
     }
 
     @Test

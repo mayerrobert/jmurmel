@@ -1,6 +1,8 @@
-named let, named let*, letrec, ::
+let*, named let*, letrec, ::
+labels reparieren vgl. testLabelsRec
 
 defun nur toplevel zulassen: interpreter + compiler
+-> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava
 
 define im compiler auch nicht-toplevel zulassen:
 -> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
