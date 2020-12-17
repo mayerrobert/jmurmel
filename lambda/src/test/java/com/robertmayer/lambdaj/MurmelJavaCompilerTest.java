@@ -329,14 +329,14 @@ public class MurmelJavaCompilerTest {
         assertEquals("labelsrec produced wrong result", 3.0, program.body());
     }
 
-    // todo body calls a local function which calls another local function
-    //@Test
+    // body calls a local function which calls another local function
+    @Test
     public void testLabelsMutual() throws Exception {
         MurmelProgram program = compile("(labels ((f1 (n) (f2 n))\n"
                                       + "         (f2 (n) n))\n"
                                       + "  (f1 5))");
         assertNotNull("failed to compile labelsmutual to class", program);
-        assertEquals("labelsmutual produced wrong result", 3L, program.body());
+        assertEquals("labelsmutual produced wrong result", 5L, program.body());
     }
 
 

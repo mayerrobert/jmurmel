@@ -1,5 +1,4 @@
 let*, named let*, letrec, ::
-labels reparieren
 
 defun nur toplevel zulassen: interpreter + compiler
 -> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava
@@ -1909,3 +1908,5 @@ wsl ists zwischen make-symbol und intern angesiedelt
 -> ggf. statt _intern -> intern, also nicht in der sprache anbieten
 
 nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
+
+labels reparieren
