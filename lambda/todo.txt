@@ -1,5 +1,5 @@
 let*, named let*, letrec, ::
-labels reparieren vgl. testLabelsRec
+labels reparieren
 
 defun nur toplevel zulassen: interpreter + compiler
 -> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava

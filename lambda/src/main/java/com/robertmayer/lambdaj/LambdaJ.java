@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.322 2020/12/17 06:01:27 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.323 2020/12/17 09:10:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3630,12 +3630,10 @@ public class LambdaJ {
                     if (isSymbol(op, "labels")) {
                         ConsCell params = paramList(args);
                         sb.append(isLast ? "tailcall(" : "funcall(");
-                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx, false);
-
-                        for (Object paramsAndBody: (ConsCell)(car(args))) {
+                        lambdaToJava(sb, cons(params, cdr(args)), env, rsfx+1);
+                        for (Object symbolParamsAndBody: (ConsCell)(car(args))) {
                             sb.append("\n        , ");
-                            // only the next line differs from "let" below, todo auf labelToJava umstellen?
-                            formToJava(sb, cons(intern("lambda"), cons(cadr(paramsAndBody), cddr(paramsAndBody))), env, rsfx, false); // todo false oder isLast?
+                            labelToJava(sb, symbolParamsAndBody, env, rsfx+1);
                         }
                         sb.append(')');
                         return;
@@ -3643,7 +3641,7 @@ public class LambdaJ {
 
                     if (isSymbol(op, "let")) {
                         if (car(args) instanceof LambdaJSymbol) {
-                            ///     - named let: (let sym ((sym form)...) forms) -> Object
+                            ///     - named let: (let sym ((sym form)...) forms...) -> Object
                             ConsCell params = paramList(cdr(args));
                             sb.append(isLast ? "tailcall(" : "funcall(");
                             labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, rsfx+1);
@@ -3654,10 +3652,10 @@ public class LambdaJ {
                             sb.append(')');
                         }
                         else {
-                            ///     - let: (let ((sym form)...) forms) -> Object
+                            ///     - let: (let ((sym form)...) forms...) -> Object
                             ConsCell params = paramList(args);
                             sb.append(isLast ? "tailcall(" : "funcall(");
-                            formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false); // todo false oder isLast?
+                            lambdaToJava(sb, cons(params, cdr(args)), env, rsfx+1);
                             for (Object paramTuple: (ConsCell)(car(args))) {
                                 sb.append("\n        , ");
                                 formToJava(sb, cadr(paramTuple), env, rsfx, false);

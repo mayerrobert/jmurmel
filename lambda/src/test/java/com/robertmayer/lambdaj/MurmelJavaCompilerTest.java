@@ -6,7 +6,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 
 import org.junit.Test;
 import com.robertmayer.lambdaj.LambdaJ.*;
@@ -306,18 +305,19 @@ public class MurmelJavaCompilerTest {
         assertEquals("letrec produced wrong result", 3.0, program.body());
     }
 
+    // body calls one local function
     @Test
     public void testLabels() throws Exception {
         MurmelProgram program = compile("(labels ((a (p1 p2 p3) (+ p1 p2 p3))"
-                                                  + " (b (p1 p2 p3) (* p1 p2 p3))"
-                                                  + " (c (p1 p2 p3) (- p1 p2 p3)))"
-                                                  + "(b 2 3 4))");
+                                      + "         (b (p1 p2 p3) (* p1 p2 p3))"
+                                      + "         (c (p1 p2 p3) (- p1 p2 p3)))"
+                                      + "  (b 2 3 4))");
         assertNotNull("failed to compile labels to class", program);
         assertEquals("labels produced wrong result", 24.0, program.body());
     }
 
-    // todo geht nicht, lokale funktionen koennen weder sich selbst noch andere aufrufen
-    //@Test
+    // body calls one local recursive function
+    @Test
     public void testLabelsRec() throws Exception {
         MurmelProgram program = compile("(labels\n"
                 + "  ((loop (n max)\n"
@@ -327,6 +327,16 @@ public class MurmelJavaCompilerTest {
                 + "  (loop 0 3))");
         assertNotNull("failed to compile labelsrec to class", program);
         assertEquals("labelsrec produced wrong result", 3.0, program.body());
+    }
+
+    // todo body calls a local function which calls another local function
+    //@Test
+    public void testLabelsMutual() throws Exception {
+        MurmelProgram program = compile("(labels ((f1 (n) (f2 n))\n"
+                                      + "         (f2 (n) n))\n"
+                                      + "  (f1 5))");
+        assertNotNull("failed to compile labelsmutual to class", program);
+        assertEquals("labelsmutual produced wrong result", 3L, program.body());
     }
 
 
