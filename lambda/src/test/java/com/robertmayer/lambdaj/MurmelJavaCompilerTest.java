@@ -291,6 +291,14 @@ public class MurmelJavaCompilerTest {
         assertEquals("let produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
+    // todo geht nicht weil named let wird in labels + let transformiert und labels geht noch nicht s.u.
+    //@Test
+    public void testNamedLet() throws Exception {
+        MurmelProgram program = compile("(let loop ((n 0) (max 3)) (if (< n max) (loop (+ n 1) max) n))");
+        assertNotNull("failed to compile named let to class", program);
+        assertEquals("named let produced wrong result", 3.0, program.body());
+    }
+
     @Test
     public void testLabels() throws Exception {
         MurmelProgram program = compile("(labels ((a (p1 p2 p3) (+ p1 p2 p3))"
@@ -299,6 +307,19 @@ public class MurmelJavaCompilerTest {
                                                   + "(b 2 3 4))");
         assertNotNull("failed to compile labels to class", program);
         assertEquals("labels produced wrong result", 24.0, program.body());
+    }
+
+    // todo geht nicht, lokale funktionen koennen weder sich selbst noch andere aufrufen
+    //@Test
+    public void testLabelsRec() throws Exception {
+        MurmelProgram program = compile("(labels\n"
+                + "  ((loop (n max)\n"
+                + "     (if (< n max)\n"
+                + "           (loop (+ n 1) max)\n"
+                + "       n)))\n"
+                + "  (loop 0 3))");
+        assertNotNull("failed to compile labelsrec to class", program);
+        assertEquals("labelsrec produced wrong result", 3.0, program.body());
     }
 
 

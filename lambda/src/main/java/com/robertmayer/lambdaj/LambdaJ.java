@@ -118,7 +118,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.320 2020/12/15 20:02:46 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.321 2020/12/16 05:58:42 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3634,26 +3634,33 @@ public class LambdaJ {
                     if (isSymbol(op, "labels")) {
                         ConsCell params = paramList(args);
                         sb.append(isLast ? "tailcall(" : "funcall(");
-                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
-                        for (Object paramTuple: (ConsCell)(car(args))) {
+                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx, false);
+
+                        for (Object paramsAndBody: (ConsCell)(car(args))) {
                             sb.append("\n        , ");
                             // only the next line differs from "let" below
-                            formToJava(sb, cons(intern("lambda"), cons(cadr(paramTuple), cddr(paramTuple))), env, rsfx, false);
+                            formToJava(sb, cons(intern("lambda"), cons(cadr(paramsAndBody), cddr(paramsAndBody))), env, rsfx, false); // todo false oder isLast?
                         }
                         sb.append(')');
                         return;
                     }
 
-                    ///     - let: (let ((sym form)...) forms) -> Object
                     if (isSymbol(op, "let")) {
-                        ConsCell params = paramList(args);
-                        sb.append(isLast ? "tailcall(" : "funcall(");
-                        formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false);
-                        for (Object paramTuple: (ConsCell)(car(args))) {
-                            sb.append("\n        , ");
-                            formToJava(sb, cadr(paramTuple), env, rsfx, false);
+                        if (car(args) instanceof LambdaJSymbol) {
+                            ///     - named let: (let sym ((sym form)...) forms) -> Object
+                            formToJava(sb, desugarNamedLet(args), env, rsfx, isLast);
                         }
-                        sb.append(')');
+                        else {
+                            ///     - let: (let ((sym form)...) forms) -> Object
+                            ConsCell params = paramList(args);
+                            sb.append(isLast ? "tailcall(" : "funcall(");
+                            formToJava(sb, cons(intern("lambda"), cons(params, cdr(args))), env, rsfx+1, false); // todo false oder isLast?
+                            for (Object paramTuple: (ConsCell)(car(args))) {
+                                sb.append("\n        , ");
+                                formToJava(sb, cadr(paramTuple), env, rsfx, false);
+                            }
+                            sb.append(')');
+                        }
                         return;
                     }
 
@@ -3683,6 +3690,17 @@ public class LambdaJ {
             }
         }
 
+        private Object desugarNamedLet(final Object args) {
+            LambdaJSymbol name = (LambdaJSymbol)car(args);
+            Object params = cadr(args);
+            Object body = caddr(args);
+
+            final Object namedBody = cons(name, cons(paramList(cdr(args)), cons(body, null)));
+            final Object labelsForm = cons(intern("labels"), cons(cons(namedBody, null), cons(cons(name, null), null)));
+            final Object letForm = cons(intern("let"), cons(params, cons(labelsForm, null)));
+            return letForm;
+        }
+
         /** write atoms that are not symbols */
         private WrappingWriter atomToJava(WrappingWriter sb, Object form) {
             if (form instanceof Long) sb.append(Long.toString(((Long)form).longValue())).append('L');
@@ -3697,7 +3715,7 @@ public class LambdaJ {
             sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
         }
 
-        /** extract a new list of symbols form a list of bindings, ((symbol1 form1)...) -> (symbol1...) */
+        /** from a list of bindings extract a new list of symbols: ((symbol1 form1)...) -> (symbol1...) */
         // todo vgl. LambdaJ.extractParamList()
         private ConsCell paramList(Object bindings) {
             ConsCell params = null; ConsCell insertPos = null;
