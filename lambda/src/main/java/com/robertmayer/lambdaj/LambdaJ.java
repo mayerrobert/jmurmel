@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.324 2020/12/17 18:04:51 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.325 2020/12/17 19:30:52 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3635,28 +3635,7 @@ public class LambdaJ {
                     }
 
                     if (isSymbol(op, "let")) {
-                        if (car(args) instanceof LambdaJSymbol) {
-                            ///     - named let: (let sym ((sym form)...) forms...) -> Object
-                            ConsCell params = paramList(cdr(args));
-                            sb.append(isLast ? "tailcall(" : "funcall(");
-                            labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, rsfx+1);
-                            for (Object paramTuple: (ConsCell)(cadr(args))) {
-                                sb.append("\n        , ");
-                                formToJava(sb, cadr(paramTuple), env, rsfx, false);
-                            }
-                            sb.append(')');
-                        }
-                        else {
-                            ///     - let: (let ((sym form)...) forms...) -> Object
-                            ConsCell params = paramList(args);
-                            sb.append(isLast ? "tailcall(" : "funcall(");
-                            lambdaToJava(sb, cons(params, cdr(args)), env, rsfx+1);
-                            for (Object paramTuple: (ConsCell)(car(args))) {
-                                sb.append("\n        , ");
-                                formToJava(sb, cadr(paramTuple), env, rsfx, false);
-                            }
-                            sb.append(')');
-                        }
+                        letToJava(sb, args, env, rsfx, isLast);
                         return;
                     }
 
@@ -3713,6 +3692,13 @@ public class LambdaJ {
             }
         }
 
+        /** write atoms that are not symbols */
+        private static WrappingWriter atomToJava(WrappingWriter sb, Object form) {
+            if (form instanceof Long) sb.append(Long.toString(((Long)form).longValue())).append('L');
+            else sb.append(printSEx(form));
+            return sb;
+        }
+
         /** args = ((sym...) form...) */
         private ConsCell lambdaToJava(WrappingWriter sb, final Object args, ConsCell env, int rsfx) {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
@@ -3759,11 +3745,28 @@ public class LambdaJ {
             sb.append("        return result").append(rsfx1).append("; } } )");
         }
 
-        /** write atoms that are not symbols */
-        private WrappingWriter atomToJava(WrappingWriter sb, Object form) {
-            if (form instanceof Long) sb.append(Long.toString(((Long)form).longValue())).append('L');
-            else sb.append(printSEx(form));
-            return sb;
+        /** let and named let */
+        private void letToJava(WrappingWriter sb, final Object args, ConsCell env, int rsfx, boolean isLast) {
+            final ConsCell bindings;
+            if (car(args) instanceof LambdaJSymbol) {
+                ///     - named let: (let sym ((sym form)...) forms...) -> Object
+                ConsCell params = paramList(cdr(args));
+                sb.append(isLast ? "tailcall(" : "funcall(");
+                labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, rsfx+1);
+                bindings = (ConsCell)cadr(args);
+            }
+            else {
+                ///     - let: (let ((sym form)...) forms...) -> Object
+                ConsCell params = paramList(args);
+                sb.append(isLast ? "tailcall(" : "funcall(");
+                lambdaToJava(sb, cons(params, cdr(args)), env, rsfx+1);
+                bindings = (ConsCell)(car(args));
+            }
+            for (Object binding: bindings) {
+                sb.append("\n        , ");
+                formToJava(sb, cadr(binding), env, rsfx, false);
+            }
+            sb.append(')');
         }
 
         private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx, boolean isLast) {
@@ -3772,6 +3775,8 @@ public class LambdaJ {
             formsToJava(sb, cond, env, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
         }
+
+
 
         /** from a list of bindings extract a new list of symbols: ((symbol1 form1)...) -> (symbol1...) */
         // todo vgl. LambdaJ.extractParamList()
@@ -3786,7 +3791,7 @@ public class LambdaJ {
             return params;
         }
 
-        /** gerate variables from arg array */
+        /** generate variables from arg array */
         // todo checks vgl zip
         private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;

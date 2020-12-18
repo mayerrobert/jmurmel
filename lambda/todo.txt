@@ -1,12 +1,17 @@
 let*, named let*, letrec, ::
 
-defun nur toplevel zulassen: interpreter + compiler
--> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava
+JMurmel setzt globale variablen nicht richtig als special um, vgl. https://stackoverflow.com/questions/3855862/setq-and-defvar-in-lisp
+-> Lisp hat kein lexical global environment, alle globalen variablen sind special, lookup ist also dynamisch
+-> Murmel hat lexical global environment
+-> special heisst:
+   wenns ein let- oder parameter binding für eine special variable gibt, "sehen" alle aufgerufenen funktionen diesen wert statt des normalen werts den die globale variable hat.
+   gehen let- bzw. parameter binding out of scope, hat die special variable wieder den alten wert
+   -> wenns kein special gibt, kann man stattdessen folgendes programmieren:
+      die funktion greift nicht auf global zu sondern hat stattdessen parameter
+      man uebergibt der funktion entweder global als argument oder einen anderen wert
 
-define im compiler auch nicht-toplevel zulassen:
--> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
--> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
--> define vs defvar/ defparameter/ defconstant klaeren
+vielleicht define und redefine (oder declare/ define), und global environment wird als lexical deklariert und forward references sind erlaubt?
+toplevel defun bleibt, nicht-toplevel defun wird nach label uebersetzt, label kommt neu dazu
 
 Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
 -> umbenennen?
@@ -16,7 +21,13 @@ Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei dup
            first
     -> damit koennte insertFront einfach arg ins environment stecken
 
-body() im interpreter fertigmachen
+define im compiler auch nicht-toplevel zulassen:
+-> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
+-> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
+-> define vs defvar/ defparameter/ defconstant klaeren
+
+defun nur toplevel zulassen: interpreter + compiler
+-> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava
 
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
 -> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
@@ -35,8 +46,13 @@ lisp eol von cmdline parameter auf lisp global umstellen
    (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
 
 
+body() im interpreter fertigmachen
 
 
+
+
+
+vielleicht --jar und --fatjar: --fatjar erzeugt ein jar, das auch die rt enthaelt
 
 apply langref:      special form
 apply interpreter:  reserved, special form
