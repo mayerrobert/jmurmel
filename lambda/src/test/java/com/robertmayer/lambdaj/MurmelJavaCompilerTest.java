@@ -297,6 +297,27 @@ public class MurmelJavaCompilerTest {
         assertEquals("named let produced wrong result", 3.0, program.body());
     }
 
+    @Test
+    public void testLetStar() throws Exception {
+        MurmelProgram program = compile("(let* ((a 1) (b a)) b)");
+        assertNotNull("failed to compile let* to class", program);
+        assertEquals("let* produced wrong result", 1L, program.body());
+    }
+
+    @Test
+    public void testNamedLetStar() throws Exception {
+        MurmelProgram program = compile("(let* loop ((a 1) (b a)) (if (> b a) (loop b a)) b)");
+        assertNotNull("failed to compile namd let* to class", program);
+        assertEquals("named let* produced wrong result", 1L, program.body());
+    }
+
+    @Test
+    public void testNamedLetStar2() throws Exception {
+        MurmelProgram program = compile("(let* loop ((a 1) (b a) (b 2)) (if (< b a) (loop b a)) b)");
+        assertNotNull("failed to compile namd let*2 to class", program);
+        assertEquals("named let*2 produced wrong result", 2L, program.body());
+    }
+
     // todo funktioniert nicht
     //@Test
     public void testLetrec() throws Exception {
