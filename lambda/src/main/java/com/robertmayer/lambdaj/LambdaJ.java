@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.325 2020/12/17 19:30:52 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.326 2020/12/18 08:30:15 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3639,7 +3639,12 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - todo (named) let*
+                    ///     - (named) let*
+                    if (isSymbol(op, "let*")) {
+                        letStarToJava(sb, args, env, rsfx, isLast);
+                        return;
+                    }
+
 
                     /*
                     ///     - todo letrec:  (letrec ((sym form)...) forms) -> Object
@@ -3720,17 +3725,16 @@ public class LambdaJ {
             return env;
         }
 
-        /** atgs = (((symbol (sym...) form...)...) form...)*/
+        /** args = (((symbol (sym...) form...)...) form...)*/
         private void labelsToJava(WrappingWriter sb, final Object args, ConsCell env, int rsfx, boolean isLast) {
-            ConsCell params = paramList(args);
             sb.append(isLast ? "tailcall(" : "funcall(");
-            final Object args1 = cons(params, cdr(args));
             ConsCell env1 = env;
-            int rsfx1 = rsfx+1;
+            final int rsfx1 = rsfx+1;
             sb.append("new MurmelFunction() {\n");
 
+            final ConsCell params = paramList(args);
             for (Object localFunc: params) {
-                env1 = extenv(localFunc, rsfx + 1, env1);
+                env1 = extenv(localFunc, rsfx1, env1);
             }
 
             for (Object symbolParamsAndBody: (ConsCell)(car(args))) {
@@ -3741,7 +3745,7 @@ public class LambdaJ {
 
             sb.append("        @Override public Object apply(Object... args) {\n");
             sb.append("        Object result").append(rsfx1).append(";\n");
-            formsToJava(sb, (ConsCell)cdr(args1), env1, rsfx1, false);
+            formsToJava(sb, (ConsCell)cdr(args), env1, rsfx1, false);
             sb.append("        return result").append(rsfx1).append("; } } )");
         }
 
@@ -3750,14 +3754,14 @@ public class LambdaJ {
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
                 ///     - named let: (let sym ((sym form)...) forms...) -> Object
-                ConsCell params = paramList(cdr(args));
+                final ConsCell params = paramList(cdr(args));
                 sb.append(isLast ? "tailcall(" : "funcall(");
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
                 ///     - let: (let ((sym form)...) forms...) -> Object
-                ConsCell params = paramList(args);
+                final ConsCell params = paramList(args);
                 sb.append(isLast ? "tailcall(" : "funcall(");
                 lambdaToJava(sb, cons(params, cdr(args)), env, rsfx+1);
                 bindings = (ConsCell)(car(args));
@@ -3769,9 +3773,50 @@ public class LambdaJ {
             sb.append(')');
         }
 
+        /** let* and named let* */
+        private void letStarToJava(WrappingWriter sb, final Object args, ConsCell env, int rsfx, boolean isLast) {
+            ConsCell env1 = env;
+            final int rsfx1 = rsfx+1;
+            final ConsCell bindings, args1;
+            final boolean named;
+            sb.append(isLast ? "tailcall(" : "funcall(");
+
+            if (car(args) instanceof LambdaJSymbol) {
+                ///     - named let*: (let sym ((sym form)...) forms...) -> Object
+                named = true;
+                env1 = extenv(car(args), rsfx1, env1);
+                sb.append("new MurmelFunction() {\n"
+                        + "        private Object ").append(javasym(car(args), env1)).append(" = (MurmelFunction)this::apply;\n"
+                        + "        @Override public Object apply(Object... args").append(rsfx1).append(") {\n        Object result").append(rsfx1).append(";\n");
+                bindings = (ConsCell)(cadr(args));
+                args1 = (ConsCell) cddr(args);
+            }
+            else {
+                ///     - let*: (let* ((sym form)...) forms...) -> Object
+                named = false;
+                sb.append("(MurmelFunction)(args").append(rsfx1).append(") -> {\n        Object result").append(rsfx1).append(";\n");
+                bindings = (ConsCell)(car(args));
+                args1 = (ConsCell) cdr(args);
+            }
+
+            final Set<String> seen = new HashSet<>();
+            for (Object binding: bindings) {
+                String javaname = mangle(car(binding).toString(), rsfx1);
+                if (seen.contains(javaname)) sb.append("        ");
+                else { sb.append("        Object "); seen.add(javaname); }
+                sb.append(javaname).append(" = ");
+                formToJava(sb, cadr(binding), env1, rsfx1, false);
+                env1 = extenv(car(binding), rsfx1, env1);
+                sb.append(";\n");
+            }
+            formsToJava(sb, args1, env1, rsfx1, false);
+            if (named) sb.append("        return result").append(rsfx1).append("; } } )");
+            else       sb.append("        return result").append(rsfx1).append("; } )");
+        }
+
         private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, int rsfx, boolean isLast) {
-            sb.append(isLast ? "tailcall(" : "funcall(")
-              .append("(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
+            sb.append((isLast ? "tailcall(" : "funcall(")
+                      + "(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, cond, env, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
         }

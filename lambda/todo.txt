@@ -1,4 +1,4 @@
-let*, named let*, letrec, ::
+letrec, ::
 
 JMurmel setzt globale variablen nicht richtig als special um, vgl. https://stackoverflow.com/questions/3855862/setq-and-defvar-in-lisp
 -> Lisp hat kein lexical global environment, alle globalen variablen sind special, lookup ist also dynamisch
@@ -11,6 +11,7 @@ JMurmel setzt globale variablen nicht richtig als special um, vgl. https://stack
       man uebergibt der funktion entweder global als argument oder einen anderen wert
 
 vielleicht define und redefine (oder declare/ define), und global environment wird als lexical deklariert und forward references sind erlaubt?
+-> das waer in etwa so wies derzeit funktioniert
 toplevel defun bleibt, nicht-toplevel defun wird nach label uebersetzt, label kommt neu dazu
 
 Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
