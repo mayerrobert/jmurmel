@@ -29,6 +29,9 @@ define im compiler auch nicht-toplevel zulassen:
 
 defun nur toplevel zulassen: interpreter + compiler
 -> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava
+-> besser nur toplevel defun. fuer selbstmodifizierenden code kann man
+   (define f (lambda (p) (form))) verwenden, ggf. auch
+   (define f (label rec (p) (form)))
 
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
 -> oder besser ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html

@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.326 2020/12/18 08:30:15 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.327 2020/12/18 20:14:11 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -893,11 +893,16 @@ public class LambdaJ {
                         final Object symbol = car(arguments);
                         if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "define", printSEx(symbol));
                         notReserved("define", symbol);
-                        final ConsCell envEntry = assoc(symbol, env);
+                        final ConsCell envEntry = assoc(symbol, topEnv);
+
+                        // todo mutable globals: naechste zeile entfernen, dann kann man globals mehrfach neu zuweisen, auch im compiler umsetzen
+                        // Murmel define verhielte sich dann wie CL defparameter, nur das Murmel global environment ist lexical (keine special symbols)
                         if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
                         final Object value = evalquote(cadr(arguments), env, stack, level, traceLvl);
-                        insertFront(topEnv, symbol, value);
+                        if (envEntry == null) insertFront(topEnv, symbol, value);
+                        else envEntry.rplacd(value);
+
                         result = symbol;
                         return result;
                     }
@@ -3127,16 +3132,21 @@ public class LambdaJ {
 
 
         /** used for function calls, and also for let, labels, progn */
-        public static Object funcall(Object fn, Object... args) {
-            if (fn instanceof Primitive)
-                return ((Primitive)fn).apply(arraySlice(args, 0));
-
-            Object r = ((MurmelFunction)fn).apply(args);
+        public static Object funcall(MurmelFunction fn, Object... args) {
+            Object r = fn.apply(args);
             while (r instanceof MurmelFunctionCall) {
-                MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
+                final MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
                 r = functionCall.next.apply(functionCall.args);
             }
             return r;
+        }
+
+        public static Object funcall(Object fn, Object... args) {
+            if (fn instanceof MurmelFunction)
+                return funcall((MurmelFunction)fn, args);
+            if (fn instanceof Primitive)
+                return ((Primitive)fn).apply(arraySlice(args, 0));
+            throw new LambdaJError(true, "not a function: %s", fn);
         }
 
         /** used for function calls */
@@ -3350,7 +3360,6 @@ public class LambdaJ {
                     result = cadr(form);
                 }
                 else if (consp(form) && isSymbol(car(form), "defun")) {
-                    //env = defineToJava(ret, cons(cadr(form), cons(cons(intern("lambda"), cddr(form)), null)), env);
                     env = defunToJava(ret, (ConsCell) cdr(form), env);
                     result = cadr(form);
                 }

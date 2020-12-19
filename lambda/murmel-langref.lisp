@@ -10,10 +10,6 @@
 ;;; or:
 ;;; java -jar jmurmel.jar --repl --echo < murmel-langref.lisp > murmel.txt
 ;;;
-;;; Note that many of these forms, predefined variables, ... can be
-;;; disabled using commandline arguments if you want to play
-;;; with an even more reduced Lisp.
-;;;
 ;;; Note the section "Known issues" at the end of this files.
 ;;;
 ;;; See also:
@@ -132,16 +128,13 @@ internal-time-units-per-second
 ; quote returns an expression w/o evaluating it
 (quote a-symbol)
 
-;;; (lambda dynamic? (params...) forms...) -> lambda or closure
+;;; (lambda (params...) forms...) -> closure
 ; When a lambda is created by the special form "lambda"
 ; the lexical environment is captured at the time of lambda creation.
 ;
-; Except: when the optional keyword "dynamic" is given then
-; no environment is captured, and lambdas - when applied -
-; get the dynamic environment.
-;
-; Note: both dynamic as well as lexical lambdas will "see"
-; the dynamic global environment.
+; Note: Common Lisp has a dynamic global environment, i.e.
+;       all global variables are special.
+;       Murmel has a lexical global environment.
 ;
 ; Arguments to the special form "lambda" are not evaluated.
 (lambda (p1 p2) p1)
@@ -299,14 +292,6 @@ nil
 
 ;;; == Predefined Primitives ==========
 
-; Note that the number of primitives is not fixed as in other
-; Lisps. In embedded use primitives may be added, also Java methods
-; created by the primitive :: act as builtins.
-; As far as the language is concerned, all primitives are variadic functions.
-; The primitives themselves may have parameter checks, tough.
-; In case you call them with the wrong type(s) or number of parameters
-; the primitives may throw an error.
-
 ; (cons 'a 'b) ==> (a . b)
 (cons 'a 'b)
 
@@ -402,6 +387,34 @@ nil
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
+;;; --- End of Murmel reference ---
+
+
+;;; == Extensions =====================
+
+; JMurmel adds some extra features to Murmel which are listed below.
+
+; lambda dynamic - only supported in the interpreter:
+; When the optional keyword "dynamic" is given then
+; no environment is captured, and lambdas - when applied -
+; get the dynamic environment.
+; (lambda dynamic (params...) forms...) -> anonymous function with
+;                                          dynamic environment
+
+; In embedded use primitives may be added, also Java methods
+; created by the primitive :: (see below) act as builtins.
+; As far as the language is concerned, all primitives are variadic functions.
+; The primitives themselves may have parameter checks, tough.
+; In case you call them with the wrong type(s) or number of parameters
+; the primitives may throw an error.
+
+; JMurmel supports commandline parameters that can be used to
+; disable many of Murmel's forms, predefined variables, ... .
+; These commandline parameters can be used if you want to play
+; with an even more reduced Lisp.
+; See 'jmurmel --help-features'
+;
+
 
 ;;; == Additional JMurmel special forms and primitives ==========
 
@@ -459,4 +472,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.41 2020/12/17 09:10:22 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.42 2020/12/18 20:14:11 Robert Exp $
