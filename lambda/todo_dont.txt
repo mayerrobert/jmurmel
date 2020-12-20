@@ -1,0 +1,66 @@
+Doch (noch) nicht:
+==================
+
+builder pattern:
+withStdin(...)        // entweder einen char supplier oder einen ObjectReader
+withStdout(...)       // entweder einen String consumer oder einen ObjectWriter
+withCustomEnv(...)    // Parameter ist ein Supplier<ConsCell>, der erzeugt eine Liste mit (symbol . builtin)
+                      // und wird in der Init Phase aufgerufen
+withTrace(Tracer)     // z.B. System.err::println
+withTty()             // Shortcut/ convenience: benutzt System in/out/err, kein Custom Env
+obige methoden liefern ein Interface "LambdaJBuilder" OHNE interpret aber mit build()
+build()               // bastelt alles zusammen und liefert ein Interface "LambdaJ" mit interpret(), withStdin(), withStdout()
+interpret(...)        // entweder einen char supplier oder einen Parser, oder ein String?!
+
+eine map builtinfunc->name damit printObj die funktionsnamen ausgeben kann?
+zweite map fuer FFI funktionen s.u.?
+
+Wenn ConsCell geeignet annotiert ist, sollte jaxb dann XML nach Lists parsen koennen? XML schreiben muesste supereinfach sein?!
+-> es braucht viele annotations und public noarg constructors, zawos brauchma des
+
+lisp write liefert als ergebnis den parameter
+-> LambdaJ liefert (quote t)
+
+Lambda erweitern, sodass es implizites currying wie in Lambda Calculus unterstuetzt wird?
+vgl. https://old.reddit.com/r/learnlisp/comments/izq5fs/how_to_implement_basic_lambda_calculus_operators/g6kikqp/
+(define xyzzy (lambda (a b c) (+ a b c)))
+(xyzzy 1 2) ; liefert einen fehler, koennte aber ein closure mit a und b und code: (lambda (c) (+ a b c)) liefern
+
+-> makeArgList muesste als ergebnis eine Liste mit 2 Listen liefern: das extenv mit den arguments + liste mit verbleibenden params
+   -> wenns keine verbleibenden params gibt, wird die funktion ausgeführt, gibts verbleibende args,
+      ist der returnwert ein lambda mit den verbleibenden params. 
+-> nur sinnvoll bei lexical closures, weil sonst gingen ja die bereits gesetzten argumente verschuett 
+  -> erst mal nicht, currying/ variadic functions, default arguments passen schlecht zusammen
+
+continuations: loops gibts ja keine, ist eine continuation einfach der restliche parse tree? 
+ist currentcc cdr(exp) (und das env bzw. closure) ?
+-> es koennte eine special form current-continuation geben, angelehnt an lambda, current-continuation haette eine parameterliste,
+   aber keinen stmt body. ergebnis von (current-continuation (a b c)) waere ein lambda (lambda (a b c) ...), ... steht fuer
+   jene automatisch eingefuegten stmts, die auf den aufruf von current-continuation folgen. d.h. wenn jemand dieses lambda aufruft,
+   gehts mit den stmts weiter, und die symbole a b c sind mit werten belegt im environment (d.h. closure) vorhanden.
+   -> geht zunaechst aber nur innerhalb einer flachen liste stmts eines lambdas, nicht z.b. innerhalb des true zweigs einer if-clause.
+      -> damit das auch geht, muesste man die stmts die der gesamten if clause folgen, auch ans lambda dranhaengen
+         -> das waer moeglich, wenn man bei jedem rekursiven oder tailrekursiven aufruf von eval eine verkette liste mit cdr(exp)
+            als parameter mitgibt, bei jedem aufruf wird die liste eins laenger. um dann das continuation lambda zu basteln,
+            haengt man diese stmt liste an eine kopie von cdr(exp) dran. haette z.b. zur folge: wenn nur im true zweig call/cc
+            aufgerufen wird, dann sind die parameter nach der if clause bei durchlauf durch true zweig vorhanden,
+            beim durchlaufen des false zweigs nicht vorhanden.
+         -> Aufrufe einer Continuation sind effektiv Endcalls
+            Nein, sind sie nicht, wenn die gerufene Continuation einfach endet, entspricht das einem return.
+            CPS waer ggf. moeglich und nicht so schwer?!?
+
+print/ pprint/ princ/
+-> die setzen parameter und rufen write, write kennt viele parameter zur formatierung, siehe
+   http://www.lispworks.com/documentation/HyperSpec/Body/f_wr_pr.htm
+
+Environment variable fuer default options
+-> aufrufscript stattdessen
+
+sollte format write aufrufen statt direkt zum lispwriter zu schreiben? write koennte erweitert werden, dass es *print-pretty* usw.
+auswertet
+-> nein, format ruft #printString, write ruft #printObj, format schreibt, was der user im formatstring spezifiziert
+   write schreibt entsprechend allfaelliger globalen variablen/ argumenten
+
+vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
+oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
+-> oder so lassen, weil interpreter, compiler und kompilate die System property line.separator auswerten

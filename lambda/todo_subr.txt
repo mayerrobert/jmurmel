@@ -30,10 +30,6 @@ CDI und EJB aehnlich :: integrieren?
    -> DeltaSpike so verpacken, dass i-wie ein CustomEnvironmentSupplier uebrigbleibt
    -> kann man das aufrufen eines CustomEnvironmentSupplier in eine Murmel Funktion verpacken?
 
-cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
--> --no-scheme, auch null? und ggf if abdrehen
--> dann gibts nur mehr not bound, kein undefined value
-
 :: macht im prinzip dasselbe wie CL create-method
 -> ggf parameterreihenfolge anpassen
    hinweis in murmel-langref.lisp
@@ -58,6 +54,10 @@ Datei IO
 bringt aber nur was, wenns auch stringmanipulationsfunktionen gibt
 -> string->charlist
 -> (split splitchars sting) -> (elements...)
+
+(char-int C:character): integer expr ; Converts character to integer.
+(int-char I:integer): character expr ; Converts integer to character.
+
 
 (load 'utf-8 "lispfile.lisp")
 -> erster optionale parameter ist ein symbol fuer den Zeichensatz
@@ -87,3 +87,29 @@ funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mi
 nativeinsert koennte fuer batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
 mit ints liefern (ein int für jede insert-tupel-liste)
 
+
+http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
+list-length could be implemented as follows:
+
+(defun list-length (x) 
+  (do ((n 0 (+ n 2))            ;Counter 
+       (fast x (cddr fast))     ;Fast pointer: leaps by 2 
+       (slow x (cdr slow)))     ;Slow pointer: leaps by 1 
+      (nil) 
+    ;; If fast pointer hits the end, return the count. 
+    (when (endp fast) (return n)) 
+    (when (endp (cdr fast)) (return (+ n 1))) 
+    ;; If fast pointer eventually equals slow pointer, 
+    ;;  then we must be stuck in a circular list. 
+    ;; (A deeper property is the converse: if we are 
+    ;;  stuck in a circular list, then eventually the 
+    ;;  fast pointer will equal the slow pointer. 
+    ;;  That fact justifies this implementation.) 
+    (when (and (eq fast slow) (> n 0)) (return nil))))
+
+
+
+isNaN, isInfinite, isFinite
+-> ggf. parameter "Error bei NaN, Infinity etc."
+div, remain, trunc, round, abs
+weitere operatoren aus java.lang.Math (oder StrictMath?)
