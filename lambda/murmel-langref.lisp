@@ -340,7 +340,10 @@ nil
 ; (in this case the expression to be read is the string "Hello!").
 (write (read)) "Hello!"
 
-; writeln accepts one optional argument
+; writeln and lnwrite accept one optional argument
+; writeln will write the argument if given and non-nil followed by a newline
+; lnwrite will write a newline followed by the argument if given and non-nil
+; followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
 (writeln "Hello, ")
 (writeln)
 (writeln "World!")
@@ -472,4 +475,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.42 2020/12/18 20:14:11 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.43 2020/12/19 19:29:04 Robert Exp $

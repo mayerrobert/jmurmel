@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.329 2020/12/20 09:33:44 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.330 2020/12/20 10:52:23 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -298,8 +298,6 @@ public class LambdaJ {
 
         HAVE_LEXC,           // use lexical environments with dynamic global environment
 
-        HAVE_LISPEOL,        // default for writeln is "<obj>\n", with this flag it's "\n<obj> "
-
         /** untyped lambda calculus with dynamic environments, S-expressions, that's all */
         HAVE_LAMBDA     { @Override public int bits() { return 0; } },
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
@@ -331,7 +329,6 @@ public class LambdaJ {
     private boolean haveEq()      { return (features & Features.HAVE_EQ.bits())      != 0; }
     private boolean haveQuote()   { return (features & Features.HAVE_QUOTE.bits())   != 0; }
     private boolean haveLexC()    { return (features & Features.HAVE_LEXC.bits())    != 0; }
-    private boolean haveLispEOL() { return (features & Features.HAVE_LISPEOL.bits()) != 0; }
 
     public LambdaJ() {
         this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null);
@@ -1831,17 +1828,18 @@ public class LambdaJ {
 
     private void writeln(final Object arg) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
-        if (arg == null) {
-            lispPrinter.printEol();
+        if (arg != null) {
+            lispPrinter.printObj(arg);
         }
-        else if (haveLispEOL()) {
-            lispPrinter.printEol();
+        lispPrinter.printEol();
+    }
+
+    private void lnwrite(final Object arg) {
+        if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
+        lispPrinter.printEol();
+        if (arg != null) {
             lispPrinter.printObj(arg);
             lispPrinter.printString(" ");
-        }
-        else {
-            lispPrinter.printObj(arg);
-            lispPrinter.printEol();
         }
     }
 
@@ -2038,10 +2036,17 @@ public class LambdaJ {
                 return expTrue.get();
             };
 
+            final Primitive flnwrite =  a -> {
+                nArgs("lnwrite", a, 0, 1);
+                lnwrite(car(a));
+                return expTrue.get();
+            };
+
             env = cons(cons(symtab.intern(new LambdaJSymbol("read")),    freadobj),
                   cons(cons(symtab.intern(new LambdaJSymbol("write")),   fwriteobj),
                   cons(cons(symtab.intern(new LambdaJSymbol("writeln")), fwriteln),
-                  env)));
+                  cons(cons(symtab.intern(new LambdaJSymbol("lnwrite")), flnwrite),
+                  env))));
 
         }
 
@@ -2784,8 +2789,6 @@ public class LambdaJ {
         if (hasFlag("--lambda+", args))     features =  Features.HAVE_LAMBDAPLUS.bits();
         if (hasFlag("--lambda", args))      features =  Features.HAVE_LAMBDA.bits();
 
-        if (hasFlag("--eol=C", args))       features &= ~Features.HAVE_LISPEOL.bits();
-        if (hasFlag("--eol=LISP", args))    features |= Features.HAVE_LISPEOL.bits();
         return features;
     }
 
@@ -2928,9 +2931,6 @@ public class LambdaJ {
     private static void showFeatureUsage() {
         System.out.println("Feature flags:\n"
                 + "\n"
-                + "--eol=LISP ....  'writeln' prints <EOL><argument>< >\n"
-                + "--eol=C .......  'writeln' prints <argument><EOL>\n"
-                + "\n"
                 + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
                 + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
                 + "--no-extra ....  no special forms 'eval', 'if', 'define', 'defun',\n"
@@ -3068,6 +3068,7 @@ public class LambdaJ {
 
         public Object _write     (Object... args) { intp.write(args[0]); return _t; };
         public Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
+        public Object _lnwrite   (Object... args) { intp.lnwrite(args == null ? null : args[0]); return _t; };
 
         public Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
         public Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
@@ -3300,7 +3301,7 @@ public class LambdaJ {
         };
         private static final String[] primitives = new String[] {
                 "car", "cdr", "cons",
-                "eval", "eq", "null", "write", "writeln",
+                "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list",
                 "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"

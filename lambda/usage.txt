@@ -41,9 +41,6 @@ Flags for REPL:
 
 Feature flags:
 
---eol=LISP ....  'writeln' prints <EOL><argument>< >
---eol=C .......  'writeln' prints <argument><EOL>
-
 --no-nil ......  don't predefine symbol nil (hint: use '()' instead)
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
 --no-extra ....  no special forms 'eval', 'if', 'define', 'defun',

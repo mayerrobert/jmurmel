@@ -1,5 +1,9 @@
 letrec, ::
 
+scope und extent:
+https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
+https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
+
 JMurmel setzt globale variablen nicht richtig als special um, vgl. https://stackoverflow.com/questions/3855862/setq-and-defvar-in-lisp
 -> Lisp hat kein lexical global environment, alle globalen variablen sind special, lookup ist also dynamisch
 -> Murmel hat lexical global environment
@@ -32,24 +36,6 @@ defun nur toplevel zulassen: interpreter + compiler
 -> besser nur toplevel defun. fuer selbstmodifizierenden code kann man
    (define f (lambda (p) (form))) verwenden, ggf. auch
    (define f (label rec (p) (form)))
-
-
-HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
-
-ggf. ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
-prin1 object &optional output-stream => object
-
-prin1 produces output suitable for input to read.
-princ is just like prin1 except that the output has no escape characters.
-print is just like prin1 except that the printed representation of object is preceded by a newline and followed by a space.
-pprint is just like print except that the trailing space is omitted and object is printed with the *print-pretty* flag non-nil to produce pretty output.
-
-lisp eol von cmdline parameter auf lisp global umstellen
--> oder write uebernimmt liste mit keyword/value tupel: (write obj flags...), z.B.
-   (write "Hallo" (list ('eol-style 'lisp) ('escape-atoms t) ('max-length 20) ('pprint t)))
--> oder write uebernimmt *optionale* liste, fallback ist eine globale variable *print-environment* mit soner liste
-   (write "Hallo") ; write benutzt *print-environment*
-   (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
 
 
 body() im interpreter fertigmachen
@@ -96,8 +82,6 @@ wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte 
 
 alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
 -> nicht alle, nur die ohne interpreter auskommen
-
-funktion fatal dokumentieren, ggf. umbenamsen
 
 letXXX und labels im compiler
 named let in einen Java loop uebersetzen. damits in generierten lambdas funkt, muss fuer den rekursiven aufruf wohl eine exception missbraucht werden
@@ -189,9 +173,6 @@ readObj koennte ArraySlice liefern, wenn eine sexpression mehr als X member hat,
 
 
 
-https://people.eecs.berkeley.edu/~bh/ssch27/appendix-cl.html
-beschreibt unterschiede zw. scheme und CL und ist damit ein guter ueberblick ueber CL, auch file open/ close
-
 https://github.com/phoe/cafe-latte
 CL conditions
 dynamic variables
@@ -202,9 +183,6 @@ restart
 -> tagbody/go koennte wsl mit "label: for (;;) continue label;" umgesetzt werden
 -> beides wird in Java lambdas nicht gehen, ggf. im lambda "throw ..."
 
-
-ANSI-CL hat die beiden funktionen lisp-implementation-type, lisp-implementation-version
--> https://franz.com/support/documentation/9.0/ansicl/dictentr/lisp-imp.htm
 
 zeilentabellen lisp->java mitfuehren und ins java verpacken? dann koennte ein catch im main() den stacktrace umschluesseln
 -> javacode sollte mehr linefeeds bekommen
@@ -237,12 +215,6 @@ compiler:
 -> statt var parameter koennen funktionen auch ein tupel (Object, Function) als result liefern
 
 -> kann man eigentlich im interpreter gleich machen
-
-cl hat with-open-file
-
-scope und extent:
-https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
-https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
 
 Tracer bei JSR-223 nutzen.
 
@@ -314,29 +286,6 @@ methoden, also funktionen die nur fuer einen bestimmten recordtyp zutreffen, kan
 
 vielleicht die recordnamen in den selben namespace geben wie double, integer, string (die noch keinen haben)?
 
-
-
-CDI und EJB aehnlich :: integrieren?
--> dazu brauchts eigentlich einen Lookup im Java-Scope, d.h. BeanProvider.getContextualReference() muss i-wie integriert werden
-   -> DeltaSpike so verpacken, dass i-wie ein CustomEnvironmentSupplier uebrigbleibt
-   -> kann man das aufrufen eines CustomEnvironmentSupplier in eine Murmel Funktion verpacken?
-
-cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
--> --no-scheme, auch null? und ggf if abdrehen
--> dann gibts nur mehr not bound, kein undefined value
-
-:: macht im prinzip dasselbe wie CL create-method
--> ggf parameterreihenfolge anpassen
-   hinweis in murmel-langref.lisp
-
-zus Primitives: https://learnxinyminutes.com/docs/common-lisp/
-(expt x y) -> x hoch y, wurzelziehen? oder ist das (x hoch 1/y)?
-(intern string) -> symbol
--> intern ist case preserving (intern "aaa") -> |aaa|, anscheinend macht der reader uppercase, und symbol lookup ist case sensitive
-AND, OR, XOR, NOT
--> brauchts eigentlich nicht, ist sugar ueber if
-null? brauchts eigentlich nur in scheme, (null? x) -> (not x)
--> umbenamsen
 
 
 
@@ -577,31 +526,6 @@ am besten setf weglassen, weil das macht serious magic
 
 
 
-Datei IO
-(pprint (read (open typ "/Users/ashokkhanna/lisp/test-pprint.lisp"))) ; typ koennte 'utf-8 oder 'ansi oder auch 'url oder 'ftp sein
--> datentyp File
--> funktion (open string...) -> File ; koennte eine menge pathelemente bekommen, setzt die mittels pathsep zusammen vgl NIO
-            (close file) -> t
-            (read-line file) -> String oder nil
-            (read-all-lines file) -> (line...)
-bringt aber nur was, wenns auch stringmanipulationsfunktionen gibt
--> string->charlist
--> (split splitchars sting) -> (elements...)
-
-(load 'utf-8 "lispfile.lisp")
--> erster optionale parameter ist ein symbol fuer den Zeichensatz
-
-Stringfunktionen: format kann auch strings zusammensetzen
-strings sind eine LSIP sequence, fuer sequence gibts
--> subseq sequence start &optional end => subsequence
-
-(concatenate 'string "all" " " "together" " " "now") =>  "all together now"
-(concatenate 'list "ABC" '(d e f) #(1 2 3) #*1011)
-=>  (#\A #\B #\C D E F 1 2 3 1 0 1 1)
-(concatenate 'list) =>  NIL
-
-CL hat stringp string= string<=, ...
-
 LambdaJString.value von String auf char[] umstellen?
 -> wuerde ggf. builtins rund um java.lang.Character erleichtern
 -> char ist 16 bit
@@ -620,15 +544,6 @@ LambdaJ> (write (read)) "Hello, World!"
 
 
 Generic S-Expression reader/ writer: (<n>:<octets>)
-
-read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
-statt lispStdin, write sinngemaess, ggf. format und format-locale
-
-in eval eine lokale variable result einfuehren, das wird vor dem return zugewiesen, dann kann finally den returnwert tracen
-
-primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht existiert, gibts nil, wenns nicht als
-double lesbar ist, gibts NaN
-primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
 
 // Files can be loaded into the REPL
 scala> :load /sites/repl-test.scala
@@ -842,16 +757,6 @@ ggf. mit timestampcheck
 
 
 
-JDBC vielleicht objectorientiert anbinden?
-funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mit (parameternameatom . wertexpression) tupeln
-
-nativeinsert koennte fuer batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
-mit ints liefern (ein int für jede insert-tupel-liste)
-
-
-
-
-
 Doch (noch) nicht:
 ==========================================
 
@@ -919,3 +824,5 @@ auswertet
 vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
 oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
 -> oder so lassen, weil interpreter, compiler und kompilate die System property line.separator auswerten
+
+HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
