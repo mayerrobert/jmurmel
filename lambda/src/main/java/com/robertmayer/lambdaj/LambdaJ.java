@@ -63,15 +63,12 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.tools.ToolProvider;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
-
-import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
-
-import com.robertmayer.lambdaj.LambdaJ.ConsCell;
+import javax.tools.SimpleJavaFileObject;
 
 /// # JMurmel - Murmel interpreter/ compiler
 
@@ -120,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.328 2020/12/19 19:29:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.329 2020/12/20 09:33:44 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -4082,7 +4079,7 @@ class JavaCompilerUtils {
         if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. "
                 + "No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
         final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
-        final List<String> options = Collections.singletonList("-g");
+        final List<String> options = Arrays.asList("-g", "-target", "1.8");
         try {
             fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));
             //                                     out       diag  opt      classes
