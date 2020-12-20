@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.327 2020/12/18 20:14:11 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.328 2020/12/19 19:29:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2379,12 +2379,14 @@ public class LambdaJ {
         int features = features(args);
         final LambdaJ interpreter = new LambdaJ(features, trace, null);
 
-        final boolean istty = null != System.console();
+        final boolean istty       = null != System.console();
         final boolean repl        = hasFlag("--repl", args);
         final boolean echo        = hasFlag("--echo", args);    // used only in repl
         final boolean printResult = hasFlag("--result", args);  // used only in filemode
         final boolean toJava      = hasFlag("--java", args);
         final boolean toJar       = hasFlag("--jar", args);
+        final String clsName      = flagValue("--class", args);
+        final String outDir       = flagValue("--outdir", args);
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");
@@ -2396,7 +2398,7 @@ public class LambdaJ {
         final List<String> files = args(args);
         if (!files.isEmpty()) {
             if (toJar || toJava) {
-                compileFiles(files, interpreter, toJar);
+                compileFiles(files, interpreter, toJar, clsName, outDir);
             }
             else {
                 interpreter.init(() -> -1, s -> { return; });
@@ -2435,12 +2437,12 @@ public class LambdaJ {
                 final String outFile;
                 final boolean success;
                 if (toJar) {
-                    outFile = "a.jar";
-                    success = compileToJar(parser, program, "MurmelProgram", outFile, interpreter);
+                    outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
+                    success = compileToJar(parser, program, clsName, outFile, interpreter);
                 }
                 else {
-                    outFile = "MurmelProgram.java";
-                    success = compileToJava(StandardCharsets.UTF_8, parser, program, null, outFile, interpreter);
+                    outFile = clsName;
+                    success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir, interpreter);
                 }
                 if (success) System.out.println("compiled stdin to " + outFile);
             }
@@ -2453,7 +2455,7 @@ public class LambdaJ {
     }
 
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
-    private static void compileFiles(final List<String> files, LambdaJ interpreter, boolean toJar) {
+    private static void compileFiles(final List<String> files, LambdaJ interpreter, boolean toJar, String clsName, String outDir) {
         SExpressionParser parser = null;
         final List<Object> program = new ArrayList<>();
         for (String fileName: files) {
@@ -2477,12 +2479,14 @@ public class LambdaJ {
         final String outFile;
         final boolean success;
         if (toJar) {
-            outFile = "a.jar";
-            success = compileToJar(parser, program, "MurmelProgram", outFile, interpreter);
+            outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
+            success = compileToJar(parser, program, clsName, outFile, interpreter);
         }
         else {
-            outFile = "MurmelProgram.java";
-            success = compileToJava(StandardCharsets.UTF_8, parser, program, null, outFile, interpreter);
+            success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir, interpreter);
+            if (clsName == null) clsName = "MurmelProgram";
+            if (outDir == null) outDir = ".";
+            outFile = outDir + '/' + clsName + ".java";
         }
         if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
     }
@@ -2577,7 +2581,7 @@ public class LambdaJ {
                     if (":echo"   .equals(exp.toString())) { echoHolder.value = true; continue; }
                     if (":noecho" .equals(exp.toString())) { echoHolder.value = false; continue; }
                     if (":env"    .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                    if (":init"   .equals(exp.toString())) { isInit = false; history.clear();  continue; }
+                    if (":res"    .equals(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
                     if (":java"   .equals(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false), interpreter); continue; }
@@ -2658,10 +2662,12 @@ public class LambdaJ {
     }
 
     /** compile history to Java source and print or write to a file.
-     *  if className is null "MurmelProgram" will be the class' name.
-     *  if filename is t the compiled Java code will be printed to the screen.
-     *  if filename is null the filename will be derived from the className
-     *  if filename ends with a / then filename is interpreted as a base directory and the classname (with packages) will be appended */
+     *  <ul>
+     *  <li>if className is null "MurmelProgram" will be the class' name.
+     *  <li>if filename is t the compiled Java code will be printed to the screen.
+     *  <li>if filename is null the filename will be derived from the className
+     *  <li>if filename not null then filename is interpreted as a base directory and the classname (with packages) will be appended
+     *  </ul> */
     private static boolean compileToJava(Charset charset, SymbolTable symtab, List<Object> history, Object className, Object filename, LambdaJ interpreter) {
         MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, null);
         String clsName = className == null ? "MurmelProgram" : className.toString();
@@ -2673,8 +2679,7 @@ public class LambdaJ {
 
         final Path p;
         if (null == filename) p = Paths.get(clsName.replace('.', '/') + ".java");
-        else if (filename.toString().endsWith("/")) p = Paths.get(filename.toString() + clsName.replace('.', '/') + ".java");
-        else p = Paths.get(filename.toString());
+        else p = Paths.get(filename.toString() + '/' + clsName.replace('.', '/') + ".java");
 
         try {
             if (p.getParent() != null) Files.createDirectories(p.getParent());
@@ -2799,6 +2804,21 @@ public class LambdaJ {
         return false;
     }
 
+    private static String flagValue(String flag, String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if ("--".equals(arg)) return null;
+            if (flag.equals(arg)) {
+                // todo checken obs einen value gibt
+                args[i] = null; // consume the arg
+                final String ret = args[i+1];
+                args[i+1] = null;
+                return ret;
+            }
+        }
+        return null;
+    }
+
     private static boolean argError(String[] args) {
         boolean err = false;
         for (String arg: args) {
@@ -2843,7 +2863,7 @@ public class LambdaJ {
         + "  :echo .......................... print forms to screen before eval'ing\n"
         + "  :noecho ........................ don't print forms\n"
         + "  :env ........................... list current global environment\n"
-        + "  :init .......................... re-init global environment, clear history\n"
+        + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
         + "\n"
         + "  :l ............................. print history to the screen\n"
         + "  :w filename .................... write history to a new file with the given filename\n"
@@ -2851,14 +2871,15 @@ public class LambdaJ {
         + "  :r ............................. compile history to Java class 'MurmelProgram' and run it\n"
         + "\n"
         + "  :java classname t .............. compile history to Java class 'classname' and print to the screen\n"
-        + "  :java classname nil ............ compile history to Java class 'classname' and print to a file based on 'classname'\n"
-        + "  :java classname directory/ ..... compile history to Java class 'classname' and print to a file based on classname in directory 'directory'\n"
-        + "  :java classname filename ....... compile history to Java class 'classname' and write to a file with the given filename\n"
+        + "  :java classname nil ............ compile history to Java class 'classname' and save to a file based on 'classname' in current directory\n"
+        + "  :java classname directory ...... compile history to Java class 'classname' and save to a file based on 'classname' in directory 'directory'\n"
+        + "\n"
         + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
         + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
         + "\n"
         + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
-        + "  classname and filename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
+        + "  If 'jarfilename' is nil then 'a.jar' will be used as the jar file name.\n"
+        + "  classname, directory and jarfilename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
         + "\n"
         + "  :q ............................. quit JMurmel\n");
     }
@@ -2886,6 +2907,9 @@ public class LambdaJ {
                 + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"
                 + "                    the class MurmelProgram. The generated jar needs\n"
                 + "                    jmurmel.jar in the same directory to run.\n"
+                + "--class <name> ...  Use 'name' instead of 'MurmelProgram' as the classname\n"
+                + "                    in generated .java- or .jar files\n"
+                + "--outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir\n"
                 + "\n"
                 + "--result .........  Print the result of the last form.\n"
                 + "--repl ...........  By default JMurmel will enter REPL only if there\n"
@@ -2896,8 +2920,8 @@ public class LambdaJ {
                 + "\n"
                 + "Flags for REPL:\n"
                 + "--echo ...........  Echo all input while reading\n"
-                + "--trace=stats ....  Print stack and memory stats at end\n"
-                + "--trace=envstats .  Print stack and memory stats at end\n"
+                + "--trace=stats ....  Print stack and memory stats after each form\n"
+                + "--trace=envstats .  Print stack, memory and environment stats after each form\n"
                 + "--trace=eval .....  Print internal interpreter info during executing programs\n"
                 + "--trace=env ......  Print more internal interpreter info executing programs\n"
                 + "--trace ..........  Print lots of internal interpreter info during\n"
@@ -4055,6 +4079,8 @@ class JavaCompilerUtils {
     /** Compile Java sourcecode of class {@code className} to Java bytecode */
     Class<?> javaToClass(String className, String javaSource) throws Exception {
         final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
+        if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. "
+                + "No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
         final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
         final List<String> options = Collections.singletonList("-g");
         try {

@@ -66,6 +66,17 @@ eval  interpreter:  reserved, special form
 eval  compiler:     reserved, funktion
 
 
+Profiling vgl. https://www.reddit.com/r/java/comments/kgcsfl/is_it_possible_with_significant_gc_load_to_have/ggf01nq/
+Start you application with
+  java -XX:+UseZGC -XX:StartFlightRecording:filename=rec.jfr ...
+You can the open up the recording in JDK Mission Control and see what happened when a slow frame happened. JFR will show GC pauses, safe points, file I/O, lock contention etc.
+If you run with
+  java -XX:StartFlightRecording:settings=profile,filename=rec.jfr 
+you can see where most of the allocation occurs, settings=profile will add a percent or so (depending on the application).
+
+java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
+
+
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
 
 Ggf. sogar mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
@@ -108,8 +119,6 @@ assoc beschleunigung xter anlauf:
 -> oder: in defun werden symbole durch einen platzhalter ersetzt, der lazy aus dem environment befuellt wird
 
 --srcjar option: die sourcen dazuzippen? oder extra srcjar?
-
-java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
 
 ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
 -> gibt probleme wg. aliasing, sobalds rplacX gibt, gibts noch mehr probleme
@@ -665,9 +674,6 @@ am besten setf weglassen, weil das macht serious magic
    rplacd cons object => cons
 
 
-
-fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
--> oeffnende Zeile merken und ausgeben
 
 
 
@@ -1835,6 +1841,9 @@ StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
 der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
 -> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
 -> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
+
+fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
+-> oeffnende Zeile merken und ausgeben
 
 files von der befehlszeile sind im environment des repl aber nicht in der history
 -> man kanns zwar interpretieren, aber nicht kompilieren/ mit :run kompilieren und laufen lassen/ mit :l listen

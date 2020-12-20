@@ -19,6 +19,9 @@ Misc flags:
 --jar ............  Compile input files to jarfile 'a.jar' containing
                     the class MurmelProgram. The generated jar needs
                     jmurmel.jar in the same directory to run.
+--class <name> ...  Use 'name' instead of 'MurmelProgram' as the classname
+                    in generated .java- or .jar files
+--outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir
 
 --result .........  Print the result of the last form.
 --repl ...........  By default JMurmel will enter REPL only if there
@@ -29,8 +32,8 @@ Misc flags:
 
 Flags for REPL:
 --echo ...........  Echo all input while reading
---trace=stats ....  Print stack and memory stats at end
---trace=envstats .  Print stack and memory stats at end
+--trace=stats ....  Print stack and memory stats after each form
+--trace=envstats .  Print stack, memory and environment stats after each form
 --trace=eval .....  Print internal interpreter info during executing programs
 --trace=env ......  Print more internal interpreter info executing programs
 --trace ..........  Print lots of internal interpreter info during
