@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.330 2020/12/20 10:52:23 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.331 2020/12/20 11:31:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3118,6 +3118,8 @@ public class LambdaJ {
         public Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
         public Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
+        public Object jambda             (Object... args) { return LambdaJ.findJavaMethod(arraySlice(args, 0)); }
+
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
@@ -3172,8 +3174,10 @@ public class LambdaJ {
         }
 
         /** used for function calls */
-        public static MurmelFunctionCall tailcall(Object fn, Object... args) {
-            return new MurmelFunctionCall((MurmelFunction)fn, args);
+        public static Object tailcall(Object fn, Object... args) {
+            if (fn instanceof MurmelFunctionCall) return new MurmelFunctionCall((MurmelFunction)fn, args);
+            if (fn instanceof Primitive) return funcall(fn, args);
+            throw new LambdaJError(true, "not a function: %s", fn);
         }
 
         /** used for (apply sym form) */
@@ -3312,6 +3316,7 @@ public class LambdaJ {
             {"format", "format"}, {"format-locale", "formatLocale" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
+            { "::", "jambda" },
         };
 
 

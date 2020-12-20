@@ -448,6 +448,8 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
+; - globals should be special (dynamic)
+; - at least globals should be mutable 
 ; - trace/ untrace are special forms, should be functions
 ; - functions for writing should be cleaned up
 ; - format and format-locale should probably renamed to
@@ -460,7 +462,6 @@ nil
 ;   Java ClassCastExceptions and NullpointerExceptions
 ; - letrec is currently not implemented
 ; - define/ defun only work as top level forms
-; - The function :: is not implemented
 ;
 ; The Todo list for features is way too long.
 
@@ -475,4 +476,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.43 2020/12/19 19:29:04 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.44 2020/12/20 11:31:50 Robert Exp $
