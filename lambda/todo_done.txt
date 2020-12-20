@@ -1,0 +1,898 @@
+Erledigt:
+==========================================
+
+welches ergebnis liefert lambda mit einer liste als body?
+-> sollte ergebnis der letzten form sein
+
+Klasse Builtin statt UnaryOperator<Pair> einfuehren
+
+eq vergleicht identitaet, was macht Lisp? https://stackoverflow.com/questions/547436/whats-the-difference-between-eq-eql-equal-and-equalp-in-common-lisp
+-> checken ob das passt, z.b. (eq (cons (quote 1) (quote 2)) (cons (quote 1) (quote 2))) ist nicht identisch aber gleich (?)
+-> GNU CLISP v2.49+ liefert NIL
+
+Eine JUnit funktion, die liest alle lisp files aus einem verzeichnis und führt sie aus.
+erwartetes Ergebnis bzw. fehlermeldung steht in der datei in einem kommentar drin, z.B.
+; result:(1 . 2)
+oder
+; error-prefix: SyntaxError in line 12:
+und ggf.
+; output: Hallo Welt
+
+Lambda -> LambdaJ
+
+Vielleicht in printObj umlenken:
+(quote t) -> "t"
+null -> "nil"
+
+beim scannen zeile und spalte mitzaehlen und in fehlermeldung einbauen
+
+apply fuer lambdas, siehe apply.lisp
+
+verschiedene konstruktoren fuer Pair und ueberladene cons brauchts wahrscheinlich nicht, cons(Object,Object) muesste reichen
+
+builtin write-line
+-> common lisp hat das, parameter muss aber ein string sein
+
+Datentyp double, (nicht int) unterstuetzen
+
+eq fuer number korrigieren
+-> oder eq lassen und = einfuehren, achtung beim vergleichen von double!
+-> vielleicht = mit optionalem drittem double parameter fuzz fuer die genauigkeit
+
++ - * / %, factorial beispiel
+
+car, cdr umstellen dass sie Object uebernehmen
+-> dann gibts einen cast in car/cdr statt 1000 casts ueberall
+
+vielleicht "Object car(Object)" und "Pair pcar(Object)"?
+-> Eruebrigt sich ggf. durch Umstellen von car(Pair) nach car(Object) 
+
+die parameterchecks ignorieren zuviele argumente
+
+numberp, ggf. atom korrigieren
+symbol? vs atom vs numberp
+
+<, >, usw checken ob Double#compareTo Vorteile bzgl. NaN und +- 0.0 hat, derzeit passiert Unboxing
+
+tests fuer atom, consp, listp, symbolp, numberp
+
+test fuer eval nil und eval t, ggf. symbol t einfuehren
+
+tests und fehlertests fuer number und operatoren
+
+numberp() ggf. teilweise durch atom() ersetzen, dann koennen externe Builtins ihre eigenen Datentypen
+in car reinstecken, der Interpreter sieht und verarbeitet nur Object
+
+errortests fuer lambda/ builtin mit zuviel/ zuwenig parametern aufrufen
+
+errortests fuer fehler wie erster parameter fuer lambda ist keine symbolliste
+
+Sollen die interpret...() Methoden einen String oder ein Objekt zurueckgeben?
+Vielleicht Object zurueck, und ConsCell bekommt eine toString() Methode basierend auf printObj?
+
+Scanner/Parser in eine Klasse rausziehen, je ein Objekt ProgramParser und InputDataParser,
+die Lisp Funktion read verwendet den InputDataParser.
+Symboltabelle zu geeigneten Zeitpunkten auf null setzen, wahrscheinlich im Konstruktor der ScannerParserKlasse
+
+if(!strcmp(token, "\'")) return cons(quote, cons(readobj(), nil));
+
+isParen und isQuote nach isSyntax zusammenziehen
+
+
+
+Tail recursion erkennen: es wird eine Funktion aufgerufen, die im environment 1 hoeher ist (?)
+oder wenigstens loop einbauen
+-> einfacher ists alle tailcalls zu optimieren
+
+eval hat einige endrekursive aufrufe. koennte man eliminieren.
+vielleicht noch einen zweiten levelzaehler einfuehren, dann kann man den level fuer eval und (kleinere) rekursionstiefe anzeigen
+
+eigentlich passiert die rekursion ja in eval:
+evlis, evcon & co inline expandieren, und das letzte listenelement nicht mit rekursion aufrufen sondern
+manuell tail recursion elimination machen.
+
+PROBLEM: function calls haben ein geaendertes environment extenv
+-> einen stack aus extenvs aufbauen: ein int "stackarray" in dem merkt man sich, wieviele elemente vorne
+drangepickt wurden und nach verarbeiten des calls entfernt werden müssen 
+
+dann werden nicht nur tail rekursionen wegoptimiert, sondern alle tail calls. es ruft zwar die eine Lisp funktion
+eine andere auf, aber in wirklichkeit laeuft nur der code der einzigen Java-methode eval. 
+
+
+
+eval, evlis, evcon vielleicht in haendischem CPS?!?
+-> eruebrigt sich durch TCO
+
+Erkennung von zirkulaeren Listen koennte man in printObj einbauen
+-> aber ohne set gibts derzeit eh keine zirkulaeren Listen ?!?)
+-> contains self aber schon
+
+printObj auf loop umbauen, "sich selbst enthalten erkennen", vgl collection.toString()
+
+"t" aus/ einschaltbar machen: flag "HAVE_TRUE"
+-> falls true  -> t in der symbol table und _expTrue = t
+-> falls false -> t nicht in der symbol table und _expTrue = (quote t)
+
+Numbersupport mit flags ausschalten?
+Optional BigDecimal statt Double?
+
+fnull, fcons usw brauchen keine members zu sein, koennten lokale variablen in environment() sein
+-> vorher environment() aufteilen?
+
+der Double Support ist eigentlich nur mittels Builtins umgesetzt
+-> in ein eigenes ExtEnv verpacken, damit kann mans optional machen,
+   oder alternativ/ zusaetzlich z.B. BigDecimal unterstuetzen
+-> UND im Lexer gibts Support fuer Double
+
+--help
+
+Datentyp Strings unterstuetzen
+-> laenger als SYMBOL_MAX=32
+
+Strings und Characters braucht eigentlich nur der Scanner, Parser (readObj) und Builtin Funktionen (inkl printObj!!!) kennen.
+Strings, Chars und Symbols sind alles Atoms, aber nur Symbols sind in der Symboltable
+
+Parser refactoren:
+LispParser bekommt statt InputStream einen IntProducer:
+fuer InputStream in:
+    () -> in::read
+oder fuer StringReader s:
+    () ->  s::read
+
+readObj umbauen dass (a . b) eingelesen werden kann?
+
+Builtins sollten ggf. expression mitbekommen fuer ausgabe von fehlermeldungen
+
+printObj sollte symbols mit syntax als |xxx| printen. Was syntax characters sind, weiss nur der Parser
+-> printObj als Methode von Parser, naechsten punkt umsetzen!
+
+Builtins sollten ggf. parser (symboltabelle) und ggf. environment mitbekommen, dann koennten sie static sein,
+waer ggf. besser fuer custom builtins
+-> builtins mit env koennten late binding machen
+-> builtins muessen printObj des parsers verwenden
+-> environment() koennte static sein
+
+!!!!!!! Alles falsch: Syntax characters bestimmt der ObjectWriter.
+Builtins sollten Symboltabelle, ObjectReader in, ObjectWriter out, ggf. Tracer, ggf. Environment bekommen
+
+write sollte ObjectWriter.printObj() verwenden,
+zum Tracen weiterhin das statische printObj verwenden
+-> LispParser (eigentlich ObjectWriter, s.u.) bekommt methode printObj, bisherige statische Methode printObj in traceObj umbenennen oder printSExpression 
+-> write schreibt im gewuenschten Format, Errormessages sind im Format S-expression
+-> Syntax characters von S-expressions als static Konstante von LambdaJ rausziehen,
+   dann kanns Lispparser und das statische printObj verwenden
+
+
+
+getrennter Reader fuer read
+-> Object interpret(Supplier lispSource, Supplier lispStdin, Consumer lispStdout, Supplier<ConsCell> customEnvironment)
+-> oder LambdaJ in Builder Pattern umbauen:
+
+interface ObjectReader { Object readObj(); }
+interface SymbolTable { String intern(); }
+interface Parser extends ObjectReader, SymbolTable
+
+interface ObjectWriter { String printObj(Object o, boolean headOfList, boolean eol); }
+class LispParser implements Parser, ObjectWriter
+
+interface Tracer { void println(String); }
+
+FFI: eine special form "extlabels". funktioniert aehnlich wie labels,
+aber statt funktionsdefinitionen gibt man einen Klassennamen an (und vielleicht ein zusaetzliches optionales namenspraefix,
+damit man im falle von gleichnamige methoden in zwei klassen "namespaces" zum trennen verwenden kann), und
+von dieser klasse werden alle public methoden mit der Signatur UnaryOperator<Pair> ins Environment gesteckt.
+Oder statt reflection: "extlabels" bekommt den Namen einer statischen methode die liefert eine Map Funktionsname->UnaryOperator<Pair>
+
+Oder: LambdaJ bekommt eine Methode void registerBuiltin(String funcName, Builtin javaFunc), die pickt eine neue
+Funktion ans Environment vorne dran.
+Oder: zus. Parameter ConsCell extEnv, damit kann man eine Liste mit zusaetzlichen Builtins mitgeben
+
+
+
+primitive string-format-localized: erster parameter ist locale, z.B.
+(format-string-localized "en-US" "%g" 1)
+
+evlis/ evcond sollten auch was tracen. stackanzeige erhoehen, evallevel nicht
+einrueckung basiert auf javastackzaehler, anzahl sterndaln evallevel - javastackzaehler
+
+apply erlaubt nur 2 argumente, sollte aber 2+ akzeptieren (und gegen parameterliste checken?)
+siehe apply3.lisp
+laut http://www.n-a-n-o.com/lisp/cmucl-tutorials/LISP-tutorial-20.html:
+(apply #'+ 3 4 '(3 4))
+Apply is just like funcall, except that its final argument should be a list; the elements of that list are treated
+as if they were additional arguments to a funcall.
+-> apply ist komplett hinueber
+
+(write " ") schreibt " " inkusive der double quotes
+-> vielleicht write-string und write-line
+
+Escapig von " ", ', \ ...
+SExpWriter sollte so schreiben wie SExpReader liest, d.h. mit escaping
+ConsCell.toString() sollte nicht escapen
+todo gelesen wird ein Symbol he\(lo, geschrieben wird |he(lo|
+
+Wenn eine Funktion labels oder cond enthaelt, werden tailcalls effektiv nicht wegoptimiert, weil evlabels bzw. evcond
+auf den Java stack kommt. "if" ist in eval inline drin, deswegen funktioniert TCO trotz "if".
+
+environment umsortieren
+
+eval braucht keine elsif Kette sein: in jedem if gibts return oder continue
+
+applyPrimitive (2x) in eval in ein try/catch wrappen, im catch:
+throw new LambdaJError(e.getMessage + expError(exp))
+-> damit sieht man in welcher expression z.B. argumente nicht passen
+
+evlabels inlinen und TCO
+
+performance: benchmarken
+warum ist das environment eine liste von listen statt eine liste von cons cells
+
+am ende wird stack und nesting getraced falls TRC_EVAL.
+-> TRC_STATS statt TRC_EVAL, zusaetzlich walltime, cpu und anzahl ConsCells tracen.
+
+in dbeval die groesse des environment ausgeben. wahrscheinlich waechst das bei rekursion. 
+
+statt dbgEval -> if (trace >= TRC_EVAL) dbgEval
+und die if clause aus dbgEval weg
+
+ggf mit :init altes environment vergessen
+
+im main loop: parsen und checken, ob obj.toString = :w oder = :q ist, so koennte man befehle für den REPL ausserhalb Lisp einbauen
+
+lexikalische closures
+
+lexical closures muessten gehen, indem man das env mit dem lambda mitspeichert und beim aufruf des lambda 
+nicht das aktuelle env extended sondern das abgespeicherte
+-> umsetzen, indem "lambda" nicht ein lambda ins environment steckt sondern "closure" 
+   (oder doch ein lambda und die liste enthaelt nicht nur ("lambda" args body) 
+   sondern ("lambda" args body closure), mit nullcheck entscheiden, 
+   ob lambda oder closure ausgefuehrt wird. und eval() erweitern, dass closure wie lambda verarbeitet wird, 
+   aber statt aktuellem env die closure mit args erweitert
+-> mit befehlszeilen parameter --dyn umstellen
+
+labels gehen mit lex clos nicht: im closure sind die labels nicht drin
+
+trace auf final int trace umstellen und im Konstruktor belegen
+
+pfx() und sfx() zusammenziehen, werden immer gemeinsam aufgerufen
+
+' ist wsl falsch: sollte alles rekursiv quoten, derzeit machts nur ein einziges (quote...
+-> eher ist apply falsch
+
+der code von apply und functioncall ist fast identisch:
+-> makeArgs umbauen, dass kein eval gemacht wird
+-> apply macht die args mit eval, functioncall mit evlis
+-> mit einigen weiteren umbauten kann functioncall nach apply springen
+---> oder beide setzen ein neues 
+
+"enter an expression, enter :h for command help or :q to exit"
+
+defun einbauen, weil define alleine ist muehsam
+oder doch defun als macro und macros unterstuetzen?
+(defmacro defun (sym params body) (define sym (lambda params body)))
+
+statt Xmal boolean HAVE_xxx
+-> ein final int features das im Konstruktor von LambdaJ belegt wird
+   static final int HAVE_XXX = 1 << 1,2,3,4...
+   methoden boolean haveXXX()
+   -> den wert fuer features muss man vorher mit | zusammenbasteln
+      zur laufzeit sollten die haveXXX methoden (fast) wegoptimiert werden, wenn features final ist
+
+Bespiel Parser liest serialisierte Objekte, intern ist String.intern()
+
+checken ob die string funktionen geeignet ein/ausgeblendet werden
+
+interpreter bekommt eine methode init()
+interpret() überladen das kein neuer parser uebergeben wird. damit kann man immer wieder interpret() aufrufen und defines bleiben bestehen
+
+die sSymbol.get() gschichte ist total overengineered, besser das lazy loading ganz weglassen (ausser vielleicht bei exptrue lassen)
+
+ConsCell hat 4 byte platz wg alignment. man koennte ein int mit typ machen statt LambdaJString und instanceof.
+CONS=0 PRIM = 1 LAMBDA=2 CLOSURE=3 ATOM=10 SYMBOL=10 STRING=11 CHAR=12 DOUBLE=12
+isAtom() { return typ >= ATOM }, dann koennte custom code seine eigenen typen erfinden.
+solange die neuen typnummern >= ATOM sind, sieht der interpreter alles als atom
+-> geht doch nicht so: das flag wird nicht bei ConsCell gebraucht, sondern bei den values, die als Object car oder cdr gespeichert sind
+-> fuer closure genutzt
+
+
+primitives format und format-locale: erstes bzw. zwei erste args sind strings, schreiben nach lispStdout
+
+        ThreadMXBean threadBean = null;
+        long startCpu = 0L;
+        long start = 0L;
+
+            threadBean = ManagementFactory.getThreadMXBean();
+
+            if (threadBean != null) {
+                startCpu = threadBean.getCurrentThreadCpuTime();
+            }
+            start = System.nanoTime();
+
+Variable INTERNAL-TIME-UNITS-PER-SECOND
+Builtins GET-INTERNAL-REAL-TIME, GET-INTERNAL-RUN-TIME, SLEEP
+
+define/defun
+
+nil in der symboltabelle als Java null ist fishy, weil symbol nil == null false ergibt
+deswegen ist auch der hack in eval bei funktionsaufruf notwendig
+-> vielleicht reichts doch, im parser umzulegen? aber was ist im modus ohne nil, aber vielleicht ists dann eh kp
+
+bei cond wird nur das erste stmt ausgefuehrt
+
+LambdaJError(String, Object...) + ggf. Stringkonstanten am anfang der Klasse
+
+in setsymtab nur die symbole erstellen, dies laut features geben soll (if have...)
+
+nCells nicht static, statt im Konstruktor in cons und cons3 schreiben
+
+File mit einigen Expressions als sample session herrichten, sample session mit
+  java -jar lambdaj.jar < sample-session.lisp > transcript.txt
+erzeugen.
+-> flag --prompt einbauen, default fuer tty = true, !tty = false
+-> eine sample session mit allen sprachmitteln und kommentaren koennte ein ausfuehrbares reference manual sein
+-> aber nur, wenn jede eingelesene zeile auch auf den schirm zurueckgeschrieben wird
+   -> parameter --echo und --no-echo
+   -> echo koennte umgesetzt werden, indem main SExpressionReader ein Lambda uebergibt, das nicht nur liest sondern ggf. alles
+      gelesene auch schreibt
+   -> --prompt koennte umgesetzt werden, indem main nicht direkt nach stdout schreibt sondern in ein lambda, das schreibt oder nicht
+      oder entweder nach --prompt: (s-> System.out.print) oder --no-prompt: (s-> return)
+
+dotted lists werden entweder nicht richtig glesen oder geschrieben
+soll:
+'(a . b)              ; (A . B)
+'(a . (b . (c . d)))  ; (A B C . D)
+'(a b c . d)          ; pprint: (A B C . D)
+'(a . (b . (c . ()))) ; (A B C)
+'(a b c)              ; (A B C)
+
+LambdaJ ist fast ein Subset von CL, Unterschiede zu CL dokumentieren, am besten ein kurzes Manual mit allen Sprachmitteln
+und ggf. Unterschieden
+oder ein builtin "help": (help) listet alle special forms und builtins nach lispStdout, (help symbol) schreibt eine Beschreibung
+zu "symbol" nach stdout
+
+im repl wird zeile/char immer weitergezaehlt
+
+writeln umbauen auf "\n<string> "
+-> mit param
+--eol=LISP
+--eol=C
+
+http://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm
+get-universal-time <no arguments> => sekunden seit 1.1.1900
+get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+
+progn fuer if und anderes?
+-> nach schema lambda und fallthrough. in zip() shortcut einbauen: if paramlist == null && arglist == null return
+
+vielleicht doch ein let? das waer ein lambda, das die uebergebene funktion in ein lambda mit den werten verpackt
+  oder eine special form die nur das environment erweitert und dann "env=extenv; continue;"
+-> let muss eine fexpr sein, special form oder macro, oder doch nicht? ja, sonst wuerden die variablenlisten ausgefuehrt
+-> oder define setzt werte im aktuellen env
+-> nur letrec als special form. letrec ist die obermenge von let und let*
+
+letrec so wie labels umbauen, dass allfaellige closures alles andere sehen, nicht nur die vorher deklarierten
+
+let*
+
+named let* und letrec
+named let: gibt dem body einen namen, damit er sich rekursiv aufrufen kann. waer leicht moeglich, das in letrec einzubauen (if symbolp(car(arguments)))
+(define (number->list n)
+  (let loop ((n n)
+             (acc '()))
+    (if (< n 10)
+        (cons n acc)
+        (loop (quotient n 10)
+              (cons (remainder n 10) acc)))))
+
+muss man bei named let immer alle parameter befuellen?
+-> in scheme ja
+
+-> number operatoren auf long erweitern
+   div: integer division, rem: rest
+   numberp erweitern
+   floor, ceil und round
+
+printSEx umbauen, dass es statt stringbuilder einen Consumer<String> uebernimmt, zum schreiben in file
+
+eval wird IMMER mit stack+1/level+1 aufgerufen
+-> +1 bei den aufrufen weg, am anfang von eval machen
+
+define und defun sollten ggf das symbol liefern
+
+eval ins environment einhaengen?
+-> The main reason for beginners is: you don't need it. https://stackoverflow.com/questions/2571401/why-exactly-is-eval-evil
+
+environment erweitern: statt cons(null, null) -> extenv = append(obj, extenv)
+
+try/ catch für javacode in eval statt in d, weil da kann man in der Fehlermeldung die Expression ausgeben
+
+statt der for (list) schleifen den iterator benutzen, sollte dotted list und circular handeln
+
+der Parser koennte integer auch parsen, ggf. auch char, long, biginteger, bigdecimal mit irgendeinem praefix gekennzeichnet. 
+sind alle Number, k.a. ob das beim erweitern der operatoren was bringt
+-> in den Operatoren ((Number)x).doubleValue zum Rechnen, ergebnis muss dann ggf. auf den richtigen typ gebracht werden
+   / ergibt immer double, bei *+/mod haengt der ergebnistyp von den eingehenden typen ab
+-> dann bräuchte man wohl auch typumwandelfunctionen, sonst stellts string-format auf, wenn man nicht mehr weiss was man hat
+
+Long im parser unterstuetzen
+-> parser geht, cmdline switches + dok fehlen
+statt double number dreht double und long auf/ ab, no long dreht ggf. long ab
+
+topEnv kann ein member sein, nicht immer rumreichen, stack detto, mit bisserl aufwand auch level
+-> stack und level bleiben params, das sind eigenschaften der methode eval
+
+http://www.lispworks.com/documentation/HyperSpec/Body/f_dec_un.htm
+decode-universal-time universal-time &optional time-zone => second, minute, hour, date, month, year, day, daylight-p, zone
+
+FFI: methoden
+Object getValue(String globalSymbol)
+Object apply(String func, Object... args)
+
+und/ oder
+
+interface MurmelFunction { Object apply(Object... args); }
+MurmelFunction getFunction(String func) {...}
+Object         getValue(String globalSymbol)
+
+Java FFI:
+JSR-223 (Java scripting API)
+
+https://stackoverflow.com/questions/46611132/how-i-merge-lisp-and-java-or-how-i-run-lisp-code-using-java
+Interpreter interpreter = Interpreter.createInstance();
+interpreter.eval("(load \"my-lisp-code.lisp\")");
+
+Symbol myFunctionSym =
+          defaultPackage.findAccessibleSymbol(
+               "MY-FUNCTION");
+     Function myFunction =
+          myFunctionSym.getSymbolFunction();
+Cons list = 
+          (Cons) myFunction.execute(
+                        Fixnum.getInstance(64),
+                        Fixnum.getInstance(64));
+
+trace und features in 2 methoden rausziehen
+
+(cons 'a . 'A) -> (a . a)
+-> dokumentiert, kein wirkliches problem, nur kosmetische eher positive auswirkung
+
+buitlin apply-java: erster parameter ist ein string statt symbol, d.h. die expression fuer das erste argument muss einen String liefern,
+das ist dann der Name einer Klasse und/ oder statischen Methode. Ggf. auch eine statische Methode,
+die ein Function<ConsCell,Object> Javalambda liefert.
+
+Vielleicht operator # fuer Javacalls? # wie in javadoc, oder :: wie in methodenreferenzen (waer cooler, moderner)
+-> # hat in CL schon eine Bedeutung, z.B. #\C
+
+(define my-map (:: new java.util.HashMap nil))
+(:: "put" "java.util.HashMap" my-map "my key" "my value")
+(:: "format" "java.lang.String" nil "%g" 1.0)
+erster parameter methodenname, zweiter klassenname, dritter objektreferenz oder nil fuer statische methoden, der rest sind parameter fuer die methode
+primitive :: koennte durch eine klasse mit methodencache implementiert werden
+
+oder :: erzeugt ein Primitive-Objekt, das Klasse, und Methode enthaelt und spaeter wie eine normale Lisp Funktion aufgerufen
+werden kann (aehnlich wie lambda ein closure erzeugt):
+(define make-java-map (:: "new" "java.util.HashMap"))
+(define java-put-hash (:: "put" "java.util.HashMap")
+
+(define my-map (make-java-map nil))
+(java-put-hash my-map "my key" "my value") ; erstes Argument beim Aufruf von "Java-Methoden" ist immer das Java-Objekt, ggf. nil fuer statische Methoden
+
+symbol vielleicht nicht als String sondern class LambdaJSymbol { char[] symname; }, dafuer LambdaJString weg -> stattdessen java.lang.String
+-> murmel muss sonst Java string argumente mit symbol abfuellen und Java return String liefert ein symbol (das es nicht gibt)
+-> spart eher speicher
+
+parameterchecks fuer letrec
+
+LambdaJ gibts schon. Ausserdem gibts:
+JavaLISP, http://jlambda.com, jlisp, rlisp, ROMALISP
+-> umbenamsen:
+   Murmel: ich mag das tier, murmeln <->-lispeln, Sprache: Murmel, interpreter: jmurmel
+   JUCL: Java Un Common Lisp, uncommon Lisp klingt negativ
+
+Vielleicht doch die Zeilennummer in ConsCell speichern fuer Fehlerausgabe?
+vielleicht ein --debug flag, dann allokiert der parser andere ConsCells mit zeilennummern?
+und printSEx bekommt einen parameter "lines" damit errorexp objekte mit zeilennummern ausgibt
+oder LambdaJError bekommt einen zusaetzlichen parameter errorExp und gibt die errorExp aus mit oder ohne zeilennummern
+-> ConsCells mit zeilennummern koennte der parser eigentlich immer erzeugen, code gibts nicht so viel, und die daten
+   werden dadurch nicht vergroessert
+
+scanner sollte | fuer symbole koennen
+oder keine | schreiben
+-> "print-read consistency" (a term given in ANSI CL, 2.3.6, in the context of symbols and packages),
+   which refers to the concept of objects being printed in a machine-readable way, so that when the
+   printed representation is scanned by the reader, a similar object is produced.
+
+die primitive "list" ist trivial: einfach das argument liefern, das ist die variable "arguments" in eval, und das ist bereits genau
+die gewuenschte liste
+
+wenn formale parameter eine dotted list sind, wird auf den letzten parameter eine (moeglicherweise leere) liste mit den restlichen argumenten gebunden
+-> variadic function mit zumindest einem parameter, scheme machts so
+-> checken was passiert, wenn statt einer parameterliste nur ein symbol steht. das koennte dann eine variadic function sein die 0 oder mehrere args schluckt:
+   alle argumente werden in eine (ggf leere) liste verpackt und an das einzige parameter symbol gebunden
+
+define hat varargs, defun nicht
+
+
+statt intern(new LambdaJSymbol... -> genSym(String...
+-> das checkt unique symbols und reserved keywords
+
+reserved words einbauen: vgl. Evolution of Lisp, pp 62 ff
+-> NIL may not be used as a function, nor as a variable
+-> T may not be used as a variable.
+
+redefinieren der symbole von special forms verbieten? auswirkung hats eh keine.
+->
+special forms werden nicht im environment gesucht, die verarbeitung ist hardcodiert
+die auswirkung davon laesst sich durch folgendes symptom beschreiben:
+effektiv sind die symbole von special forms in einem eigenen namespace wo operatoren zuerst gesucht werden
+(define eval 1) -> eval
+(eval eval) -> 1
+(eval 'eval) -> 1
+vielleicht zumindest insofern reparieren, dass fuer die keywords symbole angelegt werden, dann gibt define einen fehler
+und es gibt keine sonstigen auswirkungen mehr
+-> aber let & co lassen das redefinieren trotzdem zu
+
+ueberlegen, was special form und was primitive ist und was in der reserved word liste landet
+-> primitives sind symbols im global env, die koennte man in lambda params und let bindings benutzen
+   special forms funktionieren nicht als let bindings und muessen in die liste
+   sprachelemente wie eq, cons, car, cdr koennte man als primitive umsetzen, oder aus performancegruenden als special form
+   -> notwendige special forms plus "wichtige" primitives in die liste plus t und nil
+
+vielleicht doch ein sprachmittel um gezielt dyn od lex closures zu erzeugen
+-> vielleicht mit self evaluating symbol dynamic (self evaluating weil dann kann man quote oder nicht, ist egal)
+
+tests fuer dynamic lambda
+
+tests fuer lambda mit mehreren stmts
+-> dynamic_lambda.lisp
+
+vielleicht die feature flags nur im repl, sonst file variablen
+-> file variablen als kommentare vor anderen syntaxzeichen, gleich im kommentarloop im scanner auswerten, der setzt featureflags
+   beim setInput() die featureflags wieder zuruecksetzen
+zumindest --lex ausbauen und --dyn -> --X-dyn mit warning (nicht mehr Murmel, auch kein subset)
+vielleicht alle sprachflags -X-... und --dyn-> -XX-dyn
+
+dzt gibts let* und letrec
+-> let dazu, damit in den binding forms das umschliessende environment inkl globals garantiert sichtbar ist
+   braucht man zum macros programmieren
+-> was ist letrec*
+
+soll bei named letXX das let-symbol in den bindings sichtbar sein?
+-> CL hat kein named let
+   scheme hat nur named let, kein named let* letrec, body symbol ist in den binding expressions unbound
+    -> rausfinden was die nachteile von named let* und letrec sind
+    -> rausfinden was die nachteile von named binding in binding expressions sind 
+
+
+https://docs.racket-lang.org/reference/let.html
+https://groups.csail.mit.edu/mac/ftpdir/scheme-7.4/doc-html/scheme_3.html#SEC31
+
+LET: Lisp, Scheme, Racket   Murmel hats nicht
+(let ((symbol form)...) bodyform...) -> object
+* form sieht nur umschliessendes environment
+* bodyform sieht umschliessendes environment und symbols
+
+(let ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+((lambda (s1 s2 s3) bodyform)
+  (eval form1)
+  (eval form2)
+  (eval form3))
+
+
+NAMED LET: Scheme, Racket      Murmel hats nicht
+(let bodysymbol ((symbol form)...) (bodyform)...) -> object
+* symbols muessen unique sein
+* form sieht nur umschliessendes environment
+* body sieht umschliessendes environment, symbols und bodysymbol
+
+
+LET*: Scheme, Racket       Murmel hats korrekt und zus NAMED LET*
+(let* ((symbol form)...) (bodyform)...) -> object
+* the symbols need not be distinct; later bindings shadow earlier bindings.
+* form sieht umschliessendes environment und vorangegangene symbols (definiert)
+* body sieht umschliessendes environment und symbols
+
+(let* ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+(let ((s1 form1))
+  (let ((s2 form))
+    (let ((s3 form3))
+       bodyform)))
+->
+((lambda (s1)
+      ((lambda (s2)
+            ((lambda (s3)
+                  bodyform)
+                (eval form3)))
+          (eval form2)))
+    (eval form1))
+
+
+(letrec ((symbol form)...) (bodyform)...) -> object
+* form sieht umschliessendes environment und alle symbols (undefiniert)
+* body sieht umschliessendes environment und symbols
+
+(letrec ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+(let ((s1 *undefined*) (s2 *undefined*) (s3 *undefined*))
+  (let ((_x_ (eval form1)) (_y_ (eval form1)) (_z_ (eval form1)))   ; unique identifiers
+    (set! s1 _x_)
+    (set! s2 _y_)
+    (set! s3 _z_)
+    bodyform))
+
+
+Racket letrec == Scheme letrec*
+(letrec* ((symbol form)...) (bodyform)...) -> object
+* The ids must be distinct according to bound-identifier=?.
+* form sieht umschliessendes environment und alle symbols (vorangegangene definiert, eigens und folgende undefiniert)
+* body sieht umschliessendes environment und symbols
+
+(letrec* ((s1 form1) (s2 form2) (s3 form3)) bodyform) -> object
+->
+(let ((s1 *undefined*) (s2 *undefined*) (s3 *undefined*))
+  (set! s1 (eval form1))
+  (set! s1 (eval form1))
+  (set! s3 (eval form1))
+  bodyform)
+
+
+-> am besten:
+   named letX bleibt weil let loop
+   let dazu
+   let* bleibt
+   letrec* ist anders als scheme: in scheme sehen die let forms alles als bound aber folgende als undefined
+
+
+dynamic dokumentieren
+
+Unterscheiden: Symbol gibts nicht vs. hat keinen Wert zugewiesen: not bound vs. undefined
+-> besseres wording: bound/not bound, defined/bound but not defined
+-> spielt eigentlich bisher nur bei letrec eine Rolle
+   special forms boundp und definedp, spezialwert "Object undef" einfuehren und in symbol lookup auswerten
+
+statt reserved=cons(symbol, reserved)
+-> reserved(Symbol)
+
+primitives nach haeufigkeit umsortieren
+
+These are your father's parentheses
+Elegant weapons
+for a more... civilized age.
+
+in readme.md nur einfache beispiele, rest in features.md und verweis auf langref
+
+format und string-format zusammenziehen:
+-> format t <string> schreibt auf stdout, return wert ist <string>
+-> format nil <string> schreibt NICHT auf stdout, return wert ist <string>
+-> format-locale und string-format-locale detto
+
+string-format und format doch zusammenziehen:
+(format nil "~A, ~A!" "Hello" "world")   ; => "Hello, world!"    schreibt nix, liefert den string
+(format t "~A, ~A!" "Hello" "world")     ; => NIL                schreibt nach stdout und liefert nil
+
+behandlung von nil beschreiben (Lisp <> Scheme)
+
+alles geparste in main merken, und mit :w in eine datei schreiben und/ oder zumindest mit :l auflisten
+weitere debug gschichten wie zb :env fuer environment auflisten
+-> Scala: https://learnxinyminutes.com/docs/scala/
+// REPL sessions can be saved
+scala> :save /sites/repl-test.scala
+
+
+javax.tools.JavaCompiler comp = javax.tools.ToolProvider.getSystemJavaCompiler();
+CompilationTask c = comp.getTask(null,null, null, null, null, Collections.singletonList(new JavaSourceFromString(..., "class...");
+Boolean success = c.call();
+
+in ein jar reinkompilieren:
+void compileWithJSR199() throws IOException {
+    String cpath = "C2.jar";
+    File clientJarFile = new File(cpath);
+    File sourceFileToCompile = new File("C3.java");
+
+
+    javax.tools.JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
+    DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+    StandardJavaFileManager stdFileManager = javac.getStandardFileManager(diagnostics, null, null);
+
+    List<File> files = new ArrayList<>();
+    files.add(clientJarFile);
+
+    stdFileManager.setLocation(StandardLocation.CLASS_PATH, files);
+
+    Iterable<? extends JavaFileObject> sourceFiles = stdFileManager.getJavaFileObjects(sourceFileToCompile);
+
+    if (!javac.getTask(null, stdFileManager, diagnostics, null, null, sourceFiles).call()) {
+        throw new AssertionError("compilation failed");
+    }
+}
+-> geht so nicht, jar muss man selber zsammpacken
+
+generierte klassen in ein jar zsammpacken: https://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
+
+sind NACH dem let die let variablen wieder weg? sollte so sein -> test schreiben
+-> falls nicht: waere durch naechsten punkt erledigt
+
+der interpreter sollte haveNumbers haben, der scanner haveDouble und haveLong
+-> enumwert HAVE_NUMBERS zusaetzlich, have methoden geeignet verteilen
+
+closures NICHT dynamisches global env
+-> ist doch kein problem, interpretiert gehts, und kompiliert: zur runtime sind die globals eh alle da
+
+subOp auf asDouble umstellen
+
+:java sollte filename aus classname ableiten . -> /
+
+asDouble sollte ggf. eine function dbl() aufrufen statt so viel inline
+main von MurmelProgram refaktorn: main(new Test())
+compareOp auf interpreter angleichen
+
+
+script fuer den aufruf
+-> default parameter
+-> files oeffnen und dann von console lesen
+
+defun kompilieren
+
+statt --compile -> --to-java und --to-jar
+
+:run braucht eigentlich keinen Parameter
+-> :r
+
+ArraySlice sollte von ConsCell erben, wg. FFI (funktion gibt ArraySlice zurueck)
+ConsCell.car/cdr sollten nicht public sein, nur getter
+-> car/cdr aus ConsCell weg, damit Vererbung auf ArraySlice passt
+-> vielleicht iwie Sequence in die Hierarchie reinbringen?
+
+CL hat die funktion null, Murmel hat not
+-> doch wieder umbenamsen, null ist viel haeufiger sprechend als not
+
+Parser Interface refactoren: aufteilen in FormProducer und Symboltable
+-> compiler- und interpreter-methoden koennen entweder einen Parser oder symtab/formproducer uebernehmen
+-> gibt aber eh schon ObjectReader und symboltable, muss man nur nutzen
+
+Zeilennummern in die kommentare mit rein. was ist eigentliche das problem mit der zeilennummer des beginns einer form? auch fuer "missing ) started at..."
+
+Anatomy of LISP hat einen reader ohne rekursion
+
+der compiler soll generell '\n' schreiben, derzeit ists eine mischung
+
+LispPrinter soll linesep in strings umsetzen, ggf. waehlbar, falls waehlbar -> dokumentieren
+
+REPL muss teilw. noch linesep umsetzen
+
+compiler varargs geht wsl nicht
+
+erforschen, was der zeichensatz beim lesen und schreiben ist, und dokumentieren, moeglichst Java standard verwenden
+-> in System.initializeSystemClass() werden die Properties line.separator, sun.stdout.encoding und sun.stderr.encoding ausgewertet
+   -> System.out und err schreiben Strings und chars anhand dieser properties, output muesste also passen
+-> gelesen wird von stdin byte fuer byte (bytes werden als int geliefert), bytes werden auf char gecastet, char ist unicode
+   -> umstellen dass gelesene bytes in ein byte array gespeichert werden,
+      und tokenToString wandelt dieses bytearray anschliessend mittels new String(b, Charset.getDefault())
+      Charset.getDefault liefert das Charset aus property file.encoding
+
+SExpReader liest bytes, das funktioniert so nicht mit StringReader(der liefert nicht bytes sondern unicode chars als ints)
+-> umstellen auf new ByteArrayInputStream(StandardCharsets.UTF_8, "...")
+
+charset als param fuer den scanner (null ist java default), programmcode sollte immer als utf-8 gelesen werden
+-> param "charset" einbauen und bei Parsern auf utf8 setzen (StandardCharsets.UTF_8)
+    -> ausser im REPL, weil dort kommt der Programmcode von der Konsole
+
+AnyToUnixEol an diversen Stellen einhaengen, derzeit liest nur repl() richtig
+
+nur im Repl den gleichen Parser fuer program und read verwenden, sonst getrennte mit passender EOL konvertierung und charset
+
+bytes mit charsetdecoder nach strings wandeln, mit CodingErrorAction.REPORT erzeugt unlesbarer input eine exception:
+https://www.baeldung.com/java-char-encoding
+
+der compiler erzeugt einen (unicode-) string, der wird in ein file mit Charset.getDefault() geschrieben
+-> in ein UTF-8 file schreiben
+-> oder: compilexx returned einen string. koennte stattdessen einen writer uebernehmen
+
+JSR223: evalScript will fuer den Code einen bytereader, bekommt von JMurmelScriptEngine aber Reader::read (das liefert nicht UTF-8 bytes)
+StringReader::read liefert anscheinend bytes entsprechend file.encoding ?!?
+-> es braucht wohl einen zus. SExpressionParser der java.io.Reader liest oder einen ReadSupplier der char liefert
+-> ausserdem sollte LispReader fuer JSR233 Programme von einem Reader lesen, nicht bytes als file.encoding interpretieren
+
+der reader zaehlt bytes fuer charpos, umlaute sind 2 bytes, deswegen stimmt charpos bei umlauten nicht
+-> eigentlich sollten die ObjectReader alle char liefern, und SExpressionParser.token ist ein char array
+-> ggf. zus. Konstruktor, der einen Java.io.Reader uebernimmt
+
+fehlende schliessende klammer wird IMMER mit der letzten zeile gemeldet
+-> oeffnende Zeile merken und ausgeben
+
+files von der befehlszeile sind im environment des repl aber nicht in der history
+-> man kanns zwar interpretieren, aber nicht kompilieren/ mit :run kompilieren und laufen lassen/ mit :l listen
+
+kompilierte jars spucken das letzte result aus, wenns ungleich null ist
+der interpreter (file an der befehlszeile) nur mit --result
+-> interpreter sollte sich ohne --result so verhalten wie jars, und mit --result ergebnisse aller toplevel forms ausspucken
+
+die konstanten fuer symbolnamen von murmelprogram nach compiler
+-> doch nicht damits ein MurmelJavaProgram.getValue() geben kann
+
+der compiler braucht forward deklarationen, der interpreter nicht
+
+die basisklasse MurmelJavaProgram sollte besser MurmelRuntime heissen
+-> im Code und in den Strings umbenamsen
+-> doch nicht
+
+das generierte getValue() sollte im default ein neues MurmelProgram.getValue aufrufen, das alle vordefinierten globals und primitives liefert
+-> stattdessen enthaelt getValue() ein zweites switch mit builtins
+
+(let ((nil 42)) nil)   sollte eig wg reserved word nicht gehen, geht aber in interpreter und compiler
+(let ((t 42)) t)       sollte eig wg reserved word nicht gehen, geht aber im compiler
+(let ((cons 42)) cons) geht, sollte das einen fehler wg. reserved geben?
+
+(define t 42)          sollte eig wg reserved word nicht gehen, geht aber im compiler
+(define nil 42)        sollte eig wg reserved word nicht gehen, geht aber im interpreter, NPE im compiler
+
+muss der compiler auch reserved words handeln?
+-> ja, s.o.
+
+methode eval sollte eigentlich evalquote heissen
+
+MurmelJavaProgram implements MurmelProgram
+-> MurmelProgram verwenden
+-> MurmelJavaProgram auf private oder Package umstellen geht nicht weil erzeugte Progamme das extenden
+
+trace und untrace zum "debuggen", vgl. https://github.com/norvig/paip-lisp/blob/master/docs/chapter1.md
+
+--java liest nicht von stdin
+--trace=stats gibt nur stats der ersten exp aus
+
+der reader gibt einen kommentarblock als gesondertes objekt
+-> nein, --trace=stats schreibt auch die initialisierung mit "() -> -1"
+
+--jar packt nur MurmelProgram.class, die lambdas MurmelProgram$1.class usw gehen verschuett
+
+bei get-decoded-time fehlt der wochentag: ... jahr wochentag "Daylight saving time flag" timezone
+timezone hat das falsche vorzeichen: oestlich von greenwich ists negativ
+timezone ist ein double, sollte ein "a rational multiple of 1/3600 between -24 (inclusive) and 24 (inclusive)" sein
+
+--java schreibt 1x compiling..., --jar schreibt 2x compiling...
+
+defun koennte eigentlich Methoden ausspucken statt Member + {...}, funcToJava muss halt den richtigen ausdruck ins environment stecken (und extendfunc verwenden statt extendenv, ggf. auch das "bessere" extendfunc mit parameterliste verwenden)
+-> ausser es sollte irgendwann moeglich sein, mit setq defuns neu zuzuweisen
+-> (define x (lambda...) koennte ebenfalls eine methode ausspucken, oder weiterhin einen lvalue.
+-> spaeter mit setq koennte define aenderbar sein, und defun nicht
+
+apply als tailcall koennte/ sollte auch TCOd werden, let und progn bzgl TCO checken
+
+usage gibt keine --no-XXX aus, nur mit parameter --help-features
+
+in --help und --Xhelp aufteilen
+
+checken was passiert wenn eval eine kompilierte funktion im environment mitbekommt, oder ein lambda oder primitive returned
+eval returned Interpreter-Primitive write:
+    JMurmel> (apply (eval 'write) '(1))
+    1
+    ==> t
+    JMurmel> :r
+    history NOT run as Java - error:
+    java.lang.ClassCastException: com.robertmayer.lambdaj.LambdaJ$$Lambda$7/396180261 cannot be cast to com.robertmayer.lambdaj.LambdaJ$MurmelFunction
+            at com.robertmayer.lambdaj.LambdaJ$MurmelJavaProgram.applyHelper(LambdaJ.java:3097)
+
+eval bekommt Compiler-Rt-Funktion:
+    JMurmel> (eval '(f v) (list (cons 'f write) (cons 'v 1)))
+    1
+    ==> t
+    JMurmel> :r
+    history NOT run as Java - error: LambdaJError: function application: not a primitive or lambda: MurmelProgram$$Lambda$66/1440621772@4d14b6c2
+    error occurred in S-expression (f v)
+    JMurmel>
+
+Compiler primitives stehen als (MurmelFunction)rt():... im Environment.
+-> Optimierung: Wenn funcall ueberladen wird, dass es zus. zu funcall(Object...) ein funcall(MurmelFunction...) gibt,
+   muesste dieser overload fuer die compiler primitives verwendet werden, und da faellt "if instanceof MurmelPrimitive" weg.
+-> Noch besser: Compiler primitives nicht auf MurmelFunction casten sondern auf neuen MurmelCompilerPrimitive, dann koennt der passende overload
+   ohne die thunking schleife gemacht werden.
+
+die rt funktion intern() in MurmelJavaProgram ist anders als intern in CL, siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node110.html
+wsl ists zwischen make-symbol und intern angesiedelt
+-> ggf. statt _intern -> intern, also nicht in der sprache anbieten
+
+nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die stehen dann in *COMMAND-LINE-ARGUMENT-LIST*, vgl abcl p11
+
+labels reparieren

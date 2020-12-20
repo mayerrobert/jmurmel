@@ -1,0 +1,125 @@
+Ideen zur Beschleunigung des Interpreters, eigentlich gehts immer um das Vermeiden der linearen Suche in assoc beim aufloesen von Symbols
+=========================================
+
+assoc beschleunigung xter anlauf:
+-> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. evalquote muesste einen optionalen parameter bekommen,
+   wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in evalquote muesste die map geeignet ausnuetzen wnn != null
+-> oder: in defun werden symbole durch einen platzhalter ersetzt, der lazy aus dem environment befuellt wird
+
+statt environment als liste:
+environment als hashmap, fuer jedes symbol gibts eine liste von values
+-> aber das environment nach funktionsende abbauen ist aufwaendig
+
+eval bekommt einen zus parameter prevenv, dann kann zip bei tailcalls das aktuelle
+scope wiederbenutzen:
+    statt cons -> symbol und wert neu setzen, ist das neue environment laenger ggf. neue entries dranhaengen
+    ist das neue env kuerzer als das alte, erledigt sich das indem der return von zip das neue ende des env ist
+-> kein anwachsen des env bei dynamic, weniger new ConsCell bei lexical
+
+das environment ist eine liste von maps:
+-> zip steckt eine neu map vornedran
+-> assoc arbeitet die liste ab, und durchsucht jede map, erster treffer gilt
+-> oder eine immutable map machen, vgl. hashmap aus scheme:
+   map.extend(liste von key/values) -> neue map der lookup schaut ggf. rekursiv im parent nach
+-> oder env = newscope(), da wird eine neue hashmap vornedran gepickt, und halt ggf flat closures berücksichtigen
+
+-> ein lexikalisches environment koennte ALLE werte aller uebergeordneter environments enthalten.
+   das geht, wenn kein set moeglich ist oder
+   wenn die maps nur referenzen auf mutable werte enthalten: entweder mutable Java Objekte oder nicht die values
+   aus dem environment sondern die (symbol . value) conses aus dem environment
+   -> performance wird wohl nur dann besser, wenn solche gesamt-closures nur fuer define/ defun erstellt werden
+   -> closures koennten statt map ein array bekommen, wenn alle symbolreferenzen durch arraylookups ersetzt werden
+      -> in der liste mit dem code des lambda alles symbols ersetzen durch (envref n)
+
+   -> referenzen in lexikalische closures rein aufloesen geht auch ohne maps:
+      symbolreferenzen durch zugriffe auf das (symbol . value) cons ersetzen
+      vielleicht gemeinsam mit macroexpand?!?
+      -> cache fuer assoc? jedes scop beginnt mit einer neuen leeren cache-map (oder immer dieselbe, die immer wieder geleert wird),
+         damit waeren mehrfache zugriffe auf das selbe symbol schneller, bei vorabaufloesen UND bei dyn env
+
+
+koennte makeClosureFromForm beim closen alle (im environment vorhandenen) symbole (die spaeter ein lookup waeren)
+direkt durch die (symbol . value) tupel ersetzen? support dafuer muesste anschliessend in eval eingebaut werden
+-> das wuerd env cache ersparen
+-> nicht einfach ersetzen, sondern ersetzen durch eine neue special form (envref (symbol . value))
+   die ersetzungsroutine (die 1x laeuft) koennte einen cache haben, um mehrfache lookups auf dasselbe symbol zu vermeiden
+-> closure braucht man dann nur mehr fuer den dynamischen lookup der globalen variablen dies beim closen noch nicht gab
+    -> auch solche globalen referenzen koennten beim aufruf der closure beim ersten zugriff auf nunmehr existierende globals umgepatcht werden
+-> nur bei define/ defun machen, ggf. noch bei labels?
+-> soll envref ein reserved word sein, oder darf das bei eval und/ oder macros verwendet werden?
+   -> koennte auch versteckt sein, es gibt ein Object sEnvref, aber nicht "sEnvref = intern("envref")" sondern "sEnvref = new Object()"
+      -> das koennte man spaeter durch umstellen sichtbar machen, ggf. mit anderem symbolnamen
+-> das muesste die schlimmsten performance probleme bei groesseren programmen erledigen ?!?
+
+-> beim aufruf wird derzeit env/ closure mit cons erweitert. man koennte obigen trick auch auf die parameter anwenden 
+   parameter gehoeren nicht zur closure (wuerden sich sonst bei rekursion ueberschreiben).
+   beim aufruf koennte statt environment erweitern eine arraylist mit werten uebergeben werden:
+        - die liste mit parameternamen ist bekannt, im array stehen werte an jenem index, der dem index des symbols in der parameterliste entspricht
+        - index 0 ist ein uplink zur closure
+        - zugriffe auf parameter muessten ersetzt werden durch (paramref idx)
+        - die arraylist bekommt eval als parameter env, eval muss dynamische symbol lookups mit assoc(symbol, env[0]) machen statt assoc(symbol, env) oder assoc wird angepasst
+        - beim environment extenden fuer aufrufe aus einer closure heraus brauchts auch anpassungen -> eigentlich nicht, wenn assoc erweitert wird
+        - es waer einfach, slots in der arraylist fuer selbstrekursive tailcalls wieder zu verwenden
+
+
+cache fuer assoc: define/ defun loescht einen allenfalls vorhandenen eintrag.
+nicht globaler cache sondern lokale variable in eval, wenn eval mit einem
+erweiterten environment endet, ist der nunmehr ungueltige cache auch weg.
+ggf nicht hashmap<string,object> sondern arraylist<ConsCell>, eine funktion
+wird wohl nur wenige symbole benutzen, da kann linear search schneller sein,
+und es werden viel weniger objekte erzeugt.
+-> problem: bringt nix bei rekursionen, ausser aufrufe von eval bekommen
+   eine kopie des aktuellen cache, aus dem neue lokale variablen/ argumente
+   entfernt wurden
+
+zweiter versuch:
+topEnv sollte ein Member vom Interpreter sein, damit allfaellige threads, in denen eval laeuft,
+dasselbe globale environment haben und ggf erweiterungen sehen
+Namensduplikate sind im globalen topEnv verboten, deswegen braeucht man keine reihenfolge, hashmap fuer topenv
+wuerd gehen
+ein execution environment, d.h. was am parameter env von eval haengt, ist immer einige dynamische Scopes
+des executioncontext (parameter, let, ...) aufeinander gestapelt,
+drunter ggf. lexical closure, drunter (dynamisches) globales topEnv.
+Wenn ein lexical Closure aufgerufen wird, ist das environment (parameter closure topEnv).
+Wenn ein dynamic Lambda aufgerufen wird, ist das Environment (parameter aktuelles-dynamisches-environment).
+-> bei dynamic Lambda koennen Symbole des aktuellen Env globals verstecken, bei lexical nicht
+
+wenns in einem Scope keine duplikate geben darf, koennte es pro scope einen cache fuers environment geben.
+Ist ein parameter von eval so wie env, bei einem neuen executionscope
+(einige aber nicht alle rekursiven aufrufe von eval) faengt man mit einer neuen, am einfachsten leeren map an.
+der Scope endet beim return von eval, damit ist die hashmap auch weg.
+bei einem variablenzugriff wird im cache nachgeschaut, und ggf. das
+(symbol . wert) tupel ganz normal gesucht und in den cache gesteckt.
+
+
+derzeit haben closures lexikalische lokale variablen und dynamische globale variablen.
+ggf. die globalen variablen
+auch beim closen in die closure stecken, nur dann kann die closure ein array werden,
+und man kann alle environment zugriffe durch array index zugriffe ersetzen.
+parameter sollten dann auch slots im array sein, beim func call entsprechend abfuellen
+-> umsetzung: beim closen nicht bei env sondern cdr(env) beginnen. das erste element ist das (null . nil) cons,
+   erweiterungen werden dahintergezwickt. kann man per cmdline umswitchen.
+   -> leider nein, das environment beim closen ist (lokalesenv globalesenv)
+
+bei endcalls koennte man die parameter der aktuellen funktion fuer namensgleiche parameter nutzen: 
+nicht alle argumente dranhaengen, sondern entweder dranhaengen oder bei gleichnamigen den alten wert ersetzen
+wuerd ggf bei dynamic UND lexical closures was bringen
+-> nein nur dynamic, lexical closures erben das environment ja nicht
+
+
+-> "intern" wird bremsen, koennte HashMap oder selber geschnitzte Open Hashing Map sein
+   zumindest die Symbole wie lambda, labels,... nicht immer wieder internen, sondern deferred supplier
+   -> symbole memoizen ist erledigt
+-> der Lookup in env wird bremsen (jmh sagt: assoc braucht 40%), auf HashMap String->ArrayList umstellen ist nicht so trivial, weil
+das Environment bei funcall staendig erweitert/ zurueckgesetzt wird (fuer funcall wird das environment erweitert,
+dann gehts mit dem urspruenglichen weiter). Vielleicht eine Art Kette von Maps? funcall erzeugt eine neue Map die
+einen link zum vorgaenger hat 
+
+Zweiter Versuch:
+Das Environment sieht nur der Java Code, duplikate sind verboten. HashMap muesste also doch gehen?!
+Zugriff nur mit assoc und extend, extend schmeisst eine Excpeption, falls es das symbol schon gibt.
+sogar set! muesste gehen?!
+-> nein, geht auch nicht. beim aufruf von funktionen gibts schon duplikate, und nach dem return der funktion
+   muss das environment wieder abgeraeumt werden, s.o.
+
+
