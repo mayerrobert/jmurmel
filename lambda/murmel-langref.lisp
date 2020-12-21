@@ -457,10 +457,9 @@ nil
 ; - support for packages is currently not implemented
 ;
 ; Compiler issues:
-; - There are pretty much no compile- or runtime checks,
+; - There are pretty much no compile- or runtime checks whatsoever,
 ;   actually: most compile- and runtime errors will result in
 ;   Java ClassCastExceptions and NullpointerExceptions
-; - letrec is currently not implemented
 ; - define/ defun only work as top level forms
 ;
 ; The Todo list for features is way too long.
@@ -476,4 +475,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.44 2020/12/20 11:31:50 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.45 2020/12/20 18:03:09 Robert Exp $

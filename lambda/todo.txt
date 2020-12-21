@@ -1,3 +1,6 @@
+MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
+vielleicht MurmelCompilerPrimitive0..2, dann wuerden weniger Object[] instanziert
+
 tempdir wird nicht geloescht
 
 scope und extent:
