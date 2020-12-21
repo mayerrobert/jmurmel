@@ -1,4 +1,4 @@
-letrec
+tempdir wird nicht geloescht
 
 scope und extent:
 https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp

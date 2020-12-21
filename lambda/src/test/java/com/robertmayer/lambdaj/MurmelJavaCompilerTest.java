@@ -318,12 +318,18 @@ public class MurmelJavaCompilerTest {
         assertEquals("named let*2 produced wrong result", 2L, program.body());
     }
 
-    // todo funktioniert nicht
-    //@Test
+    @Test
     public void testLetrec() throws Exception {
         MurmelProgram program = compile("(letrec ((a 1) (b 2)) (+ a b))");
         assertNotNull("failed to compile letrec to class", program);
         assertEquals("letrec produced wrong result", 3.0, program.body());
+    }
+
+    @Test
+    public void testLetrec2() throws Exception {
+        MurmelProgram program = compile("(letrec ((a (lambda () b)) (b 1)) (a))");
+        assertNotNull("failed to compile letrec2 to class", program);
+        assertEquals("letrec2 produced wrong result", 1L, program.body());
     }
 
     // body calls one local function
