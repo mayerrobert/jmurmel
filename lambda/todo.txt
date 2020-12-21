@@ -1,6 +1,3 @@
-MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
-vielleicht MurmelCompilerPrimitive0..2, dann wuerden weniger Object[] instanziert
-
 scope und extent:
 https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
 https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
@@ -38,6 +35,12 @@ defun nur toplevel zulassen: interpreter + compiler
    (define f (lambda (p) (form))) verwenden, ggf. auch
    (define f (label rec (p) (form)))
 
+define nur toplevel zulassen (wg. kompilieren)
+-> oder kann man die variable im ersten lauf mit UNDEF belegen und der zweite lauf setzt einen wert? was ist mit functions?
+    oder das globale symbol wuerde erst im zweiten lauf des compilers an geeigneter stelle ins environment des compilers gesteckt?
+    -> dann muesste der compiler auch globales/ lokales environment haben
+-> mehraufwand lohnt wsl nicht
+
 
 body() im interpreter fertigmachen
 
@@ -60,44 +63,6 @@ eval  interpreter:  reserved, special form
 eval  compiler:     reserved, funktion
 
 
-Profiling vgl. https://www.reddit.com/r/java/comments/kgcsfl/is_it_possible_with_significant_gc_load_to_have/ggf01nq/
-Start you application with
-  java -XX:+UseZGC -XX:StartFlightRecording:filename=rec.jfr ...
-You can the open up the recording in JDK Mission Control and see what happened when a slow frame happened. JFR will show GC pauses, safe points, file I/O, lock contention etc.
-If you run with
-  java -XX:StartFlightRecording:settings=profile,filename=rec.jfr 
-you can see where most of the allocation occurs, settings=profile will add a percent or so (depending on the application).
-
-java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
-
-
-instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
-
-Ggf. sogar mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
-nicht so viele Object[] instanzieren.
-
-in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
--> aber wsl nicht einfach als special form. irgendwie ins environment reinschreiben, dass das open coded werden darf,
-   -> wenn jemand eine eigene cons funktion implementiert (mit let oder labels, define/ defun waere dzt. verboten),
-      dann steht nicht mehr "open coded" im environment und es wird die richtige funktion aufgerufen
-
-wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
--> wenn nicht mehr cdr(Object...) aufgerufen wird, sollten weniger Object[] erzeugt werden: vorher/ nachher churn rate vergleichen
--> damit koennten auch eval+apply in interpreter UND compiler ein normales verhalten bekommen: sind funktionen, halt opencoded solangs nicht wer per let ueberschreibt
-
-
-alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
--> nicht alle, nur die ohne interpreter auskommen
-
-letXXX und labels im compiler
-named let in einen Java loop uebersetzen. damits in generierten lambdas funkt, muss fuer den rekursiven aufruf wohl eine exception missbraucht werden
-recurs:
-for (;;) {
-  try {
-    // args neu belegen
-    throw RecursionException();
-  } catch (RecursionException e) { continue recurs; }
-}
 
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
@@ -106,22 +71,6 @@ compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 -> erst mit packages, weil dann brauchts weniger parameter
 
 --srcjar option: die sourcen dazuzippen? oder extra srcjar?
-
-ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
--> gibt probleme wg. aliasing, sobalds rplacX gibt, gibts noch mehr probleme
-
-funcToJava koennte selbstrekursive calls erkennen und statt call die parameter ersetzen und zum beginn springen:
-Object f(p1, p2) {
-  recur:
-  do {
-    ...
-    // (f 1 2)
-    p1 = ...;
-    p2 = ...;
-    continue recur;
-  } while (false);
-}
-vgl. PROGITER aus "A Lisp Machine with Very Compact Programs, L.Peter Deutsch, 1973"
 
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
@@ -153,12 +102,6 @@ statt trace >= TRC_XXX.ordinal -> methode TraceLevel.ge(TraceLevel)
 
 anzahl parameter duerfen begrenzt werden, auch bei varargs
 -> hilft bei cdr(arg) im compiler, umsetzen, dokumentieren, global mit dem wert erfinden, vgl. http://...
-
-define nur toplevel zulassen (wg. kompilieren)
--> oder kann man die variable im ersten lauf mit UNDEF belegen und der zweite lauf setzt einen wert? was ist mit functions?
-    oder das globale symbol wuerde erst im zweiten lauf des compilers an geeigneter stelle ins environment des compilers gesteckt?
-    -> dann muesste der compiler auch globales/ lokales environment haben
--> mehraufwand lohnt wsl nicht
 
 eval im interpreter sollte ggf. auch eine funktion sein
 -> geht nicht wg. TCO

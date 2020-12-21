@@ -1,0 +1,58 @@
+MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
+Ggf. mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
+nicht so viele Object[] instanzieren.
+
+
+Profiling vgl. https://www.reddit.com/r/java/comments/kgcsfl/is_it_possible_with_significant_gc_load_to_have/ggf01nq/
+Start your application with
+  java -XX:+UseZGC -XX:StartFlightRecording:filename=rec.jfr ...
+You can the open up the recording in JDK Mission Control and see what happened when a slow frame happened. JFR will show GC pauses, safe points, file I/O, lock contention etc.
+If you run with
+  java -XX:StartFlightRecording:settings=profile,filename=rec.jfr 
+you can see where most of the allocation occurs, settings=profile will add a percent or so (depending on the application).
+
+
+java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
+
+
+instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
+
+
+in CL gibts open-coded (inline) functions, damit waeren cons, car, ... inline im compiler moeglich
+-> aber wsl nicht einfach als special form. irgendwie ins environment reinschreiben, dass das open coded werden darf,
+   -> wenn jemand eine eigene cons funktion implementiert (mit let oder labels, define/ defun waere dzt. verboten),
+      dann steht nicht mehr "open coded" im environment und es wird die richtige funktion aufgerufen
+
+wenn car, cdr usw im  compiler environment mit value "OPENCODE" stehen, koennte das in formToJava beim generieren von functioncalls ausgewertet werden und car cdr + - usw koennten wieder inlined werden
+-> wenn nicht mehr cdr(Object...) aufgerufen wird, sollten weniger Object[] erzeugt werden: vorher/ nachher churn rate vergleichen
+-> damit koennten auch eval+apply in interpreter UND compiler ein normales verhalten bekommen: sind funktionen, halt opencoded solangs nicht wer per let ueberschreibt
+
+
+ArraySlice koennte das Array verkuerzen (neue kuerzere Kopie), wenn offset >32 && offset > arry.length/2, vielleicht so, dass die neue groesse immer eine 2er potenz ist
+-> gibt probleme wg. aliasing, sobalds rplacX gibt, gibts noch mehr probleme
+
+funcToJava koennte selbstrekursive calls erkennen und statt call die parameter ersetzen und zum beginn springen:
+Object f(p1, p2) {
+  recur:
+  do {
+    ...
+    // (f 1 2)
+    p1 = ...;
+    p2 = ...;
+    continue recur;
+  } while (false);
+}
+vgl. PROGITER aus "A Lisp Machine with Very Compact Programs, L.Peter Deutsch, 1973"
+
+letXXX und labels im compiler
+named let in einen Java loop uebersetzen. damits in generierten lambdas funkt, muss fuer den rekursiven aufruf wohl eine exception missbraucht werden
+recurs:
+for (;;) {
+  try {
+    // args neu belegen
+    throw RecursionException();
+  } catch (RecursionException e) { continue recurs; }
+}
+
+alle _write usw. methoden von MurmelJavaProgram koennten eigentlich static sein?!?
+-> nicht alle, nur die ohne interpreter auskommen

@@ -197,7 +197,7 @@ nil
 
 ;;; == NIL and T ======================
 
-; Murmel treats the symbols NIL and T almost the same way
+; Murmel treats the symbols NIL and T the same way
 ; as Mr. Moon specified them in a Memo (see "The Evolution
 ; of Lisp pp 62):
 ;
@@ -212,16 +212,32 @@ nil
 ; T is a keyword recognized by certain functions, such as FORMAT."
 
 
+;;; == Reserved words =================
+
+; In addition to NIL and T some symbols are reserved, i.e.
+; may not be used as a function nor as a variable:
+;
+; nil, t,
+; trace, untrace,
+; lambda, dynamic, quote, cond, labels, if, define, defun, let, let*, letrec,
+; eval, apply, progn
+
+
+;;; == Scope ==========================
+
+; In the current version of Murmel both the global as well as local
+; environments are lexically scoped, i.e. currently there are
+; no dynamic/ special variables.
+; That means that let-bindings and function parameters will
+; lexically shadow global symbols but not affect them.
+
+
 ;;; == Additional Special Forms =======
 
 ;;; (define symbol object) -> symbol
 ; define associates symbols in the global environment with a value.
-; Murmel's define is somewhat similar to Common Lisp's defvar.
-; Redefining already defined symbols is an error.
-; Redefining special forms is undefined behaviour, i.e. it won't work
-; as expected and may throw an error in future versions.
-; Same goes for names of function parameters, let-bound variables,
-; all symbol names really.
+; Murmel's define is somewhat similar to Common Lisp's defvar
+; except: redefining already defined symbols is an error.
 ; The first argument is not evaluated, the second is
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
@@ -229,8 +245,6 @@ nil
 ;;; (defun symbol (params...) forms...) -> symbol
 ; defun is a shorthand for defining functions
 ; arguments to defun are not evaluated
-; defun is only allowed as toplevel form (JMurmel currently does not
-; enforce this)
 (defun f2 (p1 p2) (+ p1 p2))
 
 ;;; (if condform form optionalform) -> object
@@ -448,13 +462,12 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - globals should be special (dynamic)
+; - support for macros should be added
 ; - at least globals should be mutable 
-; - trace/ untrace are special forms, should be functions
-; - functions for writing should be cleaned up
-; - format and format-locale should probably renamed to
-;   printf, they're more similar to printf than to CL format
-; - support for packages is currently not implemented
+; - globals should be special (dynamic)
+; - support for packages should be added
+; - eval is a special form, should be a function (and not reserved)
+; - trace/ untrace are special forms, should be functions (and not reserved)
 ;
 ; Compiler issues:
 ; - There are pretty much no compile- or runtime checks whatsoever,
@@ -475,4 +488,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.45 2020/12/20 18:03:09 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.46 2020/12/21 07:33:32 Robert Exp $
