@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.333 2020/12/21 07:21:52 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.334 2020/12/21 16:13:31 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3029,14 +3029,14 @@ public class LambdaJ {
 
 
         /// JMurmel native FFI - Java calls compiled Murmel
-        @Override public ObjectReader getLispReader()  { return intp.getLispReader(); }
-        @Override public ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
-        @Override public void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { intp.setReaderPrinter(lispStdin, lispStdout); }
+        @Override public final ObjectReader getLispReader()  { return intp.getLispReader(); }
+        @Override public final ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
+        @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { intp.setReaderPrinter(lispStdin, lispStdout); }
         @Override public abstract Object body();
         @Override public abstract Object getValue(String globalSymbol);
 
         @Override
-        public MurmelFunction getFunction(String func) {
+        public final MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
             if (maybeFunction instanceof MurmelFunction) {
                 return args -> funcall(maybeFunction, args);
@@ -3058,72 +3058,72 @@ public class LambdaJ {
         public ConsCell commandlineArgumentList;
 
         /// predefined primitives
-        public Object   _car (Object... args) { return car(args[0]); }
-        public Object   _cdr (Object... args) { return cdr(args[0]); }
-        public ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
+        public final Object   _car (Object... args) { return car(args[0]); }
+        public final Object   _cdr (Object... args) { return cdr(args[0]); }
+        public final ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
 
-        public Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? args[1] : null); }
-        public Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
-        public Object _null      (Object... args) { return args[0] == null ? _t : null; }
+        public final Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? args[1] : null); }
+        public final Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
+        public final Object _null      (Object... args) { return args[0] == null ? _t : null; }
 
-        public Object _write     (Object... args) { intp.write(args[0]); return _t; };
-        public Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
-        public Object _lnwrite   (Object... args) { intp.lnwrite(args == null ? null : args[0]); return _t; };
+        public final Object _write     (Object... args) { intp.write(args[0]); return _t; };
+        public final Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
+        public final Object _lnwrite   (Object... args) { intp.lnwrite(args == null ? null : args[0]); return _t; };
 
-        public Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
-        public Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
-        public Object _listp     (Object... args) { return listp     (args[0]) ? _t : null; }
-        public Object _symbolp   (Object... args) { return symbolp   (args[0]) ? _t : null; }
-        public Object _numberp   (Object... args) { return numberp   (args[0]) ? _t : null; }
-        public Object _stringp   (Object... args) { return stringp   (args[0]) ? _t : null; }
-        public Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
+        public final Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
+        public final Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
+        public final Object _listp     (Object... args) { return listp     (args[0]) ? _t : null; }
+        public final Object _symbolp   (Object... args) { return symbolp   (args[0]) ? _t : null; }
+        public final Object _numberp   (Object... args) { return numberp   (args[0]) ? _t : null; }
+        public final Object _stringp   (Object... args) { return stringp   (args[0]) ? _t : null; }
+        public final Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
 
-        public ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
-        public ConsCell _list    (Object... args) { return new ArraySlice(args, 0); }
+        public final ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
+        public final ConsCell _list    (Object... args) { return new ArraySlice(args, 0); }
 
-        public long     _round   (Object... args) { return Math.round(dbl(args[0])); }
-        public double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
-        public double   _ceiling (Object... args) { return Math.ceil (dbl(args[0])); }
+        public final long     _round   (Object... args) { return Math.round(dbl(args[0])); }
+        public final double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
+        public final double   _ceiling (Object... args) { return Math.ceil (dbl(args[0])); }
 
-        public double   _sqrt    (Object... args) { return Math.sqrt (dbl(args[0])); }
-        public double   _log     (Object... args) { return Math.log  (dbl(args[0])); }
-        public double   _log10   (Object... args) { return Math.log10(dbl(args[0])); }
-        public double   _exp     (Object... args) { return Math.exp  (dbl(args[0])); }
-        public double   _expt    (Object... args) { return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        public double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
+        public final double   _sqrt    (Object... args) { return Math.sqrt (dbl(args[0])); }
+        public final double   _log     (Object... args) { return Math.log  (dbl(args[0])); }
+        public final double   _log10   (Object... args) { return Math.log10(dbl(args[0])); }
+        public final double   _exp     (Object... args) { return Math.exp  (dbl(args[0])); }
+        public final double   _expt    (Object... args) { return Math.pow  (dbl(args[0]), dbl(args[1])); }
+        public final double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
-        public double add     (Object... args) { double ret = 0.0; if (args != null) for (int i = 0; i < args.length; i++) ret += dbl(args[i]); return ret; }
-        public double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
+        public final double add     (Object... args) { double ret = 0.0; if (args != null) for (int i = 0; i < args.length; i++) ret += dbl(args[i]); return ret; }
+        public final double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
 
-        public double sub     (Object... args) { if (args.length == 1) return 0.0 - dbl(args[0]);
+        public final double sub     (Object... args) { if (args.length == 1) return 0.0 - dbl(args[0]);
                                                  double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
-        public double quot    (Object... args) { if (args.length == 1) return 1.0 / dbl(args[0]);
+        public final double quot    (Object... args) { if (args.length == 1) return 1.0 / dbl(args[0]);
                                                  double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
-        public Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
-        public Object lt      (Object... args) { return lt(args[0], args[1]); }
-        public Object le      (Object... args) { return le(args[0], args[1]); }
-        public Object ge      (Object... args) { return ge(args[0], args[1]); }
-        public Object gt      (Object... args) { return gt(args[0], args[1]); }
+        public final Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
+        public final Object lt      (Object... args) { return lt(args[0], args[1]); }
+        public final Object le      (Object... args) { return le(args[0], args[1]); }
+        public final Object ge      (Object... args) { return ge(args[0], args[1]); }
+        public final Object gt      (Object... args) { return gt(args[0], args[1]); }
 
-        public Object format             (Object... args) { return intp.format(arraySlice(args, 0)); }
-        public Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args, 0)); }
+        public final Object format             (Object... args) { return intp.format(arraySlice(args, 0)); }
+        public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args, 0)); }
 
-        public Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
-        public Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
-        public Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(); }
-        public Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args, 0)); }
-        public Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
-        public Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
+        public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
+        public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
+        public final Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(); }
+        public final Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args, 0)); }
+        public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
+        public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
-        public Object jambda             (Object... args) { return LambdaJ.findJavaMethod(arraySlice(args, 0)); }
+        public final Object jambda             (Object... args) { return LambdaJ.findJavaMethod(arraySlice(args, 0)); }
 
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public LambdaJSymbol intern(Object... args) {
+        public final LambdaJSymbol intern(Object... args) {
             return intp.symtab.intern(new LambdaJSymbol((String)args[0]));
         }
 
@@ -3438,7 +3438,7 @@ public class LambdaJ {
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
         private ConsCell extenv(String symname, int sfx, ConsCell prev) {
-            LambdaJSymbol sym = intern(symname);
+            final LambdaJSymbol sym = intern(symname);
             notReserved(sym);
             return extenvIntern(sym, mangle(symname, sfx), prev);
         }
@@ -3459,13 +3459,13 @@ public class LambdaJ {
 //        }
 
         private ConsCell extenvfunc(String symname, String javaName, ConsCell env) {
-            LambdaJSymbol sym = intern(symname);
+            final LambdaJSymbol sym = intern(symname);
             notReserved(sym);
             return extenvIntern(sym, "((MurmelFunction)rt()::" + javaName + ')', env);
         }
 
         private ConsCell extenvprim(String symname, String javaName, ConsCell env) {
-            LambdaJSymbol sym = intern(symname);
+            final LambdaJSymbol sym = intern(symname);
             return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
         }
 
@@ -3488,7 +3488,7 @@ public class LambdaJ {
 
         private String javasym(Object form, ConsCell env) {
             if (form == null) form = intern("nil");
-            ConsCell symentry = assoc(form, env);
+            final ConsCell symentry = assoc(form, env);
             if (symentry == null) {
                 //throw new LambdaJError(true, "undefined symbol %s", form.toString());
                 System.err.println("implicit declaration of " + form.toString());
@@ -3511,8 +3511,8 @@ public class LambdaJ {
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             env = extenv(car(form), 0, env);
             sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
-                    + "    private Object ").append(javasym(car(form), env)).append(" = null;\n")
-            .append("    { ").append(javasym(car(form), env)).append(" = ");
+                    + "    private Object ").append(javasym(car(form), env)).append(" = null;\n"
+                    + "    { ").append(javasym(car(form), env)).append(" = ");
             formToJava(sb, cadr(form), env, 0, true);
             sb.append("; }\n\n");
             return env;
@@ -3520,10 +3520,10 @@ public class LambdaJ {
 
         /** form is a list (symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            int rsfx = 0;
-            Object sym = car(form);
-            Object params = cadr(form);
-            Object body = cddr(form);
+            final int rsfx = 0;
+            final Object sym = car(form);
+            final Object params = cadr(form);
+            final Object body = cddr(form);
 
 //            env = extenv(sym, 0, env);
 //            String fname = javasym(sym, env);
@@ -3536,12 +3536,12 @@ public class LambdaJ {
 //            formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
 //            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
 
-            String fname = mangle(sym.toString(), 0);
+            final String fname = mangle(sym.toString(), 0);
             env = extenvfunc(sym.toString(), fname, env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
             sb.append("    public Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
-            ConsCell extenv = params(sb, params, env, rsfx);
+            final ConsCell extenv = params(sb, params, env, rsfx);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n    }\n\n");
@@ -4144,7 +4144,7 @@ class MurmelClassLoader extends ClassLoader {
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
-            byte[] ba = getBytes(name);
+            final byte[] ba = getBytes(name);
             if (ba == null) return super.findClass(name);
             return defineClass(name, ba, 0, ba.length);
         }
@@ -4155,11 +4155,10 @@ class MurmelClassLoader extends ClassLoader {
 
     Path getOutPath() { return outPath; }
 
-    byte[] getBytes(String name) throws IOException {
-        String path = name.replace('.', '/');
-        Path p = outPath.resolve(Paths.get(path + ".class"));
+    private byte[] getBytes(String name) throws IOException {
+        final String path = name.replace('.', '/');
+        final Path p = outPath.resolve(Paths.get(path + ".class"));
         if (!Files.isReadable(p)) return null;
-        //p.toFile().deleteOnExit();
         return Files.readAllBytes(p);
     }
 }
