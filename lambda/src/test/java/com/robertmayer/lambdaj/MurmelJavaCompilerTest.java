@@ -56,19 +56,13 @@ public class MurmelJavaCompilerTest {
     // murmel compiler should throw error "reserved word"
     @Test
     public void testDefineNil() throws Exception {
-        String msg = compileError("(define nil 42)");
-        assertNotNull("expected error", msg);
-        String expected = "compile: can't use reserved";
-        assertEquals("got wrong error", expected, msg.substring(0, expected.length()));
+        compileError("(define nil 42)", "compile: can't use reserved");
     }
 
     // murmel compiler should throw error "reserved word"
     @Test
     public void testDefineT() throws Exception {
-        String msg = compileError("(define t 42)");
-        assertNotNull("expected error", msg);
-        String expected = "compile: can't use reserved";
-        assertEquals("got wrong error", expected, msg.substring(0, expected.length()));
+        compileError("(define t 42)", "compile: can't use reserved");
     }
 
     @Test
@@ -76,6 +70,11 @@ public class MurmelJavaCompilerTest {
         MurmelProgram program = compile("(define f1 (lambda (a) a)) (defun f2 (a) a)");
         assertNotNull("failed to compile defun to class", program);
         assertEquals("defun produced wrong result", "f2", TestUtils.sexp(program.body()));
+    }
+
+    @Test
+    public void testDefunNonToplevel() throws Exception {
+        compileError("(let ((a 3)) (defun f () a))", "defun as non-toplevel");
     }
 
     @Test
@@ -455,17 +454,19 @@ public class MurmelJavaCompilerTest {
         return murmelClass.newInstance();
     }
 
-    private String compileError(String source) throws Exception {
+    private void compileError(String source, String expected) throws Exception {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         try {
             c.formsToJavaClass("Test", parser, null);
+            fail("expected error " + expected + " but got no error");
         }
         catch (LambdaJError e) {
-            return e.getMessage();
+            String msg = e.getMessage();
+            assertNotNull("expected error", msg);
+            assertEquals("got wrong error", expected, msg.substring(0, expected.length()));
         }
-        return null;
     }
 }

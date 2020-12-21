@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.334 2020/12/21 16:13:31 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.335 2020/12/21 17:05:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3378,9 +3378,11 @@ public class LambdaJ {
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
             final StringBuilder globals = new StringBuilder();
+            final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
+
+            // first pass: emit define/ defun forms
             Object result = null;
             Object form;
-            final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
             while (null != (form = _forms.readObj())) {
                 if (consp(form) && isSymbol(car(form), "define")) {
                     env = defineToJava(ret, (ConsCell) cdr(form), env);
@@ -3557,12 +3559,10 @@ public class LambdaJ {
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 Object form = it.next();
-                if (!(consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))) {
-                    ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
-                    ret.append("        result").append(rsfx).append(" = ");
-                    formToJava(ret, form, env, rsfx, !topLevel && !it.hasNext());
-                    ret.append(';').append('\n');
-                }
+                ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
+                ret.append("        result").append(rsfx).append(" = ");
+                formToJava(ret, form, env, rsfx, !topLevel && !it.hasNext());
+                ret.append(';').append('\n');
             }
         }
 
@@ -3643,8 +3643,8 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (isSymbol(op, "define")) return;
-                    if (isSymbol(op, "defun")) return;
+                    if (isSymbol(op, "define")) throw new LambdaJError("define as non-toplevel form is not yet implemented");
+                    if (isSymbol(op, "defun"))  throw new LambdaJError("defun as non-toplevel form is not yet implemented");
 
                     ///     - apply
                     if (isSymbol(op, "apply")) {

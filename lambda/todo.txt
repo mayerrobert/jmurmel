@@ -42,6 +42,12 @@ define nur toplevel zulassen (wg. kompilieren)
 -> mehraufwand lohnt wsl nicht
 
 
+==> erstmal define und defun, global scope ist lexical
+    im compiler erstmal nur defvar und defun als toplevel form, rest gibt fehlermeldung
+    spaeter:
+      zus. defvar und defparameter, ggf. erst im interpreter, dann im compiler
+
+
 body() im interpreter fertigmachen
 
 
