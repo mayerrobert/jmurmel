@@ -900,3 +900,5 @@ nicht: nach -- kommen files, sondern: nach -- kommen args fuer das programm, die
 labels reparieren
 
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
+
+tempdir wird nicht geloescht

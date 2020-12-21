@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.332 2020/12/20 18:03:10 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.333 2020/12/21 07:21:52 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -4008,7 +4008,10 @@ class JavaCompilerUtils {
     @SuppressWarnings("unchecked")
     Class<LambdaJ.MurmelProgram> javaToClass(String className, String javaSource, String jarFileName) throws Exception {
         final Class<LambdaJ.MurmelProgram> program = (Class<LambdaJ.MurmelProgram>) javaToClass(className, javaSource);
-        if (jarFileName == null) return program;
+        if (jarFileName == null) {
+            cleanup();
+            return program;
+        }
 
         final Manifest mf = new Manifest();
         mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -4055,17 +4058,21 @@ class JavaCompilerUtils {
                 mf.write(out);
             }
             copyFolder(murmelClassLoader.getOutPath(), zipfs.getPath("/"));
-
-            try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
-                // delete directory including files and sub-folders
-                files.sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        //.peek(f -> System.out.println("delete " + f.toString()))
-                        .forEach(File::deleteOnExit);
-            }
         }
+        cleanup();
 
         return program;
+    }
+
+    void cleanup() throws IOException {
+        //System.out.println("cleanup " + murmelClassLoader.getOutPath().toString());
+        try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
+            // delete directory including files and sub-folders
+            files.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    //.peek(f -> System.out.println("delete " + f.toString()))
+                    .forEach(File::deleteOnExit);
+        }
     }
 
     private void copyFolder(Path src, Path dest) throws IOException {

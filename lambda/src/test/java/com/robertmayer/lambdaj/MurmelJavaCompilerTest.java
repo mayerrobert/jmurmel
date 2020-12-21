@@ -17,6 +17,7 @@ public class MurmelJavaCompilerTest {
         JavaCompilerUtils c = new JavaCompilerUtils(TestUtils.getTmpDir());
         Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
         assertNotNull("failed to compile Java to class", clazz);
+        c.cleanup();
     }
 
     @Test
