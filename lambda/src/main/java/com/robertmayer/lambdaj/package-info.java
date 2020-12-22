@@ -35,9 +35,9 @@ any line separator.
 
 <p>JMurmel's REPL reads and prints in the console characterset with OS-dependent line separators.
 Note that this goes for input that is typed on the keyboard as well as input redirected from a file.
-I.e.<pre>    jmurmel < program.lisp
+I.e.<pre>    jmurmel &lt; program.lisp
 is different from
-    jmurmel --repl < program.lisp</pre>
+    jmurmel --repl &lt; program.lisp</pre>
 The former command (no REPL involved) will read UTF-8,
 the latter command (which forces REPL and is not too useful anyways) will read console characterset.
 

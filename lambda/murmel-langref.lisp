@@ -134,7 +134,7 @@ internal-time-units-per-second
 ;
 ; Note: Common Lisp has a dynamic global environment, i.e.
 ;       all global variables are special.
-;       Murmel has a lexical global environment.
+;       Murmel currently has a lexical global environment.
 ;
 ; Arguments to the special form "lambda" are not evaluated.
 (lambda (p1 p2) p1)
@@ -412,6 +412,7 @@ nil
 ; JMurmel adds some extra features to Murmel which are listed below.
 
 ; lambda dynamic - only supported in the interpreter:
+;
 ; When the optional keyword "dynamic" is given then
 ; no environment is captured, and lambdas - when applied -
 ; get the dynamic environment.
@@ -430,7 +431,6 @@ nil
 ; These commandline parameters can be used if you want to play
 ; with an even more reduced Lisp.
 ; See 'jmurmel --help-features'
-;
 
 
 ;;; == Additional JMurmel special forms and primitives ==========
@@ -490,4 +490,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.48 2020/12/21 22:28:34 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.49 2020/12/22 07:09:00 Robert Exp $

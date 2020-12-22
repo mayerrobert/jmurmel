@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.338 2020/12/22 08:23:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.339 2020/12/22 19:21:07 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2249,7 +2249,7 @@ public class LambdaJ {
     }
 
     /** Turn {@code forms} into an interpreted Murmel program: define/ defun will be interpreted once,
-     *  the remains will be wrapped in the method {@body} that can be run multiple times.
+     *  the remains will be wrapped in the method {@link MurmelProgram#body} that can be run multiple times.
      *  Note how this is somewhat similar to {@link MurmelJavaCompiler#formsToJavaClass(String, Iterable, String)}.
      *  All interpreted programs created from one LambdaJ instance will share the same global environment (global variables and functions). */
     public MurmelProgram formsToInterpretedProgram(Iterable<Object> forms) {
@@ -3449,7 +3449,10 @@ public class LambdaJ {
                      + "    }\n\n"
                      + "    // toplevel forms\n"
                      + "    public Object body() {\n        Object result0 = ").append(result).append(";\n");
+
+            /// second pass: emit toplevel forms that are not define or defun
             formsToJava(ret, bodyForms, env, 0, true);
+
             ret.append("        return result0;\n    }\n"
                      + "}\n");
             ret.flush();
@@ -3703,13 +3706,15 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - (named) let
+                    ///     - let: (let ((sym form)...) forms...) -> Object
+                    ///     - named let: (let sym ((sym form)...) forms...) -> Object
                     if (isSymbol(op, "let")) {
                         letToJava(sb, args, env, rsfx, isLast);
                         return;
                     }
 
-                    ///     - (named) let*
+                    ///     - let*: (let* ((sym form)...) forms...) -> Object
+                    ///     - named let*: (let sym ((sym form)...) forms...) -> Object
                     if (isSymbol(op, "let*")) {
                         letStarToJava(sb, args, env, rsfx+1, isLast);
                         return;
@@ -3808,14 +3813,14 @@ public class LambdaJ {
         private void letToJava(WrappingWriter sb, final Object args, ConsCell env, int rsfx, boolean isLast) {
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
-                ///     - named let: (let sym ((sym form)...) forms...) -> Object
+                // named let
                 final ConsCell params = paramList(cdr(args));
                 sb.append(isLast ? "tailcall(" : "funcall(");
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
-                ///     - let: (let ((sym form)...) forms...) -> Object
+                // regular let
                 final ConsCell params = paramList(args);
                 sb.append(isLast ? "tailcall(" : "funcall(");
                 lambdaToJava(sb, cons(params, cdr(args)), env, rsfx+1);
@@ -3836,7 +3841,7 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
 
             if (car(args) instanceof LambdaJSymbol) {
-                ///     - named let*: (let sym ((sym form)...) forms...) -> Object
+                // named let*: (let* sym ((sym form)...) forms...) -> Object
                 named = true;
                 env = extenv(car(args), rsfx, env);
                 sb.append("new MurmelFunction() {\n"
@@ -3846,7 +3851,7 @@ public class LambdaJ {
                 bodyForms = (ConsCell) cddr(args);
             }
             else {
-                ///     - let*: (let* ((sym form)...) forms...) -> Object
+                // regular let*: (let* ((sym form)...) forms...) -> Object
                 named = false;
                 sb.append("(MurmelFunction)(args").append(rsfx).append(") -> {\n        Object result").append(rsfx).append(";\n");
                 bindings = (ConsCell)(car(args));
@@ -4033,7 +4038,9 @@ public class LambdaJ {
 }
 
 
-
+/// ## class JavaCompilerUtils
+/// class JavaCompilerUtils - a helper class that wraps the Java system compiler in tools.jar,
+/// used by MurmelJavaCompiler to compile the generated Java to an in-memory class and optionally a .jar file.
 class JavaCompilerUtils {
     private static final java.util.Map<String, String> ENV = Collections.singletonMap("create", "true");
     private MurmelClassLoader murmelClassLoader;
