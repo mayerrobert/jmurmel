@@ -2,8 +2,7 @@
 ; result: t
 
 (letrec ((x (+ 1 1))
-         (y 42)
-         (y (+ x 2)) ; later bindings hide earlier ones
+         (y (+ x 2))
          (f (lambda (n)
                     (if (= n 0)
                         nil

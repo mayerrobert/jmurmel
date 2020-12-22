@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.337 2020/12/22 07:09:00 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.338 2020/12/22 08:23:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -994,6 +994,7 @@ public class LambdaJ {
                         final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
                         if (!consp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
 
+                        final Set<Object> seen = new HashSet<Object>();
                         ConsCell extenv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
                         for (Object binding: bindings) {
                             if (!consp(binding))        throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
@@ -1001,6 +1002,9 @@ public class LambdaJ {
                             if (!symbolp(sym)) throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
                             notReserved(op, sym);
                             if (!listp(cdr(binding)))   throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                            if (!letStar) // let allows no duplicate let symbols
+                                if (seen.contains(sym)) throw new LambdaJError(true, "duplicate symbol %s", sym);
+                                else seen.add(sym);
 
                             ConsCell newBinding = null;
                             if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
@@ -1209,10 +1213,12 @@ public class LambdaJ {
             final Object _paramsAndForms = cdr(paramsAndForms);
             nArgs("lambda dynamic", _paramsAndForms, 2);
             symbolArgs("lambda dynamic", car(_paramsAndForms));
+            noDuplicates(car(_paramsAndForms));
             return cons(sLambda, _paramsAndForms);
         }
         nArgs("lambda", paramsAndForms, 2);
         symbolArgs("lambda", car(paramsAndForms));
+        noDuplicates(car(paramsAndForms));
 
         if (haveLexC()) return makeClosure(paramsAndForms, env);
         return form;
@@ -1718,6 +1724,16 @@ public class LambdaJ {
                 if (cdr(a) != null) notReserved(func, cdr(a));
                 return; // that was the end of a dotted list, everything a-ok, move along
             }
+        }
+    }
+
+    private static void noDuplicates(Object symList) {
+        if (symList == null) return;
+        if (!consp(symList)) return;
+        final Set<Object> seen = new HashSet<>();
+        for (Object o: (ConsCell)symList) {
+            if (seen.contains(o)) throw new LambdaJError(true, "duplicate symbol %s", o);
+            else seen.add(o);
         }
     }
 
