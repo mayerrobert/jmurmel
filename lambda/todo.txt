@@ -1,3 +1,4 @@
+interpreter: doppelte params bei lambda, let und letrec erkennen und verweigern
 
 body() im interpreter fertigmachen
 

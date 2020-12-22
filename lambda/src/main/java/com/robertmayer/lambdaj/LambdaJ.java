@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.336 2020/12/21 22:28:34 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.337 2020/12/22 07:09:00 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1204,6 +1204,7 @@ public class LambdaJ {
     private Object makeClosureFromForm(final ConsCell form, ConsCell env) {
         final ConsCell paramsAndForms = (ConsCell) cdr(form);
 
+        // todo duplikate in params erkennen und verweigern
         if (car(paramsAndForms) == sDynamic) {
             final Object _paramsAndForms = cdr(paramsAndForms);
             nArgs("lambda dynamic", _paramsAndForms, 2);
@@ -3305,7 +3306,6 @@ public class LambdaJ {
         /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * format, format-locale
-        /// * todo ::
         ///
         private static final String[] globalvars = new String[] { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = new String[][] {
@@ -3687,6 +3687,7 @@ public class LambdaJ {
                         return;
                     }
 
+                    ///     - (named) let
                     if (isSymbol(op, "let")) {
                         letToJava(sb, args, env, rsfx, isLast);
                         return;
@@ -3699,7 +3700,7 @@ public class LambdaJ {
                     }
 
 
-                    ///     - todo letrec:  (letrec ((sym form)...) forms) -> Object
+                    ///     - letrec:  (letrec ((sym form)...) forms) -> Object
                     if (isSymbol(op, "letrec")) {
                         letrecToJava(sb, args, env, rsfx+1, isLast);
                         return;
@@ -3783,7 +3784,7 @@ public class LambdaJ {
 
             sb.append("        @Override public Object apply(Object... args) {\n");
             sb.append("        Object result").append(rsfx).append(";\n");
-            formsToJava(sb, (ConsCell)cdr(args), env, rsfx, false); // todo isLast statt false?
+            formsToJava(sb, (ConsCell)cdr(args), env, rsfx, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
             sb.append("        return result").append(rsfx).append("; } } )");
         }
 
@@ -3858,8 +3859,11 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction () {\n");
 
+            final Set<Object> seen = new HashSet<>();
             final ConsCell params = paramList(args);
             for (Object letVar: params) {
+                if (seen.contains(letVar)) throw new LambdaJError(true, "duplicate symbol %s", letVar);
+                seen.add(letVar);
                 env = extenv(letVar, rsfx, env);
                 final String letVarName = javasym(letVar, env);
                 sb.append("        private Object ").append(letVarName).append(" = null;\n");
@@ -3870,7 +3874,6 @@ public class LambdaJ {
                 final String letVarName = javasym(letVar, env);
                 sb.append("        { ").append(letVarName).append(" = ");
                 formToJava(sb, cadr(letVarAndForm), env, rsfx, false);
-                //env = extenv(letVar, rsfx, env); // todo mehrfach vorkommende sym erkennen und verweigern
                 sb.append("; }\n");
             }
 
@@ -3899,15 +3902,20 @@ public class LambdaJ {
         private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx) {
             if (paramList == null) return env;
 
+            final Set<Object> seen = new HashSet<>();
             int n = 0;
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
                     Object param = car(params);
+                    if (seen.contains(param)) throw new LambdaJError(true, "duplicate symbol %s", param);
+                    seen.add(param);
                     env = extenv(param, rsfx, env);
                     sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
                 }
 
                 else if (symbolp(params)) {
+                    if (seen.contains(params)) throw new LambdaJError(true, "duplicate symbol %s", params);
+                    seen.add(params);
                     env = extenv(params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = args").append(rsfx).append(";\n");
                     else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
