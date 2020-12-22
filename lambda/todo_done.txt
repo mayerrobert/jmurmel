@@ -904,3 +904,6 @@ HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und ln
 tempdir wird nicht geloescht
 
 compiler: doppelte define/ defun erkennen
+
+interpreter: doppelte params bei lambda, let und letrec erkennen und verweigern
+
