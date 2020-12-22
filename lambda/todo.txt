@@ -1,3 +1,7 @@
+
+body() im interpreter fertigmachen
+
+
 scope und extent:
 https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
 https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
@@ -48,11 +52,8 @@ define nur toplevel zulassen (wg. kompilieren)
       zus. defvar und defparameter, ggf. erst im interpreter, dann im compiler
 
 
-body() im interpreter fertigmachen
 
-
-
-
+compiler: defun wieder auf Object = ...; {...} umstellen, sobald assignments moeglich sind
 
 cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
 -> --no-scheme, auch null? und ggf if abdrehen

@@ -462,6 +462,7 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
+; - support for backquotes, comma, splice should be added
 ; - support for macros should be added
 ; - at least globals should be mutable 
 ; - globals should be special (dynamic)
@@ -489,4 +490,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.47 2020/12/21 19:10:08 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.48 2020/12/21 22:28:34 Robert Exp $

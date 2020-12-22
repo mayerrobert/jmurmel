@@ -902,3 +902,5 @@ labels reparieren
 HAVE_LISPEOL/ haveLispEOL/ commandline parameter weg, stattdessen writeln und lnwrite
 
 tempdir wird nicht geloescht
+
+compiler: doppelte define/ defun erkennen

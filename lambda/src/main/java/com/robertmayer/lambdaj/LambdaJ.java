@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.335 2020/12/21 17:05:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.336 2020/12/21 22:28:34 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2655,7 +2655,7 @@ public class LambdaJ {
             System.out.print("==> ");  interpreter.lispPrinter.printObj(result); System.out.println();
         }
         catch (LambdaJError e) {
-            System.out.println("history NOT run as Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.out.println("history NOT run as Java - error: " + e.getMessage());
         }
         catch (Exception e) {
             System.out.println("history NOT run as Java - error: ");
@@ -2701,7 +2701,7 @@ public class LambdaJ {
             return true;
         }
         catch (LambdaJError e) {
-            System.out.println("NOT compiled to Java - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.out.println("NOT compiled to Java - error: " + e.getMessage());
             return false;
         }
         catch (Exception e) {
@@ -2722,7 +2722,7 @@ public class LambdaJ {
             return true;
         }
         catch (LambdaJError e) {
-            System.out.println("NOT compiled to .jar - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
             return false;
         }
         catch (Exception e) {
@@ -3286,6 +3286,15 @@ public class LambdaJ {
 
         private final Collection<LambdaJSymbol> reservedSymbols = new ArrayList<>();
 
+        private void notReserved(LambdaJSymbol sym) {
+            if (sym == null)
+                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", "nil");
+            if (reservedSymbols.contains(sym))
+                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", sym.toString());
+        }
+
+
+
         /// Environment for compiled Murmel:
         /// * nil, t, pi
         /// * car, cdr, cons
@@ -3380,22 +3389,30 @@ public class LambdaJ {
             final StringBuilder globals = new StringBuilder();
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
-            // first pass: emit define/ defun forms
+            /// first pass: emit toplevel define/ defun forms
             Object result = null;
             Object form;
             while (null != (form = _forms.readObj())) {
-                if (consp(form) && isSymbol(car(form), "define")) {
-                    env = defineToJava(ret, (ConsCell) cdr(form), env);
-                    result = cadr(form);
-                }
-                else if (consp(form) && isSymbol(car(form), "defun")) {
-                    env = defunToJava(ret, (ConsCell) cdr(form), env);
-                    result = cadr(form);
-                }
-                else bodyForms.add(form);
+                try {
+                    if (consp(form) && isSymbol(car(form), "define")) {
+                        env = defineToJava(ret, (ConsCell) cdr(form), env);
+                        result = cadr(form);
+                    }
+                    else if (consp(form) && isSymbol(car(form), "defun")) {
+                        env = defunToJava(ret, (ConsCell) cdr(form), env);
+                        result = cadr(form);
+                    }
+                    else bodyForms.add(form);
 
-                if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
-                    globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
+                    if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
+                        globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), env)).append(";\n");
+                }
+                catch (LambdaJError e) {
+                    throw new LambdaJError(false, e.getMessage(), form);
+                }
+                catch (Exception e) {
+                    throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
+                }
             }
             // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
             if (result != null) result = "intern(\"" + result.toString() + "\")";
@@ -3425,21 +3442,11 @@ public class LambdaJ {
 
 
 
-        private void notReserved(LambdaJSymbol sym) {
-            if (sym == null)
-                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", "nil");
-            if (reservedSymbols.contains(sym))
-                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", sym.toString());
-        }
-
-
-
-        private ConsCell extenv(Object sym, int sfx, ConsCell prev) {
-            return extenv(sym == null ? null : sym.toString(), sfx, prev);
-        }
-
-        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev} */
-        private ConsCell extenv(String symname, int sfx, ConsCell prev) {
+        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
+         *  symbols that are reserved words throw an error. */
+        private ConsCell extenv(Object symbol, int sfx, ConsCell prev) {
+            if (symbol != null && !(symbol instanceof LambdaJSymbol)) throw new LambdaJError(true, "not a symbol: %s", symbol);
+            final String symname = symbol == null ? null : symbol.toString();
             final LambdaJSymbol sym = intern(symname);
             notReserved(sym);
             return extenvIntern(sym, mangle(symname, sfx), prev);
@@ -3492,9 +3499,9 @@ public class LambdaJ {
             if (form == null) form = intern("nil");
             final ConsCell symentry = assoc(form, env);
             if (symentry == null) {
-                //throw new LambdaJError(true, "undefined symbol %s", form.toString());
-                System.err.println("implicit declaration of " + form.toString());
-                return mangle(form.toString(), 0);
+                throw new LambdaJError(true, "undefined symbol %s", form.toString());
+                //System.err.println("implicit declaration of " + form.toString());
+                //return mangle(form.toString(), 0);
             }
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
@@ -3507,10 +3514,19 @@ public class LambdaJ {
             return form.toString().equalsIgnoreCase(sym);
         }
 
+        private void notDefined(String func, Object sym, ConsCell env) {
+            final ConsCell prevEntry = assoc(sym, env);
+            if (prevEntry != null) {
+                notReserved((LambdaJSymbol) car(prevEntry));
+                throw new LambdaJError(true, "%s: can't redefine symbol %s", func, sym);
+            }
+        }
+
 
 
         /** form is a list (symbol forms...) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+            notDefined("define", car(form), env);
             env = extenv(car(form), 0, env);
             sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
                     + "    private Object ").append(javasym(car(form), env)).append(" = null;\n"
@@ -3522,6 +3538,7 @@ public class LambdaJ {
 
         /** form is a list (symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+            notDefined("defun", car(form), env);
             final int rsfx = 0;
             final Object sym = car(form);
             final Object params = cadr(form);
@@ -3870,7 +3887,6 @@ public class LambdaJ {
         private ConsCell paramList(Object bindings) {
             ConsCell params = null; ConsCell insertPos = null;
             for (Object binding: (ConsCell)(car(bindings))) {
-                //notReserved(car(binding)); todo
                 if (params == null) { params = cons(null, null);          insertPos = params; }
                 else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
                 insertPos.rplaca(car(binding));
