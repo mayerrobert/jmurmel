@@ -111,13 +111,13 @@ import javax.tools.SimpleJavaFileObject;
  *  You may want to run 'grep " ///" LambdaJ.java' to get something like birds-eye-view
  *  or sort of a table-of-contents of the interpreter implementation. Or run<pre>
  *  sed -nf src\main\shell\litprog.sed src\main\java\com\robertmayer\lambdaj\LambdaJ.java &gt; jmurmel-doc.md</pre>
- *   */
+ */
 public class LambdaJ {
 
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.340 2020/12/22 21:07:04 Robert Exp $";
+    public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.341 2020/12/23 08:11:59 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -158,7 +158,6 @@ public class LambdaJ {
 
         private static String errorExp(Object exp) {
             if (exp == null) return "";
-            //final String l = exp instanceof SExpConsCell ? ("before line " + ((SExpConsCell)exp).lineNo + ':' + ((SExpConsCell)exp).charNo + ": ") : "";
             final String l = lineInfo(exp);
             return System.lineSeparator() + "error occurred in S-expression " + l + printSEx(exp);
         }
@@ -255,8 +254,6 @@ public class LambdaJ {
 
 
 
-
-
     /// ## Infrastructure
     public static final int EOF = -1;
     /** Max length of string literals */
@@ -318,7 +315,7 @@ public class LambdaJ {
     private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
     private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
     private boolean haveXtra()    { return (features & Features.HAVE_XTRA.bits())    != 0; }
-    private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits())  != 0; }
+    private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits()) != 0; }
     private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
     private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
     private boolean haveUtil()    { return (features & Features.HAVE_UTIL.bits())    != 0; }
@@ -341,18 +338,6 @@ public class LambdaJ {
     }
 
 
-
-    private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '\''; }
-
-    private static boolean containsSExSyntaxOrWhiteSpace(String s) {
-        for (int i = 0; i < s.length(); i++) {
-            char c;
-            if (isSExSyntax(c = s.charAt(i))) return true;
-            if (isWhiteSpace(c)) return true;
-        }
-        return false;
-    }
 
     /// ## Printer
 
@@ -380,6 +365,19 @@ public class LambdaJ {
     }
 
     /// ## Scanner, symboltable and S-expression parser
+
+    private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
+    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '\''; }
+
+    private static boolean containsSExSyntaxOrWhiteSpace(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            char c;
+            if (isSExSyntax(c = s.charAt(i))) return true;
+            if (isWhiteSpace(c)) return true;
+        }
+        return false;
+    }
+
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     public static class SExpressionParser implements Parser {
@@ -750,7 +748,7 @@ public class LambdaJ {
     /// ## Murmel interpreter
     ///
 
-    /// Reserved words may not be used as a symbol
+    /// Murmel has a list of reserved words may not be used as a symbol
     private ConsCell reservedWords;
 
     private void reserve(Object word) { reservedWords = cons(word, reservedWords); }
@@ -758,7 +756,7 @@ public class LambdaJ {
     /** Throw error if sym is a reserved symbol */
     private void notReserved(final String op, final Object sym) {
         if (sym == null)
-            throw new LambdaJError(true, "%s: can't use reserved word nil as a symbol", op);
+            throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", op, "nil");
         if (member(sym, reservedWords))
             throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", op, sym.toString());
     }
@@ -766,8 +764,8 @@ public class LambdaJ {
     /// Symboltable
     private SymbolTable symtab;
 
-    public static final Object VALUE_NOT_DEFINED = "value is not assigned";  // only relevant in letrec
-    private static final Object NOT_A_SYMBOL = "non existant pseudo symbol";         // to avoid matches on pseudo env entries
+    public static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
+    private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
 
     /** Look up the symbols for special forms only once. Also start to build the table of reserved words. */
     private void setSymtab(SymbolTable symtab) {
@@ -775,7 +773,7 @@ public class LambdaJ {
 
         // (re-)read the new symtab
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
-        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);  // todo dynamic ist nicht Murmel sondern JMurmel interpreter erweiterung
+        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);
         sTrace =                       symtab.intern(new LambdaJSymbol("trace"));    reserve(sTrace);
         sUntrace =                     symtab.intern(new LambdaJSymbol("untrace"));  reserve(sUntrace);
 
@@ -814,7 +812,7 @@ public class LambdaJ {
     /// ### Global environment - define'd symbols go into this list
     private ConsCell topEnv;
 
-    /// ###  eval - the heart of most if not all Lisp interpreters
+    /// ###  evalquote - the heart of most if not all Lisp interpreters
     private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
         Object operator = null;
         Object result = null;
@@ -834,7 +832,7 @@ public class LambdaJ {
                     final ConsCell envEntry = assoc(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
-                        if (value == VALUE_NOT_DEFINED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", form);
+                        if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", form);
                         result = value; return value;
                     }
                     throw new LambdaJError(true, "%s: '%s' is not bound", "eval", form);
@@ -966,7 +964,7 @@ public class LambdaJ {
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (haveLabels() && operator == sLabels) {
                         nArgs("labels", arguments, 2);
-                        ListConsCell extEnv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
+                        ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
                         // stick the functions into the env
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
@@ -995,7 +993,7 @@ public class LambdaJ {
                         if (!consp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
 
                         final Set<Object> seen = new HashSet<Object>();
-                        ConsCell extenv = cons(cons(NOT_A_SYMBOL, VALUE_NOT_DEFINED), env);
+                        ConsCell extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
                         for (Object binding: bindings) {
                             if (!consp(binding))        throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
                             final Object sym = car(binding);
@@ -1007,7 +1005,7 @@ public class LambdaJ {
                                 else seen.add(sym);
 
                             ConsCell newBinding = null;
-                            if (letRec) newBinding = insertFront(extenv, sym, VALUE_NOT_DEFINED);
+                            if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
                             Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
                             if (letRec) newBinding.rplacd(val);
                             else        extenv = extendEnv(extenv, sym, val);
@@ -1101,7 +1099,7 @@ public class LambdaJ {
             throw new LambdaJError(e, "eval: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
-            traceLvl = traceExit(operator, result, traceLvl);
+            if (operator != null) traceLvl = traceExit(operator, result, traceLvl);
             Object s;
             if (traceStack != null) {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
@@ -1128,7 +1126,7 @@ public class LambdaJ {
         return cons(symbolEntry, env);
     }
 
-    /** from a list of (symbol form) conses return the symbols as new a list */
+    /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). Throw error if any symbol is a reserved word. */
     private ConsCell extractParamList(String op, final ConsCell bindings) {
         ListConsCell bodyParams = null, insertPos = null;
         if (bindings != null)
@@ -1208,7 +1206,6 @@ public class LambdaJ {
     private Object makeClosureFromForm(final ConsCell form, ConsCell env) {
         final ConsCell paramsAndForms = (ConsCell) cdr(form);
 
-        // todo duplikate in params erkennen und verweigern
         if (car(paramsAndForms) == sDynamic) {
             final Object _paramsAndForms = cdr(paramsAndForms);
             nArgs("lambda dynamic", _paramsAndForms, 2);
@@ -1236,6 +1233,7 @@ public class LambdaJ {
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
     }
 
+    /** in case compiled code calls "(eval)" */
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
         if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
         try { return primfn.applyPrimitive(listToArray(args)); }
@@ -1280,11 +1278,11 @@ public class LambdaJ {
 
     private int traceEnter(Object op, Object args, int level) {
         if (traced == null || !traced.contains(op)) return level;
-        tracer.println(enter(op, args, level));
+        enter(op, args, level);
         return level + 1;
     }
 
-    private String enter(Object op, Object args, int level) {
+    private void enter(Object op, Object args, int level) {
         final StringBuilder sb = new StringBuilder();
 
         final char[] cpfx = new char[level * 2];
@@ -1294,17 +1292,16 @@ public class LambdaJ {
         sb.append('(').append(level+1).append(" enter ").append(op.toString()).append(':').append(' ');
         printSEx(sb::append, args);
         sb.append(')');
-        return sb.toString();
+        tracer.println(sb.toString());
     }
 
     private int traceExit(Object op, Object result, int level) {
-        if (op == null) return level;
         if (traced == null || !traced.contains(op)) return level;
-        tracer.println(exit(op, result, level-1));
+        exit(op, result, level-1);
         return level < 1 ? 0 : level - 1; // clamp at zero in case a traceEnter() call was lost because of a preceeding exception
     }
 
-    private String exit(Object op, Object result, int level) {
+    private void exit(Object op, Object result, int level) {
         final StringBuilder sb = new StringBuilder();
 
         final char[] cpfx = new char[level * 2];
@@ -1314,7 +1311,7 @@ public class LambdaJ {
         sb.append('(').append(level+1).append(" exit ").append(op.toString()).append(':').append(' ');
         printSEx(sb::append, result);
         sb.append(')');
-        return sb.toString();
+        tracer.println(sb.toString());
     }
 
 
@@ -1685,8 +1682,10 @@ public class LambdaJ {
     /** ecactly two arguments */
     private static void twoArgs(String func, Object a) {
         if (a == null)       throw new LambdaJError(true, "%s: expected two arguments but no argument was given", func);
-        if (cdr(a) == null)  throw new LambdaJError(true, "%s: expected two arguments but only one argument was given", func);
-        if (cddr(a) != null) throw new LambdaJError(true, "%s: expected two arguments but got extra arg(s) %s", func, printSEx(cddr(a)));
+        a = cdr(a);
+        if (a == null)  throw new LambdaJError(true, "%s: expected two arguments but only one argument was given", func);
+        a = cdr(a);
+        if (a != null) throw new LambdaJError(true, "%s: expected two arguments but got extra arg(s) %s", func, printSEx(a));
     }
 
     /** at least {@code min} args */
@@ -3344,9 +3343,9 @@ public class LambdaJ {
 
         private void notReserved(LambdaJSymbol sym) {
             if (sym == null)
-                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", "nil");
+                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", "nil");
             if (reservedSymbols.contains(sym))
-                throw new LambdaJError(true, "compile: can't use reserved word %s as a symbol", sym.toString());
+                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", sym.toString());
         }
 
 
@@ -4381,8 +4380,6 @@ class WrappingWriter extends Writer {
     public           WrappingWriter append(long l)         { String s = String.valueOf(l); write(s, 0, s.length()); return this; }
     public           WrappingWriter append(double d)       { String s = String.valueOf(d); write(s, 0, s.length()); return this; }
     public           WrappingWriter append(Object o)       { String s = String.valueOf(o); write(s, 0, s.length()); return this; }
-
-
 
     @Override
     public void write(String s, int off, int len) {
