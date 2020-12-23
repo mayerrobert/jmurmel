@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based interpreter for Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.339 2020/12/22 19:21:07 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.340 2020/12/22 21:07:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2248,21 +2248,62 @@ public class LambdaJ {
         void setReaderPrinter(ObjectReader reader, ObjectWriter writer);
     }
 
-    /** Turn {@code forms} into an interpreted Murmel program: define/ defun will be interpreted once,
+    /** Turn {@code forms} into an interpreted Murmel program: toplevel define/ defun will be interpreted once,
      *  the remains will be wrapped in the method {@link MurmelProgram#body} that can be run multiple times.
+     *
      *  Note how this is somewhat similar to {@link MurmelJavaCompiler#formsToJavaClass(String, Iterable, String)}.
      *  All interpreted programs created from one LambdaJ instance will share the same global environment (global variables and functions). */
-    public MurmelProgram formsToInterpretedProgram(Iterable<Object> forms) {
+    public MurmelProgram formsToInterpretedProgram(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
         final LambdaJ intp = LambdaJ.this;
-        // todo define/ defun 1x abarbeiten und aus "forms" entfernen. methode body basteln: ruft eval fuer das verbleibende program.
+
         return new MurmelProgram() {
             @Override public Object getValue(String globalSymbol) { return intp.getValue(globalSymbol); }
             @Override public MurmelFunction getFunction(String funcName) { return intp.getFunction(funcName); }
 
-            @Override public Object body() { return null; }
             @Override public ObjectReader getLispReader() { return intp.getLispReader(); }
             @Override public ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
             @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { intp.setReaderPrinter(reader, writer); }
+
+            private final SymbolTable symtab;
+            private final List<Object> bodyForms = new ArrayList<>();
+            private final Object result;
+            {
+                if (LambdaJ.this.symtab == null)
+                    init(program, out);
+                else
+                    ((SExpressionParser)LambdaJ.this.symtab).setInput(program);
+                symtab = LambdaJ.this.symtab;
+
+                Object result = null;
+                Object form;
+                while ((form = ((SExpressionParser)symtab).readObj()) != null) {
+                    try {
+                        if (consp(form) && car(form) == sDefine) {
+                            result = evalquote(form, topEnv, 0, 0, 0);
+                        }
+                        else if (consp(form) && car(form) == sDefun) {
+                            result = evalquote(form, topEnv, 0, 0, 0);
+                        }
+                        else bodyForms.add(form);
+                    }
+                    catch (LambdaJError e) {
+                        throw new LambdaJError(false, e.getMessage(), form);
+                    }
+                    catch (Exception e) {
+                        throw new LambdaJError(e, "formsToInterpretedProgram init: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form);
+                    }
+                }
+                this.result = result;
+            }
+
+            @Override public Object body() {
+                if (symtab != LambdaJ.this.symtab) throw new LambdaJError("stale MurmelProgram object: environment was replaced since object creation");
+                Object result = this.result;
+                for (Object form: bodyForms) {
+                    result = evalquote(form, topEnv, 0, 0, 0);
+                }
+                return result;
+            }
         };
     }
 
@@ -2276,10 +2317,8 @@ public class LambdaJ {
     @SuppressWarnings("resource")
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (symtab == null) {
-            final Parser scriptParser = new SExpressionParser(features, trace, tracer, in::read, true);
-            setSymtab(scriptParser);
-            final ConsCell env = environment(null);
-            topEnv = env;
+            setSymtab(new SExpressionParser(features, trace, tracer, in::read, true));
+            topEnv = environment(null);
         }
         final Parser scriptParser = (Parser)symtab;
         scriptParser.setInput(program::read);
@@ -2299,9 +2338,9 @@ public class LambdaJ {
     /** Build environment, setup symbol table, Lisp reader and writer.
      *  Needs to be called once before evalQuote() and evalScript(), not needed before interpretExpression/s  */
     public SExpressionParser init(ReadSupplier in, WriteConsumer out) {
-        SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, true);
+        final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, true);
         setSymtab(parser);
-        ObjectWriter outWriter = makeWriter(out);
+        final ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
         final ConsCell env = environment(null);
         topEnv = env;
@@ -2315,7 +2354,7 @@ public class LambdaJ {
      *  will read S-expressions from {@code in} as well,
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        SExpressionParser parser = init(in, out);
+        final SExpressionParser parser = init(in, out);
         final Object exp = parser.readObj();
         long tStart = System.nanoTime();
         final Object result = evalquote(exp, topEnv, 0, 0, 0);
