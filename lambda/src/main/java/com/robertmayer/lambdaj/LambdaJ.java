@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.342 2020/12/23 20:50:34 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.343 2020/12/24 09:28:43 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1154,7 +1154,10 @@ public class LambdaJ {
 
         for (Object params = paramList; params != null; ) {
             // regular param/arg: add to env
-            if (consp(params)) env = cons(cons(car(params), car(args)), env);
+            if (consp(params)) {
+                if (args == null) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
+                env = cons(cons(car(params), car(args)), env);
+            }
 
             // if paramList is a dotted list then the last param will be bound to the list of remaining args
             else {
@@ -1175,7 +1178,7 @@ public class LambdaJ {
                 }
             }
         }
-        if (args != null)   throw new LambdaJError(true, "%s: too many arguments. remaining arguments: %s", "function application", printSEx(args));
+        if (args != null) throw new LambdaJError(true, "%s: too many arguments. remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 
