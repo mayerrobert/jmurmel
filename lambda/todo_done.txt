@@ -912,3 +912,6 @@ body() im interpreter fertigmachen
 compiler: gibt ArrayIndexOutOfBoundsException, args werden nicht gegen params gecheckt
 
 interpreter: ((lambda (a) a)) sollte einen fehler geben, gibt aber nil. erst ab 2 params werden die argumente richtig gezaehlt
+
+in kommentaren, doku checken ob FFI an den richtigen stellen verwendet wird, ggf. embedded statt FFI
+

@@ -1,8 +1,6 @@
 
 init(), parser vs. in aufraeumen
 
-in kommentaren, doku checken ob FFI an den richtigen stellen verwendet wird, ggf. embedded statt FFI
-
 die ByteArrayReader aus den tests wegputzen
 
 

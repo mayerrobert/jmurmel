@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.344 2020/12/24 14:13:23 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.345 2020/12/24 19:06:45 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1976,6 +1976,7 @@ public class LambdaJ {
 
 
 
+    /// Murmel runtime support for Java FFI - Murmel calls Java
     private static class JavaConstructor implements Primitive {
         private final Constructor<?> constructor;
 
@@ -2194,12 +2195,12 @@ public class LambdaJ {
     /// ## Invoking the interpreter
     ///
 
-    /// JMurmel native FFI: Java calls Murmel with getValue() and getFunction()
+    /// JMurmel native embed API: Java calls Murmel with getValue() and getFunction()
 
-    /** FFI: interface for compiled lambdas as well as primitives, used for FFI as well as compiled Murmel */
+    /** embed API: interface for compiled lambdas as well as primitives, used for embedding as well as compiled Murmel */
     public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
 
-    /** FFI: Return the value of {@code globalSymbol} in the interpreter's current global environment */
+    /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
         final ConsCell envEntry = assoc(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
@@ -2224,7 +2225,7 @@ public class LambdaJ {
         }
     }
 
-    /** <p>FFI: Return the function {@code funcName}
+    /** <p>embed API: Return the function {@code funcName}
      *
      *  <p>Function objects of Lambdas will be usable until the interpreter's environment is rebuilt
      *  by a call to interpretExpression/s, eg.<pre>
@@ -2316,7 +2317,7 @@ public class LambdaJ {
 
 
 
-    /// JMurmel JSR-223 FFI - Java calls Murmel with JSR223 eval
+    /// JMurmel JSR-223 embed API - Java calls Murmel with JSR223 eval
 
     /** <p>evalScript is for JSR-223 support.
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
@@ -2340,7 +2341,7 @@ public class LambdaJ {
 
 
 
-    /// JMurmel native FFI - Java calls Murmel
+    /// JMurmel native embed API - Java calls Murmel
 
     /** Build environment, setup symbol table, Lisp reader and writer.
      *  Needs to be called once before evalQuote() and evalScript(), not needed before interpretExpression/s  */
@@ -3064,7 +3065,7 @@ public class LambdaJ {
     /// ## class MurmelJavaProgram
     /// class MurmelJavaProgram - base class for compiled Murmel programs
 
-    /** Base class for compiled Murmel programs, contains Murmel runtime as well as FFI support for compiled Murmel programs. */
+    /** Base class for compiled Murmel programs, contains Murmel runtime as well as embed API support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
         public interface CompilerPrimitive {
@@ -3091,7 +3092,7 @@ public class LambdaJ {
 
 
 
-        /// JMurmel native FFI - Java calls compiled Murmel
+        /// JMurmel native embed API - Java calls compiled Murmel
         @Override public final ObjectReader getLispReader()  { return intp.getLispReader(); }
         @Override public final ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
         @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { intp.setReaderPrinter(lispStdin, lispStdout); }
@@ -3101,7 +3102,10 @@ public class LambdaJ {
         public final MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
             if (maybeFunction instanceof MurmelFunction) {
-                return args -> funcall(maybeFunction, args);
+                return args -> funcall((MurmelFunction)maybeFunction, args);
+            }
+            if (maybeFunction instanceof CompilerPrimitive) {
+                return args -> funcall((CompilerPrimitive)maybeFunction, args);
             }
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
         }
@@ -3116,7 +3120,7 @@ public class LambdaJ {
             }
         }
 
-        protected final Object rterror(LambdaJError e) {
+        public final Object rterror(LambdaJError e) {
             throw new LambdaJError(e.getMessage() + "\nError occured in " + loc);
         }
 
@@ -3524,7 +3528,7 @@ public class LambdaJ {
             // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
             if (result != null) result = "intern(\"" + result.toString() + "\")";
 
-            // generate getValue() for FFI
+            // generate getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n"
                      + "        switch (symbol) {\n")
                .append(globals)
