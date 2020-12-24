@@ -78,6 +78,13 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testTestFuncallError() throws Exception {
+        runtimeError("((lambda (a) a))", "(lambda (a)): not enough arguments");
+    }
+
+
+
+    @Test
     public void testArith() throws Exception {
         MurmelProgram program = compile("(+ 1 2 3 (* 4 5 6))");
         assertNotNull("failed to compile arith to class", program);
@@ -464,9 +471,31 @@ public class MurmelJavaCompilerTest {
             fail("expected error " + expected + " but got no error");
         }
         catch (LambdaJError e) {
-            String msg = e.getMessage();
-            assertNotNull("expected error", msg);
-            assertEquals("got wrong error", expected, msg.substring(0, expected.length()));
+            String actualMsg = e.getMessage();
+            assertNotNull("expected error", actualMsg);
+            assertEquals("got wrong error", expected, cutToLength(actualMsg, expected.length()));
         }
+    }
+
+    private void runtimeError(String source, String expected) throws Exception {
+        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
+        final SExpressionParser parser = new SExpressionParser(reader::read);
+
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        try {
+            Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+            murmelClass.newInstance().body();
+            fail("expected error " + expected + " but got no error");
+        }
+        catch (LambdaJError e) {
+            String actualMsg = e.getMessage();
+            assertNotNull("expected error", actualMsg);
+            assertEquals("got wrong error", expected, cutToLength(actualMsg, expected.length()));
+        }
+    }
+
+    private String cutToLength(String s, int maxLength) {
+        if (s.length() < maxLength) return s;
+        return s.substring(0, maxLength);
     }
 }

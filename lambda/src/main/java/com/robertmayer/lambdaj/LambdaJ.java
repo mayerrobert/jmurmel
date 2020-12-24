@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.341 2020/12/23 08:11:59 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.342 2020/12/23 20:50:34 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -222,7 +222,7 @@ public class LambdaJ {
         @Override public Object rplacd(Object cdr) { Object ret = this.cdr; this.cdr = cdr; return ret; }
     }
 
-    private static class SExpConsCell extends ListConsCell {
+    private static final class SExpConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
         private int startLineNo, startCharNo, lineNo, charNo;
         private SExpConsCell(int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
@@ -231,7 +231,7 @@ public class LambdaJ {
         }
     }
 
-    private static class ClosureConsCell extends ListConsCell {
+    private static final class ClosureConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
         private ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
         private ClosureConsCell(Object car, Object cdr, ConsCell closure)    { super(car, cdr); this.closure = closure; }
@@ -1297,8 +1297,9 @@ public class LambdaJ {
 
     private int traceExit(Object op, Object result, int level) {
         if (traced == null || !traced.contains(op)) return level;
-        exit(op, result, level-1);
-        return level < 1 ? 0 : level - 1; // clamp at zero in case a traceEnter() call was lost because of a preceeding exception
+        level--;
+        exit(op, result, level);
+        return level < 0 ? 0 : level; // clamp at zero in case a traceEnter() call was lost because of a preceeding exception
     }
 
     private void exit(Object op, Object result, int level) {
@@ -1433,6 +1434,7 @@ public class LambdaJ {
 
     private static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     private static Object   car(Object o)      { return o == null ? null
+                                                 : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof Object[] ? (((Object[])o).length == 0 ? null : ((Object[])o)[0])
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
@@ -1451,6 +1453,7 @@ public class LambdaJ {
 
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     private static Object   cdr(Object o)      { return o == null ? null
+                                                 : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).substring(1))
@@ -1710,17 +1713,19 @@ public class LambdaJ {
     /** 'a' must be a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols. */
     private void symbolArgs(String func, Object a) {
-        if (a == null) return;
         if (symbolp(a)) return;
         if (atom(a)) throw new LambdaJError(true, "%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a);
         final ConsCell start = (ConsCell) a;
-        for (; a != null; a = cdr(a)) {
-            if (listp(a) && cdr(a) == start) throw new LambdaJError(true, "%s: malformed %s: circular list of bindings is not allowed", func, func);
-            if (!symbolp(car(a)) || (atom(cdr(a)) && !symbolp(cdr(a))))
-                throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
+        for (; a != null; ) {
+            if (consp(a) && cdr(a) == start) throw new LambdaJError(true, "%s: malformed %s: circular list of bindings is not allowed", func, func);
+            if (!symbolp(car(a))) throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
             notReserved(func, car(a));
-            if (atom(cdr(a))) {
-                if (cdr(a) != null) notReserved(func, cdr(a));
+
+            a = cdr(a);
+            if (atom(a)) {
+                if (a == null) return; // end of a proper list, everything a-ok, move along
+                if (!symbolp(a)) throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
+                notReserved(func, a);
                 return; // that was the end of a dotted list, everything a-ok, move along
             }
         }
@@ -3188,6 +3193,15 @@ public class LambdaJ {
 
 
 
+        public static void argCheck(String expr, int expected, int actual) {
+            if (expected != actual) argError(expr, expected, actual);
+        }
+
+        private static void argError(String expr, int expected, int actual) {
+            if (expected > actual) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            if (expected < actual) throw new LambdaJError(true, "%s: too many arguments", expr);
+        }
+
         /** Primitives are in the environment as (CompilerPrimitive)... . Compiled code that calls primitives will
          *  actually call this overload and not funcall(Object, Object...) that contains the TCO thunking code. */
         public static Object funcall(CompilerPrimitive fn, Object... args) {
@@ -3617,7 +3631,7 @@ public class LambdaJ {
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
             sb.append("    public Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
-            final ConsCell extenv = params(sb, params, env, rsfx);
+            final ConsCell extenv = params(sb, params, env, rsfx, fname);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n    }\n\n");
@@ -3784,6 +3798,7 @@ public class LambdaJ {
                 throw new LambdaJError(false, e.getMessage(), form);
             }
             catch (Exception e) {
+                //e.printStackTrace();
                 throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
             }
         }
@@ -3798,7 +3813,8 @@ public class LambdaJ {
         /** args = ((sym...) form...) */
         private ConsCell lambdaToJava(WrappingWriter sb, final Object args, ConsCell env, int rsfx) {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
-            env = params(sb, car(args), env, rsfx);
+            final String expr = "(lambda " + printSEx(car(args)) + ')';
+            env = params(sb, car(args), env, rsfx, expr);
             formsToJava(sb, (ConsCell)cdr(args), env, rsfx, false);
             sb.append("        return result").append(rsfx).append("; })");
             return env;
@@ -3817,7 +3833,7 @@ public class LambdaJ {
             env = extenv(car(args), rsfx, env);
             sb.append("        private Object ").append(javasym(car(args), env)).append(" = (MurmelFunction)this::apply;\n");
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-            env = params(sb, cadr(args), env, rsfx);
+            env = params(sb, cadr(args), env, rsfx, car(args).toString());
             formsToJava(sb, (ConsCell)cddr(args), env, rsfx, false);
             sb.append("        return result").append(rsfx).append("; } }");
             return env;
@@ -3957,9 +3973,14 @@ public class LambdaJ {
         }
 
         /** generate variables from arg array */
-        // todo checks vgl zip
-        private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx) {
-            if (paramList == null) return env;
+        private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr) {
+            if (paramList == null) {
+                sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
+                return env;
+            }
+
+            if (!symbolp(paramList))
+                sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
 
             final Set<Object> seen = new HashSet<>();
             int n = 0;
