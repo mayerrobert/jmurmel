@@ -471,9 +471,6 @@ nil
 ; - trace/ untrace are special forms, should be functions (and not reserved)
 ;
 ; Compiler issues:
-; - There are pretty much no compile- or runtime checks whatsoever,
-;   actually: most compile- and runtime errors will result in
-;   Java ClassCastExceptions and NullpointerExceptions
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will thow a "not-yet-implemented" error.
 ;
@@ -490,4 +487,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.49 2020/12/22 07:09:00 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.50 2020/12/22 21:07:04 Robert Exp $

@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.343 2020/12/24 09:28:43 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.344 2020/12/24 14:13:23 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3095,7 +3095,6 @@ public class LambdaJ {
         @Override public final ObjectReader getLispReader()  { return intp.getLispReader(); }
         @Override public final ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
         @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { intp.setReaderPrinter(lispStdin, lispStdout); }
-        @Override public abstract Object body();
         @Override public abstract Object getValue(String globalSymbol);
 
         @Override
@@ -3105,6 +3104,20 @@ public class LambdaJ {
                 return args -> funcall(maybeFunction, args);
             }
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
+        }
+
+        protected abstract Object runbody();
+        @Override public Object body() {
+            try {
+                return runbody();
+            }
+            catch (LambdaJError e) {
+                return rterror(e);
+            }
+        }
+
+        protected final Object rterror(LambdaJError e) {
+            throw new LambdaJError(e.getMessage() + "\nError occured in " + loc);
         }
 
 
@@ -3161,9 +3174,9 @@ public class LambdaJ {
         public final double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
 
         public final double sub     (Object... args) { if (args.length == 1) return 0.0 - dbl(args[0]);
-                                                 double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
+                                                       double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
         public final double quot    (Object... args) { if (args.length == 1) return 1.0 / dbl(args[0]);
-                                                 double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
+                                                       double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
         public final Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
         public final Object lt      (Object... args) { return lt(args[0], args[1]); }
@@ -3195,15 +3208,6 @@ public class LambdaJ {
         }
 
 
-
-        public static void argCheck(String expr, int expected, int actual) {
-            if (expected != actual) argError(expr, expected, actual);
-        }
-
-        private static void argError(String expr, int expected, int actual) {
-            if (expected > actual) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            if (expected < actual) throw new LambdaJError(true, "%s: too many arguments", expr);
-        }
 
         /** Primitives are in the environment as (CompilerPrimitive)... . Compiled code that calls primitives will
          *  actually call this overload and not funcall(Object, Object...) that contains the TCO thunking code. */
@@ -3283,37 +3287,69 @@ public class LambdaJ {
         private static Object cdr (Object l)  { return LambdaJ.cdr(l); }
 
         private static double dbl(Object n) {
+            number(n);
             return ((Number)n).doubleValue();
         }
 
         private Object numbereq(Object lhs, Object rhs) {
+            numbers(lhs, rhs);
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
         }
 
         private Object lt(Object lhs, Object rhs) {
+            numbers(lhs, rhs);
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <  0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
         }
 
         private Object le(Object lhs, Object rhs) {
+            numbers(lhs, rhs);
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <= 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
         }
 
         private Object ge(Object lhs, Object rhs) {
+            numbers(lhs, rhs);
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >= 0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
         }
 
         private Object gt(Object lhs, Object rhs) {
+            numbers(lhs, rhs);
             if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >  0 ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
         }
 
 
 
+        public static void argCheck(String expr, int paramCount, int argCount) {
+            if (paramCount != argCount) argError(expr, paramCount, argCount);
+        }
+
+        private static void argError(String expr, int expected, int actual) {
+            if (expected > actual) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            if (expected < actual) throw new LambdaJError(true, "%s: too many arguments", expr);
+        }
+
+        private static void number(Object n) {
+            if (!(n instanceof Number)) notANumber(n);
+        }
+
+        private static void numbers(Object n1, Object n2) {
+            number(n1);
+            number(n2);
+        }
+
+        private static void notANumber(Object n) {
+            throw new LambdaJError(true, "not a number: %s", printSEx(n));
+        }
+
+
+
+        public String loc;
         protected static void main(MurmelJavaProgram program) {
+            program.loc = "<unknown>";
             try {
                 Object result = program.body();
                 if (result != null) {
@@ -3503,7 +3539,7 @@ public class LambdaJ {
                      + "        }\n"
                      + "    }\n\n"
                      + "    // toplevel forms\n"
-                     + "    public Object body() {\n        Object result0 = ").append(result).append(";\n");
+                     + "    protected Object runbody() {\n        Object result0 = ").append(result).append(";\n");
 
             /// second pass: emit toplevel forms that are not define or defun
             formsToJava(ret, bodyForms, env, 0, true);
@@ -3602,11 +3638,13 @@ public class LambdaJ {
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             notDefined("define", car(form), env);
             env = extenv(car(form), 0, env);
-            sb.append("    // ").append(lineInfo(form)).append("(define ").append(car(form)).append(" form)\n"
+            sb.append("    // ").append(lineInfo(cadr(form))).append("(define ").append(car(form)).append(" form)\n"
                     + "    private Object ").append(javasym(car(form), env)).append(" = null;\n"
-                    + "    { ").append(javasym(car(form), env)).append(" = ");
+                    + "    { loc = \"").append(lineInfo(cadr(form)))/*.append(printSEx(cadr(form)))*/.append("\";\n"
+                    + "      try { ").append(javasym(car(form), env)).append(" = ");
             formToJava(sb, cadr(form), env, 0, true);
-            sb.append("; }\n\n");
+            sb.append("; }\n"
+                    + "      catch (LambdaJError e) { rterror(e); } }\n\n");
             return env;
         }
 
@@ -3651,6 +3689,7 @@ public class LambdaJ {
             while (it.hasNext()) {
                 Object form = it.next();
                 ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
+                ret.append("        loc = \"").append(lineInfo(form))/*.append(printSEx(form))*/.append("\";\n");
                 ret.append("        result").append(rsfx).append(" = ");
                 formToJava(ret, form, env, rsfx, !topLevel && !it.hasNext());
                 ret.append(';').append('\n');
