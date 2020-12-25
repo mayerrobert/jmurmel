@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.348 2020/12/25 10:13:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.349 2020/12/25 17:31:17 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -810,9 +810,11 @@ public class LambdaJ {
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
-    private static class OpenCodedPrimitive {
+    private abstract static class OpenCodedPrimitive implements Primitive {
         private LambdaJSymbol symbol;
+
         private OpenCodedPrimitive(LambdaJSymbol symbol) { this.symbol = symbol; }
+
         @Override public String toString() { return "#<opencoded primitive: " + symbol.toString() + '>'; }
     }
     private OpenCodedPrimitive ocEval;
@@ -1650,6 +1652,8 @@ public class LambdaJ {
                     return;
                 }
                 sb.print(escapeSymbol((LambdaJSymbol) obj)); return;
+            } else if (obj instanceof OpenCodedPrimitive) {
+                sb.print(obj.toString()); return;
             } else if (primp(obj)) {
                 sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
@@ -2113,7 +2117,12 @@ public class LambdaJ {
             //      env);
 
             final LambdaJSymbol sEval = symtab.intern(new LambdaJSymbol("eval"));
-            ocEval = new OpenCodedPrimitive(sEval);
+            ocEval = new OpenCodedPrimitive(sEval) {
+                @Override public Object apply(ConsCell a) {
+                    nArgs("eval", a, 1, 2);
+                    return eval(car(a), cadr(a));
+                }
+            };
             env = cons(cons(sEval, ocEval), env);
         }
 
