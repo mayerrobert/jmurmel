@@ -65,15 +65,6 @@ cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
 
 vielleicht --jar und --fatjar: --fatjar erzeugt ein jar, das auch die rt enthaelt
 
-apply langref:      special form
-apply interpreter:  reserved, special form
-apply compiler:     reserved, special form
-eval  langref:      funktion
-eval  interpreter:  reserved, special form
-eval  compiler:     reserved, funktion
-
-
-
 packages koennte man mit namenspraefixes umsetzen, und bei einer symboltabelle/ einem environment bleiben.
 laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 

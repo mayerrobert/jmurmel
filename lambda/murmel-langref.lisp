@@ -467,12 +467,11 @@ nil
 ; - at least globals should be mutable 
 ; - globals should be special (dynamic)
 ; - support for packages should be added
-; - eval is a special form, should be a function (and not reserved)
 ; - trace/ untrace are special forms, should be functions (and not reserved)
 ;
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
-;   will thow a "not-yet-implemented" error.
+;   will throw a "not-yet-implemented" error.
 ;
 ; The todo list for features is way too long.
 
@@ -487,4 +486,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.50 2020/12/22 21:07:04 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.51 2020/12/24 19:06:44 Robert Exp $
