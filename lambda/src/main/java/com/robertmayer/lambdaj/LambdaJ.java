@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.346 2020/12/24 22:21:48 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.347 2020/12/25 09:20:18 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3072,13 +3072,13 @@ public class LambdaJ {
         }
 
         private static class MurmelFunctionCall {
-            final MurmelFunction next;
-            final Object[] args;
+            MurmelFunction next;
+            Object[] args;
 
-            private MurmelFunctionCall(MurmelFunction next, Object[] args) {
+            /*private MurmelFunctionCall(MurmelFunction next, Object[] args) {
                 this.next = next;
                 this.args = args;
-            }
+            }*/
         }
 
         private final LambdaJ intp = new LambdaJ();
@@ -3253,9 +3253,15 @@ public class LambdaJ {
             throw new LambdaJError(true, "not a function: %s", fn);
         }
 
+        private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
         /** used for function calls */
-        public static Object tailcall(Object fn, Object... args) {
-            if (fn instanceof MurmelFunction)    return new MurmelFunctionCall((MurmelFunction)fn, args); // todo kann ein statisch allokierter MurmelFunctionCall wiederverwendet werden?
+        public Object tailcall(Object fn, Object... args) {
+            if (fn instanceof MurmelFunction)    {
+                MurmelFunctionCall tailcall = this.tailcall;
+                tailcall.next = (MurmelFunction)fn;
+                tailcall.args = args;
+                return tailcall;
+            }
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return funcall(fn, args);
             throw new LambdaJError(true, "not a function: %s", fn);
@@ -3267,7 +3273,7 @@ public class LambdaJ {
         }
 
         /** used for (apply sym form) */
-        public static Object applyTailcallHelper(Object fn, Object argList) {
+        public Object applyTailcallHelper(Object fn, Object argList) {
             return tailcall(fn, toArray(argList));
         }
 
@@ -3395,11 +3401,11 @@ public class LambdaJ {
     ///
     public static class MurmelJavaCompiler {
         private final LambdaJ.SymbolTable st;
-        private final JavaCompilerUtils javaCompiler;
+        private final JavaCompilerHelper javaCompiler;
 
         public MurmelJavaCompiler(SymbolTable st, Path outPath) {
             this.st = st;
-            this.javaCompiler = new JavaCompilerUtils(outPath);
+            this.javaCompiler = new JavaCompilerHelper(outPath);
             for (String s: reservedWords) {
                 reservedSymbols.add(intern(s));
             }
@@ -4161,14 +4167,14 @@ public class LambdaJ {
 }
 
 
-/// ## class JavaCompilerUtils
-/// class JavaCompilerUtils - a helper class that wraps the Java system compiler in tools.jar,
+/// ## class JavaCompilerHelper
+/// class JavaCompilerHelper - a helper class that wraps the Java system compiler in tools.jar,
 /// used by MurmelJavaCompiler to compile the generated Java to an in-memory class and optionally a .jar file.
-class JavaCompilerUtils {
+class JavaCompilerHelper {
     private static final java.util.Map<String, String> ENV = Collections.singletonMap("create", "true");
     private MurmelClassLoader murmelClassLoader;
 
-    JavaCompilerUtils(Path outPath) {
+    JavaCompilerHelper(Path outPath) {
         AccessController.doPrivileged((PrivilegedAction<?>) () -> {
             murmelClassLoader = new MurmelClassLoader(outPath);
             return null;

@@ -14,7 +14,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testSimpleClass() throws Exception {
-        JavaCompilerUtils c = new JavaCompilerUtils(TestUtils.getTmpDir());
+        JavaCompilerHelper c = new JavaCompilerHelper(TestUtils.getTmpDir());
         Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
         assertNotNull("failed to compile Java to class", clazz);
         c.cleanup();
