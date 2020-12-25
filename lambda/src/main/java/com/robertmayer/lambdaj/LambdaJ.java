@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.345 2020/12/24 19:06:45 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.346 2020/12/24 22:21:48 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -196,10 +196,9 @@ public class LambdaJ {
                 if ((_cursor = cursor) == null) throw new NoSuchElementException();
                 if (_cursor instanceof ListConsCell) {
                     final ListConsCell list = (ListConsCell)_cursor;
-                    final Object ret = list.car();
                     if (list.cdr() == coll) cursor = null; // circle detected, stop here
                     else cursor = list.cdr();
-                    return ret;
+                    return list.car();
                 }
                 final Object ret = _cursor;  // last element of dotted list
                 cursor = null;
@@ -3073,8 +3072,8 @@ public class LambdaJ {
         }
 
         private static class MurmelFunctionCall {
-            private final MurmelFunction next;
-            private final Object[] args;
+            final MurmelFunction next;
+            final Object[] args;
 
             private MurmelFunctionCall(MurmelFunction next, Object[] args) {
                 this.next = next;
@@ -3138,55 +3137,57 @@ public class LambdaJ {
         public ConsCell commandlineArgumentList;
 
         /// predefined primitives
-        public final Object   _car (Object... args) { return car(args[0]); }
-        public final Object   _cdr (Object... args) { return cdr(args[0]); }
-        public final ConsCell _cons(Object... args) { return cons(args[0], args[1]); }
+        public final Object   _car     (Object... args) { oneArg("car",        args.length); return car(args[0]); }
+        public final Object   _cdr     (Object... args) { oneArg("cdr",        args.length); return cdr(args[0]); }
+        public final ConsCell _cons    (Object... args) { twoArg("cons",       args.length); return cons(args[0], args[1]); }
 
-        public final Object _eval      (Object... args) { return intp.eval(args[0], args.length == 2 ? args[1] : null); }
-        public final Object _eq        (Object... args) { return args[0] == args[1] ? _t : null; }
-        public final Object _null      (Object... args) { return args[0] == null ? _t : null; }
+        public final Object _eval      (Object... args) { onetwoArg("eval",    args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
+        public final Object _eq        (Object... args) { twoArg("eq",         args.length); return args[0] == args[1] ? _t : null; }
+        public final Object _null      (Object... args) { oneArg("null",       args.length); return args[0] == null ? _t : null; }
 
-        public final Object _write     (Object... args) { intp.write(args[0]); return _t; };
+        public final Object _write     (Object... args) { oneArg("write",      args.length); intp.write(args[0]); return _t; };
         public final Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; };
         public final Object _lnwrite   (Object... args) { intp.lnwrite(args == null ? null : args[0]); return _t; };
 
-        public final Object _atom      (Object... args) { return atom      (args[0]) ? _t : null; }
-        public final Object _consp     (Object... args) { return consp     (args[0]) ? _t : null; }
-        public final Object _listp     (Object... args) { return listp     (args[0]) ? _t : null; }
-        public final Object _symbolp   (Object... args) { return symbolp   (args[0]) ? _t : null; }
-        public final Object _numberp   (Object... args) { return numberp   (args[0]) ? _t : null; }
-        public final Object _stringp   (Object... args) { return stringp   (args[0]) ? _t : null; }
-        public final Object _characterp(Object... args) { return characterp(args[0]) ? _t : null; }
+        public final Object _atom      (Object... args) { oneArg("atom",       args.length); return atom      (args[0]) ? _t : null; }
+        public final Object _consp     (Object... args) { oneArg("consp",      args.length); return consp     (args[0]) ? _t : null; }
+        public final Object _listp     (Object... args) { oneArg("listp",      args.length); return listp     (args[0]) ? _t : null; }
+        public final Object _symbolp   (Object... args) { oneArg("symbolp",    args.length); return symbolp   (args[0]) ? _t : null; }
+        public final Object _numberp   (Object... args) { oneArg("numberp",    args.length); return numberp   (args[0]) ? _t : null; }
+        public final Object _stringp   (Object... args) { oneArg("stringp",    args.length); return stringp   (args[0]) ? _t : null; }
+        public final Object _characterp(Object... args) { oneArg("characterp", args.length); return characterp(args[0]) ? _t : null; }
 
-        public final ConsCell _assoc   (Object... args) { return assoc(args[0], args[1]); }
-        public final ConsCell _list    (Object... args) { return new ArraySlice(args, 0); }
+        public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
+        public final ConsCell _list    (Object... args) { return arraySlice(args, 0); }
 
-        public final long     _round   (Object... args) { return Math.round(dbl(args[0])); }
-        public final double   _floor   (Object... args) { return Math.floor(dbl(args[0])); }
-        public final double   _ceiling (Object... args) { return Math.ceil (dbl(args[0])); }
+        public final long     _round   (Object... args) { oneArg("round",      args.length); return Math.round(dbl(args[0])); }
+        public final double   _floor   (Object... args) { oneArg("floor",      args.length); return Math.floor(dbl(args[0])); }
+        public final double   _ceiling (Object... args) { oneArg("ceil",       args.length); return Math.ceil (dbl(args[0])); }
 
-        public final double   _sqrt    (Object... args) { return Math.sqrt (dbl(args[0])); }
-        public final double   _log     (Object... args) { return Math.log  (dbl(args[0])); }
-        public final double   _log10   (Object... args) { return Math.log10(dbl(args[0])); }
-        public final double   _exp     (Object... args) { return Math.exp  (dbl(args[0])); }
-        public final double   _expt    (Object... args) { return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        public final double   _mod     (Object... args) { return dbl(args[0]) % dbl(args[1]); }
+        public final double   _sqrt    (Object... args) { oneArg("sqrt",       args.length); return Math.sqrt (dbl(args[0])); }
+        public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
+        public final double   _log10   (Object... args) { oneArg("log10",      args.length); return Math.log10(dbl(args[0])); }
+        public final double   _exp     (Object... args) { oneArg("exp",        args.length); return Math.exp  (dbl(args[0])); }
+        public final double   _expt    (Object... args) { twoArg("expt",       args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
+        public final double   _mod     (Object... args) { twoArg("mod",        args.length); return dbl(args[0]) % dbl(args[1]); }
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
         public final double add     (Object... args) { double ret = 0.0; if (args != null) for (int i = 0; i < args.length; i++) ret += dbl(args[i]); return ret; }
         public final double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
 
-        public final double sub     (Object... args) { if (args.length == 1) return 0.0 - dbl(args[0]);
+        public final double sub     (Object... args) { onePlusArg("-", args.length);
+                                                       if (args.length == 1) return 0.0 - dbl(args[0]);
                                                        double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
-        public final double quot    (Object... args) { if (args.length == 1) return 1.0 / dbl(args[0]);
+        public final double quot    (Object... args) { onePlusArg("/", args.length);
+                                                       if (args.length == 1) return 1.0 / dbl(args[0]);
                                                        double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
-        public final Object numbereq(Object... args) { return numbereq(args[0], args[1]); }
-        public final Object lt      (Object... args) { return lt(args[0], args[1]); }
-        public final Object le      (Object... args) { return le(args[0], args[1]); }
-        public final Object ge      (Object... args) { return ge(args[0], args[1]); }
-        public final Object gt      (Object... args) { return gt(args[0], args[1]); }
+        public final Object numbereq(Object... args) { twoArg("=", args.length); return numbereq(args[0], args[1]); }
+        public final Object lt      (Object... args) { twoArg("<", args.length); return lt(args[0], args[1]); }
+        public final Object le      (Object... args) { twoArg("<=", args.length); return le(args[0], args[1]); }
+        public final Object ge      (Object... args) { twoArg(">=", args.length); return ge(args[0], args[1]); }
+        public final Object gt      (Object... args) { twoArg(">", args.length); return gt(args[0], args[1]); }
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args, 0)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args, 0)); }
@@ -3246,17 +3247,17 @@ public class LambdaJ {
         }
 
         public static Object funcall(Object fn, Object... args) {
-            if (fn instanceof MurmelFunction)
-                return funcall((MurmelFunction)fn, args);
-            if (fn instanceof Primitive)
-                return ((Primitive)fn).apply(arraySlice(args, 0));
+            if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
+            if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
+            if (fn instanceof Primitive)         return ((Primitive)fn).apply(arraySlice(args, 0));
             throw new LambdaJError(true, "not a function: %s", fn);
         }
 
         /** used for function calls */
         public static Object tailcall(Object fn, Object... args) {
-            if (fn instanceof MurmelFunction) return new MurmelFunctionCall((MurmelFunction)fn, args);
-            if (fn instanceof Primitive) return funcall(fn, args);
+            if (fn instanceof MurmelFunction)    return new MurmelFunctionCall((MurmelFunction)fn, args); // todo kann ein statisch allokierter MurmelFunctionCall wiederverwendet werden?
+            if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
+            if (fn instanceof Primitive)         return funcall(fn, args);
             throw new LambdaJError(true, "not a function: %s", fn);
         }
 
@@ -3326,6 +3327,23 @@ public class LambdaJ {
         }
 
 
+
+        private static void onePlusArg(String expr, int argCount) {
+            if (argCount < 1) throw new LambdaJError(true, "%s: not enough arguments", expr);
+        }
+
+        private static void oneArg(String expr, int argCount) {
+            if (1 != argCount) argError(expr, 1, argCount);
+        }
+
+        private static void onetwoArg(String expr, int argCount) {
+            if (argCount < 1) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            if (argCount > 2) throw new LambdaJError(true, "%s: too many arguments", expr);
+        }
+
+        private static void twoArg(String expr, int argCount) {
+            if (2 != argCount) argError(expr, 2, argCount);
+        }
 
         public static void argCheck(String expr, int paramCount, int argCount) {
             if (paramCount != argCount) argError(expr, paramCount, argCount);
