@@ -220,7 +220,7 @@ nil
 ; nil, t,
 ; trace, untrace,
 ; lambda, dynamic, quote, cond, labels, if, define, defun, let, let*, letrec,
-; eval, apply, progn
+; apply, progn
 
 
 ;;; == Scope ==========================
@@ -491,4 +491,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.52 2020/12/25 17:31:17 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.53 2020/12/26 06:12:22 Robert Exp $
