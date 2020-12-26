@@ -117,7 +117,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.349 2020/12/25 17:31:17 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.350 2020/12/25 20:04:06 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3562,7 +3562,14 @@ public class LambdaJ {
             while (null != (form = _forms.readObj())) {
                 try {
                     if (consp(form) && isSymbol(car(form), "define")) {
-                        env = defineToJava(ret, (ConsCell) cdr(form), env);
+                        notDefined("define", cadr(form), env);
+                        env = extenv(cadr(form), 0, env);
+                        ret.append("    // ").append(lineInfo(form)).append("(define ").append(cadr(form)).append(" form)\n"
+                                 + "    private Object ").append(javasym(cadr(form), env)).append(" = null;\n");
+
+                        ret.append("    {\n");
+                        env = defineToJava(ret, (ConsCell) form, env);
+                        ret.append("\n    }\n\n");
                         result = cadr(form);
                     }
                     else if (consp(form) && isSymbol(car(form), "defun")) {
@@ -3694,17 +3701,15 @@ public class LambdaJ {
 
 
 
-        /** form is a list (symbol forms...) */
-        private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            notDefined("define", car(form), env);
-            env = extenv(car(form), 0, env);
-            sb.append("    // ").append(lineInfo(cadr(form))).append("(define ").append(car(form)).append(" form)\n"
-                    + "    private Object ").append(javasym(car(form), env)).append(" = null;\n"
-                    + "    { loc = \"").append(lineInfo(cadr(form)))/*.append(printSEx(cadr(form)))*/.append("\";\n"
-                    + "      try { ").append(javasym(car(form), env)).append(" = ");
+        /** form is a list (symbol form) */
+        private ConsCell defineToJava(WrappingWriter sb, ConsCell _form, ConsCell env) {
+            ConsCell form = (ConsCell) cdr(_form);
+
+            sb.append("        loc = \"").append(lineInfo(_form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
+                    + "        try { ").append(javasym(car(form), env)).append(" = ");
             formToJava(sb, cadr(form), env, 0, true);
             sb.append("; }\n"
-                    + "      catch (LambdaJError e) { rterror(e); } }\n\n");
+                    + "        catch (LambdaJError e) { rterror(e); }");
             return env;
         }
 
