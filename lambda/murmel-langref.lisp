@@ -226,24 +226,29 @@ nil
 ;;; == Scope ==========================
 
 ; In the current version of Murmel both the global as well as local
-; environments are lexically scoped, i.e. currently there are
+; environments are lexically scoped, currently there are
 ; no dynamic/ special variables.
-; That means that let-bindings and function parameters will
-; lexically shadow global symbols but not affect them.
 
 
 ;;; == Additional Special Forms =======
 
 ;;; (define symbol object) -> symbol
-; define associates symbols in the global environment with a value.
+; define lexically binds symbols in the global environment with
+; memory locations that hold values.
 ; Murmel's define is somewhat similar to Common Lisp's defvar
-; except: redefining already defined symbols is an error.
+; except:
+; * CL's defvar creates dynamic global variables while
+;   Murmel's define creates lexical global variables
+; * redefining already defined symbols is an error.
 ; The first argument is not evaluated, the second is
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
 
 ;;; (defun symbol (params...) forms...) -> symbol
 ; defun is a shorthand for defining functions
+; (defun symbol (params...) forms...)
+;    <=>
+; (define symbol (lambda (params...) forms...))
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
 
@@ -486,4 +491,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.51 2020/12/24 19:06:44 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.52 2020/12/25 17:31:17 Robert Exp $
