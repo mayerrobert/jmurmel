@@ -46,11 +46,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
@@ -117,7 +119,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.350 2020/12/25 20:04:06 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.351 2020/12/26 18:58:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -772,15 +774,12 @@ public class LambdaJ {
 
         // (re-)read the new symtab
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
-        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));  reserve(sDynamic);
-        sTrace =                       symtab.intern(new LambdaJSymbol("trace"));    reserve(sTrace);
-        sUntrace =                     symtab.intern(new LambdaJSymbol("untrace"));  reserve(sUntrace);
+        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));
 
         if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reserve(sQuote); }
         if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reserve(sCond); }
         if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reserve(sLabels); }
 
-        //if (haveXtra())   { sEval    = symtab.intern(new LambdaJSymbol("eval"));     reserve(sEval); }
         if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reserve(sIf); }
         if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reserve(sDefine); }
         if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reserve(sDefun); }
@@ -797,10 +796,14 @@ public class LambdaJ {
 
         // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not refill these
         ocEval = null;
+
+        traced = null;
+
+        topEnv = null;
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sTrace, sUntrace, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
 
     private Supplier<Object> expTrue;
 
@@ -827,6 +830,7 @@ public class LambdaJ {
     /// ###  evalquote - the heart of most if not all Lisp interpreters
     private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
         Object operator = null;
+        Object func = null;
         Object result = null;
         Deque<Object> traceStack = null;
         boolean isTc = false;
@@ -865,14 +869,6 @@ public class LambdaJ {
 
 
                     /// eval - special forms
-
-                    /// eval - (trace function-name*) -> trace-result
-                    if (operator == sTrace) return trace(arguments);
-
-                    /// eval - (untrace function-name*) -> untrace-result
-                    if (operator == sUntrace) return untrace(arguments);
-
-
 
                     /// eval - (quote exp) -> exp
                     if (haveQuote() && operator == sQuote) {
@@ -927,16 +923,13 @@ public class LambdaJ {
                     /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                     if (operator == ocEval) {
                         nArgs("eval", arguments, 1, 2);
-                        //form = evalquote(car(arguments), env, stack, level, traceLvl);
                         form = car(arguments);
                         if (cdr(arguments) == null) env = topEnv;
                         else {
-                            //Object additionalEnv = evalquote(cadr(arguments), env, stack, level, traceLvl);
                             Object additionalEnv = cadr(arguments);
                             if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
                             env = append(additionalEnv, topEnv);
                         }
-                        //traceStack = push(ocEvalQuote, traceStack);
                         isTc = true; continue tailcall;
                     }
 
@@ -944,10 +937,8 @@ public class LambdaJ {
                     if (haveXtra() && operator == sIf) {
                         nArgs("if", arguments, 2, 3);
                         if (evalquote(car(arguments), env, stack, level, traceLvl) != null) {
-                            traceStack = push(operator, traceStack);
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (cddr(arguments) != null) {
-                            traceStack = push(operator, traceStack);
                             form = caddr(arguments); isTc = true; continue tailcall;
                         } else { result = null; return null; } // condition eval'd to false, no else form
                     }
@@ -1038,7 +1029,6 @@ public class LambdaJ {
 
                     /// eval - function application
                     else {
-                        final Object func;
                         final ConsCell argList;
 
                         /// eval - apply function to list
@@ -1062,11 +1052,10 @@ public class LambdaJ {
                         }
 
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
-                        traceLvl = traceEnter(operator, argList, traceLvl);
+                        traceLvl = traceEnter(func, argList, traceLvl);
                         if (func instanceof OpenCodedPrimitive) {
                             form = cons(func, argList);
-                            //traceStack = push(((OpenCodedPrimitive)func).op, traceStack);
-                            traceStack = push(((OpenCodedPrimitive)func).symbol, traceStack);
+                            traceStack = push(func, traceStack);
                             continue tailcall;
 
                         } else if (primp(func)) {
@@ -1117,7 +1106,7 @@ public class LambdaJ {
             throw new LambdaJError(e, "eval: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
-            if (operator != null) traceLvl = traceExit(operator, result, traceLvl);
+            if (func != null) traceLvl = traceExit(func, result, traceLvl);
             Object s;
             if (traceStack != null) {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
@@ -1264,25 +1253,32 @@ public class LambdaJ {
 
 
     /// ### debug support - trace and untrace
-    private Set<LambdaJSymbol> traced = null;
+    private Map<Object, LambdaJSymbol> traced = null;
 
-    private Object trace(Object symbols) {
-        if (symbols == null) return traced == null ? null : new ArraySlice(traced.toArray(), 0);
-        if (traced == null) traced = new HashSet<>();
-        for (Object sym: (ConsCell)symbols) {
+    private Object trace(ConsCell symbols) {
+        if (symbols == null) return traced == null ? null : new ArraySlice(traced.values().toArray(), 0);
+        if (traced == null) traced = new HashMap<>();
+        for (Object sym: symbols) {
             if (!symbolp(sym)) throw new LambdaJError(true, "trace: can't trace %s: not a symbol", printSEx(sym));
-            traced.add((LambdaJSymbol) sym);
+            final ConsCell envEntry = assoc(sym, topEnv);
+            if (envEntry == null) throw new LambdaJError(true, "trace: can't trace %s: not bound", printSEx(sym));
+            traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
         return symbols;
     }
 
-    private Object untrace(Object symbols) {
+    private Object untrace(ConsCell symbols) {
         if (symbols == null) { traced = null; return null; }
         ConsCell ret = null;
         if (traced != null) {
-            for (Object sym: (ConsCell) symbols) {
-                boolean wasTraced = traced.remove(sym);
-                if (wasTraced) ret = cons(sym, ret);
+            for (Object sym: symbols) {
+                if (symbolp(sym)) {
+                    final ConsCell envEntry = assoc(sym, topEnv);
+                    if (envEntry != null) {
+                        boolean wasTraced = traced.remove(cdr(envEntry)) != null;
+                        if (wasTraced) ret = cons(sym, ret);
+                    }
+                }
             }
             if (traced.isEmpty()) traced = null;
         }
@@ -1291,19 +1287,19 @@ public class LambdaJ {
 
     /** stack of tco'd function calls */
     private Deque<Object> push(Object op, Deque<Object> traceStack) {
-        if (traced == null || !traced.contains(op)) return traceStack;
+        if (traced == null || !traced.containsKey(op)) return traceStack;
         if (traceStack == null) traceStack = new ArrayDeque<>();
         traceStack.addLast(op);
         return traceStack;
     }
 
-    private int traceEnter(Object op, Object args, int level) {
-        if (traced == null || !traced.contains(op)) return level;
-        enter(op, args, level);
+    private int traceEnter(Object op, ConsCell args, int level) {
+        if (traced == null || !traced.containsKey(op)) return level;
+        enter(traced.get(op), args, level);
         return level + 1;
     }
 
-    private void enter(Object op, Object args, int level) {
+    private void enter(Object op, ConsCell args, int level) {
         final StringBuilder sb = new StringBuilder();
 
         tracePfx(sb, level);
@@ -1315,9 +1311,9 @@ public class LambdaJ {
     }
 
     private int traceExit(Object op, Object result, int level) {
-        if (traced == null || !traced.contains(op)) return level;
+        if (traced == null || !traced.containsKey(op)) return level;
         level = level < 1 ? 0 : level-1; // clamp at zero in case a traceEnter() call was lost because of a preceeding exception
-        exit(op, result, level);
+        exit(traced.get(op), result, level);
         return level;
     }
 
@@ -2124,6 +2120,10 @@ public class LambdaJ {
                 }
             };
             env = cons(cons(sEval, ocEval), env);
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("trace")), (Primitive) a -> { return trace(a); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("untrace")), (Primitive) a -> { return untrace(a); }),
+                  env));
         }
 
         if (haveT()) {
@@ -3190,7 +3190,7 @@ public class LambdaJ {
         public final Object _characterp(Object... args) { oneArg("characterp", args.length); return characterp(args[0]) ? _t : null; }
 
         public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
-        public final ConsCell _list    (Object... args) { return arraySlice(args, 0); }
+        public final ConsCell _list    (Object... args) { return arraySlice(args); }
 
         public final long     _round   (Object... args) { oneArg("round",      args.length); return Math.round(dbl(args[0])); }
         public final double   _floor   (Object... args) { oneArg("floor",      args.length); return Math.floor(dbl(args[0])); }
@@ -3221,17 +3221,20 @@ public class LambdaJ {
         public final Object ge      (Object... args) { twoArg(">=", args.length); return ge(args[0], args[1]); }
         public final Object gt      (Object... args) { twoArg(">", args.length); return gt(args[0], args[1]); }
 
-        public final Object format             (Object... args) { return intp.format(arraySlice(args, 0)); }
-        public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args, 0)); }
+        public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
+        public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
 
         public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
         public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
         public final Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(); }
-        public final Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args, 0)); }
+        public final Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args)); }
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
-        public final Object jambda             (Object... args) { return LambdaJ.findJavaMethod(arraySlice(args, 0)); }
+        public final Object jambda             (Object... args) { return LambdaJ.findJavaMethod(arraySlice(args)); }
+
+        public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
+        public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
 
 
 
@@ -3242,6 +3245,10 @@ public class LambdaJ {
 
         public static ConsCell arraySlice(Object[] o, int offset) {
             return offset >= o.length ? null : new ArraySlice(o, offset);
+        }
+
+        public static ConsCell arraySlice(Object[] o) {
+            return arraySlice(o, 0);
         }
 
 
@@ -3281,7 +3288,7 @@ public class LambdaJ {
         public static Object funcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
-            if (fn instanceof Primitive)         return ((Primitive)fn).apply(arraySlice(args, 0));
+            if (fn instanceof Primitive)         return ((Primitive)fn).apply(arraySlice(args));
             throw new LambdaJError(true, "not a function: %s", fn);
         }
 
@@ -3447,8 +3454,7 @@ public class LambdaJ {
 
         private static final String[] reservedWords = new String[] {
                 "nil", "t",
-                "trace", "untrace",
-                "lambda", "dynamic", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec",
+                "lambda", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec",
                 "apply", "progn",
         };
 
@@ -3484,7 +3490,8 @@ public class LambdaJ {
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list",
-                "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod"
+                "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod",
+                "trace", "untrace",
         };
         private static final String[][] aliasedPrimitives = new String[][] {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
@@ -3548,7 +3555,7 @@ public class LambdaJ {
                      + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                      + "    public static void main(String[] args) {\n"
                      + "        ").append(clsName).append(" program = new ").append(clsName).append("();\n"
-                     + "        program.commandlineArgumentList = arraySlice(args, 0);\n"
+                     + "        program.commandlineArgumentList = arraySlice(args);\n"
                      + "        main(program);\n"
                      + "    }\n\n");
 
@@ -3804,11 +3811,6 @@ public class LambdaJ {
 
 
                     /// * special forms:
-                    ///     - trace and untrace are no-ops
-                    if (isSymbol(op, "trace")) return;
-                    if (isSymbol(op, "untrace")) return;
-
-
 
                     ///     - quote
                     if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }

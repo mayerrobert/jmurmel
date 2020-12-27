@@ -218,8 +218,7 @@ nil
 ; may not be used as a function nor as a variable:
 ;
 ; nil, t,
-; trace, untrace,
-; lambda, dynamic, quote, cond, labels, if, define, defun, let, let*, letrec,
+; lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
 ; apply, progn
 
 
@@ -442,9 +441,12 @@ nil
 
 ; (trace function-name*) -> trace-result
 ; (untrace function-name*) -> untrace-result
-; In interpreted code these work pretty much like CL's trace/ untrace macros,
+; Arguments to trace/ untrace are eval'd.
+; In interpreted code these work similar to CL's trace/ untrace macros,
 ; see http://clhs.lisp.se/Body/m_tracec.htm.
-; In compiled code trace and untrace are no-ops.
+; Only interpreted code will be traced (user code as well as
+; interpreter primities).
+(trace 'write '+)
 
 ; (:: classname methodname paramclass...) -> primitive
 ; The primitive "::" will return a newly created primitive
@@ -472,7 +474,6 @@ nil
 ; - at least globals should be mutable 
 ; - globals should be special (dynamic)
 ; - support for packages should be added
-; - trace/ untrace are special forms, should be functions (and not reserved)
 ;
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
@@ -491,4 +492,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.53 2020/12/26 06:12:22 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.54 2020/12/26 13:50:44 Robert Exp $
