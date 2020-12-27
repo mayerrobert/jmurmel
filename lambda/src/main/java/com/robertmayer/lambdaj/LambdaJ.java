@@ -119,7 +119,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.351 2020/12/26 18:58:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.352 2020/12/27 12:49:04 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -912,7 +912,6 @@ public class LambdaJ {
                     if (haveXtra() && operator == sDefun) {
                         nArgs("defun", arguments, 3);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
-                        traceStack = push(operator, traceStack);
                         continue tailcall;
                     }
 
@@ -1056,6 +1055,7 @@ public class LambdaJ {
                         if (func instanceof OpenCodedPrimitive) {
                             form = cons(func, argList);
                             traceStack = push(func, traceStack);
+                            func = null;
                             continue tailcall;
 
                         } else if (primp(func)) {
@@ -1264,7 +1264,7 @@ public class LambdaJ {
             if (envEntry == null) throw new LambdaJError(true, "trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
-        return symbols;
+        return new ArraySlice(traced.values().toArray(), 0);
     }
 
     private Object untrace(ConsCell symbols) {
@@ -1287,7 +1287,13 @@ public class LambdaJ {
 
     /** stack of tco'd function calls */
     private Deque<Object> push(Object op, Deque<Object> traceStack) {
-        if (traced == null || !traced.containsKey(op)) return traceStack;
+        if (traced == null) return traceStack;
+        if (op instanceof LambdaJSymbol) {
+            ConsCell entry = assoc(op, topEnv);
+            if (entry == null) return traceStack;
+            op = cdr(entry);
+        }
+        if (!traced.containsKey(op)) return traceStack;
         if (traceStack == null) traceStack = new ArrayDeque<>();
         traceStack.addLast(op);
         return traceStack;
