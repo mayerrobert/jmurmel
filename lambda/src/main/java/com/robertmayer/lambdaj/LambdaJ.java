@@ -119,7 +119,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.352 2020/12/27 12:49:04 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.353 2020/12/27 14:27:27 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -871,7 +871,7 @@ public class LambdaJ {
                     /// eval - special forms
 
                     /// eval - (quote exp) -> exp
-                    if (haveQuote() && operator == sQuote) {
+                    if (operator == sQuote) {
                         oneArg("quote", arguments);
                         result = car(arguments);
                         return result;
@@ -888,7 +888,7 @@ public class LambdaJ {
                     /// eval - special forms that change the global environment
 
                     /// eval - (define symbol exp) -> symbol with a side of global environment extension
-                    if (haveXtra() && operator == sDefine) {
+                    if (operator == sDefine) {
                         twoArgs("define", arguments);
                         final Object symbol = car(arguments);
                         if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "define", printSEx(symbol));
@@ -909,7 +909,7 @@ public class LambdaJ {
 
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     // shortcut for (define symbol (lambda (params...) forms...))
-                    if (haveXtra() && operator == sDefun) {
+                    if (operator == sDefun) {
                         nArgs("defun", arguments, 3);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
                         continue tailcall;
@@ -933,7 +933,7 @@ public class LambdaJ {
                     }
 
                     /// eval - (if condform form optionalform) -> object
-                    if (haveXtra() && operator == sIf) {
+                    if (operator == sIf) {
                         nArgs("if", arguments, 2, 3);
                         if (evalquote(car(arguments), env, stack, level, traceLvl) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
@@ -946,13 +946,13 @@ public class LambdaJ {
                     ConsCell forms = null;
 
                     /// eval - (progn forms...) -> object
-                    if (haveXtra() && operator == sProgn) {
+                    if (operator == sProgn) {
                         if (!listp(arguments)) throw new LambdaJError(true, "%s: malformed progn: expected a list of forms but got %s", "progn", printSEx(arguments));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
                     /// eval - (cond (condform forms...)... ) -> object
-                    } else if (haveCond() && operator == sCond) {
+                    } else if (operator == sCond) {
                         if (arguments != null)
                             for (Object c: arguments) {
                                 if (!listp(c)) throw new LambdaJError(true, "%s: malformed cond: expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
@@ -966,7 +966,7 @@ public class LambdaJ {
                         // fall through to "eval a list of forms"
 
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
-                    } else if (haveLabels() && operator == sLabels) {
+                    } else if (operator == sLabels) {
                         nArgs("labels", arguments, 2);
                         ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
                         // stick the functions into the env
@@ -985,7 +985,7 @@ public class LambdaJ {
                     /// eval - (let optsymbol? (bindings...) bodyforms...) -> object
                     /// eval - (let* optsymbol? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
-                    } else if (haveXtra() && (operator == sLet) || operator == sLetStar || operator == sLetrec) {
+                    } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
                         final boolean letStar  = operator == sLetStar;
                         final boolean letRec   = operator == sLetrec;
                         final boolean namedLet = /*!star && !rec &&*/ symbolp(car(arguments));
@@ -1032,7 +1032,7 @@ public class LambdaJ {
 
                         /// eval - apply function to list
                         /// eval - (apply form argform) -> object
-                        if (haveApply() && operator == sApply) {
+                        if (operator == sApply) {
                             twoArgs("apply", arguments);
 
                             func = evalquote(car(arguments), env, stack, level, traceLvl);
