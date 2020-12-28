@@ -1,7 +1,21 @@
-
 init(), parser vs. in aufraeumen
 
 die ByteArrayReader aus den tests wegputzen
+
+
+
+formsToInterpretedProgram: erst alle define/defun und dann den rest stimmt genausowenig wie im compiler
+
+==> defun nur toplevel, keine duplikate, immutable, gibt r-values (l-value vs. r-value ist bei immutable egal)
+    define gibts top- und nichttoplevel, muss aber erstmalig toplevel vorkommen, mutable
+        toplevel ist der initialwert optional, nichttoplevel verpflichtend
+        spaeter: toplevel hat optionales keyword "dynamic",
+               ggf. (define (a (p1...)) forms...) statt (define a (lambda (p1...) forms...)), das waer wie defun als l-value
+    toplevel defun kann im ersten durchlauf verarbeitet werden
+    toplevel define: nur members ausspucken, keine zuweisungen
+        (ggf. den code fuer die initiale zuweisung in eine methode verpacken die bei der tatsaechlichen toplevel zuweisung aufgerufen wird?
+        oder beim ersten pass ein magic lambda (vom typ UNASSIGNED?), das den wert berechnet, sich selbst durch den wert ersetzt und das symbol als ersten return value hat?)
+    MurmelProgram#getValue() liefert UNASSIGNED (oder exception) fuer variablen, wenn body() noch nicht gelaufen ist, getFunction() und getValue() fuer functions liefert immer einen wert
 
 
 
@@ -49,10 +63,6 @@ define nur toplevel zulassen (wg. kompilieren)
 -> mehraufwand lohnt wsl nicht
 
 
-==> erstmal define und defun, global scope ist lexical
-    im compiler erstmal nur defvar und defun als toplevel form, rest gibt fehlermeldung
-    spaeter:
-      zus. defvar und defparameter, ggf. erst im interpreter, dann im compiler
 
 
 
