@@ -62,6 +62,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -119,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.355 2020/12/28 10:40:48 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.356 2020/12/29 07:21:35 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -365,6 +366,8 @@ public class LambdaJ {
         @Override public void printString(String s) { out.print(s); }
     }
 
+
+
     /// ## Scanner, symboltable and S-expression parser
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
@@ -432,11 +435,25 @@ public class LambdaJ {
 
         /// Scanner
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
-        private boolean isDigit(int x)  { return !escape && (x >= '0' && x <= '9'); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isBar(int x)    { return !escape && x == '|'; }
 
         private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
+
+        private static final Pattern longPattern = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*))");
+        private static boolean isLong(String s) {
+            if (s == null || s.isEmpty()) return false;
+            return longPattern.matcher(s).matches();
+        }
+
+        private static final Pattern doublePattern = Pattern.compile(
+                "[-+]?"                              // optional-sign
+              + "((([0-9]+\\.)[0-9]*)|\\.[0-9]+)"    // either: one-or-more-digits '.' zero-or-more-digits  or: '.' one-or-more-digits
+              + "([eE][-+]?[0-9]+)?");               // optional: e-or-E optional-sign one-or-more-digits
+        private static boolean isDouble(String s) {
+            if (s == null || s.isEmpty()) return false;
+            return doublePattern.matcher(s).matches();
+        }
 
         /*java.io.PrintWriter debug;
         {
@@ -528,30 +545,35 @@ public class LambdaJ {
 
             if (index == 0) {
                 tok = null;
-            } else if (haveDouble() && isNumber(token, index)) {
-                try {
-                    String s = tokenToString(token, 0, index);
-                    if (!haveLong() || s.indexOf('.') != -1 || s.indexOf('e') != -1 || s.indexOf('E') != -1) tok = Double.valueOf(s);
-                    else tok = Long.valueOf(s);
-                }
-                catch (NumberFormatException e) {
-                    throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, tokenToString(token, 0, index));
-                }
+
             } else if (haveString() && (token[0] & 0xff) == '"') {
                 tok = tokenToString(token, 1, index);
+
             } else {
                 String s = tokenToString(token, 0, index);
-                if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                tok = new LambdaJSymbol(s);
+                if (haveDouble() && isDouble(s)) {
+                    try { tok = Double.valueOf(s); }
+                    catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
+                }
+
+                else if (haveLong() && isLong(s)) {
+                    try { tok = Long.valueOf(s); }
+                    catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
+                }
+
+                else if (haveDouble() && isLong(s)) {
+                    try { tok = Double.valueOf(s); }
+                    catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
+                }
+
+                else {
+                    if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
+                    tok = new LambdaJSymbol(s);
+                }
             }
+
             if (trace.ge(TraceLevel.TRC_LEX))
                 tracer.println("*** scan  token  |" + tok + '|');
-        }
-
-        private boolean isNumber(char[] tok, int len) {
-            final int first = 0xff & tok[0];
-            if (isDigit(first)) return true;
-            return (len > 1 && (first == '-' || first == '+') && isDigit(0xff & tok[1]));
         }
 
         private String tokenToString(char[] b, int first, int end) {
