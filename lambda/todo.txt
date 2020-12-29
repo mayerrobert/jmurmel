@@ -4,6 +4,8 @@ die ByteArrayReader aus den tests wegputzen
 
 
 
+Macros: in ANSI Common Lisp, Paul Graham pp413 steht quasiquote expansion
+
 formsToInterpretedProgram: erst alle define/defun und dann den rest stimmt genausowenig wie im compiler
 
 ==> defun nur toplevel, keine duplikate, immutable, gibt r-values (l-value vs. r-value ist bei immutable egal)
@@ -16,6 +18,11 @@ formsToInterpretedProgram: erst alle define/defun und dann den rest stimmt genau
         (ggf. den code fuer die initiale zuweisung in eine methode verpacken die bei der tatsaechlichen toplevel zuweisung aufgerufen wird?
         oder beim ersten pass ein magic lambda (vom typ UNASSIGNED?), das den wert berechnet, sich selbst durch den wert ersetzt und das symbol als ersten return value hat?)
     MurmelProgram#getValue() liefert UNASSIGNED (oder exception) fuer variablen, wenn body() noch nicht gelaufen ist, getFunction() und getValue() fuer functions liefert immer einen wert
+
+
+
+...jdk-15\bin\jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs
+-> das baut anscheinend ein JRE mit den Java Modulen, dies fuer JMurmel braucht
 
 
 

@@ -119,7 +119,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.354 2020/12/27 14:55:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.355 2020/12/28 10:40:48 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3589,7 +3589,7 @@ public class LambdaJ {
                         extenv = defunToJava(ret, (ConsCell) cdr(form), extenv);
                         result = cadr(form);
                     }
-                    bodyForms.add(form);
+                    else bodyForms.add(form);
 
                     if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
                         globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), extenv)).append(";\n");
@@ -3622,7 +3622,7 @@ public class LambdaJ {
                      + "    protected Object runbody() {\n        Object result0 = ").append(result).append(";\n");
 
             /// second pass: emit toplevel forms that are not define or defun
-            formsToJava(ret, bodyForms, env, env, 0, true);
+            formsToJava(ret, bodyForms, extenv, extenv, 0, true);
 
             ret.append("        return result0;\n    }\n"
                      + "}\n");
@@ -3869,14 +3869,14 @@ public class LambdaJ {
 
                     if (isSymbol(op, "define")) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
-                        notDefined("define", cadr(form), env); // todo notdefined in topEnv?
-                        insertFront(cadr(form), topEnv);
+                        //notDefined("define", cadr(form), env); // todo notdefined in topEnv?
+                        //insertFront(cadr(form), topEnv);
                         return;
                     }
                     if (isSymbol(op, "defun")) {
                         if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
-                        notDefined("defun", cadr(form), env); // todo notdefined in topEnv?
-                        insertFront(cadr(form), topEnv);
+                        //notDefined("defun", cadr(form), env); // todo notdefined in topEnv?
+                        //insertFront(cadr(form), topEnv);
                         return;
                     }
 
@@ -4350,7 +4350,7 @@ class JavaCompilerHelper {
         if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. "
                 + "No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
         final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
-        final List<String> options = Arrays.asList("-g", "-target", "1.8");
+        final List<String> options = Arrays.asList("-g", "-source", "1.8", "-target", "1.8");
         try {
             fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));
             //                                     out       diag  opt      classes
