@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.359 2020/12/30 08:10:26 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.360 2020/12/30 16:04:51 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3578,7 +3578,8 @@ public class LambdaJ {
                 ret.append("package ").append(unitName.substring(0, dotpos)).append(";\n\n");
                 clsName = unitName.substring(dotpos+1);
             }
-            ret.append("import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
+            ret.append("import com.robertmayer.lambdaj.LambdaJ;\n"
+                     + "import com.robertmayer.lambdaj.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                      + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                      + "    public static void main(String[] args) {\n"
@@ -3592,20 +3593,17 @@ public class LambdaJ {
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
-            Object result = null;
             ConsCell globalEnv = predefinedEnv;
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
                     if (consp(form) && isSymbol(car(form), "define")) {
                         globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
-                        result = cadr(form);
                     }
                     else if (consp(form) && isSymbol(car(form), "defun")) {
                         globalEnv = defunToJava(ret, (ConsCell) cdr(form), globalEnv);
-                        result = cadr(form);
                     }
-                    else bodyForms.add(form);
+                    bodyForms.add(form);
 
                     if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
                         globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
@@ -3617,8 +3615,6 @@ public class LambdaJ {
                     throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
                 }
             }
-            // remember the result of the last define/ defun. this will be the result of a program that only contains define/ defun
-            if (result != null) result = "intern(\"" + result.toString() + "\")";
 
             // generate getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n"
@@ -3635,7 +3631,7 @@ public class LambdaJ {
                      + "        }\n"
                      + "    }\n\n"
                      + "    // toplevel forms\n"
-                     + "    protected Object runbody() {\n        Object result0 = ").append(result).append(";\n");
+                     + "    protected Object runbody() {\n        Object result0 = null;\n");
 
             /// second pass: emit toplevel forms that are not define or defun
             formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
@@ -3679,7 +3675,7 @@ public class LambdaJ {
             return cons(cons(sym, javaName), env);
         }
 
-        /** for compiling possibly recursive functions: extend the environment by putting (symbol rt()::mangle(symname)) in front of {@code prev} */
+//        /** for compiling possibly recursive functions: extend the environment by putting (symbol rt()::mangle(symname)) in front of {@code prev} */
 //        private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
 //            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', null)), prev);
 //        }
@@ -3747,55 +3743,49 @@ public class LambdaJ {
 
 
         /** form is a list (symbol form) */
-        private ConsCell defineToJava(WrappingWriter sb, ConsCell _form, ConsCell env) {
-            notDefined("define", cadr(_form), env);
-            env = extenv(cadr(_form), 0, env);
-            sb.append("    // ").append(lineInfo(_form)).append("(define ").append(cadr(_form)).append(" form)\n"
-                     + "    private Object ").append(javasym(cadr(_form), env)).append(" = null;\n");
+        private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+            final Object sym = cadr(form);
 
-            sb.append("    {\n");
+            notDefined("define", sym, env);
+            env = extenv(sym, 0, env);
+            final String javasym = javasym(sym, env);
 
-            ConsCell form = (ConsCell) cdr(_form);
+            sb.append("    // ").append(lineInfo(form)).append("(define ").append(sym).append(" form)\n"
+                    + "    public Object ").append(javasym).append(" = LambdaJ.UNASSIGNED;\n");
 
-            sb.append("        loc = \"").append(lineInfo(_form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
-                    + "        try { ").append(javasym(car(form), env)).append(" = ");
-            formToJava(sb, cadr(form), env, env, 0, true);
-            sb.append("; }\n"
-                    + "        catch (LambdaJError e) { rterror(e); }");
-            sb.append("\n    }\n\n");
+            sb.append("    public Object define_").append(javasym).append("() {\n"
+                    + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
+                    + "        if (").append(javasym).append(" != LambdaJ.UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
+                    + "        try { ").append(javasym).append(" = "); formToJava(sb, caddr(form), env, env, 0, true); sb.append("; }\n"
+                    + "        catch (LambdaJError e) { rterror(e); }\n"
+                    + "        return intern(\"").append(sym).append("\");\n"
+                    + "    }\n\n");
             return env;
         }
 
         /** form is a list (symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            notDefined("defun", car(form), env);
-            final int rsfx = 0;
             final Object sym = car(form);
             final Object params = cadr(form);
             final Object body = cddr(form);
 
+            notDefined("defun", sym, env);
             env = extenv(sym, 0, env);
-            String fname = javasym(sym, env);
+            final String javasym = javasym(sym, env);
 
-            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
-            sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
-            sb.append("    {\n"
-                    + "        ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
-            ConsCell extenv = params(sb, params, env, rsfx, fname);
-            sb.append("        Object result").append(rsfx).append(" = null;\n");
-            formsToJava(sb, (ConsCell)body, extenv, env, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n    } };\n"
+            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n"
+                    + "    private Object ").append(javasym).append(" = LambdaJ.UNASSIGNED;\n");
+
+            sb.append("    public Object defun_").append(javasym).append("() {\n"
+                    + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
+                    + "        if (").append(javasym).append(" != LambdaJ.UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
+                    + "        ").append(javasym).append(" = new MurmelFunction () { public Object apply(Object... args0) {\n"); // todo new MurmelFunction() auf lambda umstellen
+            ConsCell extenv = params(sb, params, env, 0, javasym);
+            sb.append("        Object result").append(0).append(" = null;\n");
+            formsToJava(sb, (ConsCell)body, extenv, env, 0, false);
+            sb.append("        return result0;\n        } };\n"
+                    + "        return intern(\"").append(sym).append("\");\n"
                     + "    }\n\n");
-
-//            final String fname = mangle(sym.toString(), 0);
-//            env = extenvfunc(sym.toString(), fname, env);
-//
-//            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
-//            sb.append("    public Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
-//            final ConsCell extenv = params(sb, params, env, rsfx, fname);
-//            sb.append("        Object result").append(rsfx).append(" = null;\n");
-//            formsToJava(sb, (ConsCell)body, extenv, env, rsfx, false);
-//            sb.append("        return result").append(rsfx).append(";\n    }\n\n");
 
             return env;
         }
@@ -3807,17 +3797,12 @@ public class LambdaJ {
         private void formsToJava(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
-                Object form = it.next();
-                if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun"))) {
-                    formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
-                }
-                else {
-                    ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
-                    ret.append("        loc = \"").append(lineInfo(form))/*.append(printSEx(form))*/.append("\";\n");
-                    ret.append("        result").append(rsfx).append(" = ");
-                    formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
-                    ret.append(';').append('\n');
-                }
+                final Object form = it.next();
+                ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
+                ret.append("        loc = \"").append(lineInfo(form))/*.append(printSEx(form))*/.append("\";\n");
+                ret.append("        result").append(rsfx).append(" = ");
+                formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
+                ret.append(';').append('\n');
             }
         }
 
@@ -3895,14 +3880,14 @@ public class LambdaJ {
 
                     if (isSymbol(op, "define")) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
-                        //notDefined("define", cadr(form), env); // todo notdefined in topEnv?
-                        //insertFront(cadr(form), topEnv);
+                        final String javasym = javasym(cadr(form), env);
+                        sb.append("define_").append(javasym).append("()");
                         return;
                     }
                     if (isSymbol(op, "defun")) {
                         if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
-                        //notDefined("defun", cadr(form), env); // todo notdefined in topEnv?
-                        //insertFront(cadr(form), topEnv);
+                        final String javasym = javasym(cadr(form), env);
+                        sb.append("defun_").append(javasym).append("()");
                         return;
                     }
 
