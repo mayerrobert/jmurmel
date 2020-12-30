@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Serializable;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
@@ -120,7 +121,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.360 2020/12/30 16:04:51 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.361 2020/12/30 19:23:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2315,61 +2316,21 @@ public class LambdaJ {
         void setReaderPrinter(ObjectReader reader, ObjectWriter writer);
     }
 
-    /** Turn {@code forms} into an interpreted Murmel program: toplevel define/ defun will be interpreted once,
-     *  the remains will be wrapped in the method {@link MurmelProgram#body} that can be run multiple times.
+    /** Turn {@code program} into an interpreted Murmel program: {@code program} will be wrapped in the method
+     *  {@link MurmelProgram#body} that can be run multiple times.
      *
-     *  Note how this is somewhat similar to {@link MurmelJavaCompiler#formsToJavaClass(String, Iterable, String)}.
-     *  All interpreted programs created from one LambdaJ instance will share the same global environment (global variables and functions). */
-    public MurmelProgram formsToInterpretedProgram(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        final LambdaJ intp = LambdaJ.this;
-
+     *  Note how this is somewhat similar to {@link MurmelJavaCompiler#formsToJavaClass(String, Iterable, String)}. */
+    public MurmelProgram formsToInterpretedProgram(String program, ReadSupplier in, WriteConsumer out) {
         return new MurmelProgram() {
-            @Override public Object getValue(String globalSymbol) { return intp.getValue(globalSymbol); }
-            @Override public MurmelFunction getFunction(String funcName) { return intp.getFunction(funcName); }
+            @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
+            @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
-            @Override public ObjectReader getLispReader() { return intp.getLispReader(); }
-            @Override public ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
-            @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { intp.setReaderPrinter(reader, writer); }
-
-            private final SymbolTable symtab;
-            private final List<Object> bodyForms = new ArrayList<>();
-            private final Object result;
-            {
-                if (LambdaJ.this.symtab == null)
-                    init(program, out);
-                else
-                    ((SExpressionParser)LambdaJ.this.symtab).setInput(program);
-                symtab = LambdaJ.this.symtab;
-
-                Object result = null;
-                Object form;
-                while ((form = ((SExpressionParser)symtab).readObj()) != null) {
-                    try {
-                        if (consp(form) && car(form) == sDefine) {
-                            result = evalquote(form, topEnv, 0, 0, 0);
-                        }
-                        else if (consp(form) && car(form) == sDefun) {
-                            result = evalquote(form, topEnv, 0, 0, 0);
-                        }
-                        else bodyForms.add(form);
-                    }
-                    catch (LambdaJError e) {
-                        throw new LambdaJError(false, e.getMessage(), form);
-                    }
-                    catch (Exception e) {
-                        throw new LambdaJError(e, "formsToInterpretedProgram init: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form);
-                    }
-                }
-                this.result = result;
-            }
+            @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
+            @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
+            @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
 
             @Override public Object body() {
-                if (symtab != LambdaJ.this.symtab) throw new LambdaJError("stale MurmelProgram object: environment was replaced since object creation");
-                Object result = this.result;
-                for (Object form: bodyForms) {
-                    result = evalquote(form, topEnv, 0, 0, 0);
-                }
-                return result;
+                return interpretExpressions(new StringReader(program)::read, in, out);
             }
         };
     }
