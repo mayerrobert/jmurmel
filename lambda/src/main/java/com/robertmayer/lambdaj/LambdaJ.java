@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.357 2020/12/29 09:19:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.358 2020/12/30 06:59:35 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3727,9 +3727,9 @@ public class LambdaJ {
             if (form == null) form = intern("nil");
             final ConsCell symentry = assoc(form, env);
             if (symentry == null) {
-                throw new LambdaJError(true, "undefined symbol %s", form.toString());
-                //System.err.println("implicit declaration of " + form.toString());
-                //return mangle(form.toString(), 0);
+                //throw new LambdaJError(true, "undefined symbol %s", form.toString());
+                System.err.println("implicit declaration of " + form.toString());
+                return mangle(form.toString(), 0);
             }
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
@@ -3772,26 +3772,26 @@ public class LambdaJ {
             final Object params = cadr(form);
             final Object body = cddr(form);
 
-//            env = extenv(sym, 0, env);
-//            String fname = javasym(sym, env);
-//
-//            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
-//            sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
-//            sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
-//            ConsCell extenv = params(sb, params, env, rsfx);
-//            sb.append("        Object result").append(rsfx).append(" = null;\n");
-//            formsToJava(sb, (ConsCell)body, extenv, rsfx, false);
-//            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
-
-            final String fname = mangle(sym.toString(), 0);
-            env = extenvfunc(sym.toString(), fname, env);
+            env = extenv(sym, 0, env);
+            String fname = javasym(sym, env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
-            sb.append("    public Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
-            final ConsCell extenv = params(sb, params, env, rsfx, fname);
+            sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
+            sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
+            ConsCell extenv = params(sb, params, env, rsfx, fname);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, env, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n    }\n\n");
+            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
+
+//            final String fname = mangle(sym.toString(), 0);
+//            env = extenvfunc(sym.toString(), fname, env);
+//
+//            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
+//            sb.append("    public Object ").append(fname).append("(Object... args").append(rsfx).append(") {\n");
+//            final ConsCell extenv = params(sb, params, env, rsfx, fname);
+//            sb.append("        Object result").append(rsfx).append(" = null;\n");
+//            formsToJava(sb, (ConsCell)body, extenv, env, rsfx, false);
+//            sb.append("        return result").append(rsfx).append(";\n    }\n\n");
 
             return env;
         }

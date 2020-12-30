@@ -83,6 +83,35 @@ public class MurmelJavaCompilerTest {
     }
 
 
+    // function uses a variable that is defined later
+    @Test
+    public void testForwardVariable() throws Exception {
+        MurmelProgram program = compile("(defun f () x) (define x 1) (f)");
+        assertEquals(1L, program.body());
+    }
+
+    // function uses a variable that is not defined todo erzeugt Java mit fehlender variable
+    //@Test
+    public void testUndefinedVariable() throws Exception {
+        MurmelProgram program = compile("(defun f () x) (f)");
+        assertEquals(1L, program.body());
+    }
+
+    // function uses a function that is defined later
+    @Test
+    public void testForwardFunction() throws Exception {
+        MurmelProgram program = compile("(defun f () (x)) (defun x() 1) (f)");
+        assertEquals(1L, program.body());
+    }
+
+    // function uses a function that is not defined todo erzeugt Java mit fehlender variable
+    //@Test
+    public void testUndefinedFunction() throws Exception {
+        MurmelProgram program = compile("(defun f () (x)) (f)");
+        assertEquals(1L, program.body());
+    }
+
+
 
     @Test
     public void testArith() throws Exception {
