@@ -19,6 +19,8 @@ formsToInterpretedProgram: erst alle define/defun und dann den rest stimmt genau
         oder beim ersten pass ein magic lambda (vom typ UNASSIGNED?), das den wert berechnet, sich selbst durch den wert ersetzt und das symbol als ersten return value hat?)
     MurmelProgram#getValue() liefert UNASSIGNED (oder exception) fuer variablen, wenn body() noch nicht gelaufen ist, getFunction() und getValue() fuer functions liefert immer einen wert
 
+siehe auch http://blog.rongarret.info/2009/08/global-variables-done-right.html
+
 
 
 ...jdk-15\bin\jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs

@@ -478,7 +478,6 @@ nil
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
-; - compiler doesn't handle forward references
 ; - compiler emits all toplevel defines/defuns and then all
 ;   other toplevel forms - this is wrong
 ;
@@ -495,4 +494,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.55 2020/12/27 12:49:03 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.56 2020/12/29 07:21:34 Robert Exp $
