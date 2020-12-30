@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.356 2020/12/29 07:21:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.357 2020/12/29 09:19:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3988,10 +3988,11 @@ public class LambdaJ {
             return env;
         }
 
-        private void prognToJava(WrappingWriter sb, ConsCell cond, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        // todo vielleicht funcall weglassen wenn forms nur 1 element hat oder null ist?
+        private void prognToJava(WrappingWriter sb, ConsCell forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             sb.append((isLast ? "tailcall(" : "funcall(")
                       + "(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
-            formsToJava(sb, cond, env, topEnv, rsfx, false);
+            formsToJava(sb, forms, env, topEnv, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
         }
 
