@@ -120,7 +120,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.358 2020/12/30 06:59:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.359 2020/12/30 08:10:26 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1520,6 +1520,7 @@ public class LambdaJ {
     private static boolean  stringp(Object o)  { return o instanceof String; }
     private static boolean  characterp(Object o) { return o instanceof Character; }
 
+    /** return a string with "line x:y..xx:yy: " */
     private static String lineInfo(Object form) {
         if (!(form instanceof SExpConsCell)) return "";
         SExpConsCell f = (SExpConsCell)form;
@@ -3561,11 +3562,11 @@ public class LambdaJ {
         /** Compile the Murmel compilation unit to Java source for a standalone application class {@code unitName}
          *  with a "public static void main()" */
         public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
-            ConsCell env = null;
-            for (String   global: globalvars)        env = extenvIntern(intern(global),   '_' + global,   env);
-            for (String[] alias:  aliasedGlobals)    env = extenvIntern(intern(alias[0]), alias[1], env);
-            for (String   prim:   primitives)        env = extenvprim(prim, mangle(prim, 0), env);
-            for (String[] alias:  aliasedPrimitives) env = extenvprim(alias[0], alias[1], env);
+            ConsCell predefinedEnv = null;
+            for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
+            for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
+            for (String   prim:   primitives)        predefinedEnv = extenvprim(prim, mangle(prim, 0), predefinedEnv);
+            for (String[] alias:  aliasedPrimitives) predefinedEnv = extenvprim(alias[0], alias[1], predefinedEnv);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -3592,29 +3593,22 @@ public class LambdaJ {
 
             /// first pass: emit toplevel define/ defun forms
             Object result = null;
-            ConsCell extenv = env;
+            ConsCell globalEnv = predefinedEnv;
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
                     if (consp(form) && isSymbol(car(form), "define")) {
-                        notDefined("define", cadr(form), extenv);
-                        extenv = extenv(cadr(form), 0, extenv);
-                        ret.append("    // ").append(lineInfo(form)).append("(define ").append(cadr(form)).append(" form)\n"
-                                 + "    private Object ").append(javasym(cadr(form), extenv)).append(" = null;\n");
-
-                        ret.append("    {\n");
-                        extenv = defineToJava(ret, (ConsCell) form, extenv);
-                        ret.append("\n    }\n\n");
+                        globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
                         result = cadr(form);
                     }
                     else if (consp(form) && isSymbol(car(form), "defun")) {
-                        extenv = defunToJava(ret, (ConsCell) cdr(form), extenv);
+                        globalEnv = defunToJava(ret, (ConsCell) cdr(form), globalEnv);
                         result = cadr(form);
                     }
                     else bodyForms.add(form);
 
                     if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
-                        globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), extenv)).append(";\n");
+                        globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
                 }
                 catch (LambdaJError e) {
                     throw new LambdaJError(false, e.getMessage(), form);
@@ -3644,7 +3638,7 @@ public class LambdaJ {
                      + "    protected Object runbody() {\n        Object result0 = ").append(result).append(";\n");
 
             /// second pass: emit toplevel forms that are not define or defun
-            formsToJava(ret, bodyForms, extenv, extenv, 0, true);
+            formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
 
             ret.append("        return result0;\n    }\n"
                      + "}\n");
@@ -3754,6 +3748,13 @@ public class LambdaJ {
 
         /** form is a list (symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell _form, ConsCell env) {
+            notDefined("define", cadr(_form), env);
+            env = extenv(cadr(_form), 0, env);
+            sb.append("    // ").append(lineInfo(_form)).append("(define ").append(cadr(_form)).append(" form)\n"
+                     + "    private Object ").append(javasym(cadr(_form), env)).append(" = null;\n");
+
+            sb.append("    {\n");
+
             ConsCell form = (ConsCell) cdr(_form);
 
             sb.append("        loc = \"").append(lineInfo(_form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
@@ -3761,6 +3762,7 @@ public class LambdaJ {
             formToJava(sb, cadr(form), env, env, 0, true);
             sb.append("; }\n"
                     + "        catch (LambdaJError e) { rterror(e); }");
+            sb.append("\n    }\n\n");
             return env;
         }
 
@@ -3777,11 +3779,13 @@ public class LambdaJ {
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n");
             sb.append("    private MurmelFunction ").append(fname).append(" = null;\n");
-            sb.append("    { ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
+            sb.append("    {\n"
+                    + "        ").append(fname).append(" = new MurmelFunction () { public Object apply(Object... args").append(rsfx).append(") {\n");
             ConsCell extenv = params(sb, params, env, rsfx, fname);
             sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, env, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n    } }; }\n\n");
+            sb.append("        return result").append(rsfx).append(";\n    } };\n"
+                    + "    }\n\n");
 
 //            final String fname = mangle(sym.toString(), 0);
 //            env = extenvfunc(sym.toString(), fname, env);
