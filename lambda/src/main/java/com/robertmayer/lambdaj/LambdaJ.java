@@ -121,7 +121,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.361 2020/12/30 19:23:26 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.362 2020/12/30 20:01:23 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1511,6 +1511,8 @@ public class LambdaJ {
     private static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
     private static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
     private static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
+    private static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
+    private static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
     private static boolean  consp(Object o)    { return o instanceof ConsCell; }
     private static boolean  atom(Object o)     { return !(o instanceof ConsCell); }                // ! consp(x)
@@ -3554,6 +3556,8 @@ public class LambdaJ {
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
+            passTwo = false;
+            implicitDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
             Object form;
             while (null != (form = _forms.readObj())) {
@@ -3562,7 +3566,7 @@ public class LambdaJ {
                         globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
                     }
                     else if (consp(form) && isSymbol(car(form), "defun")) {
-                        globalEnv = defunToJava(ret, (ConsCell) cdr(form), globalEnv);
+                        globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
                     }
                     bodyForms.add(form);
 
@@ -3576,6 +3580,10 @@ public class LambdaJ {
                     throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
                 }
             }
+            if (!implicitDecl.isEmpty()) {
+                throw new LambdaJError("undefined symbols: " + implicitDecl);
+            }
+            implicitDecl = null;
 
             // generate getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n"
@@ -3594,7 +3602,8 @@ public class LambdaJ {
                      + "    // toplevel forms\n"
                      + "    protected Object runbody() {\n        Object result0 = null;\n");
 
-            /// second pass: emit toplevel forms that are not define or defun
+            /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
+            passTwo = true;
             formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
 
             ret.append("        return result0;\n    }\n"
@@ -3604,22 +3613,6 @@ public class LambdaJ {
         }
 
 
-
-        /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
-         *  Returns the newly created (and inserted) symbolentry (murmelsymbol . javasymbol) */
-        private ConsCell insertFront(Object symbol, ConsCell env) {
-            if (symbol != null && !(symbol instanceof LambdaJSymbol)) throw new LambdaJError(true, "not a symbol: %s", symbol);
-            final String symname = symbol == null ? null : symbol.toString();
-            final LambdaJSymbol sym = intern(symname);
-            notReserved(sym);
-
-            final ConsCell symbolEntry = cons(symbol, mangle(symname, 0));
-            final Object oldCar = car(env);
-            final Object oldCdr = cdr(env);
-            env.rplaca(symbolEntry);
-            env.rplacd(cons(oldCar, oldCdr));
-            return symbolEntry;
-        }
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
          *  symbols that are reserved words throw an error. */
@@ -3634,22 +3627,6 @@ public class LambdaJ {
         /** extend environment w/o reserved word check */
         private ConsCell extenvIntern(LambdaJSymbol sym, String javaName, ConsCell env) {
             return cons(cons(sym, javaName), env);
-        }
-
-//        /** for compiling possibly recursive functions: extend the environment by putting (symbol rt()::mangle(symname)) in front of {@code prev} */
-//        private ConsCell extenvfunc(String symname, int sfx, ConsCell prev) {
-//            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', null)), prev);
-//        }
-
-//        // todo diese funktion steckt auch params ins env -> verwenden
-//        private ConsCell extenvfunc(String symname, ConsCell params, int sfx, ConsCell prev) {
-//            return cons(cons(intern(symname), cons("((MurmelFunction)rt()::" + mangle(symname, sfx) + ')', params)), prev);
-//        }
-
-        private ConsCell extenvfunc(String symname, String javaName, ConsCell env) {
-            final LambdaJSymbol sym = intern(symname);
-            notReserved(sym);
-            return extenvIntern(sym, "((MurmelFunction)rt()::" + javaName + ')', env);
         }
 
         private ConsCell extenvprim(String symname, String javaName, ConsCell env) {
@@ -3674,14 +3651,18 @@ public class LambdaJ {
             return '_' + mangled.toString() + (sfx == 0 ? "" : sfx);
         }
 
+        private boolean passTwo;
+        private Set<String> implicitDecl;
         private String javasym(Object form, ConsCell env) {
             if (form == null) form = intern("nil");
             final ConsCell symentry = assoc(form, env);
             if (symentry == null) {
-                //throw new LambdaJError(true, "undefined symbol %s", form.toString());
+                if (passTwo) throw new LambdaJError(true, "undefined symbol %s", form.toString());
                 System.err.println("implicit declaration of " + form.toString());
+                implicitDecl.add(form.toString());
                 return mangle(form.toString(), 0);
             }
+            else if (!passTwo) implicitDecl.remove(form.toString());
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
             else javasym = (String)cdr(symentry);
@@ -3703,7 +3684,8 @@ public class LambdaJ {
 
 
 
-        /** form is a list (symbol form) */
+        /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
+         *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             final Object sym = cadr(form);
 
@@ -3724,11 +3706,11 @@ public class LambdaJ {
             return env;
         }
 
-        /** form is a list (symbol ((symbol...) forms...)) */
+        /** @param form a list (defun symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final Object sym = car(form);
-            final Object params = cadr(form);
-            final Object body = cddr(form);
+            final Object sym = cadr(form);
+            final Object params = caddr(form);
+            final Object body = cdddr(form);
 
             notDefined("defun", sym, env);
             env = extenv(sym, 0, env);
