@@ -121,7 +121,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.362 2020/12/30 20:01:23 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.363 2020/12/31 08:53:46 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3090,6 +3090,12 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as embed API support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
+        public interface CompilerGlobal {
+            Object get();
+        }
+
+        public static final CompilerGlobal UNASSIGNED = () -> { throw new LambdaJError(false, "unassigned value"); };
+
         public interface CompilerPrimitive {
             Object applyPrimitive(Object... args);
         }
@@ -3097,11 +3103,6 @@ public class LambdaJ {
         private static class MurmelFunctionCall {
             MurmelFunction next;
             Object[] args;
-
-            /*private MurmelFunctionCall(MurmelFunction next, Object[] args) {
-                this.next = next;
-                this.args = args;
-            }*/
         }
 
         private final LambdaJ intp = new LambdaJ();
@@ -3458,6 +3459,14 @@ public class LambdaJ {
                 throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", sym.toString());
         }
 
+        private void notReserved(Object sym) {
+            if (sym == null)
+                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", "nil");
+            requireSymbol(sym);
+            if (reservedSymbols.contains(sym))
+                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", sym.toString());
+        }
+
 
 
         /// Environment for compiled Murmel:
@@ -3617,11 +3626,15 @@ public class LambdaJ {
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
          *  symbols that are reserved words throw an error. */
         private ConsCell extenv(Object symbol, int sfx, ConsCell prev) {
-            if (symbol != null && !(symbol instanceof LambdaJSymbol)) throw new LambdaJError(true, "not a symbol: %s", symbol);
+            requireSymbol(symbol);
             final String symname = symbol == null ? null : symbol.toString();
-            final LambdaJSymbol sym = intern(symname);
+            final LambdaJSymbol sym = intern(symname); // todo warum ein Symbol nochmal internen?
             notReserved(sym);
             return extenvIntern(sym, mangle(symname, sfx), prev);
+        }
+
+        private static void requireSymbol(Object symbol) {
+            if (symbol != null && !(symbol instanceof LambdaJSymbol)) throw new LambdaJError(true, "not a symbol: %s", symbol);
         }
 
         /** extend environment w/o reserved word check */
@@ -3660,7 +3673,7 @@ public class LambdaJ {
                 if (passTwo) throw new LambdaJError(true, "undefined symbol %s", form.toString());
                 System.err.println("implicit declaration of " + form.toString());
                 implicitDecl.add(form.toString());
-                return mangle(form.toString(), 0);
+                return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
             else if (!passTwo) implicitDecl.remove(form.toString());
             final String javasym;
@@ -3682,6 +3695,12 @@ public class LambdaJ {
             }
         }
 
+        private void defined(String func, Object sym, ConsCell env) {
+            if (sym == null) sym = intern("nil");
+            final ConsCell symentry = assoc(sym, env);
+            if (symentry == null) throw new LambdaJError(true, "%s: undefined symbol %s", func, sym.toString());
+        }
+
 
 
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
@@ -3689,17 +3708,18 @@ public class LambdaJ {
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             final Object sym = cadr(form);
 
+            notReserved(sym);
             notDefined("define", sym, env);
-            env = extenv(sym, 0, env);
-            final String javasym = javasym(sym, env);
+            final String javasym = mangle(sym.toString(), 0);
+            env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
             sb.append("    // ").append(lineInfo(form)).append("(define ").append(sym).append(" form)\n"
-                    + "    public Object ").append(javasym).append(" = LambdaJ.UNASSIGNED;\n");
+                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
-                    + "        if (").append(javasym).append(" != LambdaJ.UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
-                    + "        try { ").append(javasym).append(" = "); formToJava(sb, caddr(form), env, env, 0, true); sb.append("; }\n"
+                    + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
+                    + "        try { ").append(javasym).append(" = () -> "); formToJava(sb, caddr(form), env, env, 0, true); sb.append("; }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
                     + "        return intern(\"").append(sym).append("\");\n"
                     + "    }\n\n");
@@ -3712,17 +3732,18 @@ public class LambdaJ {
             final Object params = caddr(form);
             final Object body = cdddr(form);
 
+            notReserved(sym);
             notDefined("defun", sym, env);
-            env = extenv(sym, 0, env);
-            final String javasym = javasym(sym, env);
+            final String javasym = mangle(sym.toString(), 0);
+            env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env); // todo fuer rekursive aufrufe ggf. einen member "self" in die klasse stecken und ins environment javasym -> self
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n"
-                    + "    private Object ").append(javasym).append(" = LambdaJ.UNASSIGNED;\n");
+                    + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
-            sb.append("    public Object defun_").append(javasym).append("() {\n"
+            sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
-                    + "        if (").append(javasym).append(" != LambdaJ.UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
-                    + "        ").append(javasym).append(" = new MurmelFunction () { public Object apply(Object... args0) {\n"); // todo new MurmelFunction() auf lambda umstellen
+                    + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
+                    + "        ").append(javasym).append(" = () -> new MurmelFunction () { public Object apply(Object... args0) {\n"); // todo new MurmelFunction() auf lambda umstellen
             ConsCell extenv = params(sb, params, env, 0, javasym);
             sb.append("        Object result").append(0).append(" = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, env, 0, false);
@@ -3742,7 +3763,7 @@ public class LambdaJ {
             while (it.hasNext()) {
                 final Object form = it.next();
                 ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
-                ret.append("        loc = \"").append(lineInfo(form))/*.append(printSEx(form))*/.append("\";\n");
+                ret.append("        loc = \"").append(lineInfo(form)).append(escapeString(printSEx(form))).append("\";\n");
                 ret.append("        result").append(rsfx).append(" = ");
                 formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
                 ret.append(';').append('\n');
@@ -3823,13 +3844,19 @@ public class LambdaJ {
 
                     if (isSymbol(op, "define")) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
-                        final String javasym = javasym(cadr(form), env);
+                        final Object sym = cadr(form);
+                        notReserved(sym); // todo notreserved und defined muesste eigentlcich durch pass1 erledigt sein
+                        defined("define", sym, env);
+                        final String javasym = mangle(cadr(form).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
                         return;
                     }
                     if (isSymbol(op, "defun")) {
                         if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
-                        final String javasym = javasym(cadr(form), env);
+                        final Object sym = cadr(form);
+                        notReserved(sym); // todo notreserved und defined muesste eigentlcich durch pass1 erledigt sein
+                        defined("define", sym, env);
+                        final String javasym = mangle(cadr(form).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
                         return;
                     }
