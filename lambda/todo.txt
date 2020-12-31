@@ -5,75 +5,13 @@ die ByteArrayReader aus den tests wegputzen
 
 
 Macros: in ANSI Common Lisp, Paul Graham pp413 steht quasiquote expansion
-
-==> defun nur toplevel, keine duplikate, immutable, gibt r-values (l-value vs. r-value ist bei immutable egal)
-    define gibts top- und nichttoplevel, muss aber erstmalig toplevel vorkommen, mutable
-        toplevel ist der initialwert optional, nichttoplevel verpflichtend
-        spaeter: toplevel hat optionales keyword "dynamic",
-               ggf. (define (a (p1...)) forms...) statt (define a (lambda (p1...) forms...)), das waer wie defun als l-value
-    toplevel defun kann im ersten durchlauf verarbeitet werden
-    toplevel define: nur members ausspucken, keine zuweisungen
-        (ggf. den code fuer die initiale zuweisung in eine methode verpacken die bei der tatsaechlichen toplevel zuweisung aufgerufen wird?
-        oder beim ersten pass ein magic lambda (vom typ UNASSIGNED?), das den wert berechnet, sich selbst durch den wert ersetzt und das symbol als ersten return value hat?)
-    MurmelProgram#getValue() liefert UNASSIGNED (oder exception) fuer variablen, wenn body() noch nicht gelaufen ist, getFunction() und getValue() fuer functions liefert immer einen wert
-
-siehe auch http://blog.rongarret.info/2009/08/global-variables-done-right.html
-
+in https://icem.folkwang-uni.de/~finnendahl/cm_kurse/doc/schintro/schintro_130.html#SEC190 ist defmacro skizziert
 
 
 ...jdk-15\bin\jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs
 -> das baut anscheinend ein ca. 30MB grosses JRE mit den Java Modulen, dies fuer JMurmel braucht
 
 
-
-scope und extent:
-https://stackoverflow.com/questions/64418124/dynamic-binding-in-common-lisp
-https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node43.html
-
-JMurmel setzt globale variablen nicht richtig als special um, vgl. https://stackoverflow.com/questions/3855862/setq-and-defvar-in-lisp
--> Lisp hat kein lexical global environment, alle globalen variablen sind special, lookup ist also dynamisch
--> Murmel hat lexical global environment
--> special heisst:
-   wenns ein let- oder parameter binding für eine special variable gibt, "sehen" alle aufgerufenen funktionen diesen wert statt des normalen werts den die globale variable hat.
-   gehen let- bzw. parameter binding out of scope, hat die special variable wieder den alten wert
-   -> wenns kein special gibt, kann man stattdessen folgendes programmieren:
-      die funktion greift nicht auf global zu sondern hat stattdessen parameter
-      man uebergibt der funktion entweder global als argument oder einen anderen wert
-
-vielleicht define und redefine (oder declare/ define), und global environment wird als lexical deklariert und forward references sind erlaubt?
--> das waer in etwa so wies derzeit funktioniert
-toplevel defun bleibt, nicht-toplevel defun wird nach label uebersetzt, label kommt neu dazu
-
-Murmel define ist ziemlich gleich wie CL defvar (aber Murmel gibt fehler bei duplikaten, CL nicht?!?)
--> umbenennen?
--> frueher gabs anscheinend define mit einem parameter:
-    in LISP geht define so: (vgl. ABOUT LISP)
-    -> (define (first (lambda (x) (car x))))
-           first
-    -> damit koennte insertFront einfach arg ins environment stecken
-
-define im compiler auch nicht-toplevel zulassen:
--> in formToJava zuweisung generieren, undefined symbole sammeln und nachher members generieren
--> oder in formsToJava beim ersten pass member + zuweisung = UNDEFINED generieren
--> define vs defvar/ defparameter/ defconstant klaeren
-
-defun nur toplevel zulassen: interpreter + compiler
--> oder nicht-toplevel im compiler umsetzen, vielleicht mit labelToJava
--> besser nur toplevel defun. fuer selbstmodifizierenden code kann man
-   (define f (lambda (p) (form))) verwenden, ggf. auch
-   (define f (label rec (p) (form)))
-
-define nur toplevel zulassen (wg. kompilieren)
--> oder kann man die variable im ersten lauf mit UNDEF belegen und der zweite lauf setzt einen wert? was ist mit functions?
-    oder das globale symbol wuerde erst im zweiten lauf des compilers an geeigneter stelle ins environment des compilers gesteckt?
-    -> dann muesste der compiler auch globales/ lokales environment haben
--> mehraufwand lohnt wsl nicht
-
-
-
-
-
-compiler: defun wieder auf Object = ...; {...} umstellen, sobald assignments moeglich sind
 
 cmdlineflags wos let aber nicht letXXX oder ggf named let gibt
 -> --no-scheme, auch null? und ggf if abdrehen
@@ -121,13 +59,6 @@ statt trace >= TRC_XXX.ordinal -> methode TraceLevel.ge(TraceLevel)
 anzahl parameter duerfen begrenzt werden, auch bei varargs
 -> hilft bei cdr(arg) im compiler, umsetzen, dokumentieren, global mit dem wert erfinden, vgl. http://...
 
-eval im interpreter sollte ggf. auch eine funktion sein
--> geht nicht wg. TCO
-    -> ein lambda ins environment reinstecken? eigentlich: ein closure, closure ist topenv
-eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
-wuerde sich beim umstellen auf funktion angleichen lassen
--> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
-
 funktion compile, und dem interpreter beibringen, wie kompilierte funktionen aufgerufen werden, und/ oder Primitive auf MurmelFunction umstellen
 -> erst CPS im compiler umsetzen
 
@@ -159,8 +90,6 @@ zeilentabellen lisp->java mitfuehren und ins java verpacken? dann koennte ein ca
 wenns namespaces gibt, sollte :: wahrscheinlich i-wie mit import verheiratet werden
 
 vielleicht doch nil=null und t=Boolean.TRUE? Interpreter ggf. angleichen
-
-der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
 
 refactor: alles was zum interpreter gehoert in eine neue Klasse LambdaJ.MurmelInterpreter heben
 -> auf gleichem Level wie LambdaJ.MurmelJavaCompiler und LambdaJ.MurmelJavaProgram
@@ -198,9 +127,6 @@ anstatt letXX, cond im compiler auszuprogrammieren, kann man auch desugar progra
 die generierten programme koennten ein cmd arg "--repl" unterstuetzen: mit dem arg gibts nach body() kein exit() sondern repl()
 
 filevariablen statt der gefaehrlichen cmdline args
-
-global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
-lambda parameternamen auch nicht, koennte ein problem sein
 
 JSR223 vielleicht in ein zweites jar verpacken?
 

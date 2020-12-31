@@ -866,6 +866,13 @@ usage gibt keine --no-XXX aus, nur mit parameter --help-features
 
 in --help und --Xhelp aufteilen
 
+eval im interpreter sollte ggf. auch eine funktion sein
+-> geht nicht wg. TCO
+    -> ein lambda ins environment reinstecken? eigentlich: ein closure, closure ist topenv
+eval im compiler hat nur das global env, im interpreter hats das ganze dyn env
+wuerde sich beim umstellen auf funktion angleichen lassen
+-> oder eval bekommt einen zweiten optionalen param environment, bei null ists topenv
+
 checken was passiert wenn eval eine kompilierte funktion im environment mitbekommt, oder ein lambda oder primitive returned
 eval returned Interpreter-Primitive write:
     JMurmel> (apply (eval 'write) '(1))
@@ -914,4 +921,11 @@ compiler: gibt ArrayIndexOutOfBoundsException, args werden nicht gegen params ge
 interpreter: ((lambda (a) a)) sollte einen fehler geben, gibt aber nil. erst ab 2 params werden die argumente richtig gezaehlt
 
 in kommentaren, doku checken ob FFI an den richtigen stellen verwendet wird, ggf. embedded statt FFI
+
+compiler: defun wieder auf Object = ...; {...} umstellen, sobald assignments moeglich sind
+
+der interpreter und kompilierte programme unterstuetze beide getValue() und getFunction(). irgendwie ein interface drueberziehen
+
+global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
+lambda parameternamen auch nicht, koennte ein problem sein
 
