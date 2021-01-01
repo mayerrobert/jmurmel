@@ -70,6 +70,9 @@ import java.util.stream.Stream;
 import javax.tools.ToolProvider;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
+
+import com.robertmayer.lambdaj.LambdaJ.ConsCell;
+
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.SimpleJavaFileObject;
@@ -121,7 +124,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.363 2020/12/31 08:53:46 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.364 2020/12/31 19:58:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -184,6 +187,38 @@ public class LambdaJ {
         public Object rplacd(Object cdr) { throw new UnsupportedOperationException(); }
 
         ConsCell closure() { return null; }
+    }
+
+    public static final class ListBuilder {
+        private Object first = null;
+        private Object last = null;
+
+        public ListBuilder append(Object elem) {
+            ConsCell newCell = ConsCell.cons(elem, null);
+            if (first == null) {
+                last = first = newCell;
+            }
+            else if (last instanceof ConsCell) {
+                ((ConsCell) last).rplacd(newCell);
+                last = newCell;
+            }
+            else throw new LambdaJ.LambdaJError("can't append list element to dotted list");
+            return this;
+        }
+
+        public ListBuilder appendLast(Object lastElem) {
+            if (first == null) {
+                last = first = lastElem;
+            }
+            else if (last instanceof ConsCell) {
+                ((ConsCell) last).rplacd(lastElem);
+                last = lastElem;
+            }
+            else throw new LambdaJ.LambdaJError("can't append last list element to dotted list");
+            return this;
+        }
+
+        public Object first() { return first; }
     }
 
     private static class ListConsCell extends ConsCell {
@@ -3845,7 +3880,7 @@ public class LambdaJ {
                     if (isSymbol(op, "define")) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
-                        notReserved(sym); // todo notreserved und defined muesste eigentlcich durch pass1 erledigt sein
+                        notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
                         final String javasym = mangle(cadr(form).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
@@ -3854,7 +3889,7 @@ public class LambdaJ {
                     if (isSymbol(op, "defun")) {
                         if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
-                        notReserved(sym); // todo notreserved und defined muesste eigentlcich durch pass1 erledigt sein
+                        notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
                         final String javasym = mangle(cadr(form).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
@@ -4176,13 +4211,14 @@ public class LambdaJ {
 //        }
 
         private void quotedFormToJava(WrappingWriter sb, Object form) {
-            if (form == null || form.toString().equals("nil")) { sb.append("null"); return; }
+            if (form == null || form.toString().equals("nil")) { sb.append("null"); }
 
-            if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); return; }
-            if (atom(form))    { atomToJava(sb, form); return; }
+            else if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); }
+            else if (atom(form))    { atomToJava(sb, form); }
 
-            // todo den generierten code von rekursiv auf loop umstellen, mit builder vgl. ConsTest
-            if (consp(form)) {
+            else if (consp(form)) {
+                /*
+                // generates recursive code that might stackoverflow at runtime on long lists
                 int parens = 0;
                 boolean first = true;
                 for (Object o = form; ; o = cdr(o)) {
@@ -4210,10 +4246,27 @@ public class LambdaJ {
                     }
                 }
                 for (int i = 0; i < parens; i++) sb.append(')');
-                return;
+                */
+
+                // use a builder to avoid stackoverflow at runtime on long lists. nested lists still are recursive at compiletime as well as runtime, tough
+                sb.append("new LambdaJ.ListBuilder()");
+                for (Object o = form; ; o = cdr(o)) {
+                    if (cdr(o) != null) {
+                        sb.append("\n        .append("); quotedFormToJava(sb, car(o)); sb.append(')');
+                        if (!consp(cdr(o))) {
+                            sb.append("\n        .appendLast("); quotedFormToJava(sb, cdr(o)); sb.append(')');
+                            break;
+                        }
+                    }
+                    else {
+                        sb.append("\n        .append("); quotedFormToJava(sb, car(o)); sb.append(')');
+                        break;
+                    }
+                }
+                sb.append("\n        .first()");
             }
 
-            throw new LambdaJError("quote: internal error");
+            else throw new LambdaJError("quote: internal error");
         }
 
 

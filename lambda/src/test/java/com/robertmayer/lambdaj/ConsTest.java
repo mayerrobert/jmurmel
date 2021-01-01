@@ -58,37 +58,5 @@ public class ConsTest {
 
 
 
-    static ListBuilder listBuilder() { return new ListBuilder(); }
-}
-
-class ListBuilder {
-    Object first = null;
-    Object last = null;
-
-    ListBuilder append(Object elem) {
-        ConsCell newCell = ConsCell.cons(elem, null);
-        if (first == null) {
-            last = first = newCell;
-        }
-        else if (last instanceof ConsCell) {
-            ((ConsCell) last).rplacd(newCell);
-            last = newCell;
-        }
-        else throw new LambdaJ.LambdaJError("can't append list element to dotted list");
-        return this;
-    }
-
-    ListBuilder appendLast(Object lastElem) {
-        if (first == null) {
-            last = first = lastElem;
-        }
-        else if (last instanceof ConsCell) {
-            ((ConsCell) last).rplacd(lastElem);
-            last = lastElem;
-        }
-        else throw new LambdaJ.LambdaJError("can't append last list element to dotted list");
-        return this;
-    }
-
-    Object first() { return first; }
+    static LambdaJ.ListBuilder listBuilder() { return new LambdaJ.ListBuilder(); }
 }
