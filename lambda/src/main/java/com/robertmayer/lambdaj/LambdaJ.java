@@ -124,7 +124,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.364 2020/12/31 19:58:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.365 2021/01/01 10:08:31 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -4032,14 +4032,14 @@ public class LambdaJ {
             if (car(args) instanceof LambdaJSymbol) {
                 // named let
                 final ConsCell params = paramList(cdr(args));
-                sb.append(isLast ? "tailcall(" : "funcall(");
+                sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
                 // regular let
                 final ConsCell params = paramList(args);
-                sb.append(isLast ? "tailcall(" : "funcall(");
+                sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
                 bindings = (ConsCell)(car(args));
             }

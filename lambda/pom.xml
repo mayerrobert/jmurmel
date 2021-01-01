@@ -20,7 +20,7 @@
             <url>LICENSE</url>
         </license>
     </licenses>
-    
+
     <properties>
         <javac.target>1.8</javac.target>
 
@@ -74,10 +74,13 @@
 						<!-- <addClasspath>true</addClasspath> -->
 						<mainClass>com.robertmayer.lambdaj.LambdaJ</mainClass>
 					</manifest>
+                    <manifestEntries>
+                        <Automatic-Module-Name>com.robertmayer.lambdaj</Automatic-Module-Name>
+                    </manifestEntries>
 				</archive>
 			</configuration>
 		  </plugin>
-	      
+
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>

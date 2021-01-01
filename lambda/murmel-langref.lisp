@@ -222,23 +222,37 @@ nil
 ; apply, progn
 
 
-;;; == Scope ==========================
+;;; == Variables and Scope ============
 
-; In the current version of Murmel both the global as well as local
-; environments are lexically scoped, currently there are
-; no dynamic/ special variables.
+; Symbols are bound to global variables using define or defun
+; (see below), and to local variables using let, let*, letrec or
+; lambda parameter lists.
+;
+; Murmel's global bindings are dynamic, i.e. a symbol is bound to
+; a newly created variable when define or defun are actually executed.
+; The symbol's binding as well as the variable's extent (lifetime)
+; last to the end of the program (the symbol's binding may be
+; temporarily replaced by a local binding, though).
+;
+; Murmel's local bindings are lexical, i.e. a symbol is bound to
+; a newly created variable when a let/let*/letrec/lambda form
+; is executed. The symbol's binding as well as the associated variable
+; are removed when leaving the lexical scope of the let/let*/letrec/lambda
+; form, restoring any previously existing binding (which may have
+; been local or global).
 
 
 ;;; == Additional Special Forms =======
 
 ;;; (define symbol object) -> symbol
-; define lexically binds symbols in the global environment with
+; define binds symbols in the global environment with
 ; memory locations that hold values.
 ; Murmel's define is somewhat similar to Common Lisp's defvar
 ; except:
-; * CL's defvar creates dynamic global variables while
-;   Murmel's define creates lexical global variables
-; * redefining already defined symbols is an error.
+; * CL's defvar creates special global variables while
+;   Murmel's define creates global variables that can be
+;   lexically hidden by e.g. a let-binding.
+; * Redefining already defined symbols is an error in Murmel.
 ; The first argument is not evaluated, the second is
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
@@ -494,4 +508,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.56 2020/12/29 07:21:34 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.57 2020/12/30 09:23:28 Robert Exp $
