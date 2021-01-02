@@ -4,4 +4,4 @@
 ; output: |Hello, |World!
 ; result: t
 
-(write (quote Hello,\ ))(write (quote World!))
+(write (quote Hello\,\ ))(write (quote World!))

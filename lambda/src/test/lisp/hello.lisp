@@ -1,5 +1,5 @@
 (write
-  (quote Hello,\ World!))
+  (quote Hello\,\ World!))
 
 ; output: |Hello, World!|
 ; result: t
