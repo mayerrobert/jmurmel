@@ -61,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
@@ -70,8 +71,6 @@ import java.util.stream.Stream;
 import javax.tools.ToolProvider;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
-
-import com.robertmayer.lambdaj.LambdaJ.ConsCell;
 
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
@@ -124,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.365 2021/01/01 10:08:31 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.366 2021/01/01 19:47:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -407,7 +406,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression parser
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '\''; }
+    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '\'' || x == '`' || x == ','; }
 
     private static boolean containsSExSyntaxOrWhiteSpace(String s) {
         for (int i = 0; i < s.length(); i++) {
@@ -438,6 +437,7 @@ public class LambdaJ {
         private int prevLineNo = 1, prevCharNo = 0;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
+        private boolean backquote;
         private int look;
         private char token[] = new char[TOKEN_MAX];
         private Object tok;
@@ -554,7 +554,15 @@ public class LambdaJ {
             int index = 0;
             skipWs();
             if (look != EOF) {
-                if (isSyntax(look)) {
+                if (isBar(look)) {
+                    look = getchar();
+                    do {
+                        if (index < SYMBOL_MAX) token[index++] = (char)look;
+                        look = getchar();
+                    } while (look != EOF && !isBar(look));
+                    if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
+                    else look = getchar(); // consume trailing |
+                } else if (isSyntax(look)) {
                     token[index++] = (char)look;  look = getchar();
                 } else if (haveString() && isDQuote(look)) {
                     do {
@@ -562,14 +570,6 @@ public class LambdaJ {
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
                     if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
-                    else look = getchar(); // consume trailing "
-                } else if (isBar(look)) {
-                    look = getchar();
-                    do {
-                        if (index < SYMBOL_MAX) token[index++] = (char)look;
-                        look = getchar();
-                    } while (look != EOF && !isBar(look));
-                    if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
                     else look = getchar(); // consume trailing "
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
@@ -686,10 +686,15 @@ public class LambdaJ {
             skipWs();
             int startLine = lineNo, startChar = charNo;
             readToken();
-            return readObject(startLine, startChar);
+            return expand_backquote(readObject(startLine, startChar));
         }
 
-        private final Object quote = intern(new LambdaJSymbol("quote"));
+        private final Object sQuote          = intern(new LambdaJSymbol("quote"));
+        private final Object sQuasiquote     = intern(new LambdaJSymbol("quasiquote"));
+        private final Object sUnquote        = intern(new LambdaJSymbol("unquote"));
+        private final Object sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
+        private final Object sAppend         = intern(new LambdaJSymbol("append"));
+        private final Object sCons           = intern(new LambdaJSymbol("cons"));
 
         private Object readObject(int startLine, int startChar) {
             if (tok == null) {
@@ -724,7 +729,29 @@ public class LambdaJ {
                 skipWs();
                 int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                return cons(startLine, startChar, quote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+            }
+            if (!tokEscape && isToken(tok, "`")) {
+                if (backquote)
+                    throw new LambdaJError("nested backquote is not supported" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                skipWs();
+                int _startLine = lineNo, _startChar = charNo;
+                readToken();
+                backquote = true;
+                Object o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                backquote = false;
+                return o;
+            }
+            if (!tokEscape && isToken(tok, ",")) {
+                if (!backquote)
+                    throw new LambdaJError("comma not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                skipWs();
+                boolean splice;
+                if (look == '@') { splice = true; look = getchar(); }
+                else splice = false;
+                int _startLine = lineNo, _startChar = charNo;
+                readToken();
+                return cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
             }
             if (symbolp(tok)) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
@@ -767,6 +794,8 @@ public class LambdaJ {
             }
         }
 
+
+
         private ListConsCell cons(int startLine, int startChar, Object car, Object cdr) {
             return pos ? new SExpConsCell(startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
         }
@@ -797,6 +826,58 @@ public class LambdaJ {
                 }
             }
             throw new LambdaJError(true, "%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
+        }
+
+
+
+        Object expand_backquote(Object form) {
+            if (atom(form))
+                return form;
+
+            final ConsCell formCons = (ConsCell)form;
+            final Object op = car(formCons);
+
+            if (op == sQuote)
+                return form;
+
+            if (op == sUnquote || op == sUnquote_splice) {
+                throw new LambdaJError("comma is not inside a backquote");
+            }
+
+            if (op == sQuasiquote)
+                return expand_quasiquote(cadr(formCons));
+
+            return mapcar(o -> expand_backquote(o), formCons);
+        }
+
+        private Object expand_quasiquote(Object form) {
+            if (form == null) return null;
+            if (atom(form))
+                return list(sQuote, form);
+
+            final ConsCell formCons = (ConsCell)form;
+            final Object op = car(formCons);
+
+            if (op == sUnquote_splice)
+                throw new LambdaJError("can't splice here");
+            if (op == sQuasiquote)
+                throw new LambdaJError("nested backquote is not implemented");
+
+            if (op == sUnquote)
+                return cadr(formCons);
+
+            if (consp(op) && car(op) == sUnquote_splice)
+                return list(sAppend, cadr(op), expand_quasiquote(cdr(formCons)));
+
+            return list(sCons, expand_quasiquote(op), expand_quasiquote(cdr(formCons)));
+        }
+
+        private ConsCell list(Object o1, Object o2) {
+            return new ListConsCell(o1, new ListConsCell(o2, null));
+        }
+
+        private ConsCell list(Object o1, Object o2, Object o3) {
+            return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, null)));
         }
     }
 
@@ -830,6 +911,10 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
+        sQuasiquote     = symtab.intern(new LambdaJSymbol("quasiquote"));
+        sUnquote        = symtab.intern(new LambdaJSymbol("unquote"));
+        sUnquote_splice = symtab.intern(new LambdaJSymbol("unquote-splice"));
+
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
         sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));
 
@@ -860,6 +945,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
+    private Object sQuasiquote, sUnquote, sUnquote_splice;
     private Object sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
 
     private Supplier<Object> expTrue;
@@ -1650,6 +1736,14 @@ public class LambdaJ {
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add);
         return ret.toArray();
+    }
+
+    private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
+        final ListBuilder b = new ListBuilder();
+        for (Object o: l) {
+            b.append(f.apply(o));
+        }
+        return (ConsCell) b.first();
     }
 
     /** transform {@code ob} into an S-expression, atoms are not escaped */

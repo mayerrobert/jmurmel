@@ -21,7 +21,7 @@ public class LambdaJTest {
         /*  0 */ { "write", "#<primitive>", null },
 
         // application of builtins
-        /*  1 */ { "(write (quote (Hello, world!)))", "t", "(Hello, world!)" },
+        /*  1 */ { "(write (quote (Hello\\, world!)))", "t", "(|Hello,| world!)" },
         /*  2 */ { "(write (quote HELLO))", "t", "HELLO" },
         /*  3 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
         /*  4 */ { "(assoc (quote write) ())", "nil", null },
