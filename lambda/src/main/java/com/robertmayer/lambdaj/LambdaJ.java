@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.366 2021/01/01 19:47:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.367 2021/01/02 21:54:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -911,10 +911,6 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sQuasiquote     = symtab.intern(new LambdaJSymbol("quasiquote"));
-        sUnquote        = symtab.intern(new LambdaJSymbol("unquote"));
-        sUnquote_splice = symtab.intern(new LambdaJSymbol("unquote-splice"));
-
         sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
         sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));
 
@@ -945,7 +941,6 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sQuasiquote, sUnquote, sUnquote_splice;
     private Object sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
 
     private Supplier<Object> expTrue;
@@ -1740,8 +1735,17 @@ public class LambdaJ {
 
     private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
         final ListBuilder b = new ListBuilder();
-        for (Object o: l) {
-            b.append(f.apply(o));
+        Object o = l;
+        for (;;) {
+            if (o == null) break;
+            if (consp(o)) {
+                b.append(f.apply(car(o)));
+            }
+            else {
+                b.appendLast(f.apply(o));
+                break;
+            }
+            o = cdr(o);
         }
         return (ConsCell) b.first();
     }

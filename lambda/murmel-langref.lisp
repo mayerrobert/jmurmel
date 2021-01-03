@@ -84,8 +84,8 @@
 
 ; atoms that are symbols
 a-symbol
-|a symbol|         ; |a symbol|
-a\ symbol          ; a\ symbol
+|a symbol|            ; |a symbol|
+a\ symbol             ; a\ symbol
 
 )
 
@@ -93,19 +93,26 @@ a\ symbol          ; a\ symbol
 'an-expression
 
 ; a dotted pair
-'(a . b)            ;(a . b)
+'(a . b)              ;(a . b)
 
 ; a dotted list
-'(a . (b . (c . d)));(a . (b . (c . d)))
+'(a . (b . (c . d)))  ;(a . (b . (c . d)))
 
 ; shorthand for dotted list   ==> (a b c . d)
-'(a b c . d)        ;(a b c . d)
+'(a b c . d)          ;(a b c . d)
 
 ; a proper list       ==> (a b c)
 '(a . (b . (c . ()))) ;(a . (b . (c . ())))
 
 ; shorthand for a proper list ==> (a b c)
-'(a b c)            ;(a b c)
+'(a b c)              ;(a b c)
+
+; backquote starts "fill-in templates":
+; Backquote, comma and comma-at work similar to CL,
+; except: currently nested backquotes are not supported,
+; comma-dot is also not supported.
+(define a 'a-val) (define c 'c-val) (define d '(d-val1 d-val2))
+`((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
 
 
 ;;; == Predefined Symbols =============
@@ -131,10 +138,6 @@ internal-time-units-per-second
 ;;; (lambda (params...) forms...) -> closure
 ; When a lambda is created by the special form "lambda"
 ; the lexical environment is captured at the time of lambda creation.
-;
-; Note: Common Lisp has a dynamic global environment, i.e.
-;       all global variables are special.
-;       Murmel currently has a lexical global environment.
 ;
 ; Arguments to the special form "lambda" are not evaluated.
 (lambda (p1 p2) p1)
@@ -508,4 +511,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.57 2020/12/30 09:23:28 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.58 2021/01/01 19:47:21 Robert Exp $
