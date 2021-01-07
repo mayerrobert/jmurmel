@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.367 2021/01/02 21:54:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.368 2021/01/03 20:33:01 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -437,7 +437,7 @@ public class LambdaJ {
         private int prevLineNo = 1, prevCharNo = 0;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
-        private boolean backquote;
+        private int backquote;
         private int look;
         private char token[] = new char[TOKEN_MAX];
         private Object tok;
@@ -732,18 +732,18 @@ public class LambdaJ {
                 return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
             }
             if (!tokEscape && isToken(tok, "`")) {
-                if (backquote)
-                    throw new LambdaJError("nested backquote is not supported" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+//                if (backquote > 0)
+//                    throw new LambdaJError("nested backquote is not supported" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 skipWs();
                 int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                backquote = true;
+                backquote++;
                 Object o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
-                backquote = false;
+                backquote--;
                 return o;
             }
             if (!tokEscape && isToken(tok, ",")) {
-                if (!backquote)
+                if (backquote == 0)
                     throw new LambdaJError("comma not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 skipWs();
                 boolean splice;
@@ -845,12 +845,12 @@ public class LambdaJ {
             }
 
             if (op == sQuasiquote)
-                return expand_quasiquote(cadr(formCons));
+                return expand_quasiquote(cadr(formCons), 1);
 
             return mapcar(o -> expand_backquote(o), formCons);
         }
 
-        private Object expand_quasiquote(Object form) {
+        private Object expand_quasiquote(Object form, int n) {
             if (form == null) return null;
             if (atom(form))
                 return list(sQuote, form);
@@ -860,19 +860,29 @@ public class LambdaJ {
 
             if (op == sUnquote_splice)
                 throw new LambdaJError("can't splice here");
-            if (op == sQuasiquote)
-                throw new LambdaJError("nested backquote is not implemented");
 
             if (op == sUnquote)
-                return cadr(formCons);
+                if (n == 1)
+                    return cadr(formCons);
+                else
+                    return list(sQuasiquote, expand_quasiquote(cdr(formCons), n - 1));
+
+            if (op == sQuasiquote)
+                throw new LambdaJError("nested backquote is not implemented");
+                //return list(sQuasiquote, expand_quasiquote(cdr(formCons), n + 1));
 
             if (consp(op) && car(op) == sUnquote_splice)
-                return list(sAppend, cadr(op), expand_quasiquote(cdr(formCons)));
+                return list(sAppend, cadr(op), expand_quasiquote(cdr(formCons), n));
 
-            return list(sCons, expand_quasiquote(op), expand_quasiquote(cdr(formCons)));
+            return list(sCons, expand_quasiquote(op, n), expand_quasiquote(cdr(formCons), n));
         }
 
         private ConsCell list(Object o1, Object o2) {
+            if (o2 == null)
+                if (o1 == null)
+                    return null;
+                else
+                    return new ListConsCell(o1, null);
             return new ListConsCell(o1, new ListConsCell(o2, null));
         }
 
