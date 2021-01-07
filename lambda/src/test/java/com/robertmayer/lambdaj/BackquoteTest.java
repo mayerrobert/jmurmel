@@ -63,6 +63,11 @@ public class BackquoteTest {
     }
 
     @Test
+    public void testBQuotedQuotedSymbol() {
+        test("`'aaa", "(cons (quote quote) (cons (quote aaa) nil))");
+    }
+
+    @Test
     public void testBQuotedUnquotedSymbol() {
         test("`,aaa", "aaa");
     }
@@ -75,14 +80,19 @@ public class BackquoteTest {
     }
 
     @Test
+    public void testBQuotedDottedList() {
+        test("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
+    }
+
+    @Test
     public void testBQuotedListSlicedList() {
         test("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
     }
 
     // sample from CLHS
     // http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm
-    // Murmel: (define a "A")       (define c "C")       (define d '("D" "DD"))       (eval (macroexpand-1 '`((,a b) ,c ,@d))) ==> (("A" b) "C" "D" "DD")
-    // CL:     (defparameter a "A") (defparameter c "C") (defparameter d '("D" "DD")) (eval (macroexpand-1 '`((,a b) ,c ,@d))) ==> (("A" B) "C" "D" "DD")
+    // Murmel: (define       a "A") (define       c "C") (define       d '("D" "DD"))   `((,a b) ,c ,@d)  ==> (("A" b) "C" "D" "DD")
+    // CL:     (defparameter a "A") (defparameter c "C") (defparameter d '("D" "DD"))   `((,a b) ,c ,@d)  ==> (("A" B) "C" "D" "DD")
     @Test
     public void testCHLSBackQuote() {
         test("`((,a b) ,c ,@d)", "(cons (cons a (cons (quote b) nil)) (cons c (append d nil)))");
@@ -90,9 +100,29 @@ public class BackquoteTest {
 
 
 
+    //@Test
+    public void testBBquotedSymbol() {
+        test2("``aaa", "(quasiquote (cons (quote aaa) nil))");
+    }
+
+    // ``(aaa ,bbb ,,ccc) =>
+    //@Test
+    public void testX() {
+        test2("``(aaa ,bbb ,,ccc)", "(quasiquote (cons (cons (quote aaa) (cons (quasiquote (cons (quote bbb) nil)) (cons (quasiquote (cons ccc nil)) nil))) nil))");
+    }
+
+
+
     private void test(String expression, String expectedExpansion) {
         final Object expanded = expand(expression);
         final String expandedSexp = sexp(expanded);
+        assertEquals(expectedExpansion, expandedSexp);
+    }
+
+    private void test2(String expression, String expectedExpansion) {
+        final Object expanded = expand(expression);
+        final Object expanded2 = expand(sexp(expanded));
+        final String expandedSexp = sexp(expanded2);
         assertEquals(expectedExpansion, expandedSexp);
     }
 
