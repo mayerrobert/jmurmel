@@ -929,3 +929,18 @@ der interpreter und kompilierte programme unterstuetze beide getValue() und getF
 global symbol names muessen unique sein, lokale (noch) nicht -> dokumentieren
 lambda parameternamen auch nicht, koennte ein problem sein
 
+
+JMurmel> ((lambda([])((lambda(x |()| |(| |)|)(+ x |(| 1 |)| |()| |(| |(| |(|)) [] [] [] [])) 0)
+-> sollte 1 liefern, klemmt aber und wird nie fertig (keine endlosschleife mit CPU usage)
+
+JMurmel> '||
+-> klemmt
+
+JMurmel> '|(|
+-> klemmt
+
+JMurmel> '|(|  )
+==> nil
+
+JMurmel> '|)|
+Error: line 2:0: unexpected ')'

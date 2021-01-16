@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.368 2021/01/03 20:33:01 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.369 2021/01/07 07:10:05 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -406,7 +406,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression parser
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '\'' || x == '`' || x == ','; }
+    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '.' || x == '\'' || x == '`' || x == ','; }
 
     private static boolean containsSExSyntaxOrWhiteSpace(String s) {
         for (int i = 0; i < s.length(); i++) {
@@ -553,58 +553,54 @@ public class LambdaJ {
         private void readToken() {
             int index = 0;
             skipWs();
+            tok = null;
             if (look != EOF) {
                 if (isBar(look)) {
                     look = getchar();
-                    do {
+                    while (look != EOF && !isBar(look)) {
                         if (index < SYMBOL_MAX) token[index++] = (char)look;
                         look = getchar();
-                    } while (look != EOF && !isBar(look));
+                    }
                     if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
-                    else look = getchar(); // consume trailing |
+                    look = getchar(); // consume trailing |
+                    final String s = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+                    tok = new LambdaJSymbol(s);
                 } else if (isSyntax(look)) {
                     token[index++] = (char)look;  look = getchar();
+                    tok = tokenToString(token, 0, index);
                 } else if (haveString() && isDQuote(look)) {
                     do {
                         if (index < TOKEN_MAX) token[index++] = (char)look;
                         look = getchar();
                     } while (look != EOF && !isDQuote(look));
                     if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
-                    else look = getchar(); // consume trailing "
+                    look = getchar(); // consume trailing "
+                    tok = tokenToString(token, 1, index);
                 } else {
-                    while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                    while (look != EOF && !isSpace(look) && (look == '.' || !isSyntax(look))) {
                         if (index < TOKEN_MAX) token[index++] = (char)look;
                         look = getchar();
                     }
-                }
-            }
+                    String s = tokenToString(token, 0, index);
+                    if (haveDouble() && isDouble(s)) {
+                        try { tok = Double.valueOf(s); }
+                        catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
+                    }
 
-            if (index == 0) {
-                tok = null;
+                    else if (haveLong() && isLong(s)) {
+                        try { tok = Long.valueOf(s); }
+                        catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
+                    }
 
-            } else if (haveString() && (token[0] & 0xff) == '"') {
-                tok = tokenToString(token, 1, index);
+                    else if (haveDouble() && isLong(s)) {
+                        try { tok = Double.valueOf(s); }
+                        catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
+                    }
 
-            } else {
-                String s = tokenToString(token, 0, index);
-                if (haveDouble() && isDouble(s)) {
-                    try { tok = Double.valueOf(s); }
-                    catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
-                }
-
-                else if (haveLong() && isLong(s)) {
-                    try { tok = Long.valueOf(s); }
-                    catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
-                }
-
-                else if (haveDouble() && isLong(s)) {
-                    try { tok = Double.valueOf(s); }
-                    catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
-                }
-
-                else {
-                    if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                    tok = new LambdaJSymbol(s);
+                    else {
+                        if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
+                        tok = new LambdaJSymbol(s);
+                    }
                 }
             }
 
@@ -661,7 +657,10 @@ public class LambdaJ {
         }
 
         private boolean isToken(Object tok, String s) {
-            return tok == null && s == null || tok != null && tok.toString().equalsIgnoreCase(s);
+            if (tok == null && s == null) return true;
+            if (symbolp(tok)) return false;
+            if (tok != null && tok.toString().equalsIgnoreCase(s)) return true;
+            return false;
         }
 
 
@@ -701,8 +700,13 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return null;
             }
-            if (!tokEscape && tok instanceof LambdaJSymbol && isToken(tok, "nil")) {
+            if (!tokEscape && tok instanceof LambdaJSymbol && tok.toString().equals("nil")) {
+                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
                 return null;
+            }
+            if (symbolp(tok)) {
+                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
+                return intern((LambdaJSymbol)tok);
             }
             if (!tokEscape && isToken(tok, ")")) {
                 throw new LambdaJError(true, "line %d:%d: unexpected ')'", lineNo, charNo);
@@ -752,10 +756,6 @@ public class LambdaJ {
                 int _startLine = lineNo, _startChar = charNo;
                 readToken();
                 return cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
-            }
-            if (symbolp(tok)) {
-                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
-                return intern((LambdaJSymbol)tok);
             }
             if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok.toString());
             return tok;
@@ -1817,6 +1817,9 @@ public class LambdaJ {
                     return;
                 }
             } else if (escapeAtoms && symbolp(obj)) {
+                if (obj.toString().length() == 0) {
+                    sb.print("||");
+                }
                 if (containsSExSyntaxOrWhiteSpace(obj.toString())) {
                     sb.print("|"); sb.print(escapeSymbol((LambdaJSymbol) obj)); sb.print("|");
                     return;

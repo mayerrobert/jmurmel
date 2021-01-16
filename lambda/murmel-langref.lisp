@@ -114,6 +114,11 @@ a\ symbol             ; a\ symbol
 (define a 'a-val) (define c 'c-val) (define d '(d-val1 d-val2))
 `((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
 
+(define x '(1 2 3))
+`(normal= ,x splicing= ,@x see?) ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
+
+`(normal= ,x fakesplicing= . ,x) ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
+
 
 ;;; == Predefined Symbols =============
 
@@ -511,4 +516,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.58 2021/01/01 19:47:21 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.59 2021/01/03 20:33:00 Robert Exp $

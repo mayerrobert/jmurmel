@@ -8,10 +8,44 @@ import java.util.regex.Pattern;
 import org.junit.Test;
 
 public class ScannerTest {
+
+    @Test
+    public void testDouble() {
+        LambdaJTest.runTest("double", "42.0", "42.0", null);
+    }
+
+    @Test
+    public void testEmptySymbol() {
+        LambdaJTest.runTest("empty", "(quote ||)", "||", null);
+    }
+
+    @Test
+    public void testEmptySymbol2() {
+        LambdaJTest.runTest("empty", "'||", "||", null);
+    }
+
+    @Test
+    public void testPipe() {
+        LambdaJTest.runTest("pipe", "'\\|", "\\|", null);
+    }
+
+    @Test
+    public void testOpenParen() {
+        LambdaJTest.runTest("paren", "(quote \\()", "|(|", null);
+    }
+
+    @Test
+    public void testOpenParen2() {
+        LambdaJTest.runTest("paren", "'|(|", "|(|", null);
+    }
+
+
+
     @Test
     public void testEmptyList() {
         LambdaJTest.runTest("cons", "'()", "nil", null);
     }
+
     @Test
     public void testEscapedParens() {
         LambdaJTest.runTest("cons", "'(\\( b)", "(|(| b)", null);
@@ -60,7 +94,12 @@ public class ScannerTest {
 
     @Test
     public void testEscapedDot() {
-        LambdaJTest.runTest("cons", "'(a \\. b)", "(a . b)", null); // ok, aber hier wird nicht gecheckt ob cons oder list
+        LambdaJTest.runTest("cons", "'(a \\. b)", "(a |.| b)", null);
+    }
+
+    @Test
+    public void testWeird() {
+        LambdaJTest.runTest("weird", "((lambda([])((lambda(x |()| |(| |)|)(+ x |(| 1 |)| |()| |(| |(| |(|)) [] [] [] [])) 0)", "1.0", null);
     }
 
     @Test
