@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.369 2021/01/07 07:10:05 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.370 2021/01/16 17:13:14 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -931,6 +931,7 @@ public class LambdaJ {
         if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reserve(sIf); }
         if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reserve(sDefine); }
         if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reserve(sDefun); }
+        if (haveXtra())   { sDefmacro= symtab.intern(new LambdaJSymbol("defmacro")); reserve(sDefmacro); }
         if (haveXtra())   { sLet     = symtab.intern(new LambdaJSymbol("let"));      reserve(sLet); }
         if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reserve(sLetStar); }
         if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reserve(sLetrec); }
@@ -951,7 +952,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sLet, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sApply, sProgn;
 
     private Supplier<Object> expTrue;
 
@@ -974,6 +975,8 @@ public class LambdaJ {
 
     /// ### Global environment - define'd symbols go into this list
     private ConsCell topEnv;
+
+    private Map<Object, ConsCell> macros = new HashMap<>();
 
     /// ###  evalquote - the heart of most if not all Lisp interpreters
     private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
@@ -1061,6 +1064,15 @@ public class LambdaJ {
                         nArgs("defun", arguments, 3);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
                         continue tailcall;
+                    }
+
+                    // todo reserved words?
+                    if (operator == sDefmacro) {
+                        nArgs("defmacro", arguments, 3);
+                        ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
+                        result = car(arguments);
+                        macros.put(result, closure);
+                        return result;
                     }
 
 
@@ -1170,6 +1182,29 @@ public class LambdaJ {
                         }
                         env = extenv;
                         // fall through to "eval a list of forms"
+
+                    } else if (macros.containsKey(operator)) {
+                        Object macroClosure = macros.get(operator);
+                        final Object lambda = cdr(macroClosure);          // (params . (forms...))
+                        nArgs("macro expansion", lambda, 2); // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
+                        final ConsCell closure = ((ConsCell)macroClosure).closure();
+                        env = zip(closure != null ? closure : env, car(lambda), arguments);
+
+                        if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + lambda + "> " + printSEx(env));
+                        forms = (ConsCell) cdr(lambda);
+
+                        // todo dotted list wird cce geben
+                        // kopiert von unten
+                        for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
+                            evalquote(car(forms), env, stack, level, traceLvl);
+                        if (forms != null) {
+                            traceStack = push(operator, traceStack);
+                            form = evalquote(car(forms), env, stack, level, traceLvl);
+                            isTc = true; continue tailcall;
+                        }
+
+                        throw new LambdaJError("cannot expand macro");
+                        //result = null; return null; // lambda/ progn/ labels/... w/o body
                     }
 
 
@@ -1361,7 +1396,7 @@ public class LambdaJ {
 
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
-    private Object makeClosureFromForm(final ConsCell form, ConsCell env) {
+    private ConsCell makeClosureFromForm(final ConsCell form, ConsCell env) {
         final ConsCell paramsAndForms = (ConsCell) cdr(form);
 
         if (car(paramsAndForms) == sDynamic) {

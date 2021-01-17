@@ -944,3 +944,6 @@ JMurmel> '|(|  )
 
 JMurmel> '|)|
 Error: line 2:0: unexpected ')'
+
+Macros: in ANSI Common Lisp, Paul Graham pp413 steht quasiquote expansion
+in https://icem.folkwang-uni.de/~finnendahl/cm_kurse/doc/schintro/schintro_130.html#SEC190 ist defmacro skizziert

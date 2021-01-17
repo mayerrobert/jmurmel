@@ -273,6 +273,18 @@ nil
 ; arguments to defun are not evaluated
 (defun f2 (p1 p2) (+ p1 p2))
 
+;;; (defmacro (params...) forms...) -> symbol
+; Defines a macro, similar to CL's defmacro.
+; Macros are somewhat similar to functions:
+; On a function application the functions's arguments
+; are eval'd and the result of the function will be used as is.
+; On a macro application the macro's arguments are
+; NOT eval'd, but the result of the macro is.
+; IOW a function produces a value, a macro application
+; produces code that will be eval'd.
+(defmacro twice (arg) (list '* arg 2))  ; ==> twice
+(twice 3) ; ==> 6.0
+
 ;;; (if condform form optionalform) -> object
 
 ;;; (progn expr...) -> object
@@ -516,4 +528,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.59 2021/01/03 20:33:00 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.60 2021/01/16 17:13:14 Robert Exp $

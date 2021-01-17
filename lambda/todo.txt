@@ -1,11 +1,10 @@
+Macros im compiler
+
 init(), parser vs. in aufraeumen
 
 die ByteArrayReader aus den tests wegputzen
 
 
-
-Macros: in ANSI Common Lisp, Paul Graham pp413 steht quasiquote expansion
-in https://icem.folkwang-uni.de/~finnendahl/cm_kurse/doc/schintro/schintro_130.html#SEC190 ist defmacro skizziert
 
 
 ...jdk-15\bin\jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs
