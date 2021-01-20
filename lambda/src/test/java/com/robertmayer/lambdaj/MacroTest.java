@@ -35,4 +35,13 @@ public class MacroTest {
                 + "(m 'x)",
                 "x", null);
     }
+
+    @Test
+    public void test5() throws Exception {
+        LambdaJTest.runTest("macro5.lisp",
+                "(defmacro defparameter (sym val) `(define ,sym ,val)) "
+                + "(defparameter x nil) "
+                + "x",
+                "nil", null);
+    }
 }

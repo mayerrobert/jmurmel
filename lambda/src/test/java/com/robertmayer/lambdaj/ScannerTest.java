@@ -98,6 +98,21 @@ public class ScannerTest {
     }
 
     @Test
+    public void testSymbolDot() {
+        LambdaJTest.runTest("symboldot", "'a.", "a.", null);
+    }
+
+    @Test
+    public void testSymbolDot2() {
+        LambdaJTest.runTest("symboldot2", "'(a.b)", "(a.b)", null);
+    }
+
+    @Test
+    public void testSymbolDot3() {
+        LambdaJTest.runTest("symboldot3", "'(.b)", "(.b)", null);
+    }
+
+    @Test
     public void testWeird() {
         LambdaJTest.runTest("weird", "((lambda([])((lambda(x |()| |(| |)|)(+ x |(| 1 |)| |()| |(| |(| |(|)) [] [] [] [])) 0)", "1.0", null);
     }
