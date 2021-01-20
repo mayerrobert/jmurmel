@@ -512,8 +512,7 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - support for backquotes, comma, splice should be added
-; - support for macros should be added
+; - support for nested backquotes should be added
 ; - at least globals should be mutable 
 ; - globals should be special (dynamic)
 ; - support for packages should be added
@@ -521,8 +520,7 @@ nil
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
-; - compiler emits all toplevel defines/defuns and then all
-;   other toplevel forms - this is wrong
+; - support for macros should be added
 ;
 ; The todo list for features is way too long.
 
@@ -537,4 +535,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.61 2021/01/17 20:34:57 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.62 2021/01/20 16:08:59 Robert Exp $
