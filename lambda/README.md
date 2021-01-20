@@ -235,7 +235,7 @@ The environment contains the symbols `nil` and `t` and the functions
 * `let, let <symbol>, let*, letrec, progn`
 * `eq, atom, consp, listp, null, numberp, stringp, symbolp`
 
-* `assoc`
+* `assoc`, `append`
 * `read`
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
 
@@ -298,4 +298,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.54 2020/12/08 20:17:05 Robert Exp $
+$Id: README.md,v 1.55 2020/12/12 22:25:50 Robert Exp $

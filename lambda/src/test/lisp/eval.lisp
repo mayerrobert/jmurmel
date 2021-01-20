@@ -19,9 +19,9 @@
                           (t b)))
         (t (cons a (cons b ())))))
 
-(defun append (a b)
-  (cond ((eq () a) b)
-        (t (cons (car a) (append (cdr a) b)))))
+;(defun append (a b)
+;  (cond ((eq () a) b)
+;        (t (cons (car a) (append (cdr a) b)))))
 
 
 (labels

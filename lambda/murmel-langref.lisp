@@ -372,6 +372,15 @@ nil
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
 
+; append nondestructively append it's arguments. All arguments expcept the last
+; are shallow copied, all arguments except the last must be lists.
+(append)                    ; ==> nil
+(append 'a)                 ; ==> a
+(append '(a b) 'c)          ; ==> (a b . c)
+(append '(a b) '(c d))      ; ==> (a b c d)
+(append '(a . b) '(c d))    ; ==> (a b c d)
+(append '(a . b) '(c . d))  ; ==> (a b c . d)
+
 ; +, -, *, /, mod, sqrt, log, log10, exp, expt
 ; The math operators accept numbers only, log only takes 1 argument,
 ; but otherwise should work as expected.
@@ -528,4 +537,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.60 2021/01/16 17:13:14 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.61 2021/01/17 20:34:57 Robert Exp $

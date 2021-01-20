@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.370 2021/01/16 17:13:14 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.371 2021/01/17 20:34:58 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1087,7 +1087,7 @@ public class LambdaJ {
                         else {
                             Object additionalEnv = cadr(arguments);
                             if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
-                            env = append(additionalEnv, topEnv);
+                            env = append2(additionalEnv, topEnv);
                         }
                         isTc = true; continue tailcall;
                     }
@@ -1727,7 +1727,7 @@ public class LambdaJ {
 
     private Object eval(Object form, Object env) {
         if (!listp(env)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", env);
-        return evalquote(form, env != null ? append(env, topEnv) : topEnv, 0, 0, 0);
+        return evalquote(form, env != null ? append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
     private ConsCell list(Object... a) {
@@ -1746,10 +1746,11 @@ public class LambdaJ {
         return ret;
     }
 
-    /** Create a new list by concatenating lhs and rhs. Similar to CL append, CL's append is variadic, this one takes 2 args */
-    private ConsCell append(Object lhs, Object rhs) {
+    /** Create a new list by copying lhs and appending rhs. */
+    private ConsCell append2(Object lhs, Object rhs) {
         if (!consp(lhs))
-            return cons(lhs, consp(rhs) ? rhs : cons(rhs, null));
+            //return cons(lhs, consp(rhs) ? rhs : cons(rhs, null));
+            return cons(lhs, rhs);
         ListConsCell ret = null, insertPos = null;
         for (Object o: (ConsCell)lhs) {
             if (ret == null) {
@@ -1761,7 +1762,21 @@ public class LambdaJ {
                 insertPos = (ListConsCell) insertPos.cdr();
             }
         }
-        insertPos.rplacd(consp(rhs) ? rhs : cons(rhs, null));
+        //insertPos.rplacd(consp(rhs) ? rhs : cons(rhs, null));
+        insertPos.rplacd(rhs);
+        return ret;
+    }
+
+    /** append args non destructively, all args except the last are shallow copied, all args except the last must be a list */
+    // todo CL macht deep copy bei allen args ausser dem letzten, alle args ausser dem letzten muessen proper lists sein (murmel behandelt dotted und proper lists gleich)
+    private Object append(Object... args) {
+        if (args == null || args.length == 0) return null;
+        if (args.length == 1) return args[0];
+        if (args.length > 1 && atom(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
+        ConsCell ret = (ConsCell)args[0];
+        for (int i = 1; i < args.length; i++) {
+            ret = append2(ret, args[i]); // todo optimieren: bei n args wird n-1 mal kopiert -> insertpos mitfuehren
+        }
         return ret;
     }
 
@@ -2360,6 +2375,9 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("assoc")),   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), car(cdr(a))); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("list")),    (Primitive) a -> a),
                   env))))));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("append")),  (Primitive) a -> { return append(listToArray(a)); }),
+                  env);
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("internal-time-units-per-second")), new Double(1e9)),
                   cons(cons(symtab.intern(new LambdaJSymbol("get-internal-real-time")), (Primitive) a -> getInternalRealTime()),
@@ -3364,6 +3382,7 @@ public class LambdaJ {
 
         public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
         public final ConsCell _list    (Object... args) { return arraySlice(args); }
+        public final Object   _append  (Object... args) { return intp.append(args); }
 
         public final long     _round   (Object... args) { oneArg("round",      args.length); return Math.round(dbl(args[0])); }
         public final double   _floor   (Object... args) { oneArg("floor",      args.length); return Math.floor(dbl(args[0])); }
@@ -3670,7 +3689,7 @@ public class LambdaJ {
                 "car", "cdr", "cons",
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
-                "assoc", "list",
+                "assoc", "list", "append",
                 "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod",
                 "trace", "untrace",
         };
