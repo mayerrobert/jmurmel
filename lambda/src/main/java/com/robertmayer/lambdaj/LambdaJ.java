@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.371 2021/01/17 20:34:58 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.372 2021/01/20 16:08:59 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1361,7 +1361,7 @@ public class LambdaJ {
             args = (ConsCell) cdr(args);
             if (args == null) {
                 if (consp(params)) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
-                else {
+                else if (params != null) {
                     // paramList is a dotted list, no argument for vararg parm: assign nil
                     env = cons(cons(params, null), env);
                     break;
@@ -1541,7 +1541,7 @@ public class LambdaJ {
                 evFunc = fmtEvFunc(evFunc);
 
                 final String pfx = pfx(stack, level);
-                tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + "), exp:          " + printSEx(exp));
+                tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + ") exp:           " + printSEx(exp));
                 if (trace.ge(TraceLevel.TRC_ENV)) {
                     tracer.println(pfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
                 }
@@ -2443,7 +2443,7 @@ public class LambdaJ {
         if (haveCons()) {
             env = cons(cons(symtab.intern(new LambdaJSymbol("car")),     (Primitive) a -> { oneArg("car", a);    if (car(a) == null) return null; return caar(a); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { oneArg("cdr", a);    if (car(a) == null) return null; return cdar(a); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);  if (car(a) == null && car(cdr(a)) == null) return null; return cons(car(a), cadr(a)); }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);  /*if (car(a) == null && car(cdr(a)) == null) return null;*/ return cons(car(a), cadr(a)); }),
                   env)));
         }
 
