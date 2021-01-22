@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.372 2021/01/20 16:08:59 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.373 2021/01/21 19:27:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -406,7 +406,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression parser
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' || x == '.' || x == '\'' || x == '`' || x == ','; }
+    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
     private static boolean containsSExSyntaxOrWhiteSpace(String s) {
         for (int i = 0; i < s.length(); i++) {
@@ -599,7 +599,10 @@ public class LambdaJ {
 
                     else {
                         if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                        tok = new LambdaJSymbol(s);
+                        if (!tokEscape && ".".equals(s))
+                            tok = s;
+                        else
+                            tok = new LambdaJSymbol(s);
                     }
                 }
             }
@@ -1869,6 +1872,11 @@ public class LambdaJ {
             } else if (escapeAtoms && symbolp(obj)) {
                 if (obj.toString().length() == 0) {
                     sb.print("||");
+                    return;
+                }
+                if (".".equals(obj.toString())) {
+                    sb.print("|.|");
+                    return;
                 }
                 if (containsSExSyntaxOrWhiteSpace(obj.toString())) {
                     sb.print("|"); sb.print(escapeSymbol((LambdaJSymbol) obj)); sb.print("|");
