@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.373 2021/01/21 19:27:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.374 2021/01/22 05:44:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -577,7 +577,7 @@ public class LambdaJ {
                     look = getchar(); // consume trailing "
                     tok = tokenToString(token, 1, index);
                 } else {
-                    while (look != EOF && !isSpace(look) && (look == '.' || !isSyntax(look))) {
+                    while (look != EOF && !isSpace(look) && !isSyntax(look)) {
                         if (index < TOKEN_MAX) token[index++] = (char)look;
                         look = getchar();
                     }
@@ -1274,7 +1274,7 @@ public class LambdaJ {
                         evalquote(car(forms), env, stack, level, traceLvl);
                     if (forms != null) {
                         traceStack = push(operator, traceStack);
-                        form = car(forms); isTc = true; continue tailcall;
+                        form = car(forms); isTc = true; func = null; continue tailcall;
                     }
 
                     result = null; return null; // lambda/ progn/ labels/... w/o body
@@ -1496,10 +1496,21 @@ public class LambdaJ {
 
         tracePfx(sb, level);
 
-        sb.append('(').append(level+1).append(" enter ").append(op.toString()).append(':').append(' ');
-        printSEx(sb::append, args);
+        sb.append('(').append(level+1).append(" enter ").append(op.toString());
+        sb.append(printArgs(args));
         sb.append(')');
         tracer.println(sb.toString());
+    }
+
+    protected String printArgs(ConsCell args) {
+        if (args == null) return "";
+        final StringBuilder sb = new StringBuilder();
+        sb.append(':');
+        for (Object arg: args) {
+            sb.append(' ');
+            printSEx(sb::append, arg);
+        }
+        return sb.toString();
     }
 
     private int traceExit(Object op, Object result, int level) {
@@ -1514,7 +1525,7 @@ public class LambdaJ {
 
         tracePfx(sb, level);
 
-        sb.append('(').append(level+1).append(" exit ").append(op.toString()).append(':').append(' ');
+        sb.append('(').append(level+1).append(" exit  ").append(op.toString()).append(':').append(' ');
         printSEx(sb::append, result);
         sb.append(')');
         tracer.println(sb.toString());
