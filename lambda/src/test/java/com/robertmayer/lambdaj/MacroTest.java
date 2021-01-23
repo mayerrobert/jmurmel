@@ -53,4 +53,12 @@ public class MacroTest {
               + "(mac1 4 5)",
                 "19.0", null);
     }
+
+    @Test
+    public void testMacroexpand1() throws Exception {
+        LambdaJTest.runTest("macroexpand1.lisp",
+                "(defmacro mac1 (a b) `(+ ,a (* ,b 3))) "
+              + "(macroexpand-1 '(mac1 4 5))",
+                "(+ 4.0 (* 5.0 3.0))", null);
+    }
 }

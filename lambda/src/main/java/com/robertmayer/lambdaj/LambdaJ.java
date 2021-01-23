@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.375 2021/01/22 20:44:35 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.376 2021/01/23 18:19:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1088,7 +1088,7 @@ public class LambdaJ {
                     if (operator == ocEval) {
                         nArgs("eval", arguments, 1, 2);
                         form = car(arguments);
-                        if (cdr(arguments) == null) env = topEnv;
+                        if (cdr(arguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
                         else {
                             Object additionalEnv = cadr(arguments);
                             if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
@@ -1189,27 +1189,9 @@ public class LambdaJ {
                         // fall through to "eval a list of forms"
 
                     } else if (macros.containsKey(operator)) {
-                        Object macroClosure = macros.get(operator);
-                        final Object lambda = cdr(macroClosure);          // (params . (forms...))
-                        nArgs("macro expansion", lambda, 2); // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
-                        final ConsCell closure = ((ConsCell)macroClosure).closure();
-                        env = zip(closure != null ? closure : env, car(lambda), arguments);
-
-                        if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + lambda + "> " + printSEx(env));
-                        forms = (ConsCell) cdr(lambda);
-
-                        // todo dotted list wird cce geben
-                        // kopiert von unten
-                        for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                            evalquote(car(forms), env, stack, level, traceLvl);
-                        if (forms != null) {
-                            traceStack = push(operator, traceStack);
-                            form = evalquote(car(forms), env, stack, level, traceLvl);
-                            isTc = true; continue tailcall;
-                        }
-
-                        throw new LambdaJError("cannot expand macro");
-                        //result = null; return null; // lambda/ progn/ labels/... w/o body
+                        if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(env));
+                        form = mexpand(operator, arguments, stack, level, traceLvl);
+                        isTc = true; continue tailcall;
                     }
 
 
@@ -1301,6 +1283,16 @@ public class LambdaJ {
                 traceStack = null;
             }
         }
+    }
+    private Object mexpand(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
+        final ConsCell macroClosure = macros.get(operator);
+        final Object lambda = cdr(macroClosure);      // (params . (forms...))
+        nArgs("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
+        ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
+        Object expansion = null;
+        for (Object macroform: (ConsCell) cdr(lambda))
+            expansion = evalquote(macroform, menv, stack, level, traceLvl);
+        return expansion;
     }
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
@@ -2133,6 +2125,16 @@ public class LambdaJ {
         }
     }
 
+    /** expand a single macro call */
+    private Object macroexpand1(ConsCell args) {
+        oneArg("macroexpand-1", args);
+        if (!consp(car(args))) return car(args);
+        final Object operator = caar(args);
+        if (!macros.containsKey(operator)) return car(args);
+        final ConsCell arguments = (ConsCell) cdar(args);
+        return mexpand(operator, arguments, 0, 0, 0);
+    }
+
     private String format(ConsCell a) {
         String func = "format";
         nArgs(func, a, 2);
@@ -2372,6 +2374,9 @@ public class LambdaJ {
             env = cons(cons(symtab.intern(new LambdaJSymbol("trace")), (Primitive) a -> { return trace(a); }),
                   cons(cons(symtab.intern(new LambdaJSymbol("untrace")), (Primitive) a -> { return untrace(a); }),
                   env));
+
+            env = cons(cons(symtab.intern(new LambdaJSymbol("macroexpand-1")), (Primitive)this::macroexpand1),
+                  env);
         }
 
         if (haveT()) {

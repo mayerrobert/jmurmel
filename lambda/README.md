@@ -6,7 +6,7 @@
 
 **JMurmel is a lightweight Lisp-1-ish-with-a-side-of-Scheme interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
 
-Currently weighing in at ~100kB (size of compiled .jar file),
+Currently weighing in at ~115kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -21,6 +21,7 @@ The interpreter, REPL, compiler as well as generated compiled Jars all run on to
 JMurmel features a REPL with a trace facility (trace and untrace function calls),
 tail call optimization,
 dynamic as well as lexical environments,
+a macro facility,
 JSR223 support,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
@@ -115,7 +116,7 @@ Command line parameters in standalone mode:
 
 **Installation**
 
-Currently there is no setup.exe or .msi or .rpm or .deb file. Just copy jmurmel-<VERSION>.jar somewhere convenient,
+Currently there is no setup.exe or .msi or .rpm or .deb file. Just copy jmurmel-VERSION-XY.jar somewhere convenient,
 and maybe create a batchfile along these lines (Windows .cmd-style shown here):
 
     jm.cmd:
@@ -298,4 +299,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.55 2020/12/12 22:25:50 Robert Exp $
+$Id: README.md,v 1.56 2021/01/20 16:08:59 Robert Exp $
