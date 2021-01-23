@@ -1,4 +1,6 @@
 Macros im compiler
+-> http://clhs.lisp.se/Body/m_defmac.htm:
+-> If a defmacro form appears as a top level form... Users must ensure that the body of the macro can be evaluated at compile time if it is referenced within the file being compiled.
 
 init(), parser vs. in aufraeumen
 

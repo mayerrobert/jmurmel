@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.374 2021/01/22 05:44:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.375 2021/01/22 20:44:35 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -949,9 +949,11 @@ public class LambdaJ {
         // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not refill these
         ocEval = null;
 
+        topEnv = null;
+
         traced = null;
 
-        topEnv = null;
+        macros.clear();
     }
 
     /** well known symbols for special forms */

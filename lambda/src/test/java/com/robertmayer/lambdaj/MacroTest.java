@@ -44,4 +44,13 @@ public class MacroTest {
                 + "x",
                 "nil", null);
     }
+
+    // from http://clhs.lisp.se/Body/m_defmac.htm
+    @Test
+    public void clhs1() throws Exception {
+        LambdaJTest.runTest("clhs1.lisp",
+                "(defmacro mac1 (a b) `(+ ,a (* ,b 3))) "
+              + "(mac1 4 5)",
+                "19.0", null);
+    }
 }
