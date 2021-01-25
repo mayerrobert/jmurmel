@@ -61,4 +61,20 @@ public class MacroTest {
               + "(macroexpand-1 '(mac1 4 5))",
                 "(+ 4.0 (* 5.0 3.0))", null);
     }
+
+    @Test
+    public void testMacro2() throws Exception {
+        LambdaJTest.runTest("macro2.lisp",
+                "(defmacro add1 (a b) `(+ ,a ,b)) (defmacro add2 (a b) `(add1 ,a ,b)) "
+              + "(add2 1 2)",
+                "3.0", null);
+    }
+
+    @Test
+    public void testMacroexpand2() throws Exception {
+        LambdaJTest.runTest("macroexpand2.lisp",
+                "(defmacro add1 (a b) `(+ ,a ,b)) (defmacro add2 (a b) `(add1 ,a ,b)) "
+              + "(macroexpand-1 (macroexpand-1 '(add2 1 2)))",
+                "(+ 1.0 2.0)", null);
+    }
 }

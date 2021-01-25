@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.376 2021/01/23 18:19:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.377 2021/01/23 21:19:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2597,8 +2597,7 @@ public class LambdaJ {
         setSymtab(parser);
         final ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
-        final ConsCell env = environment(null);
-        topEnv = env;
+        topEnv = environment(null);
         nCells = 0; maxEnvLen = 0;
         return parser;
     }
@@ -3441,6 +3440,7 @@ public class LambdaJ {
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
+        //public final Object macroexpand1       (Object... args) { return intp.macroexpand1(arraySlice(args)); }
 
         public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
         public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
@@ -3659,6 +3659,17 @@ public class LambdaJ {
     public static class MurmelJavaCompiler {
         private final LambdaJ.SymbolTable st;
         private final JavaCompilerHelper javaCompiler;
+        private LambdaJ intp;
+
+        private LambdaJ interpreter() {
+            if (intp == null) {
+                intp = new LambdaJ();
+                intp.init(() -> -1, System.out::print);
+                intp.setSymtab(st);
+                intp.topEnv = intp.environment(null);
+            }
+            return intp;
+        }
 
         public MurmelJavaCompiler(SymbolTable st, Path outPath) {
             this.st = st;
@@ -3723,6 +3734,7 @@ public class LambdaJ {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
             {"format", "format"}, {"format-locale", "formatLocale" },
+            //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
             { "::", "jambda" },
@@ -4086,6 +4098,14 @@ public class LambdaJ {
                         sb.append("defun_").append(javasym).append("()");
                         return;
                     }
+                    if (isSymbol(op, "defmacro")) {
+                        if (rsfx != 0) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
+                        final Object sym = cadr(form);
+                        notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
+                        interpreter().eval(form, null);
+                        sb.append('"').append(sym).append('"');
+                        return;
+                    }
 
                     ///     - apply
                     if (isSymbol(op, "apply")) {
@@ -4129,6 +4149,13 @@ public class LambdaJ {
                     ///     - letrec:  (letrec ((sym form)...) forms) -> Object
                     if (isSymbol(op, "letrec")) {
                         letrecToJava(sb, args, env, topEnv, rsfx+1, isLast);
+                        return;
+                    }
+
+                    /// * macro expansion
+                    if (intp != null && intp.macros.containsKey(op)) {
+                        Object expansion = intp.mexpand(op, (ConsCell) args, 0, 0, 0);
+                        formToJava(sb, expansion, env, topEnv, rsfx, false);
                         return;
                     }
 

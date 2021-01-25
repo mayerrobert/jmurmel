@@ -398,6 +398,7 @@ nil
 
 ; (macroexpand-1 quoted-form)
 ; macroexpand-1 is a simplified version of CL's macroexpand-1.
+; It is only supported in interpreted code.
 ; If the operator of the list "quoted-form" is a macroname then
 ; the macrocall will be expanded, e.g.:
 (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
@@ -542,4 +543,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.63 2021/01/20 16:19:00 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.64 2021/01/23 21:19:29 Robert Exp $

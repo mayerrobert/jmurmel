@@ -417,6 +417,31 @@ public class MurmelJavaCompilerTest {
         assertEquals("javainstance produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
+    //@Test todo macroexpand-1 is interpreter only
+    public void testMacroexpand() throws Exception {
+        MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
+                                      + "(macroexpand-1 '(add2 3))");
+        assertNotNull("failed to compile macroexpand to class", program);
+        assertEquals("macroexpand produced wrong result", "(+ 3 2)", TestUtils.sexp(program.body()));
+    }
+
+    @Test
+    public void testMacro() throws Exception {
+        MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
+                                      + "(add2 3)");
+        assertNotNull("failed to compile macro to class", program);
+        assertEquals("macro produced wrong result", "5.0", TestUtils.sexp(program.body()));
+    }
+
+    @Test
+    public void testMacro2() throws Exception {
+        MurmelProgram program = compile("(define *g* 3)"
+                                      + "(defmacro addg (a) `(+ ,a *g*))"
+                                      + "(addg 3)");
+        assertNotNull("failed to compile macro2 to class", program);
+        assertEquals("macro2 produced wrong result", "6.0", TestUtils.sexp(program.body()));
+    }
+
 
 
     @Test
