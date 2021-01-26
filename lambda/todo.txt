@@ -1,3 +1,5 @@
+1\234 sollte als symbol gelesen werden
+
 http://www.gigamonkeys.com/book/macros-defining-your-own.html
 (defmacro when (condition . body) (list 'if condition (cons 'progn body)))
 
