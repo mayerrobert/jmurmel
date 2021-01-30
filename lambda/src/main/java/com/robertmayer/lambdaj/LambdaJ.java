@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.377 2021/01/23 21:19:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.378 2021/01/25 19:49:53 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -856,7 +856,7 @@ public class LambdaJ {
         private Object expand_quasiquote(Object form, int n) {
             if (form == null) return null;
             if (atom(form))
-                return list(sQuote, form);
+                return quote(form);
 
             final ConsCell formCons = (ConsCell)form;
             final Object op = car(formCons);
@@ -868,16 +868,23 @@ public class LambdaJ {
                 if (n == 1)
                     return cadr(formCons);
                 else
-                    return list(sQuasiquote, expand_quasiquote(cdr(formCons), n - 1));
+                    return quote(list(sUnquote, expand_quasiquote(cadr(formCons), n - 1)));
 
             if (op == sQuasiquote)
                 throw new LambdaJError("nested backquote is not implemented");
-                //return list(sQuasiquote, expand_quasiquote(cdr(formCons), n + 1));
+                //return quote(list(sQuasiquote, expand_quasiquote(cadr(formCons), n + 1)));
 
             if (consp(op) && car(op) == sUnquote_splice)
-                return list(sAppend, cadr(op), expand_quasiquote(cdr(formCons), n));
+                if (n == 1)
+                    return list(sAppend, cadr(op), expand_quasiquote(cdr(formCons), n));
+                else
+                    return quote(list(sAppend, new ListConsCell(sUnquote_splice, cadr(op)), expand_quasiquote(cdr(formCons), n)));
 
             return list(sCons, expand_quasiquote(op, n), expand_quasiquote(cdr(formCons), n));
+        }
+
+        private ConsCell quote(Object form) {
+            return list(sQuote, form);
         }
 
         private ConsCell list(Object o1, Object o2) {
@@ -928,6 +935,7 @@ public class LambdaJ {
         sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));
 
         if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reserve(sQuote); }
+        //if (haveQuote())  { sQuasiquote = symtab.intern(new LambdaJSymbol("quasiquote"));    reserve(sQuasiquote); }
         if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reserve(sCond); }
         if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reserve(sLabels); }
 
@@ -957,7 +965,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sApply, sProgn;
+    private Object sLambda, sDynamic, sQuote, /*sQuasiquote,*/ sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sApply, sProgn;
 
     private Supplier<Object> expTrue;
 
@@ -1032,6 +1040,13 @@ public class LambdaJ {
                         result = car(arguments);
                         return result;
                     }
+
+//                    if (operator == sQuasiquote) {
+//                        SExpressionParser p = (SExpressionParser)symtab;
+//                        //result = p.expand_backquote(evalquote(car(arguments), env, stack, level, traceLvl));
+//                        result = p.expand_quasiquote(car(arguments), 1);
+//                        return result;
+//                    }
 
                     /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
