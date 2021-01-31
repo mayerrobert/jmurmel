@@ -27,7 +27,7 @@ JSR223 support,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
 
-Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
+Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT.
@@ -300,4 +300,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.57 2021/01/23 21:19:30 Robert Exp $
+$Id: README.md,v 1.58 2021/01/31 10:03:05 Robert Exp $

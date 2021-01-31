@@ -532,7 +532,7 @@ nil
 
 ;;; == Copyright ======================
 ;;;
-;;; Murmel and JMurmel are Copyright (C) 2020 Robert Mayer.
+;;; Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer.
 ;;; All rights reserved.
 ;;;
 ;;; This work is licensed under the terms of the MIT license.
@@ -540,4 +540,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.66 2021/01/31 07:14:52 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.67 2021/01/31 10:06:21 Robert Exp $

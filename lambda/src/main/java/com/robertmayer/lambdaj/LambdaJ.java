@@ -1,4 +1,4 @@
-/* LambdaJ is Copyright (C) 2020 Robert Mayer. All rights reserved.
+/* LambdaJ is Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT. */
@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.380 2021/01/31 07:14:53 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.381 2021/01/31 09:57:44 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
