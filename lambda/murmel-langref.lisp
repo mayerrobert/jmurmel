@@ -526,7 +526,6 @@ nil
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
-; - support for macros should be added
 ;
 ; The todo list for features is way too long.
 
@@ -541,4 +540,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.65 2021/01/25 19:49:53 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.66 2021/01/31 07:14:52 Robert Exp $
