@@ -435,11 +435,11 @@ nil
 (/ (get-universal-time) 60 60 24 365)
 
 ; get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
-: NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
-        offset from Greenwich Mean Time.
-        In Murmel zone is given as a double, e.g. Vienna in winter is -1.0.
-        The result type of Murmel's (get-decoded-time) is a list
-        while CL's returns an ordered sequence.
+; NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
+;        offset from Greenwich Mean Time.
+;        In Murmel zone is given as a double, e.g. Vienna in winter is -1.0.
+;        The result type of Murmel's (get-decoded-time) is a list
+;        while CL's returns an ordered sequence.
 (get-decoded-time)
 
 ; format t writes a formatted string to stdout and returns nil.
@@ -497,6 +497,8 @@ nil
 ; Only interpreted code will be traced (user code as well as
 ; interpreter primities).
 (trace 'write '+)
+(write (+ 1 2))
+(untrace)
 
 ; (:: classname methodname paramclass...) -> primitive
 ; The primitive "::" will return a newly created primitive
@@ -540,4 +542,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.67 2021/01/31 10:06:21 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.68 2021/01/31 10:10:53 Robert Exp $
