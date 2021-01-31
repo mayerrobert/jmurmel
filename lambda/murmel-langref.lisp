@@ -1,4 +1,3 @@
-
 ;;;
 ;;; === Murmel Language Reference ====
 ;;;
@@ -520,7 +519,6 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - support for nested backquotes should be added
 ; - at least globals should be mutable 
 ; - globals should be special (dynamic)
 ; - support for packages should be added
@@ -543,4 +541,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.64 2021/01/23 21:19:29 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.65 2021/01/25 19:49:53 Robert Exp $

@@ -1,3 +1,6 @@
+1e3 wird als symbol gelesen
+-> doublePattern stimmt nicht
+
 1\234 sollte als symbol gelesen werden
 
 http://www.gigamonkeys.com/book/macros-defining-your-own.html

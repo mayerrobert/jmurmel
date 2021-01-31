@@ -68,7 +68,7 @@ public class BackquoteTest {
     @Test
     public void testBQuotedQuotedSymbol() {
         eval("`'aaa", "(quote aaa)");
-        expandOnce("`'aaa", "(cons (quote quote) (cons (quote aaa) nil))");
+        //expandOnce("`'aaa", "(cons (quote quote) (cons (quote aaa) nil))");
     }
 
     @Test
@@ -82,19 +82,19 @@ public class BackquoteTest {
     @Test
     public void testBQuotedList() {
         eval("`(aaa bbb ccc)", "(aaa bbb ccc)");
-        expandOnce("`(aaa bbb ccc)", "(cons (quote aaa) (cons (quote bbb) (cons (quote ccc) nil)))");
+        //expandOnce("`(aaa bbb ccc)", "(cons (quote aaa) (cons (quote bbb) (cons (quote ccc) nil)))");
     }
 
     @Test
     public void testBQuotedDottedList() {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
-        expandOnce("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
+        //expandOnce("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
     }
 
     @Test
-    public void testBQuotedListSlicedList() {
+    public void testBQuotedListSplicedList() {
         eval("(define l '(1.0 2.0)) `(a ,@l b)", "(a 1.0 2.0 b)");
-        expandOnce("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
+        //expandOnce("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
     }
 
     // sample from CLHS
@@ -104,29 +104,43 @@ public class BackquoteTest {
     @Test
     public void testCHLSBackQuote() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,c ,@d)", "((\"A\" b) \"C\" \"D\" \"DD\")");
-        expandOnce("`((,a b) ,c ,@d)", "(cons (cons a (cons (quote b) nil)) (cons c (append d nil)))");
+        //expandOnce("`((,a b) ,c ,@d)", "(cons (cons a (cons (quote b) nil)) (cons c (append d nil)))");
     }
 
     @Test
     public void testCHLSMod() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,@d ,c)", "((\"A\" b) \"D\" \"DD\" \"C\")");
-        expandOnce("`((,a b) ,@d ,c)", "(cons (cons a (cons (quote b) nil)) (append d (cons c nil)))");
+        //expandOnce("`((,a b) ,@d ,c)", "(cons (cons a (cons (quote b) nil)) (append d (cons c nil)))");
     }
 
+    // sample from Ansi Common Lisp pp413
+    // ``(w ,x ,,y) -> `
+    @Test
+    public void testACL() {
+        eval("(define  x  'a) "
+           + "(define  a  1) "
+           + "(define  y  'b) "
+           + "(define  b  2.0) "
+           + "(eval ``(w ,x ,,y))", "(w a 2.0)");
+    }
 
+    @Test
+    public void testBBquotedSymbol() {
+        eval("``a", "(quote a)");
+        expandOnce("``a", "(append (quote (quote)) (append (quote (a)) nil))");
+    }
 
-//    @Test
-//    public void testBBquotedSymbol() {
-//        expandOnce("``aaa", "(quasiquote (cons (quote aaa) nil))");
-//        //expandTwice("``aaa", "aaa");
-//        eval("``aaa", "(quasiquote aaa)");
-//    }
+    // ``(aaa ,bbb ,,ccc) =>
+    @Test
+    public void testX() {
+        //expandOnce("``(aaa ,bbb ,,ccc)", "falsch (quasiquote (cons (cons (quote aaa) (cons (quasiquote (cons (quote bbb) nil)) (cons (quasiquote (cons ccc nil)) nil))) nil))");
+        eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(append (quote (aaa)) (append (list bbb) (append (list cccval))))");
+    }
 
-//    // ``(aaa ,bbb ,,ccc) =>
-//    @Test
-//    public void testX() {
-//        expandOnce("``(aaa ,bbb ,,ccc)", "falsch (quasiquote (cons (cons (quote aaa) (cons (quasiquote (cons (quote bbb) nil)) (cons (quasiquote (cons ccc nil)) nil))) nil))");
-//    }
+    @Test
+    public void testSpliceList() {
+        eval("(define a 'aval) (define b 'bval) (define y 'b) (define l '(a b)) (eval ``(,a ,,@l ,,y))", "(aval aval bval bval)");
+    }
 
 
 
@@ -147,13 +161,6 @@ public class BackquoteTest {
         final String expandedSexp = sexp(expanded);
         assertEquals(expectedExpansion, expandedSexp);
     }
-
-//    private void expandTwice(String expression, String expectedExpansion) {
-//        final Object expanded = expand(expression);
-//        final Object expanded2 = expand(sexp(expanded));
-//        final String expandedSexp = sexp(expanded2);
-//        assertEquals(expectedExpansion, expandedSexp);
-//    }
 
     private void expandError(String s, String expectedError) {
         try {

@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.378 2021/01/25 19:49:53 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.379 2021/01/30 16:43:43 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -697,6 +697,7 @@ public class LambdaJ {
         private final Object sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
         private final Object sAppend         = intern(new LambdaJSymbol("append"));
         private final Object sCons           = intern(new LambdaJSymbol("cons"));
+        private final Object sList           = intern(new LambdaJSymbol("list"));
 
         private Object readObject(int startLine, int startChar) {
             if (tok == null) {
@@ -848,11 +849,13 @@ public class LambdaJ {
             }
 
             if (op == sQuasiquote)
-                return expand_quasiquote(cadr(formCons), 1);
+                //return expand_quasiquote(cadr(formCons), 1);
+                return qq_expand(cadr(formCons));
 
             return mapcar(o -> expand_backquote(o), formCons);
         }
 
+        /*
         private Object expand_quasiquote(Object form, int n) {
             if (form == null) return null;
             if (atom(form))
@@ -882,6 +885,87 @@ public class LambdaJ {
 
             return list(sCons, expand_quasiquote(op, n), expand_quasiquote(cdr(formCons), n));
         }
+        */
+
+
+
+        /*
+         qq-expand and qq-expand-list are based on "Quasiquotation in Lisp (1999) by Alan Bawden"
+         https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.309.227
+
+(defun qq-expand (x)
+  (cond ((null x)
+         nil)
+        ((tag-comma? x)
+         (tag-data x))
+        ((tag-comma-atsign? x)
+         (error "Illegal"))
+        ((tag-backquote? x)
+         (qq-expand
+           (qq-expand (tag-data x))))
+        ((consp x)
+         `(append
+            ,(qq-expand-list (car x))
+            ,(qq-expand (cdr x))))
+        (t `',x)))
+        */
+        private Object qq_expand(Object x) {
+            if (x == null) return null;
+            if (atom(x))
+                return quote(x);
+
+            final ConsCell formCons = (ConsCell)x;
+            final Object op = car(formCons);
+
+            if (op == sUnquote)
+                return cadr(formCons);
+
+            if (op == sUnquote_splice)
+                throw new LambdaJError("can't splice here");
+
+            if (op == sQuasiquote)
+                return qq_expand(qq_expand(cadr(formCons)));
+
+            return list(sAppend, qq_expand_list(car(x)), qq_expand(cdr(x)));
+        }
+
+        /*
+(defun qq-expand-list (x)
+  (cond ((tag-comma? x)
+          `(list ,(tag-data x)))
+        ((tag-comma-atsign? x)
+         (tag-data x))
+        ((tag-backquote? x)
+         (qq-expand-list
+           (qq-expand (tag-data x))))
+        ((consp x)
+         `(list
+            (append
+              ,(qq-expand-list (car x))
+              ,(qq-expand (cdr x)))))
+        (t `'(,x))))
+        */
+        private Object qq_expand_list(Object x) {
+            if (x == null) return null;
+            if (atom(x))
+                return quote(list(x, null));
+
+            final ConsCell formCons = (ConsCell)x;
+            final Object op = car(formCons);
+
+            if (op == sUnquote)
+                return list(sList, cadr(formCons));
+
+            if (op == sUnquote_splice)
+                return cadr(formCons);
+
+            if (op == sQuasiquote)
+                return qq_expand_list(qq_expand(cadr(formCons)));
+
+            return list(sList, list(sAppend, qq_expand_list(car(x)), qq_expand(cdr(x))));
+        }
+
+
 
         private ConsCell quote(Object form) {
             return list(sQuote, form);
@@ -1107,7 +1191,7 @@ public class LambdaJ {
                         else {
                             Object additionalEnv = cadr(arguments);
                             if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
-                            env = append2(additionalEnv, topEnv);
+                            env = (ConsCell) append2(additionalEnv, topEnv);
                         }
                         isTc = true; continue tailcall;
                     }
@@ -1750,7 +1834,7 @@ public class LambdaJ {
 
     private Object eval(Object form, Object env) {
         if (!listp(env)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", env);
-        return evalquote(form, env != null ? append2(env, topEnv) : topEnv, 0, 0, 0);
+        return evalquote(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
     private ConsCell list(Object... a) {
@@ -1770,10 +1854,9 @@ public class LambdaJ {
     }
 
     /** Create a new list by copying lhs and appending rhs. */
-    private ConsCell append2(Object lhs, Object rhs) {
-        if (!consp(lhs))
-            //return cons(lhs, consp(rhs) ? rhs : cons(rhs, null));
-            return cons(lhs, rhs);
+    private Object append2(Object lhs, Object rhs) {
+        if (lhs == null) return rhs;
+        if (!consp(lhs)) throw new LambdaJError(true, "append2: first argument %s is not a list", lhs);
         ListConsCell ret = null, insertPos = null;
         for (Object o: (ConsCell)lhs) {
             if (ret == null) {
@@ -1785,7 +1868,6 @@ public class LambdaJ {
                 insertPos = (ListConsCell) insertPos.cdr();
             }
         }
-        //insertPos.rplacd(consp(rhs) ? rhs : cons(rhs, null));
         insertPos.rplacd(rhs);
         return ret;
     }
@@ -1795,8 +1877,8 @@ public class LambdaJ {
     private Object append(Object... args) {
         if (args == null || args.length == 0) return null;
         if (args.length == 1) return args[0];
-        if (args.length > 1 && atom(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
-        ConsCell ret = (ConsCell)args[0];
+        if (args.length > 1 && !listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
+        Object ret = args[0];
         for (int i = 1; i < args.length; i++) {
             ret = append2(ret, args[i]); // todo optimieren: bei n args wird n-1 mal kopiert -> insertpos mitfuehren
         }
