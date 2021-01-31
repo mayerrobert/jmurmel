@@ -22,6 +22,7 @@ JMurmel features a REPL with a trace facility (trace and untrace function calls)
 tail call optimization,
 dynamic as well as lexical environments,
 a macro facility,
+backquote expansion including nested backquotes,
 JSR223 support,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
@@ -299,4 +300,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.56 2021/01/20 16:08:59 Robert Exp $
+$Id: README.md,v 1.57 2021/01/23 21:19:30 Robert Exp $
