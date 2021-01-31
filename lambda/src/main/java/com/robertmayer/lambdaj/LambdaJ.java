@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.379 2021/01/30 16:43:43 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.380 2021/01/31 07:14:53 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -484,8 +484,12 @@ public class LambdaJ {
 
         private static final Pattern doublePattern = Pattern.compile(
                 "[-+]?"                              // optional-sign
-              + "((([0-9]+\\.)[0-9]*)|\\.[0-9]+)"    // either: one-or-more-digits '.' zero-or-more-digits  or: '.' one-or-more-digits
-              + "([eE][-+]?[0-9]+)?");               // optional: e-or-E optional-sign one-or-more-digits
+              + "("                                  // either
+              + "(((([0-9]+\\.)[0-9]*)|\\.[0-9]+)"   //   either: one-or-more-digits '.' zero-or-more-digits  or: '.' one-or-more-digits
+              + "([eE][-+]?[0-9]+)?)"                //   optional: e-or-E optional-sign one-or-more-digits
+              + "|"                                  // or
+              + "([0-9]+[eE][-+]?[0-9]+)"            //   one-or-more-digits e-or-E optional-sign one-or-more-digits
+              + ")");
         private static boolean isDouble(String s) {
             if (s == null || s.isEmpty()) return false;
             return doublePattern.matcher(s).matches();

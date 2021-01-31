@@ -15,6 +15,16 @@ public class ScannerTest {
     }
 
     @Test
+    public void testScientificDouble() {
+        LambdaJTest.runTest("double", "1.0e3", "1000.0", null);
+    }
+
+    @Test
+    public void testScientificNoDot() {
+        LambdaJTest.runTest("double", "1e3", "1000.0", null);
+    }
+
+    @Test
     public void testEmptySymbol() {
         LambdaJTest.runTest("empty", "(quote ||)", "||", null);
     }
