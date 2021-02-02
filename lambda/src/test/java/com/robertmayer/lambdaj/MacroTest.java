@@ -77,4 +77,15 @@ public class MacroTest {
               + "(macroexpand-1 (macroexpand-1 '(add2 1 2)))",
                 "(+ 1.0 2.0)", null);
     }
+
+
+
+    @Test
+    public void testGensym() throws Exception {
+        LambdaJTest.runTest("gensym.lisp",
+                "(defmacro m (x1 x2) (let ((y1 (gensym)) (y2 (gensym))) `(let ((,y1 ,x1) (,y2 ,x2)) (+ ,y1 ,y2)))) "
+                + "(macroexpand-1 '(m 2 3)) "
+                + "(m 2 3)",
+                "5.0", null);
+    }
 }

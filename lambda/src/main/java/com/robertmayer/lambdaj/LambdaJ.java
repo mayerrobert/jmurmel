@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.381 2021/01/31 09:57:44 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.382 2021/01/31 10:10:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2236,6 +2236,11 @@ public class LambdaJ {
         return mexpand(operator, arguments, 0, 0, 0);
     }
 
+    private int gensymCounter = 0;
+    private Object gensym(ConsCell args) {
+        return new LambdaJSymbol("gensym" + ++gensymCounter);
+    }
+
     private String format(ConsCell a) {
         String func = "format";
         nArgs(func, a, 2);
@@ -2477,7 +2482,8 @@ public class LambdaJ {
                   env));
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("macroexpand-1")), (Primitive)this::macroexpand1),
-                  env);
+                  cons(cons(symtab.intern(new LambdaJSymbol("gensym")), (Primitive)this::gensym),
+                  env));
         }
 
         if (haveT()) {
@@ -3967,7 +3973,7 @@ public class LambdaJ {
         private ConsCell extenv(Object symbol, int sfx, ConsCell prev) {
             requireSymbol(symbol);
             final String symname = symbol == null ? null : symbol.toString();
-            final LambdaJSymbol sym = intern(symname); // todo warum ein Symbol nochmal internen?
+            final LambdaJSymbol sym = (LambdaJSymbol)symbol;
             notReserved(sym);
             return extenvIntern(sym, mangle(symname, sfx), prev);
         }
@@ -4255,8 +4261,8 @@ public class LambdaJ {
 
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
-                        Object expansion = intp.mexpand(op, (ConsCell) args, 0, 0, 0);
-                        formToJava(sb, expansion, env, topEnv, rsfx, false);
+                        Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
+                        formToJava(sb, expansion, env, topEnv, rsfx, false); // todo isLast statt false?
                         return;
                     }
 

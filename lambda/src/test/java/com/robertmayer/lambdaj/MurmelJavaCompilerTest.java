@@ -501,6 +501,18 @@ public class MurmelJavaCompilerTest {
 
 
 
+    @Test
+    public void testGensym() throws Exception {
+        String source = "(defmacro m (x1 x2) (let ((y1 (gensym)) (y2 (gensym))) `(let ((,y1 ,x1) (,y2 ,x2)) (+ ,y1 ,y2)))) "
+                //+ "(macroexpand-1 '(m 2 3)) "
+                + "(m 2 3)";
+        MurmelProgram program = compile(source);
+        assertNotNull("failed to compile gensym to class:", program);
+        assertEquals("gensym produced wrong result", 5.0, program.body());
+    }
+
+
+
     private MurmelProgram compile(String source) throws Exception {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);

@@ -1,5 +1,10 @@
-1e3 wird als symbol gelesen
--> doublePattern stimmt nicht
+symbolhandling ist fishy
+-> symbole sollten nicht per stringvergleich sondern ueber identity verglichen werden
+  -> dadurch wirkt sich der unterschied interned/ nicht interned nicht wie gewuenscht aus, und gensym funktioniert nicht richtig
+-> der reader sollte symbole auf UC stellen (ausser ||), symboltable sollte case sensitive sein
+-> compiler sollte nicht stringvergleich machen
+
+gensym im compiler (momentan gehts nur in macros)
 
 1\234 sollte als symbol gelesen werden
 

@@ -403,6 +403,9 @@ nil
 (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
 (macroexpand-1 '(add2 3))      ; ==> (+ 3 2)
 
+; (gensym) -> uninterned symbol
+(gensym)
+
 ; Both expressions as well as data are read from stdin.
 ; The following expression reads the expression immediately following it
 ; (in this case the expression to be read is the string "Hello!").
@@ -525,9 +528,14 @@ nil
 ; - globals should be special (dynamic)
 ; - support for packages should be added
 ;
+; Compiler + interpreter issues:
+; - internal symbol handling needs refactoring, e.g. (gensym) can't be trusted
+;   workaround: avoid using symbols whose name starts with "gensym"
+;
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
+; - gensym only works inside macros
 ;
 ; The todo list for features is way too long.
 
@@ -542,4 +550,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.68 2021/01/31 10:10:53 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.69 2021/01/31 10:18:11 Robert Exp $
