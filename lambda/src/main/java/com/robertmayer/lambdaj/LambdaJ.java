@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.382 2021/01/31 10:10:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.383 2021/02/02 15:11:42 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -700,7 +700,6 @@ public class LambdaJ {
         private final Object sUnquote        = intern(new LambdaJSymbol("unquote"));
         private final Object sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
         private final Object sAppend         = intern(new LambdaJSymbol("append"));
-        private final Object sCons           = intern(new LambdaJSymbol("cons"));
         private final Object sList           = intern(new LambdaJSymbol("list"));
 
         private Object readObject(int startLine, int startChar) {
@@ -744,8 +743,6 @@ public class LambdaJ {
                 return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
             }
             if (!tokEscape && isToken(tok, "`")) {
-//                if (backquote > 0)
-//                    throw new LambdaJError("nested backquote is not supported" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 skipWs();
                 int _startLine = lineNo, _startChar = charNo;
                 readToken();
@@ -853,43 +850,10 @@ public class LambdaJ {
             }
 
             if (op == sQuasiquote)
-                //return expand_quasiquote(cadr(formCons), 1);
                 return qq_expand(cadr(formCons));
 
             return mapcar(o -> expand_backquote(o), formCons);
         }
-
-        /*
-        private Object expand_quasiquote(Object form, int n) {
-            if (form == null) return null;
-            if (atom(form))
-                return quote(form);
-
-            final ConsCell formCons = (ConsCell)form;
-            final Object op = car(formCons);
-
-            if (op == sUnquote_splice)
-                throw new LambdaJError("can't splice here");
-
-            if (op == sUnquote)
-                if (n == 1)
-                    return cadr(formCons);
-                else
-                    return quote(list(sUnquote, expand_quasiquote(cadr(formCons), n - 1)));
-
-            if (op == sQuasiquote)
-                throw new LambdaJError("nested backquote is not implemented");
-                //return quote(list(sQuasiquote, expand_quasiquote(cadr(formCons), n + 1)));
-
-            if (consp(op) && car(op) == sUnquote_splice)
-                if (n == 1)
-                    return list(sAppend, cadr(op), expand_quasiquote(cdr(formCons), n));
-                else
-                    return quote(list(sAppend, new ListConsCell(sUnquote_splice, cadr(op)), expand_quasiquote(cdr(formCons), n)));
-
-            return list(sCons, expand_quasiquote(op, n), expand_quasiquote(cdr(formCons), n));
-        }
-        */
 
 
 
@@ -897,76 +861,78 @@ public class LambdaJ {
          qq-expand and qq-expand-list are based on "Quasiquotation in Lisp (1999) by Alan Bawden"
          https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.309.227
 
-(defun qq-expand (x)
-  (cond ((null x)
-         nil)
-        ((tag-comma? x)
-         (tag-data x))
-        ((tag-comma-atsign? x)
-         (error "Illegal"))
-        ((tag-backquote? x)
-         (qq-expand
-           (qq-expand (tag-data x))))
-        ((consp x)
-         `(append
-            ,(qq-expand-list (car x))
-            ,(qq-expand (cdr x))))
-        (t `',x)))
+        (defun qq-expand (x)
+          (cond ((null x)
+                 nil)
+                ((tag-comma? x)
+                 (tag-data x))
+                ((tag-comma-atsign? x)
+                 (error "Illegal"))
+                ((tag-backquote? x)
+                 (qq-expand
+                   (qq-expand (tag-data x))))
+                ((consp x)
+                 `(append
+                    ,(qq-expand-list (car x))
+                    ,(qq-expand (cdr x))))
+                (t `',x)))
         */
         private Object qq_expand(Object x) {
             if (x == null) return null;
             if (atom(x))
                 return quote(x);
 
-            final ConsCell formCons = (ConsCell)x;
-            final Object op = car(formCons);
+            final ConsCell xCons = (ConsCell)x; // save a few casts
+            final Object op = car(xCons);
 
             if (op == sUnquote)
-                return cadr(formCons);
+                return cadr(xCons);
 
             if (op == sUnquote_splice)
                 throw new LambdaJError("can't splice here");
 
             if (op == sQuasiquote)
-                return qq_expand(qq_expand(cadr(formCons)));
+                return qq_expand(qq_expand(cadr(xCons)));
 
-            return list(sAppend, qq_expand_list(car(x)), qq_expand(cdr(x)));
+            if (cdr(xCons) == null) return qq_expand_list(op);
+            return list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons)));
         }
 
         /*
-(defun qq-expand-list (x)
-  (cond ((tag-comma? x)
-          `(list ,(tag-data x)))
-        ((tag-comma-atsign? x)
-         (tag-data x))
-        ((tag-backquote? x)
-         (qq-expand-list
-           (qq-expand (tag-data x))))
-        ((consp x)
-         `(list
-            (append
-              ,(qq-expand-list (car x))
-              ,(qq-expand (cdr x)))))
-        (t `'(,x))))
+        (defun qq-expand-list (x)
+          (cond ((tag-comma? x)
+                  `(list ,(tag-data x)))
+                ((tag-comma-atsign? x)
+                 (tag-data x))
+                ((tag-backquote? x)
+                 (qq-expand-list
+                   (qq-expand (tag-data x))))
+                ((consp x)
+                 `(list
+                    (append
+                      ,(qq-expand-list (car x))
+                      ,(qq-expand (cdr x)))))
+                (t `'(,x))))
         */
         private Object qq_expand_list(Object x) {
             if (x == null) return null;
             if (atom(x))
                 return quote(list(x, null));
 
-            final ConsCell formCons = (ConsCell)x;
-            final Object op = car(formCons);
+            final ConsCell xCons = (ConsCell)x; // save a few casts
+            final Object op = car(xCons);
 
             if (op == sUnquote)
-                return list(sList, cadr(formCons));
+                return list(sList, cadr(xCons));
 
             if (op == sUnquote_splice)
-                return cadr(formCons);
+                return cadr(xCons);
 
             if (op == sQuasiquote)
-                return qq_expand_list(qq_expand(cadr(formCons)));
+                return qq_expand_list(qq_expand(cadr(xCons)));
 
-            return list(sList, list(sAppend, qq_expand_list(car(x)), qq_expand(cdr(x))));
+            if (cdr(xCons) == null) return list(sList, qq_expand_list(op));
+            return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
         }
 
 
@@ -1177,6 +1143,7 @@ public class LambdaJ {
                     // todo reserved words?
                     if (operator == sDefmacro) {
                         nArgs("defmacro", arguments, 3);
+                        notReserved("defmacro", car(arguments));
                         ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
                         result = car(arguments);
                         macros.put(result, closure);
@@ -1677,12 +1644,14 @@ public class LambdaJ {
     }
 
     private static String pfx(int stack, int level) {
-        final char[] cpfx = new char[stack*2];
-        Arrays.fill(cpfx, ' ');
+        final int stackLen = stack * 2;
+        final int tcoLen = 3 + (level - stack) * 2;
 
-        char[] csfx = new char[3+(level - stack)*2]; // todo nur 1 char[] instanzieren
-        Arrays.fill(csfx, '*');
-        return new String(cpfx) + new String(csfx);
+        final char[] cpfx = new char[stackLen + tcoLen];
+        Arrays.fill(cpfx, 0, stackLen, ' ');
+        Arrays.fill(cpfx, stackLen, stackLen + tcoLen, '*');
+
+        return new String(cpfx);
     }
 
 
