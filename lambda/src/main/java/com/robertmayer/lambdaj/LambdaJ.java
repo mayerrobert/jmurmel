@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.383 2021/02/02 15:11:42 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.384 2021/02/03 19:05:05 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2767,7 +2767,7 @@ public class LambdaJ {
         int features = features(args);
         final LambdaJ interpreter = new LambdaJ(features, trace, null);
 
-        final boolean istty       = null != System.console();
+        final boolean istty       = hasFlag("--tty", args) || null != System.console();
         final boolean repl        = hasFlag("--repl", args);
         final boolean echo        = hasFlag("--echo", args);    // used only in repl
         final boolean printResult = hasFlag("--result", args);  // used only in filemode
@@ -3298,11 +3298,14 @@ public class LambdaJ {
                 + "--outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir\n"
                 + "\n"
                 + "--result .........  Print the result of the last form.\n"
-                + "--repl ...........  By default JMurmel will enter REPL only if there\n"
+                + "--tty ............  By default JMurmel will enter REPL only if there\n"
                 + "                    are no filenames given on the commandline and\n"
                 + "                    stdin is a tty.\n"
-                + "                    --repl will make JMurmel enter REPL anyways,\n"
-                + "                    i.e. print prompt and results and support :commands.\n"
+                + "                    --tty will make JMurmel enter REPL anyways,\n"
+                + "                    i.e. print prompt and results, support :commands and\n"
+                + "                    continue after runtime errors.\n"
+                + "                    Useful e.g. for Emacs' (run-lisp).\n"
+                + "--repl ...........  Same as --tty but terminate after runtime errors.\n"
                 + "\n"
                 + "Flags for REPL:\n"
                 + "--echo ...........  Echo all input while reading\n"

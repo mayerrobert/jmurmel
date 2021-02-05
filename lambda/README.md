@@ -63,9 +63,9 @@ At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look
 You just wrote and ran a Murmel program!
 
 Now take it from there,
-e.g. read `murmel-langref.lisp`.
-Or type `:h` at the REPL prompt.
-Or run `java -jar jmurmel-1.0-SNAPSHOT.jar --help`.
+e.g. read `murmel-langref.lisp`.  
+Or type `:h` at the REPL prompt.  
+Or run `java -jar jmurmel-1.0-SNAPSHOT.jar --help`.  
 
 
 | [Standalone use](#standalone-use)
@@ -138,10 +138,13 @@ or if you want to interpret a file and then go into REPL:
 
     C:\> jm --repl hanoi.lisp
 
+Or use JMurmel from within Emacs: add `(setq inferior-lisp-program "jm --tty")`
+to your `.emacs` file and do `M-x (run-lisp)`.
 
 ## Embedded use
 
-JMurmel uses Java8+ only.
+JMurmel uses Java8 only, but should run on higher versions as well
+(Java 15 is lightly tested).
 It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
@@ -300,4 +303,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.58 2021/01/31 10:03:05 Robert Exp $
+$Id: README.md,v 1.59 2021/01/31 10:10:53 Robert Exp $

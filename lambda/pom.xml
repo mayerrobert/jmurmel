@@ -53,7 +53,7 @@
                 </excludes>
             </configuration>
 
-			<!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an jnuit tests.
+			<!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an junit tests.
 			     damit wird der junit runner aktiviert -->
 	        <dependencies>
 	          <dependency>

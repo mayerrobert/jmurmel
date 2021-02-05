@@ -24,11 +24,14 @@ Misc flags:
 --outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir
 
 --result .........  Print the result of the last form.
---repl ...........  By default JMurmel will enter REPL only if there
+--tty ............  By default JMurmel will enter REPL only if there
                     are no filenames given on the commandline and
                     stdin is a tty.
-                    --repl will make JMurmel enter REPL anyways,
-                    i.e. print prompt and results and support :commands.
+                    --tty will make JMurmel enter REPL anyways,
+                    i.e. print prompt and results, support :commands and
+                    continue after runtime errors.
+                    Useful e.g. for Emacs' (run-lisp).
+--repl ...........  Same as --tty but terminate after runtime errors.
 
 Flags for REPL:
 --echo ...........  Echo all input while reading
