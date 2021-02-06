@@ -31,7 +31,6 @@
 (defun euler-1 (max)
   (+ (sum 0 0 3 max) (sum 0 0 5 max)))
 
-(euler-1 1000)
 
 
 ; alternative: lots more modulo operations
@@ -50,10 +49,10 @@
 (defun sum3 (acc add incr max)
   (if (>= add max)
         acc
-    (sum (+ acc incr) (+ add incr) incr max)))
+    (sum3 (+ acc add) (+ add incr) incr max)))
 
 (defun euler-13 (max)
-  (+ (sum 0 0 3 max) (sum 0 0 5 max) (- (sum 0 0 15 max))))
+  (+ (sum3 0 0 3 max) (sum3 0 0 5 max) (- (sum3 0 0 15 max))))
 
 
 
