@@ -123,7 +123,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.384 2021/02/03 19:05:05 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.385 2021/02/05 21:13:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -692,7 +692,8 @@ public class LambdaJ {
             skipWs();
             int startLine = lineNo, startChar = charNo;
             readToken();
-            return expand_backquote(readObject(startLine, startChar));
+            //return expand_backquote(readObject(startLine, startChar));
+            return readObject(startLine, startChar);
         }
 
         private final Object sQuote          = intern(new LambdaJSymbol("quote"));
@@ -747,7 +748,10 @@ public class LambdaJ {
                 int _startLine = lineNo, _startChar = charNo;
                 readToken();
                 backquote++;
-                Object o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                final Object exp = readObject(_startLine, _startChar);
+                final Object o;
+                if (backquote == 1) o = qq_expand(exp);
+                else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
                 backquote--;
                 return o;
             }
