@@ -5,6 +5,10 @@ For a copy, see https://opensource.org/licenses/MIT. */
 
 package com.robertmayer.lambdaj;
 
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.Line2D;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -123,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.385 2021/02/05 21:13:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.386 2021/02/06 09:18:08 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2420,6 +2424,31 @@ public class LambdaJ {
                   cons(cons(symtab.intern(new LambdaJSymbol("lnwrite")), flnwrite),
                   env))));
 
+
+            final Primitive makeFrame = a -> {
+                stringArg("make-frame", "first arg", a);
+                final String title = car(a).toString();
+                numberArgs("make-frame", (ConsCell) cdr(a), 2, 2);
+                return new TurtleWindow(title, ((Number)(cadr(a))).intValue(), ((Number)(caddr(a))).intValue());
+            };
+            env = cons(cons(symtab.intern(new LambdaJSymbol("make-frame")), makeFrame),
+                  cons(cons(symtab.intern(new LambdaJSymbol("open")),       (Primitive) a -> { oneArg("open",    a); ((TurtleWindow)car(a)).open();    return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("close")),      (Primitive) a -> { oneArg("close",   a); ((TurtleWindow)car(a)).close();   return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("reset")),      (Primitive) a -> { oneArg("reset",   a); ((TurtleWindow)car(a)).reset();   return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("clear")),      (Primitive) a -> { oneArg("clear",   a); ((TurtleWindow)car(a)).clear();   return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("repaint")),    (Primitive) a -> { oneArg("repaint", a); ((TurtleWindow)car(a)).repaint(); return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("penup")),      (Primitive) a -> { oneArg("penup",   a); ((TurtleWindow)car(a)).penUp();   return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("pendown")),    (Primitive) a -> { oneArg("pendown", a); ((TurtleWindow)car(a)).penDown(); return null; }),
+
+                  cons(cons(symtab.intern(new LambdaJSymbol("color")),      (Primitive) a -> { oneArg("color", a);   ((TurtleWindow)car(a)).color(((Number)cadr(a)).intValue()); return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("bgcolor")),    (Primitive) a -> { oneArg("bgcolor", a); ((TurtleWindow)car(a)).bgColor(((Number)cadr(a)).intValue()); return null; }),
+
+                  cons(cons(symtab.intern(new LambdaJSymbol("text")),       (Primitive) a -> { nArgs("text",    a, 2, 2); ((TurtleWindow)car(a)).text(cadr(a).toString()); return null; }),
+
+                  cons(cons(symtab.intern(new LambdaJSymbol("right")),      (Primitive) a -> { nArgs("right",   a, 2, 2); ((TurtleWindow)car(a)).right(((Number)cadr(a)).doubleValue());   return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("left")),       (Primitive) a -> { nArgs("left",    a, 2, 2); ((TurtleWindow)car(a)).left(((Number)cadr(a)).doubleValue());    return null; }),
+                  cons(cons(symtab.intern(new LambdaJSymbol("forward")),    (Primitive) a -> { nArgs("forward", a, 2, 2); ((TurtleWindow)car(a)).forward(((Number)cadr(a)).doubleValue()); return null; }),
+                  env))))))))))))));
         }
 
         if (haveString()) {
@@ -2450,8 +2479,8 @@ public class LambdaJ {
             };
             env = cons(cons(sEval, ocEval), env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("trace")), (Primitive) a -> { return trace(a); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("untrace")), (Primitive) a -> { return untrace(a); }),
+            env = cons(cons(symtab.intern(new LambdaJSymbol("trace")), (Primitive) this::trace),
+                  cons(cons(symtab.intern(new LambdaJSymbol("untrace")), (Primitive) this::untrace),
                   env));
 
             env = cons(cons(symtab.intern(new LambdaJSymbol("macroexpand-1")), (Primitive)this::macroexpand1),
@@ -4906,5 +4935,207 @@ class WrappingWriter extends Writer {
     public void close() {
         try { wrapped.close(); }
         catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+    }
+}
+
+
+
+class TurtleWindow {
+    private static final Color[] colors = {
+        Color.white,        //  0
+        Color.black,        //  1
+        Color.red,          //  2
+        Color.green,        //  3
+        Color.blue,         //  4
+        Color.pink,         //  5
+        Color.orange,       //  6
+        Color.yellow,       //  7
+        Color.magenta,      //  8
+        Color.cyan,         //  9
+        Color.darkGray,     // 10
+        Color.gray,         // 11
+        Color.lightGray,    // 12
+    };
+    private static class Text {
+        private final double x, y;
+        private final String s;
+        Text(double x, double y, String s) { this.x = x; this.y = y; this.s = s; }
+    }
+
+    private int bgColor = 0;
+    private int color = 1;
+    private final ArrayList<Object> lines = new ArrayList<>();
+    private final ArrayList<Text> texts = new ArrayList<>();
+
+    private double x, y, angle;
+    private boolean draw;
+
+    private double xmin, ymin, xmax, ymax;
+
+    private boolean open;
+    private final Frame f;
+    private final LineComponent component;
+
+    TurtleWindow(String title, int w, int h) {
+        f = new Frame(title);
+        f.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                close();
+            }
+        });
+
+        draw = true;
+        component = new LineComponent(w, h);
+        f.add(component, BorderLayout.CENTER);
+        open();
+    }
+
+    void open() {
+        if (open) return;
+        f.pack();
+        f.setVisible(true);
+        open = true;
+    }
+
+    void close() {
+        if (!open) return;
+        f.dispose();
+        open = false;
+    }
+
+    void reset() {
+        draw = true;
+        x = y = angle = xmin = xmax = ymin = ymax = 0.0;
+        bgColor = 0; color = 1;
+    }
+
+    void clear() {
+        reset();
+        synchronized (lines) {
+            lines.clear();
+            texts.clear();
+        }
+        repaint();
+    }
+    void repaint() { if (open) component.repaint(); }
+
+
+
+    void color(int color) {
+        if (color == this.color) return;
+        validateColor(color);
+        synchronized (lines) { lines.add(colors[color]); }
+    }
+
+    void bgColor(int newColor) { validateColor(color);  bgColor = newColor; }
+
+    private void validateColor(int color) {
+        if (color < 0 || color >= colors.length) throw new IllegalArgumentException("Invalid color " + color);
+    }
+
+    void moveTo(double newx, double newy) {
+        if (newx < xmin) xmin = newx;
+        if (newx > xmax) xmax = newx;
+        if (newy < ymin) ymin = newy;
+        if (newy > ymax) ymax = newy;
+        x = newx; y = newy;
+    }
+
+    void lineTo(double newx, double newy) {
+        synchronized (lines) { lines.add(new Line2D.Double(x, y, newx, newy)); }
+        moveTo(newx, newy);
+    }
+
+    void moveRel(double dx, double dy) {
+        moveTo(x + dx, y + dy);
+    }
+
+    void lineRel(double dx, double dy) {
+        lineTo(x + dx, y + dy);
+    }
+
+    void text(String s) {
+        synchronized (lines) { texts.add(new Text(x, y, s)); }
+    }
+
+    void penUp() { draw = false; }
+    void penDown() { draw = true; }
+    void left(double angleDiff) { angle += angleDiff; }
+    void right(double angleDiff) { angle -= angleDiff; }
+    void forward(double length) {
+        double newx = x + Math.cos(Math.toRadians(angle)) * length;
+        double newy = y + Math.sin(Math.toRadians(angle)) * length;
+        if (draw) lineTo(newx, newy); else moveTo(newx, newy);
+    }
+
+
+
+    private class LineComponent extends Component {
+        private static final long serialVersionUID = 1L;
+
+        LineComponent(int width, int height) {
+            super();
+            setPreferredSize(new Dimension(width, height));
+        }
+
+        @Override
+        public void paint(Graphics g) {
+            super.paint(g);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            g.setColor(colors[bgColor]);
+            g.fillRect(0, 0, w, h);
+            if (lines.isEmpty()) return;
+
+            synchronized (lines) {
+
+                /*
+                double padding = 0.05;
+                double xfac = w / (xmax - xmin) * (1.0 - 2 * padding);
+                double yfac = h / (ymax - ymin) * (1.0 - 2 * padding);
+                */
+                int padding = 40;
+                double xfac = (w-padding) / (xmax - xmin);
+                double yfac = (h-padding) / (ymax - ymin);
+
+                double fac = xfac < yfac ? xfac : yfac;
+
+                double xoff = 0 - xmin;
+                xoff += (w / fac - (xmax - xmin)) / 2.0;
+
+                double yoff = 0 - ymin;
+                yoff += (h / fac - (ymax - ymin)) / 2.0;
+
+                g.setColor(Color.black);
+                for (Object o : lines) {
+                    if (o instanceof Color) {
+                        g.setColor((Color)o);
+                    }
+                    else if (o instanceof Line2D.Double) {
+                        Line2D.Double line = (Line2D.Double)o;
+                        g.drawLine(
+                            trX(fac, xoff, line.getX1()),
+                            h - trY(fac, yoff, line.getY1()),
+                            trX(fac, xoff, line.getX2()),
+                            h - trY(fac, yoff, line.getY2())
+                        );
+                    }
+                }
+                for (Text text: texts) {
+                    g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
+                }
+            }
+        }
+
+        private int trX(double fac, double xoff, double x) {
+            return (int)((x + xoff) * fac);
+        }
+
+        private int trY(double fac, double yoff, double y) {
+            return (int)((y + yoff) * fac);
+        }
     }
 }
