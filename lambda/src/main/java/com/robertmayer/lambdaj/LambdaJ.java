@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.386 2021/02/06 09:18:08 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.387 2021/02/15 06:34:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1027,7 +1027,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private Object sLambda, sDynamic, sQuote, /*sQuasiquote,*/ sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sApply, sProgn;
+    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sApply, sProgn;
 
     private Supplier<Object> expTrue;
 
@@ -2147,6 +2147,31 @@ public class LambdaJ {
         }
     }
 
+    private TurtleWindow window;
+
+    private TurtleWindow asWindow(String func, Object w) {
+        final TurtleWindow ret;
+        if (w == null) {
+            ret = window;
+        }
+        else {
+            if (!(w instanceof TurtleWindow)) throw new LambdaJError(true, "%s: expected a window argument but got %s", func, printSEx(w));
+            ret = (TurtleWindow) w;
+        }
+        if (ret == null) throw new LambdaJError(true, "%s: no window argument and no current window", func);
+        return ret;
+    }
+
+    private double asDouble(String func, Object a) {
+        if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        return ((Number)a).doubleValue();
+    }
+
+    private int asInt(String func, Object a) {
+        if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        return ((Number)a).intValue();
+    }
+
 
 
     /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
@@ -2418,10 +2443,10 @@ public class LambdaJ {
                 return expTrue.get();
             };
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("read")),    freadobj),
-                  cons(cons(symtab.intern(new LambdaJSymbol("write")),   fwriteobj),
-                  cons(cons(symtab.intern(new LambdaJSymbol("writeln")), fwriteln),
-                  cons(cons(symtab.intern(new LambdaJSymbol("lnwrite")), flnwrite),
+            env = addBuiltin("read",    freadobj,
+                  addBuiltin("write",   fwriteobj,
+                  addBuiltin("writeln", fwriteln,
+                  addBuiltin("lnwrite", flnwrite,
                   env))));
 
 
@@ -2429,46 +2454,44 @@ public class LambdaJ {
                 stringArg("make-frame", "first arg", a);
                 final String title = car(a).toString();
                 numberArgs("make-frame", (ConsCell) cdr(a), 2, 2);
-                return new TurtleWindow(title, ((Number)(cadr(a))).intValue(), ((Number)(caddr(a))).intValue());
+                final TurtleWindow ret = new TurtleWindow(title, ((Number)(cadr(a))).intValue(), ((Number)(caddr(a))).intValue());
+                window = ret;
+                return ret;
             };
-            env = cons(cons(symtab.intern(new LambdaJSymbol("make-frame")), makeFrame),
-                  cons(cons(symtab.intern(new LambdaJSymbol("open")),       (Primitive) a -> { oneArg("open",    a); ((TurtleWindow)car(a)).open();    return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("close")),      (Primitive) a -> { oneArg("close",   a); ((TurtleWindow)car(a)).close();   return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("reset")),      (Primitive) a -> { oneArg("reset",   a); ((TurtleWindow)car(a)).reset();   return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("clear")),      (Primitive) a -> { oneArg("clear",   a); ((TurtleWindow)car(a)).clear();   return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("repaint")),    (Primitive) a -> { oneArg("repaint", a); ((TurtleWindow)car(a)).repaint(); return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("penup")),      (Primitive) a -> { oneArg("penup",   a); ((TurtleWindow)car(a)).penUp();   return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("pendown")),    (Primitive) a -> { oneArg("pendown", a); ((TurtleWindow)car(a)).penDown(); return null; }),
+            env = addBuiltin("make-frame", makeFrame,
+                  addBuiltin("open",       (Primitive) a -> { nArgs("open",    a, 0, 1); asWindow("open",    car(a)).open();    return null; },
+                  addBuiltin("close",      (Primitive) a -> { nArgs("close",   a, 0, 1); asWindow("close",   car(a)).close();   return null; },
+                  addBuiltin("reset",      (Primitive) a -> { nArgs("reset",   a, 0, 1); asWindow("reset",   car(a)).reset();   return null; },
+                  addBuiltin("clear",      (Primitive) a -> { nArgs("clear",   a, 0, 1); asWindow("clear",   car(a)).clear();   return null; },
+                  addBuiltin("repaint",    (Primitive) a -> { nArgs("repaint", a, 0, 1); asWindow("repaint", car(a)).repaint(); return null; },
+                  addBuiltin("penup",      (Primitive) a -> { nArgs("penup",   a, 0, 1); asWindow("penup",   car(a)).penUp();   return null; },
+                  addBuiltin("pendown",    (Primitive) a -> { nArgs("pendown", a, 0, 1); asWindow("pendown", car(a)).penDown(); return null; },
 
-                  cons(cons(symtab.intern(new LambdaJSymbol("color")),      (Primitive) a -> { oneArg("color", a);   ((TurtleWindow)car(a)).color(((Number)cadr(a)).intValue()); return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("bgcolor")),    (Primitive) a -> { oneArg("bgcolor", a); ((TurtleWindow)car(a)).bgColor(((Number)cadr(a)).intValue()); return null; }),
+                  addBuiltin("color",      (Primitive) a -> { nArgs("color",   a, 0, 1); asWindow("color",   cadr(a)).color  (asInt("color",   car(a))); return null; },
+                  addBuiltin("bgcolor",    (Primitive) a -> { nArgs("bgcolor", a, 0, 1); asWindow("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); return null; },
 
-                  cons(cons(symtab.intern(new LambdaJSymbol("text")),       (Primitive) a -> { nArgs("text",    a, 2, 2); ((TurtleWindow)car(a)).text(cadr(a).toString()); return null; }),
+                  addBuiltin("text",       (Primitive) a -> { nArgs("text",    a, 1, 2); asWindow("text",    cadr(a)).text   (car(a).toString()); return null; },
 
-                  cons(cons(symtab.intern(new LambdaJSymbol("right")),      (Primitive) a -> { nArgs("right",   a, 2, 2); ((TurtleWindow)car(a)).right(((Number)cadr(a)).doubleValue());   return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("left")),       (Primitive) a -> { nArgs("left",    a, 2, 2); ((TurtleWindow)car(a)).left(((Number)cadr(a)).doubleValue());    return null; }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("forward")),    (Primitive) a -> { nArgs("forward", a, 2, 2); ((TurtleWindow)car(a)).forward(((Number)cadr(a)).doubleValue()); return null; }),
+                  addBuiltin("right",      (Primitive) a -> { nArgs("right",   a, 1, 2); asWindow("right",   cadr(a)).right  (asDouble("right",   car(a))); return null; },
+                  addBuiltin("left",       (Primitive) a -> { nArgs("left",    a, 1, 2); asWindow("left",    cadr(a)).left   (asDouble("left",    car(a))); return null; },
+                  addBuiltin("forward",    (Primitive) a -> { nArgs("forward", a, 1, 2); asWindow("forward", cadr(a)).forward(asDouble("forward", car(a))); return null; },
                   env))))))))))))));
         }
 
         if (haveString()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("stringp")),    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("characterp")), (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); }),
+            env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
+                  addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
                   env));
 
             if (haveUtil()) {
-                env = cons(cons(symtab.intern(new LambdaJSymbol("format")),        (Primitive) a -> format(a)),
-                      cons(cons(symtab.intern(new LambdaJSymbol("format-locale")), (Primitive) a -> formatLocale(a)),
+                env = addBuiltin("format",        (Primitive) a -> format(a),
+                      addBuiltin("format-locale", (Primitive) a -> formatLocale(a),
                       env));
             }
         }
 
         if (haveXtra()) {
-            env = cons(cons(sDynamic, sDynamic),
-                  env);
-            //env = cons(cons(sEval, (Primitive) a -> { nArgs("eval", a, 1, 2);
-            //                                          return eval(car(a), cadr(a)); }),
-            //      env);
+            env = addBuiltin(sDynamic, sDynamic, env);
 
             final LambdaJSymbol sEval = symtab.intern(new LambdaJSymbol("eval"));
             ocEval = new OpenCodedPrimitive(sEval) {
@@ -2477,112 +2500,116 @@ public class LambdaJ {
                     return eval(car(a), cadr(a));
                 }
             };
-            env = cons(cons(sEval, ocEval), env);
+            env = addBuiltin(sEval, ocEval, env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("trace")), (Primitive) this::trace),
-                  cons(cons(symtab.intern(new LambdaJSymbol("untrace")), (Primitive) this::untrace),
+            env = addBuiltin("trace", (Primitive) this::trace,
+                  addBuiltin("untrace", (Primitive) this::untrace,
                   env));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("macroexpand-1")), (Primitive)this::macroexpand1),
-                  cons(cons(symtab.intern(new LambdaJSymbol("gensym")), (Primitive)this::gensym),
+            env = addBuiltin("macroexpand-1", (Primitive)this::macroexpand1,
+                  addBuiltin("gensym", (Primitive)this::gensym,
                   env));
         }
 
         if (haveT()) {
-            Object sT = symtab.intern(new LambdaJSymbol("t"));
-            env = cons(cons(sT, sT),
-                  env);
+            LambdaJSymbol sT = symtab.intern(new LambdaJSymbol("t"));
+            env = addBuiltin(sT, sT, env);
             reserve(sT);
         }
 
         if (haveNil()) {
-            final Object sNil = symtab.intern(new LambdaJSymbol("nil"));
-            env = cons(cons(sNil, null),
-                  env);
+            final LambdaJSymbol sNil = symtab.intern(new LambdaJSymbol("nil"));
+            env = addBuiltin(sNil, null, env);
             reserve(sNil);
         }
 
         if (haveUtil()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("consp")),   (Primitive) a -> { oneArg("consp",   a);  return boolResult(consp  (car(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("symbolp")), (Primitive) a -> { oneArg("symbolp", a);  return boolResult(symbolp(car(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("listp")),   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("null")),    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("assoc")),   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), car(cdr(a))); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("list")),    (Primitive) a -> a),
+            env = addBuiltin("consp",   (Primitive) a -> { oneArg("consp",   a);  return boolResult(consp  (car(a))); },
+                  addBuiltin("symbolp", (Primitive) a -> { oneArg("symbolp", a);  return boolResult(symbolp(car(a))); },
+                  addBuiltin("listp",   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); },
+                  addBuiltin("null",    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); },
+                  addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), car(cdr(a))); },
+                  addBuiltin("list",    (Primitive) a -> a,
                   env))))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("append")),  (Primitive) a -> { return append(listToArray(a)); }),
+            env = addBuiltin("append",  (Primitive) a -> { return append(listToArray(a)); },
                   env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("internal-time-units-per-second")), new Double(1e9)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-real-time")), (Primitive) a -> getInternalRealTime()),
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-run-time")),  (Primitive) a -> getInternalRunTime()), // user
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-internal-cpu-time")),  (Primitive) a -> getInternalCpuTime()), // user + system
-                  cons(cons(symtab.intern(new LambdaJSymbol("sleep")),                  (Primitive) a -> sleep(a)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-universal-time")),     (Primitive) a -> getUniversalTime()), // seconds since 1.1.1900
-                  cons(cons(symtab.intern(new LambdaJSymbol("get-decoded-time")),       (Primitive) a -> getDecodedTime()),
+            env = addBuiltin("internal-time-units-per-second", new Double(1e9),
+                  addBuiltin("get-internal-real-time", (Primitive) a -> getInternalRealTime(),
+                  addBuiltin("get-internal-run-time",  (Primitive) a -> getInternalRunTime(), // user
+                  addBuiltin("get-internal-cpu-time",  (Primitive) a -> getInternalCpuTime(), // user + system
+                  addBuiltin("sleep",                  (Primitive) a -> sleep(a),
+                  addBuiltin("get-universal-time",     (Primitive) a -> getUniversalTime(), // seconds since 1.1.1900
+                  addBuiltin("get-decoded-time",       (Primitive) a -> getDecodedTime(),
                   env)))))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("fatal")), (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }),
-                  env);
+            env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }, env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("::")), (Primitive) a -> findJavaMethod(a)),
-                  env);
+            env = addBuiltin("::", (Primitive) a -> findJavaMethod(a), env);
 
         }
 
         if (haveAtom()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("atom")), (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); }),
-                       env);
+            env = addBuiltin("atom", (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); },
+                  env);
         }
 
         if (haveNumbers()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("numberp")), (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); }),
+            env = addBuiltin("numberp", (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); },
                   env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("pi")),      Math.PI),
-                    env);
+            env = addBuiltin("pi",      Math.PI,
+                  env);
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("round")),   (Primitive) args -> { numberArgs("round",   args, 1, 1); return Math.round(((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("floor")),   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("ceiling")), (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); }),
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return Math.round(((Number)car(args)).doubleValue()); },
+                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); },
+                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); },
                   env)));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("sqrt")),    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("log")),     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("log10")),   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("exp")),     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("expt")),    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("mod")),     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); }),
+            env = addBuiltin("sqrt",    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); },
+                  addBuiltin("log",     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); },
+                  addBuiltin("log10",   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); },
+                  addBuiltin("exp",     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); },
+                  addBuiltin("expt",    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); },
+                  addBuiltin("mod",     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); },
                   env))))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("=")),       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol(">")),       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol(">=")),      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("<")),       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("<=")),      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0)),
+            env = addBuiltin("=",       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0),
+                  addBuiltin(">",       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0),
+                  addBuiltin(">=",      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0),
+                  addBuiltin("<",       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0),
+                  addBuiltin("<=",      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0),
                   env)))));
 
-            env = cons(cons(symtab.intern(new LambdaJSymbol("+")),       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("-")),       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("*")),       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs)),
-                  cons(cons(symtab.intern(new LambdaJSymbol("/")),       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs)),
+            env = addBuiltin("+",       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
+                  addBuiltin("-",       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
+                  addBuiltin("*",       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
+                  addBuiltin("/",       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
                   env))));
         }
 
         if (haveEq()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("eq")), (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); }),
-                       env);
+            env = addBuiltin("eq", (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); },
+                  env);
         }
 
         if (haveCons()) {
-            env = cons(cons(symtab.intern(new LambdaJSymbol("car")),     (Primitive) a -> { oneArg("car", a);    if (car(a) == null) return null; return caar(a); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("cdr")),     (Primitive) a -> { oneArg("cdr", a);    if (car(a) == null) return null; return cdar(a); }),
-                  cons(cons(symtab.intern(new LambdaJSymbol("cons")),    (Primitive) a -> { twoArgs("cons", a);  /*if (car(a) == null && car(cdr(a)) == null) return null;*/ return cons(car(a), cadr(a)); }),
+            env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    if (car(a) == null) return null; return caar(a); },
+                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    if (car(a) == null) return null; return cdar(a); },
+                  addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
                   env)));
         }
 
         return env;
+    }
+
+    private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
+        return cons(cons(symtab.intern(new LambdaJSymbol(sym)), value), env);
+    }
+
+    private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
+        return cons(cons(sym, value), env);
     }
 
 
@@ -5006,12 +5033,13 @@ class TurtleWindow {
 
     void reset() {
         draw = true;
-        x = y = angle = xmin = xmax = ymin = ymax = 0.0;
+        x = y = angle = 0.0;
         bgColor = 0; color = 1;
     }
 
     void clear() {
         reset();
+        xmin = xmax = ymin = ymax = 0.0;
         synchronized (lines) {
             lines.clear();
             texts.clear();
@@ -5088,7 +5116,7 @@ class TurtleWindow {
 
             g.setColor(colors[bgColor]);
             g.fillRect(0, 0, w, h);
-            if (lines.isEmpty()) return;
+            if (lines.isEmpty() && texts.isEmpty()) return;
 
             synchronized (lines) {
 
