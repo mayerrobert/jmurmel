@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.387 2021/02/15 06:34:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.388 2021/02/16 15:50:36 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2425,56 +2425,39 @@ public class LambdaJ {
                 if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
                 return lispReader.readObj();
             };
-            final Primitive fwriteobj = a -> {
-                oneArg("write", a);
-                write(car(a));
-                return expTrue.get();
-            };
-
-            final Primitive fwriteln =  a -> {
-                nArgs("writeln", a, 0, 1);
-                writeln(car(a));
-                return expTrue.get();
-            };
-
-            final Primitive flnwrite =  a -> {
-                nArgs("lnwrite", a, 0, 1);
-                lnwrite(car(a));
-                return expTrue.get();
-            };
-
             env = addBuiltin("read",    freadobj,
-                  addBuiltin("write",   fwriteobj,
-                  addBuiltin("writeln", fwriteln,
-                  addBuiltin("lnwrite", flnwrite,
+                  addBuiltin("write",   (Primitive) a -> { oneArg("write", a);         write(car(a));    return expTrue.get(); },
+                  addBuiltin("writeln", (Primitive) a -> { nArgs("writeln", a, 0, 1);  writeln(car(a));  return expTrue.get(); },
+                  addBuiltin("lnwrite", (Primitive) a -> { nArgs("lnwrite", a, 0, 1);  lnwrite(car(a));  return expTrue.get(); },
                   env))));
 
 
             final Primitive makeFrame = a -> {
                 stringArg("make-frame", "first arg", a);
                 final String title = car(a).toString();
-                numberArgs("make-frame", (ConsCell) cdr(a), 2, 2);
-                final TurtleWindow ret = new TurtleWindow(title, ((Number)(cadr(a))).intValue(), ((Number)(caddr(a))).intValue());
+                numberArgs("make-frame", (ConsCell) cdr(a), 0, 2);
+                final TurtleWindow ret = new TurtleWindow(title, ((Number)(cadr(a))), ((Number)(caddr(a))));
                 window = ret;
                 return ret;
             };
-            env = addBuiltin("make-frame", makeFrame,
-                  addBuiltin("open",       (Primitive) a -> { nArgs("open",    a, 0, 1); asWindow("open",    car(a)).open();    return null; },
-                  addBuiltin("close",      (Primitive) a -> { nArgs("close",   a, 0, 1); asWindow("close",   car(a)).close();   return null; },
-                  addBuiltin("reset",      (Primitive) a -> { nArgs("reset",   a, 0, 1); asWindow("reset",   car(a)).reset();   return null; },
-                  addBuiltin("clear",      (Primitive) a -> { nArgs("clear",   a, 0, 1); asWindow("clear",   car(a)).clear();   return null; },
-                  addBuiltin("repaint",    (Primitive) a -> { nArgs("repaint", a, 0, 1); asWindow("repaint", car(a)).repaint(); return null; },
-                  addBuiltin("penup",      (Primitive) a -> { nArgs("penup",   a, 0, 1); asWindow("penup",   car(a)).penUp();   return null; },
-                  addBuiltin("pendown",    (Primitive) a -> { nArgs("pendown", a, 0, 1); asWindow("pendown", car(a)).penDown(); return null; },
+            env = addBuiltin("make-frame",    makeFrame,
+                  addBuiltin("open-frame",    (Primitive) a -> { nArgs("open-frame",    a, 0, 1); asWindow("open-frame",    car(a)).open();    return null; },
+                  addBuiltin("close-frame",   (Primitive) a -> { nArgs("close-frame",   a, 0, 1); asWindow("close-frame",   car(a)).close();   return null; },
+                  addBuiltin("reset-frame",   (Primitive) a -> { nArgs("reset-frame",   a, 0, 1); asWindow("reset-frame",   car(a)).reset();   return null; },
+                  addBuiltin("clear-frame",   (Primitive) a -> { nArgs("clear-frame",   a, 0, 1); asWindow("clear-frame",   car(a)).clear();   return null; },
+                  addBuiltin("repaint-frame", (Primitive) a -> { nArgs("repaint-frame", a, 0, 1); asWindow("repaint-frame", car(a)).repaint(); return null; },
 
-                  addBuiltin("color",      (Primitive) a -> { nArgs("color",   a, 0, 1); asWindow("color",   cadr(a)).color  (asInt("color",   car(a))); return null; },
-                  addBuiltin("bgcolor",    (Primitive) a -> { nArgs("bgcolor", a, 0, 1); asWindow("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); return null; },
+                  addBuiltin("penup",         (Primitive) a -> { nArgs("penup",   a, 0, 1); asWindow("penup",   car(a)).penUp();   return null; },
+                  addBuiltin("pendown",       (Primitive) a -> { nArgs("pendown", a, 0, 1); asWindow("pendown", car(a)).penDown(); return null; },
 
-                  addBuiltin("text",       (Primitive) a -> { nArgs("text",    a, 1, 2); asWindow("text",    cadr(a)).text   (car(a).toString()); return null; },
+                  addBuiltin("color",         (Primitive) a -> { nArgs("color",   a, 0, 1); asWindow("color",   cadr(a)).color  (asInt("color",   car(a))); return null; },
+                  addBuiltin("bgcolor",       (Primitive) a -> { nArgs("bgcolor", a, 0, 1); asWindow("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); return null; },
 
-                  addBuiltin("right",      (Primitive) a -> { nArgs("right",   a, 1, 2); asWindow("right",   cadr(a)).right  (asDouble("right",   car(a))); return null; },
-                  addBuiltin("left",       (Primitive) a -> { nArgs("left",    a, 1, 2); asWindow("left",    cadr(a)).left   (asDouble("left",    car(a))); return null; },
-                  addBuiltin("forward",    (Primitive) a -> { nArgs("forward", a, 1, 2); asWindow("forward", cadr(a)).forward(asDouble("forward", car(a))); return null; },
+                  addBuiltin("text",          (Primitive) a -> { nArgs("text",    a, 1, 2); asWindow("text",    cadr(a)).text   (car(a).toString()); return null; },
+
+                  addBuiltin("right",         (Primitive) a -> { nArgs("right",   a, 1, 2); asWindow("right",   cadr(a)).right  (asDouble("right",   car(a))); return null; },
+                  addBuiltin("left",          (Primitive) a -> { nArgs("left",    a, 1, 2); asWindow("left",    cadr(a)).left   (asDouble("left",    car(a))); return null; },
+                  addBuiltin("forward",       (Primitive) a -> { nArgs("forward", a, 1, 2); asWindow("forward", cadr(a)).forward(asDouble("forward", car(a))); return null; },
                   env))))))))))))));
         }
 
@@ -4004,10 +3987,9 @@ public class LambdaJ {
          *  symbols that are reserved words throw an error. */
         private ConsCell extenv(Object symbol, int sfx, ConsCell prev) {
             requireSymbol(symbol);
-            final String symname = symbol == null ? null : symbol.toString();
             final LambdaJSymbol sym = (LambdaJSymbol)symbol;
             notReserved(sym);
-            return extenvIntern(sym, mangle(symname, sfx), prev);
+            return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
         }
 
         private static void requireSymbol(Object symbol) {
@@ -4215,7 +4197,7 @@ public class LambdaJ {
 
                     ///     - lambda
                     if (isSymbol(op, "lambda")) {
-                        env = lambdaToJava(sb, args, env, topEnv, rsfx+1);
+                        lambdaToJava(sb, args, env, topEnv, rsfx+1);
                         return;
                     }
 
@@ -4965,8 +4947,7 @@ class WrappingWriter extends Writer {
     }
 }
 
-
-
+/** A window with methods to draw lines and print text */
 class TurtleWindow {
     private static final Color[] colors = {
         Color.white,        //  0
@@ -4983,6 +4964,7 @@ class TurtleWindow {
         Color.gray,         // 11
         Color.lightGray,    // 12
     };
+
     private static class Text {
         private final double x, y;
         private final String s;
@@ -5001,9 +4983,8 @@ class TurtleWindow {
 
     private boolean open;
     private final Frame f;
-    private final LineComponent component;
 
-    TurtleWindow(String title, int w, int h) {
+    TurtleWindow(String title, Number width, Number height) {
         f = new Frame(title);
         f.addWindowListener(new WindowAdapter() {
             @Override
@@ -5012,14 +4993,20 @@ class TurtleWindow {
             }
         });
 
-        draw = true;
-        component = new LineComponent(w, h);
+        final int w, h;
+        if (width != null && width.intValue() > 0) w = width.intValue();
+        else w = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
+        if (height != null && height.intValue() > 0) h = height.intValue();
+        else h = Toolkit.getDefaultToolkit().getScreenSize().height / 2;
+        final LineComponent component = new LineComponent(w, h);
         f.add(component, BorderLayout.CENTER);
+
+        draw = true;
         open();
     }
 
     void open() {
-        if (open) return;
+        if (open) { repaint(); return; }
         f.pack();
         f.setVisible(true);
         open = true;
@@ -5046,7 +5033,8 @@ class TurtleWindow {
         }
         repaint();
     }
-    void repaint() { if (open) component.repaint(); }
+
+    void repaint() { if (open) f.repaint(); }
 
 
 
@@ -5088,9 +5076,13 @@ class TurtleWindow {
     }
 
     void penUp() { draw = false; }
+
     void penDown() { draw = true; }
+
     void left(double angleDiff) { angle += angleDiff; }
+
     void right(double angleDiff) { angle -= angleDiff; }
+
     void forward(double length) {
         double newx = x + Math.cos(Math.toRadians(angle)) * length;
         double newy = y + Math.sin(Math.toRadians(angle)) * length;
@@ -5119,23 +5111,13 @@ class TurtleWindow {
             if (lines.isEmpty() && texts.isEmpty()) return;
 
             synchronized (lines) {
-
-                /*
-                double padding = 0.05;
-                double xfac = w / (xmax - xmin) * (1.0 - 2 * padding);
-                double yfac = h / (ymax - ymin) * (1.0 - 2 * padding);
-                */
                 int padding = 40;
                 double xfac = (w-padding) / (xmax - xmin);
                 double yfac = (h-padding) / (ymax - ymin);
-
                 double fac = xfac < yfac ? xfac : yfac;
 
-                double xoff = 0 - xmin;
-                xoff += (w / fac - (xmax - xmin)) / 2.0;
-
-                double yoff = 0 - ymin;
-                yoff += (h / fac - (ymax - ymin)) / 2.0;
+                double xoff = 0 - xmin + (w / fac - (xmax - xmin)) / 2.0;
+                double yoff = 0 - ymin + (h / fac - (ymax - ymin)) / 2.0;
 
                 g.setColor(Color.black);
                 for (Object o : lines) {
@@ -5152,6 +5134,8 @@ class TurtleWindow {
                         );
                     }
                 }
+
+                g.setColor(Color.black);
                 for (Text text: texts) {
                     g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
                 }
