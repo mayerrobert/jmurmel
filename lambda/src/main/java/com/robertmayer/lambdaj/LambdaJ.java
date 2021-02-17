@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.388 2021/02/16 15:50:36 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.389 2021/02/16 21:58:23 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2155,10 +2155,10 @@ public class LambdaJ {
             ret = window;
         }
         else {
-            if (!(w instanceof TurtleWindow)) throw new LambdaJError(true, "%s: expected a window argument but got %s", func, printSEx(w));
+            if (!(w instanceof TurtleWindow)) throw new LambdaJError(true, "%s: expected a frame argument but got %s", func, printSEx(w));
             ret = (TurtleWindow) w;
         }
-        if (ret == null) throw new LambdaJError(true, "%s: no window argument and no current window", func);
+        if (ret == null) throw new LambdaJError(true, "%s: no frame argument and no current frame", func);
         return ret;
     }
 
@@ -2441,24 +2441,32 @@ public class LambdaJ {
                 return ret;
             };
             env = addBuiltin("make-frame",    makeFrame,
-                  addBuiltin("open-frame",    (Primitive) a -> { nArgs("open-frame",    a, 0, 1); asWindow("open-frame",    car(a)).open();    return null; },
-                  addBuiltin("close-frame",   (Primitive) a -> { nArgs("close-frame",   a, 0, 1); asWindow("close-frame",   car(a)).close();   return null; },
-                  addBuiltin("reset-frame",   (Primitive) a -> { nArgs("reset-frame",   a, 0, 1); asWindow("reset-frame",   car(a)).reset();   return null; },
-                  addBuiltin("clear-frame",   (Primitive) a -> { nArgs("clear-frame",   a, 0, 1); asWindow("clear-frame",   car(a)).clear();   return null; },
-                  addBuiltin("repaint-frame", (Primitive) a -> { nArgs("repaint-frame", a, 0, 1); asWindow("repaint-frame", car(a)).repaint(); return null; },
+                  addBuiltin("open-frame",    (Primitive) a -> { nArgs("open-frame",    a, 0, 1); return asWindow("open-frame",    car(a)).open(); },
+                  addBuiltin("close-frame",   (Primitive) a -> { nArgs("close-frame",   a, 0, 1); return asWindow("close-frame",   car(a)).close();   },
+                  addBuiltin("reset-frame",   (Primitive) a -> { nArgs("reset-frame",   a, 0, 1); return asWindow("reset-frame",   car(a)).reset();   },
+                  addBuiltin("clear-frame",   (Primitive) a -> { nArgs("clear-frame",   a, 0, 1); return asWindow("clear-frame",   car(a)).clear();   },
+                  addBuiltin("repaint-frame", (Primitive) a -> { nArgs("repaint-frame", a, 0, 1); return asWindow("repaint-frame", car(a)).repaint(); },
+                  // set new current frame, return previous frame
+                  addBuiltin("set-frame",     (Primitive) a -> { nArgs("set-frame",     a, 1, 1); final Object prev = window; window = asWindow("set-frame", car(a)); return prev; },
 
-                  addBuiltin("penup",         (Primitive) a -> { nArgs("penup",   a, 0, 1); asWindow("penup",   car(a)).penUp();   return null; },
-                  addBuiltin("pendown",       (Primitive) a -> { nArgs("pendown", a, 0, 1); asWindow("pendown", car(a)).penDown(); return null; },
+                  addBuiltin("penup",         (Primitive) a -> { nArgs("penup",   a, 0, 1); return asWindow("penup",   car(a)).penUp();   },
+                  addBuiltin("pendown",       (Primitive) a -> { nArgs("pendown", a, 0, 1); return asWindow("pendown", car(a)).penDown(); },
 
-                  addBuiltin("color",         (Primitive) a -> { nArgs("color",   a, 0, 1); asWindow("color",   cadr(a)).color  (asInt("color",   car(a))); return null; },
-                  addBuiltin("bgcolor",       (Primitive) a -> { nArgs("bgcolor", a, 0, 1); asWindow("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); return null; },
+                  addBuiltin("color",         (Primitive) a -> { nArgs("color",   a, 0, 1); return asWindow("color",   cadr(a)).color  (asInt("color",   car(a))); },
+                  addBuiltin("bgcolor",       (Primitive) a -> { nArgs("bgcolor", a, 0, 1); return asWindow("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
 
-                  addBuiltin("text",          (Primitive) a -> { nArgs("text",    a, 1, 2); asWindow("text",    cadr(a)).text   (car(a).toString()); return null; },
+                  addBuiltin("text",          (Primitive) a -> { nArgs("text",    a, 1, 2); return asWindow("text",    cadr(a)).text   (car(a).toString()); },
 
-                  addBuiltin("right",         (Primitive) a -> { nArgs("right",   a, 1, 2); asWindow("right",   cadr(a)).right  (asDouble("right",   car(a))); return null; },
-                  addBuiltin("left",          (Primitive) a -> { nArgs("left",    a, 1, 2); asWindow("left",    cadr(a)).left   (asDouble("left",    car(a))); return null; },
-                  addBuiltin("forward",       (Primitive) a -> { nArgs("forward", a, 1, 2); asWindow("forward", cadr(a)).forward(asDouble("forward", car(a))); return null; },
-                  env))))))))))))));
+                  addBuiltin("right",         (Primitive) a -> { nArgs("right",   a, 1, 2); return asWindow("right",   cadr(a)).right  (asDouble("right",   car(a))); },
+                  addBuiltin("left",          (Primitive) a -> { nArgs("left",    a, 1, 2); return asWindow("left",    cadr(a)).left   (asDouble("left",    car(a))); },
+                  addBuiltin("forward",       (Primitive) a -> { nArgs("forward", a, 1, 2); return asWindow("forward", cadr(a)).forward(asDouble("forward", car(a))); },
+                  env)))))))))))))));
+
+            env = addBuiltin("move-to",       (Primitive) a -> { nArgs("move-to", a, 2, 3);  return asWindow("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
+                  addBuiltin("line-to",       (Primitive) a -> { nArgs("line-to", a, 2, 3);  return asWindow("line-to",  caddr(a)).moveTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
+                  addBuiltin("move-rel",      (Primitive) a -> { nArgs("move-rel", a, 2, 3); return asWindow("move-rel", caddr(a)).moveTo(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
+                  addBuiltin("line-rel",      (Primitive) a -> { nArgs("line-rel", a, 2, 3); return asWindow("line-rel", caddr(a)).moveTo(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
+                  env))));
         }
 
         if (haveString()) {
@@ -5002,91 +5010,97 @@ class TurtleWindow {
         f.add(component, BorderLayout.CENTER);
 
         draw = true;
-        open();
     }
 
-    void open() {
-        if (open) { repaint(); return; }
+    TurtleWindow open() {
+        if (open) { repaint(); return this; }
         f.pack();
         f.setVisible(true);
         open = true;
+        return this;
     }
 
-    void close() {
-        if (!open) return;
+    TurtleWindow close() {
+        if (!open) return this;
         f.dispose();
         open = false;
+        return this;
     }
 
-    void reset() {
+    TurtleWindow reset() {
         draw = true;
         x = y = angle = 0.0;
         bgColor = 0; color = 1;
+        return this;
     }
 
-    void clear() {
+    TurtleWindow clear() {
         reset();
         xmin = xmax = ymin = ymax = 0.0;
         synchronized (lines) {
             lines.clear();
             texts.clear();
         }
-        repaint();
+        return repaint();
     }
 
-    void repaint() { if (open) f.repaint(); }
+    TurtleWindow repaint() { if (open) f.repaint(); return this; }
 
 
 
-    void color(int color) {
-        if (color == this.color) return;
-        validateColor(color);
-        synchronized (lines) { lines.add(colors[color]); }
+    TurtleWindow color(int newColor) {
+        validateColor(newColor);
+        if (newColor == this.color) return this;
+        color = newColor;
+        synchronized (lines) { lines.add(colors[newColor]); }
+        return this;
     }
 
-    void bgColor(int newColor) { validateColor(color);  bgColor = newColor; }
+    TurtleWindow bgColor(int newColor) { validateColor(newColor);  bgColor = newColor; return this; }
 
     private void validateColor(int color) {
-        if (color < 0 || color >= colors.length) throw new IllegalArgumentException("Invalid color " + color);
+        if (color < 0 || color >= colors.length) throw new IllegalArgumentException("Invalid color " + color + ", valid range: 0.." + (colors.length - 1));
     }
 
-    void moveTo(double newx, double newy) {
+    TurtleWindow moveTo(double newx, double newy) {
         if (newx < xmin) xmin = newx;
         if (newx > xmax) xmax = newx;
         if (newy < ymin) ymin = newy;
         if (newy > ymax) ymax = newy;
         x = newx; y = newy;
+        return this;
     }
 
-    void lineTo(double newx, double newy) {
+    TurtleWindow lineTo(double newx, double newy) {
         synchronized (lines) { lines.add(new Line2D.Double(x, y, newx, newy)); }
-        moveTo(newx, newy);
+        return moveTo(newx, newy);
     }
 
-    void moveRel(double dx, double dy) {
-        moveTo(x + dx, y + dy);
+    TurtleWindow moveRel(double dx, double dy) {
+        return moveTo(x + dx, y + dy);
     }
 
-    void lineRel(double dx, double dy) {
-        lineTo(x + dx, y + dy);
+    TurtleWindow lineRel(double dx, double dy) {
+        return lineTo(x + dx, y + dy);
     }
 
-    void text(String s) {
-        synchronized (lines) { texts.add(new Text(x, y, s)); }
+    TurtleWindow text(String s) {
+        synchronized (lines) { texts.add(new Text(x, y, s)); return this; }
     }
 
-    void penUp() { draw = false; }
+    TurtleWindow penUp() { draw = false; return this; }
 
-    void penDown() { draw = true; }
+    TurtleWindow penDown() { draw = true; return this; }
 
-    void left(double angleDiff) { angle += angleDiff; }
+    TurtleWindow left(double angleDiff) { angle += angleDiff; return this; }
 
-    void right(double angleDiff) { angle -= angleDiff; }
+    TurtleWindow right(double angleDiff) { angle -= angleDiff; return this; }
 
-    void forward(double length) {
+    TurtleWindow forward(double length) {
         double newx = x + Math.cos(Math.toRadians(angle)) * length;
         double newy = y + Math.sin(Math.toRadians(angle)) * length;
         if (draw) lineTo(newx, newy); else moveTo(newx, newy);
+        return this;
     }
 
 
