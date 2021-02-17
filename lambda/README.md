@@ -24,6 +24,7 @@ dynamic as well as lexical environments,
 a macro facility,
 backquote expansion including nested backquotes,
 JSR223 support,
+turtle graphics,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
 
@@ -246,7 +247,7 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `=, <, <=, >, >=, +, -, *, /, mod, round, ceiling, floor`
 
-For more primitives (including primitives to run Java code) and more details on the language supported see `murmel-langref.lisp`.
+For more primitives (including graphics primitives and primitives to run Java code) and more details on the language supported see `murmel-langref.lisp`.
 
 Tail calls including tail recursive calls are optimized.
 
@@ -303,4 +304,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.59 2021/01/31 10:10:53 Robert Exp $
+$Id: README.md,v 1.60 2021/02/05 21:13:29 Robert Exp $

@@ -461,6 +461,56 @@ nil
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
+
+;;; == Predefined Graphics Primitives =
+
+;;; A frame is a toplevel GUI window with a title. You can write text on a frame,
+;;; and/ or draw lines with Turtle graphics or moveto/lineto functions.
+;;;
+;;; A frame has state: open/closed, current x/y position, current linecolor,
+;;; current turtle angle and background color.
+;;;
+;;; You can use several frames but only one is the "current-frame". All functions
+;;; (except make-frame) have an optional last parameter "frame" that can be used
+;;; to select which frame to operate on (if omitted or nil then the current frame is used).
+
+; make-frame
+; Creates a new frame, sets current frame.
+; If width and height are omitted or nil then half of the screen width/ height will be used.
+(make-frame window-title optwidthpixels optheightpixels) ; ==> frame
+
+; open-frame, close-frame, reset-frame, clear-frame, repaint-frame
+; These functions all take an optional frame parameter. If omitted or nil
+; then the current frame will be used.
+
+; current-frame
+; Set new current frame, returns previous current frame.
+
+; penup, pendown
+; Optional parameter frame
+
+; (color color optional-frame) -> frame
+; Set color for following lines, color must be >= 0 and <= 12
+(color 1) ; ==> frame
+
+; (bgcolor color optional-frame) -> frame
+; Set background color for frame, color must be >= 0 and <= 12
+(bgcolor 0) ; ==> frame
+
+; (text str) -> frame
+; Writes str at current position, does not change position.
+
+; (left  deg optional-frame) -> frame
+; (right deg optional-frame) -> frame
+; Increase/ decrease current angle by "deg" degrees, does not change position.
+
+; (forward len optional frame) -> frame
+; If pen is down then this function paints a line of length "len" from current position in current direction, changes position.
+; If pen is up then only the position is changed.
+
+; move-to, line-to, move-rel, line-rel
+(line-rel new-x new-y optional-frame) ; ==> frame
+
 ;;; --- End of Murmel reference ---
 
 
@@ -550,4 +600,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.69 2021/01/31 10:18:11 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.70 2021/02/02 15:11:42 Robert Exp $

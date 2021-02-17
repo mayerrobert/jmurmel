@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.389 2021/02/16 21:58:23 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.390 2021/02/17 20:05:16 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2447,7 +2447,7 @@ public class LambdaJ {
                   addBuiltin("clear-frame",   (Primitive) a -> { nArgs("clear-frame",   a, 0, 1); return asWindow("clear-frame",   car(a)).clear();   },
                   addBuiltin("repaint-frame", (Primitive) a -> { nArgs("repaint-frame", a, 0, 1); return asWindow("repaint-frame", car(a)).repaint(); },
                   // set new current frame, return previous frame
-                  addBuiltin("set-frame",     (Primitive) a -> { nArgs("set-frame",     a, 1, 1); final Object prev = window; window = asWindow("set-frame", car(a)); return prev; },
+                  addBuiltin("current-frame", (Primitive) a -> { nArgs("current-frame", a, 1, 1); final Object prev = window; window = asWindow("current-frame", car(a)); return prev; },
 
                   addBuiltin("penup",         (Primitive) a -> { nArgs("penup",   a, 0, 1); return asWindow("penup",   car(a)).penUp();   },
                   addBuiltin("pendown",       (Primitive) a -> { nArgs("pendown", a, 0, 1); return asWindow("pendown", car(a)).penDown(); },
