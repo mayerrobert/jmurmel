@@ -467,12 +467,30 @@ nil
 ;;; A frame is a toplevel GUI window with a title. You can write text on a frame,
 ;;; and/ or draw lines with Turtle graphics or moveto/lineto functions.
 ;;;
+;;; 0/0 is left bottom, any drawing will be resized/ shifted so that it fills
+;;; the frame.
+;;;
 ;;; A frame has state: open/closed, current x/y position, current linecolor,
 ;;; current turtle angle and background color.
 ;;;
 ;;; You can use several frames but only one is the "current-frame". All functions
 ;;; (except make-frame) have an optional last parameter "frame" that can be used
 ;;; to select which frame to operate on (if omitted or nil then the current frame is used).
+;;;
+;;; Colors are 0..12 corresponding to
+;;; white       0
+;;; black       1
+;;; red         2
+;;; green       3
+;;; blue        4
+;;; pink        5
+;;; orange      6
+;;; yellow      7
+;;; magenta     8
+;;; cyan        9
+;;; darkGray   10
+;;; gray       11
+;;; lightGray  12
 
 ; make-frame
 ; Creates a new frame, sets current frame.
@@ -483,7 +501,9 @@ nil
 ; These functions all take an optional frame parameter. If omitted or nil
 ; then the current frame will be used.
 
-; current-frame
+; (current-frame) -> frame
+; Returns current frame.
+; (current-frame optional-frame) -> frame
 ; Set new current frame, returns previous current frame.
 
 ; penup, pendown
@@ -497,14 +517,14 @@ nil
 ; Set background color for frame, color must be >= 0 and <= 12
 (bgcolor 0) ; ==> frame
 
-; (text str) -> frame
+; (text str optional-frame) -> frame
 ; Writes str at current position, does not change position.
 
 ; (left  deg optional-frame) -> frame
 ; (right deg optional-frame) -> frame
 ; Increase/ decrease current angle by "deg" degrees, does not change position.
 
-; (forward len optional frame) -> frame
+; (forward len optional-frame) -> frame
 ; If pen is down then this function paints a line of length "len" from current position in current direction, changes position.
 ; If pen is up then only the position is changed.
 
@@ -600,4 +620,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.70 2021/02/02 15:11:42 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.71 2021/02/17 20:54:37 Robert Exp $
