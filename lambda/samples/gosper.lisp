@@ -28,6 +28,6 @@
           ((= (car item) 9) (left 60)))
     (if (cdr item) (loop (cdr item)))))
 
-(right 90)
-(gosper-curve 3 20 nil)
+;(right 90)
+(gosper-curve 3 20 t)
 (open-frame)

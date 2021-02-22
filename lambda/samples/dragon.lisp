@@ -33,11 +33,12 @@
 
 
 
+(left 90)
 (color 1)
 (dragon-curve 15 20)
 
-(reset-frame)
-(right 180)
+;(reset-frame)
+;(right 180)
 (color 2)
 (dragon-curve 15 20)
 

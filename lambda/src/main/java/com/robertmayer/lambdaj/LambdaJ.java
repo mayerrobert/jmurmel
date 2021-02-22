@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.391 2021/02/17 20:54:38 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.392 2021/02/21 09:31:52 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1130,7 +1130,7 @@ public class LambdaJ {
 
                         // todo mutable globals: naechste zeile entfernen, dann kann man globals mehrfach neu zuweisen, auch im compiler umsetzen
                         // Murmel define verhielte sich dann wie CL defparameter, nur das Murmel global environment ist lexical (keine special symbols)
-                        if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
+                        //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
                         final Object value = evalquote(cadr(arguments), env, stack, level, traceLvl);
                         if (envEntry == null) insertFront(topEnv, symbol, value);
@@ -2453,6 +2453,9 @@ public class LambdaJ {
                   // set new current frame, return previous frame
                   addBuiltin("current-frame", (Primitive) a -> { nArgs("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = asFrame("current-frame", car(a)); return prev; },
 
+                  addBuiltin("push-pos",      (Primitive) a -> { nArgs("push-pos",a, 0, 1); return asFrame("push-pos",car(a)).pushPos(); },
+                  addBuiltin("pop-pos",       (Primitive) a -> { nArgs("pop-pos", a, 0, 1); return asFrame("pop-pos", car(a)).popPos();  },
+
                   addBuiltin("penup",         (Primitive) a -> { nArgs("penup",   a, 0, 1); return asFrame("penup",   car(a)).penUp();   },
                   addBuiltin("pendown",       (Primitive) a -> { nArgs("pendown", a, 0, 1); return asFrame("pendown", car(a)).penDown(); },
 
@@ -2464,7 +2467,7 @@ public class LambdaJ {
                   addBuiltin("right",         (Primitive) a -> { nArgs("right",   a, 1, 2); return asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); },
                   addBuiltin("left",          (Primitive) a -> { nArgs("left",    a, 1, 2); return asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); },
                   addBuiltin("forward",       (Primitive) a -> { nArgs("forward", a, 1, 2); return asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); },
-                  env)))))))))))))));
+                  env)))))))))))))))));
 
             env = addBuiltin("move-to",       (Primitive) a -> { nArgs("move-to", a, 2, 3);  return asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
                   addBuiltin("line-to",       (Primitive) a -> { nArgs("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).moveTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
@@ -4982,11 +4985,20 @@ class TurtleFrame {
         private final String s;
         Text(double x, double y, String s) { this.x = x; this.y = y; this.s = s; }
     }
+    private static class Pos {
+        private final double x, y, angle;
+        private Pos(TurtleFrame f) {
+            x = f.x;
+            y = f.y;
+            angle = f.angle;
+        }
+    }
 
     private int bgColor = 0;
     private int color = 1;
     private final ArrayList<Object> lines = new ArrayList<>();
     private final ArrayList<Text> texts = new ArrayList<>();
+    private final Deque<Pos> posStack = new ArrayDeque<>();
 
     private double x, y, angle;
     private boolean draw;
@@ -5052,6 +5064,21 @@ class TurtleFrame {
 
 
 
+    TurtleFrame pushPos() {
+        posStack.addLast(new Pos(this));
+        return this;
+    }
+
+    TurtleFrame popPos() {
+        Pos next = posStack.removeLast();
+        x = next.x;
+        y = next.y;
+        angle = next.angle;
+        return this;
+    }
+
+
+
     TurtleFrame color(int newColor) {
         validateColor(newColor);
         if (newColor == this.color) return this;
@@ -5076,7 +5103,8 @@ class TurtleFrame {
     }
 
     TurtleFrame lineTo(double newx, double newy) {
-        synchronized (lines) { lines.add(new Line2D.Double(x, y, newx, newy)); }
+        if (x != newx || y != newy)
+            synchronized (lines) { lines.add(new Line2D.Double(x, y, newx, newy)); }
         return moveTo(newx, newy);
     }
 
@@ -5101,9 +5129,11 @@ class TurtleFrame {
     TurtleFrame right(double angleDiff) { angle -= angleDiff; return this; }
 
     TurtleFrame forward(double length) {
-        double newx = x + Math.cos(Math.toRadians(angle)) * length;
-        double newy = y + Math.sin(Math.toRadians(angle)) * length;
-        if (draw) lineTo(newx, newy); else moveTo(newx, newy);
+        if (length != 0.0) {
+            double newx = x + Math.cos(Math.toRadians(angle)) * length;
+            double newy = y + Math.sin(Math.toRadians(angle)) * length;
+            if (draw) lineTo(newx, newy); else moveTo(newx, newy);
+        }
         return this;
     }
 
