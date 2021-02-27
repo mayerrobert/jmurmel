@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.393 2021/02/22 21:14:43 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.394 2021/02/27 08:55:38 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -5117,30 +5117,18 @@ class TurtleFrame {
         return this;
     }
 
-    TurtleFrame moveRel(double dx, double dy) {
-        return moveTo(x + dx, y + dy);
-    }
-
-    TurtleFrame lineRel(double dx, double dy) {
-        return lineTo(x + dx, y + dy);
-    }
-
-    TurtleFrame text(String s) {
-        synchronized (lines) { texts.add(new Text(x, y, s)); return this; }
-    }
-
+    TurtleFrame moveRel(double dx, double dy) { return moveTo(x + dx, y + dy); }
+    TurtleFrame lineRel(double dx, double dy) { return lineTo(x + dx, y + dy); }
+    TurtleFrame text(String s) { synchronized (lines) { texts.add(new Text(x, y, s)); return this; } }
     TurtleFrame penUp() { draw = false; return this; }
-
     TurtleFrame penDown() { draw = true; return this; }
-
     TurtleFrame left(double angleDiff) { angle += angleDiff; return this; }
-
     TurtleFrame right(double angleDiff) { angle -= angleDiff; return this; }
 
     TurtleFrame forward(double length) {
         if (length != 0.0) {
-            double newx = x + Math.cos(Math.toRadians(angle)) * length;
-            double newy = y + Math.sin(Math.toRadians(angle)) * length;
+            final double newx = x + Math.cos(Math.toRadians(angle)) * length;
+            final double newy = y + Math.sin(Math.toRadians(angle)) * length;
             if (draw) lineTo(newx, newy); else moveTo(newx, newy);
         }
         return this;
@@ -5160,21 +5148,21 @@ class TurtleFrame {
         public void paint(Graphics g) {
             super.paint(g);
 
-            int w = getWidth();
-            int h = getHeight();
+            final int w = getWidth();
+            final int h = getHeight();
 
             g.setColor(colors[bgColor]);
             g.fillRect(0, 0, w, h);
             if (lines.isEmpty() && texts.isEmpty()) return;
 
             synchronized (lines) {
-                int padding = 40;
-                double xfac = (w-padding) / (xmax - xmin);
-                double yfac = (h-padding) / (ymax - ymin);
-                double fac = xfac < yfac ? xfac : yfac;
+                final int padding = 40;
+                final double xfac = (w-padding) / (xmax - xmin);
+                final double yfac = (h-padding) / (ymax - ymin);
+                final double fac = xfac < yfac ? xfac : yfac;
 
-                double xoff = 0 - xmin + (w / fac - (xmax - xmin)) / 2.0;
-                double yoff = 0 - ymin + (h / fac - (ymax - ymin)) / 2.0;
+                final double xoff = 0 - xmin + (w / fac - (xmax - xmin)) / 2.0;
+                final double yoff = 0 - ymin + (h / fac - (ymax - ymin)) / 2.0;
 
                 g.setColor(Color.black);
                 for (Object o : lines) {
