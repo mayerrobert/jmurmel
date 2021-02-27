@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.392 2021/02/21 09:31:52 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.393 2021/02/22 21:14:43 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2456,8 +2456,8 @@ public class LambdaJ {
                   addBuiltin("push-pos",      (Primitive) a -> { nArgs("push-pos",a, 0, 1); return asFrame("push-pos",car(a)).pushPos(); },
                   addBuiltin("pop-pos",       (Primitive) a -> { nArgs("pop-pos", a, 0, 1); return asFrame("pop-pos", car(a)).popPos();  },
 
-                  addBuiltin("penup",         (Primitive) a -> { nArgs("penup",   a, 0, 1); return asFrame("penup",   car(a)).penUp();   },
-                  addBuiltin("pendown",       (Primitive) a -> { nArgs("pendown", a, 0, 1); return asFrame("pendown", car(a)).penDown(); },
+                  addBuiltin("pen-up",        (Primitive) a -> { nArgs("pen-up",  a, 0, 1); return asFrame("pen-up",   car(a)).penUp();   },
+                  addBuiltin("pen-down",      (Primitive) a -> { nArgs("pen-down",a, 0, 1); return asFrame("pen-down", car(a)).penDown(); },
 
                   addBuiltin("color",         (Primitive) a -> { nArgs("color",   a, 0, 1); return asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); },
                   addBuiltin("bgcolor",       (Primitive) a -> { nArgs("bgcolor", a, 0, 1); return asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
@@ -5056,6 +5056,7 @@ class TurtleFrame {
         synchronized (lines) {
             lines.clear();
             texts.clear();
+            posStack.clear();
         }
         return repaint();
     }
@@ -5089,23 +5090,31 @@ class TurtleFrame {
 
     TurtleFrame bgColor(int newColor) { validateColor(newColor);  bgColor = newColor; return this; }
 
-    private void validateColor(int color) {
-        if (color < 0 || color >= colors.length) throw new IllegalArgumentException("Invalid color " + color + ", valid range: 0.." + (colors.length - 1));
+    private static void validateColor(int color) {
+        if (color >= 0 && color < colors.length) return;
+        throw new IllegalArgumentException("Invalid color " + color + ", valid range: 0.." + (colors.length - 1));
     }
 
     TurtleFrame moveTo(double newx, double newy) {
-        if (newx < xmin) xmin = newx;
-        if (newx > xmax) xmax = newx;
-        if (newy < ymin) ymin = newy;
-        if (newy > ymax) ymax = newy;
-        x = newx; y = newy;
+        if (x != newx) {
+            if (newx < xmin) xmin = newx;
+            if (newx > xmax) xmax = newx;
+            x = newx;
+        }
+        if (y != newy) {
+            if (newy < ymin) ymin = newy;
+            if (newy > ymax) ymax = newy;
+            y = newy;
+        }
         return this;
     }
 
     TurtleFrame lineTo(double newx, double newy) {
-        if (x != newx || y != newy)
+        if (x != newx || y != newy) {
             synchronized (lines) { lines.add(new Line2D.Double(x, y, newx, newy)); }
-        return moveTo(newx, newy);
+            moveTo(newx, newy);
+        }
+        return this;
     }
 
     TurtleFrame moveRel(double dx, double dy) {

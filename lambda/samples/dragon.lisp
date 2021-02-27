@@ -17,8 +17,6 @@
 
 (define root-half (sqrt 0.5))
 
-(make-frame "Dragon curve")
-
 (defun dragon-curve (order length)
   (right (* order 45))
   (dragon-curve-recursive order length 1))
@@ -33,13 +31,35 @@
 
 
 
+(make-frame "Dragon curve")
+
 (left 90)
+(forward 10) (text "10")
+(reset-frame)
+(forward 30) (text "30")
+(reset-frame)
+
 (color 1)
-(dragon-curve 15 20)
+(dragon-curve 8 20)
+
+(reset-frame)
+(color 2)
+(dragon-curve 11 20)
+
+(open-frame)
+
+
+
+(make-frame "Dragon curve 2")
+
+(color 1)
+(dragon-curve 10 20)
 
 ;(reset-frame)
-;(right 180)
 (color 2)
-(dragon-curve 15 20)
+;(pen-up)
+;(forward 20)
+;(pen-down)
+(dragon-curve 13 20)
 
 (open-frame)

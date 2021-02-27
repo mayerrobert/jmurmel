@@ -506,7 +506,7 @@ nil
 ; (current-frame optional-frame) -> frame
 ; Set new current frame, returns previous current frame.
 
-; penup, pendown
+; pen-up, pen-down
 ; Optional parameter frame
 
 ; (color color optional-frame) -> frame
@@ -620,4 +620,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.71 2021/02/17 20:54:37 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.72 2021/02/21 09:31:51 Robert Exp $
