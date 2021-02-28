@@ -477,7 +477,7 @@ nil
 ;;; (except make-frame) have an optional last parameter "frame" that can be used
 ;;; to select which frame to operate on (if omitted or nil then the current frame is used).
 ;;;
-;;; Colors are 0..12 corresponding to
+;;; Colors are 0..15 corresponding to
 ;;; white       0
 ;;; black       1
 ;;; red         2
@@ -491,13 +491,16 @@ nil
 ;;; darkGray   10
 ;;; gray       11
 ;;; lightGray  12
+;;; darkred    13
+;;; darkgreen  14
+;;; darkblue   15
 
 ; make-frame
 ; Creates a new frame, sets current frame.
 ; If width and height are omitted or nil then half of the screen width/ height will be used.
 (make-frame window-title optwidthpixels optheightpixels) ; ==> frame
 
-; open-frame, close-frame, reset-frame, clear-frame, repaint-frame
+; open-frame, close-frame, reset-frame, clear-frame, repaint-frame, flush-frame
 ; These functions all take an optional frame parameter. If omitted or nil
 ; then the current frame will be used.
 
@@ -620,4 +623,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.72 2021/02/21 09:31:51 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.73 2021/02/27 08:55:38 Robert Exp $

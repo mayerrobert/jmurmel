@@ -23,7 +23,9 @@
 
 (defun dragon-curve-recursive (order length sign)
   (if (= 0 order)
-        (progn (forward length) (sleep (* 0.05 internal-time-units-per-second)) (repaint-frame))
+        (progn (forward length)
+               (sleep (* length 0.005 internal-time-units-per-second))
+               (flush-frame))
     (progn
       (dragon-curve-recursive (- order 1) (* length root-half) 1)
       (right (* sign -90))
@@ -34,13 +36,10 @@
 (make-frame "Dragon curve")
 (open-frame)
 
-(left 90)
-(forward 10) (text "10")
-(reset-frame)
-(forward 30) (text "30")
-(reset-frame)
+;(move-to 0 -20) (left 90) (forward 40) (text "20") (reset-frame)
+;(move-to -30 0) (forward 60) (text "30") (reset-frame)
 
-(color 1)
+(color 13)
 (dragon-curve 8 20)
 
 (reset-frame)
@@ -49,16 +48,15 @@
 
 
 
-
 (make-frame "Dragon curve 2")
 (open-frame)
 
-(color 1)
+(color 4)
 (dragon-curve 10 20)
 
 ;(reset-frame)
-(color 2)
 ;(pen-up)
 ;(forward 20)
 ;(pen-down)
+(color 2)
 (dragon-curve 13 20)

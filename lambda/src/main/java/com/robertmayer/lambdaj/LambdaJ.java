@@ -127,7 +127,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.394 2021/02/27 08:55:38 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.395 2021/02/27 09:47:28 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2449,6 +2449,7 @@ public class LambdaJ {
                   addBuiltin("reset-frame",   (Primitive) a -> { nArgs("reset-frame",   a, 0, 1); return asFrame("reset-frame",   car(a)).reset();   },
                   addBuiltin("clear-frame",   (Primitive) a -> { nArgs("clear-frame",   a, 0, 1); return asFrame("clear-frame",   car(a)).clear();   },
                   addBuiltin("repaint-frame", (Primitive) a -> { nArgs("repaint-frame", a, 0, 1); return asFrame("repaint-frame", car(a)).repaint(); },
+                  addBuiltin("flush-frame",   (Primitive) a -> { nArgs("flush-frame", a, 0, 1);   return asFrame("flush-frame",   car(a)).flush(); },
 
                   // set new current frame, return previous frame
                   addBuiltin("current-frame", (Primitive) a -> { nArgs("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = asFrame("current-frame", car(a)); return prev; },
@@ -2467,7 +2468,7 @@ public class LambdaJ {
                   addBuiltin("right",         (Primitive) a -> { nArgs("right",   a, 1, 2); return asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); },
                   addBuiltin("left",          (Primitive) a -> { nArgs("left",    a, 1, 2); return asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); },
                   addBuiltin("forward",       (Primitive) a -> { nArgs("forward", a, 1, 2); return asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); },
-                  env)))))))))))))))));
+                  env))))))))))))))))));
 
             env = addBuiltin("move-to",       (Primitive) a -> { nArgs("move-to", a, 2, 3);  return asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
                   addBuiltin("line-to",       (Primitive) a -> { nArgs("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).moveTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
@@ -4964,6 +4965,7 @@ class WrappingWriter extends Writer {
 
 /** A frame (window) with methods to draw lines and print text. */
 class TurtleFrame {
+    private static final int padding = 40;
     private static final Color[] colors = {
         Color.white,        //  0
         Color.black,        //  1
@@ -4978,6 +4980,10 @@ class TurtleFrame {
         Color.darkGray,     // 10
         Color.gray,         // 11
         Color.lightGray,    // 12
+
+        Color.red.darker(),
+        Color.green.darker(),
+        Color.blue.darker(),
     };
 
     private static class Text {
@@ -5003,10 +5009,13 @@ class TurtleFrame {
     private double x, y, angle;
     private boolean draw;
 
+    private final Object minMaxLock = new Object();
     private double xmin, ymin, xmax, ymax;
+    private double dirtyxl, dirtyyl, dirtyxr, dirtyyu;
 
     private boolean open;
     private final Frame f;
+    private final LineComponent component;
 
     TurtleFrame(String title, Number width, Number height) {
         f = new Frame(title);
@@ -5022,11 +5031,14 @@ class TurtleFrame {
         else w = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
         if (height != null && height.intValue() > 0) h = height.intValue();
         else h = Toolkit.getDefaultToolkit().getScreenSize().height / 2;
-        final LineComponent component = new LineComponent(w, h);
+        component = new LineComponent(w, h);
         f.add(component, BorderLayout.CENTER);
 
         draw = true;
     }
+
+    @Override
+    public String toString() { return "#<frame \"" + f.getTitle() + "\">"; }
 
     TurtleFrame open() {
         if (open) { repaint(); return this; }
@@ -5052,7 +5064,8 @@ class TurtleFrame {
 
     TurtleFrame clear() {
         reset();
-        xmin = xmax = ymin = ymax = 0.0;
+        synchronized (minMaxLock) { xmin = xmax = ymin = ymax = 0.0; }
+        allclean();
         synchronized (lines) {
             lines.clear();
             texts.clear();
@@ -5061,7 +5074,45 @@ class TurtleFrame {
         return repaint();
     }
 
-    TurtleFrame repaint() { if (open) f.repaint(); return this; }
+    TurtleFrame repaint() {
+        if (open) {
+            alldirty(); f.repaint(); allclean();
+        }
+        return this;
+    }
+
+    TurtleFrame flush() {
+        if (open) {
+            final int w = component.getWidth();
+            final int h = component.getHeight();
+
+            final int x, width, y, height;
+            synchronized (minMaxLock) {
+                if (dirtyxl == xmin || dirtyxr == xmax || dirtyyl == ymin || dirtyyu == ymax) {
+                    x = 0;  width = w;  y = 0;  height = h;
+                }
+                else {
+                    final double fac, xoff, yoff;
+                    fac = fact(w, h);
+
+                    xoff = 0 - xmin + (w / fac - (xmax - xmin)) / 2.0;
+                    yoff = 0 - ymin + (h / fac - (ymax - ymin)) / 2.0;
+
+                    x = trX(fac, xoff, dirtyxl);
+                    width = trX(fac, xoff, dirtyxr) - x + 1;
+
+                    y = h - trY(fac, yoff, dirtyyu);
+                    height = h - trY(fac, yoff, dirtyyl) - y + 1;
+                }
+            }
+
+            //System.out.println("calling repaint x=" + x + ", y=" + y + ", w=" + width + ", h=" + height);
+            component.repaint(0, x, y, width, height);
+
+            allclean();
+        }
+        return this;
+    }
 
 
 
@@ -5096,15 +5147,20 @@ class TurtleFrame {
     }
 
     TurtleFrame moveTo(double newx, double newy) {
-        if (x != newx) {
-            if (newx < xmin) xmin = newx;
-            if (newx > xmax) xmax = newx;
-            x = newx;
-        }
-        if (y != newy) {
-            if (newy < ymin) ymin = newy;
-            if (newy > ymax) ymax = newy;
-            y = newy;
+        if (x == newx && y == newy) return this;
+
+        synchronized (minMaxLock) {
+            if (x != newx) {
+                if (newx < xmin) { xmin = newx; alldirty(); }
+                if (newx > xmax) { xmax = newx; alldirty(); }
+                x = newx;
+            }
+            if (y != newy) {
+                if (newy < ymin) { ymin = newy; alldirty(); }
+                if (newy > ymax) { ymax = newy; alldirty(); }
+                y = newy;
+            }
+            calcdirty();
         }
         return this;
     }
@@ -5136,6 +5192,34 @@ class TurtleFrame {
 
 
 
+    private void allclean() { dirtyxl = dirtyxr = x; dirtyyl = dirtyyu = y; }
+    private void alldirty() { dirtyxl = xmin; dirtyxr = xmax; dirtyyl = ymin; dirtyyu = ymax; }
+    private void calcdirty() {
+        if (x < dirtyxl) dirtyxl = x;
+        else if (x > dirtyxr) dirtyxr = x;
+        if (y < dirtyyl) dirtyyl = y;
+        else if (y > dirtyyu) dirtyyu = y;
+    }
+
+
+
+    private double fact(final int w, final int h) {
+        final double xfac = (w-padding) / (xmax - xmin);
+        final double yfac = (h-padding) / (ymax - ymin);
+
+        return xfac < yfac ? xfac : yfac;
+    }
+
+    private static int trX(double fac, double xoff, double x) {
+        return (int)((x + xoff) * fac);
+    }
+
+    private static int trY(double fac, double yoff, double y) {
+        return (int)((y + yoff) * fac);
+    }
+
+
+
     private class LineComponent extends Component {
         private static final long serialVersionUID = 1L;
 
@@ -5146,7 +5230,7 @@ class TurtleFrame {
 
         @Override
         public void paint(Graphics g) {
-            super.paint(g);
+            //System.out.println("paint x=" + g.getClipBounds().x + ", y=" + g.getClipBounds().y + ", w=" + g.getClipBounds().width + ", h=" + g.getClipBounds().height);
 
             final int w = getWidth();
             final int h = getHeight();
@@ -5155,22 +5239,24 @@ class TurtleFrame {
             g.fillRect(0, 0, w, h);
             if (lines.isEmpty() && texts.isEmpty()) return;
 
+            final double fac, xoff, yoff;
+            synchronized (minMaxLock) {
+                fac = fact(w, h);
+
+                xoff = 0 - xmin + (w / fac - (xmax - xmin)) / 2.0;
+                yoff = 0 - ymin + (h / fac - (ymax - ymin)) / 2.0;
+            }
+
             synchronized (lines) {
-                final int padding = 40;
-                final double xfac = (w-padding) / (xmax - xmin);
-                final double yfac = (h-padding) / (ymax - ymin);
-                final double fac = xfac < yfac ? xfac : yfac;
-
-                final double xoff = 0 - xmin + (w / fac - (xmax - xmin)) / 2.0;
-                final double yoff = 0 - ymin + (h / fac - (ymax - ymin)) / 2.0;
-
                 g.setColor(Color.black);
                 for (Object o : lines) {
                     if (o instanceof Color) {
                         g.setColor((Color)o);
                     }
-                    else if (o instanceof Line2D.Double) {
+                    else /*if (o instanceof Line2D.Double)*/ {
                         Line2D.Double line = (Line2D.Double)o;
+                        //System.out.println("line x1=" + trX(fac, xoff, line.getX1()) + " y1=" + (h - trY(fac, yoff, line.getY1())) + " x2=" + trX(fac, xoff, line.getX2()) + " y2=" + (h - trY(fac, yoff, line.getY2())));
+
                         g.drawLine(
                             trX(fac, xoff, line.getX1()),
                             h - trY(fac, yoff, line.getY1()),
@@ -5185,14 +5271,6 @@ class TurtleFrame {
                     g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
                 }
             }
-        }
-
-        private int trX(double fac, double xoff, double x) {
-            return (int)((x + xoff) * fac);
-        }
-
-        private int trY(double fac, double yoff, double y) {
-            return (int)((y + yoff) * fac);
         }
     }
 }
