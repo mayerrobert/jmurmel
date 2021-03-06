@@ -8,7 +8,7 @@ package com.robertmayer.lambdaj;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
-
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,9 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -127,7 +129,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.395 2021/02/27 09:47:28 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.396 2021/02/28 09:02:50 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2853,7 +2855,7 @@ public class LambdaJ {
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
                     Path p = Paths.get(fileName);
-                    try (Reader r = Files.newBufferedReader(p)) {
+                    try (Reader r = newBufferedReader(p)) {
                         interpretStream(interpreter, r::read, printResult, history);
                     } catch (IOException e) {
                         System.err.println();
@@ -2901,6 +2903,21 @@ public class LambdaJ {
         }
     }
 
+    private static BufferedReader newBufferedReader(Path p) throws IOException {
+        if (true) {
+            return Files.newBufferedReader(p);
+        }
+        else {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPLACE)
+                    .onUnmappableCharacter(CodingErrorAction.REPLACE)
+                    //.replaceWith("?")
+                    ;
+            Reader reader = new InputStreamReader(Files.newInputStream(p), decoder);
+            return new BufferedReader(reader);
+        }
+    }
+
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
     private static void compileFiles(final List<String> files, LambdaJ interpreter, boolean toJar, String clsName, String outDir) {
         SExpressionParser parser = null;
@@ -2909,7 +2926,7 @@ public class LambdaJ {
             if ("--".equals(fileName)) continue;
             Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
-            try (Reader reader = Files.newBufferedReader(p)) {
+            try (Reader reader = newBufferedReader(p)) {
                 if (parser == null) parser = new SExpressionParser(reader::read);
                 else parser.setInput(reader::read);
                 while (true) {
@@ -3592,6 +3609,45 @@ public class LambdaJ {
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
 
+        public final Object makeFrame          (Object... args) {
+            //stringArg("make-frame", "first arg", a);
+            final String title = args[0].toString();
+            //numberArgs("make-frame", (ConsCell) cdr(a), 0, 2);
+            final TurtleFrame ret = new TurtleFrame(title, null, null);
+            intp.current_frame = ret;
+            return ret;
+        }
+
+        public final Object openFrame          (Object... args) { ConsCell a = arraySlice(args); nArgs("open-frame",    a, 0, 1); return intp.asFrame("open-frame", car(a)).open(); }
+        public final Object closeFrame         (Object... args) { ConsCell a = arraySlice(args); nArgs("close-frame",   a, 0, 1); return intp.asFrame("close-frame",   car(a)).close();   }
+        public final Object resetFrame         (Object... args) { ConsCell a = arraySlice(args); nArgs("reset-frame",   a, 0, 1); return intp.asFrame("reset-frame",   car(a)).reset();   }
+        public final Object clearFrame         (Object... args) { ConsCell a = arraySlice(args); nArgs("clear-frame",   a, 0, 1); return intp.asFrame("clear-frame",   car(a)).clear();   }
+        public final Object repaintFrame       (Object... args) { ConsCell a = arraySlice(args); nArgs("repaint-frame", a, 0, 1); return intp.asFrame("repaint-frame", car(a)).repaint(); }
+        public final Object flushFrame         (Object... args) { ConsCell a = arraySlice(args); nArgs("flush-frame",   a, 0, 1); return intp.asFrame("flush-frame",   car(a)).flush(); }
+
+        // set new current frame, return previous frame
+        public final Object currentFrame       (Object... args) { ConsCell a = arraySlice(args); nArgs("current-frame", a, 0, 1); final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.asFrame("current-frame", car(a)); return prev; }
+
+        public final Object pushPos            (Object... args) { ConsCell a = arraySlice(args); nArgs("push-pos",a, 0, 1); return intp.asFrame("push-pos",car(a)).pushPos(); }
+        public final Object popPos             (Object... args) { ConsCell a = arraySlice(args); nArgs("pop-pos", a, 0, 1); return intp.asFrame("pop-pos", car(a)).popPos();  }
+
+        public final Object penUp              (Object... args) { ConsCell a = arraySlice(args); nArgs("pen-up",  a, 0, 1); return intp.asFrame("pen-up",   car(a)).penUp();   }
+        public final Object penDown            (Object... args) { ConsCell a = arraySlice(args); nArgs("pen-down",a, 0, 1); return intp.asFrame("pen-down", car(a)).penDown(); }
+
+        public final Object color              (Object... args) { ConsCell a = arraySlice(args); nArgs("color",   a, 0, 1); return intp.asFrame("color",   cadr(a)).color  (intp.asInt("color",   car(a))); }
+        public final Object bgColor            (Object... args) { ConsCell a = arraySlice(args); nArgs("bgcolor", a, 0, 1); return intp.asFrame("bgcolor", cadr(a)).bgColor(intp.asInt("bgcolor", car(a))); }
+
+        public final Object text               (Object... args) { ConsCell a = arraySlice(args); nArgs("text",    a, 1, 2); return intp.asFrame("text",    cadr(a)).text   (car(a).toString()); }
+
+        public final Object right              (Object... args) { ConsCell a = arraySlice(args); nArgs("right",   a, 1, 2); return intp.asFrame("right",   cadr(a)).right  (intp.asDouble("right",   car(a))); }
+        public final Object left               (Object... args) { ConsCell a = arraySlice(args); nArgs("left",    a, 1, 2); return intp.asFrame("left",    cadr(a)).left   (intp.asDouble("left",    car(a))); }
+        public final Object forward            (Object... args) { ConsCell a = arraySlice(args); nArgs("forward", a, 1, 2); return intp.asFrame("forward", cadr(a)).forward(intp.asDouble("forward", car(a))); }
+
+        public final Object moveTo             (Object... args) { ConsCell a = arraySlice(args); nArgs("move-to", a, 2, 3);  return intp.asFrame("move-to",  caddr(a)).moveTo(intp.asDouble("move-to",  car(a)), intp.asDouble("move-to", cadr(a)));  }
+        public final Object lineTo             (Object... args) { ConsCell a = arraySlice(args); nArgs("line-to", a, 2, 3);  return intp.asFrame("line-to",  caddr(a)).moveTo(intp.asDouble("line-to",  car(a)), intp.asDouble("line-to", cadr(a)));  }
+        public final Object moveRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveTo(intp.asDouble("move-rel", car(a)), intp.asDouble("move-rel", cadr(a))); }
+        public final Object lineRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).moveTo(intp.asDouble("line-rel", car(a)), intp.asDouble("line-rel", cadr(a))); }
+
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
@@ -3876,6 +3932,14 @@ public class LambdaJ {
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
             { "::", "jambda" },
+
+            { "make-frame", "makeFrame" }, { "open-frame", "openFrame"}, { "close-frame", "closeFrame" },
+            { "reset-frame", "resetFrame" }, { "clear-frame", "clearFrame" }, { "repaint-frame", "repaintFrame" }, { "flush-frame", "flushFrame" },
+            { "current-frame", "currentFrame" },
+            { "push-pos", "pushPos" }, { "pop-pos", "popPos" }, { "pen-up", "penUp" }, { "pen-down", "penDown" },
+            { "color", "color" }, { "bgcolor", "bgColor" }, { "text", "text" },
+            { "right", "right" }, { "left", "left" }, { "forward", "forward" },
+            { "move-to", "moveTo" }, { "line-to", "lineTo" }, { "move-rel", "moveRel" }, { "line-rel", "lineRel" },
         };
 
 

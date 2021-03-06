@@ -91,7 +91,7 @@ This means that Murmel programs will only see "\n" as a line separator.
 
 
 <p><b>Copyright</b></p>
-<p>Murmel and JMurmel are Copyright (C) 2020 Robert Mayer. All rights reserved.
+<p>Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
 
 <p>This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT.
