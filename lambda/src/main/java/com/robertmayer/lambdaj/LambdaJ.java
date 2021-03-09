@@ -129,7 +129,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.396 2021/02/28 09:02:50 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.397 2021/03/06 21:03:14 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2563,18 +2563,21 @@ public class LambdaJ {
             env = addBuiltin("pi",      Math.PI,
                   env);
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return Math.round(((Number)car(args)).doubleValue()); },
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return cl_round(((Number)car(args))); },
                   addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); },
                   addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); },
-                  env)));
+                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 1); return cl_truncate((Number)car(args)); },
+                  env))));
 
             env = addBuiltin("sqrt",    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); },
                   addBuiltin("log",     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); },
                   addBuiltin("log10",   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); },
                   addBuiltin("exp",     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); },
                   addBuiltin("expt",    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); },
-                  addBuiltin("mod",     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); },
-                  env))))));
+
+                  addBuiltin("mod",     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return cl_mod((Number)car(args), (Number)cadr(args)); },
+                  addBuiltin("rem",     (Primitive) args -> { numberArgs("rem",     args, 2, 2); return cl_rem((Number)car(args), (Number)cadr(args)); },
+                  env)))))));
 
             env = addBuiltin("=",       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0),
                   addBuiltin(">",       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0),
@@ -2603,6 +2606,39 @@ public class LambdaJ {
         }
 
         return env;
+    }
+
+    /** produce a quotient that has been rounded to the nearest mathematical integer;
+     *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
+     *  then the quotient has been rounded to the even (divisible by two) integer. */
+    private static double cl_round(Number n) {
+        final double x = n.doubleValue();
+
+        final double floor = Math.floor(x);
+        if (x - floor < 0.5) return floor;
+
+        final double ceil = Math.ceil(x);
+        if (ceil - x < 0.5) return ceil;
+
+        if (floor % 2 == 0) return floor;
+        return ceil;
+    }
+
+    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer of the same sign as the mathematical quotient,
+     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
+    private static double cl_truncate(Number n) {
+        double d = n.doubleValue();
+        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
+    }
+
+    private static double cl_mod(Number n1, Number n2) {
+        final double x = n1.doubleValue();
+        final double y = n2.doubleValue();
+        return x - Math.floor(x / y) * y;
+    }
+
+    private static double cl_rem(Number n1, Number n2) {
+        return n1.doubleValue() % n2.doubleValue();
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
@@ -3564,16 +3600,18 @@ public class LambdaJ {
         public final ConsCell _list    (Object... args) { return arraySlice(args); }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
-        public final long     _round   (Object... args) { oneArg("round",      args.length); return Math.round(dbl(args[0])); }
+        public final double   _round   (Object... args) { oneArg("round",      args.length); return cl_round(dbl(args[0])); }
         public final double   _floor   (Object... args) { oneArg("floor",      args.length); return Math.floor(dbl(args[0])); }
-        public final double   _ceiling (Object... args) { oneArg("ceil",       args.length); return Math.ceil (dbl(args[0])); }
+        public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return Math.ceil (dbl(args[0])); }
+        public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return cl_truncate(dbl(args[0])); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",       args.length); return Math.sqrt (dbl(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",      args.length); return Math.log10(dbl(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",        args.length); return Math.exp  (dbl(args[0])); }
         public final double   _expt    (Object... args) { twoArg("expt",       args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        public final double   _mod     (Object... args) { twoArg("mod",        args.length); return dbl(args[0]) % dbl(args[1]); }
+        public final double   _mod     (Object... args) { twoArg("mod",        args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
+        public final double   _rem     (Object... args) { twoArg("rem",        args.length); return cl_rem(dbl(args[0]), dbl(args[1])); }
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
@@ -3921,7 +3959,7 @@ public class LambdaJ {
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list", "append",
-                "round", "floor", "ceiling", "sqrt", "log", "log10", "exp", "expt", "mod",
+                "round", "floor", "ceiling", "truncate", "sqrt", "log", "log10", "exp", "expt", "mod", "rem",
                 "trace", "untrace",
         };
         private static final String[][] aliasedPrimitives = new String[][] {

@@ -380,16 +380,16 @@ nil
 (append '(a . b) '(c d))    ; ==> (a b c d)
 (append '(a . b) '(c . d))  ; ==> (a b c . d)
 
-; +, -, *, /, mod, sqrt, log, log10, exp, expt
+; +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
 ; The math operators accept numbers only, log only takes 1 argument,
 ; but otherwise should work as expected.
 ; All numeric operators return a double.
 ; eg. (+ number number) -> double
 (+ 1 1)
 
-; round, floor, ceiling
-; These operators return an integer (java.lang.Long)
-; eg. (floor number) -> integer
+; round, truncate, floor, ceiling
+; These operators return an integer value as a double
+; eg. (floor number) -> double
 (floor 1.)
 
 ; = < > <= >=
@@ -623,4 +623,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.73 2021/02/27 08:55:38 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.74 2021/02/28 09:02:49 Robert Exp $
