@@ -129,7 +129,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.397 2021/03/06 21:03:14 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.398 2021/03/09 10:51:03 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1010,6 +1010,7 @@ public class LambdaJ {
         if (haveXtra())   { sLet     = symtab.intern(new LambdaJSymbol("let"));      reserve(sLet); }
         if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reserve(sLetStar); }
         if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reserve(sLetrec); }
+        if (haveXtra())   { sSetQ    = symtab.intern(new LambdaJSymbol("setq"));     reserve(sSetQ); }
 
         if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reserve(sApply); }
         if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reserve(sProgn); }
@@ -1029,7 +1030,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sApply, sProgn;
+    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn;
 
     private Supplier<Object> expTrue;
 
@@ -1148,6 +1149,28 @@ public class LambdaJ {
                         nArgs("defun", arguments, 3);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
                         continue tailcall;
+                    }
+
+                    if (operator == sSetQ) {
+                        nArgs("setq", arguments, 2);
+                        ConsCell pairs = arguments;
+                        do {
+                            final Object symbol = car(pairs);
+                            if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "setq", printSEx(symbol));
+                            notReserved("setq", symbol);
+                            final ConsCell envEntry = assoc(symbol, env);
+
+                            pairs = (ConsCell) cdr(pairs);
+                            if (pairs == null) throw new LambdaJError(true, "%s: odd number of arguments", "setq");
+                            final Object value = evalquote(car(pairs), env, stack, level, traceLvl);
+                            if (envEntry == null)
+                                //insertFront(env, symbol, value);
+                                throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
+                            else envEntry.rplacd(value);
+                            result = value;
+                            pairs = (ConsCell) cdr(pairs);
+                        } while (pairs != null);
+                        return result;
                     }
 
                     // todo reserved words?
@@ -2177,6 +2200,12 @@ public class LambdaJ {
         return ((Number)a).intValue();
     }
 
+    /** Return {@code a} as a list, error if {@code a} is not a list or nil. */
+    private ConsCell asList(String func, Object a) {
+        if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
+        return (ConsCell)a;
+    }
+
 
 
     /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
@@ -2209,6 +2238,20 @@ public class LambdaJ {
         for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
             result = op.applyAsDouble(result, ((Number)car(args)).doubleValue());
         return result;
+    }
+
+    private Object cl_rplaca(Object args) {
+        twoArgs("rplaca", args);
+        final ConsCell l = asList("rplaca", car(args));
+        l.rplaca(cadr(args));
+        return l;
+    }
+
+    private Object cl_rplacd(Object args) {
+        twoArgs("rplacd", args);
+        final ConsCell l = asList("rplacd", car(args));
+        l.rplacd(cadr(args));
+        return l;
     }
 
     private void write(final Object arg) {
@@ -2510,6 +2553,10 @@ public class LambdaJ {
             env = addBuiltin("macroexpand-1", (Primitive)this::macroexpand1,
                   addBuiltin("gensym", (Primitive)this::gensym,
                   env));
+
+            env = addBuiltin("rplaca", (Primitive)this::cl_rplaca,
+                  addBuiltin("rplacd", (Primitive)this::cl_rplacd,
+                  env));
         }
 
         if (haveT()) {
@@ -2612,6 +2659,7 @@ public class LambdaJ {
      *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
      *  then the quotient has been rounded to the even (divisible by two) integer. */
     private static double cl_round(Number n) {
+        /*
         final double x = n.doubleValue();
 
         final double floor = Math.floor(x);
@@ -2622,6 +2670,8 @@ public class LambdaJ {
 
         if (floor % 2 == 0) return floor;
         return ceil;
+        */
+        return Math.rint(n.doubleValue());
     }
 
     /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer of the same sign as the mathematical quotient,

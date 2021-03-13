@@ -1,7 +1,7 @@
 ;; see also namedlet.lisp
 
 ; output: (empty)
-; result: (1 3 3)
+; result: (1.0 3.0 3.0)
 
 ;;; Murmel using letrec and lambda
 (defun number->list (n)

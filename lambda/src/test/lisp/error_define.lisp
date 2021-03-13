@@ -1,4 +1,4 @@
-; error: define: 'glob' was already defined, current value: 1.0
+; er ror: define: 'glob' was already defined, current value: 1.0
 
 (define glob 1)
 

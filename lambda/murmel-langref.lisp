@@ -226,7 +226,7 @@ nil
 ;
 ; nil, t,
 ; lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
-; apply, progn
+; setq, apply, progn, defmacro
 
 
 ;;; == Variables and Scope ============
@@ -283,6 +283,13 @@ nil
 ; produces code that will be eval'd.
 (defmacro twice (arg) (list '* arg 2))  ; ==> twice
 (twice 3) ; ==> 6.0
+
+;;; setq
+; Inserts symbols into the current environment or updates
+; the value if the symbols are already defined.
+(setq a 1 b 2 c (+ a b))
+
+;;; rplaca, rplacd
 
 ;;; (if condform form optionalform) -> object
 
@@ -597,7 +604,6 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - at least globals should be mutable 
 ; - globals should be special (dynamic)
 ; - support for packages should be added
 ;
@@ -609,6 +615,7 @@ nil
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
 ; - gensym only works inside macros
+; - setq, rplaca, rplacd are not supported
 ;
 ; The todo list for features is way too long.
 
@@ -623,4 +630,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.74 2021/02/28 09:02:49 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.75 2021/03/09 10:51:02 Robert Exp $

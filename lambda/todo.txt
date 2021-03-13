@@ -1,8 +1,12 @@
+(re-) define im compiler
+setq, rplaca, rplacd im compiler
+
 https://www.reddit.com/r/lisp/comments/lxlyvb/why_does_cl_have_such_a_strange_way_of_obtaining/gpo0swr/
 it is undefined behavior according to the ANSI spec to redefine a standard function
 -> car cdr cons koennten im interpreter open coded sein zwecks performance
 
 grafik im compiler
+-> was fehlt noch?
 
 symbolhandling ist fishy
 -> symbole sollten nicht per stringvergleich sondern ueber identity verglichen werden
