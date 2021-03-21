@@ -1,4 +1,4 @@
-;;; See https://en.wikipedia.org/wiki/L-system
+;;; See https://en.wikipedia.org/wiki/L-system and https://de.wikipedia.org/wiki/Fraktal
 ;;; and https://jsantell.com/l-systems/
 
 (defun l-system (order size op)

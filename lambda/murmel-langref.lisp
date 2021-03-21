@@ -541,6 +541,10 @@ nil
 ; move-to, line-to, move-rel, line-rel
 (line-rel new-x new-y optional-frame) ; ==> frame
 
+; make-bitmap, discard-bitmap
+; set-pixel
+; rgb-to-pixel, hsb-to-pixel
+
 ;;; --- End of Murmel reference ---
 
 
@@ -630,4 +634,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.75 2021/03/09 10:51:02 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.76 2021/03/13 12:55:11 Robert Exp $

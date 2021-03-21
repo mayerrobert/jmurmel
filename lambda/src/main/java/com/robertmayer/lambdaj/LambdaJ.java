@@ -8,6 +8,7 @@ package com.robertmayer.lambdaj;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -129,7 +130,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.398 2021/03/09 10:51:03 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.399 2021/03/13 12:55:12 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1387,6 +1388,7 @@ public class LambdaJ {
             }
         }
     }
+
     private Object mexpand(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
         final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
@@ -1771,6 +1773,8 @@ public class LambdaJ {
     private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
     private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
     private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
+    private static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
+    private static Object   cadddr(Object o)   { return o == null ? null : car(cdddr(o)); }
 
     private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     private static Object   cdr(Object o)      { return o == null ? null
@@ -2188,6 +2192,12 @@ public class LambdaJ {
         return ret;
     }
 
+    /** Return {@code a} as a float, error if {@code a} is not a number. */
+    private float asFloat(String func, Object a) {
+        if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        return ((Number)a).floatValue();
+    }
+
     /** Return {@code a} as a double, error if {@code a} is not a number. */
     private double asDouble(String func, Object a) {
         if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
@@ -2520,6 +2530,17 @@ public class LambdaJ {
                   addBuiltin("move-rel",      (Primitive) a -> { nArgs("move-rel", a, 2, 3); return asFrame("move-rel", caddr(a)).moveTo(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
                   addBuiltin("line-rel",      (Primitive) a -> { nArgs("line-rel", a, 2, 3); return asFrame("line-rel", caddr(a)).moveTo(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
                   env))));
+
+            env = addBuiltin("make-bitmap",   (Primitive) a -> { nArgs("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
+                  addBuiltin("discard-bitmap",(Primitive) a -> { nArgs("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
+                  addBuiltin("set-pixel",     (Primitive) a -> { nArgs("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-rgb", cadr(a)), asInt("set-rgb", caddr(a)));  },
+                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { nArgs("rgb-to-pixel",   a, 3, 3); return (asInt("rgb-to-pixel", car(a)) << 16)
+                                                                                                        | (asInt("rgb-to-pixel", cadr(a)) << 8)
+                                                                                                        | (asInt("rgb-to-pixel", caddr(a)));  },
+                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { nArgs("hsb-to-pixel",   a, 3, 3); return Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
+                                                                                                                         asFloat("hsb-to-pixel", cadr(a)),
+                                                                                                                         asFloat("hsb-to-pixel", caddr(a)));  },
+                  env)))));
         }
 
         if (haveString()) {
@@ -2659,18 +2680,6 @@ public class LambdaJ {
      *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
      *  then the quotient has been rounded to the even (divisible by two) integer. */
     private static double cl_round(Number n) {
-        /*
-        final double x = n.doubleValue();
-
-        final double floor = Math.floor(x);
-        if (x - floor < 0.5) return floor;
-
-        final double ceil = Math.ceil(x);
-        if (ceil - x < 0.5) return ceil;
-
-        if (floor % 2 == 0) return floor;
-        return ceil;
-        */
         return Math.rint(n.doubleValue());
     }
 
@@ -3736,6 +3745,21 @@ public class LambdaJ {
         public final Object moveRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveTo(intp.asDouble("move-rel", car(a)), intp.asDouble("move-rel", cadr(a))); }
         public final Object lineRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).moveTo(intp.asDouble("line-rel", car(a)), intp.asDouble("line-rel", cadr(a))); }
 
+        public final Object makeBitmap         (Object... args) { ConsCell a = arraySlice(args); nArgs("make-bitmap",     a, 2, 3); return intp.asFrame("make-bitmap",    caddr(a)).makeBitmap(intp.asInt("make-bitmap",  car(a)), intp.asInt("make-bitmap", cadr(a)));  }
+        public final Object discardBitmap      (Object... args) { ConsCell a = arraySlice(args); nArgs("discard-bitmap",  a, 0, 1); return intp.asFrame("discard-bitmap", car(a))  .discardBitmap();   }
+
+        public final Object setPixel           (Object... args) { ConsCell a = arraySlice(args); nArgs("set-pixel",       a, 3, 4); return intp.asFrame("set-pixel",      cadddr(a)).setRGB(intp.asInt("set-pixel",  car(a)), intp.asInt("set-pixel", cadr(a)), intp.asInt("set-pixel", caddr(a)));  }
+        public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length); numbers(args[0], args[1], args[2]);
+                                                                  int r = intp.asInt("rgb-to-pixel", args[0]);
+                                                                  int g = intp.asInt("rgb-to-pixel", args[1]);
+                                                                  int b = intp.asInt("rgb-to-pixel", args[2]);
+                                                                  return (r<<16) | (g<<8) | b; }
+        public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length); numbers(args[0], args[1], args[2]);
+                                                                  float hue = intp.asFloat("hsb-to-pixel", args[0]);
+                                                                  float sat = intp.asFloat("hsb-to-pixel", args[1]);
+                                                                  float bri = intp.asFloat("hsb-to-pixel", args[2]);
+                                                                  return Color.HSBtoRGB(hue, sat, bri); }
+
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
@@ -3890,6 +3914,10 @@ public class LambdaJ {
             if (2 != argCount) argError(expr, 2, argCount);
         }
 
+        private static void threeArgs(String expr, int argCount) {
+            if (3 != argCount) argError(expr, 3, argCount);
+        }
+
         public static void argCheck(String expr, int paramCount, int argCount) {
             if (paramCount != argCount) argError(expr, paramCount, argCount);
         }
@@ -3908,6 +3936,12 @@ public class LambdaJ {
             number(n2);
         }
 
+        private static void numbers(Object n1, Object n2, Object n3) {
+            number(n1);
+            number(n2);
+            number(n3);
+        }
+
         private static void notANumber(Object n) {
             throw new LambdaJError(true, "not a number: %s", printSEx(n));
         }
@@ -3923,7 +3957,7 @@ public class LambdaJ {
                     System.out.println();
                     System.out.print("==> "); program._write(result);
                     System.out.println();
-                    System.exit(0);
+                    //System.exit(0); don't call exit this wouldn't wait for open frames
                 }
             } catch (LambdaJError e) {
                 System.err.println(e.getMessage());
@@ -4028,6 +4062,9 @@ public class LambdaJ {
             { "color", "color" }, { "bgcolor", "bgColor" }, { "text", "text" },
             { "right", "right" }, { "left", "left" }, { "forward", "forward" },
             { "move-to", "moveTo" }, { "line-to", "lineTo" }, { "move-rel", "moveRel" }, { "line-rel", "lineRel" },
+            { "make-bitmap", "makeBitmap" }, { "discard-bitmap", "discardBitmap" },
+            { "set-pixel", "setPixel" },
+            { "rgb-to-pixel", "rgbToPixel" }, { "hsb-to-pixel", "hsbToPixel" },
         };
 
 
@@ -5372,6 +5409,25 @@ class TurtleFrame {
 
 
 
+    private BufferedImage bitmap;
+
+    TurtleFrame makeBitmap(int width, int height) {
+        bitmap = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        return this;
+    }
+
+    TurtleFrame discardBitmap() {
+        bitmap = null;
+        return this;
+    }
+
+    TurtleFrame setRGB(int x, int y, int rgb) {
+        bitmap.setRGB(x, bitmap.getHeight() - y - 1, rgb);
+        return this;
+    }
+
+
+
     private class LineComponent extends Component {
         private static final long serialVersionUID = 1L;
 
@@ -5389,6 +5445,11 @@ class TurtleFrame {
 
             g.setColor(colors[bgColor]);
             g.fillRect(0, 0, w, h);
+
+            if (bitmap != null) {
+                g.drawImage(bitmap, 0, 0, w, h, null);
+            }
+
             if (lines.isEmpty() && texts.isEmpty()) return;
 
             final double fac, xoff, yoff;
