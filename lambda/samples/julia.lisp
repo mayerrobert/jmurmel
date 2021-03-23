@@ -1,5 +1,5 @@
-(define W 150)
-(define H 100)
+(define W 300)
+(define H 200)
 
 (define MAX_ITERATIONS 300)
 (define ZOOM 1)
@@ -27,7 +27,7 @@
 ;            }
 ;        }
 
-(make-frame "Julia set" W H)
+(make-frame "Julia set" W H 0)
 (make-bitmap W H)
 
 (defun calc (zx zy)

@@ -505,7 +505,8 @@ nil
 ; make-frame
 ; Creates a new frame, sets current frame.
 ; If width and height are omitted or nil then half of the screen width/ height will be used.
-(make-frame window-title optwidthpixels optheightpixels) ; ==> frame
+; If padding is omitted or nil then 40 will be used.
+(make-frame window-title optwidthpixels optheightpixels optpaddingpixels) ; ==> frame
 
 ; open-frame, close-frame, reset-frame, clear-frame, repaint-frame, flush-frame
 ; These functions all take an optional frame parameter. If omitted or nil
@@ -634,4 +635,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.76 2021/03/13 12:55:11 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.77 2021/03/21 11:26:29 Robert Exp $

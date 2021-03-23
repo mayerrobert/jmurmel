@@ -130,7 +130,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.400 2021/03/21 11:26:30 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.401 2021/03/23 15:15:21 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2493,8 +2493,8 @@ public class LambdaJ {
             final Primitive makeFrame = a -> {
                 stringArg("make-frame", "first arg", a);
                 final String title = car(a).toString();
-                numberArgs("make-frame", (ConsCell) cdr(a), 0, 2);
-                final TurtleFrame ret = new TurtleFrame(title, ((Number)(cadr(a))), ((Number)(caddr(a))));
+                numberArgs("make-frame", (ConsCell) cdr(a), 0, 3);
+                final TurtleFrame ret = new TurtleFrame(title, (Number)cadr(a), (Number)caddr(a), (Number)cadddr(a));
                 current_frame = ret;
                 return ret;
             };
@@ -3710,7 +3710,7 @@ public class LambdaJ {
             //stringArg("make-frame", "first arg", a);
             final String title = args[0].toString();
             //numberArgs("make-frame", (ConsCell) cdr(a), 0, 2);
-            final TurtleFrame ret = new TurtleFrame(title, null, null);
+            final TurtleFrame ret = new TurtleFrame(title, null, null, null); // todo w h padding
             intp.current_frame = ret;
             return ret;
         }
@@ -5154,7 +5154,6 @@ class WrappingWriter extends Writer {
 
 /** A frame (window) with methods to draw lines and print text. */
 class TurtleFrame {
-    private static final int padding = 40;
     private static final Color[] colors = {
         Color.white,        //  0
         Color.black,        //  1
@@ -5189,6 +5188,8 @@ class TurtleFrame {
         }
     }
 
+    private final int padding;
+
     private int bgColor = 0;
     private int color = 1;
     private final List<Object> lines = new ArrayList<>();
@@ -5206,7 +5207,7 @@ class TurtleFrame {
     private final Frame f;
     private final LineComponent component;
 
-    TurtleFrame(String title, Number width, Number height) {
+    TurtleFrame(String title, Number width, Number height, Number padding) {
         f = new Frame(title);
         f.addWindowListener(new WindowAdapter() {
             @Override
@@ -5220,6 +5221,10 @@ class TurtleFrame {
         else w = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
         if (height != null && height.intValue() > 0) h = height.intValue();
         else h = Toolkit.getDefaultToolkit().getScreenSize().height / 2;
+
+        if (padding != null && padding.intValue() >= 0) this.padding = padding.intValue();
+        else this.padding = 40;
+
         component = new LineComponent(w, h);
         f.add(component, BorderLayout.CENTER);
 
@@ -5393,11 +5398,11 @@ class TurtleFrame {
 
 
     private double fact(final int w, final int h) {
-        final double xfac = (w-padding) / (xmax - xmin);
-        final double yfac = (h-padding) / (ymax - ymin);
+        final double xfac = (w-2*padding) / (xmax - xmin);
+        final double yfac = (h-2*padding) / (ymax - ymin);
 
         double ret = xfac < yfac ? xfac : yfac;
-        System.out.printf("frame w=%d, lines w=%g, xfac=%g, frame h=%d, lines h=%g, yfac=%g, fac=%g\n", w, (xmax - xmin), xfac, h, (ymax - ymin), yfac, ret);
+        //System.out.printf("frame w=%d, lines w=%g, xfac=%g, frame h=%d, lines h=%g, yfac=%g, fac=%g\n", w, (xmax - xmin), xfac, h, (ymax - ymin), yfac, ret);
         return ret;
     }
 
