@@ -130,7 +130,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.399 2021/03/13 12:55:12 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.400 2021/03/21 11:26:30 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2526,9 +2526,9 @@ public class LambdaJ {
                   env))))))))))))))))));
 
             env = addBuiltin("move-to",       (Primitive) a -> { nArgs("move-to", a, 2, 3);  return asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
-                  addBuiltin("line-to",       (Primitive) a -> { nArgs("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).moveTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
-                  addBuiltin("move-rel",      (Primitive) a -> { nArgs("move-rel", a, 2, 3); return asFrame("move-rel", caddr(a)).moveTo(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
-                  addBuiltin("line-rel",      (Primitive) a -> { nArgs("line-rel", a, 2, 3); return asFrame("line-rel", caddr(a)).moveTo(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
+                  addBuiltin("line-to",       (Primitive) a -> { nArgs("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
+                  addBuiltin("move-rel",      (Primitive) a -> { nArgs("move-rel", a, 2, 3); return asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
+                  addBuiltin("line-rel",      (Primitive) a -> { nArgs("line-rel", a, 2, 3); return asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
                   env))));
 
             env = addBuiltin("make-bitmap",   (Primitive) a -> { nArgs("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
@@ -3741,9 +3741,9 @@ public class LambdaJ {
         public final Object forward            (Object... args) { ConsCell a = arraySlice(args); nArgs("forward", a, 1, 2); return intp.asFrame("forward", cadr(a)).forward(intp.asDouble("forward", car(a))); }
 
         public final Object moveTo             (Object... args) { ConsCell a = arraySlice(args); nArgs("move-to", a, 2, 3);  return intp.asFrame("move-to",  caddr(a)).moveTo(intp.asDouble("move-to",  car(a)), intp.asDouble("move-to", cadr(a)));  }
-        public final Object lineTo             (Object... args) { ConsCell a = arraySlice(args); nArgs("line-to", a, 2, 3);  return intp.asFrame("line-to",  caddr(a)).moveTo(intp.asDouble("line-to",  car(a)), intp.asDouble("line-to", cadr(a)));  }
-        public final Object moveRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveTo(intp.asDouble("move-rel", car(a)), intp.asDouble("move-rel", cadr(a))); }
-        public final Object lineRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).moveTo(intp.asDouble("line-rel", car(a)), intp.asDouble("line-rel", cadr(a))); }
+        public final Object lineTo             (Object... args) { ConsCell a = arraySlice(args); nArgs("line-to", a, 2, 3);  return intp.asFrame("line-to",  caddr(a)).lineTo(intp.asDouble("line-to",  car(a)), intp.asDouble("line-to", cadr(a)));  }
+        public final Object moveRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveRel(intp.asDouble("move-rel", car(a)), intp.asDouble("move-rel", cadr(a))); }
+        public final Object lineRel            (Object... args) { ConsCell a = arraySlice(args); nArgs("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).lineRel(intp.asDouble("line-rel", car(a)), intp.asDouble("line-rel", cadr(a))); }
 
         public final Object makeBitmap         (Object... args) { ConsCell a = arraySlice(args); nArgs("make-bitmap",     a, 2, 3); return intp.asFrame("make-bitmap",    caddr(a)).makeBitmap(intp.asInt("make-bitmap",  car(a)), intp.asInt("make-bitmap", cadr(a)));  }
         public final Object discardBitmap      (Object... args) { ConsCell a = arraySlice(args); nArgs("discard-bitmap",  a, 0, 1); return intp.asFrame("discard-bitmap", car(a))  .discardBitmap();   }
@@ -5191,8 +5191,8 @@ class TurtleFrame {
 
     private int bgColor = 0;
     private int color = 1;
-    private final ArrayList<Object> lines = new ArrayList<>();
-    private final ArrayList<Text> texts = new ArrayList<>();
+    private final List<Object> lines = new ArrayList<>();
+    private final List<Text> texts = new ArrayList<>();
     private final Deque<Pos> posStack = new ArrayDeque<>();
 
     private double x, y, angle;
@@ -5396,7 +5396,9 @@ class TurtleFrame {
         final double xfac = (w-padding) / (xmax - xmin);
         final double yfac = (h-padding) / (ymax - ymin);
 
-        return xfac < yfac ? xfac : yfac;
+        double ret = xfac < yfac ? xfac : yfac;
+        System.out.printf("frame w=%d, lines w=%g, xfac=%g, frame h=%d, lines h=%g, yfac=%g, fac=%g\n", w, (xmax - xmin), xfac, h, (ymax - ymin), yfac, ret);
+        return ret;
     }
 
     private static int trX(double fac, double xoff, double x) {
@@ -5405,6 +5407,15 @@ class TurtleFrame {
 
     private static int trY(double fac, double yoff, double y) {
         return (int)((y + yoff) * fac);
+    }
+
+    private double factBitmap(final int w, final int h) {
+        final double xfac = ((double)w-2*padding) / bitmap.getWidth();
+        final double yfac = ((double)h-2*padding) / bitmap.getHeight();
+
+        double ret = xfac < yfac ? xfac : yfac;
+        //System.out.printf("frame w=%d, bm w=%d, xfac=%g, frame h=%d, bm h=%d, yfac=%g, fac=%g\n", w, bitmap.getWidth(), xfac, h, bitmap.getHeight(), yfac, ret);
+        return ret;
     }
 
 
@@ -5445,9 +5456,14 @@ class TurtleFrame {
 
             g.setColor(colors[bgColor]);
             g.fillRect(0, 0, w, h);
+            if (w < 2*padding || h < 2*padding)
+                return;
 
             if (bitmap != null) {
-                g.drawImage(bitmap, 0, 0, w, h, null);
+                double fac = factBitmap(w, h);
+                int xoff = (int)((w - bitmap.getWidth() * fac) / 2.0);
+                int yoff = (int)((h - bitmap.getHeight() * fac) / 2.0);
+                g.drawImage(bitmap, xoff, yoff, w - 2*xoff, h - 2*yoff, null);
             }
 
             if (lines.isEmpty() && texts.isEmpty()) return;
@@ -5483,6 +5499,7 @@ class TurtleFrame {
                 for (Text text: texts) {
                     g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
                 }
+                //g.drawRect(padding, padding, w - 2*padding, h - 2*padding);
             }
         }
     }
