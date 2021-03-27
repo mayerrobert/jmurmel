@@ -130,7 +130,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.401 2021/03/23 15:15:21 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.402 2021/03/23 15:50:57 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2161,7 +2161,7 @@ public class LambdaJ {
     }
 
     /** the given arg must be a LambdaJString */
-    private static void stringArg(String func, String arg, Object a) {
+    private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
             throw new LambdaJError(true, "%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
     }
@@ -2332,7 +2332,7 @@ public class LambdaJ {
             locString = (String) car(a);
         } else locString = null;
 
-        stringArg(func, "third argument", cdr(a));
+        stringArg(func, "third argument", (ConsCell) cdr(a));
         String s = (String) cadr(a);
         final Object[] args = listToArray(cddr(a));
         try {
@@ -3701,16 +3701,17 @@ public class LambdaJ {
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
 
-        public final Object jambda             (Object... args) { return LambdaJ.findJavaMethod(arraySlice(args)); }
+        public final Object jambda             (Object... args) { return findJavaMethod(arraySlice(args)); }
 
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
 
         public final Object makeFrame          (Object... args) {
-            //stringArg("make-frame", "first arg", a);
+            ConsCell a = arraySlice(args);
+            stringArg("make-frame", "first arg", a);
             final String title = args[0].toString();
-            //numberArgs("make-frame", (ConsCell) cdr(a), 0, 2);
-            final TurtleFrame ret = new TurtleFrame(title, null, null, null); // todo w h padding
+            numberArgs("make-frame", (ConsCell) cdr(a), 0, 3);
+            final TurtleFrame ret = new TurtleFrame(title, (Number)cadr(a), (Number)caddr(a), (Number)cadddr(a));
             intp.current_frame = ret;
             return ret;
         }
@@ -3927,15 +3928,18 @@ public class LambdaJ {
             if (expected < actual) throw new LambdaJError(true, "%s: too many arguments", expr);
         }
 
+        /** error if n is not of type number */
         private static void number(Object n) {
             if (!(n instanceof Number)) notANumber(n);
         }
 
+        /** error if any arg is not of type number */
         private static void numbers(Object n1, Object n2) {
             number(n1);
             number(n2);
         }
 
+        /** error if any arg is not of type number */
         private static void numbers(Object n1, Object n2, Object n3) {
             number(n1);
             number(n2);
