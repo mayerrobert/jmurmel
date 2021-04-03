@@ -39,6 +39,7 @@
         <jacoco-plugin.version>0.7.3.201502191951</jacoco-plugin.version>
         <versions-plugin.version>2.1</versions-plugin.version>
         <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
+        <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 	</properties>
 
 	<build>
