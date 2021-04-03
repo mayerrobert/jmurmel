@@ -1,12 +1,19 @@
-(define W 300)
-(define H 200)
+(define W 600)
+(define H 400)
 
 (define MAX_ITERATIONS 300)
 (define ZOOM 1)
-(define CX -0.7)
-(define CY 0.27015)
 (define MOVE_X 0)
 (define MOVE_Y 0)
+
+;(define CX -0.7)
+;(define CY 0.27015)
+
+;(define CX -0.156844471694257101941)
+;(define CY -0.649707745759247905171)
+
+(define CX -0.4)
+(define CY  0.6)
 
 
 ; https://rosettacode.org/wiki/Julia_set#Java
@@ -46,14 +53,14 @@
       i)))
 
 (let xloop ((x 0))
-    (let yloop ((y 0))
-      (let* ((zx (+ (/ (* 1.5 (- x (/ w 2)))
-                      (* 0.5 ZOOM W))
-                   MOVE_X))
-             (zy (+ (/ (- y (/ H 2))
-                       (* 0.5 ZOOM H))
-                    MOVE_Y))
-             (iter (calc zx zy)))
+  (let yloop ((y 0))
+    (let* ((zx (+ (/ (* 1.5 (- x (/ w 2)))
+                     (* 0.5 ZOOM W))
+                  MOVE_X))
+           (zy (+ (/ (- y (/ H 2))
+                     (* 0.5 ZOOM H))
+                  MOVE_Y))
+           (iter (calc zx zy)))
       (set-pixel x y (hsb-to-pixel (/ MAX_ITERATIONS iter) 1 (if (> iter 0) 1 0)))
       (if (< y (- h 1)) (yloop (+ y 1)))))
   (if (< x (- w 1)) (xloop (+ x 1))))

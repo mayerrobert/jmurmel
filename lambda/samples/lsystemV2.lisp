@@ -7,7 +7,8 @@
         (if (eq op 'X) nil
           (if (eq op 'Y) nil
             (if (eq op 'Z) nil
-              (forward size))))
+              (if (eq op 'g) (progn (pen-up) (forward size) (pen-down))
+                (forward size)))))
 
     (let loop ((word (cdr (assoc op rules))))
       (let* ((nextop (car word))
@@ -256,7 +257,81 @@
 (define rules '((F . (+ F - - F +))))
 
 (define actions '((+ . (lambda () (right 45)))
-                  (- . (lambda () (left 45)))))
+                  (- . (lambda () (left  45)))))
 
 (l-system 12 20 'F)
+(open-frame)
+
+
+;https://de.wikipedia.org/wiki/Fraktal
+; Hilbert Kurve, 1 : 1/2
+(make-frame "Hilbert Curve 6")
+
+(define rules '((X . (- Y F + X F X + F Y -))
+                (Y . (+ X F - Y F Y - F X +))))
+
+(define actions '((+ . (lambda () (right 90)))
+                  (- . (lambda () (left  90)))))
+
+(l-system 6 20 'X)
+(open-frame)
+
+
+; Peano Kurve
+(make-frame "Peano Curve 4")
+
+(define rules '((X . (X F Y F X + F + Y F X F Y - F - X F Y F X))
+                (Y . (Y F X F Y - F - X F Y F X + F + Y F X F Y))))
+
+(define actions '((+ . (lambda () (right 90)))
+                  (- . (lambda () (left  90)))))
+
+(l-system 4 20 'X)
+(open-frame)
+
+
+; Peano Kurve, 1 : 1/3
+(make-frame "Peano Kurve 4")
+
+(define rules '((F . (F - F + F + F + F - F - F - F + F))))
+
+(define actions '((+ . (lambda () (right 90)))
+                  (- . (lambda () (left  90)))))
+
+(l-system 4 20 'F)
+(open-frame)
+
+
+; Penta Plexity
+(make-frame "Penta Plexity 4")
+
+(define rules '((F . (F + + F + + F R F - F + + F))))
+
+(define actions '((+ . (lambda () (right 36)))
+                  (- . (lambda () (left  36)))
+                  (R . (lambda () (left 180)))))
+
+(l-system 4 20 'F)
+(right 72)
+(l-system 4 20 'F)
+(right 72)
+(l-system 4 20 'F)
+(right 72)
+(l-system 4 20 'F)
+(right 72)
+(l-system 4 20 'F)
+
+(open-frame)
+
+
+; Sierpinsky (Menger) Teppich
+(make-frame "Sierpinsky (Menger) Teppich")
+
+(define rules '((F . (F + F - F - F F - F - F - g F))
+                (g . (g g g))))
+
+(define actions '((+ . (lambda () (right 90)))
+                  (- . (lambda () (left  90)))))
+
+(l-system 4 20 'F)
 (open-frame)
