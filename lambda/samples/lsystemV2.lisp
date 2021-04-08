@@ -7,7 +7,7 @@
         (if (eq op 'X) nil
           (if (eq op 'Y) nil
             (if (eq op 'Z) nil
-              (if (eq op 'g) (progn (pen-up) (forward size) (pen-down))
+              (if (eq op 'W) (progn (pen-up) (forward size) (pen-down))
                 (forward size)))))
 
     (let loop ((word (cdr (assoc op rules))))
@@ -327,8 +327,8 @@
 ; Sierpinsky (Menger) Teppich
 (make-frame "Sierpinsky (Menger) Teppich")
 
-(define rules '((F . (F + F - F - F F - F - F - g F))
-                (g . (g g g))))
+(define rules '((F . (F + F - F - F F - F - F - w F))
+                (w . (w w w))))
 
 (define actions '((+ . (lambda () (right 90)))
                   (- . (lambda () (left  90)))))
