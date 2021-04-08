@@ -29,9 +29,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -130,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.403 2021/03/27 07:16:52 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.404 2021/04/03 18:08:54 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -773,7 +771,7 @@ public class LambdaJ {
                 readToken();
                 return cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
             }
-            if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok.toString());
+            if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok);
             return tok;
         }
 
@@ -1046,7 +1044,7 @@ public class LambdaJ {
 
         private OpenCodedPrimitive(LambdaJSymbol symbol) { this.symbol = symbol; }
 
-        @Override public String toString() { return "#<opencoded primitive: " + symbol.toString() + '>'; }
+        @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
     }
     private OpenCodedPrimitive ocEval;
 
@@ -1259,7 +1257,7 @@ public class LambdaJ {
                         final boolean letRec   = operator == sLetrec;
                         final boolean namedLet = /*!star && !rec &&*/ symbolp(car(arguments));
 
-                        final String op = (namedLet ? "named " : "") + operator.toString();
+                        final String op = (namedLet ? "named " : "") + operator;
                         final ConsCell bindingsAndBodyForms = namedLet ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
                         final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
@@ -1594,7 +1592,7 @@ public class LambdaJ {
 
         tracePfx(sb, level);
 
-        sb.append('(').append(level+1).append(" enter ").append(op.toString());
+        sb.append('(').append(level+1).append(" enter ").append(op);
         sb.append(printArgs(args));
         sb.append(')');
         tracer.println(sb.toString());
@@ -1623,7 +1621,7 @@ public class LambdaJ {
 
         tracePfx(sb, level);
 
-        sb.append('(').append(level+1).append(" exit  ").append(op.toString()).append(':').append(' ');
+        sb.append('(').append(level+1).append(" exit  ").append(op).append(':').append(' ');
         printSEx(sb::append, result);
         sb.append(')');
         tracer.println(sb.toString());
@@ -1746,7 +1744,7 @@ public class LambdaJ {
                     Object o = arry[i];
                     if (first) first = false;
                     else ret.append(' ');
-                    LambdaJ._printSEx(ret::append, arry, o, true, escapeAtoms);
+                    _printSEx(ret::append, arry, o, true, escapeAtoms);
                 }
                 ret.append(')');
                 return ret.toString();
@@ -1810,7 +1808,7 @@ public class LambdaJ {
     private static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
-        for (Object l: (ConsCell)list) n++;
+        for (Object ignored: (ConsCell)list) n++;
         return n;
     }
 
@@ -1886,7 +1884,7 @@ public class LambdaJ {
     private Object append(Object... args) {
         if (args == null || args.length == 0) return null;
         if (args.length == 1) return args[0];
-        if (args.length > 1 && !listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
+        if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
         Object ret = args[0];
         for (int i = 1; i < args.length; i++) {
             ret = append2(ret, args[i]); // todo optimieren: bei n args wird n-1 mal kopiert -> insertpos mitfuehren
@@ -2083,14 +2081,14 @@ public class LambdaJ {
         if (symbolp(a)) return;
         if (atom(a)) throw new LambdaJError(true, "%s: malformed %s: expected bindings to be a symbol or list of symbols but got %s", func, func, a);
         final ConsCell start = (ConsCell) a;
-        while (a != null) {
+        for (;;) {
             if (consp(a) && cdr(a) == start) throw new LambdaJError(true, "%s: malformed %s: circular list of bindings is not allowed", func, func);
             if (!symbolp(car(a))) throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
             notReserved(func, car(a));
 
             a = cdr(a);
+            if (a == null) return; // end of a proper list, everything a-ok, move along
             if (atom(a)) {
-                if (a == null) return; // end of a proper list, everything a-ok, move along
                 if (!symbolp(a)) throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
                 notReserved(func, a);
                 return; // that was the end of a dotted list, everything a-ok, move along
@@ -2193,19 +2191,19 @@ public class LambdaJ {
 
     /** Return {@code a} as a float, error if {@code a} is not a number. */
     private static float asFloat(String func, Object a) {
-        if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        if (!(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
         return ((Number)a).floatValue();
     }
 
     /** Return {@code a} as a double, error if {@code a} is not a number. */
     private static double asDouble(String func, Object a) {
-        if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        if (!(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
         return ((Number)a).doubleValue();
     }
 
     /** Return {@code a} as an int, error if {@code a} is not a number. */
     private static int asInt(String func, Object a) {
-        if (a == null || !(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        if (!(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
         return ((Number)a).intValue();
     }
 
@@ -2600,7 +2598,7 @@ public class LambdaJ {
                   addBuiltin("list",    (Primitive) a -> a,
                   env))))));
 
-            env = addBuiltin("append",  (Primitive) a -> { return append(listToArray(a)); },
+            env = addBuiltin("append",  (Primitive) a -> append(listToArray(a)),
                   env);
 
             env = addBuiltin("internal-time-units-per-second", 1e9,
@@ -2953,7 +2951,7 @@ public class LambdaJ {
                         interpretStream(interpreter, r::read, printResult, history);
                     } catch (IOException e) {
                         System.err.println();
-                        System.err.println(e.toString());
+                        System.err.println(e);
                         System.exit(1);
                     }
                 }
@@ -2998,18 +2996,17 @@ public class LambdaJ {
     }
 
     private static BufferedReader newBufferedReader(Path p) throws IOException {
-        if (true) {
-            return Files.newBufferedReader(p);
-        }
-        else {
-            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPLACE)
-                    .onUnmappableCharacter(CodingErrorAction.REPLACE)
-                    //.replaceWith("?")
-                    ;
-            Reader reader = new InputStreamReader(Files.newInputStream(p), decoder);
-            return new BufferedReader(reader);
-        }
+        return Files.newBufferedReader(p);
+
+        /*
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE)
+                //.replaceWith("?")
+                ;
+        Reader reader = new InputStreamReader(Files.newInputStream(p), decoder);
+        return new BufferedReader(reader);
+        */
     }
 
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
@@ -3030,7 +3027,7 @@ public class LambdaJ {
                 }
             } catch (IOException e) {
                 System.err.println();
-                System.err.println(e.toString());
+                System.err.println(e);
                 System.exit(1);
             }
         }
@@ -3077,7 +3074,7 @@ public class LambdaJ {
             }
         } catch (LambdaJError e) {
             System.err.println();
-            System.err.println(e.toString());
+            System.err.println(e);
             System.exit(1);
         }
     }
@@ -3158,11 +3155,11 @@ public class LambdaJ {
             } catch (LambdaJError e) {
                 if (istty) {
                     System.out.println();
-                    System.out.println(e.toString());
+                    System.out.println(e);
                     System.out.println();
                 } else {
                     System.err.println();
-                    System.err.println(e.toString());
+                    System.err.println(e);
                     System.exit(1);
                 }
             }
@@ -3182,7 +3179,7 @@ public class LambdaJ {
             Files.write(p, history.stream()
                     .map(LambdaJ::printSEx)
                     .collect(Collectors.toList()));
-            System.out.println("wrote history to file '" + p.toString() + '\'');
+            System.out.println("wrote history to file '" + p + '\'');
         }
         catch (Exception e) {
             System.out.println("history NOT written - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -3252,7 +3249,7 @@ public class LambdaJ {
              final WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
             System.out.println("compiling...");
             c.formsToJavaSource(writer, clsName, history);
-            System.out.println("compiled to Java file '" + p.toString() + '\'');
+            System.out.println("compiled to Java file '" + p + '\'');
             return true;
         }
         catch (LambdaJError e) {
@@ -3377,7 +3374,7 @@ public class LambdaJ {
     private static boolean argError(String[] args) {
         boolean err = false;
         for (String arg: args) {
-            if (arg != null && arg.equals("--")) return err;
+            if ("--".equals(arg)) return err;
             if (arg != null && arg.startsWith("-")) {
                 System.err.println("LambdaJ: unknown commandline argument " + arg);
                 System.err.println("use '--help' to show available commandline arguments");
@@ -3866,19 +3863,19 @@ public class LambdaJ {
 
         private Object numbereq(Object lhs, Object rhs) {
             numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) == 0 ? _t : null;
+            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs == (Long) rhs ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
         }
 
         private Object lt(Object lhs, Object rhs) {
             numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <  0 ? _t : null;
+            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs < (Long) rhs ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
         }
 
         private Object le(Object lhs, Object rhs) {
             numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) <= 0 ? _t : null;
+            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs <= (Long) rhs ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
         }
 
@@ -4093,16 +4090,15 @@ public class LambdaJ {
 
         /// Wrappers to compile Murmel to Java source
 
-        public Writer formsToJavaSource(Writer ret, String unitName, Iterable<Object> forms) {
+        public void formsToJavaSource(Writer ret, String unitName, Iterable<Object> forms) {
             Iterator<Object> i = forms.iterator();
             ObjectReader r = () -> i.hasNext() ? i.next() : null;
             formsToJavaSource(ret, unitName, r);
-            return ret;
         }
 
         /** Compile the Murmel compilation unit to Java source for a standalone application class {@code unitName}
          *  with a "public static void main()" */
-        public Writer formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
+        public void formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             ConsCell predefinedEnv = null;
             for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
             for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
@@ -4187,7 +4183,6 @@ public class LambdaJ {
             ret.append("        return result0;\n    }\n"
                      + "}\n");
             ret.flush();
-            return ret;
         }
 
 
@@ -4239,7 +4234,7 @@ public class LambdaJ {
             final ConsCell symentry = assoc(form, env);
             if (symentry == null) {
                 if (passTwo) throw new LambdaJError(true, "undefined symbol %s", form.toString());
-                System.err.println("implicit declaration of " + form.toString());
+                System.err.println("implicit declaration of " + form);
                 implicitDecl.add(form.toString());
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
@@ -4929,9 +4924,8 @@ class JavaCompilerHelper {
         final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
         if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. "
                 + "No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
-        final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
-        final List<String> options = Arrays.asList("-g", "-source", "1.8", "-target", "1.8");
-        try {
+        try (StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null)) {
+            final List<String> options = Arrays.asList("-g", "-source", "1.8", "-target", "1.8");
             fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));
             //                                     out       diag  opt      classes
             final CompilationTask c = comp.getTask(null, fm, null, options, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
@@ -4939,9 +4933,6 @@ class JavaCompilerHelper {
                 return Class.forName(className, true, murmelClassLoader);
             }
             throw new LambdaJ.LambdaJError(true, "compilation of class %s failed", className);
-        }
-        finally {
-            fm.close();
         }
     }
 }
@@ -5019,6 +5010,7 @@ class EolUtil {
         StringBuilder stringBuilder = null;
         int index = 0;
         int len = inputValue.length();
+        /*
         while (index < len) {
             char c = inputValue.charAt(index);
             if (c == '\r') {
@@ -5027,20 +5019,52 @@ class EolUtil {
                     // build up the string builder so it contains all the prior characters
                     stringBuilder.append(inputValue, 0, index);
                 }
-                if ((index + 1 < len) &&
-                    inputValue.charAt(index + 1) == '\n') {
+                if ((index + 1 < len) && inputValue.charAt(index + 1) == '\n') {
                     // this means we encountered a \r\n  ... move index forward one more character
                     index++;
                 }
                 stringBuilder.append('\n');
             } else {
-                if (stringBuilder != null){
+                if (stringBuilder != null) {
                     stringBuilder.append(c);
                 }
             }
             index++;
         }
-        return stringBuilder == null ? inputValue : stringBuilder.toString();
+        */
+        while (index < len) {
+            if (inputValue.charAt(index) == '\r') {
+                stringBuilder = new StringBuilder();
+                break;
+            }
+            index++;
+        }
+        if (stringBuilder == null) return inputValue;
+
+        // we get here if we just read a '\r'
+        // build up the string builder so it contains all the prior characters
+        stringBuilder.append(inputValue, 0, index);
+        if ((index + 1 < len) && inputValue.charAt(index + 1) == '\n') {
+            // this means we encountered a \r\n  ... move index forward one more character
+            index++;
+        }
+        stringBuilder.append('\n');
+        index++;
+        while (index < len) {
+            final char c = inputValue.charAt(index);
+            if (c == '\r') {
+                if ((index + 1 < len) && inputValue.charAt(index + 1) == '\n') {
+                    // this means we encountered a \r\n  ... move index forward one more character
+                    index++;
+                }
+                stringBuilder.append('\n');
+            } else {
+                stringBuilder.append(c);
+            }
+            index++;
+        }
+
+        return stringBuilder.toString();
     }
 }
 
@@ -5402,9 +5426,7 @@ class TurtleFrame {
         final double xfac = (w-2*padding) / (xmax - xmin);
         final double yfac = (h-2*padding) / (ymax - ymin);
 
-        double ret = xfac < yfac ? xfac : yfac;
-        //System.out.printf("frame w=%d, lines w=%g, xfac=%g, frame h=%d, lines h=%g, yfac=%g, fac=%g\n", w, (xmax - xmin), xfac, h, (ymax - ymin), yfac, ret);
-        return ret;
+        return xfac < yfac ? xfac : yfac;
     }
 
     private static int trX(double fac, double xoff, double x) {
@@ -5419,9 +5441,7 @@ class TurtleFrame {
         final double xfac = ((double)w-2*padding) / bitmap.getWidth();
         final double yfac = ((double)h-2*padding) / bitmap.getHeight();
 
-        double ret = xfac < yfac ? xfac : yfac;
-        //System.out.printf("frame w=%d, bm w=%d, xfac=%g, frame h=%d, bm h=%d, yfac=%g, fac=%g\n", w, bitmap.getWidth(), xfac, h, bitmap.getHeight(), yfac, ret);
-        return ret;
+        return xfac < yfac ? xfac : yfac;
     }
 
 
@@ -5449,7 +5469,6 @@ class TurtleFrame {
         private static final long serialVersionUID = 1L;
 
         LineComponent(int width, int height) {
-            super();
             setPreferredSize(new Dimension(width, height));
         }
 
