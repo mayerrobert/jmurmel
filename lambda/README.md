@@ -4,9 +4,10 @@
 > *Elegant weapons*  
 > *for a more... civilized age.*
 
-**JMurmel is a lightweight Lisp-1-ish-with-a-side-of-Scheme interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
+**JMurmel is a lightweight Lisp-1-ish (mostly based on a subset of Common Lisp with a side of Scheme)
+interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
 
-Currently weighing in at ~115kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
+Currently weighing in at ~130kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -304,4 +305,4 @@ with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.
 And, of course:
 [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
 
-$Id: README.md,v 1.60 2021/02/05 21:13:29 Robert Exp $
+$Id: README.md,v 1.61 2021/02/17 20:54:38 Robert Exp $
