@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.404 2021/04/03 18:08:54 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.405 2021/04/08 18:17:20 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -291,8 +291,6 @@ public class LambdaJ {
 
         @Override public int hashCode() { return name.hashCode(); }
         @Override public boolean equals(Object o) { return o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
-
-        public boolean equalsIgnoreCase(LambdaJSymbol other) { return name.equalsIgnoreCase(other.name); }
     }
 
 
@@ -445,7 +443,7 @@ public class LambdaJ {
         private boolean tokEscape;
         private int backquote;
         private int look;
-        private char[] token = new char[TOKEN_MAX];
+        private final char[] token = new char[TOKEN_MAX];
         private Object tok;
 
         /** Create an S-expression parser (==reader) with all features, no tracing.
@@ -661,7 +659,7 @@ public class LambdaJ {
         public LambdaJSymbol intern(LambdaJSymbol sym) {
             if (symbols != null)
                 for (Object symbol: symbols) {
-                    if (((LambdaJSymbol) symbol).equalsIgnoreCase(sym)) {
+                    if (symbol.toString().equalsIgnoreCase(sym.toString())) {
                         return (LambdaJSymbol)symbol;
                     }
                 }
@@ -776,10 +774,7 @@ public class LambdaJ {
         }
 
         private Object readList(int listStartLine, int listStartChar) {
-            return readList(listStartLine, listStartChar, null, null);
-        }
-
-        private Object readList(int listStartLine, int listStartChar, ListConsCell first, ListConsCell appendTo) {
+            ListConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();
                 int carStartLine = lineNo, carStartChar = charNo;
@@ -844,6 +839,7 @@ public class LambdaJ {
 
 
 
+        /*
         Object expand_backquote(Object form) {
             if (atom(form))
                 return form;
@@ -863,6 +859,7 @@ public class LambdaJ {
 
             return mapcar(this::expand_backquote, formCons);
         }
+        */
 
 
 
@@ -2890,7 +2887,7 @@ public class LambdaJ {
             if (trace.ge(TraceLevel.TRC_ENVSTATS)) tracer.println("*** max env length:    " + maxEnvLen + " ***");
 
             long millis = (long)(nanos * 0.000001D);
-            String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
+            String ms = Long.toString(millis) + '.' + ((long) (nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
             tracer.println("*** elapsed wall time: " + ms + "ms ***");
             tracer.println("");
 
@@ -2903,7 +2900,7 @@ public class LambdaJ {
         if (trace.ge(TraceLevel.TRC_STATS)) {
             tracer.println("");
             long millis = (long)(nanos * 0.000001D);
-            String ms = Long.toString(millis) + '.' + Long.toString((long)(nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
+            String ms = Long.toString(millis) + '.' + ((long) (nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
             tracer.println("*** elapsed wall time: " + ms + "ms ***");
             tracer.println("");
         }
@@ -3863,7 +3860,7 @@ public class LambdaJ {
 
         private Object numbereq(Object lhs, Object rhs) {
             numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs == (Long) rhs ? _t : null;
+            if (lhs instanceof Long && rhs instanceof Long)  return lhs == rhs ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
         }
 
@@ -3881,13 +3878,13 @@ public class LambdaJ {
 
         private Object ge(Object lhs, Object rhs) {
             numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >= 0 ? _t : null;
+            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs >= (Long) rhs ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
         }
 
         private Object gt(Object lhs, Object rhs) {
             numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return Long.compare((Long)lhs, (Long)rhs) >  0 ? _t : null;
+            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs > (Long) rhs ? _t : null;
             return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
         }
 
@@ -4509,10 +4506,9 @@ public class LambdaJ {
         }
 
         /** write atoms that are not symbols */
-        private static WrappingWriter atomToJava(WrappingWriter sb, Object form) {
+        private static void atomToJava(WrappingWriter sb, Object form) {
             if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else sb.append(printSEx(form));
-            return sb;
         }
 
         /** args = ((sym...) form...) */
