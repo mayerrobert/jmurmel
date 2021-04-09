@@ -275,7 +275,7 @@ If you want to experiment with a bare-bones-Lisp use `--help` for details.
 JMurmel comes with:
 
 * a parser that reads S-expressions composed of lists, symbols, Doubles, Longs and Strings.
-* Math support for Doubles
+* Math support for Longs and Doubles
 * (Very) simple I/O
 * Some support for strings
 
@@ -297,12 +297,4 @@ Additional datatypes can be supported in your custom Parser, in your custom prim
 JMurmel is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
 without any need for change.
 
-## References
-
-(Very loosely) based on [micro-lisp](https://github.com/carld/micro-lisp)
-with additional inspiration from [Implementing Lisp (wiki.c2.com)](https://wiki.c2.com/?ImplementingLisp).
-
-And, of course:
-[Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](http://www-formal.stanford.edu/jmc/recursive.pdf), John McCarthy's famous as well as brilliant paper.
-
-$Id: README.md,v 1.61 2021/02/17 20:54:38 Robert Exp $
+$Id: README.md,v 1.62 2021/04/08 18:20:16 Robert Exp $
