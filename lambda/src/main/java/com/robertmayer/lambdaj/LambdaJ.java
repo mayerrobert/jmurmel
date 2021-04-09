@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.405 2021/04/08 18:17:20 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.406 2021/04/09 07:19:39 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -290,7 +290,7 @@ public class LambdaJ {
         @Override public String toString() { return name; }
 
         @Override public int hashCode() { return name.hashCode(); }
-        @Override public boolean equals(Object o) { return o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
+        @Override public boolean equals(Object o) { return o == this || o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
     }
 
 
@@ -657,12 +657,18 @@ public class LambdaJ {
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
         public LambdaJSymbol intern(LambdaJSymbol sym) {
+            /*
             if (symbols != null)
-                for (Object symbol: symbols) {
-                    if (symbol.toString().equalsIgnoreCase(sym.toString())) {
-                        return (LambdaJSymbol)symbol;
-                    }
-                }
+                for (Object symbol: symbols)
+                    if (symbol.toString().equalsIgnoreCase(sym.toString()))
+                        return (LambdaJSymbol) symbol;
+            */
+            for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
+                final LambdaJSymbol _s = (LambdaJSymbol) car(s);
+                if (_s.name.equalsIgnoreCase(sym.name))
+                    return _s;
+            }
+
             symbols = cons(0, 0, sym, symbols);
             return sym;
         }
@@ -1169,7 +1175,6 @@ public class LambdaJ {
                         return result;
                     }
 
-                    // todo reserved words?
                     if (operator == sDefmacro) {
                         nArgs("defmacro", arguments, 3);
                         notReserved("defmacro", car(arguments));
