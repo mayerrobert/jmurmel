@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>com.robertmayer.platform</groupId>
-            <artifactId>lambdaj</artifactId>
+            <artifactId>jmurmel</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>

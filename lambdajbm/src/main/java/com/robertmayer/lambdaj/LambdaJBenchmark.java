@@ -30,8 +30,8 @@ import org.openjdk.jmh.infra.Blackhole;
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Warmup(iterations = LambdaJBenchmark.WARMUP, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = LambdaJBenchmark.ITERATIONS, time = 1, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = LambdaJBenchmark.WARMUP, time = 1)
+@Measurement(iterations = LambdaJBenchmark.ITERATIONS, time = 1)
 @Fork(LambdaJBenchmark.FORK)
 @State(value = Scope.Thread)
 public class LambdaJBenchmark {
@@ -44,7 +44,7 @@ public class LambdaJBenchmark {
     public static final String LAMBDA_AND_ADD_DOUBLE = "((lambda (x y) (+ x y)) 2 3); lambda and add double";
     public static final String TAILREC =
             "(labels ((print-last (list)\r\n" +
-            "                     (if (null? (cdr list))\r\n" +
+            "                     (if (null (cdr list))\r\n" +
             "                         (car list)\r\n" +
             "                         (print-last (cdr list)))))\r\n" +
             "        (print-last (quote (0. 1. 2. 3. 4. 5. 6. 7. 8. 9.))))";
@@ -52,7 +52,7 @@ public class LambdaJBenchmark {
             "(labels ((factTR (n a)\r\n" +
             "                 (cond ((= n 0) a)\r\n" +
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
-            "        (string-format-locale \"en-US\" \"Factorial of 50 is %g\" (factTR 50. 1.)))";
+            "        (format-locale nil \"en-US\" \"Factorial of 50 is %g\" (factTR 50. 1.)))";
 
     public static final String[] PROGRAMS = {
             EMPTY_PROGRAM,
@@ -88,15 +88,15 @@ public class LambdaJBenchmark {
 
     @Benchmark
     public Object eval() {
-        return interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; });
+        return interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> {});
     }
 
     @Benchmark
     public void fiveTimesEval(Blackhole bh) {
-        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
-        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
-        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
-        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
-        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
+        bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
     }
 }

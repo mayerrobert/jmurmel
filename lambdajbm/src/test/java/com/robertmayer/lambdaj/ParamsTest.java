@@ -29,8 +29,8 @@ public class ParamsTest {
         }
     }
 
-    private void run(int prog, LambdaJ interpreter) {
-        Object result = interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { return; });
+    private static void run(int prog, LambdaJ interpreter) {
+        Object result = interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { });
         if (result == null) result = "nil";
         assertEquals("prog " + prog, RESULTS[prog], result.toString());
     }
