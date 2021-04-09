@@ -40,6 +40,7 @@ die ByteArrayReader aus den tests wegputzen
 -> das baut anscheinend ein ca. 30MB grosses JRE mit den Java Modulen, dies fuer JMurmel braucht
 -> jdk.localedata noch dazu?
 
+obiges hab ich experimentell ermittelt, jdeps sollte exakte aussagen treffen;
 ...\lambda>jdeps --print-module-deps target\jmurmel-1.0-SNAPSHOT.jar
 java.base,java.compiler,java.desktop,java.management
 

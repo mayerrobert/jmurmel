@@ -612,13 +612,10 @@ nil
 ; - globals should be special (dynamic)
 ; - support for packages should be added
 ;
-; Compiler + interpreter issues:
-; - internal symbol handling needs refactoring, e.g. (gensym) can't be trusted
-;   workaround: avoid using symbols whose name starts with "gensym"
-;
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
+; - define-ing an already define-d symbol is not supported
 ; - gensym only works inside macros
 ; - setq, rplaca, rplacd are not supported
 ;
@@ -635,4 +632,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.77 2021/03/21 11:26:29 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.78 2021/03/23 15:50:56 Robert Exp $
