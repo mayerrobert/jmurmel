@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.408 2021/04/09 21:25:39 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.409 2021/04/11 08:29:51 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -3364,7 +3364,10 @@ public class LambdaJ {
             final String arg = args[i];
             if ("--".equals(arg)) return null;
             if (flag.equals(arg)) {
-                // todo checken obs einen value gibt
+                if (args.length < i+2) {
+                    System.err.println("LambdaJ: commandline argument " + flag + " requires a value");
+                    return null;
+                }
                 args[i] = null; // consume the arg
                 final String ret = args[i+1];
                 args[i+1] = null;
@@ -3379,7 +3382,7 @@ public class LambdaJ {
         for (String arg: args) {
             if ("--".equals(arg)) return err;
             if (arg != null && arg.startsWith("-")) {
-                System.err.println("LambdaJ: unknown commandline argument " + arg);
+                System.err.println("LambdaJ: unknown commandline argument " + arg + " or missing value");
                 System.err.println("use '--help' to show available commandline arguments");
                 err = true;
             }
