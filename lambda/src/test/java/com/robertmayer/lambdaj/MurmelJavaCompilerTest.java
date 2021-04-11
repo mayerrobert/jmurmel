@@ -90,11 +90,10 @@ public class MurmelJavaCompilerTest {
         assertEquals(1L, program.body());
     }
 
-    // function uses a variable that is not defined todo erzeugt Java mit fehlender variable
-    //@Test
+    // function uses a variable that is not defined
+    @Test
     public void testUndefinedVariable() throws Exception {
-        MurmelProgram program = compile("(defun f () x) (f)");
-        assertEquals(1L, program.body());
+        compileError("(defun f () x) (f)", "undefined symbols: [x]");
     }
 
     // function uses a function that is defined later
@@ -104,11 +103,10 @@ public class MurmelJavaCompilerTest {
         assertEquals(1L, program.body());
     }
 
-    // function uses a function that is not defined todo erzeugt Java mit fehlender variable
-    //@Test
+    // function uses a function that is not defined
+    @Test
     public void testUndefinedFunction() throws Exception {
-        MurmelProgram program = compile("(defun f () (x)) (f)");
-        assertEquals(1L, program.body());
+        compileError("(defun f () (x)) (f)", "undefined symbols: [x]");
     }
 
 
