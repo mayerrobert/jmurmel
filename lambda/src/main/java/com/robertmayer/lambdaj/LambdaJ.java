@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.407 2021/04/09 16:59:16 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.408 2021/04/09 21:25:39 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -243,9 +243,8 @@ public class LambdaJ {
                     else cursor = list.cdr();
                     return list.car();
                 }
-                final Object ret = _cursor;  // last element of dotted list
                 cursor = null;
-                return ret;
+                return _cursor;  // last element of dotted list
             }
         }
 
@@ -652,7 +651,7 @@ public class LambdaJ {
 
 
         /// A symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
-        private ConsCell symbols = null;
+        private ConsCell symbols;
 
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
@@ -1537,7 +1536,7 @@ public class LambdaJ {
 
 
     /// ### debug support - trace and untrace
-    private Map<Object, LambdaJSymbol> traced = null;
+    private Map<Object, LambdaJSymbol> traced;
 
     private Object trace(ConsCell symbols) {
         if (symbols == null) return traced == null ? null : new ArraySlice(traced.values().toArray(), 0);
@@ -1952,27 +1951,29 @@ public class LambdaJ {
                 sb.print(((ArraySlice)obj).printSEx(escapeAtoms)); return;
             } else if (listp(obj)) {
                 if (headOfList) sb.print("(");
-                if (car(obj) == list) {
+                final Object first = car(obj);
+                if (first == list) {
                     sb.print(headOfList ? "#<this cons>" : "#<this list>");
                 } else {
-                    _printSEx(sb, car(obj), car(obj), true, escapeAtoms);
+                    _printSEx(sb, first, first, true, escapeAtoms);
                 }
-                if (cdr(obj) != null) {
-                    if (listp(cdr(obj))) {
+                final Object rest = cdr(obj);
+                if (rest != null) {
+                    if (listp(rest)) {
                         sb.print(" ");
-                        if (list == cdr(obj)) {
+                        if (list == rest) {
                             sb.print("#<circular list>)"); return;
                         } else {
-                            obj = cdr(obj); headOfList = false; continue;
+                            obj = rest; headOfList = false; continue;
                         }
                     } else if (headOfList) {
                         sb.print(" . ");
-                        _printSEx(sb, list, cdr(obj), false, escapeAtoms);
+                        _printSEx(sb, list, rest, false, escapeAtoms);
                         sb.print(")");
                         return;
                     } else {
                         sb.print(" . ");
-                        _printSEx(sb, list, cdr(obj), false, escapeAtoms); // must be an atom
+                        _printSEx(sb, list, rest, false, escapeAtoms); // must be an atom
                         sb.print(")");
                         return;
                     }
@@ -4000,7 +4001,7 @@ public class LambdaJ {
 
 
 
-        private static final String[] reservedWords = new String[] {
+        private static final String[] reservedWords = {
                 "nil", "t",
                 "lambda", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec",
                 "apply", "progn",
@@ -4037,11 +4038,11 @@ public class LambdaJ {
         /// * format, format-locale
         ///
         private static final String[] globalvars = { "nil", "t", "pi" };
-        private static final String[][] aliasedGlobals = new String[][] {
+        private static final String[][] aliasedGlobals = {
             { "internal-time-units-per-second", "itups" },
             { "*command-line-argument-list*", "commandlineArgumentList" },
         };
-        private static final String[] primitives = new String[] {
+        private static final String[] primitives = {
                 "car", "cdr", "cons",
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
@@ -4049,7 +4050,7 @@ public class LambdaJ {
                 "round", "floor", "ceiling", "truncate", "sqrt", "log", "log10", "exp", "expt", "mod", "rem",
                 "trace", "untrace",
         };
-        private static final String[][] aliasedPrimitives = new String[][] {
+        private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
             {"format", "format"}, {"format-locale", "formatLocale" },
