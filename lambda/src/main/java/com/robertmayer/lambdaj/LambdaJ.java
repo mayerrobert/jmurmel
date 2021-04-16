@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.409 2021/04/11 08:29:51 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.410 2021/04/11 08:56:58 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -4142,15 +4142,15 @@ public class LambdaJ {
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
-                    if (consp(form) && isSymbol(car(form), "define")) {
+                    if (consp(form) && car(form) == interpreter().sDefine) {
                         globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
                     }
-                    else if (consp(form) && isSymbol(car(form), "defun")) {
+                    else if (consp(form) && car(form) == interpreter().sDefun) {
                         globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
                     }
                     bodyForms.add(form);
 
-                    if (consp(form) && (isSymbol(car(form), "define") || isSymbol(car(form), "defun")))
+                    if (consp(form) && (car(form) == interpreter().sDefine || car(form) == interpreter().sDefun))
                         globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
                 }
                 catch (LambdaJError e) {
@@ -4249,11 +4249,6 @@ public class LambdaJ {
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
             else javasym = (String)cdr(symentry);
             return javasym;
-        }
-
-        /** return true if {@code form} matches the symbol {@code sym} */
-        private static boolean isSymbol(Object form, String sym) {
-            return form.toString().equalsIgnoreCase(sym);
         }
 
         private void notDefined(String func, Object sym, ConsCell env) {
@@ -4384,10 +4379,10 @@ public class LambdaJ {
                     /// * special forms:
 
                     ///     - quote
-                    if (isSymbol(op, "quote")) { quotedFormToJava(sb, car(args)); return; }
+                    if (interpreter().sQuote == op) { quotedFormToJava(sb, car(args)); return; }
 
                     ///     - if
-                    if (isSymbol(op, "if"))  {
+                    if (interpreter().sIf == op) {
                         formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(" != null\n        ? "); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
                         if (caddr(args) != null) { sb.append("\n        : "); formToJava(sb, caddr(args), env, topEnv, rsfx, isLast); }
                         else sb.append("\n        : null");
@@ -4395,7 +4390,7 @@ public class LambdaJ {
                     }
 
                     ///     - cond
-                    if (isSymbol(op, "cond"))  {
+                    if (interpreter().sCond == op) {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
                             sb.append("        : ("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(" != null)\n        ? ");
@@ -4406,12 +4401,12 @@ public class LambdaJ {
                     }
 
                     ///     - lambda
-                    if (isSymbol(op, "lambda")) {
+                    if (interpreter().sLambda == op) {
                         lambdaToJava(sb, args, env, topEnv, rsfx+1);
                         return;
                     }
 
-                    if (isSymbol(op, "define")) {
+                    if (interpreter().sDefine == op) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
@@ -4420,7 +4415,7 @@ public class LambdaJ {
                         sb.append("define_").append(javasym).append("()");
                         return;
                     }
-                    if (isSymbol(op, "defun")) {
+                    if (interpreter().sDefun == op) {
                         if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
@@ -4429,7 +4424,7 @@ public class LambdaJ {
                         sb.append("defun_").append(javasym).append("()");
                         return;
                     }
-                    if (isSymbol(op, "defmacro")) {
+                    if (interpreter().sDefmacro == op) {
                         if (rsfx != 0) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
@@ -4439,7 +4434,7 @@ public class LambdaJ {
                     }
 
                     ///     - apply
-                    if (isSymbol(op, "apply")) {
+                    if (interpreter().sApply == op) {
                         sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
                         formToJava(sb, car(args), env, topEnv, rsfx, false);
                         sb.append("\n        , ");
@@ -4449,7 +4444,7 @@ public class LambdaJ {
                     }
 
                     ///     - progn
-                    if (isSymbol(op, "progn")) {
+                    if (interpreter().sProgn == op) {
                         if (args == null) sb.append("null");
                         else prognToJava(sb, (ConsCell)args, env, topEnv, rsfx+1, isLast);
                         return;
@@ -4457,28 +4452,28 @@ public class LambdaJ {
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                    if (isSymbol(op, "labels")) {
+                    if (interpreter().sLabels == op) {
                         labelsToJava(sb, args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
 
                     ///     - let: (let ((sym form)...) forms...) -> Object
                     ///     - named let: (let sym ((sym form)...) forms...) -> Object
-                    if (isSymbol(op, "let")) {
+                    if (interpreter().sLet == op) {
                         letToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                    if (isSymbol(op, "let*")) {
+                    if (interpreter().sLetStar == op) {
                         letStarToJava(sb, args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
 
 
                     ///     - letrec:  (letrec ((sym form)...) forms) -> Object
-                    if (isSymbol(op, "letrec")) {
+                    if (interpreter().sLetrec == op) {
                         letrecToJava(sb, args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
