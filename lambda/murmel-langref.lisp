@@ -610,6 +610,9 @@ nil
 ;
 ; Murmel language:
 ; - globals should be special (dynamic)
+; - needs some means of catching and processing runtime errors,
+;   e.g. unwind-potect and handler-case
+; - file i/o
 ; - support for packages should be added
 ;
 ; Compiler issues:
@@ -632,4 +635,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.78 2021/03/23 15:50:56 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.79 2021/04/09 07:19:13 Robert Exp $
