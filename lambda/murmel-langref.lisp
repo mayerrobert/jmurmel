@@ -206,7 +206,7 @@ nil
 
 ; Murmel treats the symbols NIL and T the same way
 ; as Mr. Moon specified them in a Memo (see "The Evolution
-; of Lisp pp 62):
+; of Lisp pp 62"):
 ;
 ; "NIL is a symbol, the empty list, and the distinguished
 ; "false" value. SYMBOLP, ATOM, and LISTP are true of it;
@@ -635,4 +635,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.79 2021/04/09 07:19:13 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.80 2021/04/16 16:20:14 Robert Exp $
