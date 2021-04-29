@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.410 2021/04/11 08:56:58 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.411 2021/04/16 17:41:22 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2210,7 +2210,7 @@ public class LambdaJ {
         return ((Number)a).intValue();
     }
 
-    /** Return {@code a} as a list, error if {@code a} is not a list or nil. */
+    /** Return {@code a} cast to a list, error if {@code a} is not a list or nil. */
     private static ConsCell asList(String func, Object a) {
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
@@ -3640,6 +3640,9 @@ public class LambdaJ {
         public final Object   _cdr     (Object... args) { oneArg("cdr",        args.length); return cdr(args[0]); }
         public final ConsCell _cons    (Object... args) { twoArg("cons",       args.length); return cons(args[0], args[1]); }
 
+        public final Object   _rplaca  (Object... args) { return cl_rplaca(arraySlice(args)); }
+        public final Object   _rplacd  (Object... args) { return cl_rplacd(arraySlice(args)); }
+
         public final Object _eval      (Object... args) { onetwoArg("eval",    args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public final Object _eq        (Object... args) { twoArg("eq",         args.length); return args[0] == args[1] ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",       args.length); return args[0] == null ? _t : null; }
@@ -4046,7 +4049,7 @@ public class LambdaJ {
             { "*command-line-argument-list*", "commandlineArgumentList" },
         };
         private static final String[] primitives = {
-                "car", "cdr", "cons",
+                "car", "cdr", "cons", "rplaca", "rplacd",
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list", "append",

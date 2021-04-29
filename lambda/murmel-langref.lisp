@@ -135,9 +135,9 @@ internal-time-units-per-second
 
 ;;; == Basic Special Forms ============
 
-;;; (quote symbol) -> symbol
-; quote returns an expression w/o evaluating it
-(quote a-symbol)
+;;; (quote form) -> form
+; quote returns a form w/o evaluating it
+(quote a-symbol) ; ==> a-symbol
 
 ;;; (lambda (params...) forms...) -> closure
 ; When a lambda is created by the special form "lambda"
@@ -151,6 +151,8 @@ internal-time-units-per-second
 ; packed into a list and bound to the symbol.
 ; If paramlist is a dotted list then remaining arguments
 ; will be bound to the last parameter.
+; The list containing optional arguments is immutable,
+; i.e. using rplaca and rplacd is undefined behaviour.
 (lambda popt (write popt)) ; no mandatory arguments
 (lambda (p1 p2 . prest) (write prest)) ; two mandatory arguments
 
@@ -620,7 +622,7 @@ nil
 ;   will throw a "not-yet-implemented" error.
 ; - define-ing an already define-d symbol is not supported
 ; - gensym only works inside macros
-; - setq, rplaca, rplacd are not supported
+; - setq is not supported
 ;
 ; The todo list for features is way too long.
 
@@ -635,4 +637,4 @@ nil
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
 
-;;; $Id: murmel-langref.lisp,v 1.80 2021/04/16 16:20:14 Robert Exp $
+;;; $Id: murmel-langref.lisp,v 1.81 2021/04/25 16:35:11 Robert Exp $
