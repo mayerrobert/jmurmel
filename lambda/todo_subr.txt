@@ -63,7 +63,7 @@ bringt aber nur was, wenns auch stringmanipulationsfunktionen gibt
 -> erster optionale parameter ist ein symbol fuer den Zeichensatz
 
 Stringfunktionen: format kann auch strings zusammensetzen
-strings sind eine LSIP sequence, fuer sequence gibts
+strings sind eine LISP sequence, fuer sequence gibts
 -> subseq sequence start &optional end => subsequence
 
 (concatenate 'string "all" " " "together" " " "now") =>  "all together now"
