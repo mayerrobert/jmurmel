@@ -128,7 +128,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.411 2021/04/16 17:41:22 Robert Exp $";
+    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.412 2021/04/29 05:43:51 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -4484,7 +4484,7 @@ public class LambdaJ {
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
                         final Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
-                        formToJava(sb, expansion, env, topEnv, rsfx, false); // todo isLast statt false?
+                        formToJava(sb, expansion, env, topEnv, rsfx, isLast);
                         return;
                     }
 
