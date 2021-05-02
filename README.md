@@ -75,7 +75,6 @@ Or run `java -jar jmurmel-1.0-SNAPSHOT.jar --help`.
 | [Examples](#examples)
 | [Features](#jmurmel-features)
 | [Customization](#customization)
-| [References](#references)
 | 
 
 ## Standalone use
