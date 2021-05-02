@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.robertmayer.parent</groupId>
+    <artifactId>definitions</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+	<properties>
+		<platform.version>1.0-SNAPSHOT</platform.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!--
+            Java source/target to use for compilation.
+          -->
+        <javac.target>1.7</javac.target>
+        
+        <surefire.version>2.18</surefire.version>
+
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.h2database</groupId>
+				<artifactId>h2</artifactId>
+				<version>1.4.200</version>
+				<scope>runtime</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>6.9.9</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>	
+	
+	<build>
+		<pluginManagement>
+			<plugins>
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>2.6.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.8.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.5</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.7</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.4</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.2.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                </plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>findbugs-maven-plugin</artifactId>
+					<version>3.0.4</version>
+					<configuration>
+						<failOnError>${maven.findbugs.failure.strict}</failOnError>
+						<effort>Max</effort>
+						<omitVisitors>FindReturnRef</omitVisitors>
+						<!-- findbugs nimmt beim check der Test-Klassen nicht den Test Classpath 
+							sondern den normalen, deswegen gibts beim Checken der Testklassen ClassNotFoundExceptions -->
+						<includeTests>false</includeTests>
+						<plugins>
+							<plugin>
+								<!-- findet unpässlichkeiten rund um die benutzung von Log4j https://github.com/KengoTODA/findbugs-slf4j -->
+								<groupId>jp.skypencil.findbugs.slf4j</groupId>
+								<artifactId>bug-pattern</artifactId>
+								<version>1.0.10</version>
+							</plugin>
+						</plugins>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.0</version>
+				<configuration>
+					<compilerVersion>${javac.target}</compilerVersion>
+					<source>${javac.target}</source>
+					<target>${javac.target}</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>	
+</project>
