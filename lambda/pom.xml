@@ -22,8 +22,6 @@
     </licenses>
 
     <properties>
-        <javac.target>1.8</javac.target>
-
         <!-- report maven-plugins -->
         <maven-reports-plugin.version>2.7</maven-reports-plugin.version>
         <maven-changelog-plugin.version>2.3</maven-changelog-plugin.version>

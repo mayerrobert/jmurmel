@@ -15,7 +15,7 @@
         <!--
             Java source/target to use for compilation.
           -->
-        <javac.target>1.7</javac.target>
+        <javac.target>1.8</javac.target>
         
         <surefire.version>2.18</surefire.version>
 
