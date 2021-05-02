@@ -21,14 +21,14 @@ public class TraceTest {
                           "nil", null);
 
         final String expectedTrace
-                        = "(1 enter f: 2.0)\r\n"
-                        + "  (2 enter f: 1.0)\r\n"
-                        + "    (3 enter f: 0.0)\r\n"
-                        + "    (3 exit  f: nil)\r\n"
-                        + "  (2 exit  f: nil)\r\n"
-                        + "(1 exit  f: nil)\r\n";
+                        = "(1 enter f: 2.0)\n"
+                        + "  (2 enter f: 1.0)\n"
+                        + "    (3 enter f: 0.0)\n"
+                        + "    (3 exit  f: nil)\n"
+                        + "  (2 exit  f: nil)\n"
+                        + "(1 exit  f: nil)\n";
 
-        assertEquals(expectedTrace, myOut.toString());
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
     }
 
     @Test
@@ -43,12 +43,12 @@ public class TraceTest {
                           "2.0", null);
 
         final String expectedTrace
-                = "(1 enter f2: 2.0)\r\n"
-                + "  (2 enter f1: 2.0)\r\n"
-                + "  (2 exit  f1: 2.0)\r\n"
-                + "(1 exit  f2: 2.0)\r\n";
+                = "(1 enter f2: 2.0)\n"
+                + "  (2 enter f1: 2.0)\n"
+                + "  (2 exit  f1: 2.0)\n"
+                + "(1 exit  f2: 2.0)\n";
 
-        assertEquals(expectedTrace, myOut.toString());
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
     }
 
     @Test
@@ -63,14 +63,14 @@ public class TraceTest {
                           "2.0", null);
 
         final String expectedTrace
-                = "(1 enter f3: 2.0)\r\n"
-                + "  (2 enter f2: 2.0)\r\n"
-                + "    (3 enter f1: 2.0)\r\n"
-                + "    (3 exit  f1: 2.0)\r\n"
-                + "  (2 exit  f2: 2.0)\r\n"
-                + "(1 exit  f3: 2.0)\r\n";
+                = "(1 enter f3: 2.0)\n"
+                + "  (2 enter f2: 2.0)\n"
+                + "    (3 enter f1: 2.0)\n"
+                + "    (3 exit  f1: 2.0)\n"
+                + "  (2 exit  f2: 2.0)\n"
+                + "(1 exit  f3: 2.0)\n";
 
-        assertEquals(expectedTrace, myOut.toString());
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
     }
 
     @Test
@@ -85,15 +85,15 @@ public class TraceTest {
                           "2.0", null);
 
         final String expectedTrace
-                        = "(1 enter f3)\r\n"
-                        + "  (2 enter f1: 1.0)\r\n"
-                        + "  (2 exit  f1: 1.0)\r\n"
-                        + "  (2 enter f2: 2.0)\r\n"
-                        + "    (3 enter f1: 2.0)\r\n"
-                        + "    (3 exit  f1: 2.0)\r\n"
-                        + "  (2 exit  f2: 2.0)\r\n"
-                        + "(1 exit  f3: 2.0)\r\n";
+                        = "(1 enter f3)\n"
+                        + "  (2 enter f1: 1.0)\n"
+                        + "  (2 exit  f1: 1.0)\n"
+                        + "  (2 enter f2: 2.0)\n"
+                        + "    (3 enter f1: 2.0)\n"
+                        + "    (3 exit  f1: 2.0)\n"
+                        + "  (2 exit  f2: 2.0)\n"
+                        + "(1 exit  f3: 2.0)\n";
 
-        assertEquals(expectedTrace, myOut.toString());
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
     }
 }
