@@ -108,8 +108,7 @@ a\ symbol             ; a\ symbol
 
 ; backquote starts "fill-in templates":
 ; Backquote, comma and comma-at work similar to CL,
-; except: currently nested backquotes are not supported,
-; comma-dot is also not supported.
+; except: comma-dot is not supported.
 (define a 'a-val) (define c 'c-val) (define d '(d-val1 d-val2))
 `((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
 
