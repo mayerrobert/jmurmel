@@ -15,8 +15,11 @@
 ; CX=-0.76
 ; CY=0.025..0.08
 
-(define CX -0.4)
-(define CY  0.6)
+;(define CX -0.4)
+;(define CY  0.6)
+
+(define CX -0.758750)
+(define CY  0.0696875)
 
 
 ; https://rosettacode.org/wiki/Julia_set#Java
@@ -55,6 +58,8 @@
             i)
       i)))
 
+(open-frame)
+
 (let xloop ((x 0))
   (let yloop ((y 0))
     (let* ((zx (+ (/ (* 1.5 (- x (/ w 2)))
@@ -66,11 +71,5 @@
            (iter (calc zx zy)))
       (set-pixel x y (hsb-to-pixel (/ MAX_ITERATIONS iter) 1 (if (> iter 0) 1 0)))
       (if (< y (- h 1)) (yloop (+ y 1)))))
+  (flush-frame)
   (if (< x (- w 1)) (xloop (+ x 1))))
-
-(open-frame)
-
-;;; wait 3 seconds and then close the window
-;(sleep (* 3 internal-time-units-per-second))
-;(close-frame)
-;;; the prevoius 2 lines are commented out therefore the program will only end after the user closes the frame (or presses CTRL-C)
