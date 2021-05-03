@@ -9,7 +9,6 @@
 
 	<modules>
 		<module>parent/definitions</module>
-		<module>parent/jmh</module>
 
 		<module>lambda</module>
 		<module>lambdajbm</module>
