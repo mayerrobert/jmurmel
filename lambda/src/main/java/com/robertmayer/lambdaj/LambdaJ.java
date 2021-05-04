@@ -2533,7 +2533,7 @@ public class LambdaJ {
 
             env = addBuiltin("make-bitmap",   (Primitive) a -> { nArgs("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
                   addBuiltin("discard-bitmap",(Primitive) a -> { nArgs("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
-                  addBuiltin("set-pixel",     (Primitive) a -> { nArgs("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-rgb", cadr(a)), asInt("set-rgb", caddr(a)));  },
+                  addBuiltin("set-pixel",     (Primitive) a -> { nArgs("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { nArgs("rgb-to-pixel",   a, 3, 3); return (asInt("rgb-to-pixel", car(a)) << 16)
                                                                                                         | (asInt("rgb-to-pixel", cadr(a)) << 8)
                                                                                                         | (asInt("rgb-to-pixel", caddr(a)));  },
@@ -5285,6 +5285,7 @@ class TurtleFrame {
         return this;
     }
 
+    // todo bitmap auch clearen?
     TurtleFrame clear() {
         reset();
         synchronized (minMaxLock) { xmin = xmax = ymin = ymax = 0.0; }

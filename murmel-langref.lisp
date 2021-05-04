@@ -125,7 +125,7 @@ nil
 t
 
 ; "dynamic" is a self-evaluating symbol that may be used
-; in the lambda form, see below
+; in the lambda form, see below, note: this is interpreter only!
 dynamic
 
 ; Resolution of the time related functions, see below.
@@ -255,12 +255,11 @@ nil
 ;;; (define symbol object) -> symbol
 ; define binds symbols in the global environment with
 ; memory locations that hold values.
-; Murmel's define is somewhat similar to Common Lisp's defvar
+; Murmel's define is somewhat similar to Common Lisp's defparameter
 ; except:
-; * CL's defvar creates special global variables while
+; * CL's defparameter creates special global variables while
 ;   Murmel's define creates global variables that can be
 ;   lexically hidden by e.g. a let-binding.
-; * Redefining already defined symbols is an error in Murmel.
 ; The first argument is not evaluated, the second is
 (define *global-var* 42)
 (define f1 (lambda (p1 p2) (+ p1 p2)))
@@ -286,13 +285,18 @@ nil
 (twice 3) ; ==> 6.0
 
 ;;; setq
-; Inserts symbols into the current environment or updates
-; the value if the symbols are already defined.
-(setq a 1 b 2 c (+ a b))
+; Updates the value of the given global or local symbols which must be already defined.
+(define a nil)
+(let ((b nil) (c nil))
+  (setq a 1 b 2 c (+ a b)))
 
 ;;; rplaca, rplacd
+(define l '(1 2))
+(rplaca l 11) ; ==> (11 2)
+(rplacd l 22) ; ==> (11 . 22)
 
 ;;; (if condform form optionalform) -> object
+(if nil 'YASSS! 'OHNOOO!!!)
 
 ;;; (progn expr...) -> object
 (if t (progn (write 'abc) (write 'def)))
@@ -420,8 +424,8 @@ nil
 (write (read)) "Hello!"
 
 ; writeln and lnwrite accept one optional argument
-; writeln will write the argument if given and non-nil followed by a newline
-; lnwrite will write a newline followed by the argument if given and non-nil
+; writeln will write the argument if given and non-nil, followed by a newline
+; lnwrite will write a newline followed by the argument if given and non-nil,
 ; followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
 (writeln "Hello, ")
 (writeln)
@@ -474,8 +478,9 @@ nil
 
 ;;; A frame is a toplevel GUI window with a title. You can write text on a frame,
 ;;; and/ or draw lines with Turtle graphics or moveto/lineto functions.
+;;; Also you can stick a bitmap into a frame and do pixel-graphics.
 ;;;
-;;; 0/0 is left bottom, any drawing will be resized/ shifted so that it fills
+;;; 0/0 is towards left bottom, any drawing will be resized/ shifted so that it fills
 ;;; the frame.
 ;;;
 ;;; A frame has state: open/closed, current x/y position, current linecolor,
@@ -505,12 +510,20 @@ nil
 
 ; make-frame
 ; Creates a new frame, sets current frame.
-; If width and height are omitted or nil then half of the screen width/ height will be used.
+; If width and height are omitted or nil then half of the physical screen width/ height will be used.
 ; If padding is omitted or nil then 40 will be used.
-(make-frame window-title optwidthpixels optheightpixels optpaddingpixels) ; ==> frame
+; The newly created frame will not yet be visible (see open-frame below).
+(let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
+(make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
 
-; open-frame, close-frame, reset-frame, clear-frame, repaint-frame, flush-frame
-; These functions all take an optional frame parameter. If omitted or nil
+; open-frame ... make frame visible
+; close-frame ... hide frame
+; reset-frame ... reset pen to "down", turtle position and angle, color and bgcolor
+; clear-frame ... reset frame and discard frame contents
+; repaint-frame ... force full repaint
+; flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible
+;
+; The above functions all take an optional frame parameter. If omitted or nil
 ; then the current frame will be used.
 
 ; (current-frame) -> frame
@@ -519,6 +532,9 @@ nil
 ; Set new current frame, returns previous current frame.
 
 ; pen-up, pen-down
+; Optional parameter frame
+
+; push-pos, pop-pos
 ; Optional parameter frame
 
 ; (color color optional-frame) -> frame
@@ -541,11 +557,14 @@ nil
 ; If pen is up then only the position is changed.
 
 ; move-to, line-to, move-rel, line-rel
+(define new-x 1) (define new-y 2) (define optional-frame nil)
 (line-rel new-x new-y optional-frame) ; ==> frame
 
-; make-bitmap, discard-bitmap
-; set-pixel
-; rgb-to-pixel, hsb-to-pixel
+; (make-bitmap w h optional-frame) ; -> frame; associates a bitmap with the current or given frame
+; (discard-bitmap optional-frame)
+; (rgb-to-pixel r g b) ; -> 24bit color value acceptable to set-pixel; r, g and b are 0..255
+; (hsb-to-pixel h s b) ; -> 24bit color value acceptable to set-pixel; h, s and b are 0..1.0
+; (set-pixel x y color-as-24-bit optional-frame) ; -> frame; set pixel at the given xy-position to the given color
 
 ;;; --- End of Murmel reference ---
 

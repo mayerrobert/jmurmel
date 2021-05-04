@@ -232,8 +232,6 @@ The environment contains the symbols `nil` and `t` and the functions
 * `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
 
 * `define` ... inserts a (symbol value) pair into the top level environment, returns `value`.
-  You can define a symbol only once,
-  subsequent redefinitions will fail with an error.
   No fancy features, just `(define <symbol> <form>)`, e.g.
     - `(define *answer* 42)`
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
