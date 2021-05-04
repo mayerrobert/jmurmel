@@ -37,6 +37,15 @@ For a copy, see https://opensource.org/licenses/MIT.
 
 ## Getting started
 
+**Quickstart for Java 15+ users**
+
+Instead of building the jarfile Java 15+ users can download https://github.com/robertmayer67/jmurmel/blob/master/lambda/src/main/java/com/robertmayer/lambdaj/LambdaJ.java
+and run
+
+    C:\> java Lambdaj.java
+
+for a first peek at JMurmel (compiling Murmel won't work, tough, only the interpreter works that way).
+
 *(This section replicates the contents of `GETTING STARTED.txt`.)*
 
 Make sure you have Java 8+ installed (Java 8 is minimum, Java 15 is preferred as it is considerably faster).
