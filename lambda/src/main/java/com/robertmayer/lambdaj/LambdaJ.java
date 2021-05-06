@@ -9,7 +9,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -2950,7 +2949,7 @@ public class LambdaJ {
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
                     final Path p = Paths.get(fileName);
-                    try (final Reader r = newBufferedReader(p)) {
+                    try (final Reader r = Files.newBufferedReader(p)) {
                         interpretStream(interpreter, r::read, printResult, history);
                     } catch (IOException e) {
                         System.err.println();
@@ -2996,57 +2995,6 @@ public class LambdaJ {
                 interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
             }
         }
-    }
-
-    private static BufferedReader newBufferedReader(Path p) throws IOException {
-        return Files.newBufferedReader(p);
-
-        /*
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-                .onMalformedInput(CodingErrorAction.REPLACE)
-                .onUnmappableCharacter(CodingErrorAction.REPLACE)
-                //.replaceWith("?")
-                ;
-        Reader reader = new InputStreamReader(Files.newInputStream(p), decoder);
-        return new BufferedReader(reader);
-        */
-    }
-
-    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
-    private static void compileFiles(final List<String> files, boolean toJar, String clsName, String outDir) {
-        SExpressionParser parser = null;
-        final List<Object> program = new ArrayList<>();
-        for (String fileName: files) {
-            if ("--".equals(fileName)) continue;
-            final Path p = Paths.get(fileName);
-            System.out.println("parsing " + fileName + "...");
-            try (final Reader reader = newBufferedReader(p)) {
-                if (parser == null) parser = new SExpressionParser(reader::read);
-                else parser.setInput(reader::read);
-                while (true) {
-                    final Object sexp = parser.readObj(true);
-                    if (sexp == null) break;
-                    program.add(sexp);
-                }
-            } catch (IOException e) {
-                System.err.println();
-                System.err.println(e);
-                System.exit(1);
-            }
-        }
-        final String outFile;
-        final boolean success;
-        if (toJar) {
-            outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
-            success = compileToJar(parser, program, clsName, outFile);
-        }
-        else {
-            success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir);
-            if (clsName == null) clsName = "MurmelProgram";
-            if (outDir == null) outDir = ".";
-            outFile = outDir + '/' + clsName + ".java";
-        }
-        if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
     }
 
     private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult, List<Object> history) {
@@ -3216,6 +3164,43 @@ public class LambdaJ {
             System.out.println("history NOT run as Java - error: ");
             e.printStackTrace(System.out);
         }
+    }
+
+    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
+    private static void compileFiles(final List<String> files, boolean toJar, String clsName, String outDir) {
+        SExpressionParser parser = null;
+        final List<Object> program = new ArrayList<>();
+        for (String fileName: files) {
+            if ("--".equals(fileName)) continue;
+            final Path p = Paths.get(fileName);
+            System.out.println("parsing " + fileName + "...");
+            try (final Reader reader = Files.newBufferedReader(p)) {
+                if (parser == null) parser = new SExpressionParser(reader::read);
+                else parser.setInput(reader::read);
+                while (true) {
+                    final Object sexp = parser.readObj(true);
+                    if (sexp == null) break;
+                    program.add(sexp);
+                }
+            } catch (IOException e) {
+                System.err.println();
+                System.err.println(e);
+                System.exit(1);
+            }
+        }
+        final String outFile;
+        final boolean success;
+        if (toJar) {
+            outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
+            success = compileToJar(parser, program, clsName, outFile);
+        }
+        else {
+            success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir);
+            if (clsName == null) clsName = "MurmelProgram";
+            if (outDir == null) outDir = ".";
+            outFile = outDir + '/' + clsName + ".java";
+        }
+        if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
     }
 
     /** compile history to Java source and print or write to a file.
