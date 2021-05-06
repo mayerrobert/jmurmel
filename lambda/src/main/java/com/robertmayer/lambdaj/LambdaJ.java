@@ -505,6 +505,7 @@ public class LambdaJ {
         }*/
 
         /** Translate the various line end sequences \r, \r\n and \n all to \n */
+        // todo ist die lineend behandlung erforderlich? vgl EolUtil,  AnyToUnixEol
         private void savePrevPos() { prevLineNo = lineNo; prevCharNo = charNo; }
         private int prev = -1;
         private int readchar() throws IOException {
@@ -655,12 +656,6 @@ public class LambdaJ {
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
         public LambdaJSymbol intern(LambdaJSymbol sym) {
-            /*
-            if (symbols != null)
-                for (Object symbol: symbols)
-                    if (symbol.toString().equalsIgnoreCase(sym.toString()))
-                        return (LambdaJSymbol) symbol;
-            */
             for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
                 final LambdaJSymbol _s = (LambdaJSymbol) car(s);
                 if (_s.name.equalsIgnoreCase(sym.name))
@@ -892,7 +887,7 @@ public class LambdaJ {
             if (atom(x))
                 return quote(x);
 
-            final ConsCell xCons = (ConsCell)x; // save a few casts
+            final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
 
             if (op == sUnquote)
@@ -929,7 +924,7 @@ public class LambdaJ {
             if (atom(x))
                 return quote(list(x, null));
 
-            final ConsCell xCons = (ConsCell)x; // save a few casts
+            final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
 
             if (op == sUnquote)
