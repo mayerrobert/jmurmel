@@ -11,7 +11,7 @@ import javax.script.ScriptEngineFactory;
 
 import com.robertmayer.lambdaj.LambdaJ;
 
-/** JSR-223 wraper for JMurmel */
+/** JSR-223 wrapper for JMurmel */
 public class JMurmelScriptEngineFactory implements ScriptEngineFactory {
     private final List<String> extensions = Collections.unmodifiableList(Arrays.asList(".lisp", ".lsp"));
     private final List<String> names      = Collections.unmodifiableList(Arrays.asList("JMurmel", "jmurmel"));
@@ -71,7 +71,6 @@ public class JMurmelScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getMethodCallSyntax(String obj, String m, String... args) {
-        // TODO Auto-generated method stub
         return null;
     }
 
@@ -82,7 +81,6 @@ public class JMurmelScriptEngineFactory implements ScriptEngineFactory {
 
     @Override
     public String getProgram(String... statements) {
-        // TODO Auto-generated method stub
         return null;
     }
 

@@ -38,12 +38,12 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
     @Override
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
         if (!isInit) {
+            murmel.init(() -> -1, s -> { });
             isInit = true;
-            murmel.init(() -> -1, s -> { return; });
         }
         final Reader stdIn = context.getReader();
         final Writer stdOut = context.getWriter();
-        Object ret = murmel.evalScript(reader, stdIn, stdOut);
+        final Object ret = murmel.evalScript(reader, stdIn, stdOut);
         try {
             stdOut.flush();
         } catch (IOException e) {
