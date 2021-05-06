@@ -1,3 +1,7 @@
+;;; Some CL functions that are not available in Murmel
+;;; Use like this:
+;;; jm 000_lib.lisp 3.01_tak.lisp
+
 (defun not (e)
   (null e))
 
