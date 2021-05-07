@@ -1896,7 +1896,7 @@ public class LambdaJ {
         }
         if (!listp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a List but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
-        ((ConsCell) maybeList).forEach(ret::add);
+        ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         return ret.toArray();
     }
 
@@ -3682,11 +3682,11 @@ public class LambdaJ {
                                                        if (args.length == 1) return 1.0 / dbl(args[0]);
                                                        double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
-        public final Object numbereq(Object... args) { twoArg("=", args.length); return numbereq(args[0], args[1]); }
-        public final Object lt      (Object... args) { twoArg("<", args.length); return lt(args[0], args[1]); }
-        public final Object le      (Object... args) { twoArg("<=", args.length); return le(args[0], args[1]); }
-        public final Object ge      (Object... args) { twoArg(">=", args.length); return ge(args[0], args[1]); }
-        public final Object gt      (Object... args) { twoArg(">", args.length); return gt(args[0], args[1]); }
+        public final Object numbereq(Object... args) { return compare("=", args, r -> r == 0); }
+        public final Object lt      (Object... args) { return compare("<", args, r -> r < 0); }
+        public final Object le      (Object... args) { return compare("<=", args, r -> r <= 0); }
+        public final Object ge      (Object... args) { return compare(">=", args, r -> r >= 0); }
+        public final Object gt      (Object... args) { return compare(">", args, r -> r > 0); }
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
@@ -3864,34 +3864,18 @@ public class LambdaJ {
             return ((Number)n).doubleValue();
         }
 
-        private Object numbereq(Object lhs, Object rhs) {
-            numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return lhs == rhs ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) == 0 ? _t : null;
-        }
-
-        private Object lt(Object lhs, Object rhs) {
-            numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs < (Long) rhs ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <  0 ? _t : null;
-        }
-
-        private Object le(Object lhs, Object rhs) {
-            numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs <= (Long) rhs ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) <= 0 ? _t : null;
-        }
-
-        private Object ge(Object lhs, Object rhs) {
-            numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs >= (Long) rhs ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >= 0 ? _t : null;
-        }
-
-        private Object gt(Object lhs, Object rhs) {
-            numbers(lhs, rhs);
-            if (lhs instanceof Long && rhs instanceof Long)  return (Long) lhs > (Long) rhs ? _t : null;
-            return            Double.compare(((Number)lhs).doubleValue(), ((Number)rhs).doubleValue()) >  0 ? _t : null;
+        private Object compare(String op, Object[] args, IntPredicate pred) {
+            oneOrMoreNumbers(op, args);
+            Number prev = (Number)args[0];
+            for (int i = 1; i < args.length; i++) {
+                final Number next = (Number)args[i];
+                final boolean success;
+                if (prev instanceof Long && next instanceof Long) success = pred.test(Long.compare(prev.longValue(),     next.longValue()));
+                else                                              success = pred.test(Double.compare(prev.doubleValue(), next.doubleValue()));
+                if (!success) return null;
+                prev = next;
+            }
+            return _t;
         }
 
 
@@ -3927,6 +3911,13 @@ public class LambdaJ {
         }
 
 
+
+        private static void oneOrMoreNumbers(String expr, Object[] args) {
+            if (args.length == 0) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            for (Object arg: args) {
+                number(arg);
+            }
+        }
 
         /** error if n is not of type number */
         private static void number(Object n) {
