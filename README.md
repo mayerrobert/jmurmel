@@ -4,7 +4,7 @@
 > *Elegant weapons*  
 > *for a more... civilized age.*
 
-**JMurmel is a lightweight Lisp-1-ish (mostly based on a subset of Common Lisp with a side of Scheme)
+**JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
 
 Currently weighing in at ~130kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
@@ -18,6 +18,9 @@ JMurmel is the name of the interpreter/ compiler that implements Murmel.
 For more details on the language see `murmel-langref.lisp`.
 
 The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
+Compilation is done as Murmel to Java source
+which is then compiled to .class files using the JDK compiler.
+JMurmel as well as compiled Murmel programs should run on all platforms supported by Java.
 
 JMurmel features a REPL with a trace facility (trace and untrace function calls),
 tail call optimization,
@@ -25,7 +28,7 @@ dynamic as well as lexical environments,
 a macro facility,
 backquote expansion including nested backquotes,
 JSR223 support,
-turtle graphics,
+turtle- and bitmap graphics,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
 
@@ -48,7 +51,7 @@ for a first peek at JMurmel (compiling Murmel won't work, tough, only the interp
 
 *(This section replicates the contents of `GETTING STARTED.txt`.)*
 
-Make sure you have Java 8+ installed (Java 8 is minimum, Java 15 is preferred as it is considerably faster).
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 16 is preferred).
 
 `java -version` will tell (GNU/linux or Unix or Mac users please adjust as appropriate):
 
@@ -302,5 +305,3 @@ Additional datatypes can be supported in your custom Parser, in your custom prim
 
 JMurmel is based on values of the Java type Object. It will see your custom datatypes as atoms and should handle them
 without any need for change.
-
-$Id: README.md,v 1.62 2021/04/08 18:20:16 Robert Exp $
