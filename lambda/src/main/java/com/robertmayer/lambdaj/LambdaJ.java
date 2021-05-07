@@ -2217,6 +2217,7 @@ public class LambdaJ {
     private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     /** generate a comparison operator */
+    /*
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
         twoArgs(opName, args);
         numberArgs(opName, args);
@@ -2224,6 +2225,20 @@ public class LambdaJ {
         final Number rhs = (Number)cadr(args);
         if (lhs instanceof Long && rhs instanceof Long) return boolResult(pred.test(Long.compare(lhs.longValue(),     rhs.longValue())));
         else                                            return boolResult(pred.test(Double.compare(lhs.doubleValue(), rhs.doubleValue())));
+    }
+    */
+    private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
+        oneOrMoreNumbers(opName, args);
+        Number prev = (Number)car(args);
+        for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
+            final Number next = (Number)car(rest);
+            final boolean success;
+            if (prev instanceof Long && next instanceof Long) success = pred.test(Long.compare(prev.longValue(),     next.longValue()));
+            else                                              success = pred.test(Double.compare(prev.doubleValue(), next.doubleValue()));
+            if (!success) return boolResult(false);
+            prev = next;
+        }
+        return boolResult(true);
     }
 
     /** generate operator for zero or more args */
@@ -2482,7 +2497,6 @@ public class LambdaJ {
                   addBuiltin("writeln", (Primitive) a -> { nArgs("writeln", a, 0, 1);  writeln(car(a));  return expTrue.get(); },
                   addBuiltin("lnwrite", (Primitive) a -> { nArgs("lnwrite", a, 0, 1);  lnwrite(car(a));  return expTrue.get(); },
                   env))));
-
 
             final Primitive makeFrame = a -> {
                 stringArg("make-frame", "first arg", a);

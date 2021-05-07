@@ -405,7 +405,9 @@ nil
 (floor 1.)
 
 ; = < > <= >=
-(= 1 1.0)
+(= 1 1.0) ; ==> t
+(< 1 2 3.0 4 5.0) ; ==> t
+(< 1 2 3 3 4 5)   ; ==> nil
 
 ; (macroexpand-1 quoted-form)
 ; macroexpand-1 is a simplified version of CL's macroexpand-1.
