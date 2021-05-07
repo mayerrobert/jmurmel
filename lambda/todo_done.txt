@@ -209,7 +209,7 @@ as if they were additional arguments to a funcall.
 Escapig von " ", ', \ ...
 SExpWriter sollte so schreiben wie SExpReader liest, d.h. mit escaping
 ConsCell.toString() sollte nicht escapen
-todo gelesen wird ein Symbol he\(lo, geschrieben wird |he(lo|
+gelesen wird ein Symbol he\(lo, geschrieben wird |he(lo|
 
 Wenn eine Funktion labels oder cond enthaelt, werden tailcalls effektiv nicht wegoptimiert, weil evlabels bzw. evcond
 auf den Java stack kommt. "if" ist in eval inline drin, deswegen funktioniert TCO trotz "if".

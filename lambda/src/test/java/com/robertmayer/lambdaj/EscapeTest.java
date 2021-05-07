@@ -35,7 +35,7 @@ public class EscapeTest {
         assertEquals("(\"he\\\\lo\")", sExp.toString());
     }
 
-    @Test // todo
+    @Test
     public void testSymbolSpace() {
         // create a list that contains a symbol with a space
         LambdaJ.ConsCell cell = ConsCell.cons(new LambdaJ.LambdaJSymbol("he lo"), null);

@@ -44,7 +44,7 @@ public class MurmelJavaCompilerTest {
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
-        MurmelProgram instance = murmelClass.newInstance();
+        MurmelProgram instance = murmelClass.getDeclaredConstructor().newInstance();
         Object result = instance.body();
         assertEquals("wrong result", "t", TestUtils.sexp(result));
 
@@ -511,7 +511,7 @@ public class MurmelJavaCompilerTest {
 
 
 
-    private MurmelProgram compile(String source) throws Exception {
+    private static MurmelProgram compile(String source) throws Exception {
         InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
@@ -522,7 +522,7 @@ public class MurmelJavaCompilerTest {
         String s = w.toString();
         assertNotNull("failed to compile Murmel to class:\n\n" + s, murmelClass);
 
-        return murmelClass.newInstance();
+        return murmelClass.getDeclaredConstructor().newInstance();
     }
 
     private void compileError(String source, String expected) throws Exception {
@@ -548,7 +548,7 @@ public class MurmelJavaCompilerTest {
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         try {
             Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
-            murmelClass.newInstance().body();
+            murmelClass.getDeclaredConstructor().newInstance().body();
             fail("expected error " + expected + " but got no error");
         }
         catch (LambdaJError e) {
@@ -558,7 +558,7 @@ public class MurmelJavaCompilerTest {
         }
     }
 
-    private String cutToLength(String s, int maxLength) {
+    private static String cutToLength(String s, int maxLength) {
         if (s.length() < maxLength) return s;
         return s.substring(0, maxLength);
     }

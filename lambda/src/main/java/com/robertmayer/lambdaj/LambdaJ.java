@@ -434,9 +434,9 @@ public class LambdaJ {
         private ReadSupplier in;    // readObj() will read from this
         private boolean init;
 
-        private boolean pos = false;
-        private int lineNo = 1, charNo = 0;
-        private int prevLineNo = 1, prevCharNo = 0;
+        private boolean pos;
+        private int lineNo = 1, charNo;
+        private int prevLineNo = 1, prevCharNo;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int backquote;
@@ -1053,7 +1053,6 @@ public class LambdaJ {
 
     /// ###  evalquote - the heart of most if not all Lisp interpreters
     private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
-        Object operator = null;
         Object func = null;
         Object result = null;
         Deque<Object> traceStack = null;
@@ -1065,6 +1064,7 @@ public class LambdaJ {
             while (true) {
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
+                final Object operator;
 
                 /// eval - lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
@@ -1377,7 +1377,6 @@ public class LambdaJ {
             Object s;
             if (traceStack != null) {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
-                traceStack = null;
             }
         }
     }
@@ -1388,7 +1387,7 @@ public class LambdaJ {
         nArgs("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
         final ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
         Object expansion = null;
-        for (Object macroform: (ConsCell) cdr(lambda))
+        for (Object macroform: (ConsCell) cdr(lambda)) // todo warum ist das ein for loop ?!?
             expansion = evalquote(macroform, menv, stack, level, traceLvl);
         return expansion;
     }
@@ -2305,7 +2304,7 @@ public class LambdaJ {
         return mexpand(operator, arguments, 0, 0, 0);
     }
 
-    private int gensymCounter = 0;
+    private int gensymCounter;
     private Object gensym(ConsCell args) {
         return new LambdaJSymbol("gensym" + ++gensymCounter);
     }
@@ -3912,22 +3911,18 @@ public class LambdaJ {
 
 
 
+        /** error if any arg is not of type number */
         private static void oneOrMoreNumbers(String expr, Object[] args) {
-            if (args.length == 0) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            for (Object arg: args) {
-                number(arg);
+            final int length = args.length;
+            if (length == 0) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            for (int i = 0; i < length; i++) {
+                number(args[i]);
             }
         }
 
         /** error if n is not of type number */
         private static void number(Object n) {
             if (!(n instanceof Number)) notANumber(n);
-        }
-
-        /** error if any arg is not of type number */
-        private static void numbers(Object n1, Object n2) {
-            number(n1);
-            number(n2);
         }
 
         /** error if any arg is not of type number */
@@ -3944,6 +3939,9 @@ public class LambdaJ {
 
 
         public String loc;
+
+        /** main() will be called from compiled Murmel code */
+        @SuppressWarnings("unused")
         protected static void main(MurmelJavaProgram program) {
             program.loc = "<unknown>";
             try {
@@ -5204,7 +5202,7 @@ class TurtleFrame {
 
     private final int padding;
 
-    private int bgColor = 0;
+    private int bgColor /*= 0*/;
     private int color = 1;
     private final List<Object> lines = new ArrayList<>();
     private final List<Text> texts = new ArrayList<>();
