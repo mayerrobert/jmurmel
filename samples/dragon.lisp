@@ -36,13 +36,11 @@
 (make-frame "Dragon curve")
 (open-frame)
 
-;(move-to 0 -20) (left 90) (forward 40) (text "20") (reset-frame)
-;(move-to -30 0) (forward 60) (text "30") (reset-frame)
-
 (color 13)
 (dragon-curve 8 20)
 
 (reset-frame)
+
 (color 2)
 (dragon-curve 11 20)
 
@@ -54,9 +52,5 @@
 (color 4)
 (dragon-curve 10 20)
 
-;(reset-frame)
-;(pen-up)
-;(forward 20)
-;(pen-down)
 (color 2)
 (dragon-curve 13 20)

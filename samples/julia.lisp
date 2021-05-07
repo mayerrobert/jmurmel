@@ -1,3 +1,7 @@
+;;; Print a Julia set, based on https://rosettacode.org/wiki/Julia_set#Java
+;;; runs somewhat slow, you may want to compile this program.
+;;;
+
 (define W 600)
 (define H 400)
 

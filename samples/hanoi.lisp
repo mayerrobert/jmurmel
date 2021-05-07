@@ -1,7 +1,16 @@
 ;;; from https://graham.main.nc.us/~bhammel/graham/lisp.html
+;;;
+;;; use like this:
+;;;   jm --repl hanoi.lisp
+;;;   JMurmel> (hanoi 5)
+;;; or:
+;;;   jm --repl hanoi.lisp
+;;;   JMurmel> (pr-hanoi (hanoi 5))
 
-;;; some LISP functions that are missing in Murmel:
+; some LISP functions that are missing in Murmel:
+; (append was added to Murmel after writing this program so append and append2 could be deleted)
 
+; not a full CL eql but good enough for hanoi
 (defun eql (x y)
   (= x y))
 

@@ -1,3 +1,5 @@
+;;; create a window and draw a line for each turtle graphics color
+
 (make-frame "Murmel colors")
 (open-frame)
 
