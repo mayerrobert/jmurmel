@@ -2240,6 +2240,22 @@ public class LambdaJ {
         return boolResult(true);
     }
 
+    private Object notEqualNumber(ConsCell args) {
+        oneOrMoreNumbers("/=", args);
+        Number number = (Number)car(args);
+        for (Object moreNumbers = cdr(args); moreNumbers != null; moreNumbers = cdr(moreNumbers)) {
+            for (ConsCell l = (ConsCell)moreNumbers; l != null; l = (ConsCell)cdr(l)) {
+                final Number n = (Number)car(l);
+                final boolean success;
+                if (number instanceof Long && n instanceof Long) success = number.longValue() == n.longValue();
+                else                                             success = Double.compare(number.doubleValue(), n.doubleValue()) == 0;
+                if (success) return boolResult(false);
+            }
+            number = (Number)car(moreNumbers);
+        }
+        return boolResult(true);
+    }
+
     /** generate operator for zero or more args */
     private static Object makeAddOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         numberArgs(opName, args);
@@ -2659,7 +2675,8 @@ public class LambdaJ {
                   addBuiltin(">=",      (Primitive) args -> makeCompareOp(args, ">=", compareResult -> compareResult >= 0),
                   addBuiltin("<",       (Primitive) args -> makeCompareOp(args, "<",  compareResult -> compareResult <  0),
                   addBuiltin("<=",      (Primitive) args -> makeCompareOp(args, "<=", compareResult -> compareResult <= 0),
-                  env)))));
+                  addBuiltin("/=",      (Primitive) args -> notEqualNumber(args),
+                  env))))));
 
             env = addBuiltin("+",       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
                   addBuiltin("-",       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
@@ -3686,6 +3703,7 @@ public class LambdaJ {
         public final Object le      (Object... args) { return compare("<=", args, r -> r <= 0); }
         public final Object ge      (Object... args) { return compare(">=", args, r -> r >= 0); }
         public final Object gt      (Object... args) { return compare(">", args, r -> r > 0); }
+        public final Object ne      (Object... args) { return notEqualNumber(args); }
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
@@ -3866,13 +3884,31 @@ public class LambdaJ {
         private Object compare(String op, Object[] args, IntPredicate pred) {
             oneOrMoreNumbers(op, args);
             Number prev = (Number)args[0];
-            for (int i = 1; i < args.length; i++) {
+            final int length = args.length;
+            for (int i = 1; i < length; i++) {
                 final Number next = (Number)args[i];
                 final boolean success;
                 if (prev instanceof Long && next instanceof Long) success = pred.test(Long.compare(prev.longValue(),     next.longValue()));
                 else                                              success = pred.test(Double.compare(prev.doubleValue(), next.doubleValue()));
                 if (!success) return null;
                 prev = next;
+            }
+            return _t;
+        }
+
+        private Object notEqualNumber(Object[] args) {
+            oneOrMoreNumbers("/=", args);
+            Number number = (Number)args[0];
+            final int length = args.length;
+            for (int i = 1; i < length; i++) {
+                for (int j = i; j < length; j++) {
+                    final Number n = (Number)args[j];
+                    final boolean success;
+                    if (number instanceof Long && n instanceof Long) success = number.longValue() == n.longValue();
+                    else                                             success = Double.compare(number.doubleValue(), n.doubleValue()) == 0;
+                    if (success) return null;
+                }
+                number = (Number)args[i];
             }
             return _t;
         }
@@ -4041,7 +4077,7 @@ public class LambdaJ {
         };
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
-            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"},
+            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
             {"format", "format"}, {"format-locale", "formatLocale" },
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },

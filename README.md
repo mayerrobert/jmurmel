@@ -255,7 +255,7 @@ The environment contains the symbols `nil` and `t` and the functions
 * `read`
 * `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
 
-* `=, <, <=, >, >=, +, -, *, /, mod, round, ceiling, floor`
+* `=, <, <=, >, >=, /=, +, -, *, /, mod, round, ceiling, floor`
 
 For more primitives (including graphics primitives and primitives to run Java code) and more details on the language supported see `murmel-langref.lisp`.
 
