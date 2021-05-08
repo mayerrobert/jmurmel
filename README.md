@@ -216,9 +216,9 @@ Or see `JSR223Test.java` for an example on how to use JMurmel through the
 (setting/ accessing Java objects via JSR223 from Murmel code is not supported yet.)
 
 ## Examples
-write, string-format
+write, format
 
-    LambdaJ> (write (string-format "%s, World!%n" "Hello"))
+    LambdaJ> (write (format nil "%s, World!%n" "Hello"))
     "Hello, World!
     "
     ==> t
@@ -229,7 +229,7 @@ Tail recursion, locale dependent number formatting
                               (if (= n 0)
                                   a
                                   (factTR (- n 1) (* n a)))))
-     (write (string-format-locale "en-US" "Factorial of 50 is %g" (factTR 50 1))))
+     (write (format-locale nil "en-US" "Factorial of 50 is %g" (factTR 50 1))))
     Factorial of 50 is 3.04141e+64
     ==> t
 
