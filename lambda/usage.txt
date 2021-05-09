@@ -52,7 +52,7 @@ Feature flags:
 --no-string ...  no string support
 --no-io .......  no primitive functions read/ write/ writeln/
                  format/ format-locale
---no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/
+--no-util .....  no primitive functions consp/ symbolp/ listp/ null/ assoc/
                  string-format/ string-format-locale
                  no time related primitives
 

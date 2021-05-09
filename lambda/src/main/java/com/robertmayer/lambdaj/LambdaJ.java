@@ -3515,7 +3515,7 @@ public class LambdaJ {
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read/ write/ writeln/\n"
                 + "                 format/ format-locale\n"
-                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null?/ assoc/\n"
+                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null/ assoc/\n"
                 + "                 string-format/ string-format-locale\n"
                 + "                 no time related primitives\n"
                 + "\n"
