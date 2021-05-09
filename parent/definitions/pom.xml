@@ -8,8 +8,6 @@
     <packaging>pom</packaging>
 
 	<properties>
-		<platform.version>1.0-SNAPSHOT</platform.version>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!--
@@ -80,14 +78,6 @@
 						<!-- findbugs nimmt beim check der Test-Klassen nicht den Test Classpath 
 							sondern den normalen, deswegen gibts beim Checken der Testklassen ClassNotFoundExceptions -->
 						<includeTests>false</includeTests>
-						<plugins>
-							<plugin>
-								<!-- findet unpässlichkeiten rund um die benutzung von Log4j https://github.com/KengoTODA/findbugs-slf4j -->
-								<groupId>jp.skypencil.findbugs.slf4j</groupId>
-								<artifactId>bug-pattern</artifactId>
-								<version>1.0.10</version>
-							</plugin>
-						</plugins>
 					</configuration>
 				</plugin>
 			</plugins>
