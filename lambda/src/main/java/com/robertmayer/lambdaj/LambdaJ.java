@@ -1730,14 +1730,14 @@ public class LambdaJ {
 
         @Override public Object     car() { return (arry == null || arry.length <= offset) ? null : arry[offset]; }
         @Override public ArraySlice cdr() { return (arry == null || arry.length <= offset+1) ? null : new ArraySlice(this); }
-        @Override public String toString() { return printSEx(false); }
+        @Override public String toString() { return printSEx(true, false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
-        private String printSEx(boolean escapeAtoms) {
+        private String printSEx(boolean headOfList, boolean escapeAtoms) {
             if (arry == null || arry.length <= offset) return LambdaJ.printSEx(null);
             else {
                 final StringBuilder ret = new StringBuilder();
-                ret.append('(');
+                if (headOfList) ret.append('(');
                 boolean first = true;
                 for (int i = offset; i < arry.length; i++) {
                     final Object o = arry[i];
@@ -1946,7 +1946,7 @@ public class LambdaJ {
             if (obj == null) {
                 sb.print("nil"); return;
             } else if (obj instanceof ArraySlice) {
-                sb.print(((ArraySlice)obj).printSEx(escapeAtoms)); return;
+                sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return;
             } else if (listp(obj)) {
                 if (headOfList) sb.print("(");
                 final Object first = car(obj);
