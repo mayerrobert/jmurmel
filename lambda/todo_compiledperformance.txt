@@ -12,7 +12,7 @@ If you run with
 you can see where most of the allocation occurs, settings=profile will add a percent or so (depending on the application).
 
 
-java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel-1.0-SNAPSHOT.jar test_ack.lisp
+java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel.jar test_ack.lisp
 
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist

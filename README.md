@@ -24,7 +24,7 @@ JMurmel as well as compiled Murmel programs should run on all platforms supporte
 
 JMurmel features a REPL with a trace facility (trace and untrace function calls),
 tail call optimization,
-dynamic as well as lexical environments,
+lexical environments,
 a macro facility,
 backquote expansion including nested backquotes,
 JSR223 support,
@@ -60,13 +60,13 @@ Make sure you have Java 8+ installed (Java 8 is minimum, Java 16 is preferred).
     OpenJDK Runtime Environment (AdoptOpenJDK)(build 1.8.0_252-b09)
     OpenJDK 64-Bit Server VM (AdoptOpenJDK)(build 25.252-b09, mixed mode)
 
-With `jmurmel-1.0-SNAPSHOT.jar` in the current directory start JMurmel with the following command
+With `jmurmel.jar` in the current directory start JMurmel with the following command
 
-    C:\> java -jar jmurmel-1.0-SNAPSHOT.jar
+    C:\> java -jar jmurmel.jar
 
 At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look like this:
 
-    D:\robert\Workspace.java\platform\lambda\target>java -jar jmurmel-1.0-SNAPSHOT.jar
+    D:\jmurmel\lambda\target>java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
 
     JMurmel> (write "Hello, World!")
@@ -79,7 +79,7 @@ You just wrote and ran a Murmel program!
 Now take it from there,
 e.g. read `murmel-langref.lisp`.  
 Or type `:h` at the REPL prompt.  
-Or run `java -jar jmurmel-1.0-SNAPSHOT.jar --help`.  
+Or run `java -jar jmurmel.jar --help`.  
 
 
 | [Standalone use](#standalone-use)
@@ -91,14 +91,14 @@ Or run `java -jar jmurmel-1.0-SNAPSHOT.jar --help`.
 
 ## Standalone use
 
-    $ java -jar jmurmel-1.0-SNAPSHOT.jar
+    $ java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
     LambdaJ>
 
 The command above will wait for you to enter an S-expression, interpret it and print it's result.
 Try e.g.
 
-    $ java -jar jmurmel-1.0-SNAPSHOT.jar
+    $ java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
     LambdaJ> (+ 1 2)
 
@@ -107,7 +107,7 @@ Try e.g.
 
 JMurmel also can read program text from stdin:
 
-    C:\> echo (write (quote Hello,\ World!))| java -jar jmurmel-1.0-SNAPSHOT.jar
+    C:\> echo (write (quote Hello,\ World!))| java -jar jmurmel.jar
     |Hello, World!|
     ==> t
     
@@ -115,7 +115,7 @@ JMurmel also can read program text from stdin:
 
 or
 
-    $ echo "(write (quote Hello,\ World!))" | java -jar jmurmel-1.0-SNAPSHOT.jar
+    $ echo "(write (quote Hello,\ World!))" | java -jar jmurmel.jar
     |Hello, World!|
     ==> t
     
@@ -138,7 +138,7 @@ and maybe create a batchfile along these lines (Windows .cmd-style shown here):
     @echo off
     setlocal
     set JAVA_HOME=C:\Apps\Java\X64\jdk8u252-b09
-    set JMURMEL=D:\robert\Workspace.java\platform\lambda\target\jmurmel-1.0-SNAPSHOT.jar
+    set JMURMEL=D:\jmurmel\lambda\target\jmurmel.jar
     %JAVA_HOME%\bin\java -jar %JMURMEL% %*
     endlocal
     --- snip ---
@@ -156,6 +156,7 @@ to your `.emacs` file and do `M-x (run-lisp)`.
 
 ## Embedded use
 
+JMurmel can also be used embedded in another Java program.
 JMurmel uses Java8 only, but should run on higher versions as well
 (Java 15 is lightly tested).
 It comes as one self contained jar, no further dependencies needed.
@@ -238,8 +239,8 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `quote, cons, car, cdr`
 * `cond, if`
-* `lambda, lambda dynamic` ... `lambda` creates a lexical closure, `lambda dynamic` creates a lambdy with dynamic environment
-* `labels`
+* `lambda` ... `lambda` creates a lexical closure
+* `labels` ... define local functions
 
 * `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
 

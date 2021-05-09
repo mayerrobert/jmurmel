@@ -44,7 +44,7 @@ die ByteArrayReader aus den tests wegputzen
 -> jdk.localedata noch dazu?
 
 obiges hab ich experimentell ermittelt, jdeps sollte exakte aussagen treffen;
-...\lambda>jdeps --print-module-deps target\jmurmel-1.0-SNAPSHOT.jar
+...\lambda>jdeps --print-module-deps target\jmurmel.jar
 java.base,java.compiler,java.desktop,java.management
 
 

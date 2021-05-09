@@ -22,6 +22,8 @@
     </licenses>
 
     <properties>
+        <maven.build.timestamp.format>yyyyMMdd_HHmm</maven.build.timestamp.format>
+
         <!-- report maven-plugins -->
         <maven-reports-plugin.version>2.7</maven-reports-plugin.version>
         <maven-changelog-plugin.version>2.3</maven-changelog-plugin.version>
@@ -66,6 +68,7 @@
 	        <groupId>org.apache.maven.plugins</groupId>
 	        <artifactId>maven-jar-plugin</artifactId>
 	        <configuration>
+                <finalName>jmurmel</finalName>
 				<archive>
 					<manifest>
 						<!-- <addClasspath>true</addClasspath> -->
@@ -73,6 +76,7 @@
 					</manifest>
                     <manifestEntries>
                         <Automatic-Module-Name>com.robertmayer.lambdaj</Automatic-Module-Name>
+                        <Implementation-Version>${project.version}/${maven.build.timestamp}/${user.name}</Implementation-Version>
                     </manifestEntries>
 				</archive>
 			</configuration>

@@ -9,23 +9,13 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Serializable;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.UncheckedIOException;
-import java.io.Writer;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
@@ -127,8 +117,23 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String ENGINE_VERSION = "LambdaJ $Id: LambdaJ.java,v 1.412 2021/04/29 05:43:51 Robert Exp $";
     public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
+    public static final String ENGINE_VERSION;
+    static {
+        String versionInfo;
+        final ClassLoader cl = LambdaJ.class.getClassLoader();
+        final URL url = cl.getResource("META-INF/MANIFEST.MF");
+        if (url == null) versionInfo = "unknown";
+        else {
+            try (final InputStream is = url.openStream()) {
+                final Manifest manifest = new Manifest(is);
+                versionInfo = manifest.getMainAttributes().getValue("Implementation-Version");
+            } catch (IOException e) {
+                versionInfo = "error";
+            }
+        }
+        ENGINE_VERSION = versionInfo;
+    }
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
