@@ -444,7 +444,7 @@ am besten setf weglassen, weil das macht serious magic
 -> set ... belegt den ersten gefundenen wert im environment neu. dynamic, lexical, global, halt dort, wos assoc zuerst findet
            beide argumente werden evaluiert
 -> setq ... wie set aber das erste argument wird nicht evaluiert
--> rplaca, rpclacd http://clhs.lisp.se/Body/f_rplaca.htm
+-> rplaca, rplacd http://clhs.lisp.se/Body/f_rplaca.htm
    rplaca cons object => cons
    rplacd cons object => cons
 
