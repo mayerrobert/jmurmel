@@ -15,7 +15,7 @@ why not try JMurmel?
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
-For more details on the language see `murmel-langref.lisp`.
+For more details on the language see [murmel-langref.lisp](murmel-langref.lisp).
 
 The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
 Compilation is done as Murmel to Java source
@@ -35,7 +35,7 @@ and compiled Murmel will be optimized by Java's JIT compiler.
 Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
-For a copy, see https://opensource.org/licenses/MIT.
+For a copy, see [LICENSE](LICENSE) or https://opensource.org/licenses/MIT.
 
 
 ## Getting started
@@ -231,8 +231,10 @@ Tail recursion, locale dependent number formatting
                                   a
                                   (factTR (- n 1) (* n a)))))
      (write (format-locale nil "en-US" "Factorial of 50 is %g" (factTR 50 1))))
-    Factorial of 50 is 3.04141e+64
+    "Factorial of 50 is 3.04141e+64"
     ==> t
+
+See [samples/](samples/) for more Murmel example code including usage of Murmel's turtle graphics.
 
 ## JMurmel Features
 The environment contains the symbols `nil` and `t` and the functions
