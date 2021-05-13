@@ -3,6 +3,7 @@
   (if names
         (cons (car names) (f (cdr names))) ; this line should be "(cons (car names) (apply f (cdr names)))"
     nil))
+-> stackoverflow ist wsl ok, sollte aber in eine Murmelfehlermeldung umgelenkt werden
 
 
 
