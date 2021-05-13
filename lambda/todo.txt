@@ -6,16 +6,6 @@
 
 
 
-backquote expansion unterschlaegt nil:
-JMurmel> `(if a nil 'a-is-nil)
-==> (if a (quote a-is-nil)) ; sollte "(if a nil (quote a-is-nil))" sein
-
-Vgl. sbcl:
-* `(if a nil 'a-is-nil)
-(IF A
-    NIL
-    'A-IS-NIL)
-
 
 
 befehlszeilenoption zum kompilieren und laufen lassen

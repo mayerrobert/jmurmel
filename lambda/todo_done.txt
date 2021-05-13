@@ -952,3 +952,13 @@ in https://icem.folkwang-uni.de/~finnendahl/cm_kurse/doc/schintro/schintro_130.h
 -> doublePattern stimmt nicht
 
 ByteArrayInputStream aus den tests wegputzen
+
+backquote expansion unterschlaegt nil:
+JMurmel> `(if a nil 'a-is-nil)
+==> (if a (quote a-is-nil)) ; sollte "(if a nil (quote a-is-nil))" sein
+
+Vgl. sbcl:
+* `(if a nil 'a-is-nil)
+(IF A
+    NIL
+    'A-IS-NIL)
