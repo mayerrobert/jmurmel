@@ -44,6 +44,8 @@ init(), parser vs. in aufraeumen
 obiges hab ich experimentell ermittelt, jdeps sollte exakte aussagen treffen;
 ...\lambda>jdeps --print-module-deps target\jmurmel.jar
 java.base,java.compiler,java.desktop,java.management
+-> jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.compiler,java.desktop,java.management
+-> da ist aber kein compiler dabei
 
 
 

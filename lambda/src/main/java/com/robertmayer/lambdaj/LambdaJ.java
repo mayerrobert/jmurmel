@@ -1392,7 +1392,7 @@ public class LambdaJ {
         nArgs("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
         final ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
         Object expansion = null;
-        for (Object macroform: (ConsCell) cdr(lambda)) // todo warum ist das ein for loop ?!?
+        for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = evalquote(macroform, menv, stack, level, traceLvl);
         return expansion;
     }
