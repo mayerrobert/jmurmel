@@ -2,12 +2,7 @@ package com.robertmayer.lambdaj.custom;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.*;
 import java.util.HashMap;
 
 import org.junit.Test;
@@ -70,15 +65,15 @@ public class SerializeTest {
     @Test
     public void testSerializationParser() throws Exception {
         LambdaJ interp = new LambdaJ();
-        byte[] program = sExpToByteArray(interp, "(+ 1 2)");
+        byte[] program = sExpToByteArray("(+ 1 2)");
 
         SerializationParser myParser = new SerializationParser(program);
-        Object result = interp.interpretExpressions(myParser, (ObjectReader)null, (ObjectWriter)null, (CustomEnvironmentSupplier)null);
+        Object result = interp.interpretExpressions(myParser, null, null, null);
         assertEquals(3.0,  result);
     }
 
-    private byte[] sExpToByteArray(LambdaJ interp, String sExp) throws IOException {
-        ObjectReader parser = new SExpressionParser(new ByteArrayInputStream(sExp.getBytes(StandardCharsets.UTF_8))::read);
+    private static byte[] sExpToByteArray(String sExp) throws IOException {
+        ObjectReader parser = new SExpressionParser(new StringReader(sExp)::read);
         ByteArrayOutputStream s = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(s);
         os.writeObject(parser.readObj());

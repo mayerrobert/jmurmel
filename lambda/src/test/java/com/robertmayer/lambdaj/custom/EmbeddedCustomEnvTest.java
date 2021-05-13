@@ -3,9 +3,8 @@ package com.robertmayer.lambdaj.custom;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.Reader;
+import java.io.StringReader;
 
 import org.junit.Test;
 
@@ -24,7 +23,7 @@ public class EmbeddedCustomEnvTest {
         final LambdaJ interpreter = new LambdaJ(LambdaJ.Features.HAVE_ALL_LEXC.bits(), LambdaJ.TraceLevel.TRC_FUNC, null); // turn on logging of eval and function invocations
 
         // our Lisp "program"
-        InputStream program = new ByteArrayInputStream("(writeln *answer*)(greet \"Robert\")".getBytes(StandardCharsets.UTF_8));
+        Reader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
         Parser parser = new LambdaJ.SExpressionParser(program::read);
 
         // empty "file" for stdin, simply return EOF

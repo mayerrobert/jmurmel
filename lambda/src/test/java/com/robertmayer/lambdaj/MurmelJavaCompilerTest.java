@@ -2,10 +2,9 @@ package com.robertmayer.lambdaj;
 
 import static org.junit.Assert.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 import com.robertmayer.lambdaj.LambdaJ.*;
@@ -22,7 +21,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testForm() throws Exception {
-        InputStream reader = new ByteArrayInputStream("(define a 2)".getBytes(StandardCharsets.UTF_8));
+        final Reader reader = new StringReader("(define a 2)");
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
@@ -37,7 +36,7 @@ public class MurmelJavaCompilerTest {
         String source = "(define f (lambda (a b) (write a) (write b)))"
                       + "(f \"Hello, \" \"World!\")";
 
-        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
+        final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
@@ -512,7 +511,7 @@ public class MurmelJavaCompilerTest {
 
 
     private static MurmelProgram compile(String source) throws Exception {
-        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
+        final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
@@ -525,34 +524,34 @@ public class MurmelJavaCompilerTest {
         return murmelClass.getDeclaredConstructor().newInstance();
     }
 
-    private void compileError(String source, String expected) throws Exception {
-        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
+    private static void compileError(String source, String expected) throws Exception {
+        final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         try {
             c.formsToJavaClass("Test", parser, null);
             fail("expected error " + expected + " but got no error");
         }
         catch (LambdaJError e) {
-            String actualMsg = e.getMessage();
+            final String actualMsg = e.getMessage();
             assertNotNull("expected error", actualMsg);
             assertEquals("got wrong error", expected, cutToLength(actualMsg, expected.length()));
         }
     }
 
-    private void runtimeError(String source, String expected) throws Exception {
-        InputStream reader = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
+    private static void runtimeError(String source, String expected) throws Exception {
+        final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
         try {
-            Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
             murmelClass.getDeclaredConstructor().newInstance().body();
             fail("expected error " + expected + " but got no error");
         }
         catch (LambdaJError e) {
-            String actualMsg = e.getMessage();
+            final String actualMsg = e.getMessage();
             assertNotNull("expected error", actualMsg);
             assertEquals("got wrong error", expected, cutToLength(actualMsg, expected.length()));
         }

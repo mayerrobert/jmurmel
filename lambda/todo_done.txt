@@ -950,3 +950,5 @@ in https://icem.folkwang-uni.de/~finnendahl/cm_kurse/doc/schintro/schintro_130.h
 
 1e3 wird als symbol gelesen
 -> doublePattern stimmt nicht
+
+ByteArrayInputStream aus den tests wegputzen

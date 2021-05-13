@@ -34,8 +34,6 @@ Macros im compiler
 
 init(), parser vs. in aufraeumen
 
-die ByteArrayReader aus den tests wegputzen
-
 
 
 
