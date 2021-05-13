@@ -53,7 +53,7 @@ Feature flags:
 --no-io .......  no primitive functions read/ write/ writeln/
                  format/ format-locale
 --no-util .....  no primitive functions consp/ symbolp/ listp/ null/ assoc/
-                 string-format/ string-format-locale
+                 format/ format-locale
                  no time related primitives
 
 --min+ ........  turn off all above features, leaving a Lisp
