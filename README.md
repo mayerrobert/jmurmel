@@ -20,7 +20,7 @@ For more details on the language see `murmel-langref.lisp`.
 The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
 Compilation is done as Murmel to Java source
 which is then compiled to .class files using the JDK compiler.
-JMurmel as well as compiled Murmel programs should run on all platforms supported by Java.
+JMurmel as well as compiled Murmel programs should run on all platforms supported by Java8+.
 
 JMurmel features a REPL with a trace facility (trace and untrace function calls),
 tail call optimization,
@@ -42,7 +42,7 @@ For a copy, see https://opensource.org/licenses/MIT.
 
 **Quickstart for Java 15+ users**
 
-Instead of building the jarfile Java 15+ users can download https://github.com/robertmayer67/jmurmel/blob/master/lambda/src/main/java/com/robertmayer/lambdaj/LambdaJ.java
+Instead of building the jarfile Java 15+ users can download [JMurmel.java](lambda/src/main/java/com/robertmayer/lambdaj/LambdaJ.java)
 and run
 
     C:\> java Lambdaj.java
@@ -77,7 +77,7 @@ At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look
 You just wrote and ran a Murmel program!
 
 Now take it from there,
-e.g. read `murmel-langref.lisp`.  
+e.g. read [`murmel-langref.lisp`].  
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
