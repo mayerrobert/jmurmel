@@ -77,7 +77,7 @@ At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look
 You just wrote and ran a Murmel program!
 
 Now take it from there,
-e.g. read [murmel-langref.lisp].  
+e.g. read [murmel-langref.lisp](murmel-langref.lisp).  
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
