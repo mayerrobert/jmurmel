@@ -962,3 +962,6 @@ Vgl. sbcl:
 (IF A
     NIL
     'A-IS-NIL)
+
+grafik im compiler
+-> was fehlt noch?

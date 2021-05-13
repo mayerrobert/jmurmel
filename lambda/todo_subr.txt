@@ -1,3 +1,9 @@
+utils: combine, list, nth, nhtcdr, c*r
+
+Hashmaps
+-> make-hash-table
+   get-hash key -> value
+
 ggf. ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
 prin1 object &optional output-stream => object
 

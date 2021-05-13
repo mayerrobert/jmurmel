@@ -6,8 +6,6 @@
 
 
 
-
-
 befehlszeilenoption zum kompilieren und laufen lassen
 
 (re-) define im compiler
@@ -17,9 +15,6 @@ setq, rplaca, rplacd im compiler
 https://www.reddit.com/r/lisp/comments/lxlyvb/why_does_cl_have_such_a_strange_way_of_obtaining/gpo0swr/
 it is undefined behavior according to the ANSI spec to redefine a standard function
 -> car cdr cons koennten im interpreter open coded sein zwecks performance
-
-grafik im compiler
--> was fehlt noch?
 
 symbolhandling ist fishy
 -> symbole sollten nicht per stringvergleich sondern ueber identity verglichen werden
@@ -232,8 +227,6 @@ tabs im scanner richtig zaehlen
 col += tabsize
 col = (col / tabsize) * tabsize
 
-Fexpr unterstuetzen, in eigenen Namespace stecken und diesen Namespace nur in define auswerten/ fexpr aufrufen/ aufloesen
--> sind das dann effektiv macros?
 
 
 koennt ma namespaces irgendwie so einfuehren:
@@ -310,8 +303,6 @@ add(1, 2)
 ConsCell methoden double carAsDouble(), long carAsLong() einfuehren
 -> und DoubleConsCell, LongConsCell, das hat zusaetzlich Java primitive datentypen als car und ueberlaedt die methoden
 
-LambdaJSymbol.equals, equalsIgnoreCase aufraeumen
-
 multivalue let: wenn funktionen mehrere werte zurueckgeben, koennte ein erweitertes letXXX zuweisen:
 (let ((r1 r2 (multivaluefunction)))
    (print r1)
@@ -334,11 +325,6 @@ synchronized ueberlegen
 
 
 
-
-
-Evolution of Lisp, pp 66 ff: Macros nach dem paper von Timothy P. Hart in 1963
-pp73ff: modernes defmacro
--> besser wie lispy2
 
 
 solange es kein rplaca gibt, koennte man int, float, double und ggf kurze/ lange strings/ symbols in jeweils massgeschneiderte ConsCell stecken
@@ -418,17 +404,7 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 
 
-backticks und , ggf. auch ,@ im scanner einbauen?
-(defun constant-adder (a)
-  (eval `(lambda (b) (+ (quote ,a) b))))
-
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
-
-utils: combine, list, nth, nhtcdr, c*r
-
-Hashmaps
--> make-hash-table
-   get-hash key -> value
 
 flag ob die identifier auf UC umgestellt werden sollen
 flag fuer symbols:
