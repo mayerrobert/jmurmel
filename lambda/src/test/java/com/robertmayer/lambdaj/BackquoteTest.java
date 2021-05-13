@@ -142,6 +142,15 @@ public class BackquoteTest {
         eval("(define a 'aval) (define b 'bval) (define y 'b) (define l '(a b)) (eval ``(,a ,,@l ,,y))", "(aval aval bval bval)");
     }
 
+    //@Test // todo broken
+    public void testNil() {
+        eval("`(setq a nil)", "(setq a nil)");
+    }
+
+    //@Test // todo broken
+    public void testNil2() {
+        eval("`(if a nil 'a-is-nil)", "(if a nil (quote a-is-nil))");
+    }
 
 
     @Test

@@ -1,3 +1,23 @@
+; makes jmurmel crash with java.lang.StackOverflowError
+(defun f names
+  (if names
+        (cons (car names) (f (cdr names))) ; this line should be "(cons (car names) (apply f (cdr names)))"
+    nil))
+
+
+
+backquote expansion unterschlaegt nil:
+JMurmel> `(if a nil 'a-is-nil)
+==> (if a (quote a-is-nil)) ; sollte "(if a nil (quote a-is-nil))" sein
+
+Vgl. sbcl:
+* `(if a nil 'a-is-nil)
+(IF A
+    NIL
+    'A-IS-NIL)
+
+
+
 befehlszeilenoption zum kompilieren und laufen lassen
 
 (re-) define im compiler
