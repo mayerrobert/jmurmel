@@ -925,7 +925,6 @@ public class LambdaJ {
                 (t `'(,x))))
         */
         private Object qq_expand_list(Object x) {
-            if (x == null) return null;
             if (atom(x))
                 return quote(list(x, null));
 
@@ -953,10 +952,7 @@ public class LambdaJ {
 
         private static ConsCell list(Object o1, Object o2) {
             if (o2 == null)
-                if (o1 == null)
-                    return null;
-                else
-                    return new ListConsCell(o1, null);
+                return new ListConsCell(o1, null);
             return new ListConsCell(o1, new ListConsCell(o2, null));
         }
 
