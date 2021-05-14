@@ -1,4 +1,4 @@
-;;; macros for logical and and or
+;;; short-circuiting macros for logical and and or
 
 (defmacro or args
    (if (null args)
@@ -22,8 +22,9 @@
              (if ,temp
                    (and ,@(cdr args))))))))
 
+;;; test "and" and "or"
 (and (= 1 1)
      (or (< 1 2)
          (> 1 2))
      (and (<= 1 2 3 4)
-          (> 5 3 1)))
+          (> 5 3 1))) ; ==> t
