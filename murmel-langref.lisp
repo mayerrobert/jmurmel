@@ -656,5 +656,3 @@ nil
 ;;; For a copy, see https://opensource.org/licenses/MIT.
 
 ;;; At the end of the input file JMurmel will print "bye." and exit.
-
-;;; $Id: murmel-langref.lisp,v 1.81 2021/04/25 16:35:11 Robert Exp $
