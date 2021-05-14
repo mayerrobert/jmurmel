@@ -281,6 +281,9 @@ nil
 ; NOT eval'd, but the result of the macro is.
 ; IOW a function produces a value, a macro application
 ; produces code that will be eval'd.
+; Macros are defined in a macro namespace.
+; All macros are in the global scope, i.e. macros
+; are not scoped but once defined they are visible everywhere.
 (defmacro twice (arg) (list '* arg 2))  ; ==> twice
 (twice 3) ; ==> 6.0
 
@@ -482,8 +485,8 @@ nil
 ;;; and/ or draw lines with Turtle graphics or moveto/lineto functions.
 ;;; Also you can stick a bitmap into a frame and do pixel-graphics.
 ;;;
-;;; 0/0 is towards left bottom, any drawing will be resized/ shifted so that it fills
-;;; the frame.
+;;; 0/0 is towards left bottom, any drawing will be resized/ shifted so that
+;;; it fills the frame.
 ;;;
 ;;; A frame has state: open/closed, current x/y position, current linecolor,
 ;;; current turtle angle and background color.
@@ -491,6 +494,9 @@ nil
 ;;; You can use several frames but only one is the "current-frame". All functions
 ;;; (except make-frame) have an optional last parameter "frame" that can be used
 ;;; to select which frame to operate on (if omitted or nil then the current frame is used).
+;;;
+;;; Hint: if graphics primitives are slow then you might want to try switching to OpenGL:
+;;; C:\> java -Dsun.java2d.opengl=true -jar jmurmel.jar
 ;;;
 ;;; Colors are 0..15 corresponding to
 ;;; white       0
@@ -512,11 +518,12 @@ nil
 
 ; make-frame
 ; Creates a new frame, sets current frame.
-; If width and height are omitted or nil then half of the physical screen width/ height will be used.
+; If width and height are omitted or nil then half of the physical screen
+; width/ height will be used.
 ; If padding is omitted or nil then 40 will be used.
 ; The newly created frame will not yet be visible (see open-frame below).
 (let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
-(make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
+  (make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
 
 ; open-frame ... make frame visible
 ; close-frame ... hide frame
@@ -555,7 +562,8 @@ nil
 ; Increase/ decrease current angle by "deg" degrees, does not change position.
 
 ; (forward len optional-frame) -> frame
-; If pen is down then this function paints a line of length "len" from current position in current direction, changes position.
+; If pen is down then this function paints a line of length "len" from current
+; position in current direction, changes position.
 ; If pen is up then only the position is changed.
 
 ; move-to, line-to, move-rel, line-rel
