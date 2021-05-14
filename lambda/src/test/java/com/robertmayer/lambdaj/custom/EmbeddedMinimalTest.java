@@ -2,7 +2,7 @@ package com.robertmayer.lambdaj.custom;
 
 import java.io.StringReader;
 
-import static junit.framework.Assert.*;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 

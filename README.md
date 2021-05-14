@@ -35,7 +35,7 @@ and compiled Murmel will be optimized by Java's JIT compiler.
 Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
-For a copy, see [LICENSE](LICENSE) or https://opensource.org/licenses/MIT.
+For a copy, see [LICENSE](LICENSE).
 
 
 ## Getting started

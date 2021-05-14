@@ -1,7 +1,7 @@
 package com.robertmayer.lambdaj.custom;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -67,7 +67,7 @@ public class EmbeddedCustomEnvTest {
         intp.getLispPrinter().printObj(msg);
         intp.getLispPrinter().printEol();
         return null;
-    };
+    }
 
 
     private static ConsCell cons(Object car, Object cdr) {

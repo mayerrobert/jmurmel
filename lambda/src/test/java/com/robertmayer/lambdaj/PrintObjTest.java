@@ -2,7 +2,7 @@ package com.robertmayer.lambdaj;
 
 import org.junit.Test;
 
-import static junit.framework.Assert.*;
+import static org.junit.Assert.*;
 import static com.robertmayer.lambdaj.LambdaJ.ConsCell;
 import static com.robertmayer.lambdaj.TestUtils.cdr;
 

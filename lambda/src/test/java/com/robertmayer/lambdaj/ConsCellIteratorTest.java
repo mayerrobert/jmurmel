@@ -1,6 +1,6 @@
 package com.robertmayer.lambdaj;
 
-import static junit.framework.Assert.*;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -23,7 +23,7 @@ public class ConsCellIteratorTest {
         assertEquals(3, n);
 
         StringBuilder b = new StringBuilder();
-        list.forEach(car -> b.append(car));
+        list.forEach(b::append);
         assertEquals("abc", b.toString());
     }
 
@@ -40,7 +40,7 @@ public class ConsCellIteratorTest {
         assertEquals(2, n);
 
         StringBuilder b = new StringBuilder();
-        cell.forEach(car -> b.append(car));
+        cell.forEach(b::append);
         assertEquals("ab", b.toString());
     }
 }

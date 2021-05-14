@@ -8,7 +8,7 @@
     <packaging>pom</packaging>
 
 	<modules>
-		<module>parent/definitions</module>
+		<!--<module>parent/definitions</module>-->
 
 		<module>lambda</module>
 		<module>lambdajbm</module>
