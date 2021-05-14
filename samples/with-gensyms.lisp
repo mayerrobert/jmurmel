@@ -22,7 +22,7 @@
 
 
 ; define a "non-shortcircuiting logical and" as a macro
-; todo doesn't work because JMurmel has a bug in backquote expansion: nil is swallowed
+; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"
 (defmacro logical-and-3 (a b c)
   (with-gensyms (result)
     `(let ((,result t))
@@ -32,5 +32,6 @@
        ,result)))
 
 (define result 3) ; the symbol "result" is used in the macro, name-capturing must be avoided
+
 (logical-and-3 result 2 3) ; ==> t
 result ; ==> 3 (global variable is not affected by the macro
