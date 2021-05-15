@@ -2,16 +2,23 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>com.robertmayer.parent</groupId>
+        <artifactId>definitions</artifactId>
+        <relativePath>./parent/definitions/pom.xml</relativePath>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
     <groupId>com.robertmayer</groupId>
     <artifactId>jmurmel-all</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 	<modules>
-		<!--<module>parent/definitions</module>-->
+		<module>parent/definitions</module>
 
 		<module>lambda</module>
 		<module>lambdajbm</module>
 	</modules>
-	
+
 </project>

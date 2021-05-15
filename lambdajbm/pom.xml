@@ -10,10 +10,18 @@
     </parent>
 
     <groupId>com.robertmayer.jmurmel</groupId>
-    <artifactId>jmurmeljbm</artifactId>
+    <artifactId>jmurmelbm</artifactId>
     <packaging>jar</packaging>
 
-	<properties>
+    <description>JMH benchmark for JMurmel</description>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>../LICENSE</url>
+        </license>
+    </licenses>
+
+    <properties>
         <!--
             JMH version to use with this project.
           -->
@@ -23,7 +31,7 @@
             Name of the benchmark Uber-JAR to generate.
           -->
         <uberjar.name>benchmarks</uberjar.name>
-	</properties>
+    </properties>
 
     <dependencies>
         <dependency>

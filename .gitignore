@@ -31,3 +31,5 @@ core
 /parent/definitions/definitions.iml
 /parent/jmh/jmh.iml
 /jmurmel-all.iml
+/parent/definitions/target/
+/target/
