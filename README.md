@@ -78,6 +78,7 @@ You just wrote and ran a Murmel program!
 
 Now take it from there,
 e.g. read [murmel-langref.lisp](murmel-langref.lisp).  
+Or take a look at the example code in [samples](samples/).  
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
