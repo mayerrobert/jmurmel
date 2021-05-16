@@ -248,6 +248,7 @@ nil
 ; are removed when leaving the lexical scope of the let/let*/letrec/lambda
 ; form, restoring any previously existing binding (which may have
 ; been local or global).
+; Except: "let dynamic" will treat global symbols as "special", see below.
 
 
 ;;; == Additional Special Forms =======
@@ -307,6 +308,16 @@ nil
 ;;; (cond (condform forms...)... ) -> object
 
 ;;; (labels ((symbol (params...) forms...)...) forms...) -> object
+
+;;; (let dynamic ((symbol bindingform)...) bodyforms...) -> object
+; Similar to "let" except: globals are not shadowed but temporarily
+; bound to the given value, and the previous value is restored when
+; leaving the scope of the let form.
+; I.e. "let dynamic" treats globals as "special".
+(define *g* 'global)
+(defun f () (write *g*))
+(let dynamic ((*g* 'temp)) (f)) ; f will write temp
+*g* ; ==> 'global
 
 ;;; (let optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 ; Works like you would expect from "let" with the addition
@@ -386,7 +397,7 @@ nil
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
 
-; append nondestructively append it's arguments. All arguments expcept the last
+; append nondestructively append it's arguments. All arguments except the last
 ; are shallow copied, all arguments except the last must be lists.
 (append)                    ; ==> nil
 (append 'a)                 ; ==> a
@@ -639,7 +650,6 @@ nil
 ;;; == Known issues ===================
 ;
 ; Murmel language:
-; - globals should be special (dynamic)
 ; - needs some means of catching and processing runtime errors,
 ;   e.g. unwind-potect and handler-case
 ; - file i/o
@@ -649,8 +659,9 @@ nil
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" error.
 ; - define-ing an already define-d symbol is not supported
-; - gensym only works inside macros
 ; - setq is not supported
+; - let dynamic is not supported
+; - gensym only works inside macros
 ;
 ; The todo list for features is way too long.
 

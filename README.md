@@ -32,6 +32,12 @@ turtle- and bitmap graphics,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
 
+**Status**
+
+Both the language Murmel as well as the interpreter/ compiler JMurmel currently are work in progress.
+
+**Copyright**
+
 Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.

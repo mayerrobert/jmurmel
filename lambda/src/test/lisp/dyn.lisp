@@ -1,5 +1,5 @@
+; Extension (not part of the language): "jm --XX-dyn" will switch from lexical closures to a dynamic environment
 ; In lexical closure mode JMurmel will eval to (2 0), in dynamic mode (2 2)
-
 
 
 

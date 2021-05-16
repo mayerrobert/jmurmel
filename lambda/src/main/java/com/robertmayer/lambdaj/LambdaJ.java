@@ -1057,6 +1057,7 @@ public class LambdaJ {
         Object func = null;
         Object result = null;
         Deque<Object> traceStack = null;
+        ConsCell restore = null;
         boolean isTc = false;
         try {
             stack++;
@@ -1245,16 +1246,19 @@ public class LambdaJ {
                         env = extEnv;
                         // fall through to "eval a list of forms"
 
+
                     /// eval - (let optsymbol? (bindings...) bodyforms...) -> object
                     /// eval - (let* optsymbol? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
+                        final boolean letDynamic = (car(arguments)) == sDynamic;
+                        if (letDynamic && !(operator == sLet)) throw new LambdaJError(true, "%s: malformed %s: dynamic only allowed with let", operator, operator, form);
                         final boolean letStar  = operator == sLetStar;
                         final boolean letRec   = operator == sLetrec;
-                        final boolean namedLet = /*!star && !rec &&*/ symbolp(car(arguments));
+                        final boolean namedLet = !letDynamic && symbolp(car(arguments));
 
-                        final String op = (namedLet ? "named " : "") + operator;
-                        final ConsCell bindingsAndBodyForms = namedLet ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
+                        final String op = letDynamic ? "let dynamic" : (namedLet ? "named " : "") + operator;
+                        final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
                         final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
                         if (!consp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
@@ -1272,9 +1276,14 @@ public class LambdaJ {
                                 else seen.add(sym);
 
                             ConsCell newBinding = null;
-                            if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
+                            if (letDynamic) newBinding = assoc(sym, topEnv);
+                            else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
                             final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
-                            if (letRec) newBinding.rplacd(val);
+                            if (letDynamic && newBinding != null) {
+                                restore = cons(cons(newBinding, cdr(newBinding)), restore);
+                                newBinding.rplacd(val);
+                            }
+                            else if (letRec) newBinding.rplacd(val);
                             else        extenv = extendEnv(extenv, sym, val);
                         }
                         forms = (ConsCell)cdr(bindingsAndBodyForms);
@@ -1378,6 +1387,10 @@ public class LambdaJ {
             Object s;
             if (traceStack != null) {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
+            }
+            for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
+                ConsCell entry = (ConsCell) caar(c);
+                entry.rplacd(cdar(c));
             }
         }
     }
