@@ -42,7 +42,8 @@ For a copy, see [LICENSE](LICENSE).
 
 **Quickstart for Java 15+ users**
 
-Instead of building the jarfile Java 15+ users can download [JMurmel.java](lambda/src/main/java/com/robertmayer/lambdaj/LambdaJ.java)
+Instead of cloning the repo and building the jarfile
+Java 15+ users can download [JMurmel.java](lambda/src/main/java/com/robertmayer/lambdaj/LambdaJ.java)
 and run
 
     C:\> java Lambdaj.java
@@ -78,7 +79,7 @@ You just wrote and ran a Murmel program!
 
 Now take it from there,
 e.g. read [murmel-langref.lisp](murmel-langref.lisp).  
-Or take a look at the example code in [samples](samples/).  
+Or take a look at the example code in [samples/](samples/).  
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
