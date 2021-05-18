@@ -47,7 +47,8 @@ Murmel and JMurmel currently have the following priorities:
 * Avoid undefined behaviour, throw an error instead
 * When Murmel differs from Common Lisp the differences should be made obvious,
   i.e. a Common Lisp program should either work in JMurmel or throw an error
-* Compilation and execution speed
+* Compilation and execution speed at this time is somewhat low priority
+  compared to the previous items
 
 **Status**
 
