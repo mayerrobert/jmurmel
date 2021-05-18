@@ -60,7 +60,7 @@
 					</manifest>
                     <manifestEntries>
                         <Automatic-Module-Name>com.robertmayer.lambdaj</Automatic-Module-Name>
-                        <Implementation-Version>${project.version}/${maven.build.timestamp}/Built with ${java.vm.vendor} ${java.vm.name} ${java.vm.version}/Built by ${user.name}</Implementation-Version>
+                        <Implementation-Version>${project.version}/${maven.build.timestamp}/Built with ${java.vm.vendor} ${java.vm.name} ${java.vm.version}/Built for Java ${javac.target}/Built by ${user.name}</Implementation-Version>
                     </manifestEntries>
 				</archive>
 			</configuration>
