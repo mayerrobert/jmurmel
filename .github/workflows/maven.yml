@@ -13,13 +13,17 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '8', '11', '15' ]
+    name: Java ${{ matrix.Java }} CI
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 8
+    - name: Set up JDK ${{ matrix.Java }}
       uses: actions/setup-java@v2
       with:
-        java-version: '8'
+        java-version: ${{ matrix.java }}
         distribution: 'adopt'
     - name: Cache Maven packages
       uses: actions/cache@v2
@@ -28,4 +32,4 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B clean package --file pom.xml
