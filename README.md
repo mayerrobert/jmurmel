@@ -32,9 +32,27 @@ turtle- and bitmap graphics,
 garbage collection c/o Java,
 and compiled Murmel will be optimized by Java's JIT compiler.
 
+**Goals, Priorities**
+
+At this time Murmel is a toy project,
+don't expect it to be an industrial strength Lisp in the near future.
+
+Murmel is inspired by Common Lisp, i.e. when in doubt try to do it the Common Lisp way.
+It should be easy to port a program from Murmel to Common Lisp,
+and Murmel knowledge should transfer to Common Lisp.
+
+Murmel and JMurmel currently have the following priorities:
+
+* Small language, small implementation, "hackable"
+* Avoid undefined behaviour, throw an error instead
+* When Murmel differs from Common Lisp the differences should be made obvious,
+  i.e. a Common Lisp program should either work in JMurmel or throw an error
+* Compilation and execution speed
+
 **Status**
 
 Both the language Murmel as well as the interpreter/ compiler JMurmel currently are work in progress.
+There may be incompatible changes in the language.
 
 **Copyright**
 

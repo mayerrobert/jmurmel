@@ -1,3 +1,5 @@
+http://www.ulisp.com/show?1EO1 hat einige benchmarks
+
 ; makes jmurmel crash with java.lang.StackOverflowError
 (defun f names
   (if names
