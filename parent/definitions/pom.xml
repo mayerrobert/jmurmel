@@ -10,8 +10,8 @@
 	<properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- target Java version defaults to the version maven runs on -->
-        <!--<javac.target>1.8</javac.target>-->
+        <!-- default to Java 8, can be changed here or overriden by e.g. "mvn package -Djavac.target=15" -->
+        <javac.target>1.8</javac.target>
 
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
@@ -118,13 +118,11 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
-                <!--
 				<configuration>
 					<compilerVersion>${javac.target}</compilerVersion>
 					<source>${javac.target}</source>
 					<target>${javac.target}</target>
 				</configuration>
-				-->
 			</plugin>
 		</plugins>
 	</build>	
