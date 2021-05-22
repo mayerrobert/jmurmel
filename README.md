@@ -68,7 +68,7 @@ For a copy, see [LICENSE](LICENSE).
 **Quickstart for Java 15+ users**
 
 Instead of cloning the repo and building the jarfile
-Java 15+ users can download [LambdaJ.java](lambda/src/main/java/com/robertmayer/lambdaj/LambdaJ.java)
+Java 11+ users can download [LambdaJ.java](lambda/src/main/java/io/github/jmurmel/LambdaJ.java)
 and run
 
     C:\> java Lambdaj.java

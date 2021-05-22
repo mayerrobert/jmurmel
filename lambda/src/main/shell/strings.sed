@@ -3,7 +3,7 @@
 # list string literals in a java file
 #
 # usage:
-# sed -nf src\main\shell\strings.sed src\main\java\com\robertmayer\lambdaj\LambdaJ.java | sort | uniq -c
+# sed -nf src\main\shell\strings.sed src\main\java\io\github\jmurmel\LambdaJ.java | sort | uniq -c
 
 # remove comments
 sx\(.*\)[ ]*//.*x\1xg

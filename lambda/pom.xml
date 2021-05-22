@@ -89,10 +89,10 @@
 				<archive>
 					<manifest>
 						<!-- <addClasspath>true</addClasspath> -->
-						<mainClass>com.robertmayer.lambdaj.LambdaJ</mainClass>
+						<mainClass>io.github.jmurmel.LambdaJ</mainClass>
 					</manifest>
                     <manifestEntries>
-                        <Automatic-Module-Name>com.robertmayer.lambdaj</Automatic-Module-Name>
+                        <Automatic-Module-Name>io.github.jmurmel</Automatic-Module-Name>
                         <Implementation-Version>Version ${project.version}/Built from ${git.commit.id.describe} ${git.commit.time}/Built by ${user.name} ${git.build.time}</Implementation-Version>
                     </manifestEntries>
 				</archive>
