@@ -27,7 +27,40 @@
 
 	<build>
 	    <plugins>
-	      <plugin>
+            <plugin>
+                <!-- see https://github.com/git-commit-id/git-commit-id-maven-plugin
+                     and https://github.com/git-commit-id/git-commit-id-maven-plugin/blob/master/maven/docs/using-the-plugin.md -->
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>4.0.0</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failOnNoGitDirectory>true</failOnNoGitDirectory>
+                    <failOnUnableToExtractRepoInfo>true</failOnUnableToExtractRepoInfo>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/META-INF/git.properties</generateGitPropertiesFilename>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>git.branch</includeOnlyProperty>
+                        <includeOnlyProperty>git.closest.tag.name</includeOnlyProperty>
+                        <includeOnlyProperty>git.tags</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>git.commit.id.full</includeOnlyProperty>
+                        <includeOnlyProperty>git.commit.id.describe</includeOnlyProperty>
+                    </includeOnlyProperties>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
+
+            <plugin>
 	        <groupId>org.apache.maven.plugins</groupId>
 	        <artifactId>maven-surefire-plugin</artifactId>
 
@@ -60,7 +93,7 @@
 					</manifest>
                     <manifestEntries>
                         <Automatic-Module-Name>com.robertmayer.lambdaj</Automatic-Module-Name>
-                        <Implementation-Version>${project.version}/${maven.build.timestamp}/Built with ${java.vm.vendor} ${java.vm.name} ${java.vm.version}/Built for Java ${javac.target}/Built by ${user.name}</Implementation-Version>
+                        <Implementation-Version>Version ${project.version}/Built from ${git.commit.id.describe} ${git.commit.time}/Built by ${user.name} ${git.build.time}</Implementation-Version>
                     </manifestEntries>
 				</archive>
 			</configuration>
