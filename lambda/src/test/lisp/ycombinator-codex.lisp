@@ -18,6 +18,11 @@
   (if (= d (round d)) (round d)
      d))
 
+; return a one-arg function that applies f and then g
+(defun compose (f g)
+  (lambda (x) (g (f x))))
+
+
 
 ;; Y Combinator  
 (defun Y (f)
@@ -32,7 +37,7 @@
        (lambda (n a b)
         (if (< n 1)
            a
-           (f (- n 1) b (+ a b))))))
+           (f (1- n) b (+ a b))))))
    n 0 1))
 
 ;; factorial
@@ -41,9 +46,9 @@
        (lambda (n)
         (if (zerop n)
            1
-           (* n (f (- n 1)))))))
+           (* n (f (1- n)))))))
    n))
 
-(writeln (mapcar maybe-int (mapcar fib '(1 2 3 4 5 6 7 8 9))))  ; ==> (1 1 2 3 5 8 13 21 34)
+(writeln (mapcar (compose fib maybe-int) '(1 2 3 4 5 6 7 8 9)))  ; ==> (1 1 2 3 5 8 13 21 34)
 
-(writeln (mapcar maybe-int (mapcar fac '(1 2 3 4 5 6 7 8 9))))  ; ==> (1 2 6 24 120 720 5040 40320 362880)
+(writeln (mapcar (compose fac maybe-int) '(1 2 3 4 5 6 7 8 9)))  ; ==> (1 2 6 24 120 720 5040 40320 362880)
