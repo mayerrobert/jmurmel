@@ -14,26 +14,10 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/mayerrobert/jmurmel</url>
-        </repository>
-    </distributionManagement>
-
-    <scm>
-        <url>https://github.com/mayerrobert/jmurmel/blob/master</url>
-        <connection>scm:git:git://github.com/mayerrobert/jmurmel.git</connection>
-        <developerConnection>scm:git:git@github.com:mayerrobert/jmurmel.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
 	<modules>
 		<module>parent/definitions</module>
 
 		<module>lambda</module>
 		<module>lambdajbm</module>
 	</modules>
-
 </project>
