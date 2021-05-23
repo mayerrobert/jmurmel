@@ -3,7 +3,7 @@
 
     <groupId>io.github.jmurmel.parent</groupId>
     <artifactId>definitions</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 	<properties>
