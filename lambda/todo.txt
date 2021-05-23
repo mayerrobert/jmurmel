@@ -1,12 +1,6 @@
-vielleicht round -> fround und round liefert ein integer mit expception bei overflow?
-vgl http://www.lispworks.com/documentation/HyperSpec/Body/f_floorc.htm
-ebenso round, floor, ceiling usw.
-
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
 vgl. Graham, Paul "On Lisp"  Prentice-Hall, New Jersey, 1994, pp. 348-379, available online at http://www.paulgraham.com/onlisptext.html.
 siehe auch http://forum.ulisp.com/t/a-simple-object-system-for-ulisp/622
-
-http://www.ulisp.com/show?1EO1 hat einige benchmarks
 
 ; makes jmurmel crash with java.lang.StackOverflowError
 (defun f names

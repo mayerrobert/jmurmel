@@ -5,9 +5,9 @@
 > *for a more... civilized age.*
 
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
-interpreter/ compiler written in Java8+ that can be used standalone as well as embedded.**
+interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~130kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
+Currently weighing in at ~133kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
 Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
@@ -45,7 +45,7 @@ Murmel and JMurmel currently have the following priorities:
 
 * Small language, small implementation, "hackable"
 * Avoid undefined behaviour, throw an error instead
-* When Murmel differs from Common Lisp the differences should be made obvious,
+* Where Murmel differs from Common Lisp the differences should be made obvious,
   i.e. a Common Lisp program should either work in JMurmel or throw an error
 * Compilation and execution speed at this time is somewhat low priority
   compared to the previous items
@@ -53,7 +53,8 @@ Murmel and JMurmel currently have the following priorities:
 **Status**
 
 Both the language Murmel as well as the interpreter/ compiler JMurmel currently are work in progress.
-There may be incompatible changes in the language.
+There may be some incompatible language changes in the future.
+See also "Known Issues" in [murmel-langref.lisp](murmel-langref.lisp).
 
 **Copyright**
 
@@ -65,7 +66,7 @@ For a copy, see [LICENSE](LICENSE).
 
 ## Getting started
 
-**Quickstart for Java 15+ users**
+**Quickstart for Java 11+ users**
 
 Instead of cloning the repo and building the jarfile
 Java 11+ users can download [LambdaJ.java](lambda/src/main/java/io/github/jmurmel/LambdaJ.java)

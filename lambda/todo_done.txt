@@ -965,3 +965,7 @@ Vgl. sbcl:
 
 grafik im compiler
 -> was fehlt noch?
+
+vielleicht round -> fround und round liefert ein integer mit expception bei overflow?
+vgl http://www.lispworks.com/documentation/HyperSpec/Body/f_floorc.htm
+ebenso round, floor, ceiling usw.
