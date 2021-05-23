@@ -2141,6 +2141,11 @@ public class LambdaJ {
         if (a != null) throw new LambdaJError(true, "%s: expected no arguments but got %s", func, printSEx(a));
     }
 
+    private static void oneArg(String func, ConsCell a) {
+        if (a == null) throw new LambdaJError(true, "%s: expected one argument but no argument was given", func);
+        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected onr argument but got %s", func, printSEx(a));
+    }
+
     private static void oneOrMoreArgs(String func, ConsCell a) {
         if (a == null) throw new LambdaJError(true, "%s: expected at least one argument but no argument was given", func);
     }
@@ -2158,6 +2163,12 @@ public class LambdaJ {
     /** between {@code min} and {@code max} number args */
     private static void numberArgs(String func, ConsCell a, int min, int max) {
         nArgs(func, a, min, max);
+        numberArgs(func, a);
+    }
+
+    /** one number arg */
+    private static void oneNumber(String func, ConsCell a) {
+        oneArg(func, a);
         numberArgs(func, a);
     }
 
@@ -2668,11 +2679,21 @@ public class LambdaJ {
             env = addBuiltin("pi",      Math.PI,
                   env);
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return cl_round(((Number)car(args))); },
-                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); },
-                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); },
-                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 1); return cl_truncate((Number)car(args)); },
+            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 1); return cl_round(((Number)car(args))); },
+                  addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); },
+                  addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); },
+                  addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 1); return cl_truncate((Number)car(args)); },
                   env))));
+
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return truncate(cl_round(((Number)car(args)))); },
+                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return truncate(Math.floor(((Number)car(args)).doubleValue())); },
+                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return truncate(Math.ceil (((Number)car(args)).doubleValue())); },
+                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 1); return truncate(cl_truncate((Number)car(args))); },
+                  env))));
+
+            env = addBuiltin("1+",      (Primitive) args -> { oneNumber("1+", args); return inc((Number)car(args)); },
+                  addBuiltin("1-",      (Primitive) args -> { oneNumber("1-", args); return dec((Number)car(args)); },
+                  env));
 
             env = addBuiltin("sqrt",    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); },
                   addBuiltin("log",     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); },
@@ -2736,6 +2757,32 @@ public class LambdaJ {
 
     private static double cl_rem(Number n1, Number n2) {
         return n1.doubleValue() % n2.doubleValue();
+    }
+
+    /** return the argument w/o decimal places as a long, exception if conversion is not possible */
+    private static long truncate(double d) {
+        if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
+        if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
+        if (d > Long.MAX_VALUE) throw new LambdaJError("overflow");
+        return (long)d;
+    }
+
+    private static Number inc(Number n) {
+        if (n instanceof Long) {
+            long l;
+            if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
+            return l + 1;
+        }
+        return n.doubleValue() + 1;
+    }
+
+    private static Number dec(Number n) {
+        if (n instanceof Long) {
+            long l;
+            if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
+            return l - 1;
+        }
+        return n.doubleValue() - 1;
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
@@ -3687,10 +3734,18 @@ public class LambdaJ {
         public final ConsCell _list    (Object... args) { return arraySlice(args); }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
-        public final double   _round   (Object... args) { oneArg("round",      args.length); return cl_round(dbl(args[0])); }
-        public final double   _floor   (Object... args) { oneArg("floor",      args.length); return Math.floor(dbl(args[0])); }
-        public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return Math.ceil (dbl(args[0])); }
-        public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return cl_truncate(dbl(args[0])); }
+        public final double   _fround   (Object... args) { oneArg("fround",      args.length); return cl_round(dbl(args[0])); }
+        public final double   _ffloor   (Object... args) { oneArg("ffloor",      args.length); return Math.floor(dbl(args[0])); }
+        public final double   _fceiling (Object... args) { oneArg("fceiling",    args.length); return Math.ceil (dbl(args[0])); }
+        public final double   _ftruncate(Object... args) { oneArg("ftruncate",   args.length); return cl_truncate(dbl(args[0])); }
+
+        public final double   _round   (Object... args) { oneArg("round",      args.length); return truncate(cl_round(dbl(args[0]))); }
+        public final double   _floor   (Object... args) { oneArg("floor",      args.length); return truncate(Math.floor(dbl(args[0]))); }
+        public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
+        public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
+
+        public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
+        public final Object   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",       args.length); return Math.sqrt (dbl(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
@@ -4086,12 +4141,15 @@ public class LambdaJ {
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
                 "assoc", "list", "append",
-                "round", "floor", "ceiling", "truncate", "sqrt", "log", "log10", "exp", "expt", "mod", "rem",
+                "round", "floor", "ceiling", "truncate",
+                "fround", "ffloor", "fceiling", "ftruncate",
+                "sqrt", "log", "log10", "exp", "expt", "mod", "rem",
                 "trace", "untrace",
         };
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
+            {"1+", "inc"}, {"1-", "dec"},
             {"format", "format"}, {"format-locale", "formatLocale" },
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },

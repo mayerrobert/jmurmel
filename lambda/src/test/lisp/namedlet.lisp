@@ -1,5 +1,5 @@
 ; output: (empty)
-; result: (1.0 3.0 3.0)
+; result: (1 3 3)
 
 ;;; scheme
 ; (define (number->list n)

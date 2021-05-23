@@ -2,7 +2,7 @@
 ;;; the Y-combinator below is an applicative version also known as the Z-combinator
 
 ; result: t
-; output: (1.0 1.0 2.0 3.0 5.0 8.0 13.0 21.0 34.0)\n(1.0 2.0 6.0 24.0 120.0 720.0 5040.0 40320.0 362880.0)\n
+; output: (1 1 2 3 5 8 13 21 34)\n(1 2 6 24 120 720 5040 40320 362880)\n
 
 ; mapcar for Murmel
 (defun mapcar (f l)
@@ -44,6 +44,6 @@
            (* n (f (- n 1)))))))
    n))
 
-(writeln (mapcar maybe-int (mapcar fib '(1 2 3 4 5 6 7 8 9))))  ; ==> (1.0 1.0 2.0 3.0 5.0 8.0 13.0 21.0 34.0)
+(writeln (mapcar maybe-int (mapcar fib '(1 2 3 4 5 6 7 8 9))))  ; ==> (1 1 2 3 5 8 13 21 34)
 
-(writeln (mapcar maybe-int (mapcar fac '(1 2 3 4 5 6 7 8 9))))  ; ==> (1.0 2.0 6.0 24.0 120.0 720.0 5040.0 40320.0 362880.0)
+(writeln (mapcar maybe-int (mapcar fac '(1 2 3 4 5 6 7 8 9))))  ; ==> (1 2 6 24 120 720 5040 40320 362880)

@@ -14,23 +14,23 @@
            (if (>= ,var ,count) ,result
              (progn
                ,@body
-               (loop (+ ,var 1)))))))))
+               (loop (1+ ,var)))))))))
 
 (macroexpand-1 '(dotimes (i 5 'done) (write i) (writeln)))
 
 (dotimes (i 3 'done) (write i) (writeln))
 ;0
-;1.0
-;2.0
+;1
+;2
 ;==> done
 
 (dotimes (i 3) (write i) (writeln))
 ;0
-;1.0
-;2.0
+;1
+;2
 ;==> nil
 
-(dotimes (temp-one 10 temp-one)) ; ==> 10.0
+(dotimes (temp-one 10 temp-one)) ; ==> 10
 
 
 

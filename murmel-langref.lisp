@@ -262,8 +262,8 @@ nil
 ;   Murmel's define creates global variables that can be
 ;   lexically hidden by e.g. a let-binding.
 ; The first argument is not evaluated, the second is
-(define *global-var* 42)
-(define f1 (lambda (p1 p2) (+ p1 p2)))
+(define *global-var* 42)               ; ==> *gloval-var*
+(define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
 
 ;;; (defun symbol (params...) forms...) -> symbol
 ; defun is a shorthand for defining functions
@@ -271,7 +271,7 @@ nil
 ;    <=>
 ; (define symbol (lambda (params...) forms...))
 ; arguments to defun are not evaluated
-(defun f2 (p1 p2) (+ p1 p2))
+(defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
 ;;; (defmacro (params...) forms...) -> symbol
 ; Defines a macro, similar to CL's defmacro.
@@ -300,7 +300,7 @@ nil
 (rplacd l 22) ; ==> (11 . 22)
 
 ;;; (if condform form optionalform) -> object
-(if nil 'YASSS! 'OHNOOO!!!)
+(if nil 'YASSS! 'OHNOOO!!!) ; ==> OHNOOO!!!
 
 ;;; (progn expr...) -> object
 (if t (progn (write 'abc) (write 'def)))
@@ -359,7 +359,7 @@ nil
 ; form must return a primitive or lambda
 ; argform must eval to a proper list
 ; e.g. apply the function + to the arguments 1 and 2
-(apply + '(1 2))
+(apply + '(1 2)) ; ==> 3.0
 
 ;;; function call
 ; applies the operator returned by operatorform to
@@ -369,15 +369,15 @@ nil
 
 ;;; == Predefined Primitives ==========
 
-; (cons 'a 'b) ==> (a . b)
-(cons 'a 'b)
+; (cons e1 e2) -> conscell
+(cons 'a 'b) ; ==> (a . b)
 
-; (car '(a b c)) ==> a
-(car '(a b c))
+; (car list) -> 1st element of list
+(car '(a b c)) ; ==> a
 (car "abc") ; ==> 'a'
 
-; (cdr '(a b c)) ==> (b c)
-(cdr '(a b c))
+; (cdr list) -> rest of list
+(cdr '(a b c)) ; ==> (b c)
 (cdr "abc") ; ==> "bc"
 
 ;;; (eval form) -> object
@@ -411,15 +411,26 @@ nil
 ; but otherwise should work as expected.
 ; All numeric operators return a double.
 ; eg. (+ number number) -> double
-(+ 1 1)
+(+ 1 1) ; ==> 2.0
+
+; 1+, 1-
+; Increment and decrement return the same type as the argument.
+(1+ 1)   ; ==> 2
+(1+ 1.0) ; ==> 2.0
 
 ; round, truncate, floor, ceiling
-; These operators return an integer value as a double
-; eg. (floor number) -> double
-(floor 1.)
+; These operators return an integer value or an exception
+; if the value cannot be represented by a long (NaN, overflow, underflow),
+; eg. (floor number) -> long
+(floor 1.1) ; ==> 1.0
+
+; fround, ftruncate, ffloor, fceiling
+; These operators return an integer value as a double,
+; eg. (ffloor number) -> double
+(ffloor 1.1) ; ==> 1.0
 
 ; = < > <= >= /=
-(= 1 1.0) ; ==> t
+(= 1 1.0)         ; ==> t
 (< 1 2 3.0 4 5.0) ; ==> t
 (< 1 2 3 3 4 5)   ; ==> nil
 
