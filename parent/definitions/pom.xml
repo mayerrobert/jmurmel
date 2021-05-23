@@ -3,7 +3,7 @@
 
     <groupId>io.github.jmurmel.parent</groupId>
     <artifactId>definitions</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <distributionManagement>
@@ -18,7 +18,7 @@
         <url>https://github.com/mayerrobert/jmurmel/blob/master</url>
         <connection>scm:git:git://github.com/mayerrobert/jmurmel.git</connection>
         <developerConnection>scm:git:git@github.com:mayerrobert/jmurmel.git</developerConnection>
-        <tag>jmurmel-all-1.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <properties>
