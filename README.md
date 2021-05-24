@@ -58,7 +58,7 @@ See also "Known Issues" in [murmel-langref.lisp](murmel-langref.lisp).
 
 **Copyright**
 
-Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer. All rights reserved.
+Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see [LICENSE](LICENSE).
