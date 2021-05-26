@@ -361,6 +361,22 @@ nil
 ; e.g. apply the function + to the arguments 1 and 2
 (apply + '(1 2)) ; ==> 3.0
 
+;;; (load filespec) -> object
+; eval the contents of the given file, return value
+; is the value returned by the last form or nil
+; in case of an empty file.
+; "filespec" is not eval'd.
+; If filespec is an absolute path then it will be used as is.
+; Otherwise the file will be searched in the same directory
+; as the file that contains the "load" and after that
+; in the directory that contains jmurmel.jar.
+; If "load" is entered into the REPL then the file
+; will be searched in the current directory and then
+; in the directory that contains jmurmel.jar.
+(load "nul") ; ==> nil, NUL is Windows specific
+(load "lib.lisp") ;
+
+
 ;;; function call
 ; applies the operator returned by operatorform to
 ; the eval'd operands
@@ -664,7 +680,6 @@ nil
 ; - needs some means of catching and processing runtime errors,
 ;   e.g. unwind-potect and handler-case
 ; - file i/o
-; - support for packages should be added
 ;
 ; Compiler issues:
 ; - define/ defun only work as top level forms, use as non-toplevel form
@@ -672,9 +687,8 @@ nil
 ; - define-ing an already define-d symbol is not supported
 ; - setq is not supported
 ; - let dynamic is not supported
+; - load is not supported
 ; - gensym only works inside macros
-;
-; The todo list for features is way too long.
 
 
 ;;; == Copyright ======================

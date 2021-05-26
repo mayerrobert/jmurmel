@@ -15,6 +15,7 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -133,6 +134,29 @@ public class LambdaJ {
             }
         }
         ENGINE_VERSION = versionInfo;
+    }
+
+    private static final Path murmelDir;
+    static {
+        Path path;
+        try {
+            Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            if (Files.isDirectory(p)) {
+                path = p;
+            }
+            else {
+                path = p.getParent();
+                if (!Files.isDirectory(path)) {
+                    System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
+                }
+            }
+            //System.out.println("murmeldir: " + path);
+        }
+        catch (URISyntaxException e) {
+            System.out.println("cannot get Murmel dir: " + e.getMessage());
+            path = Paths.get(".");
+        }
+        murmelDir = path;
     }
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -437,6 +461,7 @@ public class LambdaJ {
         private final TraceConsumer tracer;
 
         private ReadSupplier in;    // readObj() will read from this
+        Path filePath;
         private boolean init;
 
         private boolean pos;
@@ -456,7 +481,11 @@ public class LambdaJ {
          *            {@code Reader::read} will work
          */
         public SExpressionParser(ReadSupplier in) {
-            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, true);
+            this(in, null);
+        }
+
+        public SExpressionParser(ReadSupplier in, Path filePath) {
+            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, in, filePath, true);
         }
 
         /** Create an S-expression parser (==reader).
@@ -465,9 +494,10 @@ public class LambdaJ {
          *            {@code Reader::read} will work
          * @param eolConversion if true then any EOL will be converted to Unix EOL
          */
-        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, boolean eolConversion) {
+        public SExpressionParser(int features, TraceLevel trace, TraceConsumer tracer, ReadSupplier in, Path filePath, boolean eolConversion) {
             this.features = features; this.trace = trace; this.tracer = tracer;
             this.in = eolConversion ? new AnyToUnixEol(in) : in;
+            this.filePath = filePath;
         }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
@@ -1011,6 +1041,8 @@ public class LambdaJ {
         if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reserve(sApply); }
         if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reserve(sProgn); }
 
+        if (haveXtra())   { sLoad    = symtab.intern(new LambdaJSymbol("load"));    reserve(sLoad); }
+
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
         expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
@@ -1026,7 +1058,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn;
+    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn, sLoad;
 
     private Supplier<Object> expTrue;
 
@@ -1204,6 +1236,10 @@ public class LambdaJ {
                         } else if (cddr(arguments) != null) {
                             form = caddr(arguments); isTc = true; continue tailcall;
                         } else { result = null; return null; } // condition eval'd to false, no else form
+
+                    /// eval - (load filespec) -> object
+                    } else if (operator == sLoad) {
+                        return loadFile(arguments);
                     }
 
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
@@ -1539,6 +1575,49 @@ public class LambdaJ {
         try { return primfn.applyPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws exception: %s", e.getMessage()); }
+    }
+
+
+    private Object loadFile(ConsCell arguments) {
+        nArgs("load", arguments, 1);
+        if (!stringp(car(arguments))) throw new LambdaJError(true, "load: expected a string but got %s", printSEx(arguments));
+        final String fileName = (String) car(arguments);
+        final SymbolTable prevSymtab = symtab;
+        final Path prevPath = ((SExpressionParser)symtab).filePath;
+        final Path p = findFile(prevPath, fileName);
+        try (final Reader r = Files.newBufferedReader(p)) {
+            final SExpressionParser parser = new SExpressionParser(r::read) {
+                @Override
+                public LambdaJSymbol intern(LambdaJSymbol sym) {
+                    return prevSymtab.intern(sym);
+                }
+            };
+            symtab = parser;
+            Object result = null;
+            for (;;) {
+                final Object form = parser.readObj(true);
+                if (form == null) break;
+
+                result = evalquote(form, topEnv, 0, 0, 0);
+            }
+            return result;
+        } catch (IOException e) {
+            throw new LambdaJError(true, "load: error reading file '%s': ", e.getMessage());
+        }
+        finally {
+            symtab = prevSymtab;
+            ((SExpressionParser)symtab).filePath = prevPath;
+        }
+    }
+
+    private static Path findFile(Path current, String fileName) {
+        final Path path = Paths.get(fileName);
+        if (path.isAbsolute()) return path;
+        if (current == null) current = Paths.get("dummy");
+        Path ret = current.resolveSibling(fileName);
+        if (Files.isReadable(ret)) return ret;
+        ret = murmelDir.resolve(fileName);
+        return ret;
     }
 
 
@@ -2889,7 +2968,7 @@ public class LambdaJ {
     @SuppressWarnings("resource")
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (symtab == null) {
-            setSymtab(new SExpressionParser(features, trace, tracer, in::read, true));
+            setSymtab(new SExpressionParser(features, trace, tracer, in::read, null, true));
             topEnv = environment(null);
         }
         final Parser scriptParser = (Parser)symtab;
@@ -2910,7 +2989,7 @@ public class LambdaJ {
     /** Build environment, setup symbol table, Lisp reader and writer.
      *  Needs to be called once before evalQuote() and evalScript(), not needed before interpretExpression/s  */
     public SExpressionParser init(ReadSupplier in, WriteConsumer out) {
-        final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, true);
+        final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
         setSymtab(parser);
         final ObjectWriter outWriter = makeWriter(out);
         setReaderPrinter(parser, outWriter);
@@ -2939,8 +3018,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        final Parser parser = new SExpressionParser(features, trace, tracer, program, true);
-        final ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, true);
+        final Parser parser = new SExpressionParser(features, trace, tracer, program, null, true);
+        final ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
     }
@@ -3036,7 +3115,7 @@ public class LambdaJ {
                     if ("--".equals(fileName)) continue;
                     final Path p = Paths.get(fileName);
                     try (final Reader r = Files.newBufferedReader(p)) {
-                        interpretStream(interpreter, r::read, printResult, history);
+                        interpretStream(interpreter, r::read, p, printResult, history);
                     } catch (IOException e) {
                         System.err.println();
                         System.err.println(e);
@@ -3054,7 +3133,7 @@ public class LambdaJ {
 
             if (toJar || toJava) {
                 final SExpressionParser parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                                                       new InputStreamReader(System.in, consoleCharset)::read, true);
+                                                                       new InputStreamReader(System.in, consoleCharset)::read, null, true);
 
                 final List<Object> program = new ArrayList<>();
                 while (true) {
@@ -3078,16 +3157,16 @@ public class LambdaJ {
             else {
                 interpreter.init(() -> -1, s -> {});
                 injectCommandlineArgs(interpreter, args);
-                interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, printResult, null);
+                interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
             }
         }
     }
 
-    private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, final boolean printResult, List<Object> history) {
+    private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
         try {
             final SExpressionParser parser = (SExpressionParser)interpreter.symtab;
             parser.setInput(prog);
-            final ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, true);
+            final ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, fileName, true);
             final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
             Object result = null;
@@ -3147,7 +3226,7 @@ public class LambdaJ {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 final AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
-                                               () -> read.read(echoHolder.value), false);
+                                               () -> read.read(echoHolder.value), null, false);
                 interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
@@ -3655,7 +3734,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.init(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, true), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionParser(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, System.in::read, null, true), intp.getLispPrinter());
             _t = intern("t");
         }
 
