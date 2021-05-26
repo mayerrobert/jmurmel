@@ -34,7 +34,7 @@
   (or (eq a b)
       (and (integerp a) (integerp b) (= a b))
       (and (floatp a)   (floatp b) (= a b))
-      (and (characterp a) (characterp b) (= (code-char a) (code-char b)))))
+      (and (characterp a) (characterp b) (= (char-code a) (char-code b)))))
 
 
 ;;; Is this number zero?
