@@ -1621,12 +1621,12 @@ public class LambdaJ {
     private Path findFile(Path current, String fileName) {
         final Path path;
         if (fileName.toLowerCase().endsWith(".lisp")) path = Paths.get(fileName);
-        else path = Paths.get(fileName, ".lisp");
+        else path = Paths.get(fileName + ".lisp");
         if (path.isAbsolute()) return path;
         if (current == null) current = Paths.get("dummy");
-        Path ret = current.resolveSibling(fileName);
+        Path ret = current.resolveSibling(path);
         if (Files.isReadable(ret)) return ret;
-        ret = libDir.resolve(fileName);
+        ret = libDir.resolve(path);
         return ret;
     }
 
@@ -1893,6 +1893,8 @@ public class LambdaJ {
     private static boolean  primp(Object o)    { return o instanceof Primitive; }
     private static boolean  numberp(Object o)  { return o instanceof Number; }
     private static boolean  stringp(Object o)  { return o instanceof String; }
+    private static boolean  floatp(Object o)   { return o instanceof Double; }
+    private static boolean  integerp(Object o) { return o instanceof Long; }
     private static boolean  characterp(Object o) { return o instanceof Character; }
 
     /** return a string with "line x:y..xx:yy: " */
@@ -2317,6 +2319,12 @@ public class LambdaJ {
         return ((Number)a).intValue();
     }
 
+    /** Return {@code c} as a Character, error if {@code c} is not a Character. */
+    private Character asChar(String func, Object c) {
+        if (!(c instanceof Character)) throw new LambdaJError(true, "%s: expected a character argument but got %s", func, printSEx(c));
+        return (Character)c;
+    }
+
     /** Return {@code a} cast to a list, error if {@code a} is not a list or nil. */
     private static ConsCell asList(String func, Object a) {
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
@@ -2683,7 +2691,9 @@ public class LambdaJ {
         if (haveString()) {
             env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
-                  env));
+                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (int)(asChar("char-code", car(a))); },
+                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); },
+                  env))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
@@ -2763,7 +2773,9 @@ public class LambdaJ {
 
         if (haveNumbers()) {
             env = addBuiltin("numberp", (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); },
-                  env);
+                  addBuiltin("floatp", (Primitive) args -> { oneArg("floatp", args); return boolResult(floatp(car(args))); },
+                  addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
+                  env)));
 
             env = addBuiltin("pi",      Math.PI,
                   env);

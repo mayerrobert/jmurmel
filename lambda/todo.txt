@@ -1,6 +1,6 @@
 n-aeres char= und in mlib.lisp:eql nutzen
 
-integerp, floatp und char-code fuer mlib.lisp:eql im compiler
+integerp, floatp, code-char und char-code im compiler
 
 load im compiler
 
