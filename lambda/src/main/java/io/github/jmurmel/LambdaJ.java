@@ -1619,7 +1619,9 @@ public class LambdaJ {
     }
 
     private Path findFile(Path current, String fileName) {
-        final Path path = Paths.get(fileName);
+        final Path path;
+        if (fileName.toLowerCase().endsWith(".lisp")) path = Paths.get(fileName);
+        else path = Paths.get(fileName, ".lisp");
         if (path.isAbsolute()) return path;
         if (current == null) current = Paths.get("dummy");
         Path ret = current.resolveSibling(fileName);

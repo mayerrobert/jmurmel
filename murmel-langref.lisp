@@ -365,7 +365,9 @@ nil
 ; eval the contents of the given file, return value
 ; is the value returned by the last form or nil
 ; in case of an empty file.
-; "filespec" is not eval'd.
+; "filespec" is not eval'd and must be a string.
+; Unless filespec ends with ".lisp" the file extension
+; ".lisp" will be appended.
 ; If filespec is an absolute path then it will be used as is.
 ; Otherwise the file will be searched in the same directory
 ; as the file that contains the "load" and after that
