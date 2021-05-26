@@ -377,7 +377,7 @@ nil
 ; will be searched in the current directory and then
 ; in the directory that contains jmurmel.jar.
 (load "nul") ; ==> nil, NUL is Windows specific
-(load "lib.lisp") ;
+(load "lib") ; will search for lib.lisp
 
 
 ;;; function call
