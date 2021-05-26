@@ -1,3 +1,6 @@
+integerp, floatp und code-char fuer mlib.lisp:eql
+
+
 varargs im compiler gehen nicht
 JMurmel> (defun f (a b . c) (list a b c))
 
