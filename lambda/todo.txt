@@ -1,3 +1,16 @@
+varargs im compiler gehen nicht
+JMurmel> (defun f (a b . c) (list a b c))
+
+==> f
+JMurmel> (f 1 2)
+
+==> (1 2 nil)
+JMurmel> :r
+history NOT run as Java - error: _f: not enough arguments
+Error occured in line 1:1..1:7: (f 1 2)
+
+
+
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
 vgl. Graham, Paul "On Lisp"  Prentice-Hall, New Jersey, 1994, pp. 348-379, available online at http://www.paulgraham.com/onlisptext.html.
 siehe auch http://forum.ulisp.com/t/a-simple-object-system-for-ulisp/622
