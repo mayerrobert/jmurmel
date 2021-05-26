@@ -159,6 +159,8 @@ public class LambdaJ {
         murmelDir = path;
     }
 
+    private final Path libDir;
+
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
     @FunctionalInterface public interface TraceConsumer { void println(String msg); }
@@ -400,9 +402,15 @@ public class LambdaJ {
     }
 
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
+        this(features, trace, tracer, null);
+    }
+
+    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, Path libDir) {
         this.features = features;
         this.trace = trace;
         this.tracer = tracer != null ? tracer : System.err::println;
+        if (libDir != null) this.libDir = libDir;
+        else this.libDir = murmelDir;
     }
 
 
@@ -1610,13 +1618,13 @@ public class LambdaJ {
         }
     }
 
-    private static Path findFile(Path current, String fileName) {
+    private Path findFile(Path current, String fileName) {
         final Path path = Paths.get(fileName);
         if (path.isAbsolute()) return path;
         if (current == null) current = Paths.get("dummy");
         Path ret = current.resolveSibling(fileName);
         if (Files.isReadable(ret)) return ret;
-        ret = murmelDir.resolve(fileName);
+        ret = libDir.resolve(fileName);
         return ret;
     }
 
@@ -3085,7 +3093,6 @@ public class LambdaJ {
         misc(args);
         final TraceLevel trace = trace(args);
         final int features = features(args);
-        final LambdaJ interpreter = new LambdaJ(features, trace, null);
 
         final boolean istty       = hasFlag("--tty", args) || null != System.console();
         final boolean repl        = hasFlag("--repl", args);
@@ -3095,11 +3102,32 @@ public class LambdaJ {
         final boolean toJar       = hasFlag("--jar", args);
         final String clsName      = flagValue("--class", args);
         final String outDir       = flagValue("--outdir", args);
+        final String libDir       = flagValue("--libdir", args);
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");
             System.exit(1);
         }
+
+        Path libPath = null;
+        if (libDir != null) {
+            try {
+                libPath = Paths.get(libDir).toAbsolutePath();
+                if (!Files.isDirectory(libPath)) {
+                    System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
+                    System.exit(1);
+                }
+                if (!Files.isReadable(libPath)) {
+                    System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
+                    System.exit(1);
+                }
+            }
+            catch (Exception e) {
+                System.err.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
+                System.exit(1);
+            }
+        }
+        final LambdaJ interpreter = new LambdaJ(features, trace, null, libPath);
 
         final List<Object> history = repl ? new ArrayList<>() : null;
 
@@ -3610,6 +3638,8 @@ public class LambdaJ {
                 + "--help ...........  Show this message and exit\n"
                 + "--help-features ..  Show advanced commandline flags to disable various\n"
                 + "                    Murmel language elements (interpreter only)\n"
+                + "--libdir <dir> ...  (load filespec) also searches in this directory,\n"
+                + "                    default is the directory containing jmurmel.jar.\n"
                 + "\n"
                 + "--java ...........  Compile input files to Java source 'MurmelProgram.java'\n"
                 + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"

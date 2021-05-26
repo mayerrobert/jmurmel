@@ -14,6 +14,8 @@ Misc flags:
 --help ...........  Show this message and exit
 --help-features ..  Show advanced commandline flags to disable various
                     Murmel language elements (interpreter only)
+--libdir <dir> ...  (load filespec) also searches in this directory,
+                    default is the directory containing jmurmel.jar.
 
 --java ...........  Compile input files to Java source 'MurmelProgram.java'
 --jar ............  Compile input files to jarfile 'a.jar' containing

@@ -369,7 +369,8 @@ nil
 ; If filespec is an absolute path then it will be used as is.
 ; Otherwise the file will be searched in the same directory
 ; as the file that contains the "load" and after that
-; in the directory that contains jmurmel.jar.
+; in "libdir" (set with --libdir, libdir defaults to the
+; directory containing jmurmel.jar).
 ; If "load" is entered into the REPL then the file
 ; will be searched in the current directory and then
 ; in the directory that contains jmurmel.jar.
@@ -435,13 +436,13 @@ nil
 (1+ 1.0) ; ==> 2.0
 
 ; round, truncate, floor, ceiling
-; These operators return an integer value or an exception
+; These operators take one argument and return an integer value or an exception
 ; if the value cannot be represented by a long (NaN, overflow, underflow),
 ; eg. (floor number) -> long
 (floor 1.1) ; ==> 1.0
 
 ; fround, ftruncate, ffloor, fceiling
-; These operators return an integer value as a double,
+; These operators take one argument and return an integer value as a double,
 ; eg. (ffloor number) -> double
 (ffloor 1.1) ; ==> 1.0
 
