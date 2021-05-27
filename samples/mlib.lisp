@@ -29,10 +29,22 @@
   (null e))
 
 
-; todo should be (defun char= (a . b) forms...)
-(defun char= (a b) (= (char-code a) (char-code b)))
+;;; Return t if all of the arguments are the same character
+(defun char= (c . more)
+  (if more
+        (let loop ((code (char-code c)) (l more))
+          (if (= code (char-code (car l)))
+                (if (cdr l)
+                      (loop code (cdr l))
+                  t)
+            nil))
+   t))
 
-;;;
+
+;;; Return t if one of the following is true
+;;; a and b are eq
+;;; a and b are numbers of the same type and have the same value
+;;; a and b are the same characters
 (defun eql (a b)
   (or (eq a b)
       (and (integerp a) (integerp b)     (= a b))
