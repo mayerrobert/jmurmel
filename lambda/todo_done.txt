@@ -969,3 +969,14 @@ grafik im compiler
 vielleicht round -> fround und round liefert ein integer mit expception bei overflow?
 vgl http://www.lispworks.com/documentation/HyperSpec/Body/f_floorc.htm
 ebenso round, floor, ceiling usw.
+
+varargs im compiler gehen nicht
+JMurmel> (defun f (a b . c) (list a b c))
+
+==> f
+JMurmel> (f 1 2)
+
+==> (1 2 nil)
+JMurmel> :r
+history NOT run as Java - error: _f: not enough arguments
+Error occured in line 1:1..1:7: (f 1 2)

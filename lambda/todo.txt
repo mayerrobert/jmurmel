@@ -1,20 +1,10 @@
+characters sollten #\a sein, nicht 'a'
+
 n-aeres char= und in mlib.lisp:eql nutzen
 
 integerp, floatp, code-char und char-code im compiler
 
 load im compiler
-
-
-varargs im compiler gehen nicht
-JMurmel> (defun f (a b . c) (list a b c))
-
-==> f
-JMurmel> (f 1 2)
-
-==> (1 2 nil)
-JMurmel> :r
-history NOT run as Java - error: _f: not enough arguments
-Error occured in line 1:1..1:7: (f 1 2)
 
 
 

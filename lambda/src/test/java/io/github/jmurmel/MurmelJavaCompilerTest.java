@@ -281,11 +281,46 @@ public class MurmelJavaCompilerTest {
         assertEquals("progn2 produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
+
     @Test
     public void testVarargs() throws Exception {
         MurmelProgram program = compile("((lambda a (apply + a)) 2 3)");
         assertNotNull("failed to compile varargs to class", program);
         assertEquals("varargs produced wrong result", 5.0, program.body());
+    }
+
+    @Test
+    public void testVarargs0() throws Exception {
+        MurmelProgram program = compile("((lambda (a . b) b))");
+        assertNotNull("failed to compile varargs0 to class", program);
+        try {
+            program.body();
+            fail("expected rt error");
+        }
+        catch (LambdaJError e) {
+            assertTrue(e.getMessage().startsWith("(lambda (a . b)): not enough arguments"));
+        }
+    }
+
+    @Test
+    public void testVarargs1() throws Exception {
+        MurmelProgram program = compile("((lambda (a . b) b) 1)");
+        assertNotNull("failed to compile varargs1 to class", program);
+        assertEquals("varargs1 produced wrong result", null, program.body());
+    }
+
+    @Test
+    public void testVarargs2() throws Exception {
+        MurmelProgram program = compile("((lambda (a . b) b) 1 2)");
+        assertNotNull("failed to compile varargs2 to class", program);
+        assertEquals("varargs2 produced wrong result", "(2)", program.body().toString());
+    }
+
+    @Test
+    public void testVarargs3() throws Exception {
+        MurmelProgram program = compile("((lambda (a . b) b) 1 2 3)");
+        assertNotNull("failed to compile varargs3 to class", program);
+        assertEquals("varargs3 produced wrong result", "(2 3)", program.body().toString());
     }
 
     @Test
@@ -308,6 +343,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile varargscdddr to class", program);
         assertEquals("varargscdddr produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
+
 
     @Test
     public void testFormat() throws Exception {

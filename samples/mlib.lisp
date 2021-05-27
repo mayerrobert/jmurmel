@@ -29,12 +29,15 @@
   (null e))
 
 
+; todo should be (defun char= (a . b) forms...)
+(defun char= (a b) (= (char-code a) (char-code b)))
+
 ;;;
 (defun eql (a b)
   (or (eq a b)
-      (and (integerp a) (integerp b) (= a b))
-      (and (floatp a)   (floatp b) (= a b))
-      (and (characterp a) (characterp b) (= (char-code a) (char-code b)))))
+      (and (integerp a) (integerp b)     (= a b))
+      (and (floatp a)   (floatp b)       (= a b))
+      (and (characterp a) (characterp b) (char= a b))))
 
 
 ;;; Is this number zero?
@@ -49,6 +52,10 @@
   (list 'if condition nil (cons 'progn body)))
 
 
+; use like this:
+; (member 1 '(a b c 1 2 3))
+; (member 1 '(a b c 1 2 3) eq)
+; (member 1 '(a b c 1 2 3) (lambda (a b) (eq a b))
 (defun member (obj l . test)
   (let* ((tst (car test))
          (pred (if tst

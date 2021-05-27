@@ -4132,6 +4132,10 @@ public class LambdaJ {
             if (paramCount != argCount) argError(expr, paramCount, argCount);
         }
 
+        public static void argCheckVarargs(String expr, int paramCount, int argCount) {
+            if (argCount < paramCount - 1) argError(expr, paramCount - 1, argCount);
+        }
+
         private static void argError(String expr, int expected, int actual) {
             if (expected > actual) throw new LambdaJError(true, "%s: not enough arguments", expr);
             if (expected < actual) throw new LambdaJError(true, "%s: too many arguments", expr);
@@ -4899,8 +4903,13 @@ public class LambdaJ {
                 return env;
             }
 
-            if (!symbolp(paramList))
-                sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
+            if (symbolp(paramList)) {
+                // (lambda a forms...) - style varargs
+            }
+            else if (!properList(paramList)) {
+                sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
+            }
+            else sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
 
             final Set<Object> seen = new HashSet<>();
             int n = 0;
@@ -4925,6 +4934,17 @@ public class LambdaJ {
                 params = cdr(params);
             }
             return env;
+        }
+
+        private static boolean properList(Object params) {
+            if (params == null) return true;
+            if (!listp(params)) return false;
+            for (;;) {
+                if (params == null) return true;
+                Object rest = cdr(params);
+                if (!listp(cdr(params))) return false;
+                params = rest;
+            }
         }
 
 //        /** generate boolean op for one or two args */
