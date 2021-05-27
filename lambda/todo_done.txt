@@ -980,3 +980,5 @@ JMurmel> (f 1 2)
 JMurmel> :r
 history NOT run as Java - error: _f: not enough arguments
 Error occured in line 1:1..1:7: (f 1 2)
+
+integerp, floatp, code-char und char-code im compiler

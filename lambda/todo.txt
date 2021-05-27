@@ -1,8 +1,18 @@
+(writeln nil) sollte nil\n schreiben, schreibt aber nur \n
+-> interpreter und compiler
+
+(writeln) gibt im compiler
+java.lang.ArrayIndexOutOfBoundsException: 0
+        at io.github.jmurmel.LambdaJ$MurmelJavaProgram._writeln(LambdaJ.java:3845)
+        at io.github.jmurmel.LambdaJ$MurmelJavaProgram.funcall(LambdaJ.java:3996)
+
+; in einem string ?!?
+
+filenamen in fehlermeldungen
+
 characters sollten #\a sein, nicht 'a'
 
 n-aeres char= und in mlib.lisp:eql nutzen
-
-integerp, floatp, code-char und char-code im compiler
 
 load im compiler
 

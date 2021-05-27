@@ -2234,7 +2234,7 @@ public class LambdaJ {
 
     private static void oneArg(String func, ConsCell a) {
         if (a == null) throw new LambdaJError(true, "%s: expected one argument but no argument was given", func);
-        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected onr argument but got %s", func, printSEx(a));
+        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected one argument but got %s", func, printSEx(a));
     }
 
     private static void oneOrMoreArgs(String func, ConsCell a) {
@@ -2320,7 +2320,7 @@ public class LambdaJ {
     }
 
     /** Return {@code c} as a Character, error if {@code c} is not a Character. */
-    private Character asChar(String func, Object c) {
+    private static Character asChar(String func, Object c) {
         if (!(c instanceof Character)) throw new LambdaJError(true, "%s: expected a character argument but got %s", func, printSEx(c));
         return (Character)c;
     }
@@ -3852,6 +3852,8 @@ public class LambdaJ {
         public final Object _numberp   (Object... args) { oneArg("numberp",    args.length); return numberp   (args[0]) ? _t : null; }
         public final Object _stringp   (Object... args) { oneArg("stringp",    args.length); return stringp   (args[0]) ? _t : null; }
         public final Object _characterp(Object... args) { oneArg("characterp", args.length); return characterp(args[0]) ? _t : null; }
+        public final Object _integerp  (Object... args) { oneArg("integerp",   args.length); return integerp  (args[0]) ? _t : null; }
+        public final Object _floatp    (Object... args) { oneArg("floatp",     args.length); return floatp    (args[0]) ? _t : null; }
 
         public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
         public final ConsCell _list    (Object... args) { return arraySlice(args); }
@@ -3866,6 +3868,9 @@ public class LambdaJ {
         public final double   _floor   (Object... args) { oneArg("floor",      args.length); return truncate(Math.floor(dbl(args[0]))); }
         public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
         public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
+
+        public final Object   charCode (Object... args) { oneArg("char-code", args.length); return (int)asChar("char-code", args[0]); }
+        public final Object   codeChar (Object... args) { oneArg("code-char", args.length); return (char)asInt("code-char", args[0]); }
 
         public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
         public final Object   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
@@ -4266,7 +4271,7 @@ public class LambdaJ {
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 "eval", "eq", "null", "write", "writeln", "lnwrite",
-                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp",
+                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
                 "assoc", "list", "append",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
@@ -4276,6 +4281,7 @@ public class LambdaJ {
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
+            {"char-code", "charCode"}, {"code-char", "codeChar"},
             {"1+", "inc"}, {"1-", "dec"},
             {"format", "format"}, {"format-locale", "formatLocale" },
             //{ "macroexpand-1", "macroexpand1" },
