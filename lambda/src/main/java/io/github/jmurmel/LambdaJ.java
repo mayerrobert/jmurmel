@@ -2415,19 +2415,19 @@ public class LambdaJ {
         lispPrinter.printObj(arg);
     }
 
-    private void writeln(final Object arg) {
+    private void writeln(final ConsCell arg) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
         if (arg != null) {
-            lispPrinter.printObj(arg);
+            lispPrinter.printObj(car(arg));
         }
         lispPrinter.printEol();
     }
 
-    private void lnwrite(final Object arg) {
+    private void lnwrite(final ConsCell arg) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
         lispPrinter.printEol();
         if (arg != null) {
-            lispPrinter.printObj(arg);
+            lispPrinter.printObj(car(arg));
             lispPrinter.printString(" ");
         }
     }
@@ -2631,8 +2631,8 @@ public class LambdaJ {
             };
             env = addBuiltin("read",    freadobj,
                   addBuiltin("write",   (Primitive) a -> { oneArg("write", a);         write(car(a));    return expTrue.get(); },
-                  addBuiltin("writeln", (Primitive) a -> { nArgs("writeln", a, 0, 1);  writeln(car(a));  return expTrue.get(); },
-                  addBuiltin("lnwrite", (Primitive) a -> { nArgs("lnwrite", a, 0, 1);  lnwrite(car(a));  return expTrue.get(); },
+                  addBuiltin("writeln", (Primitive) a -> { nArgs("writeln", a, 0, 1);  writeln(a);  return expTrue.get(); },
+                  addBuiltin("lnwrite", (Primitive) a -> { nArgs("lnwrite", a, 0, 1);  lnwrite(a);  return expTrue.get(); },
                   env))));
 
             final Primitive makeFrame = a -> {
@@ -3842,8 +3842,8 @@ public class LambdaJ {
         public final Object _null      (Object... args) { oneArg("null",       args.length); return args[0] == null ? _t : null; }
 
         public final Object _write     (Object... args) { oneArg("write",      args.length); intp.write(args[0]); return _t; }
-        public final Object _writeln   (Object... args) { intp.writeln(args == null ? null : args[0]); return _t; }
-        public final Object _lnwrite   (Object... args) { intp.lnwrite(args == null ? null : args[0]); return _t; }
+        public final Object _writeln   (Object... args) { oneOptArg("writeln", args.length); intp.writeln(arraySlice(args)); return _t; }
+        public final Object _lnwrite   (Object... args) { oneOptArg("lnwrite", args.length); intp.lnwrite(arraySlice(args)); return _t; }
 
         public final Object _atom      (Object... args) { oneArg("atom",       args.length); return atom      (args[0]) ? _t : null; }
         public final Object _consp     (Object... args) { oneArg("consp",      args.length); return consp     (args[0]) ? _t : null; }
@@ -4112,10 +4112,17 @@ public class LambdaJ {
 
 
 
+        /** zero or one argument */
+        private static void oneOptArg(String expr, int argCount) {
+            if (argCount > 1) throw new LambdaJError(true, "%s: too many arguments", expr);
+        }
+
+        /** one or more arguments */
         private static void onePlusArg(String expr, int argCount) {
             if (argCount < 1) throw new LambdaJError(true, "%s: not enough arguments", expr);
         }
 
+        /** exactly one argument */
         private static void oneArg(String expr, int argCount) {
             if (1 != argCount) argError(expr, 1, argCount);
         }

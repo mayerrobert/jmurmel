@@ -982,3 +982,11 @@ history NOT run as Java - error: _f: not enough arguments
 Error occured in line 1:1..1:7: (f 1 2)
 
 integerp, floatp, code-char und char-code im compiler
+
+(writeln nil) sollte nil\n schreiben, schreibt aber nur \n
+-> interpreter und compiler
+
+(writeln) gibt im compiler
+java.lang.ArrayIndexOutOfBoundsException: 0
+        at io.github.jmurmel.LambdaJ$MurmelJavaProgram._writeln(LambdaJ.java:3845)
+        at io.github.jmurmel.LambdaJ$MurmelJavaProgram.funcall(LambdaJ.java:3996)
