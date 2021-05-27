@@ -990,3 +990,5 @@ integerp, floatp, code-char und char-code im compiler
 java.lang.ArrayIndexOutOfBoundsException: 0
         at io.github.jmurmel.LambdaJ$MurmelJavaProgram._writeln(LambdaJ.java:3845)
         at io.github.jmurmel.LambdaJ$MurmelJavaProgram.funcall(LambdaJ.java:3996)
+
+; in einem string ?!?

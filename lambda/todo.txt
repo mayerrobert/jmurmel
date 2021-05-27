@@ -1,5 +1,3 @@
-; in einem string ?!?
-
 filenamen in fehlermeldungen
 
 characters sollten #\a sein, nicht 'a'

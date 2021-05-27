@@ -579,6 +579,10 @@ public class LambdaJ {
         }
 
         private int getchar() {
+            return getchar(true);
+        }
+
+        private int getchar(boolean handleComment) {
             try {
                 tokEscape = escape;
                 escape = false;
@@ -587,7 +591,7 @@ public class LambdaJ {
                     escape = true;
                     return readchar();
                 }
-                if (c == ';') {
+                if (handleComment && c == ';') {
                     while ((c = readchar()) != '\n' && c != EOF) /* nothing */;
                 }
                 return c;
@@ -609,7 +613,7 @@ public class LambdaJ {
                     look = getchar();
                     while (look != EOF && !isBar(look)) {
                         if (index < SYMBOL_MAX) token[index++] = (char)look;
-                        look = getchar();
+                        look = getchar(false);
                     }
                     if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
                     look = getchar(); // consume trailing |
@@ -621,7 +625,7 @@ public class LambdaJ {
                 } else if (haveString() && isDQuote(look)) {
                     do {
                         if (index < TOKEN_MAX) token[index++] = (char)look;
-                        look = getchar();
+                        look = getchar(false);
                     } while (look != EOF && !isDQuote(look));
                     if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
                     look = getchar(); // consume trailing "
