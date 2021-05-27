@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -141,47 +140,11 @@ public class LambdaJTest {
         /* 86 */ { "(numberp nil)",         "nil", null },
         /* 87 */ { "(numberp (quote (a)))", "nil", null },
 
-        /* https://graham.main.nc.us/~bhammel/graham/lisp.html
-
-        It is a convention, and perhaps a logically infelicitous one, of most LISP interpreters
-        to equate the empty list with a selfevaluating atom called "nil". Thus,
-        */
-
         /* 88 */ { "(cdr (cdr (cdr (quote (a (b c) (d (e f)))))))", "nil", null },
         /* 89 */ { "()", "nil", null },
         /* 90 */ { "(quote ())", "nil", null },
         /* 91 */ { "nil", "nil", null },
         /* 92 */ { "t", "t", null },
-
-        /*
-        The values that atom returns sets the stage for the two internally defined selfevaluating
-        boolean values "nil" and "t".
-        Examples:
-
-        -> nil
-           nil
-
-        -> t
-           t
-
-        -> (atom ())
-           t
-
-        -> (atom ())
-           t
-
-        -> (atom nil)
-           t
-
-        -> (atom t)
-           t
-
-        -> (atom (quote a))
-           t
-
-        -> (atom (quote (a b)))
-           nil
-         */
 
         /* 93 */ { "(define *xyxxy* (lambda () ()))", "*xyxxy*", null },
     };
@@ -196,10 +159,10 @@ public class LambdaJTest {
     @Test
     public void runAllFiles() throws Exception {
         Path cwd = Paths.get(".").toRealPath();
-        System.out.println("cwd: " + cwd.toString());
+        System.out.println("LambdaJTest.runAllFiles() cwd: " + cwd);
         Path lispDir = Paths.get("src", "test", "lisp");
         int skipped = Files.walk(lispDir).filter(path -> path.toString()
-                .endsWith(".lisp")).collect(Collectors.summingInt(path -> runTest(path)));
+                .endsWith(".lisp")).mapToInt(LambdaJTest::runTest).sum();
 
         // files that contain neither "result:" nor "error:" will be skipped
         // grep -L -E "(result:|error:)" *.lisp
@@ -222,9 +185,9 @@ public class LambdaJTest {
         }
     }
 
-    private static Pattern outputPattern = Pattern.compile("[^;]*; output: (.*)");
-    private static Pattern resultPattern = Pattern.compile("[^;]*; result: (.*)");
-    private static Pattern errorPattern = Pattern.compile("[^;]*; error: (.*)");
+    private static final Pattern outputPattern = Pattern.compile("[^;]*; output: (.*)");
+    private static final Pattern resultPattern = Pattern.compile("[^;]*; result: (.*)");
+    private static final Pattern errorPattern = Pattern.compile("[^;]*; error: (.*)");
 
     static int runTest(Path fileName) {
         try {
@@ -239,7 +202,7 @@ public class LambdaJTest {
                 expectedResult = transform(expectedResult);
                 try {
                     runTest(fileName.toString(), contents, expectedResult, expectedOutput);
-                    if (expectedError != null) fail(fileName.toString() + ": expected error \"" + expectedError + "\" but no error occurred");
+                    if (expectedError != null) fail(fileName + ": expected error \"" + expectedError + "\" but no error occurred");
                 }
                 catch (LambdaJ.LambdaJError e) {
                     if (expectedError != null) {
@@ -247,17 +210,17 @@ public class LambdaJTest {
                             // thats fine
                         }
                         else {
-                            fail(fileName.toString() + ": expected error \"" + expectedError + '\"'
+                            fail(fileName + ": expected error \"" + expectedError + '\"'
                                     + " but got error \"" + e.getMessage() + '\"');
                         }
                     } else {
-                        fail(fileName.toString() + " threw exception " + e.getMessage());
+                        fail(fileName + " threw exception " + e.getMessage());
                     }
                 }
                 return 0;
             }
             else {
-                System.out.println("***** skipping " + fileName.toString());
+                System.out.println("***** skipping " + fileName);
                 return 1;
             }
         } catch (LambdaJ.LambdaJError | AssertionError e) {
@@ -285,7 +248,7 @@ public class LambdaJTest {
 
     static void runErrorTest(String fileName, String prog, String expectedExceptionMsgPfx) {
         try {
-            LambdaJTest.runTest(fileName, prog, "ignored", "ignored");
+            runTest(fileName, prog, "ignored", "ignored");
             fail("was expecting error: " + expectedExceptionMsgPfx);
         }
         catch (LambdaJ.LambdaJError e) {
