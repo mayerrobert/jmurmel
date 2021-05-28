@@ -2695,7 +2695,7 @@ public class LambdaJ {
         if (haveString()) {
             env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
-                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (int)(asChar("char-code", car(a))); },
+                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)(asChar("char-code", car(a))); },
                   addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); },
                   env))));
 
@@ -3873,7 +3873,7 @@ public class LambdaJ {
         public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
         public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
 
-        public final Object   charCode (Object... args) { oneArg("char-code", args.length); return (int)asChar("char-code", args[0]); }
+        public final Object   charCode (Object... args) { oneArg("char-code", args.length); return (long)asChar("char-code", args[0]); }
         public final Object   codeChar (Object... args) { oneArg("code-char", args.length); return (char)asInt("code-char", args[0]); }
 
         public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }

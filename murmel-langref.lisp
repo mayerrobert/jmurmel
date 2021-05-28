@@ -410,7 +410,8 @@ nil
 (eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
 (eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
 
-; eq, null, atom, consp, listp, symbolp, numberp, stringp, characterp,
+; eq, null, atom, consp, listp, symbolp, numberp, integerp, floatp,
+; stringp, characterp,
 
 ; assoc takes a key and a list of key/value tupels (lists or conses)
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
@@ -497,10 +498,10 @@ nil
 
 ; get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
 ; NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
-;        offset from Greenwich Mean Time.
-;        In Murmel zone is given as a double, e.g. Vienna in winter is -1.0.
-;        The result type of Murmel's (get-decoded-time) is a list
-;        while CL's returns an ordered sequence.
+;       offset from Greenwich Mean Time.
+;       In Murmel zone is given as a double, e.g. Vienna in winter is -1.0.
+;       The result type of Murmel's (get-decoded-time) is a list
+;       while CL's returns an ordered sequence.
 (get-decoded-time)
 
 ; format t writes a formatted string to stdout and returns nil.
@@ -519,6 +520,8 @@ nil
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
+; (code-char integer) -> character
+; (char-code character) -> integer
 
 ;;; == Predefined Graphics Primitives =
 
