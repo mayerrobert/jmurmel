@@ -992,3 +992,5 @@ java.lang.ArrayIndexOutOfBoundsException: 0
         at io.github.jmurmel.LambdaJ$MurmelJavaProgram.funcall(LambdaJ.java:3996)
 
 ; in einem string ?!?
+
+n-aeres char= und in mlib.lisp:eql nutzen

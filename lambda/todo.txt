@@ -2,8 +2,6 @@ filenamen in fehlermeldungen
 
 characters sollten #\a sein, nicht 'a'
 
-n-aeres char= und in mlib.lisp:eql nutzen
-
 load im compiler
 
 
