@@ -667,32 +667,6 @@ public class LambdaJ {
 
         private static String tokenToString(char[] b, int first, int end) {
             return new String(b, first, end - first);
-
-            /*
-            // based on StringCoding.StringDecoder.decode()
-            CharsetDecoder cd = charset.newDecoder();
-            cd.onMalformedInput(CodingErrorAction.REPORT)
-              .onUnmappableCharacter(CodingErrorAction.REPORT)
-              .reset();
-            ByteBuffer bb = ByteBuffer.wrap(b, first, end - first);
-            char[] ca = new char[TOKEN_MAX];
-            CharBuffer cb = CharBuffer.wrap(ca);
-            try {
-                CoderResult cr = cd.decode(bb, cb, true);
-                if (!cr.isUnderflow())
-                    cr.throwException();
-                cr = cd.flush(cb);
-                if (!cr.isUnderflow())
-                    cr.throwException();
-            } catch (MalformedInputException x) {
-                throw new ParseError("error converting token %s to charset %s: malformed input", new String(b, first, end - first, charset), charset.displayName());
-            } catch (UnmappableCharacterException x) {
-                throw new ParseError("error converting token %s to charset %s: unmappable character", new String(b, first, end - first, charset), charset.displayName());
-            } catch (CharacterCodingException x) {
-                throw new ParseError("error converting token %s to charset %s", new String(b, first, end - first, charset), charset.displayName());
-            }
-            return new String(ca, 0, cb.position());
-            */
         }
 
 
@@ -1146,13 +1120,6 @@ public class LambdaJ {
                         result = car(arguments);
                         return result;
                     }
-
-//                    if (operator == sQuasiquote) {
-//                        SExpressionParser p = (SExpressionParser)symtab;
-//                        //result = p.expand_backquote(evalquote(car(arguments), env, stack, level, traceLvl));
-//                        result = p.expand_quasiquote(car(arguments), 1);
-//                        return result;
-//                    }
 
                     /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
@@ -2342,16 +2309,6 @@ public class LambdaJ {
     private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     /** generate a comparison operator */
-    /*
-    private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
-        twoArgs(opName, args);
-        numberArgs(opName, args);
-        final Number lhs = (Number)car(args);
-        final Number rhs = (Number)cadr(args);
-        if (lhs instanceof Long && rhs instanceof Long) return boolResult(pred.test(Long.compare(lhs.longValue(),     rhs.longValue())));
-        else                                            return boolResult(pred.test(Double.compare(lhs.doubleValue(), rhs.doubleValue())));
-    }
-    */
     private Object makeCompareOp(ConsCell args, String opName, IntPredicate pred) {
         oneOrMoreNumbers(opName, args);
         Number prev = (Number)car(args);
@@ -2360,10 +2317,10 @@ public class LambdaJ {
             final boolean success;
             if (prev instanceof Long && next instanceof Long) success = pred.test(Long.compare(prev.longValue(),     next.longValue()));
             else                                              success = pred.test(Double.compare(prev.doubleValue(), next.doubleValue()));
-            if (!success) return boolResult(false);
+            if (!success) return null;
             prev = next;
         }
-        return boolResult(true);
+        return expTrue.get();
     }
 
     private Object notEqualNumber(ConsCell args) {
@@ -2375,11 +2332,11 @@ public class LambdaJ {
                 final boolean success;
                 if (number instanceof Long && n instanceof Long) success = number.longValue() == n.longValue();
                 else                                             success = Double.compare(number.doubleValue(), n.doubleValue()) == 0;
-                if (success) return boolResult(false);
+                if (success) return null;
             }
             number = (Number)car(moreNumbers);
         }
-        return boolResult(true);
+        return expTrue.get();
     }
 
     /** generate operator for zero or more args */
@@ -2951,6 +2908,7 @@ public class LambdaJ {
         if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) {
             return new CallLambda((ConsCell)maybeFunction);
         }
+        // todo CompilerPrimitive
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName);
     }
 
@@ -4265,14 +4223,17 @@ public class LambdaJ {
 
         /// Environment for compiled Murmel:
         /// * nil, t, pi
-        /// * car, cdr, cons
-        /// * eval, eq, null, intern, write, writeln
-        /// * atom, consp, listp, symbolp, numberp, stringp, characterp, assoc, list
-        /// * round, floor, ceiling, sqrt, log, log10, exp, expt, mod
+        /// * car, cdr, cons, rplaca, rplacd
+        /// * eval, eq, null, intern, write, writeln, lnwrite
+        /// * atom, consp, listp, symbolp, numberp, stringp, characterp, integerp, floatp
+        /// * assoc, list, append
+        /// * round, floor, ceiling, truncate
+        /// * fround, ffloor, fceiling, ftruncate
+        /// * sqrt, log, log10, exp, expt, mod, rem
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-        /// * format, format-locale
+        /// * format, format-locale, char-code, code-char
         ///
         private static final String[] globalvars = { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = {
@@ -4292,9 +4253,8 @@ public class LambdaJ {
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
-            {"char-code", "charCode"}, {"code-char", "codeChar"},
             {"1+", "inc"}, {"1-", "dec"},
-            {"format", "format"}, {"format-locale", "formatLocale" },
+            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charCode"}, {"code-char", "codeChar"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
@@ -4537,7 +4497,7 @@ public class LambdaJ {
             notReserved(sym);
             notDefined("defun", sym, env);
             final String javasym = mangle(sym.toString(), 0);
-            env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env); // todo fuer rekursive aufrufe ggf. einen member "self" in die klasse stecken und ins environment javasym -> self
+            env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env);
 
             sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n"
                     + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
@@ -5011,37 +4971,6 @@ public class LambdaJ {
             else if (atom(form))    { atomToJava(sb, form); }
 
             else if (consp(form)) {
-                /*
-                // generates recursive code that might stackoverflow at runtime on long lists
-                int parens = 0;
-                boolean first = true;
-                for (Object o = form; ; o = cdr(o)) {
-                    if (o == null) break;
-                    if (first) first = false;
-                    else sb.append(',').append(' ');
-
-                    if (cdr(o) != null) {
-                        sb.append("cons(");
-                        parens++;
-                        quotedFormToJava(sb, car(o));
-                        if (!consp(cdr(o))) {
-                            sb.append(',').append(' ');
-                            quotedFormToJava(sb, cdr(o));
-                            break;
-                        }
-                    }
-                    else {
-                        sb.append("cons(");
-                        parens++;
-                        quotedFormToJava(sb, car(o));
-                        sb.append(',').append(' ');
-                        quotedFormToJava(sb, cdr(o));
-                        break;
-                    }
-                }
-                for (int i = 0; i < parens; i++) sb.append(')');
-                */
-
                 // use a builder to avoid stackoverflow at runtime on long lists. nested lists still are recursive at compiletime as well as runtime, tough
                 sb.append("new LambdaJ.ListBuilder()");
                 for (Object o = form; ; o = cdr(o)) {
@@ -5265,28 +5194,7 @@ class EolUtil {
         StringBuilder stringBuilder = null;
         int index = 0;
         final int len = inputValue.length();
-        /*
-        while (index < len) {
-            char c = inputValue.charAt(index);
-            if (c == '\r') {
-                if (stringBuilder == null) {
-                    stringBuilder = new StringBuilder();
-                    // build up the string builder so it contains all the prior characters
-                    stringBuilder.append(inputValue, 0, index);
-                }
-                if ((index + 1 < len) && inputValue.charAt(index + 1) == '\n') {
-                    // this means we encountered a \r\n  ... move index forward one more character
-                    index++;
-                }
-                stringBuilder.append('\n');
-            } else {
-                if (stringBuilder != null) {
-                    stringBuilder.append(c);
-                }
-            }
-            index++;
-        }
-        */
+
         while (index < len) {
             if (inputValue.charAt(index) == '\r') {
                 stringBuilder = new StringBuilder();
