@@ -1139,8 +1139,7 @@ public class LambdaJ {
                         notReserved("define", symbol);
                         final ConsCell envEntry = assoc(symbol, topEnv);
 
-                        // todo mutable globals: naechste zeile entfernen, dann kann man globals mehrfach neu zuweisen, auch im compiler umsetzen
-                        // Murmel define verhielte sich dann wie CL defparameter, nur das Murmel global environment ist lexical (keine special symbols)
+                        // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
                         //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
                         final Object value = evalquote(cadr(arguments), env, stack, level, traceLvl);
@@ -5444,7 +5443,6 @@ class TurtleFrame {
         return this;
     }
 
-    // todo bitmap auch clearen?
     TurtleFrame clear() {
         reset();
         synchronized (minMaxLock) { xmin = xmax = ymin = ymax = 0.0; }
@@ -5453,6 +5451,12 @@ class TurtleFrame {
             lines.clear();
             texts.clear();
             posStack.clear();
+            if (bitmap != null) {
+                final Graphics2D g = bitmap.createGraphics();
+                g.setBackground(new Color(0, 0, 0, 0));
+                g.clearRect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                g.dispose();
+            }
         }
         return repaint();
     }
