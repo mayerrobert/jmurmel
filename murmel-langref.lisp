@@ -522,6 +522,8 @@ nil
 
 ; (code-char integer) -> character
 ; (char-code character) -> integer
+; (string= s1 s2) -> boolean
+
 
 ;;; == Predefined Graphics Primitives =
 

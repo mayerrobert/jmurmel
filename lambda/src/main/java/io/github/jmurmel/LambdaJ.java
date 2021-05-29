@@ -2295,6 +2295,13 @@ public class LambdaJ {
         return (Character)c;
     }
 
+    /** Return {@code c} as a String, error if {@code c} is not a string, character or symbol. */
+    private static String asString(String func, Object c) {
+        if (c == null) return null;
+        if (!(c instanceof String) && !(c instanceof Character) && !(c instanceof LambdaJSymbol)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
+        return c.toString();
+    }
+
     /** Return {@code a} cast to a list, error if {@code a} is not a list or nil. */
     private static ConsCell asList(String func, Object a) {
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
@@ -2653,7 +2660,8 @@ public class LambdaJ {
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
                   addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)(asChar("char-code", car(a))); },
                   addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); },
-                  env))));
+                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return Objects.equals(asString("string=", car(a)), asString("string=", cadr(a))); },
+                  env)))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
@@ -3832,6 +3840,7 @@ public class LambdaJ {
 
         public final Object   charCode (Object... args) { oneArg("char-code", args.length); return (long)asChar("char-code", args[0]); }
         public final Object   codeChar (Object... args) { oneArg("code-char", args.length); return (char)asInt("code-char", args[0]); }
+        public final Object   stringeq(Object... args) { twoArg("string=",   args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])); }
 
         public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
         public final Object   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
@@ -4232,7 +4241,7 @@ public class LambdaJ {
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-        /// * format, format-locale, char-code, code-char
+        /// * format, format-locale, char-code, code-char, string=
         ///
         private static final String[] globalvars = { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = {
@@ -4253,7 +4262,7 @@ public class LambdaJ {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
             {"1+", "inc"}, {"1-", "dec"},
-            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charCode"}, {"code-char", "codeChar"},
+            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charCode"}, {"code-char", "codeChar"}, {"string=", "stringeq"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
