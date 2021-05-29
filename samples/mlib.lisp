@@ -52,6 +52,16 @@
       (and (characterp a) (characterp b) (char= a b))))
 
 
+;;; Return t if one of the following is true
+;;; a and b are eql
+;;; a and b are strings, characters or symbols and have the same text value
+;;; a and b are conses whose car and cdr are equal respectively
+(defun equal (a b)
+  (or (eql a b)
+      (and (stringp a) (stringp b) (string= a b))
+      (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
+
+
 ;;; Is this number zero?
 (defun zerop (n)
   (= n 0))
