@@ -20,10 +20,12 @@
         <tag>HEAD</tag>
     </scm>
 
-	<modules>
-		<module>parent/definitions</module>
-
-		<module>lambda</module>
-		<module>lambdajbm</module>
-	</modules>
+    <modules>
+        <module>parent/definitions</module>
+    
+        <module>lambda</module>
+        <module>lambdajbm</module>
+        
+        <module>mlib</module>
+    </modules>
 </project>

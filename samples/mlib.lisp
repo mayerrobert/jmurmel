@@ -41,7 +41,7 @@
    t))
 
 
-;;; Return t if one of the following is true
+;;; Return t if any of the following is true
 ;;; a and b are eq
 ;;; a and b are numbers of the same type and have the same value
 ;;; a and b are the same characters
@@ -52,7 +52,7 @@
       (and (characterp a) (characterp b) (char= a b))))
 
 
-;;; Return t if one of the following is true
+;;; Return t if any of the following is true
 ;;; a and b are eql
 ;;; a and b are strings, characters or symbols and have the same text value
 ;;; a and b are conses whose car and cdr are equal respectively
