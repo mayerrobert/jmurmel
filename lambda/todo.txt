@@ -1,3 +1,9 @@
+compiler: alle defuns/ defines
+-> zähler mitlaufen lassen
+   im pass1 alle gen-methoden mit zähler als suffix generieren
+   im pass2 zähler erneut hochzählen und die entsprechende zuweisung generieren
+   -> achtung bei macros
+
 filenamen in fehlermeldungen
 
 characters sollten #\a sein, nicht 'a'
