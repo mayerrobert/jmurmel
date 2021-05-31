@@ -2660,7 +2660,7 @@ public class LambdaJ {
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
                   addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)(asChar("char-code", car(a))); },
                   addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); },
-                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return Objects.equals(asString("string=", car(a)), asString("string=", cadr(a))); },
+                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
                   env)))));
 
             if (haveUtil()) {
@@ -3840,7 +3840,7 @@ public class LambdaJ {
 
         public final Object   charCode (Object... args) { oneArg("char-code", args.length); return (long)asChar("char-code", args[0]); }
         public final Object   codeChar (Object... args) { oneArg("code-char", args.length); return (char)asInt("code-char", args[0]); }
-        public final Object   stringeq(Object... args) { twoArg("string=",   args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])); }
+        public final Object   stringeq (Object... args) { twoArg("string=",   args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
 
         public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
         public final Object   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
