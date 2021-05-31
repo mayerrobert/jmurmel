@@ -1,6 +1,26 @@
-;;;; Standard library for Murmel
+;;;; Default library for Murmel
+; Provides:
+; not, and, or
+; zerop, char=
+; eql, equal
+; when, unless, dotimes, dolist
+; member, mapcar, remove-if, remove-if-not
+
+
+
+;;; Logical not
+(defun not (e)
+  (null e))
+
 
 ;;; Short-circuiting macros for logical and and or
+(defmacro and args
+   (if (null args)
+         t
+     (if (null (cdr args))
+           (car args)
+       `(if ,(car args)
+         (and ,@(cdr args))))))
 
 (defmacro or args
    (if (null args)
@@ -13,20 +33,10 @@
                    ,temp
                (or ,@(cdr args))))))))
 
-(defmacro and args
-   (if (null args)
-         t
-     (if (null (cdr args))
-           (car args)
-       (let ((temp (gensym)))
-         `(let ((,temp ,(car args)))
-             (if ,temp
-                   (and ,@(cdr args))))))))
 
-
-;;; Logical not
-(defun not (e)
-  (null e))
+;;; Is this number zero?
+(defun zerop (n)
+  (= n 0))
 
 
 ;;; Return t if all of the arguments are the same character
@@ -38,7 +48,7 @@
                       (loop code (cdr l))
                   t)
             nil))
-   t))
+    t))
 
 
 ;;; Return t if any of the following is true
@@ -62,16 +72,43 @@
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
-;;; Is this number zero?
-(defun zerop (n)
-  (= n 0))
-
-
 (defmacro when (condition . body)
   (list 'if condition (cons 'progn body) nil))
 
 (defmacro unless (condition . body)
   (list 'if condition nil (cons 'progn body)))
+
+
+; similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
+; dotimes (var count-form [result-form]) statement* => result
+(defmacro dotimes (exp . body)
+  (let ((var (car exp))
+        (countform (car (cdr exp)))
+        (count (gensym))
+        (result (car (cdr (cdr exp)))))
+    `(let ((,count ,countform))
+       (if (<= ,count 0)
+             (let ((,var 0)) ,result)
+         (let loop ((,var 0))
+           (if (>= ,var ,count) ,result
+             (progn
+               ,@body
+               (loop (1+ ,var)))))))))
+
+
+; similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
+; dolist (var list-form [result-form]) statement* => result*
+(defmacro dolist (exp . body)
+  (let ((var (car exp))
+        (listform (car (cdr exp)))
+        (lst (gensym))
+        (result (car (cdr (cdr exp)))))
+    `(let loop ((,lst ,listform))
+       (let ((,var (car ,lst)))
+         (if (null ,lst) ,result
+           (progn
+             ,@body
+             (loop (cdr ,lst))))))))
 
 
 ; use like this:
@@ -111,35 +148,3 @@
                 (cons obj (remove-if-not pred (cdr l)))
             (remove-if-not pred (cdr l))))
     nil))
-
-
-; similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
-; dotimes (var count-form [result-form]) statement* => result
-(defmacro dotimes (exp . body)
-  (let ((var (car exp))
-        (countform (car (cdr exp)))
-        (count (gensym))
-        (result (car (cdr (cdr exp)))))
-    `(let ((,count ,countform))
-       (if (<= ,count 0)
-             (let ((,var 0)) ,result)
-         (let loop ((,var 0))
-           (if (>= ,var ,count) ,result
-             (progn
-               ,@body
-               (loop (1+ ,var)))))))))
-
-
-; similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
-; dolist (var list-form [result-form]) statement* => result*
-(defmacro dolist (exp . body)
-  (let ((var (car exp))
-        (listform (car (cdr exp)))
-        (lst (gensym))
-        (result (car (cdr (cdr exp)))))
-    `(let loop ((,lst ,listform))
-       (let ((,var (car ,lst)))
-         (if (null ,lst) ,result
-           (progn
-             ,@body
-             (loop (cdr ,lst))))))))

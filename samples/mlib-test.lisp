@@ -31,16 +31,14 @@
     nil))
 
 
-
-;(defmacro run-form (e) `(progn (write ',e) (format t " ; ==> ") (writeln ,e)))
-;(run-form (char-code (car "la")))
-;(run-form (code-char 108))
-;(run-form (integerp 1))
-;(run-form (integerp 1.0))
-;(run-form (floatp 1))
-;(run-form (floatp 1.0))
-
-
+;;; test not
+(assert-true  (not nil))
+(assert-true  (not '()))
+(assert-true  (not (integerp 'sss)))
+(assert-false (not (integerp 1)))
+(assert-false (not 3.7))
+(assert-false (not 'apple))
+ 
 
 ;;; test logical and/ or macros
 (assert-true
@@ -50,9 +48,18 @@
        (and (<= 1 2 3 4)
             (> 5 3 1))))
 
+(defmacro inc-var (var) `(setq ,var (1+ ,var)))
+(defmacro dec-var (var) `(setq ,var (1- ,var)))
+(define temp1 1) (define temp2 1) (define temp3 1)
+(assert-equal 2 (and (inc-var temp1) (inc-var temp2) (inc-var temp3)))
+(assert-true (and (eql 2 temp1) (eql 2 temp2) (eql 2 temp3)))
+(assert-equal 1 (dec-var temp3))
+(assert-false (and (dec-var temp1) (dec-var temp2) (eq temp3 'nil) (dec-var temp3)))
+(assert-true (and (eql temp1 temp2) (eql temp2 temp3)))
+(assert-true (and))
 
-;;; test not
-(assert-true (not nil))
+
+; todo zerop, char=
 
 
 ;;; test eql
@@ -66,15 +73,11 @@
 (assert-false (eql (cons 'a 'b) (cons 'a 'c)))
 (assert-false (eql (cons 'a 'b) (cons 'a 'b)))
 (assert-false (eql '(a . b) '(a . b)))
-;=>  true
-;OR=>  false
 (define x nil)
 (assert-true  (progn (setq x (cons 'a 'b)) (eql x x)))
 (assert-true  (progn (setq x '(a . b)) (eql x x)))
 ; (eql #\A #\A) =>  true
 (assert-false (eql "Foo" "Foo"))
-;=>  true
-;OR=>  false
 ; (eql "Foo" (copy-seq "Foo")) =>  false
 (assert-false (eql "FOO" "foo"))
 
@@ -96,6 +99,10 @@
 (assert-false (equal "FOO" "foo"))
 (assert-true  (equal "This-string" "This-string"))
 (assert-false (equal "This-string" "this-string"))
+
+
+; todo when, unless, dotimes, dolist
+; todo member, mapcar, remove-if, remove-if-not
 
 
 

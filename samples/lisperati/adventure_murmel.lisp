@@ -8,10 +8,8 @@
          t
      (if (null (cdr args))
            (car args)
-       (let ((temp (gensym)))
-         `(let ((,temp ,(car args)))
-             (if ,temp
-                   (and ,@(cdr args))))))))
+       `(if ,(car args)
+         (and ,@(cdr args))))))
 
 (defun not (x) (null x))
 
