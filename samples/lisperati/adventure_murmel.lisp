@@ -3,11 +3,15 @@
 
 (defmacro defparameter (sym val) `(define ,sym ,val))
 
-; "and" sollte eigentlich ein macro sein, so wies hier verwendet wird ists aber egal
-(defun and l
-  (if (null l) t
-     (if (car l) (apply and (cdr l))
-       nil)))
+(defmacro and args
+   (if (null args)
+         t
+     (if (null (cdr args))
+           (car args)
+       (let ((temp (gensym)))
+         `(let ((,temp ,(car args)))
+             (if ,temp
+                   (and ,@(cdr args))))))))
 
 (defun not (x) (null x))
 
@@ -43,12 +47,12 @@
 ; http://www.lisperati.com/data.html
 (defparameter *objects* '(whiskey-bottle bucket frog chain))
 
-(defparameter *map* '((living-room (you are in the living-room of a wizards house. there is a wizard snoring loudly on the couch.)
+(defparameter *map* '((living-room (you are in the living-room of a wizard's house. there is a wizard snoring loudly on the couch.)
                                    (west door garden)  
                                    (upstairs stairway attic))
                       (garden (you are in a beautiful garden. there is a well in front of you.)
                               (east door living-room))
-                      (attic (you are in the attic of the wizards house. there is a giant welding torch in the corner.)
+                      (attic (you are in the attic of the abandoned house. there is a giant welding torch in the corner.)
                              (downstairs stairway living-room))))
 
 (defparameter *object-locations* '((whiskey-bottle living-room)
@@ -100,7 +104,7 @@
 ; http://www.lisperati.com/walking.html
 (defun walk-direction (direction)
   (let ((next (assoc direction (cddr (assoc *location* *map*)))))
-    (cond (next (define *location* (third next)) (look))
+    (cond (next (setq *location* (third next)) (look))
 	      (t    '(you cant go that way.)))))
 
 (walk-direction 'west)
@@ -148,11 +152,11 @@
             (t '(i cant ,',command like that.)))))
 
 (game-action weld chain bucket attic
-             (cond ((and (have 'bucket) (define *chain-welded* 't)) '(the chain is now securely welded to the bucket.))
+             (cond ((and (have 'bucket) (setq *chain-welded* 't)) '(the chain is now securely welded to the bucket.))
                    (t '(you do not have a bucket.))))
 
 (game-action dunk bucket well garden
-             (cond (*chain-welded* (define *bucket-filled* 't) '(the bucket is now full of water))
+             (cond (*chain-welded* (setq *bucket-filled* 't) '(the bucket is now full of water))
                    (t '(the water level is too low to reach.))))
 
 (game-action splash bucket wizard living-room
@@ -162,6 +166,7 @@
 
 
 
+; Solution:
 (pickup bucket)
 (walk west)
 (pickup chain)

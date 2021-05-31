@@ -1,3 +1,6 @@
+mlib-test vervollständigen
+mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
+
 compiler: alle defuns/ defines
 -> zähler mitlaufen lassen
    im pass1 alle gen-methoden mit zähler als suffix generieren
