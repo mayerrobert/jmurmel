@@ -731,7 +731,7 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return null;
             }
-            if (!tokEscape && tok instanceof LambdaJSymbol && "nil".equals(tok.toString())) {
+            if (!tokEscape && tok instanceof LambdaJSymbol && "nil".equalsIgnoreCase(tok.toString())) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
                 return null;
             }
