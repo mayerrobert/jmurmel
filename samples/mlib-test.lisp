@@ -50,13 +50,27 @@
 
 (defmacro inc-var (var) `(setq ,var (1+ ,var)))
 (defmacro dec-var (var) `(setq ,var (1- ,var)))
-(define temp1 1) (define temp2 1) (define temp3 1)
+(define temp0 nil) (define temp1 1) (define temp2 1) (define temp3 1)
+
 (assert-equal 2 (and (inc-var temp1) (inc-var temp2) (inc-var temp3)))
 (assert-true (and (eql 2 temp1) (eql 2 temp2) (eql 2 temp3)))
 (assert-equal 1 (dec-var temp3))
 (assert-false (and (dec-var temp1) (dec-var temp2) (eq temp3 'nil) (dec-var temp3)))
 (assert-true (and (eql temp1 temp2) (eql temp2 temp3)))
 (assert-true (and))
+
+(assert-false (or))
+(assert-equal 30 (setq temp0 nil temp1 10 temp2 20 temp3 30))
+(assert-equal 10 (or temp0 temp1 (setq temp2 37)))
+(assert-equal 20 temp2)
+(assert-equal 11 (or (inc-var temp1) (inc-var temp2) (inc-var temp3)))
+(assert-equal 11 temp1)
+(assert-equal 20 temp2)
+(assert-equal 30 temp3)
+; (or (values) temp1) =>  11
+; (or (values temp1 temp2) temp3) =>  11
+; (or temp0 (values temp1 temp2)) =>  11, 20
+; (or (values temp0 temp1) (values temp2 temp3)) =>  20, 30
 
 
 ; todo zerop, char=
@@ -101,7 +115,33 @@
 (assert-false (equal "This-string" "this-string"))
 
 
-; todo when, unless, dotimes, dolist
+; when, unless
+(labels ((oddp (n) (= 1.0 (mod n 2)))
+         (prin1 (form) (write form) form))
+(assert-equal 'hello (when t 'hello))
+(assert-equal nil    (unless t 'hello))
+(assert-equal nil    (when nil 'hello))
+(assert-equal 'hello (unless nil 'hello))
+(assert-equal nil    (when t))
+(assert-equal nil    (unless nil))
+(assert-equal 3      (when t (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
+(assert-equal nil    (unless t (prin1 1) (prin1 2) (prin1 3)))
+(assert-equal nil    (when nil (prin1 1) (prin1 2) (prin1 3)))
+(assert-equal 3      (unless nil (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
+(assert-equal
+ '((4) NIL (5) NIL 6 (6) 7 (7))
+ (let ((x 3))
+   (list (when (oddp x) (inc-var x) (list x))
+         (when (oddp x) (inc-var x) (list x))
+         (unless (oddp x) (inc-var x) (list x))
+         (unless (oddp x) (inc-var x) (list x))
+         (if (oddp x) (inc-var x) (list x))
+         (if (oddp x) (inc-var x) (list x))
+         (if (not (oddp x)) (inc-var x) (list x))
+         (if (not (oddp x)) (inc-var x) (list x))))))
+
+
+; dotimes, dolist
 ; todo member, mapcar, remove-if, remove-if-not
 
 
