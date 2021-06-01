@@ -1,4 +1,7 @@
-push, pop?
+funktion error wirft eine exception die am programmende den errorlevel bestimmt
+         fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
+undefmacro
+push, pop
 
 mlib-test vervollständigen
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)

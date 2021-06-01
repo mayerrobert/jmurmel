@@ -150,7 +150,7 @@
 (assert-equal 10 temp-two)
 
 
-; dolist
+; test dolist
 (defmacro prepend (elem l) `(setq ,l (cons ,elem ,l)))
 (define temp-two '())
 (assert-equal '(4 3 2 1) (dolist (temp-one '(1 2 3 4) temp-two) (prepend temp-one temp-two)))
@@ -163,7 +163,50 @@
 
 
 
-; member, mapcar, remove-if, remove-if-not
+; test member
+(assert-equal '(2 3) (member 2 '(1 2 3)))
+(assert-equal NIL (member 'e '(a b c d)))
+
+
+; test mapcar
+(assert-equal '(1 2 3)
+              (mapcar car '((1 a) (2 b) (3 c))))
+(assert-equal '(3.0 4.0 2.0 5.0 6.0)
+              (mapcar abs '(3 -4 2 -5 -6)))
+(assert-equal '((A . 1) (B . 2) (C . 3))
+              (mapcar cons '(a b c) '(1 2 3)))
+
+
+; test maplist
+(assert-equal '((1 2 3 4 1 2 1 2 3) (2 3 4 2 2 3))
+              (maplist append '(1 2 3 4) '(1 2) '(1 2 3)) )
+(assert-equal '((FOO A B C D) (FOO B C D) (FOO C D) (FOO D))
+              (maplist (lambda (x) (cons 'foo x)) '(a b c d)))
+(assert-equal '(0 0 1 0 1 1 1)
+              (maplist (lambda (x) (if (member (car x) (cdr x)) 0 1)) '(a b a c d b c)))
+;An entry is 1 if the corresponding element of the input
+;  list was the last instance of that element in the input list.
+
+
+; test mapc
+(define dummy nil)
+(assert-equal
+  '(1 2 3 4)
+  (mapc (lambda x (setq dummy (append dummy x)))
+        '(1 2 3 4)
+        '(a b c d e)
+        '(x y z)))
+(assert-equal '(1 A X 2 B Y 3 C Z) dummy)
+
+
+; test mapl
+(setq dummy nil)
+(assert-equal '(1 2 3 4)
+              (mapl (lambda (x) (prepend x dummy)) '(1 2 3 4)))
+(assert-equal '((4) (3 4) (2 3 4) (1 2 3 4)) dummy)
+
+
+; remove-if, remove-if-not
 
 
 

@@ -1,11 +1,13 @@
 ;;;; Default library for Murmel
 ; Provides:
 ; not, and, or
-; zerop, char=
+; zerop, abs
+; char=
 ; eql, equal
 ; when, unless, dotimes, dolist
-; member, mapcar, remove-if, remove-if-not
-
+; member
+; mapcar, maplist, mapc, mapl
+; remove-if, remove-if-not
 
 
 ;;; Logical not
@@ -37,6 +39,9 @@
 ;;; Is this number zero?
 (defun zerop (n)
   (= n 0))
+
+(defun abs (n)
+  (if (< n 0) (- n) (+ n)))
 
 
 ;;; Return t if all of the arguments are the same character
@@ -129,9 +134,40 @@
       nil)))
 
 
-(defun mapcar (f l)
-  (if l (cons (f (car l)) (mapcar f (cdr l)))
-    nil))
+; helper macro to generate defuns for the various maxXX functions
+(defmacro mapx (name comb acc accn return-list)
+  (append
+    (list 'defun name '(f l . more))
+    (list `(if more
+                 (labels ((none-nil (lists)
+                            (if lists
+                                  (and (car lists) (none-nil (cdr lists)))
+                              t))
+                          (cdrs (lists)
+                            (if lists
+                                  (cons (cdr (car lists)) (cdrs (cdr lists)))
+                              nil))
+                          (cars (lists)
+                            (if lists
+                                  (cons (car (car lists)) (cars (cdr lists)))
+                              nil)))
+                   (let loop ((args (cons l more)))
+                     (if (none-nil args)
+                           (,comb (apply f (,accn args)) (loop (cdrs args)))
+                       nil)))
+             (if l (,comb (f (,acc l)) (,name f (cdr l)))
+               nil)))
+    (when return-list '(l))))
+
+; (mapcar function list [more-lists]) -> list
+(mapx mapcar  cons  car cars nil)
+; (maplist function list [more-lists]) -> list
+(mapx maplist cons  (lambda (l) l) (lambda (l) l) nil)
+; (mapc function list [more-lists]) -> first-arg-list
+(mapx mapc    progn car cars t)
+; (mapl function list [more-lists]) -> first-arg-list
+(mapx mapl    progn (lambda (l) l) (lambda (l) l) t)
+
 
 (defun remove-if (pred l)
   (if l
@@ -140,6 +176,7 @@
                 (remove-if pred (cdr l))
             (cons obj (remove-if pred (cdr l)))))
     nil))
+
 
 (defun remove-if-not (pred l)
   (if l
