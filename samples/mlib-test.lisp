@@ -2,6 +2,7 @@
 
 (load "mlib")
 
+(define *success-count* 0)
 (define *error-count* 0)
 
 
@@ -10,6 +11,7 @@
   `(do-assert-equal ,expected ,form (if ,msg ,(car msg) '(equal ,expected ,form))))
 
 (defun do-assert-equal (expected actual msg)
+  (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
     (format t "%nassert-equal failed: ") (writeln msg)
     (format t "expected: ") (writeln expected)
@@ -25,6 +27,7 @@
   `(do-assert (not ,condition) ',condition (if ,msg ,(car msg) "expected condition to be false")))
 
 (defun do-assert (condition quoted-condition msg)
+  (setq *success-count* (1+ *success-count*))
   (unless condition
     (format t "%nassertion failed:%n")
     (writeln quoted-condition)
@@ -75,7 +78,13 @@
 ; (or (values temp0 temp1) (values temp2 temp3)) =>  20, 30
 
 
-; todo zerop, char=
+; todo abs
+
+
+; todo zerop, evenp, oddp
+
+
+; todo char=
 
 
 ;;; test eql
@@ -118,29 +127,28 @@
 
 
 ; test when, unless
-(labels ((oddp (n) (= 1.0 (mod n 2)))
-         (prin1 (form) (write form) form))
-(assert-equal 'hello (when t 'hello))
-(assert-equal nil    (unless t 'hello))
-(assert-equal nil    (when nil 'hello))
-(assert-equal 'hello (unless nil 'hello))
-(assert-equal nil    (when t))
-(assert-equal nil    (unless nil))
-(assert-equal 3      (when t (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
-(assert-equal nil    (unless t (prin1 1) (prin1 2) (prin1 3)))
-(assert-equal nil    (when nil (prin1 1) (prin1 2) (prin1 3)))
-(assert-equal 3      (unless nil (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
-(assert-equal
- '((4) NIL (5) NIL 6 (6) 7 (7))
- (let ((x 3))
-   (list (when (oddp x) (inc-var x) (list x))
-         (when (oddp x) (inc-var x) (list x))
-         (unless (oddp x) (inc-var x) (list x))
-         (unless (oddp x) (inc-var x) (list x))
-         (if (oddp x) (inc-var x) (list x))
-         (if (oddp x) (inc-var x) (list x))
-         (if (not (oddp x)) (inc-var x) (list x))
-         (if (not (oddp x)) (inc-var x) (list x))))))
+(labels ((prin1 (form) (write form) form))
+  (assert-equal 'hello (when t 'hello))
+  (assert-equal nil    (unless t 'hello))
+  (assert-equal nil    (when nil 'hello))
+  (assert-equal 'hello (unless nil 'hello))
+  (assert-equal nil    (when t))
+  (assert-equal nil    (unless nil))
+  (assert-equal 3      (when t (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
+  (assert-equal nil    (unless t (prin1 1) (prin1 2) (prin1 3)))
+  (assert-equal nil    (when nil (prin1 1) (prin1 2) (prin1 3)))
+  (assert-equal 3      (unless nil (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
+  (assert-equal
+    '((4) NIL (5) NIL 6 (6) 7 (7))
+    (let ((x 3))
+      (list (when (oddp x) (inc-var x) (list x))
+            (when (oddp x) (inc-var x) (list x))
+            (unless (oddp x) (inc-var x) (list x))
+            (unless (oddp x) (inc-var x) (list x))
+            (if (oddp x) (inc-var x) (list x))
+            (if (oddp x) (inc-var x) (list x))
+            (if (not (oddp x)) (inc-var x) (list x))
+            (if (not (oddp x)) (inc-var x) (list x))))))
 
 
 ; test dotimes
@@ -206,11 +214,17 @@
 (assert-equal '((4) (3 4) (2 3 4) (1 2 3 4)) dummy)
 
 
-; remove-if, remove-if-not
+; test remove-if, remove-if-not, remove
+(assert-equal '(2 4 4) (remove-if oddp '(1 2 4 1 3 4 5)))
+(assert-equal '(2 4 4) (remove-if-not evenp '(1 2 4 1 3 4 5)))
 
+(assert-equal '(1 3 5 9) (remove 4 '(1 3 4 5 9)))
+(assert-equal '(1 2 1 3 5) (remove 4 '(1 2 4 1 3 4 5)))
 
 
 ; Summary
-; print failed tests if any
-(unless (zerop *error-count*)
-  (fatal (format nil "%n%d asserts failed%n" *error-count*)))
+; print succeeded and failed tests if any
+(writeln) (writeln)
+(if (zerop *error-count*)
+      (format t "mlib-test.lisp: %d asserts succeeded. Yay!%n" *success-count*)
+  (fatal (format nil "mlib-test.lisp: %d/%d asserts failed. D'oh!%n" *error-count* *success-count*)))

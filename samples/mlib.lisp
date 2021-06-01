@@ -1,13 +1,17 @@
 ;;;; Default library for Murmel
+;
+; Usage: copy into the directory containing jmurmel.jar or into the directory specified with --libdir
+;        and begin your file with (load "mlib")
+;
 ; Provides:
 ; not, and, or
-; zerop, abs
+; abs, zerop, evenp, oddp
 ; char=
 ; eql, equal
 ; when, unless, dotimes, dolist
 ; member
 ; mapcar, maplist, mapc, mapl
-; remove-if, remove-if-not
+; remove-if, remove-if-not, remove
 
 
 ;;; Logical not
@@ -36,12 +40,14 @@
                (or ,@(cdr args))))))))
 
 
-;;; Is this number zero?
-(defun zerop (n)
-  (= n 0))
-
 (defun abs (n)
   (if (< n 0) (- n) (+ n)))
+
+
+;;; Is this number zero?
+(defun zerop (n) (= n 0))
+(defun evenp (n) (= 0.0 (mod n 2)))
+(defun oddp  (n) (= 1.0 (mod n 2)))
 
 
 ;;; Return t if all of the arguments are the same character
@@ -136,28 +142,25 @@
 
 ; helper macro to generate defuns for the various maxXX functions
 (defmacro mapx (name comb acc accn return-list)
-  (append
-    (list 'defun name '(f l . more))
-    (list `(if more
-                 (labels ((none-nil (lists)
-                            (if lists
-                                  (and (car lists) (none-nil (cdr lists)))
-                              t))
-                          (cdrs (lists)
-                            (if lists
-                                  (cons (cdr (car lists)) (cdrs (cdr lists)))
-                              nil))
-                          (cars (lists)
-                            (if lists
-                                  (cons (car (car lists)) (cars (cdr lists)))
-                              nil)))
-                   (let loop ((args (cons l more)))
-                     (if (none-nil args)
-                           (,comb (apply f (,accn args)) (loop (cdrs args)))
-                       nil)))
-             (if l (,comb (f (,acc l)) (,name f (cdr l)))
-               nil)))
-    (when return-list '(l))))
+  `(defun ,name (f l . more)
+     (if more
+           (labels ((none-nil (lists)
+                      (if lists (and (car lists) (none-nil (cdr lists)))
+                        t))
+                    (cdrs (lists)
+                      (if lists (cons (cdr (car lists)) (cdrs (cdr lists)))
+                        nil))
+                    (cars (lists)
+                      (if lists (cons (car (car lists)) (cars (cdr lists)))
+                        nil)))
+             (let loop ((args (cons l more)))
+               (if (none-nil args)
+                     (,comb (apply f (,accn args)) (loop (cdrs args)))
+                 nil)))
+       (let loop ((f f) (l l))
+         (if l (,comb (f (,acc l)) (loop f (cdr l)))
+           nil)))
+    ,@(when return-list '(l))))
 
 ; (mapcar function list [more-lists]) -> list
 (mapx mapcar  cons  car cars nil)
@@ -177,11 +180,18 @@
             (cons obj (remove-if pred (cdr l)))))
     nil))
 
-
 (defun remove-if-not (pred l)
   (if l
         (let ((obj (car l)))
           (if (pred obj)
                 (cons obj (remove-if-not pred (cdr l)))
             (remove-if-not pred (cdr l))))
+    nil))
+
+(defun remove (elem l)
+  (if l
+        (let ((obj (car l)))
+          (if (eql elem obj)
+                (remove elem (cdr l))
+            (cons obj (remove elem (cdr l)))))
     nil))
