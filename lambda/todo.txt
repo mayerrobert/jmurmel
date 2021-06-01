@@ -1,3 +1,5 @@
+push, pop?
+
 mlib-test vervollständigen
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
 

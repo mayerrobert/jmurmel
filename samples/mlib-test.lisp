@@ -1,3 +1,5 @@
+;;;; Tests for Murmel's default library "mlib".
+
 (load "mlib")
 
 (define *error-count* 0)
@@ -115,7 +117,7 @@
 (assert-false (equal "This-string" "this-string"))
 
 
-; when, unless
+; test when, unless
 (labels ((oddp (n) (= 1.0 (mod n 2)))
          (prin1 (form) (write form) form))
 (assert-equal 'hello (when t 'hello))
@@ -141,8 +143,27 @@
          (if (not (oddp x)) (inc-var x) (list x))))))
 
 
-; dotimes, dolist
-; todo member, mapcar, remove-if, remove-if-not
+; test dotimes
+(assert-equal 10 (dotimes (temp-one 10 temp-one)))
+(define temp-two 0)
+(assert-true (dotimes (temp-one 10 t) (inc-var temp-two)))
+(assert-equal 10 temp-two)
+
+
+; dolist
+(defmacro push (elem l) `(setq ,l (cons ,elem ,l)))
+(define temp-two '())
+(assert-equal '(4 3 2 1) (dolist (temp-one '(1 2 3 4) temp-two) (push temp-one temp-two)))
+
+(define temp-two 0)
+(assert-equal nil (dolist (temp-one '(1 2 3 4)) (inc-var temp-two)))
+(assert-equal 4 temp-two)
+
+(assert-equal nil (dolist (x '(a b c d)) (write x) (format t " "))) ; >>  A B C D , =>  NIL
+
+
+
+; member, mapcar, remove-if, remove-if-not
 
 
 
