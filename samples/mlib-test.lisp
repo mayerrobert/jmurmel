@@ -151,9 +151,9 @@
 
 
 ; dolist
-(defmacro push (elem l) `(setq ,l (cons ,elem ,l)))
+(defmacro prepend (elem l) `(setq ,l (cons ,elem ,l)))
 (define temp-two '())
-(assert-equal '(4 3 2 1) (dolist (temp-one '(1 2 3 4) temp-two) (push temp-one temp-two)))
+(assert-equal '(4 3 2 1) (dolist (temp-one '(1 2 3 4) temp-two) (prepend temp-one temp-two)))
 
 (define temp-two 0)
 (assert-equal nil (dolist (temp-one '(1 2 3 4)) (inc-var temp-two)))
