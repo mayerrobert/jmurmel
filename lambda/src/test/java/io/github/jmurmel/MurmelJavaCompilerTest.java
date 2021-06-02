@@ -475,6 +475,25 @@ public class MurmelJavaCompilerTest {
         assertEquals("macro2 produced wrong result", "6.0", TestUtils.sexp(program.body()));
     }
 
+    @Test
+    public void testMacroInDefine() throws Exception {
+        MurmelProgram program = compile("(defmacro m () 3)"
+                + "(define *g* (m))"
+                + "*g*");
+        assertNotNull("failed to compile macroInDefine to class", program);
+        assertEquals("macroInDefine produced wrong result", "3", TestUtils.sexp(program.body()));
+    }
+
+    @Test
+    public void testMacroInDefun() throws Exception {
+        MurmelProgram program = compile("(define *g* 3)"
+                + "(defmacro addg (a) `(+ ,a *g*))"
+                + "(defun f () (addg 3))"
+                + "(f)");
+        assertNotNull("failed to compile macroInDefun to class", program);
+        assertEquals("macroInDefun produced wrong result", "6.0", TestUtils.sexp(program.body()));
+    }
+
 
 
     @Test

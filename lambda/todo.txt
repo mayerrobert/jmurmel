@@ -1,4 +1,7 @@
 vielleicht doch require in core murmel?
+-> vielleicht load umbenennen in require mit hardcodiertem provides-handling
+   -> aber dann kann man im REPL nicht mehr neu laden
+      -> ist :load eine abhilfe?
 
 funktion error (und/ oder exit) wirft eine exception die am programmende den errorlevel bestimmt
          fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
@@ -7,7 +10,6 @@ push, pop
 
 mlib-test vervollständigen
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
--> macros in pass1 verarbeiten!
 
 compiler: alle defuns/ defines
 -> zähler mitlaufen lassen

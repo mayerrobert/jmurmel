@@ -4348,12 +4348,16 @@ public class LambdaJ {
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
-                    // todo macros?!? so werden macros in defuns nicht aufgeloest
                     if (consp(form) && car(form) == interpreter().sDefine) {
                         globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
                     }
                     else if (consp(form) && car(form) == interpreter().sDefun) {
                         globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
+                    }
+                    else if  (consp(form) && car(form) == interpreter().sDefmacro) {
+                        final Object sym = cadr(form);
+                        notReserved(sym);
+                        interpreter().eval(form, null);
                     }
                     bodyForms.add(form);
 
@@ -4367,10 +4371,13 @@ public class LambdaJ {
                     throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
                 }
             }
+
             if (!implicitDecl.isEmpty()) {
                 throw new LambdaJError("undefined symbols: " + implicitDecl);
             }
             implicitDecl = null;
+
+            interpreter().macros.clear(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
 
             // generate getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n"
@@ -4634,7 +4641,6 @@ public class LambdaJ {
                     if (interpreter().sDefmacro == op) {
                         if (rsfx != 0) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
-                        notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         interpreter().eval(form, null);
                         sb.append('"').append(sym).append('"');
                         return;
