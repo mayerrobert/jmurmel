@@ -30,13 +30,13 @@ At this time Murmel is a personal project,
 don't expect it to be an industrial strength Lisp in the near future.
 
 Murmel is inspired by Common Lisp, i.e. when in doubt try to do it the Common Lisp way.
-It should be easy to port a program from Murmel to Common Lisp,
+It should be relatively easy to port a program from Murmel to Common Lisp,
 and Murmel knowledge should transfer to Common Lisp.
 
 Murmel and JMurmel currently have the following priorities:
 
 * Small language, small implementation, "hackable"
-* Avoid undefined behaviour, throw an error instead
+* Avoid unspecified or undefined behaviour, throw an error instead
 * Where Murmel differs from Common Lisp the differences should be made obvious,
   i.e. a Common Lisp program should either work in JMurmel or throw an error
 * Compilation and execution speed at this time is somewhat low priority
@@ -44,7 +44,8 @@ Murmel and JMurmel currently have the following priorities:
 
 **Status**
 
-Both the language Murmel as well as the interpreter/ compiler JMurmel currently are work in progress.
+Both the language Murmel as well as the interpreter/ compiler JMurmel
+currently are work in progress.
 There may be some incompatible language changes in the future.
 See also "Known Issues" in [murmel-langref.lisp](murmel-langref.lisp).
 
