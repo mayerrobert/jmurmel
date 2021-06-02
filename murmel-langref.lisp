@@ -81,9 +81,9 @@
 
 ; = Atoms that are symbols
 
-;a-symbol
-;|a symbol|
-;a\ symbol
+;     a-symbol
+;     |a symbol|
+;     a\ symbol
 
 
 ; A single quote is a shorthand for (quote an-expression)
@@ -131,7 +131,7 @@ nil
 t
 
 ; "dynamic" is a pre-defined self-evaluating symbol that may be used
-; in the `(lambda dynamic...` and `(let dynamic...` form, see below.
+; in the `(lambda dynamic...` and `(let dynamic...` forms, see below.
 
 dynamic
 
@@ -189,9 +189,12 @@ pi
 ; Implementation note: JMurmel preserves the
 ; capitalization of the first encounter of a symbol
 ; for printing, e.g.:
-; '(AbC . dEf) -> (AbC . dEf)
+;
+;     '(AbC . dEf) -> (AbC . dEf)
+;
 ; but
-; '(AbC . abc) -> (AbC . AbC)
+;
+;     '(AbC . abc) -> (AbC . AbC)
 
 '*a-sample-symbol*
 'a\ symbol\ with\ spaces!
@@ -328,12 +331,6 @@ nil
 (let ((b nil) (c nil))
   (setq a 1 b 2 c (+ a b)))
 
-;;; rplaca, rplacd
-
-(define l '(1 2))
-(rplaca l 11) ; ==> (11 2)
-(rplacd l 22) ; ==> (11 . 22)
-
 ;;; (if condform form optionalform) -> object
 
 (if nil 'YASSS! 'OHNOOO!!!) ; ==> OHNOOO!!!
@@ -361,8 +358,8 @@ nil
 ;
 ; Works like you would expect from "let" with the addition
 ; of Scheme's "named let".
-; The let-bound variables "symbol" as well as "optsymbol"
-; - if given - are bound inside bodyforms.
+; The let-bound variables "symbol" as well as "optsymbol" - if given -
+; are bound inside bodyforms.
 ; "optsymbol" will be bound inside "bodyforms" to a lambda
 ; whose parameters are the let-variables and whose code is
 ; "bodyforms". Therefore "optsymbol" can be used for
@@ -434,7 +431,8 @@ nil
 ;
 ; applies the operator returned by operatorform to
 ; the eval'd operands
-; (operatorform operands...)
+;
+;     (operatorform operands...)
 
 
 ;;; == Predefined Primitives ==========
@@ -453,7 +451,15 @@ nil
 (cdr '(a b c)) ; ==> (b c)
 (cdr "abc") ; ==> "bc"
 
-;;; (eval form) -> object 
+;;; rplaca, rplacd
+;
+; Replace the value of the CAR or CDR slot of a cons cell.
+
+(define l '(1 2))
+(rplaca l 11) ; ==> (11 2)
+(rplacd l 22) ; ==> (11 . 22)
+
+;;; (eval form) -> object  
 ;;; (eval form env) -> object
 ;
 ; "form" will be eval'd, it must return a form.
@@ -603,8 +609,8 @@ nil
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; (code-char integer) -> character 
-; (char-code character) -> integer 
+; (code-char integer) -> character  
+; (char-code character) -> integer  
 ; (string= s1 s2) -> boolean
 
 
@@ -658,12 +664,12 @@ nil
 (let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
   (make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
 
-; open-frame ... make frame visible
-; close-frame ... hide frame
-; reset-frame ... reset pen to "down", turtle position and angle, color and bgcolor
-; clear-frame ... reset frame and discard frame contents
-; repaint-frame ... force full repaint
-; flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible
+; open-frame ... make frame visible  
+; close-frame ... hide frame  
+; reset-frame ... reset pen to "down", turtle position and angle, color and bgcolor  
+; clear-frame ... reset frame and discard frame contents  
+; repaint-frame ... force full repaint  
+; flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible  
 ;
 ; The above functions all take an optional frame parameter. If omitted or nil
 ; then the current frame will be used.
