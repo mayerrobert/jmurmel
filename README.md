@@ -281,7 +281,8 @@ The environment contains the symbols `nil` and `t` and the functions
 
 * `=, <, <=, >, >=, /=, +, -, *, /, mod, round, ceiling, floor`
 
-For more primitives (including graphics primitives and primitives to run Java code) and more details on the language supported see `murmel-langref.lisp`.
+For more primitives (including graphics primitives and primitives to run Java code)
+and more details on the language supported see `murmel-langref.lisp`.
 
 Tail calls including tail recursive calls are optimized.
 
