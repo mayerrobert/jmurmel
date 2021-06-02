@@ -1,23 +1,16 @@
 # JMurmel
 
-> *These are your father's parentheses*  
-> *Elegant weapons*  
-> *for a more... civilized age.*
-
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~133kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
+Currently weighing in at ~137kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
 or one single Java source file.
-
-Fast and powerful Open Source Lisp interpreters and compilers are a dime a dozen,
-why not try JMurmel?
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
 For more details on the language see [murmel-langref.lisp](murmel-langref.lisp).
 
-The interpreter, REPL, compiler as well as generated compiled Jars all run on top of the JVM.
+The interpreter, REPL, compiler as well as Jars with compiled Murmel all run on top of the JVM.
 Compilation is done as Murmel to Java source
 which is then compiled to .class files using the JDK compiler.
 JMurmel as well as compiled Murmel programs should run on all platforms supported by Java8+.
@@ -28,13 +21,12 @@ lexical environments,
 a macro facility,
 backquote expansion including nested backquotes,
 JSR223 support,
-turtle- and bitmap graphics,
-garbage collection c/o Java,
-and compiled Murmel will be optimized by Java's JIT compiler.
+turtle- and bitmap graphics
+and garbage collection c/o Java.
 
 **Goals, Priorities**
 
-At this time Murmel is a toy project,
+At this time Murmel is a personal project,
 don't expect it to be an industrial strength Lisp in the near future.
 
 Murmel is inspired by Common Lisp, i.e. when in doubt try to do it the Common Lisp way.

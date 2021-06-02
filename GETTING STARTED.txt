@@ -37,8 +37,6 @@ e.g. read README.md and/ or murmel-langref.lisp.
 Or type :h at the REPL prompt.
 Or run 'java -jar jmurmel.jar --help'.
 
-(Don't read META.md, however.)
-
 
 
 Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer.
