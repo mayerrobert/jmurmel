@@ -4,7 +4,7 @@
 # Description: transforms murmel-langref.lisp to Markdown
 #
 # Usage:
-# sed -nf langref-to-md.sed murmel-langref.lisp > murmel-langref.md murmel-langref.lisp > murmel-langref.md
+# sed -nf langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 
 # If a line doesn't start with a ; indent it 4 spaces
 s/^\([^;].*\)$/    \1/gp
