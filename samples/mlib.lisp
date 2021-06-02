@@ -21,23 +21,23 @@
 
 ;;; Short-circuiting macros for logical and and or
 (defmacro and args
-   (if (null args)
-         t
-     (if (null (cdr args))
-           (car args)
-       `(if ,(car args)
-         (and ,@(cdr args))))))
+   (if args
+         (if (cdr args)
+               `(if ,(car args)
+                 (and ,@(cdr args)))
+           (car args))
+     t))
 
 (defmacro or args
-   (if (null args)
-         nil
-     (if (null (cdr args))
-           (car args)
-       (let ((temp (gensym)))
-         `(let ((,temp ,(car args)))
-             (if ,temp
-                   ,temp
-               (or ,@(cdr args))))))))
+   (if args
+         (if (cdr args)
+               (let ((temp (gensym)))
+                 `(let ((,temp ,(car args)))
+                     (if ,temp
+                           ,temp
+                       (or ,@(cdr args)))))
+           (car args))
+     nil))
 
 
 (defun abs (n)
@@ -116,10 +116,11 @@
         (result (car (cdr (cdr exp)))))
     `(let loop ((,lst ,listform))
        (let ((,var (car ,lst)))
-         (if (null ,lst) ,result
-           (progn
-             ,@body
-             (loop (cdr ,lst))))))))
+         (if ,lst
+               (progn
+                 ,@body
+                 (loop (cdr ,lst)))
+           ,result)))))
 
 
 ; use like this:
