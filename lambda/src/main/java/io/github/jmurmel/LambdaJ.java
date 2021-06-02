@@ -4348,6 +4348,7 @@ public class LambdaJ {
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
+                    // todo macros?!? so werden macros in defuns nicht aufgeloest
                     if (consp(form) && car(form) == interpreter().sDefine) {
                         globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
                     }
