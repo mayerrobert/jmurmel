@@ -282,7 +282,7 @@ nil
 
 ;;; == Additional Special Forms =======
 
-;;; (define symbol object) -> symbol
+;;; = (define symbol object) -> symbol
 ;
 ; define binds symbols in the global environment with
 ; memory locations that hold values.
@@ -296,7 +296,7 @@ nil
 (define *global-var* 42)               ; ==> *gloval-var*
 (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
 
-;;; (defun symbol (params...) forms...) -> symbol
+;;; = (defun symbol (params...) forms...) -> symbol
 ;
 ; defun is a shorthand for defining functions
 ;     (defun symbol (params...) forms...)
@@ -306,7 +306,7 @@ nil
 
 (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
-;;; (defmacro (params...) forms...) -> symbol
+;;; = (defmacro (params...) forms...) -> symbol
 ;
 ; Defines a macro, similar to CL's defmacro.
 ; Macros are somewhat similar to functions:
@@ -324,37 +324,28 @@ nil
 (defmacro twice (arg) (list '* arg 2))  ; ==> twice
 (twice 3) ; ==> 6.0
 
-;;; setq
+;;; = (setq symbol value...) -> last-value
+;
 ; Updates the value of the given global or local symbols which must be already defined.
 
 (define a nil)
 (let ((b nil) (c nil))
-  (setq a 1 b 2 c (+ a b)))
+  (setq a 1 b 2 c (+ a b))) ; ==> 3.0
 
-;;; (if condform form optionalform) -> object
+;;; = (if condform form optionalform) -> object
 
 (if nil 'YASSS! 'OHNOOO!!!) ; ==> OHNOOO!!!
 
-;;; (progn expr...) -> object
+;;; = (progn expr...) -> object
 
 (if t (progn (write 'abc) (write 'def)))
 
-;;; (cond (condform forms...)... ) -> object
+;;; = (cond (condform forms...)... ) -> object
 
-;;; (labels ((symbol (params...) forms...)...) forms...) -> object
+;;; = (labels ((symbol (params...) forms...)...) forms...) -> object
+;
 
-;;; (let dynamic ((symbol bindingform)...) bodyforms...) -> object
-; Similar to "let" except: globals are not shadowed but temporarily
-; bound to the given value, and the previous value is restored when
-; leaving the scope of the let form.
-; I.e. "let dynamic" treats globals as "special".
-
-(define *g* 'global)
-(defun f () (write *g*))
-(let dynamic ((*g* 'temp)) (f)) ; f will write temp
-*g* ; ==> 'global
-
-;;; (let optsymbol? ((symbol bindingform)...) bodyforms...) -> object
+;;; = (let optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 ;
 ; Works like you would expect from "let" with the addition
 ; of Scheme's "named let".
@@ -371,7 +362,19 @@ nil
       (write msg)
     (progn (write (floor x)) (loop (- x 1) msg))))
 
-;;; (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
+;;; = (let dynamic ((symbol bindingform)...) bodyforms...) -> object
+;
+; Similar to "let" except: globals are not shadowed but temporarily
+; bound to the given value, and the previous value is restored when
+; leaving the scope of the let form.
+; I.e. "let dynamic" treats globals as "special".
+
+(define *g* 'global)
+(defun f () (write *g*))
+(let dynamic ((*g* 'temp)) (f)) ; f will write temp
+*g* ; ==> 'global
+
+;;; = (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 ;
 ; Works like let (see above) with the addition:
 ; each bindingform "sees" the previous symbols. If multiple
@@ -386,7 +389,7 @@ nil
       (write msg)
     (progn (write (floor x)) (loop 0 0 (- x 1) msg))))
 
-;;; (letrec ((symbol bindingform)...) bodyforms...) -> object
+;;; = (letrec ((symbol bindingform)...) bodyforms...) -> object
 ;
 ; works like let and let* except each bindingform "sees"
 ; all other let symbols as well as it's own symbol.
@@ -396,7 +399,7 @@ nil
 
 (letrec ((x 1) (y (+ x 1))) (write y))
 
-;;; (apply form argform) -> object
+;;; = (apply form argform) -> object
 ;
 ; form must return a primitive or lambda
 ; argform must eval to a proper list
@@ -404,9 +407,9 @@ nil
 
 (apply + '(1 2)) ; ==> 3.0
 
-;;; (load filespec) -> object
+;;; = (load filespec) -> object
 ;
-; eval the contents of the given file, return value
+; Eval the contents of the given file, return value
 ; is the value returned by the last form or nil
 ; in case of an empty file.
 ; "filespec" is not eval'd and must be a string.
@@ -427,9 +430,9 @@ nil
 
 ;;; == Function application ===========
 
-;;; function call
+;;; = function call
 ;
-; applies the operator returned by operatorform to
+; Applies the operator returned by operatorform to
 ; the eval'd operands
 ;
 ;     (operatorform operands...)
@@ -437,21 +440,21 @@ nil
 
 ;;; == Predefined Primitives ==========
 
-; (cons e1 e2) -> conscell
+; = (cons e1 e2) -> conscell
 
 (cons 'a 'b) ; ==> (a . b)
 
-; (car list) -> 1st element of list
+; = (car list) -> 1st element of list
 
 (car '(a b c)) ; ==> a
 (car "abc") ; ==> 'a'
 
-; (cdr list) -> rest of list
+; = (cdr list) -> rest of list
 
 (cdr '(a b c)) ; ==> (b c)
 (cdr "abc") ; ==> "bc"
 
-;;; rplaca, rplacd
+;;; = rplaca, rplacd
 ;
 ; Replace the value of the CAR or CDR slot of a cons cell.
 
@@ -459,8 +462,7 @@ nil
 (rplaca l 11) ; ==> (11 2)
 (rplacd l 22) ; ==> (11 . 22)
 
-;;; (eval form) -> object  
-;;; (eval form env) -> object
+;;; = (eval form) -> object<br/> (eval form env) -> object
 ;
 ; "form" will be eval'd, it must return a form.
 ; The optional argument "env" will be eval'd, it must return a list of (symbol . value).
@@ -472,14 +474,17 @@ nil
 (eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
 (eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
 
-; eq, null, atom, consp, listp, symbolp, numberp, integerp, floatp,
-; stringp, characterp,
+; = eq, null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
 
+; = (assoc key alist) -> cons or nil
+;
 ; assoc takes a key and a list of key/value tupels (lists or conses)
 
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
 
+; = (append lists...) -> list
+;
 ; append nondestructively append it's arguments. All arguments except the last
 ; are shallow copied, all arguments except the last must be lists.
 
@@ -490,7 +495,7 @@ nil
 (append '(a . b) '(c d))    ; ==> (a b c d)
 (append '(a . b) '(c . d))  ; ==> (a b c . d)
 
-; +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
+; = +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
 ;
 ; The math operators accept numbers only, log only takes 1 argument,
 ; but otherwise should work as expected.
@@ -499,35 +504,35 @@ nil
 
 (+ 1 1) ; ==> 2.0
 
-; 1+, 1-
+; = 1+, 1-
 ;
 ; Increment and decrement return the same type as the argument.
 
 (1+ 1)   ; ==> 2
 (1+ 1.0) ; ==> 2.0
 
-; round, truncate, floor, ceiling
+; = round, truncate, floor, ceiling
 ;
-; These operators take one argument and return an integer value or an exception
+; These functions take one argument and return an integer value or an exception
 ; if the value cannot be represented by a long (NaN, overflow, underflow),
 ; eg. (floor number) -> long
 
 (floor 1.1) ; ==> 1.0
 
-; fround, ftruncate, ffloor, fceiling
+; = fround, ftruncate, ffloor, fceiling
 ;
-; These operators take one argument and return an integer value as a double,
+; These functions take one argument and return an integer value as a double,
 ; eg. (ffloor number) -> double
 
 (ffloor 1.1) ; ==> 1.0
 
-; = < > <= >= /=
+; = = < > <= >= /=
 
 (= 1 1.0)         ; ==> t
 (< 1 2 3.0 4 5.0) ; ==> t
 (< 1 2 3 3 4 5)   ; ==> nil
 
-; (macroexpand-1 quoted-form)
+; = (macroexpand-1 quoted-form)
 ;
 ; macroexpand-1 is a simplified version of CL's macroexpand-1.
 ; It is only supported in interpreted code.
@@ -537,10 +542,12 @@ nil
 (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
 (macroexpand-1 '(add2 3))      ; ==> (+ 3 2)
 
-; (gensym) -> uninterned symbol
+; = (gensym) -> uninterned symbol
 
 (gensym)
 
+; = read, write, writeln, lnwrite
+;
 ; Both expressions as well as data are read from stdin.
 ; The following expression reads the expression immediately following it
 ; (in this case the expression to be read is the string "Hello!").
@@ -556,31 +563,39 @@ nil
 (writeln)
 (writeln "World!")
 
+; = (get-internal-real-time) -> number
+;
 ; Walltime in internal time units, relative to an arbitrary time base
 
 (get-internal-real-time)
 
+; = (get-run-real-time) -> number
+;
 ; User cpu time in internal time units
 
 (get-internal-run-time)
 
+; = (get-internal-cpu-time) -> number
+;
 ; User + system cpu time in internal time units
 
 (get-internal-cpu-time)
 
+; = (sleep desired-duration) -> actual-duration
+;
 ; Pause execution for x internal time units, returns actually slept
 ; wall time in internal time units.
 ; This example code will pause execution for approx. 1 second.
 
 (sleep (* 1 internal-time-units-per-second))
 
-; get-universal-time <no arguments> => seconds since 1.1.1900 00:00:00 UTC
+; = (get-universal-time) -> seconds since 1.1.1900 00:00:00 UTC
 ;
 ; This example code will return approx. years since 1.1.1900
 
 (/ (get-universal-time) 60 60 24 365)
 
-; get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+; = (get-decoded-time) -> second, minute, hour, date, month, year, day, daylight-p, zone
 ;
 ; NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
 ;       offset from Greenwich Mean Time.
@@ -590,6 +605,8 @@ nil
 
 (get-decoded-time)
 
+; = format, format-locale
+;
 ; format t writes a formatted string to stdout and returns nil.
 ; format's parameters work as java.lang.String.format().
 
@@ -609,16 +626,20 @@ nil
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; (int-char integer) -> character
-; (char-int character) -> integer
-; (string= s1 s2) -> boolean
+; = (int-char integer) -> character
+
+; = (char-int character) -> integer
+
+; = (string= s1 s2) -> boolean
 
 
 ;;; == Predefined Graphics Primitives =
 
+;;; Murmel features primitives for graphics output to a frame.
+;;;
 ;;; A frame is a toplevel GUI window with a title. You can write text on a frame,
 ;;; and/ or draw lines with Turtle graphics or moveto/lineto functions.
-;;; Also you can stick a bitmap into a frame and do pixel-graphics.
+;;; Also you can attach a bitmap to a frame and use pixel-graphics primitives.
 ;;;
 ;;; 0/0 is towards left bottom, any drawing will be resized/ shifted so that
 ;;; it fills the frame.
@@ -653,7 +674,7 @@ nil
 ;;;      14 ; darkgreen
 ;;;      15 ; darkblue
 
-; make-frame
+; = (make-frame window-title optwidthpixels optheightpixels optpaddingpixels) -> frame
 ;
 ; Creates a new frame, sets current frame.
 ; If width and height are omitted or nil then half of the physical screen
@@ -664,70 +685,88 @@ nil
 (let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
   (make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
 
-; open-frame ... make frame visible  
-; close-frame ... hide frame  
-; reset-frame ... reset pen to "down", turtle position and angle, color and bgcolor  
-; clear-frame ... reset frame and discard frame contents  
-; repaint-frame ... force full repaint  
-; flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible  
-;
-; The above functions all take an optional frame parameter. If omitted or nil
-; then the current frame will be used.
-
-; (current-frame) -> frame
+; = (current-frame) -> frame
 ;
 ; Returns current frame.
-;
-; (current-frame optional-frame) -> frame
+
+; = (current-frame optional-frame) -> frame
 ;
 ; Set new current frame, returns previous current frame.
 
-; pen-up, pen-down
+; = More frame-functions
 ;
-; Optional parameter frame
-
-; push-pos, pop-pos
+; open-frame ... make frame visible  
+; close-frame ... hide frame  
+; reset-frame ... reset pen to "down", turtle position and angle, color and bgcolor    
+; clear-frame ... reset frame and discard frame contents  
+; repaint-frame ... force full repaint  
+; flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible  
+; pen-up ... subsequent line operations will only move the position
+; pen-down ... subsequent line operations will have visible effect
+; push-pos ... save current position and angle
+; pop-pos ... restore previous position and angle
 ;
-; Optional parameter frame
+; The above functions all take one optional frame parameter. If omitted or nil
+; then the current frame will be used.
 
-; (color color optional-frame) -> frame
+; = (color color optional-frame) -> frame
 ;
 ; Set color for following lines, color must be >= 0 and <= 12
 
 (color 1) ; ==> frame
 
-; (bgcolor color optional-frame) -> frame
+; = (bgcolor color optional-frame) -> frame
 ;
 ; Set background color for frame, color must be >= 0 and <= 12
 
 (bgcolor 0) ; ==> frame
 
-; (text str optional-frame) -> frame
+; = (text str optional-frame) -> frame
 ;
 ; Writes str at current position, does not change position.
 
-; (left  deg optional-frame) -> frame 
-; (right deg optional-frame) -> frame
+; = (left  deg optional-frame) -> frame</br>(right deg optional-frame) -> frame
 ;
 ; Increase/ decrease current angle by "deg" degrees, does not change position.
 
-; (forward len optional-frame) -> frame
+; = (forward len optional-frame) -> frame
 ;
 ; If pen is down then this function paints a line of length "len" from current
 ; position in current direction, changes position.
 ; If pen is up then only the position is changed.
 
-; move-to, line-to, move-rel, line-rel
+; = move-to, line-to, move-rel, line-rel
+;
+; These functions take two arguments denoting the new position
+; and an optional frame argument.
 
-(define new-x 1) (define new-y 2) (define optional-frame nil)
+(define new-x 1)
+(define new-y 2)
+(define optional-frame nil)
 (line-rel new-x new-y optional-frame) ; ==> frame
 
-; (make-bitmap w h optional-frame) ; -> frame; associates a bitmap with the current or given frame
+; = (make-bitmap w h optional-frame) -> frame
 ;
-; (discard-bitmap optional-frame)
-; (rgb-to-pixel r g b) ; -> 24bit color value acceptable to set-pixel; r, g and b are 0..255
-; (hsb-to-pixel h s b) ; -> 24bit color value acceptable to set-pixel; h, s and b are 0..1.0
-; (set-pixel x y color-as-24-bit optional-frame) ; -> frame; set pixel at the given xy-position to the given color
+; Associates a bitmap of the given width and height
+; with the current or given frame. The bitmap will be scaled
+; to fill the frame.
+;
+; = (discard-bitmap optional-frame)
+;
+; Remove the bitmap of the given or current frame,
+; and release the resources associated with the bitmap.
+;
+; = (rgb-to-pixel r g b) -> 24bit color value acceptable to set-pixel
+;
+; r, g and b are 0..255
+;
+; = (hsb-to-pixel h s b) ; -> 24bit color value acceptable to set-pixel
+;
+; h, s and b are 0..1.0
+;
+; = (set-pixel x y color-as-24-bit optional-frame) -> frame
+;
+; Set pixel at the given xy-position to the given color.
 
 ;;; --- End of Murmel reference ---
 
@@ -736,32 +775,40 @@ nil
 
 ; JMurmel adds some extra features to Murmel which are listed below.
 
-; lambda dynamic - only supported in the interpreter:
+; = lambda dynamic
+;
+; For experimentation purposes the interpreter also supports
+; lambdas that are not lexical closures.
 ;
 ; When the optional keyword "dynamic" is given then
 ; no environment is captured, and lambdas - when applied -
 ; get the dynamic environment.
-; (lambda dynamic (params...) forms...) -> anonymous function with
-;                                          dynamic environment
+;
+;     (lambda dynamic (params...) forms...) -> anonymous function with
+;                                              dynamic environment
 
+; = Custom primitives
+;
 ; In embedded use primitives may be added, also Java methods
-; created by the primitive :: (see below) act as builtins.
+; created by the primitive `::` (see below) act as builtins.
 ; As far as the language is concerned, all primitives are variadic functions.
 ; The primitives themselves may have parameter checks, tough.
 ; In case you call them with the wrong type(s) or number of parameters
 ; the primitives may throw an error.
 
+; = Language subsets
+;
 ; JMurmel supports commandline parameters that can be used to
 ; disable many of Murmel's forms, predefined variables, ... .
 ; These commandline parameters can be used if you want to play
 ; with an even more reduced Lisp.
+;
 ; See 'jmurmel --help-features'
 
 
 ;;; == Additional JMurmel special forms and primitives ==========
 
-; (trace function-name*) -> trace-result 
-; (untrace function-name*) -> untrace-result
+; = (trace function-name*) -> trace-result<br/> (untrace function-name*) -> untrace-result
 ;
 ; Arguments to trace/ untrace are eval'd.
 ; In interpreted code these work similar to CL's trace/ untrace macros,
@@ -769,11 +816,11 @@ nil
 ; Only interpreted code will be traced (user code as well as
 ; interpreter primities).
 
-(trace 'write '+)
-(write (+ 1 2))
+(trace 'write '+)  
+(write (+ 1 2))  
 (untrace)
 
-; (:: classname methodname paramclass...) -> primitive
+; = (:: classname methodname paramclass...) -> primitive
 ;
 ; The primitive "::" will return a newly created primitive
 ; that is implemented by the method "methodname" of the Java class
@@ -785,12 +832,12 @@ nil
 ; a Java object of the primitive's method's class or nil for static methods:
 ; invoke static method:
 
-(define ctm (:: "java.lang.System" "currentTimeMillis"))
+(define ctm (:: "java.lang.System" "currentTimeMillis"))  
 (ctm nil)
 
 ; invoke method on an object
 
-(define my-hash ((:: "java.util.HashMap" "new")))
+(define my-hash ((:: "java.util.HashMap" "new")))  
 (write ((:: "java.util.HashMap" "toString") my-hash))
 
 

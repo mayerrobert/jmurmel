@@ -15,7 +15,7 @@ s/^;;* \([^=*].*\)$/\1/gp
 # Comment lines that start with ';;; =' will become headings
 s/^;;; ===\([^=]*\).*$/#\1/gp
 s/^;;; ==\([^=]*\).*$/##\1/gp
-s/^;;* =\([^=]*\).*$/###\1/gp
+s/^;;* =\(.*\)$/###\1/gp
 
 # Pass through empty lines as well as empty comment lines
 s/^;*$//gp

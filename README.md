@@ -8,7 +8,7 @@ or one single Java source file.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
-For more details on the language see [murmel-langref.lisp](murmel-langref.lisp).
+For more details on the language see [murmel-langref.md](murmel-langref.md).
 
 The interpreter, REPL, compiler as well as Jars with compiled Murmel all run on top of the JVM.
 Compilation is done as Murmel to Java source
@@ -47,7 +47,7 @@ Murmel and JMurmel currently have the following priorities:
 Both the language Murmel as well as the interpreter/ compiler JMurmel
 currently are work in progress.
 There may be some incompatible language changes in the future.
-See also "Known Issues" in [murmel-langref.lisp](murmel-langref.lisp).
+See also "Known Issues" in [murmel-langref.md](murmel-langref.md).
 
 **Copyright**
 
@@ -97,7 +97,7 @@ At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look
 You just wrote and ran a Murmel program!
 
 Now take it from there,
-e.g. read [murmel-langref.lisp](murmel-langref.lisp).  
+e.g. read [murmel-langref.md](murmel-langref.md).  
 Or take a look at the example code in [samples/](samples/).  
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
@@ -282,7 +282,7 @@ The environment contains the symbols `nil` and `t` and the functions
 * `=, <, <=, >, >=, /=, +, -, *, /, mod, round, ceiling, floor`
 
 For more primitives (including graphics primitives and primitives to run Java code)
-and more details on the language supported see `murmel-langref.lisp`.
+and more details on the language supported see [murmel-langref.md](murmel-langref.md).
 
 Tail calls including tail recursive calls are optimized.
 

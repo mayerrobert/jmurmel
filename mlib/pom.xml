@@ -70,6 +70,24 @@
                             </arguments>
                         </configuration>
                     </execution>
+
+                    <!-- generate murmel-langref.md from murmel-langref.lisp
+                         if "sed" is not available then this can be commented out -->
+                    <execution>
+                        <id>make-langref-md</id>
+                        <phase>install</phase> <!-- could also use phase "process-sources" -->
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <executable>sed</executable>
+                            <outputFile>../murmel-langref.md</outputFile>
+                            <arguments>
+                                <argument>-nf</argument>
+                                <argument>../langref-to-md.sed</argument>
+                                <argument>../murmel-langref.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <!-- end of section that needs sed -->
                 </executions>
             </plugin>
         </plugins>
