@@ -146,7 +146,10 @@ public class LambdaJ {
             }
             else {
                 path = p.getParent();
-                if (!Files.isDirectory(path)) {
+                if (path == null) {
+                    System.out.println("cannot get Murmel dir: " + p + " is not a directory but does not have a parent to use");
+                }
+                else if (!Files.isDirectory(path)) {
                     System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
                 }
             }
