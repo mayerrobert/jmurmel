@@ -90,10 +90,19 @@
 
 
 (defmacro when (condition . body)
-  (list 'if condition (cons 'progn body) nil))
+  (list 'if
+        condition
+        (if (cdr body)
+              (cons 'progn body)
+          (car body))))
 
 (defmacro unless (condition . body)
-  (list 'if condition nil (cons 'progn body)))
+  (list 'if
+        condition
+        nil
+        (if (cdr body)
+              (cons 'progn body)
+          (car body))))
 
 
 ; similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
