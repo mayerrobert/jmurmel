@@ -10,6 +10,7 @@
 (defmacro assert-equal (expected form . msg)
   `(do-assert-equal ,expected ,form (if ,msg ,(car msg) '(equal ,expected ,form))))
 
+;;; helper function for assert-equal macro
 (defun do-assert-equal (expected actual msg)
   (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
@@ -20,25 +21,14 @@
     nil))
 
 
-(defmacro assert-true (condition . msg)
-  `(do-assert ,condition ',condition (if ,msg ,(car msg) "expected condition to be true")))
-
-(defmacro assert-false (condition . msg)
-  `(do-assert (not ,condition) ',condition (if ,msg ,(car msg) "expected condition to be false")))
-
-(defun do-assert (condition quoted-condition msg)
-  (setq *success-count* (1+ *success-count*))
-  (unless condition
-    (format t "%nassertion failed:%n")
-    (writeln quoted-condition)
-    (when msg (format t "%s%n" msg))
-    (setq *error-count* (1+ *error-count*))
-    nil))
-
-
 (defun caddr (l) (car (cdr (cdr l))))
 (defun cdddr (l) (cdr (cdr (cdr l))))
 
+;;; run some tests
+;;; usage:
+;;; (tests form1 => result1
+;;;        form2 => result2
+;;;        ...)
 (defmacro tests l
   (if l
     `(append (assert-equal ',(caddr l) ,(car l))
@@ -46,15 +36,14 @@
 
 
 ;;; test acons
-(define alist '())
 (tests
-  (setq alist '()) => NIL
-  (acons 1 "one" alist) =>  ((1 . "one"))
-  alist =>  NIL
-  (setq alist (acons 1 "one" (acons 2 "two" alist))) =>  ((1 . "one") (2 . "two"))
-  (assoc 1 alist) =>  (1 . "one")
-  (setq alist (acons 1 "uno" alist)) =>  ((1 . "uno") (1 . "one") (2 . "two"))
-  (assoc 1 alist) =>  (1 . "uno")
+  (define alist '()) => alist
+  (acons 1 "one" alist) => ((1 . "one"))
+  alist => NIL
+  (setq alist (acons 1 "one" (acons 2 "two" alist))) => ((1 . "one") (2 . "two"))
+  (assoc 1 alist) => (1 . "one")
+  (setq alist (acons 1 "uno" alist)) => ((1 . "uno") (1 . "one") (2 . "two"))
+  (assoc 1 alist) => (1 . "uno")
 )
 
 
@@ -68,38 +57,43 @@
   (not 'apple) => nil
 )
 
+
 ;;; test logical and/ or macros
-(assert-true
+(tests
   (and (= 1 1)
        (or (< 1 2)
            (> 1 2))
        (and (<= 1 2 3 4)
-            (> 5 3 1))))
+            (> 5 3 1))) => t
+)
 
 (defmacro inc-var (var) `(setq ,var (1+ ,var)))
 (defmacro dec-var (var) `(setq ,var (1- ,var)))
 (define temp0 nil) (define temp1 1) (define temp2 1) (define temp3 1)
 
-(assert-equal 2 (and (inc-var temp1) (inc-var temp2) (inc-var temp3)))
-(assert-true (and (eql 2 temp1) (eql 2 temp2) (eql 2 temp3)))
-(assert-equal 1 (dec-var temp3))
-(assert-false (and (dec-var temp1) (dec-var temp2) (eq temp3 'nil) (dec-var temp3)))
-(assert-true (and (eql temp1 temp2) (eql temp2 temp3)))
-(assert-true (and))
+(tests
+  (and (inc-var temp1) (inc-var temp2) (inc-var temp3)) => 2
+  (and (eql 2 temp1) (eql 2 temp2) (eql 2 temp3)) => t
+  (dec-var temp3) => 1
+  (and (dec-var temp1) (dec-var temp2) (eq temp3 'nil) (dec-var temp3)) => nil
+  (and (eql temp1 temp2) (eql temp2 temp3)) => t
+  (and) => t
+)
 
-(assert-false (or))
-(assert-equal 30 (setq temp0 nil temp1 10 temp2 20 temp3 30))
-(assert-equal 10 (or temp0 temp1 (setq temp2 37)))
-(assert-equal 20 temp2)
-(assert-equal 11 (or (inc-var temp1) (inc-var temp2) (inc-var temp3)))
-(assert-equal 11 temp1)
-(assert-equal 20 temp2)
-(assert-equal 30 temp3)
-; (or (values) temp1) =>  11
-; (or (values temp1 temp2) temp3) =>  11
-; (or temp0 (values temp1 temp2)) =>  11, 20
-; (or (values temp0 temp1) (values temp2 temp3)) =>  20, 30
-
+(tests
+  (or) => nil
+  (setq temp0 nil temp1 10 temp2 20 temp3 30) => 30
+  (or temp0 temp1 (setq temp2 37)) => 10
+  temp2 => 20
+  (or (inc-var temp1) (inc-var temp2) (inc-var temp3)) => 11
+  temp1 => 11
+  temp2 => 20
+  temp3 => 30
+; (or (values) temp1) => 11
+; (or (values temp1 temp2) temp3) => 11
+; (or temp0 (values temp1 temp2)) => 11, 20
+; (or (values temp0 temp1) (values temp2 temp3)) => 20, 30
+)
 
 ; todo abs
 
@@ -111,58 +105,60 @@
 
 
 ;;; test eql
-(assert-false (eql 'a 'b))
-(assert-true  (eql 'a 'a))
-(assert-true  (eql 3 3))
-(assert-false (eql 3 3.0))
-(assert-true  (eql 3.0 3.0))
-;(assert-true  (eql #c(3 -4) #c(3 -4)))
-; (eql #c(3 -4.0) #c(3 -4)) =>  false
-(assert-false (eql (cons 'a 'b) (cons 'a 'c)))
-(assert-false (eql (cons 'a 'b) (cons 'a 'b)))
-(assert-false (eql '(a . b) '(a . b)))
-(define x nil)
-(assert-true  (progn (setq x (cons 'a 'b)) (eql x x)))
-(assert-true  (progn (setq x '(a . b)) (eql x x)))
-; (eql #\A #\A) =>  true
-(assert-false (eql "Foo" "Foo"))
-; (eql "Foo" (copy-seq "Foo")) =>  false
-(assert-false (eql "FOO" "foo"))
+(tests
+  (eql 'a 'b) => nil
+  (eql 'a 'a) => t
+  (eql 3 3) => t
+  (eql 3 3.0) => nil
+  (eql 3.0 3.0) => t
+  ;(eql #c(3 -4) #c(3 -4)) => t
+  ;(eql #c(3 -4.0) #c(3 -4)) => false
+  (eql (cons 'a 'b) (cons 'a 'c)) => nil
+  (eql (cons 'a 'b) (cons 'a 'b)) => nil
+  (eql '(a . b) '(a . b)) => nil
+  (define x nil) => x
+  (progn (setq x (cons 'a 'b)) (eql x x)) => t
+  (progn (setq x '(a . b)) (eql x x)) => t
+  ;(eql #\A #\A) => true
+  (eql "Foo" "Foo") => nil
+  ;(eql "Foo" (copy-seq "Foo")) => false
+  (eql "FOO" "foo") => nil
+)
 
 
 ;;; test equal
-(assert-false (equal 'a 'b))
-(assert-true  (equal 'a 'a))
-(assert-true  (equal 3 3))
-(assert-false (equal 3 3.0))
-(assert-true  (equal 3.0 3.0))
-;(assert-true  (equal #c(3 -4) #c(3 -4)))
-;(assert-false (equal #c(3 -4.0) #c(3 -4)))
-(assert-false (equal (cons 'a 'b) (cons 'a 'c)))
-(assert-true  (equal (cons 'a 'b) (cons 'a 'b)))
-;(assert-true  (equal #\A #\A))
-;(assert-false (equal #\A #\a))
-(assert-true  (equal "Foo" "Foo"))
-;(assert-true  (equal "Foo" (copy-seq "Foo")))
-(assert-false (equal "FOO" "foo"))
-(assert-true  (equal "This-string" "This-string"))
-(assert-false (equal "This-string" "this-string"))
-
+(tests
+  (equal 'a 'b) => nil
+  (equal 'a 'a) => t
+  (equal 3 3) => t
+  (equal 3 3.0) => nil
+  (equal 3.0 3.0) => t
+  ;(equal #c(3 -4) #c(3 -4)) => t
+  ;(equal #c(3 -4.0) #c(3 -4)) => nil
+  (equal (cons 'a 'b) (cons 'a 'c)) => nil
+  (equal (cons 'a 'b) (cons 'a 'b)) => t
+  ;(equal #\A #\A) => t
+  ;(equal #\A #\a) => nil
+  (equal "Foo" "Foo") => t
+  ;(equal "Foo" (copy-seq "Foo")) => t
+  (equal "FOO" "foo") => nil
+  (equal "This-string" "This-string") => t
+  (equal "This-string" "this-string") => nil
+)
 
 ; test when, unless
 (labels ((prin1 (form) (write form) form))
-  (assert-equal 'hello (when t 'hello))
-  (assert-equal nil    (unless t 'hello))
-  (assert-equal nil    (when nil 'hello))
-  (assert-equal 'hello (unless nil 'hello))
-  (assert-equal nil    (when t))
-  (assert-equal nil    (unless nil))
-  (assert-equal 3      (when t (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
-  (assert-equal nil    (unless t (prin1 1) (prin1 2) (prin1 3)))
-  (assert-equal nil    (when nil (prin1 1) (prin1 2) (prin1 3)))
-  (assert-equal 3      (unless nil (prin1 1) (prin1 2) (prin1 3))) ; >>  123, =>  3
-  (assert-equal
-    '((4) NIL (5) NIL 6 (6) 7 (7))
+  (tests
+    (when t 'hello) => hello
+    (unless t 'hello) => nil
+    (when nil 'hello) => nil
+    (unless nil 'hello) => hello
+    (when t) => nil
+    (unless nil) => nil
+    (when t (prin1 1) (prin1 2) (prin1 3)) => 3 ; >>  123, => 3
+    (unless t (prin1 1) (prin1 2) (prin1 3)) => nil
+    (when nil (prin1 1) (prin1 2) (prin1 3)) => nil
+    (unless nil (prin1 1) (prin1 2) (prin1 3)) => 3 ; >>  123, => 3
     (let ((x 3))
       (list (when (oddp x) (inc-var x) (list x))
             (when (oddp x) (inc-var x) (list x))
@@ -171,78 +167,84 @@
             (if (oddp x) (inc-var x) (list x))
             (if (oddp x) (inc-var x) (list x))
             (if (not (oddp x)) (inc-var x) (list x))
-            (if (not (oddp x)) (inc-var x) (list x))))))
+            (if (not (oddp x)) (inc-var x) (list x)))) => ((4) NIL (5) NIL 6 (6) 7 (7))
+))
 
 
 ; test dotimes
-(assert-equal 10 (dotimes (temp-one 10 temp-one)))
-(define temp-two 0)
-(assert-true (dotimes (temp-one 10 t) (inc-var temp-two)))
-(assert-equal 10 temp-two)
+(tests
+  (dotimes (temp-one 10 temp-one)) => 10
+  (define temp-two 0) => temp-two
+  (dotimes (temp-one 10 t) (inc-var temp-two)) => t
+  temp-two => 10
+)
 
 
 ; test dolist
 (defmacro prepend (elem l) `(setq ,l (cons ,elem ,l)))
-(define temp-two '())
-(assert-equal '(4 3 2 1) (dolist (temp-one '(1 2 3 4) temp-two) (prepend temp-one temp-two)))
+(tests
+  (define temp-two '()) => temp-two
+  (dolist (temp-one '(1 2 3 4) temp-two) (prepend temp-one temp-two)) => (4 3 2 1)
 
-(define temp-two 0)
-(assert-equal nil (dolist (temp-one '(1 2 3 4)) (inc-var temp-two)))
-(assert-equal 4 temp-two)
+  (setq temp-two 0) => 0
+  (dolist (temp-one '(1 2 3 4)) (inc-var temp-two)) => nil
+  temp-two => 4
 
-(assert-equal nil (dolist (x '(a b c d)) (write x) (format t " "))) ; >>  A B C D , =>  NIL
-
+  (dolist (x '(a b c d)) (write x) (format t " ")) => nil ; >>  A B C D , => NIL
+)
 
 
 ; test member
-(assert-equal '(2 3) (member 2 '(1 2 3)))
-(assert-equal NIL (member 'e '(a b c d)))
+(tests
+  (member 2 '(1 2 3)) => (2 3)
+  (member 'e '(a b c d)) => NIL
+)
 
 
 ; test mapcar
-(assert-equal '(1 2 3)
-              (mapcar car '((1 a) (2 b) (3 c))))
-(assert-equal '(3.0 4.0 2.0 5.0 6.0)
-              (mapcar abs '(3 -4 2 -5 -6)))
-(assert-equal '((A . 1) (B . 2) (C . 3))
-              (mapcar cons '(a b c) '(1 2 3)))
+(tests
+  (mapcar car '((1 a) (2 b) (3 c))) => (1 2 3)
+  (mapcar abs '(3 -4 2 -5 -6)) => (3.0 4.0 2.0 5.0 6.0)
+  (mapcar cons '(a b c) '(1 2 3)) => ((A . 1) (B . 2) (C . 3))
+)
 
 
 ; test maplist
-(assert-equal '((1 2 3 4 1 2 1 2 3) (2 3 4 2 2 3))
-              (maplist append '(1 2 3 4) '(1 2) '(1 2 3)) )
-(assert-equal '((FOO A B C D) (FOO B C D) (FOO C D) (FOO D))
-              (maplist (lambda (x) (cons 'foo x)) '(a b c d)))
-(assert-equal '(0 0 1 0 1 1 1)
-              (maplist (lambda (x) (if (member (car x) (cdr x)) 0 1)) '(a b a c d b c)))
-;An entry is 1 if the corresponding element of the input
-;  list was the last instance of that element in the input list.
-
+(tests
+  (maplist append '(1 2 3 4) '(1 2) '(1 2 3)) => ((1 2 3 4 1 2 1 2 3) (2 3 4 2 2 3))
+  (maplist (lambda (x) (cons 'foo x)) '(a b c d)) => ((FOO A B C D) (FOO B C D) (FOO C D) (FOO D))
+  (maplist (lambda (x) (if (member (car x) (cdr x)) 0 1)) '(a b a c d b c)) => (0 0 1 0 1 1 1)
+  ;An entry is 1 if the corresponding element of the input
+  ;  list was the last instance of that element in the input list.
+)
 
 ; test mapc
-(define dummy nil)
-(assert-equal
-  '(1 2 3 4)
+(tests
+  (define dummy nil) => dummy
   (mapc (lambda x (setq dummy (append dummy x)))
         '(1 2 3 4)
         '(a b c d e)
-        '(x y z)))
-(assert-equal '(1 A X 2 B Y 3 C Z) dummy)
+        '(x y z)) => (1 2 3 4)
+  dummy => (1 A X 2 B Y 3 C Z)
+)
 
 
 ; test mapl
-(setq dummy nil)
-(assert-equal '(1 2 3 4)
-              (mapl (lambda (x) (prepend x dummy)) '(1 2 3 4)))
-(assert-equal '((4) (3 4) (2 3 4) (1 2 3 4)) dummy)
+(tests
+  (setq dummy nil) => nil
+  (mapl (lambda (x) (prepend x dummy)) '(1 2 3 4)) => (1 2 3 4)
+  dummy => ((4) (3 4) (2 3 4) (1 2 3 4))
+)
 
 
 ; test remove-if, remove-if-not, remove
-(assert-equal '(2 4 4) (remove-if oddp '(1 2 4 1 3 4 5)))
-(assert-equal '(2 4 4) (remove-if-not evenp '(1 2 4 1 3 4 5)))
+(tests
+  (remove-if oddp '(1 2 4 1 3 4 5)) => (2 4 4)
+  (remove-if-not evenp '(1 2 4 1 3 4 5)) => (2 4 4)
 
-(assert-equal '(1 3 5 9) (remove 4 '(1 3 4 5 9)))
-(assert-equal '(1 2 1 3 5) (remove 4 '(1 2 4 1 3 4 5)))
+  (remove 4 '(1 3 4 5 9)) => (1 3 5 9)
+  (remove 4 '(1 2 4 1 3 4 5)) => (1 2 1 3 5)
+)
 
 
 ; Summary
