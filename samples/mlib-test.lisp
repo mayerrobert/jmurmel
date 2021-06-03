@@ -247,6 +247,24 @@
 )
 
 
+; test with-gensyms
+; define a "non-shortcircuiting logical and" as a macro
+; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"
+(defmacro logical-and-3 (a b c)
+  (with-gensyms (result)
+    `(let ((,result t))
+       (if ,a nil (setq ,result nil))
+       (if ,b nil (setq ,result nil))
+       (if ,c nil (setq ,result nil))
+       ,result)))
+
+(tests
+  (define result 1) ==> result; the symbol "result" is used in the macro, name-capturing must be avoided
+  (logical-and-3 result 2 3) ==> t
+  result ==> 1 ; global variable is not affected by the macro
+)
+
+
 ; Summary
 ; print succeeded and failed tests if any
 (writeln) (writeln)

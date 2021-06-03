@@ -202,3 +202,15 @@
                 (remove elem (cdr l))
             (cons obj (remove elem (cdr l)))))
     nil))
+
+
+; "with-gensyms" is a macro commonly used by Common Lispers to help with avoiding name capture when writing macros.
+; CL version of "with-gensyms", see "Practical Common Lisp, Peter Seibel" (http://www.gigamonkeys.com/book/macros-defining-your-own.html)
+;(defmacro with-gensyms ((&rest names) &body body)
+;  `(let ,(loop for n in names collect `(,n (gensym)))
+;     ,@body))
+;
+(defmacro with-gensyms (names . body)
+  `(let ,(let loop ((names names))
+           (if names (cons (list (car names) '(gensym)) (loop (cdr names)))))
+     ,@body))
