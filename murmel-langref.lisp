@@ -514,10 +514,11 @@ nil
 ; = round, truncate, floor, ceiling
 ;
 ; These functions take one argument and return an integer value or an exception
-; if the value cannot be represented by a long (NaN, overflow, underflow),
+; if the value cannot be represented by a long
+; (NaN, Infinite, integer overflow or underflow),
 ; eg. (floor number) -> long
 
-(floor 1.1) ; ==> 1.0
+(floor 1.1) ; ==> 1
 
 ; = fround, ftruncate, ffloor, fceiling
 ;

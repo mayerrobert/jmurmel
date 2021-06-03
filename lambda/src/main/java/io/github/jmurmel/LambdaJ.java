@@ -2831,6 +2831,7 @@ public class LambdaJ {
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
     private static long truncate(double d) {
         if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
+        if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
         if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
         if (d > Long.MAX_VALUE) throw new LambdaJError("overflow");
         return (long)d;
