@@ -43,7 +43,7 @@
 
 ;;; == Terminology ====================
 ;;;
-;;; = S-expressions vs. forms =
+;;; = S-expressions vs. forms
 ;;; Murmel is a Lisp dialect. As such the language isn't
 ;;; really defined in terms of program text but in terms
 ;;; of in-memory objects (lists, symbols and other atoms)
@@ -58,7 +58,7 @@
 ;;; (as well as their textual representation as S-expressions)
 ;;; are referred to as "forms".
 ;;;
-;;; = Surface representation vs. internal representation =
+;;; = Surface representation vs. internal representation
 ;;; This is really the same discussion as "S-expressions vs. forms".
 ;;; JMurmel adds S-Expressions as a surface representation
 ;;; to Murmel.
@@ -391,19 +391,18 @@ nil
 
 ;;; = (letrec ((symbol bindingform)...) bodyforms...) -> object
 ;
-; works like let and let* except each bindingform "sees"
+; `letrec` works like `let` and `let*` except each bindingform "sees"
 ; all other let symbols as well as it's own symbol.
 ; All symbols are bound, but only the preceeding bindings
-; are defined (have a value) while eval'ing the bindingform.
+; are defined (have a value) while eval'ing the `bindingform`.
 ; That way a let-bound variable could be a recursive lambda.
 
 (letrec ((x 1) (y (+ x 1))) (write y))
 
 ;;; = (apply form argform) -> object
 ;
-; form must return a primitive or lambda
-; argform must eval to a proper list
-; e.g. apply the function + to the arguments 1 and 2
+; `form` must return a primitive or lambda.
+; `argform` must eval to a proper list. 
 
 (apply + '(1 2)) ; ==> 3.0
 
@@ -528,12 +527,14 @@ nil
 (ffloor 1.1) ; ==> 1.0
 
 ; = = < > <= >= /=
+;
+; The numeric comparison operators take one or more number arguments.
 
 (= 1 1.0)         ; ==> t
 (< 1 2 3.0 4 5.0) ; ==> t
 (< 1 2 3 3 4 5)   ; ==> nil
 
-; = (macroexpand-1 quoted-form)
+; = (macroexpand-1 quoted-form) -> expanded form
 ;
 ; macroexpand-1 is a simplified version of CL's macroexpand-1.
 ; It is only supported in interpreted code.
