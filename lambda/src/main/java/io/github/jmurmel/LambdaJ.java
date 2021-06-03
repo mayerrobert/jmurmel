@@ -4348,21 +4348,7 @@ public class LambdaJ {
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
-                    if (consp(form) && car(form) == interpreter().sDefine) {
-                        globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
-                    }
-                    else if (consp(form) && car(form) == interpreter().sDefun) {
-                        globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
-                    }
-                    else if  (consp(form) && car(form) == interpreter().sDefmacro) {
-                        final Object sym = cadr(form);
-                        notReserved(sym);
-                        interpreter().eval(form, null);
-                    }
-                    bodyForms.add(form);
-
-                    if (consp(form) && (car(form) == interpreter().sDefine || car(form) == interpreter().sDefun))
-                        globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
+                    globalEnv = toplevelFormsToJava(ret, bodyForms, globals, globalEnv, form);
                 }
                 catch (LambdaJError e) {
                     throw new LambdaJError(false, e.getMessage(), form);
@@ -4405,6 +4391,30 @@ public class LambdaJ {
             ret.flush();
         }
 
+        private ConsCell toplevelFormsToJava(WrappingWriter ret, ArrayList<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
+            if (consp(form)) {
+                final Object op = car(form);
+                if (op == interpreter().sDefine) {
+                    globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
+                } else if (op == interpreter().sDefun) {
+                    globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
+                } else if (op == interpreter().sDefmacro) {
+                    final Object sym = cadr(form);
+                    notReserved(sym);
+                    interpreter().eval(form, null);
+                }
+            }
+
+            if (consp(form) && interpreter().macros.containsKey(car(form))) {
+                final Object expansion = interpreter().mexpand(car(form), (ConsCell) cdr(form), 0, 0, 0);
+                globalEnv = toplevelFormsToJava(ret, bodyForms, globals, globalEnv, expansion);
+            }
+            else bodyForms.add(form);
+
+            if (consp(form) && (car(form) == interpreter().sDefine || car(form) == interpreter().sDefun))
+                globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
+            return globalEnv;
+        }
 
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},

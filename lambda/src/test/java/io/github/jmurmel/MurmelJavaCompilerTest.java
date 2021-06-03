@@ -494,7 +494,13 @@ public class MurmelJavaCompilerTest {
         assertEquals("macroInDefun produced wrong result", "6.0", TestUtils.sexp(program.body()));
     }
 
-
+    // macro defines a function
+    @Test
+    public void testMacroDefun() throws Exception {
+        MurmelProgram program = compile("(defmacro m () `(defun f () 1)) (m) (f)");
+        assertNotNull("failed to compile macroDefun to class", program);
+        assertEquals("macroDefun produced wrong result", "1", TestUtils.sexp(program.body()));
+    }
 
     @Test
     public void testReverse() throws Exception {
