@@ -4,6 +4,7 @@
 ;        and begin your file with (load "mlib")
 ;
 ; Provides:
+; acons
 ; not, and, or
 ; abs, zerop, evenp, oddp
 ; char=
@@ -12,6 +13,11 @@
 ; member
 ; mapcar, maplist, mapc, mapl
 ; remove-if, remove-if-not, remove
+
+
+;;; acons key datum alist => new-alist
+(defun acons (key datum alist)
+  (cons (cons key datum) alist))
 
 
 ;;; Logical not

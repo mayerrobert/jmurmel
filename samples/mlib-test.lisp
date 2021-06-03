@@ -36,14 +36,37 @@
     nil))
 
 
+(defun caddr (l) (car (cdr (cdr l))))
+(defun cdddr (l) (cdr (cdr (cdr l))))
+
+(defmacro tests l
+  (if l
+    `(append (assert-equal ',(caddr l) ,(car l))
+             (tests ,@(cdddr l)))))
+
+
+;;; test acons
+(define alist '())
+(tests
+  (setq alist '()) => NIL
+  (acons 1 "one" alist) =>  ((1 . "one"))
+  alist =>  NIL
+  (setq alist (acons 1 "one" (acons 2 "two" alist))) =>  ((1 . "one") (2 . "two"))
+  (assoc 1 alist) =>  (1 . "one")
+  (setq alist (acons 1 "uno" alist)) =>  ((1 . "uno") (1 . "one") (2 . "two"))
+  (assoc 1 alist) =>  (1 . "uno")
+)
+
+
 ;;; test not
-(assert-true  (not nil))
-(assert-true  (not '()))
-(assert-true  (not (integerp 'sss)))
-(assert-false (not (integerp 1)))
-(assert-false (not 3.7))
-(assert-false (not 'apple))
- 
+(tests
+  (not nil) => t
+  (not '()) => t
+  (not (integerp 'sss)) => t
+  (not (integerp 1)) => nil
+  (not 3.7) => nil
+  (not 'apple) => nil
+)
 
 ;;; test logical and/ or macros
 (assert-true
