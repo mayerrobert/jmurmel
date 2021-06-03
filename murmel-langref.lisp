@@ -609,8 +609,8 @@ nil
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; (code-char integer) -> character  
-; (char-code character) -> integer  
+; (int-char integer) -> character
+; (char-int character) -> integer
 ; (string= s1 s2) -> boolean
 
 

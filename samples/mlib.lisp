@@ -59,8 +59,8 @@
 ;;; Return t if all of the arguments are the same character
 (defun char= (c . more)
   (if more
-        (let loop ((code (char-code c)) (l more))
-          (if (= code (char-code (car l)))
+        (let loop ((code (char-int c)) (l more))
+          (if (= code (char-int (car l)))
                 (if (cdr l)
                       (loop code (cdr l))
                   t)

@@ -994,3 +994,6 @@ java.lang.ArrayIndexOutOfBoundsException: 0
 ; in einem string ?!?
 
 n-aeres char= und in mlib.lisp:eql nutzen
+
+char-code -> char-int
+code-char -> int-char
