@@ -35,3 +35,4 @@ core
 /target/
 /lambdajbm/jmurmelbm.iml
 /mlib/jmurmel-lib.iml
+/mlib/target/
