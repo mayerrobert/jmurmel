@@ -5,11 +5,11 @@ The file `murmel-langref.lisp`
 is an executable language reference manual
 for Murmel, a single-namespace Lisp dialect.
 
-You can read this file as-is or run it with:
+The file `murmel-langref.lisp` can be read as-is or run it with:
 
     $ java -jar jmurmel.jar --repl --echo < murmel-langref.lisp
 
-or transform it to Markdown:
+or transformed to Markdown:
 
     $ sed -nf langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 
@@ -37,7 +37,7 @@ and the prompt `JMurmel>`.
 ## Disclaimer 
 
 In order to understand and make use of this Reference Manual
-you should probably at least know some Lisp.
+one should probably at least know some Lisp.
 This manual does not attempt to be a Lisp or Murmel tutorial.
 
 
@@ -638,9 +638,9 @@ but return the string
 
 Murmel features primitives for graphics output to a frame.
 
-A frame is a toplevel GUI window with a title. You can write text on a frame,
+A frame is a toplevel GUI window with a title. One can write text on a frame,
 and/ or draw lines with Turtle graphics or moveto/lineto functions.
-Also you can attach a bitmap to a frame and use pixel-graphics primitives.
+Also one can attach a bitmap to a frame and use pixel-graphics primitives.
 
 0/0 is towards left bottom, any drawing will be resized/ shifted so that
 it fills the frame.
@@ -648,11 +648,12 @@ it fills the frame.
 A frame has state: open/closed, current x/y position, current linecolor,
 current turtle angle and background color.
 
-You can use several frames but only one is the "current-frame". All functions
+One can use several frames but only one is the "current-frame". All functions
 (except make-frame) have an optional last parameter "frame" that can be used
 to select which frame to operate on (if omitted or `nil` then the current frame is used).
 
-Hint: if graphics primitives are slow then you might want to try switching to OpenGL:
+Hint: if graphics primitives are slow then maybe switching to OpenGL
+will speed things up:
 
     C:\> java -Dsun.java2d.opengl=true -jar jmurmel.jar
 
@@ -794,14 +795,14 @@ In embedded use primitives may be added, also Java methods
 created by the primitive `::` (see below) act as builtins.
 As far as the language is concerned, all primitives are variadic functions.
 The primitives themselves may have parameter checks, tough.
-In case you call them with the wrong type(s) or number of parameters
+In case they are called with the wrong type(s) or number of parameters
 the primitives may throw an error.
 
 ### Language subsets
 
 JMurmel supports commandline parameters that can be used to
 disable many of Murmel's forms, predefined variables, ... .
-These commandline parameters can be used if you want to play
+These commandline parameters can be used to experiment
 with an even more reduced Lisp.
 
 See 'jmurmel --help-features'
