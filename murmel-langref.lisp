@@ -135,11 +135,13 @@ t
 
 dynamic
 
-; Resolution of the time related functions, see below.
+; `internal-time-units-per-second` contains the resolution
+; of the time related functions, see below.
 
 internal-time-units-per-second
 
-; The mathematical constant pi
+; `pi` contains the value of the mathematical constant pi
+; in double precision.
 
 pi
 
@@ -411,6 +413,10 @@ nil
 ; Eval the contents of the given file, return value
 ; is the value returned by the last form or nil
 ; in case of an empty file.
+;
+; When compiling Murmel "load" is performed at
+; compile time.
+;
 ; "filespec" is not eval'd and must be a string.
 ; Unless filespec ends with ".lisp" the file extension
 ; ".lisp" will be appended.
@@ -425,6 +431,26 @@ nil
 
 (load "nul") ; ==> nil, NUL is Windows specific
 (load "lib") ; will search for lib.lisp
+
+
+;;; = (require module-name optional-file-path)
+;
+; Load the given file once. Murmel maintains an internal
+; set of loaded modules, and "require" will ignore
+; loading files that were already loaded by comparing
+; "module-name" to the set of already loaded modules.
+;
+; When compiling Murmel "require" is performed at
+; compile time.
+;
+; If "optional-file-path" is omitted or nil then
+; "module-name" will be used as the file path.
+;
+; "module-name" and "optional-file-path" are not eval'd
+; and must be strings.
+
+(require "mlib") ; will search for the file mlib.lisp
+                 ; unless the module "mlib" was already loaded
 
 
 ;;; == Function application ===========

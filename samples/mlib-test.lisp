@@ -1,6 +1,6 @@
 ;;;; Tests for Murmel's default library "mlib".
 
-(load "mlib")
+(require "mlib")
 
 (define *success-count* 0)
 (define *error-count* 0)

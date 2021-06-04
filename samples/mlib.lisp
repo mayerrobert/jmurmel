@@ -1,20 +1,24 @@
 ;;;; Default library for Murmel
 ;
-; Usage: copy into the directory containing jmurmel.jar or into the directory specified with --libdir
-;        and begin your file with (load "mlib")
+; Usage:
+; copy into the directory containing jmurmel.jar or into the directory specified with --libdir
+; and begin your file with
+;
+;     (require "mlib")
 ;
 ; Provides:
-; acons
-; not, and, or
-; abs, zerop, evenp, oddp
-; char=
-; eql, equal
-; when, unless, dotimes, dolist
-; constantly, complement
-; member
-; mapcar, maplist, mapc, mapl
-; remove-if, remove
-; with-gensyms
+;     acons
+;     not, and, or
+;     abs, zerop, evenp, oddp
+;     char=
+;     eql, equal
+;     when, unless, dotimes, dolist
+;     constantly, complement
+;     member
+;     mapcar, maplist, mapc, mapl
+;     remove-if, remove
+;     
+;     with-gensyms
 
 
 ;;; acons key datum alist => new-alist

@@ -1031,6 +1031,7 @@ public class LambdaJ {
             sProgn   = internReserved("progn");
 
             sLoad    = internReserved("load");
+            sRequire = internReserved("require");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1045,10 +1046,11 @@ public class LambdaJ {
         traced = null;
 
         macros.clear();
+        modules.clear();
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn, sLoad;
+    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn, sLoad, sRequire;
 
     private Supplier<Object> expTrue;
 
@@ -1083,6 +1085,7 @@ public class LambdaJ {
     private ConsCell topEnv;
 
     private final Map<Object, ConsCell> macros = new HashMap<>();
+    private final Set<Object> modules = new HashSet<>();
 
     /// ###  evalquote - the heart of most if not all Lisp interpreters
     private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
@@ -1231,7 +1234,22 @@ public class LambdaJ {
 
                     /// eval - (load filespec) -> object
                     } else if (operator == sLoad) {
-                        return loadFile(arguments);
+                        nArgs("load", arguments, 1);
+                        return loadFile("load", car(arguments));
+
+                    /// eval - (require modulname optfilespec) -> object
+                    } else if (operator == sRequire) {
+                        nArgs("reqire", arguments, 1, 2);
+                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string but got %s", func, printSEx(arguments));
+                        final Object modName = car(arguments);
+                        if (!modules.contains(modName)) {
+                            Object modFilePath = cadr(arguments);
+                            if (modFilePath == null) modFilePath = modName;
+                            final Object ret = loadFile("require", modFilePath);
+                            modules.add(modName);
+                            return ret;
+                        }
+                        return null;
                     }
 
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
@@ -1570,10 +1588,9 @@ public class LambdaJ {
     }
 
 
-    private Object loadFile(ConsCell arguments) {
-        nArgs("load", arguments, 1);
-        if (!stringp(car(arguments))) throw new LambdaJError(true, "load: expected a string but got %s", printSEx(arguments));
-        final String fileName = (String) car(arguments);
+    private Object loadFile(String func, Object argument) {
+        if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string but got %s", func, printSEx(argument));
+        final String fileName = (String) argument;
         final SymbolTable prevSymtab = symtab;
         final Path prevPath = ((SExpressionParser)symtab).filePath;
         final Path p = findFile(prevPath, fileName);
