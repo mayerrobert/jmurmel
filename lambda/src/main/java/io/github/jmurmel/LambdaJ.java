@@ -1214,7 +1214,7 @@ public class LambdaJ {
                         nArgs("if", arguments, 2, 3);
                         if (evalquote(car(arguments), env, stack, level, traceLvl) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
-                        } else if (cddr(arguments) != null) {
+                        } else if (caddr(arguments) != null) {
                             form = caddr(arguments); isTc = true; continue tailcall;
                         } else { result = null; return null; } // condition eval'd to false, no else form
 

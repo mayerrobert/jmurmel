@@ -3,7 +3,7 @@ compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/ale
 ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, obs ein macro oder eine funktion ist
 -> gibts ein macro "m" dann hat "(defun m..." keine auswirkung
 
-vielleicht doch require in core murmel?
+vielleicht doch require in core murmel? provide, require, *modules*
 -> vielleicht load umbenennen in require mit hardcodiertem provides-handling
    -> aber dann kann man im REPL nicht mehr neu laden
       -> ist :load eine abhilfe?
@@ -25,6 +25,7 @@ compiler: alle defuns/ defines
 filenamen in fehlermeldungen
 
 characters sollten #\a sein, nicht 'a'
+vielleicht #+, #- und *features*
 
 load im compiler
 
