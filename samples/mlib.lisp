@@ -10,9 +10,11 @@
 ; char=
 ; eql, equal
 ; when, unless, dotimes, dolist
+; constantly, complement
 ; member
 ; mapcar, maplist, mapc, mapl
-; remove-if, remove-if-not, remove
+; remove-if, remove
+; with-gensyms
 
 
 ;;; acons key datum alist => new-alist
@@ -138,6 +140,23 @@
            ,result)))))
 
 
+; (constantly value) -> function
+; constantly returns a function that accepts any number of arguments,
+; that has no side-effects, and that always returns value. 
+(defun constantly (value)
+  (lambda arguments value))
+
+
+; (complement function) -> complement-function
+; complement returns a function that takes the same arguments as function,
+; and has the same side-effect behavior as function, but returns only
+; a single value: a boolean with the opposite truth value of that
+; which would be returned as the value of function.
+(defun complement (f)
+  (lambda arguments
+    (null (apply f arguments))))
+
+
 ; use like this:
 ; (member 1 '(a b c 1 2 3))
 ; (member 1 '(a b c 1 2 3) eq)
@@ -156,7 +175,7 @@
       nil)))
 
 
-; helper macro to generate defuns for the various maxXX functions
+; Helper macro to generate defuns for the various maxXX functions
 (defmacro mapx (name comb acc accn return-list)
   `(defun ,name (f l . more)
      (if more
@@ -194,14 +213,6 @@
           (if (pred obj)
                 (remove-if pred (cdr l))
             (cons obj (remove-if pred (cdr l)))))
-    nil))
-
-(defun remove-if-not (pred l)
-  (if l
-        (let ((obj (car l)))
-          (if (pred obj)
-                (cons obj (remove-if-not pred (cdr l)))
-            (remove-if-not pred (cdr l))))
     nil))
 
 (defun remove (elem l)

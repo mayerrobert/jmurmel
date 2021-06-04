@@ -194,6 +194,27 @@
 )
 
 
+; test constantly
+(tests
+ (mapcar (constantly 3) '(a b c d)) =>  (3 3 3 3)
+
+ (defmacro with-vars (vars . forms)
+   `((lambda ,vars ,@forms) ,@(mapcar (constantly nil) vars))) => WITH-VARS
+
+ (macroexpand-1 '(with-vars (a b) (setq a 3 b (* a a)) (list a b)))
+   => ((LAMBDA (A B) (SETQ A 3 B (* A A)) (LIST A B)) NIL NIL)
+)
+
+
+; test complement
+(tests
+ ((complement zerop) 1) => t
+ ((complement characterp) (car "a")) => nil ; todo (car "a") -> #\a
+ ((complement member) 'a '(a b c)) =>  nil
+ ((complement member) 'd '(a b c)) =>  t
+)
+
+
 ; test member
 (tests
   (member 2 '(1 2 3)) => (2 3)
@@ -240,7 +261,7 @@
 ; test remove-if, remove-if-not, remove
 (tests
   (remove-if oddp '(1 2 4 1 3 4 5)) => (2 4 4)
-  (remove-if-not evenp '(1 2 4 1 3 4 5)) => (2 4 4)
+  (remove-if (complement evenp) '(1 2 4 1 3 4 5)) => (2 4 4)
 
   (remove 4 '(1 3 4 5 9)) => (1 3 5 9)
   (remove 4 '(1 2 4 1 3 4 5)) => (1 2 1 3 5)

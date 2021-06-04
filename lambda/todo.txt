@@ -1,3 +1,5 @@
+compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
+
 ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, obs ein macro oder eine funktion ist
 -> gibts ein macro "m" dann hat "(defun m..." keine auswirkung
 

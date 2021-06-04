@@ -997,3 +997,5 @@ n-aeres char= und in mlib.lisp:eql nutzen
 
 char-code -> char-int
 code-char -> int-char
+
+remove-if-not weg (deprecated in CL siehe http://clhs.lisp.se/Body/f_comple.htm), complement dazu, vgl http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Issues/iss172-writeup.html
