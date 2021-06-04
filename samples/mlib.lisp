@@ -21,17 +21,23 @@
 ;     with-gensyms
 
 
-;;; acons key datum alist => new-alist
+;;; (acons key datum alist) -> new-alist
 (defun acons (key datum alist)
   (cons (cons key datum) alist))
 
 
-;;; Logical not
+;;; (not form) -> boolean
+;;;
+;;; Logical not.
 (defun not (e)
   (null e))
 
 
-;;; Short-circuiting macros for logical and and or
+;;; (and forms*) -> result
+;;;
+;;; Short-circuiting logical and.
+;;; Return T unless any of the forms evaluate to NIL,
+;;; NIL otherwise.
 (defmacro and args
    (if args
          (if (cdr args)
@@ -40,6 +46,12 @@
            (car args))
      t))
 
+
+;;; (or forms*) -> result
+;;;
+;;; Short-circuiting logical or.
+;;; Return NIL unless any of the forms evaluate to non-NIL,
+;;; the result of the first form returning non-NIL otherwise.
 (defmacro or args
    (if args
          (if (cdr args)
@@ -52,16 +64,33 @@
      nil))
 
 
+;;; (abs n) -> result
+;;;
+;;; Return the absoute value of a number
 (defun abs (n)
   (if (< n 0) (- n) (+ n)))
 
 
+;;; (zerop number) -> boolean
+;;;
 ;;; Is this number zero?
 (defun zerop (n) (= n 0))
+
+
+;;; (evenp number) -> boolean
+;;;
+;;; Is this number even?
 (defun evenp (n) (= 0.0 (mod n 2)))
+
+
+;;; (oddp number) -> boolean
+;;;
+;;; Is this number odd?
 (defun oddp  (n) (= 1.0 (mod n 2)))
 
 
+;;; (char= characters+) -> boolean
+;;;
 ;;; Return t if all of the arguments are the same character
 (defun char= (c . more)
   (if more
@@ -74,6 +103,8 @@
     t))
 
 
+;;; (eql x y) -> boolean
+;;;
 ;;; Return t if any of the following is true
 ;;; a and b are eq
 ;;; a and b are numbers of the same type and have the same value
@@ -85,6 +116,8 @@
       (and (characterp a) (characterp b) (char= a b))))
 
 
+;;; (equal x y) -> boolean
+;;;
 ;;; Return t if any of the following is true
 ;;; a and b are eql
 ;;; a and b are strings, characters or symbols and have the same text value
@@ -95,6 +128,13 @@
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
+;;; (when condition forms*) -> result
+;;;
+;;; Execute forms if condition evaluates to true
+;;; and return the result of the last form if any
+;;; Orherwise f condition evaluates to false,
+;;; the forms are not evaluated and the return value
+;;; of the when-form is nil.
 (defmacro when (condition . body)
   (list 'if
         condition
@@ -102,6 +142,14 @@
               (cons 'progn body)
           (car body))))
 
+
+;;; (unless condition forms*) -> result
+;;;
+;;; Execute forms if condition evaluates to false
+;;; and return the result of the last form if any
+;;; Orherwise f condition evaluates to true,
+;;; the forms are not evaluated and the return value
+;;; of the unless-form is nil.
 (defmacro unless (condition . body)
   (list 'if
         condition
@@ -111,8 +159,9 @@
           (car body))))
 
 
-; similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
-; dotimes (var count-form [result-form]) statement* => result
+;;; (dotimes (var count-form [result-form]) statement*) -> result
+;;;
+;;; Similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
 (defmacro dotimes (exp . body)
   (let ((var (car exp))
         (countform (car (cdr exp)))
@@ -129,8 +178,9 @@
                (,loop (1+ ,var)))))))))
 
 
-; similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
-; dolist (var list-form [result-form]) statement* => result*
+;;; (dolist (var list-form [result-form]) statement*) -> result
+;;;
+;;; Similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
 (defmacro dolist (exp . body)
   (let ((var (car exp))
         (listform (car (cdr exp)))
@@ -146,27 +196,43 @@
            ,result)))))
 
 
-; (constantly value) -> function
-; constantly returns a function that accepts any number of arguments,
-; that has no side-effects, and that always returns value. 
+;;; (constantly value) -> function
+;;;
+;;; constantly returns a function that accepts any number of arguments,
+;;; that has no side-effects, and that always returns value. 
 (defun constantly (value)
   (lambda arguments value))
 
 
-; (complement function) -> complement-function
-; complement returns a function that takes the same arguments as function,
-; and has the same side-effect behavior as function, but returns only
-; a single value: a boolean with the opposite truth value of that
-; which would be returned as the value of function.
+;;; (complement function) -> complement-function
+;;;
+;;; complement returns a function that takes the same arguments as function,
+;;; and has the same side-effect behavior as function, but returns only
+;;; a single value: a boolean with the opposite truth value of that
+;;; which would be returned as the value of function.
 (defun complement (f)
   (lambda arguments
     (null (apply f arguments))))
 
 
-; use like this:
-; (member 1 '(a b c 1 2 3))
-; (member 1 '(a b c 1 2 3) eq)
-; (member 1 '(a b c 1 2 3) (lambda (a b) (eq a b))
+;;; (member item list [test]) -> tail
+;;;
+;;; member searches list for item or for a top-level element that
+;;; satisfies the test.
+;;;
+;;; test if given must be a function that takes to arguments.
+;;;
+;;; Example usage:
+;;;     (member 2 '(1 2 3))
+;;;         ; => (2 3)
+;;;     (member 'e '(a b c d))
+;;;         ; => NIL
+;;;     (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal)
+;;;         ; => ((1 . 1) (2 . 2) (3 . 3))
+;;;     (member 'c '(a b c 1 2 3) eq)
+;;;         ; => (c 1 2 3)
+;;;     (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
+;;;         ; => (b c 1 2 3)
 (defun member (obj l . test)
   (let* ((tst (car test))
          (pred (if tst
@@ -203,13 +269,16 @@
            nil)))
     ,@(when return-list '(l))))
 
-; (mapcar function list [more-lists]) -> list
+;;; (mapcar function list [more-lists]) -> list
 (mapx mapcar  cons  car cars nil)
-; (maplist function list [more-lists]) -> list
+
+;;; (maplist function list [more-lists]) -> list
 (mapx maplist cons  (lambda (l) l) (lambda (l) l) nil)
-; (mapc function list [more-lists]) -> first-arg-list
+
+;;; (mapc function list [more-lists]) -> first-arg-list
 (mapx mapc    progn car cars t)
-; (mapl function list [more-lists]) -> first-arg-list
+
+;;; (mapl function list [more-lists]) -> first-arg-list
 (mapx mapl    progn (lambda (l) l) (lambda (l) l) t)
 
 
@@ -221,6 +290,7 @@
             (cons obj (remove-if pred (cdr l)))))
     nil))
 
+
 (defun remove (elem l)
   (if l
         (let ((obj (car l)))
@@ -230,12 +300,12 @@
     nil))
 
 
-; "with-gensyms" is a macro commonly used by Common Lispers to help with avoiding name capture when writing macros.
-; CL version of "with-gensyms", see "Practical Common Lisp, Peter Seibel" (http://www.gigamonkeys.com/book/macros-defining-your-own.html)
-;(defmacro with-gensyms ((&rest names) &body body)
-;  `(let ,(loop for n in names collect `(,n (gensym)))
-;     ,@body))
-;
+;;; (with-gensyms (names*) forms*) -> result
+;;;
+;;; "with-gensyms" is a macro commonly used by Common Lispers
+;;; to help with avoiding name capture when writing macros.
+;;; See "Practical Common Lisp, Peter Seibel"
+;;; (http://www.gigamonkeys.com/book/macros-defining-your-own.html)
 (defmacro with-gensyms (names . body)
   `(let ,(let loop ((names names))
            (if names (cons (list (car names) '(gensym)) (loop (cdr names)))))

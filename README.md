@@ -8,7 +8,8 @@ or one single Java source file.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
-For more details on the language see [murmel-langref.md](murmel-langref.md).
+For more details on the language see [murmel-langref.md](murmel-langref.md),
+and [samples/mlib.lisp](samples/mlib.lisp) for Murmel's default library.
 
 The interpreter, REPL, compiler as well as Jars with compiled Murmel all run on top of the JVM.
 Compilation is done as Murmel to Java source

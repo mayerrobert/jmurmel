@@ -221,6 +221,9 @@
 (tests
   (member 2 '(1 2 3)) => (2 3)
   (member 'e '(a b c d)) => NIL
+  (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal) => ((1 . 1) (2 . 2) (3 . 3))
+  (member 'c '(a b c 1 2 3) eq) => (c 1 2 3)
+  (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b))) => (b c 1 2 3)
 )
 
 
