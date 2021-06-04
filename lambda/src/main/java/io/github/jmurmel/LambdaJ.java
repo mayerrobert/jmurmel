@@ -1010,27 +1010,28 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sLambda =                      symtab.intern(new LambdaJSymbol("lambda"));   reserve(sLambda);
-        sDynamic =                     symtab.intern(new LambdaJSymbol("dynamic"));
+        sLambda =                      internReserved("lambda");
+        sDynamic =                     intern("dynamic");
 
-        if (haveQuote())  { sQuote   = symtab.intern(new LambdaJSymbol("quote"));    reserve(sQuote); }
-        //if (haveQuote())  { sQuasiquote = symtab.intern(new LambdaJSymbol("quasiquote"));    reserve(sQuasiquote); }
-        if (haveCond())   { sCond    = symtab.intern(new LambdaJSymbol("cond"));     reserve(sCond); }
-        if (haveLabels()) { sLabels  = symtab.intern(new LambdaJSymbol("labels"));   reserve(sLabels); }
+        if (haveQuote())  { sQuote   = internReserved("quote"); }
+        if (haveCond())   { sCond    = internReserved("cond"); }
+        if (haveLabels()) { sLabels  = internReserved("labels"); }
+        if (haveApply())  { sApply   = internReserved("apply"); }
 
-        if (haveXtra())   { sIf      = symtab.intern(new LambdaJSymbol("if"));       reserve(sIf); }
-        if (haveXtra())   { sDefine  = symtab.intern(new LambdaJSymbol("define"));   reserve(sDefine); }
-        if (haveXtra())   { sDefun   = symtab.intern(new LambdaJSymbol("defun"));    reserve(sDefun); }
-        if (haveXtra())   { sDefmacro= symtab.intern(new LambdaJSymbol("defmacro")); reserve(sDefmacro); }
-        if (haveXtra())   { sLet     = symtab.intern(new LambdaJSymbol("let"));      reserve(sLet); }
-        if (haveXtra())   { sLetStar = symtab.intern(new LambdaJSymbol("let*"));     reserve(sLetStar); }
-        if (haveXtra())   { sLetrec  = symtab.intern(new LambdaJSymbol("letrec"));   reserve(sLetrec); }
-        if (haveXtra())   { sSetQ    = symtab.intern(new LambdaJSymbol("setq"));     reserve(sSetQ); }
+        if (haveXtra())   {
+            sIf      = internReserved("if");
+            sDefine  = internReserved("define");
+            sDefun   = internReserved("defun");
+            sDefmacro= internReserved("defmacro");
+            sLet     = internReserved("let");
+            sLetStar = internReserved("let*");
+            sLetrec  = internReserved("letrec");
+            sSetQ    = internReserved("setq");
 
-        if (haveApply())  { sApply   = symtab.intern(new LambdaJSymbol("apply"));    reserve(sApply); }
-        if (haveXtra())   { sProgn   = symtab.intern(new LambdaJSymbol("progn"));    reserve(sProgn); }
+            sProgn   = internReserved("progn");
 
-        if (haveXtra())   { sLoad    = symtab.intern(new LambdaJSymbol("load"));    reserve(sLoad); }
+            sLoad    = internReserved("load");
+        }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1055,6 +1056,16 @@ public class LambdaJ {
         if (haveT()) return symtab.intern(new LambdaJSymbol("t")); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
         else if (haveQuote()) return cons(symtab.intern(new LambdaJSymbol("quote")), cons(symtab.intern(new LambdaJSymbol("t")), null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
+    }
+
+    private LambdaJSymbol intern(String sym) {
+        return symtab.intern(new LambdaJSymbol(sym));
+    }
+
+    private LambdaJSymbol internReserved(String sym) {
+        final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym));
+        reserve(ret);
+        return ret;
     }
 
     private abstract static class OpenCodedPrimitive implements Primitive {
