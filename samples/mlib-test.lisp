@@ -177,6 +177,8 @@
   (define temp-two 0) => temp-two
   (dotimes (temp-one 10 t) (inc-var temp-two)) => t
   temp-two => 10
+  (let ((loop "loop") (result nil)) (dotimes (i 3 result) (setq result (cons loop result))))
+    => ("loop" "loop" "loop")
 )
 
 

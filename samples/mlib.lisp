@@ -117,15 +117,16 @@
   (let ((var (car exp))
         (countform (car (cdr exp)))
         (count (gensym))
+        (loop (gensym))
         (result (car (cdr (cdr exp)))))
     `(let ((,count ,countform))
        (if (<= ,count 0)
              (let ((,var 0)) ,result)
-         (let loop ((,var 0))
+         (let ,loop ((,var 0))
            (if (>= ,var ,count) ,result
              (progn
                ,@body
-               (loop (1+ ,var)))))))))
+               (,loop (1+ ,var)))))))))
 
 
 ; similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
@@ -134,13 +135,14 @@
   (let ((var (car exp))
         (listform (car (cdr exp)))
         (lst (gensym))
+        (loop (gensym))
         (result (car (cdr (cdr exp)))))
-    `(let loop ((,lst ,listform))
+    `(let ,loop ((,lst ,listform))
        (let ((,var (car ,lst)))
          (if ,lst
                (progn
                  ,@body
-                 (loop (cdr ,lst)))
+                 (,loop (cdr ,lst)))
            ,result)))))
 
 
