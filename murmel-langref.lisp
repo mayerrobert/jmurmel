@@ -503,10 +503,13 @@ nil
 
 ; = (assoc key alist) -> cons or nil
 ;
-; assoc takes a key and a list of key/value tupels (lists or conses)
+; assoc takes a key and a list of key/value tupels (lists or conses).
+; The return value is the first cons whose car is eq to "key" or nil
+; if no such cons was found. nil-elements in "alist" are ignored.
 
-(assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
-(cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
+(assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
+(cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
+(assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ==> (nil 2)
 
 ; = (append lists...) -> list
 ;
@@ -855,6 +858,7 @@ nil
 ; that is implemented by the method "methodname" of the Java class
 ; "classname" that has the formal parameters "paramclass...".
 ; Parameters to "::" must be strings.
+
 (:: "java.lang.System" "currentTimeMillis")
 
 ; When invoking primitives created by "::" the first argument must be

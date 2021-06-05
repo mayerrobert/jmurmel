@@ -504,8 +504,8 @@ else it is the concatenation of "env" and all predefined globals
 
 assoc takes a key and a list of key/value tupels (lists or conses)
 
-    (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
-    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
+    (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
+    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
 
 ### (append lists...) -> list
 
@@ -854,6 +854,7 @@ The primitive "::" will return a newly created primitive
 that is implemented by the method "methodname" of the Java class
 "classname" that has the formal parameters "paramclass...".
 Parameters to "::" must be strings.
+
     (:: "java.lang.System" "currentTimeMillis")
 
 When invoking primitives created by "::" the first argument must be

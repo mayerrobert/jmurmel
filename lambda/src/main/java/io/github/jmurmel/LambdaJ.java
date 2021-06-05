@@ -1920,13 +1920,15 @@ public class LambdaJ {
         return list;
     }
 
-    /** note: searches using object identity, will work for interned symbols, won't work for e.g. numbers */
+    /** note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     private static ConsCell assoc(Object atom, Object maybeList) {
-        if (atom == null || maybeList == null) return null;
+        if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
         for (Object env: (ConsCell) maybeList) {
-            final ConsCell _env = (ConsCell)env;
-            if (atom == car(_env)) return _env;
+            if (env != null) {
+                final ConsCell _env = (ConsCell) env;
+                if (atom == car(_env)) return _env;
+            }
         }
         return null;
     }
