@@ -6,11 +6,12 @@
 (define *error-count* 0)
 
 
-;;; check whether "form" eval's to "expected"
+;;; Macro to check whether "form" eval's to "expected".
+;;; Comparisin is done using "equal".
 (defmacro assert-equal (expected form . msg)
   `(do-assert-equal ,expected ,form (if ,msg ,(car msg) '(equal ,expected ,form))))
 
-;;; helper function for assert-equal macro
+; helper function for assert-equal macro
 (defun do-assert-equal (expected actual msg)
   (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
@@ -21,13 +22,10 @@
     nil))
 
 
-(defun caddr (l) (car (cdr (cdr l))))
-(defun cdddr (l) (cdr (cdr (cdr l))))
-
-;;; run some tests
+;;; Macro to run some tests
 ;;; usage:
-;;; (tests form1 => result1
-;;;        form2 => result2
+;;; (tests form1 => expected-result1
+;;;        form2 => expected-result2
 ;;;        ...)
 (defmacro tests l
   (if l

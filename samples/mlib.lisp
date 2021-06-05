@@ -7,6 +7,7 @@
 ;     (require "mlib")
 ;
 ; Provides:
+;     caar..cdddr
 ;     acons
 ;     not, and, or
 ;     abs, zerop, evenp, oddp
@@ -19,6 +20,22 @@
 ;     remove-if, remove
 ;     
 ;     with-gensyms
+
+
+(defun  caar (l) (car (car l)))
+(defun  cadr (l) (car (cdr l)))
+(defun  cdar (l) (cdr (car l)))
+(defun  cddr (l) (cdr (cdr l)))
+
+(defun caaar (l) (car (car (car l))))
+(defun caadr (l) (car (car (cdr l))))
+(defun cadar (l) (car (cdr (car l))))
+(defun caddr (l) (car (cdr (cdr l))))
+
+(defun cdaar (l) (cdr (car (car l))))
+(defun cdadr (l) (cdr (car (cdr l))))
+(defun cddar (l) (cdr (cdr (car l))))
+(defun cdddr (l) (cdr (cdr (cdr l))))
 
 
 ;;; (acons key datum alist) -> new-alist
