@@ -1876,7 +1876,7 @@ public class LambdaJ {
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
-                                                 : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).substring(1))
+                                                 : o instanceof String ? (((String)o).length() <= 1 ? null : ((String)o).substring(1))
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.substring(1)
                                                  : carCdrError("cdr", o); }
 
