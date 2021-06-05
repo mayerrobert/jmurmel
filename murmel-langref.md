@@ -498,14 +498,26 @@ else it is the concatenation of "env" and all predefined globals
     (eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
     (eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
 
-### eq, null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
+### (eq x y) -> boolean
+
+Returns true if a and b are the same object, nil otherwise.
+
+### null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
 
 ### (assoc key alist) -> cons or nil
 
-assoc takes a key and a list of key/value tupels (lists or conses)
+assoc takes a key and a list of key/value tupels (lists or conses).
+The return value is the first cons whose car is equal(*) to "key"
+or nil if no such cons was found. nil-elements in "alist" are ignored.
+
+(*) assoc considers two items as "equal" if
+
+- Both are "eq" (are the same object
+- Both are integers or floats or characters respectively and have the same value
 
     (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
     (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
+    (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ==> (nil 2)
 
 ### (append lists...) -> list
 
