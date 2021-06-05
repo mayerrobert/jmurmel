@@ -13,9 +13,9 @@
 ;     char=
 ;     eql, equal
 ;     when, unless, dotimes, dolist
-;     constantly, complement
+;     identity, constantly, complement
 ;     member
-;     mapcar, maplist, mapc, mapl
+;     mapcar, maplist, mapc, mapl, mapcan, mapcon
 ;     remove-if, remove
 ;     
 ;     with-gensyms
@@ -196,6 +196,12 @@
            ,result)))))
 
 
+;;;  (identity object) -> object
+;;;
+;;; Returns its argument object.
+(defun identity (x) x)
+
+
 ;;; (constantly value) -> function
 ;;;
 ;;; constantly returns a function that accepts any number of arguments,
@@ -259,24 +265,30 @@
                         nil)))
              (let loop ((args (cons l more)))
                (if (none-nil args)
-                     (,comb (apply f (,accn args)) (loop (cdrs args)))
+                     (,comb (apply f ,(if accn (list accn 'args) 'args)) (loop (cdrs args)))
                  nil)))
        (let loop ((f f) (l l))
-         (if l (,comb (f (,acc l)) (loop f (cdr l)))
+         (if l (,comb (f ,(if acc (list acc 'l) 'l)) (loop f (cdr l)))
            nil)))
     ,@(when return-list '(l))))
 
 ;;; (mapcar function list [more-lists]) -> list
-(mapx mapcar  cons  car cars nil)
+(mapx mapcar  cons    car cars nil)
 
 ;;; (maplist function list [more-lists]) -> list
-(mapx maplist cons  (lambda (l) l) (lambda (l) l) nil)
+(mapx maplist cons    nil nil nil)
 
 ;;; (mapc function list [more-lists]) -> first-arg-list
-(mapx mapc    progn car cars t)
+(mapx mapc    progn   car cars t)
 
 ;;; (mapl function list [more-lists]) -> first-arg-list
-(mapx mapl    progn (lambda (l) l) (lambda (l) l) t)
+(mapx mapl    progn   nil nil t)
+
+;;; (mapcan function list [more-lists]) -> concatenated-results
+(mapx mapcan  append  car cars nil)
+
+;;; (mapcon function list [more-lists]) -> concatenated-results
+(mapx mapcon  append  nil nil nil)
 
 
 (defun remove-if (pred l)

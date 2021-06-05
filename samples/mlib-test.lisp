@@ -196,24 +196,31 @@
 )
 
 
+; test identity
+(tests
+  (identity 101) =>  101
+  (mapcan identity (list (list 1 2 3) '(4 5 6))) =>  (1 2 3 4 5 6)
+)
+
+
 ; test constantly
 (tests
- (mapcar (constantly 3) '(a b c d)) =>  (3 3 3 3)
+  (mapcar (constantly 3) '(a b c d)) =>  (3 3 3 3)
 
- (defmacro with-vars (vars . forms)
-   `((lambda ,vars ,@forms) ,@(mapcar (constantly nil) vars))) => WITH-VARS
+  (defmacro with-vars (vars . forms)
+    `((lambda ,vars ,@forms) ,@(mapcar (constantly nil) vars))) => WITH-VARS
 
- (macroexpand-1 '(with-vars (a b) (setq a 3 b (* a a)) (list a b)))
-   => ((LAMBDA (A B) (SETQ A 3 B (* A A)) (LIST A B)) NIL NIL)
+  (macroexpand-1 '(with-vars (a b) (setq a 3 b (* a a)) (list a b)))
+    => ((LAMBDA (A B) (SETQ A 3 B (* A A)) (LIST A B)) NIL NIL)
 )
 
 
 ; test complement
 (tests
- ((complement zerop) 1) => t
- ((complement characterp) (car "a")) => nil ; todo (car "a") -> #\a
- ((complement member) 'a '(a b c)) =>  nil
- ((complement member) 'd '(a b c)) =>  t
+  ((complement zerop) 1) => t
+  ((complement characterp) (car "a")) => nil ; todo (car "a") -> #\a
+  ((complement member) 'a '(a b c)) =>  nil
+  ((complement member) 'd '(a b c)) =>  t
 )
 
 
@@ -260,6 +267,24 @@
   (setq dummy nil) => nil
   (mapl (lambda (x) (prepend x dummy)) '(1 2 3 4)) => (1 2 3 4)
   dummy => ((4) (3 4) (2 3 4) (1 2 3 4))
+)
+
+
+; test mapcan
+(tests
+  (mapcan (lambda (x y) (if (null x) nil (list x y)))
+          '(nil nil nil d e)
+          '(1 2 3 4 5 6))
+    =>  (D 4 E 5) 
+  (mapcan (lambda (x) (and (numberp x) (list x)))
+          '(a 1 b c 3 4 d 5))
+    =>  (1 3 4 5)
+)
+
+
+; test mapcon
+(tests
+  (mapcon list '(1 2 3 4)) =>  ((1 2 3 4) (2 3 4) (3 4) (4))
 )
 
 
