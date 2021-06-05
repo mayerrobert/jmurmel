@@ -66,7 +66,7 @@
 
 ;;; (abs n) -> result
 ;;;
-;;; Return the absoute value of a number
+;;; Return the absoute value of a number.
 (defun abs (n)
   (if (< n 0) (- n) (+ n)))
 
@@ -220,7 +220,8 @@
 ;;; member searches list for item or for a top-level element that
 ;;; satisfies the test.
 ;;;
-;;; test if given must be a function that takes to arguments.
+;;; "test" if given must be a function that takes to arguments.
+;;; If "test" was omitted or nil then "eql" will be used.
 ;;;
 ;;; Example usage:
 ;;;     (member 2 '(1 2 3))
@@ -235,11 +236,7 @@
 ;;;         ; => (b c 1 2 3)
 (defun member (obj l . test)
   (let* ((tst (car test))
-         (pred (if tst
-                     (if (symbolp tst)
-                           (lambda (a b) (apply tst (list a b)))
-                       tst)
-                 (lambda (a b) (eql a b)))))
+         (pred (if tst tst eql)))
     (if l
           (if (pred obj (car l))
                 l

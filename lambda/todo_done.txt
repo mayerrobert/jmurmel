@@ -999,3 +999,8 @@ char-code -> char-int
 code-char -> int-char
 
 remove-if-not weg (deprecated in CL siehe http://clhs.lisp.se/Body/f_comple.htm), complement dazu, vgl http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Issues/iss172-writeup.html
+
+vielleicht doch require in core murmel? provide, require, *modules*
+-> vielleicht load umbenennen in require mit hardcodiertem provides-handling
+   -> aber dann kann man im REPL nicht mehr neu laden
+      -> ist :load eine abhilfe?
