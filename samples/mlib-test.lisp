@@ -308,6 +308,35 @@
 )
 
 
+; test reduce
+(tests
+  (reduce * '(1 2 3 4 5)) =>  120.0
+
+  ;(reduce append '((1) (2)) :initial-value '(i n i t)) =>  (I N I T 1 2)
+  (reduce append (cons '(i n i t) '((1) (2)))) =>  (I N I T 1 2)
+
+  ;(reduce append '((1) (2)) :from-end t :initial-value '(i n i t)) =>  (1 2 I N I T) 
+  (reduce append (append '((1) (2)) (list '(i n i t))) t) =>  (1 2 I N I T) 
+
+  (reduce - '(1 2 3 4)) ;==  (- (- (- 1 2) 3) 4)
+    =>  -8.0
+  (reduce - '(1 2 3 4) t)    ;Alternating sum: ==  (- 1 (- 2 (- 3 4)))
+    =>  -2.0
+  (reduce + '()) =>  0.0
+  (reduce + '(3)) =>  3
+  (reduce + '(foo)) =>  FOO
+  (reduce list '(1 2 3 4)) =>  (((1 2) 3) 4)
+  (reduce list '(1 2 3 4) t) =>  (1 (2 (3 4)))
+
+  ;(reduce list '(1 2 3 4) :initial-value 'foo) =>  ((((foo 1) 2) 3) 4)
+  (reduce list (cons 'foo '(1 2 3 4))) =>  ((((foo 1) 2) 3) 4)
+  
+  ;(reduce #'list '(1 2 3 4)
+  ;     :from-end t :initial-value 'foo) =>  (1 (2 (3 (4 foo))))
+  (reduce list (append '(1 2 3 4) (list 'foo)) t) =>  (1 (2 (3 (4 foo))))
+)
+
+
 ; test with-gensyms
 ; define a "non-shortcircuiting logical and" as a macro
 ; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"

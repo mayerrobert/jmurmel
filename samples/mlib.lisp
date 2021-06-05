@@ -1,25 +1,25 @@
 ;;;; Default library for Murmel
-;
-; Usage:
-; copy into the directory containing jmurmel.jar or into the directory specified with --libdir
-; and begin your file with
-;
-;     (require "mlib")
-;
-; Provides:
-;     caar..cdddr
-;     acons
-;     not, and, or
-;     abs, zerop, evenp, oddp
-;     char=
-;     eql, equal
-;     when, unless, dotimes, dolist
-;     identity, constantly, complement
-;     member
-;     mapcar, maplist, mapc, mapl, mapcan, mapcon
-;     remove-if, remove
-;     
-;     with-gensyms
+;;;
+;;; Usage:
+;;; copy into the directory containing jmurmel.jar or into the directory specified with --libdir
+;;; and begin your file with
+;;;
+;;;     (require "mlib")
+;;;
+;;; Provides:
+;;;     caar..cdddr
+;;;     acons
+;;;     not, and, or
+;;;     abs, zerop, evenp, oddp
+;;;     char=
+;;;     eql, equal
+;;;     when, unless, dotimes, dolist
+;;;     identity, constantly, complement
+;;;     member
+;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
+;;;     remove-if, remove
+;;;     
+;;;     with-gensyms
 
 
 (defun  caar (l) (car (car l)))
@@ -321,6 +321,10 @@
 (mapx mapcon  append  nil nil nil)
 
 
+;;; (remove pred list) -> list
+;;;
+;;; Return a fresh list without the elements for which pred
+;;; evaluates to non-nil.
 (defun remove-if (pred l)
   (if l
         (let ((obj (car l)))
@@ -330,6 +334,10 @@
     nil))
 
 
+;;; (remove elem list) -> list
+;;;
+;;; Return a fresh list without occurrences of elem.
+;;; An occurrence is determined by eql.
 (defun remove (elem l)
   (if l
         (let ((obj (car l)))
@@ -337,6 +345,39 @@
                 (remove elem (cdr l))
             (cons obj (remove elem (cdr l)))))
     nil))
+
+
+;;; (reduce func sequence [from-end-p]) -> result
+;;;
+;;; If sequence is empty then "reduce" will return (f).
+;;;
+;;; Otherwise if sequence contains one element then "reduce will
+;;; return this element.
+;;;
+;;; Otherwise if from-end is omitted or nil then
+;;; f will be called with the first two elements
+;;; of the sequence and subsequently with the previous result
+;;; and the next element, and "reduce" will return the last
+;;; result from f.
+;;;
+;;; Otherwise if from-end is given and non-nil then
+;;; f will be called with the last two elements
+;;; of the sequence and subsequently with the previous result
+;;; and the previous element, and "reduce" will return the last
+;;; result from f.
+(defun reduce (f seq . from-end)
+  (let ((from-end-p (car from-end)))
+    (if seq
+          (if (cdr seq)
+                (let loop ((elem (car seq))
+                           (tail (cdr seq)))
+                  (if (cdr tail)
+                        (if from-end-p
+                              (f elem (loop (car tail) (cdr tail)))
+                          (loop (f elem (car tail)) (cdr tail)))
+                    (f elem (car tail))))
+            (car seq))
+      (f))))
 
 
 ;;; (with-gensyms (names*) forms*) -> result
