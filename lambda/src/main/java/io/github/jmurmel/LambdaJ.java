@@ -2709,7 +2709,9 @@ public class LambdaJ {
                   addBuiltin("char-int",   (Primitive) a -> { oneArg("char-int", a);   return (long)(asChar("char-int", car(a))); },
                   addBuiltin("int-char",   (Primitive) a -> { oneArg("int-char", a);   return (char)(asInt("int-char", car(a))); },
                   addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
-                  env)))));
+                  addBuiltin("string->list", (Primitive) LambdaJ::stringToList,
+                  addBuiltin("list->string", (Primitive) LambdaJ::listToString,
+                  env)))))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
@@ -2901,6 +2903,25 @@ public class LambdaJ {
             return l - 1;
         }
         return n.doubleValue() - 1;
+    }
+
+    private static Object listToString(ConsCell a) {
+        oneArg("list->string", a);
+        final ConsCell l = asList("list->string", car(a));
+        final StringBuilder ret = new StringBuilder();
+        for (Object c: l) {
+            ret.append(asChar("list->string", c));
+        }
+        return ret.toString();
+    }
+
+    private static Object stringToList(ConsCell a) {
+        oneArg("string->list", a);
+        final ListBuilder ret = new ListBuilder();
+        for (char c: asString("string->list", car(a)).toCharArray()) {
+            ret.append(c);
+        }
+        return ret.first;
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
@@ -3890,6 +3911,8 @@ public class LambdaJ {
         public final Object   charInt  (Object... args) { oneArg("char-int",  args.length); return (long)asChar("char-int", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("int-char",  args.length); return (char)asInt("int-char", args[0]); }
         public final Object   stringeq (Object... args) { twoArg("string=",   args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
+        public final Object   stringToList (Object... args) { oneArg("string->list",   args.length); return LambdaJ.stringToList(arraySlice(args)); }
+        public final Object   listToString (Object... args) { oneArg("list->string",   args.length); return LambdaJ.listToString(arraySlice(args)); }
 
         public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
         public final Object   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
@@ -4290,7 +4313,7 @@ public class LambdaJ {
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-        /// * format, format-locale, char-int, int-char, string=
+        /// * format, format-locale, char-int, int-char, string=, string->list, list->string
         ///
         private static final String[] globalvars = { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = {
@@ -4311,7 +4334,8 @@ public class LambdaJ {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
             {"1+", "inc"}, {"1-", "dec"},
-            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-int", "charInt"}, {"int-char", "intChar"}, {"string=", "stringeq"},
+            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-int", "charInt"}, {"int-char", "intChar"}, 
+            {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },

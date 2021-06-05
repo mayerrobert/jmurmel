@@ -232,6 +232,18 @@
 )
 
 
+; test reverse
+(let ((str nil) (l nil))
+  (tests
+    (setq str "abc") =>  "abc"
+    (reverse str) => "cba"
+    str =>  "abc"
+    (setq l (list 1 2 3)) =>  (1 2 3)
+    (reverse l) =>  (3 2 1)
+    l => (1 2 3)
+  ))
+
+
 ; test mapcar
 (tests
   (mapcar car '((1 a) (2 b) (3 c))) => (1 2 3)

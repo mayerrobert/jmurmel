@@ -267,6 +267,19 @@
       nil)))
 
 
+;;; (reverse sequence) -> reversed-sequence
+;;;
+;;; If sequence is a list then return a fresh list
+;;; with elements in reversed order, if sequence
+;;; is a string then return a fresh reversed string.
+(defun reverse (l)
+  (labels ((rev (l lp)
+             (if l (rev (cdr l) (cons (car l) lp))
+               lp)))
+    (if (stringp l) (list->string (rev l nil))
+      (rev l nil))))
+
+
 ; Helper macro to generate defuns for the various maxXX functions
 (defmacro mapx (name comb acc accn return-list)
   `(defun ,name (f l . more)

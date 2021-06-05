@@ -1,4 +1,4 @@
-; A very inefficient tail recursive list-reverse function
+; A tail recursive list-reverse function
 ;
 ; output: ((a) (b) (c) (d) (e))((e) (d) (c) (b) (a))
 ; result: t

@@ -672,6 +672,10 @@ nil
 
 ; = (string= s1 s2) -> boolean
 
+; = (string->list str) -> list-of-characters
+
+; = (list->string list-of-characters) -> string
+
 
 ;;; == Predefined Graphics Primitives =
 
