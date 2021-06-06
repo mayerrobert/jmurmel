@@ -1198,12 +1198,21 @@ public class LambdaJ {
                     }
 
                     if (operator == sDefmacro) {
-                        nArgs("defmacro", arguments, 3);
-                        notReserved("defmacro", car(arguments));
-                        final ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
-                        result = car(arguments);
-                        macros.put(result, closure);
-                        return result;
+                        nArgs("defmacro", arguments, 1);
+                        final Object macroName = car(arguments);
+                        notReserved("defmacro", macroName);
+                        final int arglen = length(arguments);
+                        if (arglen == 1) {
+                            Object prev = macros.remove(macroName);
+                            return prev != null ? macroName : null;
+                        }
+                        else if (arglen == 3) {
+                            final ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
+                            result = macroName;
+                            macros.put(result, closure);
+                            return result;
+                        }
+                        else throw new LambdaJError(true, "defmacro: syntax error", printSEx(form));
                     }
 
 
@@ -4724,8 +4733,9 @@ public class LambdaJ {
                     if (interpreter().sDefmacro == op) {
                         if (rsfx != 0) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
-                        interpreter().eval(form, null);
-                        sb.append('"').append(sym).append('"');
+                        Object result = interpreter().eval(form, null);
+                        if (result != null) sb.append("intern(\"").append(sym).append("\")");
+                        else sb.append("null");
                         return;
                     }
 

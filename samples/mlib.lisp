@@ -320,6 +320,9 @@
 ;;; (mapcon function list [more-lists]) -> concatenated-results
 (mapx mapcon  append  nil nil nil)
 
+; undef mapx
+(defmacro mapx)
+
 
 ;;; (remove pred list) -> list
 ;;;

@@ -308,7 +308,7 @@ nil
 
 (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
-;;; = (defmacro (params...) forms...) -> symbol
+;;; = (defmacro name (params...) forms...) -> symbol<br/>(defmacro name) -> prev-name
 ;
 ; Defines a macro, similar to CL's defmacro.
 ; Macros are somewhat similar to functions:
@@ -322,9 +322,14 @@ nil
 ; Macros are defined in a macro namespace.
 ; All macros are in the global scope, i.e. macros
 ; are not scoped but once defined they are visible everywhere.
+;
+; `(defmacro name)` can be used to unbind previously
+; defined macros.
 
 (defmacro twice (arg) (list '* arg 2))  ; ==> twice
 (twice 3) ; ==> 6.0
+(defmacro twice) ; ==> twice; macro is unbound
+(defmacro twice) ; ==> nil
 
 ;;; = (setq symbol value...) -> last-value
 ;
@@ -511,7 +516,8 @@ nil
 ; The return value is the first cons whose car is equal(*) to "key"
 ; or nil if no such cons was found. nil-elements in "alist" are ignored.
 ;
-; (*) assoc considers two items as "equal" if
+; (*) assoc compares two items as if eql was used.
+;     assoc considers two items as "equal" if
 ;
 ; - Both are "eq" (are the same object
 ; - Both are integers or floats or characters respectively and have the same value

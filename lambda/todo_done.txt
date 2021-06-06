@@ -1004,3 +1004,6 @@ vielleicht doch require in core murmel? provide, require, *modules*
 -> vielleicht load umbenennen in require mit hardcodiertem provides-handling
    -> aber dann kann man im REPL nicht mehr neu laden
       -> ist :load eine abhilfe?
+
+undefmacro
+-> oder (defmacro m) entfernt das macro?
