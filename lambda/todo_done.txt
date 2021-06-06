@@ -1007,3 +1007,42 @@ vielleicht doch require in core murmel? provide, require, *modules*
 
 undefmacro
 -> oder (defmacro m) entfernt das macro?
+
+-> und ->> siehe https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
+; thread-first
+; inserts first form as the first argument (second in list) of the second form, and so forth
+(macro -> [terms]
+    (do
+        (define apply-partials [partials expr]
+            (if (nil? partials)
+                expr
+                (if (symbol? (car partials))
+                    (list (car partials) (apply-partials (cdr partials) expr))
+                    ; if it's a list with other parameters, insert expr (recursive call) 
+                    ; as second parameter into partial (note need to use cons to ensure same list for func args)
+                    (cons (caar partials) (cons (apply-partials (cdr partials) expr) (cdar partials)))
+                )
+            )
+        )
+        (apply-partials (reverse (cdr terms)) (car terms))
+    )
+)
+
+; thread-last
+; same as -> but inserts first form as last argument (last in list) of second form, and so forth
+(macro ->> [terms]
+    (do
+        (define apply-partials [partials expr]
+            (if (nil? partials)
+                expr
+                (if (symbol? (car partials))
+                    (list (car partials) (apply-partials (cdr partials) expr))
+                    ; if it's a list with other parameters, insert expr (recursive call) 
+                    ; as last form 
+                    (cons (caar partials) (append (cdar partials) (apply-partials (cdr partials) expr)))
+                )
+            )
+        )
+        (apply-partials (reverse (cdr terms)) (car terms))
+    )
+)
