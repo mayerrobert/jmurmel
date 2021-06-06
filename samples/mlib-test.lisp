@@ -355,6 +355,26 @@
 )
 
 
+; test thread-first
+(tests
+  (->) => nil
+  (-> 200 (/ 2) (+ 7)) => 107.0
+  (macroexpand-1 '(-> 200 (/ 2) (+ 7)))
+    ==> (+ (/ 200 2) 7)
+  (-> 107 int-char char-int) => 107
+)
+
+
+; test thread-last
+(tests
+  (->>) => nil
+  (->> 200 (/ 2) (+ 7)) => 7.01
+  (macroexpand-1 '(->> 200 (/ 2) (+ 7)))
+    ==> (+ 7 (/ 2 200))
+  (->> 107 int-char char-int) => 107
+)
+
+
 ; Summary
 ; print succeeded and failed tests if any
 (writeln) (writeln)
