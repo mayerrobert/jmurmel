@@ -1046,3 +1046,7 @@ undefmacro
         (apply-partials (reverse (cdr terms)) (car terms))
     )
 )
+
+int-char gibts nicht, nur code-char, char-code und char-int (char-int == char-code)
+-> wieder zurückbenamsen
+   fehler werfen falls kein character

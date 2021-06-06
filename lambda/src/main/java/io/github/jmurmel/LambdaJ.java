@@ -2715,8 +2715,8 @@ public class LambdaJ {
         if (haveString()) {
             env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
-                  addBuiltin("char-int",   (Primitive) a -> { oneArg("char-int", a);   return (long)(asChar("char-int", car(a))); },
-                  addBuiltin("int-char",   (Primitive) a -> { oneArg("int-char", a);   return (char)(asInt("int-char", car(a))); },
+                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)(asChar("char-code", car(a))); },
+                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); }, // todo fehler werfen falls kein gueltiger char
                   addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
                   addBuiltin("string->list", (Primitive) LambdaJ::stringToList,
                   addBuiltin("list->string", (Primitive) LambdaJ::listToString,
@@ -3917,8 +3917,8 @@ public class LambdaJ {
         public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
         public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-int",  args.length); return (long)asChar("char-int", args[0]); }
-        public final Object   intChar  (Object... args) { oneArg("int-char",  args.length); return (char)asInt("int-char", args[0]); }
+        public final Object   charInt  (Object... args) { oneArg("char-code",  args.length); return (long)asChar("char-code", args[0]); }
+        public final Object   intChar  (Object... args) { oneArg("code-char",  args.length); return (char)asInt("code-char", args[0]); }
         public final Object   stringeq (Object... args) { twoArg("string=",   args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) { oneArg("string->list",   args.length); return LambdaJ.stringToList(arraySlice(args)); }
         public final Object   listToString (Object... args) { oneArg("list->string",   args.length); return LambdaJ.listToString(arraySlice(args)); }
@@ -4322,7 +4322,7 @@ public class LambdaJ {
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
-        /// * format, format-locale, char-int, int-char, string=, string->list, list->string
+        /// * format, format-locale, char-code, code-char, string=, string->list, list->string
         ///
         private static final String[] globalvars = { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = {
@@ -4343,7 +4343,7 @@ public class LambdaJ {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
             {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
             {"1+", "inc"}, {"1-", "dec"},
-            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-int", "charInt"}, {"int-char", "intChar"}, 
+            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
             {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
