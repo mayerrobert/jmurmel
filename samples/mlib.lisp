@@ -399,15 +399,23 @@
 ;;;
 ;;; thread-first, inspired by https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
 ;;;
-;;; inserts first form as the first argument (second in list) of the second form, and so forth
+;;; Inserts first form as the first argument (second in list) of the second form, and so forth
+;;;
+;;; Usage is illustrated by:
+;;;
+;;;     (macroexpand-1 '(-> 1 f g h))
+;;;       ; ==> (h (g (f 1)))
+;;;     (macroexpand-1 '(-> 1 (f farg) (g garg) (h harg)))
+;;;       ; ==> (h (g (f 1 farg) garg) harg)
+;;;
 (defmacro -> terms
   (labels ((apply-partials (partials expr)
              (if partials
                    (if (symbolp (car partials))
-                       (list (car partials) (apply-partials (cdr partials) expr))
-                       ; if it's a list with other parameters, insert expr (recursive call) 
-                       ; as second parameter into partial (note need to use cons to ensure same list for func args)
-                       (cons (caar partials) (cons (apply-partials (cdr partials) expr) (cdar partials))))
+                         (list (car partials) (apply-partials (cdr partials) expr))
+                     ; if it's a list with other parameters, insert expr (recursive call) 
+                     ; as second parameter into partial (note need to use cons to ensure same list for func args)
+                     (cons (caar partials) (cons (apply-partials (cdr partials) expr) (cdar partials))))
                expr)))
   (apply-partials (reverse (cdr terms)) (car terms))))
 
@@ -416,14 +424,22 @@
 ;;;
 ;;; thread-last
 ;;;
-;;; same as -> but inserts first form as last argument (last in list) of second form, and so forth
+;;; Same as -> but inserts first form as last argument (last in list) of second form, and so forth
+;;;
+;;; Usage is illustrated by:
+;;;
+;;;     (macroexpand-1 '(->> 1 f g h))
+;;;       ; ==> (h (g (f 1)))
+;;;     (macroexpand-1 '(->> 1 (f farg) (g garg) (h harg)))
+;;;       ; ==> (h harg (g garg (f farg 1)))
+;;;
 (defmacro ->> terms
   (labels ((apply-partials (partials expr)
              (if partials
                    (if (symbolp (car partials))
-                       (list (car partials) (apply-partials (cdr partials) expr))
-                    ; if it's a list with other parameters, insert expr (recursive call) 
-                    ; as last form 
-                    (cons (caar partials) (append (cdar partials) (list (apply-partials (cdr partials) expr)))))
+                         (list (car partials) (apply-partials (cdr partials) expr))
+                     ; if it's a list with other parameters, insert expr (recursive call) 
+                     ; as last form 
+                     (cons (caar partials) (append (cdar partials) (list (apply-partials (cdr partials) expr)))))
                expr)))
   (apply-partials (reverse (cdr terms)) (car terms))))

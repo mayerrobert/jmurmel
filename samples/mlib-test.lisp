@@ -372,6 +372,7 @@
   (macroexpand-1 '(->> 200 (/ 2) (+ 7)))
     ==> (+ 7 (/ 2 200))
   (->> 107 int-char char-int) => 107
+  (->> '(1 2 3) (mapcar (lambda (n) (expt n 2))) (reduce +)) => 14.0
 )
 
 

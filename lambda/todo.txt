@@ -31,9 +31,8 @@ vielleicht #+, #- und *features*
 load im compiler
 
 
+
 globals koennten eine hashmao sein?!?
-
-
 
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
 vgl. Graham, Paul "On Lisp"  Prentice-Hall, New Jersey, 1994, pp. 348-379, available online at http://www.paulgraham.com/onlisptext.html.

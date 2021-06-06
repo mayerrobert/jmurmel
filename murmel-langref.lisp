@@ -290,10 +290,12 @@ nil
 ; memory locations that hold values.
 ; Murmel's define is somewhat similar to Common Lisp's defparameter
 ; except:
-; * CL's defparameter creates special global variables while
-;   Murmel's define creates global variables that can be
-;   lexically hidden by e.g. a let-binding.
-; The first argument is not evaluated, the second is
+;
+; CL's defparameter creates special global variables while
+; Murmel's define creates global variables that can be
+; lexically hidden by e.g. a let-binding.
+;
+; The first argument is not evaluated, the second one is.
 
 (define *global-var* 42)               ; ==> *gloval-var*
 (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
@@ -519,8 +521,10 @@ nil
 ; (*) assoc compares two items as if eql was used.
 ;     assoc considers two items as "equal" if
 ;
-; - Both are "eq" (are the same object
+; - Both are "eq" (are the same object)
 ; - Both are integers or floats or characters respectively and have the same value
+;
+; Examples:
 
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
