@@ -508,7 +508,7 @@ nil
 
 ; = (eq x y) -> boolean
 ;
-; Returns true if a and b are the same object, nil otherwise.
+; Returns t if x and y are the same object, nil otherwise.
 
 ; = null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
 
