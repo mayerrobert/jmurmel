@@ -399,7 +399,7 @@
 ;;;
 ;;; thread-first, inspired by https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
 ;;;
-;;; Inserts first form as the first argument (second in list) of the second form, and so forth
+;;; Inserts first form as the first argument (second in list) of the second form, and so forth.
 ;;;
 ;;; Usage is illustrated by:
 ;;;
@@ -417,14 +417,14 @@
                      ; as second parameter into partial (note need to use cons to ensure same list for func args)
                      (cons (caar partials) (cons (apply-partials (cdr partials) expr) (cdar partials))))
                expr)))
-  (apply-partials (reverse (cdr terms)) (car terms))))
+    (apply-partials (reverse (cdr terms)) (car terms))))
 
 
-;;; (-> forms*) -> result
+;;; (->> forms*) -> result
 ;;;
 ;;; thread-last
 ;;;
-;;; Same as -> but inserts first form as last argument (last in list) of second form, and so forth
+;;; Same as -> but inserts first form as last argument (last in list) of second form, and so forth.
 ;;;
 ;;; Usage is illustrated by:
 ;;;
@@ -442,4 +442,42 @@
                      ; as last form 
                      (cons (caar partials) (append (cdar partials) (list (apply-partials (cdr partials) expr)))))
                expr)))
-  (apply-partials (reverse (cdr terms)) (car terms))))
+    (apply-partials (reverse (cdr terms)) (car terms))))
+
+
+;;; (and-> forms*) -> result
+;;;
+;;; Short-circuiting thread-first
+;;;
+;;; Same as -> but if one function returns nil then the remaining
+;;; functions are not called and the overall result is nil.
+;;;
+(defmacro and-> terms
+  (let* ((temp (gensym))
+         (init (car terms))
+         (forms (let loop ((tail (cdr terms)))
+                   (if tail
+                     (if (symbolp (car tail))
+                           (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
+                       (cons (list 'setq temp (cons (caar tail) (cons temp (cdar tail)))) (loop (cdr tail))))))))
+    `(let ((,temp ,init))
+       (and ,@forms))))
+
+
+;;; (and->> forms*) -> result
+;;;
+;;; Short circuiting thread-last
+;;;
+;;; Same as ->> but if one function returns nil then the remaining
+;;; functions are not called and the overall result is nil.
+;;;
+(defmacro and->> terms
+  (let* ((temp (gensym))
+         (init (car terms))
+         (forms (let loop ((tail (cdr terms)))
+                   (if tail
+                     (if (symbolp (car tail))
+                           (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
+                       (cons (list 'setq temp (cons (caar tail) (append (cdar tail) (list temp)))) (loop (cdr tail))))))))
+    `(let ((,temp ,init))
+       (and ,@forms))))

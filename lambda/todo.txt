@@ -1,3 +1,7 @@
+int-char gibts nicht, nur code-char, char-code und char-int (char-int == char-code)
+-> wieder zurückbenamsen
+   fehler werfen falls kein character
+
 sollte mlib equal einen fallback nach Objects.equals() haben?
 
 macros haben mlib nicht zur verfügung oder doch?
@@ -32,7 +36,7 @@ load im compiler
 
 
 
-globals koennten eine hashmao sein?!?
+globals koennten eine hashmap sein?!?
 
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
 vgl. Graham, Paul "On Lisp"  Prentice-Hall, New Jersey, 1994, pp. 348-379, available online at http://www.paulgraham.com/onlisptext.html.

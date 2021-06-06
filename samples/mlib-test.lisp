@@ -373,6 +373,20 @@
     ==> (+ 7 (/ 2 200))
   (->> 107 code-char char-code) => 107
   (->> '(1 2 3) (mapcar (lambda (n) (expt n 2))) (reduce +)) => 14.0
+  (->> '(1 2 3) (mapcar 1+) (reduce +)) => 9.0
+  (->> '(1 2 3 4 5) (remove-if evenp) (mapcar 1+) (reduce +)) => 12.0
+)
+
+
+; test short-circuiting thread first
+(tests
+)
+
+
+; test short-circuiting thread last
+(tests
+  (and->> '(1 3 5) (mapcar 1+) (remove-if evenp) (reduce -)) => nil
+    ; ->> would throw an error: "-" needs at least one arg
 )
 
 
