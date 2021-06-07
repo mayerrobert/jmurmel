@@ -395,6 +395,52 @@
 )
 
 
+; more threading macros tests
+(tests
+  (->) => nil
+  (->>) => nil
+  (and->) => nil
+  (and->>) => nil
+
+  (-> 1) => 1
+  (->> 1) => 1
+  (and-> 1) => 1
+  (and->> 1) => 1
+
+  (-> 1 identity) => 1
+  (->> 1 identity) => 1
+  (and-> 1 identity) => 1
+  (and->> 1 identity) => 1
+
+  (-> 1 1+) => 2
+  (->> 1 1+) => 2
+  (and-> 1 1+) => 2
+  (and->> 1 1+) => 2
+)
+
+(let* ((f-args nil)
+       (f (lambda (a1 a2 a3) (setq f-args (list a1 a2 a3)) a1)) ; f passes 1st arg and records args
+       (l-args nil)
+       (l (lambda (a1 a2 a3) (setq l-args (list a1 a2 a3)) a3))) ; l passes last arg and records args
+  (tests
+    (-> 11 (f 1 2)) => 11
+    f-args => (11 1 2)
+    (setq f-args nil) => nil
+
+    (and-> 11 (f 1 2)) => 11
+    f-args => (11 1 2)
+    (setq f-args nil) => nil
+
+    (->> 11 (l 1 2)) => 11
+    l-args => (1 2 11)
+    (setq l-args nil) => nil
+
+    (and->> 11 (l 1 2)) => 11
+    l-args => (1 2 11)
+    (setq l-args nil) => nil
+  ))
+
+
 ; Summary
 ; print succeeded and failed tests if any
 (writeln) (writeln)

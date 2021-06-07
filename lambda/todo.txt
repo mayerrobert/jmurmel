@@ -1,7 +1,3 @@
-int-char gibts nicht, nur code-char, char-code und char-int (char-int == char-code)
--> wieder zurückbenamsen
-   fehler werfen falls kein character
-
 sollte mlib equal einen fallback nach Objects.equals() haben?
 
 macros haben mlib nicht zur verfügung oder doch?

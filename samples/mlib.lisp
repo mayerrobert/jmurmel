@@ -453,15 +453,21 @@
 ;;; functions are not called and the overall result is nil.
 ;;;
 (defmacro and-> terms
-  (let* ((temp (gensym))
-         (init (car terms))
-         (forms (let loop ((tail (cdr terms)))
-                   (if tail
-                     (if (symbolp (car tail))
-                           (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
-                       (cons (list 'setq temp (cons (caar tail) (cons temp (cdar tail)))) (loop (cdr tail))))))))
-    `(let ((,temp ,init))
-       (and ,@forms))))
+  (if (cdr terms)
+        (let* ((temp (gensym))
+               (init (car terms))
+               (forms (let loop ((tail (cdr terms)))
+                         (if (cdr tail)
+                               (if (symbolp (car tail))
+                                     (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
+                                 (cons (list 'setq temp (cons (caar tail) (cons temp (cdar tail)))) (loop (cdr tail))))
+                           (if (symbolp (car tail))
+                                 (list (list (car tail) temp))
+                             (list (cons (caar tail) (cons temp (cdar tail))))
+                             )))))
+          `(let ((,temp ,init))
+             (and ,@forms)))
+    (car terms)))
 
 
 ;;; (and->> forms*) -> result
@@ -472,12 +478,18 @@
 ;;; functions are not called and the overall result is nil.
 ;;;
 (defmacro and->> terms
-  (let* ((temp (gensym))
-         (init (car terms))
-         (forms (let loop ((tail (cdr terms)))
-                   (if tail
-                     (if (symbolp (car tail))
-                           (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
-                       (cons (list 'setq temp (cons (caar tail) (append (cdar tail) (list temp)))) (loop (cdr tail))))))))
-    `(let ((,temp ,init))
-       (and ,@forms))))
+  (if (cdr terms)
+        (let* ((temp (gensym))
+               (init (car terms))
+               (forms (let loop ((tail (cdr terms)))
+                         (if (cdr tail)
+                               (if (symbolp (car tail))
+                                     (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
+                                 (cons (list 'setq temp (cons (caar tail) (append (cdar tail) (list temp)))) (loop (cdr tail))))
+                           (if (symbolp (car tail))
+                                 (list (list (car tail) temp))
+                             (list (cons (caar tail) (append (cdar tail) (list temp)))))
+                             ))))
+          `(let ((,temp ,init))
+             (and ,@forms)))
+    (car terms)))
