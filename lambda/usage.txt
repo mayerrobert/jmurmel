@@ -16,6 +16,7 @@ Misc flags:
                     Murmel language elements (interpreter only)
 --libdir <dir> ...  (load filespec) also searches in this directory,
                     default is the directory containing jmurmel.jar.
+--verbose ........  List files given on the commandline as they are interpreted.
 
 --java ...........  Compile input files to Java source 'MurmelProgram.java'
 --jar ............  Compile input files to jarfile 'a.jar' containing

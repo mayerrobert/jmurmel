@@ -2596,7 +2596,7 @@ public class LambdaJ {
         numberArgs("sleep", a);
         try {
             final long startNanos = System.nanoTime();
-            final long nanos = ((Double)car(a)).longValue();
+            final long nanos = ((Number)car(a)).longValue();
             final long millis = TimeUnit.NANOSECONDS.toMillis(nanos);
             Thread.sleep(millis);
             return System.nanoTime() - startNanos;
@@ -3217,6 +3217,7 @@ public class LambdaJ {
         final boolean printResult = hasFlag("--result", args);  // used only in filemode
         final boolean toJava      = hasFlag("--java", args);
         final boolean toJar       = hasFlag("--jar", args);
+        final boolean verbose     = hasFlag("--verbose", args);
         final String clsName      = flagValue("--class", args);
         final String outDir       = flagValue("--outdir", args);
         final String libDir       = flagValue("--libdir", args);
@@ -3258,6 +3259,7 @@ public class LambdaJ {
                 injectCommandlineArgs(interpreter, args);
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
+                    if (verbose) System.out.println("interpreting " + fileName + "...");
                     final Path p = Paths.get(fileName);
                     try (final Reader r = Files.newBufferedReader(p)) {
                         interpretStream(interpreter, r::read, p, printResult, history);
@@ -3757,6 +3759,7 @@ public class LambdaJ {
                 + "                    Murmel language elements (interpreter only)\n"
                 + "--libdir <dir> ...  (load filespec) also searches in this directory,\n"
                 + "                    default is the directory containing jmurmel.jar.\n"
+                + "--verbose ........  List files given on the commandline as they are interpreted.\n"
                 + "\n"
                 + "--java ...........  Compile input files to Java source 'MurmelProgram.java'\n"
                 + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"

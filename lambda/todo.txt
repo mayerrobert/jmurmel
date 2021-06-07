@@ -1,3 +1,6 @@
+vielleicht #+, #- und *features*
+multiline comments: #| ... |#
+
 sollte mlib equal einen fallback nach Objects.equals() haben?
 
 macros haben mlib nicht zur verfügung oder doch?
@@ -24,9 +27,6 @@ compiler: alle defuns/ defines
    -> achtung bei macros
 
 filenamen in fehlermeldungen
-
-characters sollten #\a sein, nicht 'a'
-vielleicht #+, #- und *features*
 
 load im compiler
 
@@ -641,10 +641,6 @@ Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach Cons
 
 
 
-The read syntax for characters objects is simple: #\ followed by the desired character. 
-
-
-
 Vielleicht car, cdr, cons, ConsCell in eine Basisklasse LambdaJRuntime rausziehen?
 LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
 und ein Lisp Programm verwendet Lisp Runtime wie car, cdr, ... .
@@ -653,16 +649,3 @@ Fuer interpretierte Programme gibts die Builtin-Wrapper, die Parameter-Checks ma
 die Argument-Liste in Argumente wandeln.
 -> public static nested class LambdaJRuntime + "import static LambdaJ.*"
    damit gaebs nur wenig Aenderungen in LambdaJ, und externer Code haette auch Zugriff mittels "import static LambdaJ.*" 
-
-Falls Compiler, sollte der nicht nur ein Programm sondern z.B. *.lisp uebersetzen,
-ggf. mit timestampcheck
-
-
-
-(loop for thing in list
-   do (if (numberp thing)
-          (format nil “I’m a number: ~a~%” thing)
-          (format nil “Not a number!~%”)
-
-(defun factorial(x)
-  (reduce '* (loop for a from x downto 1 collect a)))

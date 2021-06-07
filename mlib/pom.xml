@@ -43,6 +43,7 @@
                                      also adding the project build directory -->
                                 <classpath/>
                                 <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
                                 <argument>--libdir</argument>
                                 <argument>../samples</argument>
                                 <argument>../samples/mlib-test.lisp</argument>
@@ -64,9 +65,73 @@
                                      also adding the project build directory -->
                                 <classpath/>
                                 <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
                                 <argument>--libdir</argument>
                                 <argument>../samples</argument>
                                 <argument>../murmel-langref.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-gabriel</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>../samples/gabriel</workingDirectory>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>000_lib.lisp</argument>
+                                <argument>00_tak_apo.lisp</argument>
+                                <argument>3.01_tak.lisp</argument>
+                                <argument>3.01_takeuchi.lisp</argument>
+                                <argument>3.04_takl.lisp</argument>
+                                <argument>3.10_deriv.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-lisperati</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>../samples/lisperati/adventure_murmel.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-samples</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>../samples</workingDirectory>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>fibonacci.lisp</argument>
+                                <argument>fibonacci_simple.lisp</argument>
+                                <argument>hanoi.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>

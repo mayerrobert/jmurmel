@@ -220,14 +220,14 @@ are interpreted as 64bit integer numbers (java.lang.Long)
 
     1
 
-a number in double precision
+Datatype float: a number in double precision
 
 numbers that contain the characters '.eE' are interpreted
 as double precision (java.lang.Double)
 
     1.
 
-a number in scientific notation
+a float in scientific notation
 
     1e3
 
@@ -638,7 +638,7 @@ User + system cpu time in internal time units
 ### (sleep desired-duration) -> actual-duration
 
 Pause execution for x internal time units, returns actually slept
-wall time in internal time units.
+wall time in internal time units as an integer (java.lang.Long).
 This example code will pause execution for approx. 1 second.
 
     (sleep (* 1 internal-time-units-per-second))
