@@ -164,6 +164,13 @@ public class LambdaJ {
 
     private final Path libDir;
 
+    private static final String[] CTRL = {
+            "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
+            "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
+            "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
+            "Us"
+    };
+    
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
     @FunctionalInterface public interface TraceConsumer { void println(String msg); }
@@ -521,6 +528,7 @@ public class LambdaJ {
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isBar(int x)    { return !escape && x == '|'; }
+        private boolean isHash(int x)   { return !escape && x == '#'; }
 
         private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
 
@@ -607,6 +615,41 @@ public class LambdaJ {
 
         private void skipWs() { while (isSpace(look)) { look = getchar(); } }
 
+        /** if we get here then we have already read '#' and look contains the character after # */
+        private Object readerMacro(int m) {
+            int index = 0;
+            switch (m) {
+            case '\\':
+                if (look != EOF) {
+                    token[index++] = (char)look;
+                    look = getchar(false);
+                }
+                while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                    if (index < TOKEN_MAX) token[index++] = (char)look;
+                    look = getchar(false);
+                }
+                final String c = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+                if (c.isEmpty()) throw new ParseError("line %d:%d: EOF after #\\", lineNo, charNo);
+                if (c.length() == 1) return c.charAt(0);
+                if (isLong(c)) {
+                    try {
+                        int n = Integer.parseInt(c);
+                        if (n > 126) return (char)n;
+                    } catch (NumberFormatException e) {
+                        throw new ParseError("line %d:%d: '%s' following #\\ is not a valid number", lineNo, charNo, c);
+                    }
+                }
+                for (int i = 0; i < CTRL.length; i++) {
+                    if (CTRL[i].equals(c)) return i;
+                }
+                throw new ParseError("line %d:%d: unrecognized character name %s", lineNo, charNo, c);
+
+                default:
+                    look = getchar();
+                    throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(m));
+            }
+        }
+        
         private void readToken() {
             int index = 0;
             skipWs();
@@ -627,12 +670,16 @@ public class LambdaJ {
                     tok = tokenToString(token, 0, index);
                 } else if (haveString() && isDQuote(look)) {
                     do {
-                        if (index < TOKEN_MAX) token[index++] = (char)look;
+                        if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar(false);
                     } while (look != EOF && !isDQuote(look));
-                    if (look == EOF) throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
+                    if (look == EOF)
+                        throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
                     look = getchar(); // consume trailing "
                     tok = tokenToString(token, 1, index);
+                } else if (isHash(look)) {
+                    look = getchar(false);
+                    tok = readerMacro(escape ? '\\' : look);
                 } else {
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
                         if (index < TOKEN_MAX) token[index++] = (char)look;
@@ -2127,13 +2174,21 @@ public class LambdaJ {
             } else if (escapeAtoms && stringp(obj)) {
                 sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
             } else if (escapeAtoms && characterp(obj)) {
-                sb.print("'"); sb.print(((Character)obj) == '\'' ? "\\'" : String.valueOf(obj)); sb.print("'"); return;
+                sb.print(printChar((int)(Character)obj));
+                return;
             } else if (atom(obj)) {
                 sb.print(obj.toString()); return;
             } else {
                 sb.print("<internal error>"); return;
             }
         }
+    }
+
+    private static String printChar(int c) {
+        return "#\\"
+         + ((c < CTRL.length) ? CTRL[c]
+        : (c < 127) ? String.valueOf((char)c)
+        : String.valueOf(c));
     }
 
     private static String escapeSymbol(LambdaJSymbol s) {

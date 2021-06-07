@@ -114,8 +114,12 @@
 ; backquote, comma and comma-at work similar to CL,
 ; except: comma-dot is not supported.
 
-(define a 'a-val) (define c 'c-val) (define d '(d-val1 d-val2))
+(define a 'a-val) (define b 'b-val) (define c 'c-val)
+(define d '(d-val1 d-val2))
 `((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
+
+(define y 'b) (define l '(a b))
+(eval ``(,a ,,@l ,,y)) ; ==> (a-val a-val b-val b-val)
 
 (define x '(1 2 3))
 `(normal= ,x splicing= ,@x see?) ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
@@ -479,7 +483,7 @@ nil
 ; = (car list) -> 1st element of list
 
 (car '(a b c)) ; ==> a
-(car "abc") ; ==> 'a'
+(car "abc") ; ==> #\a
 
 ; = (cdr list) -> rest of list
 

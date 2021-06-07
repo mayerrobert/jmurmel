@@ -216,7 +216,7 @@
 ; test complement
 (tests
   ((complement zerop) 1) => t
-  ((complement characterp) (car "a")) => nil ; todo (car "a") -> #\a
+  ((complement characterp) #\a) => nil
   ((complement member) 'a '(a b c)) =>  nil
   ((complement member) 'd '(a b c)) =>  t
 )
