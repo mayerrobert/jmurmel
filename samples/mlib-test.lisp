@@ -7,9 +7,9 @@
 
 
 ;;; Macro to check whether "form" eval's to "expected".
-;;; Comparisin is done using "equal".
+;;; Comparison is done using "equal".
 (defmacro assert-equal (expected form . msg)
-  `(do-assert-equal ,expected ,form (if ,msg ,(car msg) '(equal ,expected ,form))))
+  `(do-assert-equal ,expected ,form (if ,(car msg) ',(car msg) '(equal ,expected ,form))))
 
 ; helper function for assert-equal macro
 (defun do-assert-equal (expected actual msg)
@@ -379,8 +379,13 @@
 
 
 ; test short-circuiting thread first
-(tests
-)
+(let* ((mk-nil-args nil)
+       (mk-nil (lambda args (setq mk-nil-args args) nil))
+       (fail (lambda (args) (assert-equal t nil "function fail should not be called!"))))
+  (tests
+    (and-> 1 1+ (+ 2 3) (mk-nil 'a 'b 'c) fail) => nil
+    mk-nil-args => (7.0 a b c)
+  ))
 
 
 ; test short-circuiting thread last
