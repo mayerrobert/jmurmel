@@ -27,6 +27,7 @@ filenamen in fehlermeldungen
 
 load im compiler
 
+every, some
 compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
 evenp, oddp mit x & 0x1 machen.
 

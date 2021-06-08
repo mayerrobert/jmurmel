@@ -617,10 +617,10 @@ public class LambdaJ {
 
         private static final Object CONTINUE = new Object();
         
-        /** if we get here then we have already read '#' and look contains the character after # */
-        private Object readerMacro(int m) {
+        /** if we get here then we have already read '#' and look contains the character after #subchar */
+        private Object readerMacro(int sub_char) {
             int index = 0;
-            switch (m) {
+            switch (sub_char) {
             // #\ ... character literal
             case '\\':
                 if (look != EOF) {
@@ -631,21 +631,21 @@ public class LambdaJ {
                     if (index < TOKEN_MAX) token[index++] = (char)look;
                     look = getchar(false);
                 }
-                final String c = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
-                if (c.isEmpty()) throw new ParseError("line %d:%d: EOF after #\\", lineNo, charNo);
-                if (c.length() == 1) return c.charAt(0);
-                if (isLong(c)) {
+                final String charOrCharactername = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+                if (charOrCharactername.isEmpty()) throw new ParseError("line %d:%d: EOF after #\\", lineNo, charNo);
+                if (charOrCharactername.length() == 1) return charOrCharactername.charAt(0);
+                if (isLong(charOrCharactername)) {
                     try {
-                        int n = Integer.parseInt(c);
+                        int n = Integer.parseInt(charOrCharactername);
                         if (n > 126) return (char)n;
                     } catch (NumberFormatException e) {
-                        throw new ParseError("line %d:%d: '%s' following #\\ is not a valid number", lineNo, charNo, c);
+                        throw new ParseError("line %d:%d: '%s' following #\\ is not a valid number", lineNo, charNo, charOrCharactername);
                     }
                 }
                 for (int i = 0; i < CTRL.length; i++) {
-                    if (CTRL[i].equals(c)) return i;
+                    if (CTRL[i].equals(charOrCharactername)) return i;
                 }
-                throw new ParseError("line %d:%d: unrecognized character name %s", lineNo, charNo, c);
+                throw new ParseError("line %d:%d: unrecognized character name %s", lineNo, charNo, charOrCharactername);
 
             // #| ... multiline comment ending with |#
             case '|':
@@ -666,7 +666,7 @@ public class LambdaJ {
 
             default:
                 look = getchar();
-                throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(m));
+                throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(sub_char));
             }
         }
         
