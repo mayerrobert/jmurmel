@@ -53,10 +53,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.IntPredicate;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
@@ -169,6 +166,10 @@ public class LambdaJ {
             "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
             "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
             "Us"
+    };
+
+    private static final String[] FEATURES = {
+            "murmel", "jvm"
     };
     
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -664,12 +665,63 @@ public class LambdaJ {
                 look = getchar();
                 return CONTINUE;
 
+            case '+':
+            case '-':
+                final boolean hasFeature = featurep(readObj(true));
+                final Object next = readObj(true);
+                if (sub_char == '+') return hasFeature ? next : CONTINUE;
+                else return hasFeature ? CONTINUE : next;
+                
             default:
                 look = getchar();
                 throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(sub_char));
             }
         }
-        
+
+        private final Object sNot          = intern(new LambdaJSymbol("not"));
+        private final Object sAnd          = intern(new LambdaJSymbol("and"));
+        private final Object sOr           = intern(new LambdaJSymbol("or"));
+
+        private final ConsCell featureList;
+        {
+            ConsCell l = null;
+            for (String feat: FEATURES) {
+                l = new ListConsCell(intern(new LambdaJSymbol(feat)), l);
+            }
+            // todo os, javaversion, ... zur laufzeit hinzufuegen
+            featureList = l;
+        }
+
+        private boolean featurep(Object next) {
+            //if (!symbolp(next)) throw new ParseError("only symbols are supported as feature expressions, got %s", printSEx(next));
+            //return "murmel".equalsIgnoreCase(next.toString());
+            if (next != null && symbolp(next)) return some(x -> x == next, featureList);
+            else if (consp(next)) {
+                if (car(next) == sAnd) return every(this::featurep, cdr(next));
+                if (car(next) == sOr) return some(this::featurep, cdr(next));
+                if (car(next) == sNot) {
+                    if (cdr(next) == null) throw new ParseError("feature expression not: not enough subexpressions, got %s", printSEx(next));
+                    if (cddr(next) != null) throw new ParseError("feature expression not: too many subexpressions, got %s", printSEx(next));
+                    return !featurep(cadr(next));
+                }
+            }
+            throw new ParseError("unsupported feature expressions, got %s", printSEx(next));
+        }
+
+        private static boolean every(Function<Object, Boolean> pred, Object maybeList) {
+            if (maybeList == null) return true;
+            if (!consp(maybeList)) return pred.apply(maybeList);
+            for (Object o: (ConsCell)maybeList) { if (!pred.apply(o)) return false; }
+            return true;
+        }
+
+        private static boolean some(Function<Object, Boolean> pred, Object maybeList) {
+            if (maybeList == null) return false;
+            if (!consp(maybeList)) return pred.apply(maybeList);
+            for (Object o: (ConsCell)maybeList) { if (pred.apply(o)) return true; }
+            return false;
+        }
+
         private void readToken() {
             for (;;) {
                 int index = 0;
@@ -702,7 +754,10 @@ public class LambdaJ {
                         tok = tokenToString(token, 1, index);
                     } else if (isHash(look)) {
                         look = getchar(false);
-                        tok = readerMacro(escape ? '\\' : look);
+                        final int subChar;
+                        if (escape) subChar = '\\';
+                        else { subChar = look; look = getchar(false); }
+                        tok = readerMacro(subChar);
                     } else {
                         while (look != EOF && !isSpace(look) && !isSyntax(look)) {
                             if (index < TOKEN_MAX) token[index++] = (char) look;
