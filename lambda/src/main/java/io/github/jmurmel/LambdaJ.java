@@ -615,10 +615,13 @@ public class LambdaJ {
 
         private void skipWs() { while (isSpace(look)) { look = getchar(); } }
 
+        private static final Object CONTINUE = new Object();
+        
         /** if we get here then we have already read '#' and look contains the character after # */
         private Object readerMacro(int m) {
             int index = 0;
             switch (m) {
+            // #\ ... character literal
             case '\\':
                 if (look != EOF) {
                     token[index++] = (char)look;
@@ -644,75 +647,101 @@ public class LambdaJ {
                 }
                 throw new ParseError("line %d:%d: unrecognized character name %s", lineNo, charNo, c);
 
-                default:
-                    look = getchar();
-                    throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(m));
+            // #| ... multiline comment ending with |#
+            case '|':
+                int ln = lineNo, cn = charNo;
+                while (look != EOF) {
+                    // note single & to avoid short-circuiting
+                    if (look == '|' & (look = getchar(false)) == '#') {
+                        look = getchar();
+                        return CONTINUE;
+                    }
+                }
+                throw new ParseError("line %d:%d: EOF in multiline comment", ln, cn);
+
+            // #' ... function, ignore for CL compatibility
+            case '\'':
+                look = getchar();
+                return CONTINUE;
+
+            default:
+                look = getchar();
+                throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(m));
             }
         }
         
         private void readToken() {
-            int index = 0;
-            skipWs();
-            tok = null;
-            if (look != EOF) {
-                if (isBar(look)) {
-                    look = getchar();
-                    while (look != EOF && !isBar(look)) {
-                        if (index < SYMBOL_MAX) token[index++] = (char)look;
-                        look = getchar(false);
-                    }
-                    if (look == EOF) throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
-                    look = getchar(); // consume trailing |
-                    final String s = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
-                    tok = new LambdaJSymbol(s);
-                } else if (isSyntax(look)) {
-                    token[index++] = (char)look;  look = getchar();
-                    tok = tokenToString(token, 0, index);
-                } else if (haveString() && isDQuote(look)) {
-                    do {
-                        if (index < TOKEN_MAX) token[index++] = (char) look;
-                        look = getchar(false);
-                    } while (look != EOF && !isDQuote(look));
-                    if (look == EOF)
-                        throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
-                    look = getchar(); // consume trailing "
-                    tok = tokenToString(token, 1, index);
-                } else if (isHash(look)) {
-                    look = getchar(false);
-                    tok = readerMacro(escape ? '\\' : look);
-                } else {
-                    while (look != EOF && !isSpace(look) && !isSyntax(look)) {
-                        if (index < TOKEN_MAX) token[index++] = (char)look;
+            for (;;) {
+                int index = 0;
+                skipWs();
+                tok = null;
+                if (look != EOF) {
+                    if (isBar(look)) {
                         look = getchar();
-                    }
-                    String s = tokenToString(token, 0, index);
-                    if (haveDouble() && isDouble(s)) {
-                        try { tok = Double.valueOf(s); }
-                        catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
-                    }
-
-                    else if (haveLong() && isLong(s)) {
-                        try { tok = Long.valueOf(s); }
-                        catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
-                    }
-
-                    else if (haveDouble() && isLong(s)) {
-                        try { tok = Double.valueOf(s); }
-                        catch (NumberFormatException e) { throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s); }
-                    }
-
-                    else {
-                        if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                        if (!tokEscape && ".".equals(s))
-                            tok = s;
-                        else
-                            tok = new LambdaJSymbol(s);
+                        while (look != EOF && !isBar(look)) {
+                            if (index < SYMBOL_MAX) token[index++] = (char) look;
+                            look = getchar(false);
+                        }
+                        if (look == EOF)
+                            throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
+                        look = getchar(); // consume trailing |
+                        final String s = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+                        tok = new LambdaJSymbol(s);
+                    } else if (isSyntax(look)) {
+                        token[index++] = (char) look;
+                        look = getchar();
+                        tok = tokenToString(token, 0, index);
+                    } else if (haveString() && isDQuote(look)) {
+                        do {
+                            if (index < TOKEN_MAX) token[index++] = (char) look;
+                            look = getchar(false);
+                        } while (look != EOF && !isDQuote(look));
+                        if (look == EOF)
+                            throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
+                        look = getchar(); // consume trailing "
+                        tok = tokenToString(token, 1, index);
+                    } else if (isHash(look)) {
+                        look = getchar(false);
+                        tok = readerMacro(escape ? '\\' : look);
+                    } else {
+                        while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                            if (index < TOKEN_MAX) token[index++] = (char) look;
+                            look = getchar();
+                        }
+                        String s = tokenToString(token, 0, index);
+                        if (haveDouble() && isDouble(s)) {
+                            try {
+                                tok = Double.valueOf(s);
+                            } catch (NumberFormatException e) {
+                                throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s);
+                            }
+                        } else if (haveLong() && isLong(s)) {
+                            try {
+                                tok = Long.valueOf(s);
+                            } catch (NumberFormatException e) {
+                                throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s);
+                            }
+                        } else if (haveDouble() && isLong(s)) {
+                            try {
+                                tok = Double.valueOf(s);
+                            } catch (NumberFormatException e) {
+                                throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s);
+                            }
+                        } else {
+                            if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
+                            if (!tokEscape && ".".equals(s))
+                                tok = s;
+                            else
+                                tok = new LambdaJSymbol(s);
+                        }
                     }
                 }
-            }
 
-            if (trace.ge(TraceLevel.TRC_LEX))
-                tracer.println("*** scan  token  |" + tok + '|');
+                if (trace.ge(TraceLevel.TRC_LEX))
+                    tracer.println("*** scan  token  |" + tok + '|');
+
+                if (tok != CONTINUE) return;
+            }
         }
 
         private static String tokenToString(char[] b, int first, int end) {

@@ -126,6 +126,18 @@
 
 `(normal= ,x fakesplicing= . ,x) ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
 
+; One line comments are started with ';', i.e. everything between a semicolon
+; and the end of the line is ignored:
+
+;     ; this is a comment
+
+; Multiline comments are started with '#|' and end with '|#':
+
+#|
+This is a
+multiline comment.
+|#
+
 
 ;;; == Predefined Symbols =============
 

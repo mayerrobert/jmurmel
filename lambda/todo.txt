@@ -7,9 +7,6 @@ macros haben mlib nicht zur verfügung oder doch?
 -> checken, ggf. entweder ändern oder dokumentieren
    -> im interpreter sehen die macros defuns, im compiler nicht, weil der compiler das interpreter-eval aufruft
 
-compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
-evenp, oddp mit x & 0x1 machen.
-
 ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, obs ein macro oder eine funktion ist
 -> gibts ein macro "m" dann hat "(defun m..." keine auswirkung
 
@@ -29,6 +26,9 @@ compiler: alle defuns/ defines
 filenamen in fehlermeldungen
 
 load im compiler
+
+compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
+evenp, oddp mit x & 0x1 machen.
 
 
 
