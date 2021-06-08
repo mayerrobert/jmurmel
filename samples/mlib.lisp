@@ -17,6 +17,7 @@
 ;;;     identity, constantly, complement
 ;;;     member
 ;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
+;;;     every, some, notevery, notany
 ;;;     remove-if, remove
 ;;;     
 ;;;     with-gensyms
@@ -281,7 +282,7 @@
 
 
 ; Helper macro to generate defuns for the various maxXX functions
-(defmacro mapx (name comb acc accn return-list)
+(defmacro mapx (name comb acc accn return-list lastelem)
   `(defun ,name (f l . more)
      (if more
            (labels ((none-nil (lists)
@@ -296,29 +297,94 @@
              (let loop ((args (cons l more)))
                (if (none-nil args)
                      (,comb (apply f ,(if accn (list accn 'args) 'args)) (loop (cdrs args)))
-                 nil)))
+                 ,lastelem)))
        (let loop ((f f) (l l))
          (if l (,comb (f ,(if acc (list acc 'l) 'l)) (loop f (cdr l)))
-           nil)))
+           ,lastelem)))
     ,@(when return-list '(l))))
 
-;;; (mapcar function list [more-lists]) -> list
-(mapx mapcar  cons    car cars nil)
+;;; (mapcar function sequence+) -> list
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will applied to subsequent items of the given sequences.
+;;; All function application results will be combined into a list
+;;; which is the return value of mapcar.
+(mapx mapcar  cons    car cars nil nil)
 
-;;; (maplist function list [more-lists]) -> list
-(mapx maplist cons    nil nil nil)
+;;; (maplist function sequence+) -> list
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will applied to subsequent tails of the given sequences.
+;;;
+;;; All function application results will be combined into a list
+;;; which is the return value of maplist.
+(mapx maplist cons    nil nil nil nil)
 
-;;; (mapc function list [more-lists]) -> first-arg-list
-(mapx mapc    progn   car cars t)
+;;; (mapc function sequence+) -> first-arg-list
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will applied to subsequent cars items of the given sequences.
+(mapx mapc    progn   car cars t nil)
 
-;;; (mapl function list [more-lists]) -> first-arg-list
-(mapx mapl    progn   nil nil t)
+;;; (mapl function sequence+) -> first-arg-list
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will applied to subsequent tails of the given sequences.
+(mapx mapl    progn   nil nil t nil)
 
-;;; (mapcan function list [more-lists]) -> concatenated-results
-(mapx mapcan  append  car cars nil)
+;;; (mapcan function sequence+) -> concatenated-results
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will applied to subsequent items of the given sequences.
+;;;
+;;; All function application results will be concatenated to a list
+;;; which is the return value of mapcan.
+(mapx mapcan  append  car cars nil nil)
 
-;;; (mapcon function list [more-lists]) -> concatenated-results
-(mapx mapcon  append  nil nil nil)
+;;; (mapcon function sequence+) -> concatenated-results
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will applied to subsequent tails of the given sequences.
+;;;
+;;; All function application results will be concatenated to a list
+;;; which is the return value of mapcon.
+(mapx mapcon  append  nil nil nil nil)
+
+
+;;; (every function sequence+) -> boolean
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will be applied to subsequent items of the given sequences.
+;;;
+;;; Immediately return nil if an application of function returns nil,
+;;; t otherwise.
+(mapx every and car cars nil t)
+
+;;; (some function sequence+) -> result
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will be applied to subsequent items of the given sequences.
+;;;
+;;; Immediately return the first non-nil-value of an application of function,
+;;; or nil if no applications yield non-nil.
+(mapx some or car cars nil nil)
+
+;;; (notevery function sequence+) -> boolean
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will be applied to subsequent items of the given sequences.
+;;;
+;;; (notevery predicate sequence+) == (not (every predicate sequence+))
+(defun notevery (f seq . more)
+  (not (apply some (cons f (cons seq more)))))
+
+;;; (notany function sequence+) -> boolean
+;;;
+;;; "Function" must accept as many arguments as sequences are given,
+;;; and will be applied to subsequent items of the given sequences.
+;;;
+;;; (notany predicate sequence+) == (not (some predicate sequence+))
+(defun notany (f seq . more)
+  (not (apply every (cons f (cons seq more)))))
 
 ; undef mapx
 (defmacro mapx)

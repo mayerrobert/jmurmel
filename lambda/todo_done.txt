@@ -1052,3 +1052,6 @@ int-char gibts nicht, nur code-char, char-code und char-int (char-int == char-co
    fehler werfen falls kein character
 
 characters sollten #\a sein, nicht 'a'
+
+vielleicht #+, #- und *features*
+multiline comments: #| ... |#

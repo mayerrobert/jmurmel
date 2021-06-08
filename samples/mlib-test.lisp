@@ -298,6 +298,16 @@
 )
 
 
+; test every, some, notevery, notany
+(tests
+  (every characterp "abc") =>  t
+  (every char= "abcdefg" '(#\a #\b)) => t
+  (some     = '(1 2 3 4 5) '(5 4 3 2 1)) =>  t
+  (notevery < '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  nil
+  (notany   > '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  t
+)
+
+
 ; test remove-if, remove-if-not, remove
 (tests
   (remove-if oddp '(1 2 4 1 3 4 5)) => (2 4 4)

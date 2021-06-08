@@ -662,7 +662,6 @@ public class LambdaJ {
 
             // #' ... function, ignore for CL compatibility
             case '\'':
-                look = getchar();
                 return CONTINUE;
 
             case '+':

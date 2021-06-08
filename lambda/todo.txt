@@ -1,6 +1,3 @@
-vielleicht #+, #- und *features*
-multiline comments: #| ... |#
-
 sollte mlib equal einen fallback nach Objects.equals() haben?
 
 macros haben mlib nicht zur verfügung oder doch?
