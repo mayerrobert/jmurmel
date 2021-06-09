@@ -1055,3 +1055,9 @@ characters sollten #\a sein, nicht 'a'
 
 vielleicht #+, #- und *features*
 multiline comments: #| ... |#
+
+every, some
+
+IEEE 754 sagt -0.0 == 0.0
+Java == funktioniert, Double.compare() nicht
+-> https://de.wikipedia.org/wiki/Vorzeichenbehaftete_Null#Vergleichsoperatoren

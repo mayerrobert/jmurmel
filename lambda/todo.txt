@@ -1,4 +1,5 @@
-sollte mlib equal einen fallback nach Objects.equals() haben?
+
+Builtin signum: if instanceof Long (n < 0)?-1:1, für double mit Math.signum
 
 macros haben mlib nicht zur verfügung oder doch?
 -> checken, ggf. entweder ändern oder dokumentieren
@@ -9,8 +10,6 @@ ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, ob
 
 funktion error (und/ oder exit) wirft eine exception die am programmende den errorlevel bestimmt
          fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
-push, pop
-
 mlib-test vervollständigen
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
 
@@ -24,9 +23,11 @@ filenamen in fehlermeldungen
 
 load im compiler
 
-every, some
 compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
 evenp, oddp mit x & 0x1 machen.
+push, pop
+
+sollte mlib equal einen fallback nach Objects.equals() haben?
 
 
 

@@ -2517,11 +2517,15 @@ public class LambdaJ {
             final Number next = (Number)car(rest);
             final boolean success;
             if (prev instanceof Long && next instanceof Long) success = pred.test(Long.compare(prev.longValue(),     next.longValue()));
-            else                                              success = pred.test(Double.compare(prev.doubleValue(), next.doubleValue()));
+            else                                              success = pred.test(compareDoubleIEEE754(prev.doubleValue(), next.doubleValue()));
             if (!success) return null;
             prev = next;
         }
         return expTrue.get();
+    }
+
+    private static int compareDoubleIEEE754(double d1, double d2) {
+        return Double.compare(d1 + 0, d2 + 0); // Double.compare(0.0, -0.0) would say: not equal, adding 0 fixes this: -0.0 + 0 -> 0.0
     }
 
     private Object notEqualNumber(ConsCell args) {
@@ -2532,7 +2536,7 @@ public class LambdaJ {
                 final Number n = (Number)car(l);
                 final boolean success;
                 if (number instanceof Long && n instanceof Long) success = number.longValue() == n.longValue();
-                else                                             success = Double.compare(number.doubleValue(), n.doubleValue()) == 0;
+                else                                             success = compareDoubleIEEE754(number.doubleValue(), n.doubleValue()) == 0;
                 if (success) return null;
             }
             number = (Number)car(moreNumbers);
@@ -4278,7 +4282,7 @@ public class LambdaJ {
                 final Number next = (Number)args[i];
                 final boolean success;
                 if (prev instanceof Long && next instanceof Long) success = pred.test(Long.compare(prev.longValue(),     next.longValue()));
-                else                                              success = pred.test(Double.compare(prev.doubleValue(), next.doubleValue()));
+                else                                              success = pred.test(compareDoubleIEEE754(prev.doubleValue(), next.doubleValue()));
                 if (!success) return null;
                 prev = next;
             }
@@ -4294,7 +4298,7 @@ public class LambdaJ {
                     final Number n = (Number)args[j];
                     final boolean success;
                     if (number instanceof Long && n instanceof Long) success = number.longValue() == n.longValue();
-                    else                                             success = Double.compare(number.doubleValue(), n.doubleValue()) == 0;
+                    else                                             success = compareDoubleIEEE754(number.doubleValue(), n.doubleValue()) == 0;
                     if (success) return null;
                 }
                 number = (Number)args[i];
