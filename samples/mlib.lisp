@@ -51,7 +51,7 @@
   (null e))
 
 
-;;; (and forms*) -> result
+;;; (and forms*) -> boolean
 ;;;
 ;;; Short-circuiting logical and.
 ;;; Return T unless any of the forms evaluate to NIL,
@@ -104,7 +104,7 @@
 ;;; (oddp number) -> boolean
 ;;;
 ;;; Is this number odd?
-(defun oddp  (n) (= 1.0 (mod n 2)))
+(defun oddp (n) (= 1.0 (mod n 2)))
 
 
 ;;; (char= characters+) -> boolean
@@ -303,6 +303,7 @@
            ,lastelem)))
     ,@(when return-list '(l))))
 
+
 ;;; (mapcar function sequence+) -> list
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
@@ -310,6 +311,7 @@
 ;;; All function application results will be combined into a list
 ;;; which is the return value of mapcar.
 (mapx mapcar  cons    car cars nil nil)
+
 
 ;;; (maplist function sequence+) -> list
 ;;;
@@ -320,16 +322,19 @@
 ;;; which is the return value of maplist.
 (mapx maplist cons    nil nil nil nil)
 
+
 ;;; (mapc function sequence+) -> first-arg-list
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent cars items of the given sequences.
 (mapx mapc    progn   car cars t nil)
 
+
 ;;; (mapl function sequence+) -> first-arg-list
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
 (mapx mapl    progn   nil nil t nil)
+
 
 ;;; (mapcan function sequence+) -> concatenated-results
 ;;;
@@ -339,6 +344,7 @@
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of mapcan.
 (mapx mapcan  append  car cars nil nil)
+
 
 ;;; (mapcon function sequence+) -> concatenated-results
 ;;;
@@ -359,6 +365,7 @@
 ;;; t otherwise.
 (mapx every and car cars nil t)
 
+
 ;;; (some function sequence+) -> result
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
@@ -368,6 +375,7 @@
 ;;; or nil if no applications yield non-nil.
 (mapx some or car cars nil nil)
 
+
 ;;; (notevery function sequence+) -> boolean
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
@@ -376,6 +384,7 @@
 ;;; (notevery predicate sequence+) == (not (every predicate sequence+))
 (defun notevery (f seq . more)
   (not (apply some (cons f (cons seq more)))))
+
 
 ;;; (notany function sequence+) -> boolean
 ;;;
@@ -465,7 +474,7 @@
 ;;;
 ;;; thread-first, inspired by https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
 ;;;
-;;; Inserts first form as the first argument (second in list) of the second form, and so forth.
+;;; Inserts first form as the first argument of the second form, and so forth.
 ;;;
 ;;; Usage is illustrated by:
 ;;;
@@ -490,7 +499,7 @@
 ;;;
 ;;; thread-last
 ;;;
-;;; Same as -> but inserts first form as last argument (last in list) of second form, and so forth.
+;;; Same as -> but inserts first form as last argument of the second form, and so forth.
 ;;;
 ;;; Usage is illustrated by:
 ;;;
