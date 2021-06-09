@@ -1063,3 +1063,5 @@ Java == funktioniert, Double.compare() nicht
 -> https://de.wikipedia.org/wiki/Vorzeichenbehaftete_Null#Vergleichsoperatoren
 
 Builtin signum: if instanceof Long (n < 0)?-1:1, für double mit Math.signum
+
+murmel-test automatisch laufen lassen, am ende ggf. fatal

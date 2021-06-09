@@ -1,3 +1,5 @@
+=, <, > usw behandeln NaN nicht richtig:
+
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
 
