@@ -2545,9 +2545,11 @@ public class LambdaJ {
     /** generate operator for zero or more args */
     private static Object makeAddOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         numberArgs(opName, args);
-        for (; args != null; args = (ConsCell) cdr(args))
-            startVal = op.applyAsDouble(startVal, ((Number)car(args)).doubleValue());
-        return startVal;
+        if (car(args) == null) return startVal;
+        double result = ((Number)car(args)).doubleValue();
+        for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
+            result = op.applyAsDouble(result, ((Number)car(args)).doubleValue());
+        return result;
     }
 
     /** generate operator for one or more args */
@@ -4096,8 +4098,8 @@ public class LambdaJ {
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
-        public final double add     (Object... args) { double ret = 0.0; if (args != null) for (int i = 0; i < args.length; i++) ret += dbl(args[i]); return ret; }
-        public final double mul     (Object... args) { double ret = 1.0; if (args != null) for (int i = 0; i < args.length; i++) ret *= dbl(args[i]); return ret; }
+        public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
+        public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
 
         public final double sub     (Object... args) { onePlusArg("-", args.length);
                                                        if (args.length == 1) return 0.0 - dbl(args[0]);
