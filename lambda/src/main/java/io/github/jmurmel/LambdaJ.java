@@ -644,7 +644,7 @@ public class LambdaJ {
                     }
                 }
                 for (int i = 0; i < CTRL.length; i++) {
-                    if (CTRL[i].equals(charOrCharactername)) return i;
+                    if (CTRL[i].equals(charOrCharactername)) return (char)i;
                 }
                 throw new ParseError("line %d:%d: unrecognized character name %s", lineNo, charNo, charOrCharactername);
 
@@ -2075,13 +2075,10 @@ public class LambdaJ {
     private static ConsCell assoc(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
-        for (Object env: (ConsCell) maybeList) {
-            if (env != null) {
-                final ConsCell _env = (ConsCell) env;
-                final Object key = car(_env);
-                if (atom == key) return _env;
-                if (atom instanceof Number && atom.equals(key)) return _env;
-                if (atom instanceof Character && atom.equals(key)) return _env;
+        for (Object item: (ConsCell) maybeList) {
+            if (item != null) { // ignore null items
+                final ConsCell itemAsCons = (ConsCell) item;
+                if (cl_eql(atom, car(itemAsCons))) return itemAsCons;
             }
         }
         return null;
@@ -2524,8 +2521,9 @@ public class LambdaJ {
         return expTrue.get();
     }
 
+    /** Double.compare(0.0, -0.0) would say: not equal */
     private static int compareDoubleIEEE754(double d1, double d2) {
-        return Double.compare(d1 + 0, d2 + 0); // Double.compare(0.0, -0.0) would say: not equal, adding 0 fixes this: -0.0 + 0 -> 0.0
+        return Double.compare(d1 + 0, d2 + 0);
     }
 
     private Object notEqualNumber(ConsCell args) {
@@ -2994,7 +2992,8 @@ public class LambdaJ {
 
         if (haveEq()) {
             env = addBuiltin("eq", (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); },
-                  env);
+                  addBuiltin("eql", (Primitive) a -> { twoArgs("eql", a);   return boolResult(cl_eql(car(a), cadr(a))); },
+                  env));
         }
 
         if (haveCons()) {
@@ -3005,6 +3004,13 @@ public class LambdaJ {
         }
 
         return env;
+    }
+
+    private static boolean cl_eql(Object o1, Object o2) {
+        if (o1 == o2) return true;
+        if (numberp(o1) && numberp(o2)
+            || characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
+        return false;
     }
 
     private static Number cl_signum(Number n) {
@@ -4039,6 +4045,7 @@ public class LambdaJ {
 
         public final Object _eval      (Object... args) { onetwoArg("eval",    args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public final Object _eq        (Object... args) { twoArg("eq",         args.length); return args[0] == args[1] ? _t : null; }
+        public final Object _eql       (Object... args) { twoArg("eql",        args.length); return cl_eql(args[0], args[1]) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",       args.length); return args[0] == null ? _t : null; }
 
         public final Object _write     (Object... args) { oneArg("write",      args.length); intp.write(args[0]); return _t; }
@@ -4466,7 +4473,7 @@ public class LambdaJ {
         /// Environment for compiled Murmel:
         /// * nil, t, pi
         /// * car, cdr, cons, rplaca, rplacd
-        /// * eval, eq, null, intern, write, writeln, lnwrite
+        /// * eval, eq, eql, null, intern, write, writeln, lnwrite
         /// * atom, consp, listp, symbolp, numberp, stringp, characterp, integerp, floatp
         /// * assoc, list, append
         /// * round, floor, ceiling, truncate
@@ -4484,7 +4491,7 @@ public class LambdaJ {
         };
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
-                "eval", "eq", "null", "write", "writeln", "lnwrite",
+                "eval", "eq", "eql", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
                 "assoc", "list", "append",
                 "round", "floor", "ceiling", "truncate",

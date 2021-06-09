@@ -526,6 +526,18 @@ nil
 ;
 ; Returns t if x and y are the same object, nil otherwise.
 
+; (eql x y) -> boolean
+;
+; Return t if any of the following is true
+;
+; - a and b are eq
+; - a and b are numbers of the same type and have the same value
+; - a and b are the same characters
+
+(eql 2 2) ; => t
+(eql #\a (car "aaa") ; => t
+(eql -0.0 0.0) ; => nil
+
 ; = null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
 
 ; = (assoc key alist) -> cons or nil

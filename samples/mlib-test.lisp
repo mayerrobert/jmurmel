@@ -102,28 +102,6 @@
 ; todo char=
 
 
-;;; test eql
-(tests
-  (eql 'a 'b) => nil
-  (eql 'a 'a) => t
-  (eql 3 3) => t
-  (eql 3 3.0) => nil
-  (eql 3.0 3.0) => t
-  ;(eql #c(3 -4) #c(3 -4)) => t
-  ;(eql #c(3 -4.0) #c(3 -4)) => false
-  (eql (cons 'a 'b) (cons 'a 'c)) => nil
-  (eql (cons 'a 'b) (cons 'a 'b)) => nil
-  (eql '(a . b) '(a . b)) => nil
-  (define x nil) => x
-  (progn (setq x (cons 'a 'b)) (eql x x)) => t
-  (progn (setq x '(a . b)) (eql x x)) => t
-  ;(eql #\A #\A) => true
-  (eql "Foo" "Foo") => nil
-  ;(eql "Foo" (copy-seq "Foo")) => false
-  (eql "FOO" "foo") => nil
-)
-
-
 ;;; test equal
 (tests
   (equal 'a 'b) => nil

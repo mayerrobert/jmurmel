@@ -1,3 +1,7 @@
+trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
+und es wird nicht mehr getraced
+
+as... konsequenter einsetzen statt numberArgs wenns nur um ein arg geht
 
 macros haben mlib nicht zur verfügung oder doch?
 -> checken, ggf. entweder ändern oder dokumentieren

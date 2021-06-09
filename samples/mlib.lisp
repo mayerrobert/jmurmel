@@ -12,7 +12,7 @@
 ;;;     not, and, or
 ;;;     abs, zerop, evenp, oddp
 ;;;     char=
-;;;     eql, equal
+;;;     equal
 ;;;     when, unless, dotimes, dolist
 ;;;     identity, constantly, complement
 ;;;     member
@@ -119,19 +119,6 @@
                   t)
             nil))
     t))
-
-
-;;; (eql x y) -> boolean
-;;;
-;;; Return t if any of the following is true
-;;; a and b are eq
-;;; a and b are numbers of the same type and have the same value
-;;; a and b are the same characters
-(defun eql (a b)
-  (or (eq a b)
-      (and (integerp a) (integerp b)     (= a b))
-      (and (floatp a)   (floatp b)       (= a b))
-      (and (characterp a) (characterp b) (char= a b))))
 
 
 ;;; (equal x y) -> boolean
