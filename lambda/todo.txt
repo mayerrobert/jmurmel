@@ -1,6 +1,4 @@
 
-Builtin signum: if instanceof Long (n < 0)?-1:1, für double mit Math.signum
-
 macros haben mlib nicht zur verfügung oder doch?
 -> checken, ggf. entweder ändern oder dokumentieren
    -> im interpreter sehen die macros defuns, im compiler nicht, weil der compiler das interpreter-eval aufruft

@@ -590,6 +590,21 @@ nil
 
 (ffloor 1.1) ; ==> 1.0
 
+; = (signum number) -> signed-prototype
+;
+; signum determines a numerical value that indicates whether
+; number is negative, zero, or positive. 
+
+(signum 0)    ; => 0
+(signum -0)   ; => 0
+(signum 3)    ; => 1
+(signum -3)   ; => -1
+
+(signum 0.0)  ; => 0.0
+(signum -0.0) ; => -0.0
+(signum 3.0)  ; => 1.0
+(signum -3.0) ; => -1.0
+
 ; = = < > <= >= /=
 ;
 ; The numeric comparison operators take one or more number arguments.

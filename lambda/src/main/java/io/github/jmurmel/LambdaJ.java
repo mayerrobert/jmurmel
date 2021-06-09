@@ -2973,7 +2973,9 @@ public class LambdaJ {
 
                   addBuiltin("mod",     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return cl_mod((Number)car(args), (Number)cadr(args)); },
                   addBuiltin("rem",     (Primitive) args -> { numberArgs("rem",     args, 2, 2); return cl_rem((Number)car(args), (Number)cadr(args)); },
-                  env)))))));
+                          
+                  addBuiltin("signum",  (Primitive) args -> { oneNumber("signum", args); return cl_signum((Number)car(args)); },
+                  env))))))));
 
             env = addBuiltin("=",       (Primitive) args -> makeCompareOp(args, "=",  compareResult -> compareResult == 0),
                   addBuiltin(">",       (Primitive) args -> makeCompareOp(args, ">",  compareResult -> compareResult >  0),
@@ -3003,6 +3005,11 @@ public class LambdaJ {
         }
 
         return env;
+    }
+
+    private static Number cl_signum(Number n) {
+        if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
+        return Math.signum(n.doubleValue());
     }
 
     /** produce a quotient that has been rounded to the nearest mathematical integer;
@@ -4075,6 +4082,7 @@ public class LambdaJ {
         public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",      args.length); return Math.log10(dbl(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",        args.length); return Math.exp  (dbl(args[0])); }
+        public final Number   _signum  (Object... args) { oneArg("signum",     args.length); number(args[0]); return cl_signum((Number)(args[0])); }
         public final double   _expt    (Object... args) { twoArg("expt",       args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
         public final double   _mod     (Object... args) { twoArg("mod",        args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
         public final double   _rem     (Object... args) { twoArg("rem",        args.length); return cl_rem(dbl(args[0]), dbl(args[1])); }
@@ -4463,7 +4471,7 @@ public class LambdaJ {
         /// * assoc, list, append
         /// * round, floor, ceiling, truncate
         /// * fround, ffloor, fceiling, ftruncate
-        /// * sqrt, log, log10, exp, expt, mod, rem
+        /// * sqrt, log, log10, exp, expt, mod, rem, signum
         /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
         /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
@@ -4481,7 +4489,7 @@ public class LambdaJ {
                 "assoc", "list", "append",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
-                "sqrt", "log", "log10", "exp", "expt", "mod", "rem",
+                "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
                 "trace", "untrace",
         };
         private static final String[][] aliasedPrimitives = {
