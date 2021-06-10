@@ -108,28 +108,75 @@
 ;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  false)
 (deftest eql.16 (eql "FOO" "foo")  nil)
 
+(deftest eql.17 (eql -0 -0) t)
+(deftest eql.18 (eql -0 0) t)
+(deftest eql.18 (eql -0.0 -0) nil)
+
+(deftest eql.17 (eql -0.0 -0.0) t)
+(deftest eql.18 (eql -0.0 0.0) nil)
+
 
 ;;; test number comparison operators
-(deftest test-numbereq.1
-  (= 2 2)
-  t
-)
+(deftest test-numbereq.1  (= 2 2)       t)
+(deftest test-numbereq.2  (= 2 3)       nil)
+(deftest test-numbereq.3  (= 1e20 1e20) t)
 
-(deftest test-numbereq.2
-  (= 2 3)
-  nil
-)
+(deftest test-numbereq.4 (= -0 -0)     t)
+(deftest test-numbereq.5 (= -0 0)      t)
+(deftest test-numbereq.6 (= -0.0 -0)   t)
 
-(deftest test-numbereq.3
-  (= 1e20 1e20)
-  t
-)
+(deftest test-numbereq.7 (= -0.0 -0.0) t)
+(deftest test-numbereq.8 (= -0.0 0.0)  t)
 
 
 ;;; test +
-(deftest test-add
+(deftest test-add-minus-zero
   (+ -0.0 -0.0)
   -0.0
+)
+
+
+;;; Murmel-only tests for various not-a-numbers.
+;;; In Common division by zero is signalled as an error.
+#+murmel
+(let ((nan (/ 0 0))     ; NaN, not-a-number
+      (ninf (/ -1 0))   ; -Infinity, negative infinity
+      (pinf (/ 1 0)))   ; Infinity, positive infinity
+
+  (deftest inf.lt (< ninf -1.0 0.0 pinf) t)
+  
+  (deftest inf.add1  (+ ninf ninf) ninf)
+  (deftest inf.add2  (+ ninf -1.0) ninf)
+  (deftest inf.add3  (+ ninf  0.0) ninf)
+  (deftest inf.add4  (+ ninf  1.0) ninf)
+  (deftest inf.add5  (+ ninf pinf)  nan)
+  (deftest inf.add6  (+ ninf  nan)  nan)
+
+  (deftest inf.add7  (+ pinf ninf)  nan)
+  (deftest inf.add8  (+ pinf -1.0) pinf)
+  (deftest inf.add9  (+ pinf  0.0) pinf)
+  (deftest inf.add10 (+ pinf  1.0) pinf)
+  (deftest inf.add11 (+ pinf pinf) pinf)
+  (deftest inf.add11 (+ pinf  nan)  nan)
+
+  (deftest inf.sub1  (- ninf ninf)  nan)
+  (deftest inf.sub2  (- ninf -1.0) ninf)
+  (deftest inf.sub3  (- ninf  0.0) ninf)
+  (deftest inf.sub4  (- ninf  1.0) ninf)
+  (deftest inf.sub5  (- ninf pinf) ninf)
+  (deftest inf.sub6  (- ninf  nan)  nan)
+
+  (deftest inf.sub7  (- pinf ninf) pinf)
+  (deftest inf.sub8  (- pinf -1.0) pinf)
+  (deftest inf.sub9  (- pinf  0.0) pinf)
+  (deftest inf.sub10 (- pinf  1.0) pinf)
+  (deftest inf.sub11 (- pinf pinf)  nan)
+  (deftest inf.sub12 (- pinf  nan)  nan)
+
+  (deftest nan.1 (= nan nan) nil)
+  (deftest nan.2 (< nan nan) nil)
+  (deftest nan.3 (> nan nan) nil)
+  (deftest nan.4 (/= nan nan) t)
 )
 
 
