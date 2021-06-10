@@ -620,20 +620,10 @@ public class LambdaJ {
         
         /** if we get here then we have already read '#' and look contains the character after #subchar */
         private Object readerMacro(int sub_char) {
-            int index = 0;
             switch (sub_char) {
             // #\ ... character literal
             case '\\':
-                if (look != EOF) {
-                    token[index++] = (char)look;
-                    look = getchar(false);
-                }
-                while (look != EOF && !isSpace(look) && !isSyntax(look)) {
-                    if (index < TOKEN_MAX) token[index++] = (char)look;
-                    look = getchar(false);
-                }
-                final String charOrCharactername = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
-                if (charOrCharactername.isEmpty()) throw new ParseError("line %d:%d: EOF after #\\", lineNo, charNo);
+                final String charOrCharactername = readerMacroToken(sub_char);
                 if (charOrCharactername.length() == 1) return charOrCharactername.charAt(0);
                 if (isLong(charOrCharactername)) {
                     try {
@@ -664,17 +654,48 @@ public class LambdaJ {
             case '\'':
                 return CONTINUE;
 
+            // #+... , #-... feature expressions
             case '+':
             case '-':
                 final boolean hasFeature = featurep(readObj(true));
                 final Object next = readObj(true);
                 if (sub_char == '+') return hasFeature ? next : CONTINUE;
                 else return hasFeature ? CONTINUE : next;
+
+            case 'b':
+            case 'B':
+                skipWs();
+                return parseLong(readerMacroToken(sub_char), 2);
+
+            case 'o':
+            case 'O':
+                skipWs();
+                return parseLong(readerMacroToken(sub_char), 8);
+
+            case 'x':
+            case 'X':
+                skipWs();
+                return parseLong(readerMacroToken(sub_char), 16);
                 
             default:
                 look = getchar();
                 throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(sub_char));
             }
+        }
+
+        private String readerMacroToken(int macroChar) {
+            int index = 0;
+            if (look != EOF) {
+                token[index++] = (char)look;
+                look = getchar(false);
+            }
+            while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                if (index < TOKEN_MAX) token[index++] = (char)look;
+                look = getchar(false);
+            }
+            final String ret = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+            if (ret.isEmpty()) throw new ParseError("line %d:%d: EOF after #%c", lineNo, charNo, (int)macroChar);
+            return ret;
         }
 
         private final Object sNot          = intern(new LambdaJSymbol("not"));
@@ -764,23 +785,11 @@ public class LambdaJ {
                         }
                         String s = tokenToString(token, 0, index);
                         if (haveDouble() && isDouble(s)) {
-                            try {
-                                tok = Double.valueOf(s);
-                            } catch (NumberFormatException e) {
-                                throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s);
-                            }
+                            tok = parseDouble(s);
                         } else if (haveLong() && isLong(s)) {
-                            try {
-                                tok = Long.valueOf(s);
-                            } catch (NumberFormatException e) {
-                                throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s);
-                            }
+                            tok = parseLong(s, 10);
                         } else if (haveDouble() && isLong(s)) {
-                            try {
-                                tok = Double.valueOf(s);
-                            } catch (NumberFormatException e) {
-                                throw new ParseError("line %d:%d: '%s' is not a valid symbol or number", lineNo, charNo, s);
-                            }
+                            tok = parseDouble(s);
                         } else {
                             if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                             if (!tokEscape && ".".equals(s))
@@ -795,6 +804,22 @@ public class LambdaJ {
                     tracer.println("*** scan  token  |" + tok + '|');
 
                 if (tok != CONTINUE) return;
+            }
+        }
+
+        private Number parseLong(String s, int radix) {
+            try {
+                return Long.valueOf(s, radix);
+            } catch (NumberFormatException e) {
+                throw new ParseError("line %d:%d: '%s' is not a valid number", lineNo, charNo, s);
+            }
+        }
+
+        private Number parseDouble(String s) {
+            try {
+                return Double.valueOf(s);
+            } catch (NumberFormatException e) {
+                throw new ParseError("line %d:%d: '%s' is not a valid number", lineNo, charNo, s);
             }
         }
 
