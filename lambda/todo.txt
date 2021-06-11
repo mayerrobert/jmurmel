@@ -1,4 +1,5 @@
-=, <, > usw behandeln NaN nicht richtig:
+im repl: rplaca, rplacd, setq veraendert die history (die aus conses besteht)
+-> :r fuehrt was anderes aus als der interpreter davor
 
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced

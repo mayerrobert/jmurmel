@@ -243,7 +243,8 @@ a float in scientific notation
 
     1e3
 
-Stringliterals may have a maximum length of 2000 chars
+Stringliterals may have a maximum length of 2000 chars.
+Stringliterals of the same value are coalesced (interned).
 
     "a string literal"
     "another 'literal' \"string literal\""

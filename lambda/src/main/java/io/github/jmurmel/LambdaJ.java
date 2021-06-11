@@ -771,7 +771,7 @@ public class LambdaJ {
                         if (look == EOF)
                             throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
                         look = getchar(); // consume trailing "
-                        tok = tokenToString(token, 1, index);
+                        tok = tokenToString(token, 1, index).intern();
                     } else if (isHash(look)) {
                         look = getchar(false);
                         final int subChar;
@@ -3324,6 +3324,7 @@ public class LambdaJ {
         final boolean printResult = hasFlag("--result", args);  // used only in filemode
         final boolean toJava      = hasFlag("--java", args);
         final boolean toJar       = hasFlag("--jar", args);
+        final boolean run         = hasFlag("--run", args);
         final boolean verbose     = hasFlag("--verbose", args);
         final String clsName      = flagValue("--class", args);
         final String outDir       = flagValue("--outdir", args);
@@ -3361,6 +3362,34 @@ public class LambdaJ {
             if (toJar || toJava) {
                 compileFiles(files, toJar, clsName, outDir);
             }
+            else if (run) {
+                final SExpressionParser parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
+                        () -> -1, null, true);
+
+                final List<Object> program = new ArrayList<>();
+                for (String fileName: files) {
+                    if ("--".equals(fileName)) continue;
+                    if (verbose) System.out.println("interpreting " + fileName + "...");
+                    final Path p = Paths.get(fileName);
+                    try (final Reader r = Files.newBufferedReader(p)) {
+                        while (true) {
+                            parser.setInput(r::read);
+                            parser.filePath = p;
+                            final Object sexp = parser.readObj(true);
+                            if (sexp == null) break;
+                            program.add(sexp);
+                        }
+                    } catch (IOException e) {
+                        System.err.println();
+                        System.err.println(e);
+                        System.exit(1);
+                    }
+                }
+                interpreter.init(System.in::read, System.out::print);
+                injectCommandlineArgs(interpreter, args);
+                runForms(parser, program, interpreter);
+                return;
+            }
             else {
                 interpreter.init(() -> -1, s -> {});
                 injectCommandlineArgs(interpreter, args);
@@ -3385,7 +3414,7 @@ public class LambdaJ {
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
             final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
-            if (toJar || toJava) {
+            if (toJar || run || toJava) {
                 final SExpressionParser parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
                                                                        new InputStreamReader(System.in, consoleCharset)::read, null, true);
 
@@ -3396,17 +3425,24 @@ public class LambdaJ {
                     program.add(sexp);
                 }
 
-                final String outFile;
-                final boolean success;
                 if (toJar) {
-                    outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
-                    success = compileToJar(parser, program, clsName, outFile);
+                    final String outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
+                    final boolean success = compileToJar(parser, program, clsName, outFile);
+                    if (success) System.out.println("compiled stdin to " + outFile);
+                }
+                else if (run) {
+                    interpreter.setSymtab(parser);
+                    ObjectWriter outWriter = makeWriter(System.out::print);
+                    interpreter.setReaderPrinter(parser, outWriter);
+                    interpreter.topEnv = interpreter.environment(null);
+                    injectCommandlineArgs(interpreter, args);
+                    runForms(parser, program, interpreter);
                 }
                 else {
-                    outFile = clsName;
-                    success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir);
+                    final String outFile = clsName;
+                    final boolean success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir);
+                    if (success) System.out.println("compiled stdin to " + (outFile == null ? "MurmelProgram" : outFile.toString()));
                 }
-                if (success) System.out.println("compiled stdin to " + outFile);
             }
             else {
                 interpreter.init(() -> -1, s -> {});
@@ -3872,6 +3908,7 @@ public class LambdaJ {
                 + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"
                 + "                    the class MurmelProgram. The generated jar needs\n"
                 + "                    jmurmel.jar in the same directory to run.\n"
+                + "--run ............  Compile and run\n"
                 + "--class <name> ...  Use 'name' instead of 'MurmelProgram' as the classname\n"
                 + "                    in generated .java- or .jar files\n"
                 + "--outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir\n"
@@ -4736,7 +4773,8 @@ public class LambdaJ {
             sb.append("    public Object define_").append(javasym).append("() {\n"
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
-                    + "        try { ").append(javasym).append(" = () -> "); formToJava(sb, caddr(form), env, env, 0, true); sb.append("; }\n"
+                    + "        try { final Object value = "); formToJava(sb, caddr(form), env, env, 0, true); sb.append(";"
+                    + "              ").append(javasym).append(" = () -> value; }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
                     + "        return intern(\"").append(sym).append("\");\n"
                     + "    }\n\n");
@@ -4965,6 +5003,7 @@ public class LambdaJ {
         /** write atoms that are not symbols */
         private static void atomToJava(WrappingWriter sb, Object form) {
             if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
+            //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else sb.append(printSEx(form));
         }
 

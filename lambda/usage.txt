@@ -22,6 +22,7 @@ Misc flags:
 --jar ............  Compile input files to jarfile 'a.jar' containing
                     the class MurmelProgram. The generated jar needs
                     jmurmel.jar in the same directory to run.
+--run ............  Compile and run
 --class <name> ...  Use 'name' instead of 'MurmelProgram' as the classname
                     in generated .java- or .jar files
 --outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir

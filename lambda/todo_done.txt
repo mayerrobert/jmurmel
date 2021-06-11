@@ -1065,3 +1065,6 @@ Java == funktioniert, Double.compare() nicht
 Builtin signum: if instanceof Long (n < 0)?-1:1, für double mit Math.signum
 
 murmel-test automatisch laufen lassen, am ende ggf. fatal
+
+=, <, > usw behandeln NaN nicht richtig:
+
