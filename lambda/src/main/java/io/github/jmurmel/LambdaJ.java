@@ -4775,7 +4775,7 @@ public class LambdaJ {
             sb.append("    public Object define_").append(javasym).append("() {\n"
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
-                    + "        try { final Object value = "); formToJava(sb, caddr(form), env, env, 0, true); sb.append(";"
+                    + "        try { final Object value = "); formToJava(sb, caddr(form), env, env, 0, true); sb.append(";\n"
                     + "              ").append(javasym).append(" = () -> value; }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
                     + "        return intern(\"").append(sym).append("\");\n"
@@ -4800,11 +4800,12 @@ public class LambdaJ {
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
-                    + "        ").append(javasym).append(" = () -> new MurmelFunction () { public Object apply(Object... args0) {\n"); // todo new MurmelFunction() auf lambda umstellen
+                    + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params(sb, params, env, 0, javasym);
-            sb.append("        Object result").append(0).append(" = null;\n");
+            sb.append("        Object result0 = null;\n");
             formsToJava(sb, (ConsCell)body, extenv, env, 0, false);
-            sb.append("        return result0;\n        } };\n"
+            sb.append("        return result0;\n        };\n"
+                    + "        ").append(javasym).append(" = () -> func;\n"
                     + "        return intern(\"").append(sym).append("\");\n"
                     + "    }\n\n");
 
