@@ -8,32 +8,9 @@
 ;;;   JMurmel> (pr-hanoi (hanoi 5))
 
 ; some LISP functions that are missing in Murmel:
-; (append was added to Murmel after writing this program so append and append2 could be deleted)
-
-; not a full CL eql but good enough for hanoi
-(defun eql (x y)
-  (= x y))
-
-(defun append2 (x y)
-  (if (null x)
-        (if (consp y) y (list y))
-    (if (atom x)
-          (if (consp y)
-                (cons x y)
-            (if (null y)
-                  (list x)
-              (list x y)))
-      (cons (car x) (append2 (cdr x) y)))))
-
-(defun append (x y . rest)
-  (if (null rest)
-        (append2 x y)
-    (if (null (car rest))
-          (append2 x y)
-      (append (append2 x y) (car rest) (cdr rest)))))
 
 (defun sub1 (i)
-  (- i 1))
+  (1- i ))
 
 ; Helper to print the result of hanoi:
 ; print a list of lists, each on it's line

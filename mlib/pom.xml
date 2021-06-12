@@ -202,6 +202,28 @@
                         </configuration>
                     </execution>
 
+                    <execution>
+                        <id>run-compiled-samples</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>../samples</workingDirectory>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>fibonacci.lisp</argument>
+                                <argument>fibonacci_simple.lisp</argument>
+                                <argument>hanoi.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
                     <!-- generate murmel-langref.md from murmel-langref.lisp
                          if "sed" is not available then this can be commented out -->
                     <execution>
