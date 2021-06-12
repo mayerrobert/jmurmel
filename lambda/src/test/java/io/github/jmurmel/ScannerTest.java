@@ -49,6 +49,16 @@ public class ScannerTest {
         LambdaJTest.runTest("paren", "'|(|", "|(|", null);
     }
 
+    @Test
+    public void testStringOpenParen() {
+        LambdaJTest.runTest("stringopenparen", "\"(\"", "\"(\"", null);
+    }
+
+    @Test
+    public void testStringCloseParen() {
+        LambdaJTest.runTest("stringcloseparen", "\")\"", "\")\"", null);
+    }
+
 
 
     @Test
