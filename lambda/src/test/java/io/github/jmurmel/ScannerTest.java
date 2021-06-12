@@ -49,6 +49,16 @@ public class ScannerTest {
         LambdaJTest.runTest("paren", "'|(|", "|(|", null);
     }
 
+    @Test
+    public void testStringOpenParen() {
+        LambdaJTest.runTest("stringopenparen", "\"(\"", "\"(\"", null);
+    }
+
+    @Test
+    public void testStringCloseParen() {
+        LambdaJTest.runTest("stringcloseparen", "\")\"", "\")\"", null);
+    }
+
 
 
     @Test
@@ -123,7 +133,13 @@ public class ScannerTest {
     }
 
     @Test
+    public void testSymbolDotString() {
+        LambdaJTest.runTest("symboldotstring", "'(a \".\" b)", "(a \".\" b)", null);
+    }
+
+    @Test
     public void testWeird() {
+        // sbcl: (funcall (lambda([])(funcall (lambda(x |()| |(| |)|)(+ x |(| 1 |)| |()| |(| |(| |(|)) [] [] [] [])) 0) ; => 1
         LambdaJTest.runTest("weird", "((lambda([])((lambda(x |()| |(| |)|)(+ x |(| 1 |)| |()| |(| |(| |(|)) [] [] [] [])) 0)", "1.0", null);
     }
 

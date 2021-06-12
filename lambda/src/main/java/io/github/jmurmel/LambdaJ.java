@@ -742,6 +742,13 @@ public class LambdaJ {
             return false;
         }
 
+        private static final Object LP = new String("(");
+        private static final Object RP = new String(")");
+        private static final Object DOT = new String(".");
+        private static final Object SQ = new String("'");
+        private static final Object BQ = new String("`");
+        private static final Object COMMA = new String(",");
+
         private void readToken() {
             for (;;) {
                 int index = 0;
@@ -760,9 +767,15 @@ public class LambdaJ {
                         final String s = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
                         tok = new LambdaJSymbol(s);
                     } else if (isSyntax(look)) {
-                        token[index++] = (char) look;
+                        switch (look) {
+                        case '(': tok = LP; break;
+                        case ')': tok = RP; break;
+                        case '\'': tok = SQ; break;
+                        case '`': tok = BQ; break;
+                        case ',': tok = COMMA; break;
+                        default: throw new ParseError("line %d:%d: internal error - unexpected syntax char %c", lineNo, charNo, (char)look);
+                        }
                         look = getchar();
-                        tok = tokenToString(token, 0, index);
                     } else if (haveString() && isDQuote(look)) {
                         do {
                             if (index < TOKEN_MAX) token[index++] = (char) look;
@@ -784,7 +797,9 @@ public class LambdaJ {
                             look = getchar();
                         }
                         String s = tokenToString(token, 0, index);
-                        if (haveDouble() && isDouble(s)) {
+                        if (!tokEscape && ".".equals(s)) {
+                            tok = DOT;
+                        } else if (haveDouble() && isDouble(s)) {
                             tok = parseDouble(s);
                         } else if (haveLong() && isLong(s)) {
                             tok = parseLong(s, 10);
@@ -792,10 +807,7 @@ public class LambdaJ {
                             tok = parseDouble(s);
                         } else {
                             if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                            if (!tokEscape && ".".equals(s))
-                                tok = s;
-                            else
-                                tok = new LambdaJSymbol(s);
+                            tok = new LambdaJSymbol(s);
                         }
                     }
                 }
@@ -845,12 +857,6 @@ public class LambdaJ {
             return sym;
         }
 
-        private static boolean isToken(Object tok, String s) {
-            if (tok == null && s == null) return true;
-            if (symbolp(tok)) return false;
-            return tok.toString().equalsIgnoreCase(s);
-        }
-
 
 
         /// S-expression parser
@@ -897,13 +903,13 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
                 return intern((LambdaJSymbol)tok);
             }
-            if (!tokEscape && isToken(tok, ")")) {
+            if (!tokEscape && tok == RP) {
                 throw new LambdaJError(true, "line %d:%d: unexpected ')'", lineNo, charNo);
             }
-            if (!tokEscape && isToken(tok, "(")) {
+            if (!tokEscape && tok == LP) {
                 try {
                     final Object list = readList(startLine, startChar);
-                    if (!tokEscape && isToken(tok, ".")) {
+                    if (!tokEscape && tok == DOT) {
                         skipWs();
                         final Object cdr = readList(lineNo, charNo);
                         if (cdr(cdr) != null) throw new ParseError("line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
@@ -918,13 +924,13 @@ public class LambdaJ {
                     throw new LambdaJError(e.getMessage() + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 }
             }
-            if (!tokEscape && isToken(tok, "'")) {
+            if (!tokEscape && tok == SQ) {
                 skipWs();
                 final int _startLine = lineNo, _startChar = charNo;
                 readToken();
                 return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
             }
-            if (!tokEscape && isToken(tok, "`")) {
+            if (!tokEscape && tok == BQ) {
                 skipWs();
                 final int _startLine = lineNo, _startChar = charNo;
                 readToken();
@@ -936,7 +942,7 @@ public class LambdaJ {
                 backquote--;
                 return o;
             }
-            if (!tokEscape && isToken(tok, ",")) {
+            if (!tokEscape && tok == COMMA) {
                 if (backquote == 0)
                     throw new LambdaJError("comma not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 skipWs();
@@ -958,7 +964,7 @@ public class LambdaJ {
                 final int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
                 if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
-                if (!tokEscape && (isToken(tok, ")") || isToken(tok, "."))) {
+                if (!tokEscape && (tok == RP || tok == DOT)) {
                     adjustEnd(first);
                     return first;
                 }

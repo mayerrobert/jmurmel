@@ -26,7 +26,7 @@
 
 ;;; Test "framework":
 ;;;
-;;; - A list to hold the failure count
+;;; - A list to hold test count and failure count
 ;;;   (a list is used to hold results because compiled Murmel
 ;;;    doesn't support setq yet).
 ;;; - The macro "deftest" to define test-name, test-form and expected result.
