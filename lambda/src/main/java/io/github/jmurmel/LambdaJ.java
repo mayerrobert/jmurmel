@@ -169,7 +169,7 @@ public class LambdaJ {
     };
 
     private static final String[] FEATURES = {
-            "murmel", "jvm"
+            "murmel", "jvm", "ieee-floating-point"
     };
     
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -2934,7 +2934,7 @@ public class LambdaJ {
                   addBuiltin("get-decoded-time",       (Primitive) a -> getDecodedTime(),
                   env)))))));
 
-            env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(car(a).toString()); }, env);
+            env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
 
             env = addBuiltin("::", (Primitive) LambdaJ::findJavaMethod, env);
 
@@ -3369,7 +3369,7 @@ public class LambdaJ {
                 final List<Object> program = new ArrayList<>();
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
-                    if (verbose) System.out.println("interpreting " + fileName + "...");
+                    if (verbose) System.out.println("compiling " + fileName + "...");
                     final Path p = Paths.get(fileName);
                     try (final Reader r = Files.newBufferedReader(p)) {
                         while (true) {
@@ -4227,6 +4227,7 @@ public class LambdaJ {
                                                                   final float sat = asFloat("hsb-to-pixel", args[1]);
                                                                   final float bri = asFloat("hsb-to-pixel", args[2]);
                                                                   return Color.HSBtoRGB(hue, sat, bri); }
+        public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
 
 
@@ -4522,6 +4523,7 @@ public class LambdaJ {
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
                 "trace", "untrace",
+                "fatal",
         };
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},

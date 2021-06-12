@@ -13,3 +13,5 @@
   (if l (cons (f (car l)) (mapcar f (cdr l)))
     nil))
 
+(defun  cadr (l) (car (cdr l)))
+(defun caddr (l) (car (cdr (cdr l))))

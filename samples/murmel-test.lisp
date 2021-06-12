@@ -101,8 +101,8 @@
 (deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
 (deftest eql.10 (eql '(a . b) '(a . b))  nil)
 (#+murmel define #-murmel defparameter x nil)
-(deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
-(deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
+; todo (deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
+; todo (deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
 ;(deftest eql.13 (eql #\A #\A)  true)
 #+murmel (deftest eql.14 (eql "Foo" "Foo")  t) ; sbcl murmel-test.lisp -> nil, sbcl murmel-test.fasl -> t
 ;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  false)
