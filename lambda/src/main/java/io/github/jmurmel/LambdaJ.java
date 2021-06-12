@@ -4775,8 +4775,8 @@ public class LambdaJ {
             sb.append("    public Object define_").append(javasym).append("() {\n"
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
-                    + "        try { final Object value = "); formToJava(sb, caddr(form), env, env, 0, true); sb.append(";\n"
-                    + "              ").append(javasym).append(" = () -> value; }\n"
+                    + "        try { final Object value = "); formToJava(sb, caddr(form), env, env, 0, false); sb.append(";\n"
+                    + "        ").append(javasym).append(" = () -> value; }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
                     + "        return intern(\"").append(sym).append("\");\n"
                     + "    }\n\n");
@@ -5019,9 +5019,11 @@ public class LambdaJ {
             sb.append("        return result").append(rsfx).append("; })");
         }
 
+        private int ignoredCounter = 0;
+        
         // todo vielleicht funcall weglassen wenn forms nur 1 element hat oder null ist?
         private void prognToJava(WrappingWriter sb, ConsCell forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            sb.append((isLast ? "tailcall(" : "funcall(")).append("(MurmelFunction)(Object... args) -> {\n        Object result").append(rsfx).append(" = null;\n");
+            sb.append((isLast ? "tailcall(" : "funcall(")).append("(MurmelFunction)(Object... ignored" + ignoredCounter++ + ") -> {\n        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, forms, env, topEnv, rsfx, false);
             sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
         }
