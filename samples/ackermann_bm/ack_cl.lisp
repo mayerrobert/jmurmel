@@ -2,12 +2,17 @@
 ;;; Common Lisp version. See also ack_murmel.lisp.
 ;;;
 ;;; Run with
-;;;   C:\> abcl --load samples\ackermann_bm\ack_cl.lisp
+;;;
+;;;     C:\> abcl --load samples\ackermann_bm\ack_cl.lisp
+;;;
 ;;; or within the abcl repl compile and run with
-;;;   C:\> abcl
-;;;   CL-USER(1): :cl samples\ackermann_bm\ack_cl.lisp
+;;;
+;;;     C:\> abcl
+;;;     CL-USER(1): :cl samples\ackermann_bm\ack_cl.lisp
+;;;
 ;;; or
-;;;   C:\> sbcl --script samples\ackermann_bm\ack_cl.lisp
+;;;
+;;;     C:\> sbcl --script samples\ackermann_bm\ack_cl.lisp
 
 (defun Z (f)
   (funcall (lambda (g)
@@ -29,7 +34,7 @@
   (/ n (/ nanos internal-time-units-per-second)))
   
 (defun run (n tstart tend)
-    (format t "~D: ~3,0F, ~F ops/s~%" (round n) (ackermann 3 6) (rate n (- (get-internal-real-time) tstart)))
+    (format t "~D: ~3,0F, ~F ops/s~%" (floor n) (ackermann 3 6) (rate n (- (get-internal-real-time) tstart)))
     (if (< (get-internal-real-time) tend)
           (run (+ n 1) tstart tend)))
 

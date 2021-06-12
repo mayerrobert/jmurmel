@@ -1,3 +1,7 @@
+--add-feature
+-> z.B. jm --add-feature test
+   -> damit kann man tests per feature expressions ein/ ausschalten
+
 im repl: rplaca, rplacd, setq veraendert die history (die aus conses besteht)
 -> :r fuehrt was anderes aus als der interpreter davor
 

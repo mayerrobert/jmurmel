@@ -1,6 +1,8 @@
 ;;; Print a Julia set, based on https://rosettacode.org/wiki/Julia_set#Java
-;;; runs somewhat slow, you may want to compile this program.
 ;;;
+;;; Runs somewhat slow, you may want to compile/run this program:
+;;;
+;;;     jm --run julia.lisp
 
 (define W 600)
 (define H 400)

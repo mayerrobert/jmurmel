@@ -4115,10 +4115,10 @@ public class LambdaJ {
         public final double   _fceiling (Object... args) { oneArg("fceiling",    args.length); return Math.ceil (dbl(args[0])); }
         public final double   _ftruncate(Object... args) { oneArg("ftruncate",   args.length); return cl_truncate(dbl(args[0])); }
 
-        public final double   _round   (Object... args) { oneArg("round",      args.length); return truncate(cl_round(dbl(args[0]))); }
-        public final double   _floor   (Object... args) { oneArg("floor",      args.length); return truncate(Math.floor(dbl(args[0]))); }
-        public final double   _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
-        public final double   _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
+        public final long     _round   (Object... args) { oneArg("round",      args.length); return truncate(cl_round(dbl(args[0]))); }
+        public final long     _floor   (Object... args) { oneArg("floor",      args.length); return truncate(Math.floor(dbl(args[0]))); }
+        public final long     _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
+        public final long     _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
 
         public final Object   charInt  (Object... args) { oneArg("char-code",  args.length); return (long)asChar("char-code", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",  args.length); return (char)asInt("code-char", args[0]); }
