@@ -16,6 +16,7 @@ macros haben mlib nicht zur verfügung oder doch?
 
 ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, obs ein macro oder eine funktion ist
 -> gibts ein macro "m" dann hat "(defun m..." keine auswirkung
+-> vielleicht so lassen und defun für ein macro verbieten, so wie defun für special forms verboten ist?
 
 funktion error (und/ oder exit) wirft eine exception die am programmende den errorlevel bestimmt
          fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack

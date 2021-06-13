@@ -147,7 +147,7 @@ nil
 t
 
 ; "dynamic" is a pre-defined self-evaluating symbol that may be used
-; in the `(lambda dynamic...` and `(let dynamic...` forms, see below.
+; in the `(lambda dynamic...` and `(let* dynamic...` forms, see below.
 
 dynamic
 
@@ -296,7 +296,7 @@ nil
 ; are removed when leaving the lexical scope of the `let/let*/letrec/lambda`
 ; form, restoring any previously existing binding (which may have
 ; been local or global).
-; Except: `let dynamic` will treat global symbols as "special", see below.
+; Except: `let* dynamic` will treat global symbols as "special", see below.
 
 
 ;;; == Additional Special Forms =======
@@ -388,16 +388,16 @@ nil
       (write msg)
     (progn (write (floor x)) (loop (- x 1) msg))))
 
-;;; = (let dynamic ((symbol bindingform)...) bodyforms...) -> object
+;;; = (let* dynamic ((symbol bindingform)...) bodyforms...) -> object
 ;
 ; Similar to "let" except: globals are not shadowed but temporarily
 ; bound to the given value, and the previous value is restored when
 ; leaving the scope of the let form.
-; I.e. "let dynamic" treats globals as "special".
+; I.e. "let* dynamic" treats globals as "special".
 
 (define *g* 'global)
 (defun f () (write *g*))
-(let dynamic ((*g* 'temp)) (f)) ; f will write temp
+(let* dynamic ((*g* 'temp)) (f)) ; f will write temp
 *g* ; ==> 'global
 
 ;;; = (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
@@ -955,7 +955,7 @@ nil
 ;   will throw a "not-yet-implemented" error.
 ; - define-ing an already define-d symbol is not supported
 ; - setq is not supported
-; - let dynamic is not supported
+; - let* dynamic is not supported
 ; - load is not supported
 ; - gensym only works inside macros
 

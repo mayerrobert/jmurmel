@@ -1468,12 +1468,12 @@ public class LambdaJ {
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
                         final boolean letDynamic = (car(arguments)) == sDynamic;
-                        if (letDynamic && !(operator == sLet)) throw new LambdaJError(true, "%s: malformed %s: dynamic only allowed with let", operator, operator, form);
+                        if (letDynamic && !(operator == sLetStar)) throw new LambdaJError(true, "%s: malformed %s: dynamic only allowed with let*", operator, operator, form);
                         final boolean letStar  = operator == sLetStar;
                         final boolean letRec   = operator == sLetrec;
                         final boolean namedLet = !letDynamic && symbolp(car(arguments));
 
-                        final String op = letDynamic ? "let dynamic" : (namedLet ? "named " : "") + operator;
+                        final String op = letDynamic ? "let* dynamic" : (namedLet ? "named " : "") + operator;
                         final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
                         final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
@@ -1497,7 +1497,7 @@ public class LambdaJ {
                             final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
                             if (letDynamic && newBinding != null) {
                                 restore = cons(cons(newBinding, cdr(newBinding)), restore);
-                                newBinding.rplacd(val);
+                                newBinding.rplacd(val); // todo hier ist das zu frueh, das macht effektiv ein let* dynamic
                             }
                             else if (letRec) newBinding.rplacd(val);
                             else        extenv = extendEnv(extenv, sym, val);
