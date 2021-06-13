@@ -8,6 +8,7 @@
 ;;;
 ;;; Provides:
 ;;;     caar..cdddr
+;;;     setf
 ;;;     acons
 ;;;     not, and, or
 ;;;     abs, zerop, evenp, oddp
@@ -50,39 +51,39 @@
 ;;; - car..cdddr
 (defmacro setf args
   (if args
-    (or (if (cddr args) nil
-          (if (cdr args)
-            (if (symbolp (car args)) `(setq ,(car args) ,(cadr args)))))
-        (cons 'progn
-          (let loop ((args args)
-                     (place (car args))
-                     (value (cadr args)))
-            (if (cdr args)
-                  (cons
-                    (cond ((eq 'car   (car place)) `(rplaca       ,@(cdr place)  ,value))
-                          ((eq 'caar  (car place)) `(rplaca (car  ,@(cdr place)) ,value))
-                          ((eq 'cadr  (car place)) `(rplaca (cdr  ,@(cdr place)) ,value))
-                          ((eq 'caaar (car place)) `(rplaca (caar ,@(cdr place)) ,value))
-                          ((eq 'caadr (car place)) `(rplaca (cadr ,@(cdr place)) ,value))
-                          ((eq 'cadar (car place)) `(rplaca (cdar ,@(cdr place)) ,value))
-                          ((eq 'caddr (car place)) `(rplaca (cddr ,@(cdr place)) ,value))
-          
-                          ((eq 'cdr   (car place)) `(rplacd       ,@(cdr place)  ,value))
-                          ((eq 'cdar  (car place)) `(rplacd (car  ,@(cdr place)) ,value))
-                          ((eq 'cddr  (car place)) `(rplacd (cdr  ,@(cdr place)) ,value))
-                          ((eq 'cdaar (car place)) `(rplacd (caar ,@(cdr place)) ,value))
-                          ((eq 'cdadr (car place)) `(rplacd (cadr ,@(cdr place)) ,value))
-                          ((eq 'cddar (car place)) `(rplacd (cdar ,@(cdr place)) ,value))
-                          ((eq 'cdddr (car place)) `(rplacd (cddr ,@(cdr place)) ,value))
-          
-                          ((symbolp place)
-                           `(setq ,place ,value))
-          
-                          (t (fatal "only symbols and car..cdddr are supported for 'place'")))
-                          (if (cddr args)
-                                (loop (cddr args) (caddr args) (car (cdddr args)))
-                            `(,value)))
-              (fatal "odd number of arguments to setf")))))))
+        (if (cdr args)
+              (if (cddr args)
+                    (cons 'progn
+                      (let loop ((args args))
+                        (if (cdr args)
+                              (cons `(setf ,(car args) ,(cadr args))
+                                    (if (cddr args)
+                                          (loop (cddr args))
+                                      `(,(cadr args))))
+                          (fatal "odd number of arguments to setf"))))
+                (let ((place (car args))
+                      (value (cadr args)))
+                  (cond ((eq 'car   (car place)) `(rplaca       ,@(cdr place)  ,value))
+                        ((eq 'caar  (car place)) `(rplaca (car  ,@(cdr place)) ,value))
+                        ((eq 'cadr  (car place)) `(rplaca (cdr  ,@(cdr place)) ,value))
+                        ((eq 'caaar (car place)) `(rplaca (caar ,@(cdr place)) ,value))
+                        ((eq 'caadr (car place)) `(rplaca (cadr ,@(cdr place)) ,value))
+                        ((eq 'cadar (car place)) `(rplaca (cdar ,@(cdr place)) ,value))
+                        ((eq 'caddr (car place)) `(rplaca (cddr ,@(cdr place)) ,value))
+        
+                        ((eq 'cdr   (car place)) `(rplacd       ,@(cdr place)  ,value))
+                        ((eq 'cdar  (car place)) `(rplacd (car  ,@(cdr place)) ,value))
+                        ((eq 'cddr  (car place)) `(rplacd (cdr  ,@(cdr place)) ,value))
+                        ((eq 'cdaar (car place)) `(rplacd (caar ,@(cdr place)) ,value))
+                        ((eq 'cdadr (car place)) `(rplacd (cadr ,@(cdr place)) ,value))
+                        ((eq 'cddar (car place)) `(rplacd (cdar ,@(cdr place)) ,value))
+                        ((eq 'cdddr (car place)) `(rplacd (cddr ,@(cdr place)) ,value))
+        
+                        ((symbolp place)
+                         `(setq ,place ,value))
+  
+                        (t (fatal "only symbols and car..cdddr are supported for 'place'")))))
+          (fatal "odd number of arguments to setf"))))
 
 
 ;;; (acons key datum alist) -> new-alist
