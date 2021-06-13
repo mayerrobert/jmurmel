@@ -180,7 +180,7 @@ public class LambdaJ {
     public interface SymbolTable { LambdaJSymbol intern(LambdaJSymbol symbol); }
     public interface Parser extends ObjectReader, SymbolTable {
         default void setInput(ReadSupplier input) {
-            throw new UnsupportedOperationException("This parser does not support changing input");
+            throw new UnsupportedOperationException("this parser does not support changing input");
         }
     }
 
@@ -944,7 +944,7 @@ public class LambdaJ {
             }
             if (!tokEscape && tok == COMMA) {
                 if (backquote == 0)
-                    throw new LambdaJError("comma not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                    throw new LambdaJError("comma is not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 skipWs();
                 final boolean splice;
                 if (look == '@') { splice = true; look = getchar(); }
@@ -1409,8 +1409,8 @@ public class LambdaJ {
 
                     /// eval - (require modulname optfilespec) -> object
                     } else if (operator == sRequire) {
-                        nArgs("reqire", arguments, 1, 2);
-                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string but got %s", func, printSEx(arguments));
+                        nArgs("require", arguments, 1, 2);
+                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(arguments));
                         final Object modName = car(arguments);
                         if (!modules.contains(modName)) {
                             Object modFilePath = cadr(arguments);
@@ -1759,7 +1759,7 @@ public class LambdaJ {
 
 
     private Object loadFile(String func, Object argument) {
-        if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string but got %s", func, printSEx(argument));
+        if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
         final String fileName = (String) argument;
         final SymbolTable prevSymtab = symtab;
         final Path prevPath = ((SExpressionParser)symtab).filePath;
@@ -2029,7 +2029,7 @@ public class LambdaJ {
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.charAt(0)
                                                  : carCdrError("car", o); }
 
-    private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one Pair or Symbol or String argument but got %s", func, printSEx(o)); }
+    private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
 
     private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
     private static Object   caadr(ConsCell c)  { return c == null ? null : car(cadr(c)); }
@@ -2183,7 +2183,7 @@ public class LambdaJ {
             if (slice.offset == 0) return slice.arry;
             return Arrays.copyOfRange(slice.arry, slice.offset, slice.arry.length);
         }
-        if (!listp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a List but got %s", "listToArray", printSEx(maybeList));
+        if (!listp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         return ret.toArray();
@@ -2360,11 +2360,11 @@ public class LambdaJ {
     private static void nArgs(String func, Object a, int min, int max) {
         final int actualLength = length(a);
         if (actualLength < min) {
-            if (min == max) throw new LambdaJError(true, "%s: expected %d argument but got only %d", func, min, actualLength);
+            if (min == max) throw new LambdaJError(true, "%s: expected %d arguments but got only %d", func, min, actualLength);
             throw new LambdaJError(true, "%s: expected %d to %d arguments but got only %d", func, min, max, actualLength);
         }
         if (actualLength > max) {
-            if (min == max) throw new LambdaJError(true, "%s: expected %d argument but got extra arg(s) %s", func, min, printSEx(nthcdr(max, a)));
+            if (min == max) throw new LambdaJError(true, "%s: expected %d arguments but got extra arg(s) %s", func, min, printSEx(nthcdr(max, a)));
             throw new LambdaJError(true, "%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)));
         }
     }
@@ -2465,7 +2465,7 @@ public class LambdaJ {
     /** the given arg must be a LambdaJString */
     private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
-            throw new LambdaJError(true, "%s: expected %s to be a String but got %s", func, arg, printSEx(car(a)));
+            throw new LambdaJError(true, "%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
     }
 
     /** a must be a proper list of only strings (empty list is fine, too) */
@@ -3125,7 +3125,7 @@ public class LambdaJ {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
         final ConsCell envEntry = assoceq(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
         if (envEntry != null) return cdr(envEntry);
-        throw new LambdaJError(true, "%s: '%s' is undefined", "getValue", globalSymbol);
+        throw new LambdaJError(true, "%s: '%s' is not bound", "getValue", globalSymbol);
     }
 
     private class CallPrimitive implements MurmelFunction {
@@ -5410,8 +5410,7 @@ class JavaCompilerHelper {
     /** Compile Java sourcecode of class {@code className} to Java bytecode */
     Class<?> javaToClass(String className, String javaSource) throws Exception {
         final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
-        if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. "
-                + "No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
+        if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
         try (final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null)) {
             final List<String> options = Collections.singletonList("-g"/*, "-source", "1.8", "-target", "1.8"*/);
             fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));

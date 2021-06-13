@@ -164,7 +164,7 @@ public class BackquoteTest {
 
     @Test
     public void errortestUnquote() {
-        expandError("(,b)", "comma not inside a backquote");
+        expandError("(,b)", "comma is not inside a backquote");
     }
 
     @Test
