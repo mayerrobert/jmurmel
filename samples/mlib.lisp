@@ -40,6 +40,9 @@
 (defun cdddr (l) (cdr (cdr (cdr l))))
 
 
+(defun rplaca* (l v) (rplaca l v) v)
+(defun rplacd* (l v) (rplacd l v) v)
+
 ;;; (setf pair*) -> result
 ;;;
 ;;; Takes pairs of arguments like SETQ. The first is a place and the second
@@ -58,32 +61,72 @@
                         (if (cdr args)
                               (cons `(setf ,(car args) ,(cadr args))
                                     (if (cddr args)
-                                          (loop (cddr args))
-                                      `(,(cadr args))))
+                                          (loop (cddr args))))
                           (fatal "odd number of arguments to setf"))))
-                (let ((place (car args))
-                      (value (cadr args)))
-                  (cond ((eq 'car   (car place)) `(rplaca       ,@(cdr place)  ,value))
-                        ((eq 'caar  (car place)) `(rplaca (car  ,@(cdr place)) ,value))
-                        ((eq 'cadr  (car place)) `(rplaca (cdr  ,@(cdr place)) ,value))
-                        ((eq 'caaar (car place)) `(rplaca (caar ,@(cdr place)) ,value))
-                        ((eq 'caadr (car place)) `(rplaca (cadr ,@(cdr place)) ,value))
-                        ((eq 'cadar (car place)) `(rplaca (cdar ,@(cdr place)) ,value))
-                        ((eq 'caddr (car place)) `(rplaca (cddr ,@(cdr place)) ,value))
-        
-                        ((eq 'cdr   (car place)) `(rplacd       ,@(cdr place)  ,value))
-                        ((eq 'cdar  (car place)) `(rplacd (car  ,@(cdr place)) ,value))
-                        ((eq 'cddr  (car place)) `(rplacd (cdr  ,@(cdr place)) ,value))
-                        ((eq 'cdaar (car place)) `(rplacd (caar ,@(cdr place)) ,value))
-                        ((eq 'cdadr (car place)) `(rplacd (cadr ,@(cdr place)) ,value))
-                        ((eq 'cddar (car place)) `(rplacd (cdar ,@(cdr place)) ,value))
-                        ((eq 'cdddr (car place)) `(rplacd (cddr ,@(cdr place)) ,value))
-        
-                        ((symbolp place)
-                         `(setq ,place ,value))
-  
-                        (t (fatal "only symbols and car..cdddr are supported for 'place'")))))
+                (if (symbolp (car args))
+                      `(setq ,(car args) ,(cadr args))
+                  (let* ((place (car args))
+                         (place-op (car place))
+                         (place-args (cdr place))
+                         (value (cadr args)))
+                    (cond ((eq 'car   place-op) `(rplaca*       ,@place-args  ,value))
+                          ((eq 'caar  place-op) `(rplaca* (car  ,@place-args) ,value))
+                          ((eq 'cadr  place-op) `(rplaca* (cdr  ,@place-args) ,value))
+                          ((eq 'caaar place-op) `(rplaca* (caar ,@place-args) ,value))
+                          ((eq 'caadr place-op) `(rplaca* (cadr ,@place-args) ,value))
+                          ((eq 'cadar place-op) `(rplaca* (cdar ,@place-args) ,value))
+                          ((eq 'caddr place-op) `(rplaca* (cddr ,@place-args) ,value))
+
+                          ((eq 'cdr   place-op) `(rplacd*       ,@place-args  ,value))
+                          ((eq 'cdar  place-op) `(rplacd* (car  ,@place-args) ,value))
+                          ((eq 'cddr  place-op) `(rplacd* (cdr  ,@place-args) ,value))
+                          ((eq 'cdaar place-op) `(rplacd* (caar ,@place-args) ,value))
+                          ((eq 'cdadr place-op) `(rplacd* (cadr ,@place-args) ,value))
+                          ((eq 'cddar place-op) `(rplacd* (cdar ,@place-args) ,value))
+                          ((eq 'cdddr place-op) `(rplacd* (cddr ,@place-args) ,value))
+
+                          (t (fatal "only symbols and car..cdddr are supported for 'place'"))))))
           (fatal "odd number of arguments to setf"))))
+
+
+;;; (push item place) -> new-place-value
+;;;
+;;; push prepends item to the list that is stored in place,
+;;; stores the resulting list in place, and returns the list.
+(defmacro push (item place)
+  (if (symbolp place)
+        `(setq ,place (cons ,item ,place))
+    (let ((tmp (gensym))
+          (place-op (car place)))
+      (append
+        `(let ((,tmp ,(cadr place))))
+        (cond ((eq   'car place-op) (list `(rplaca*       ,tmp  (cons ,item (  car ,tmp)))))
+              ((eq  'caar place-op) (list `(rplaca* ( car ,tmp) (cons ,item ( caar ,tmp)))))
+              ((eq  'cadr place-op) (list `(rplaca* ( cdr ,tmp) (cons ,item ( cadr ,tmp)))))
+              ((eq 'caaar place-op) (list `(rplaca* (caar ,tmp) (cons ,item (caaar ,tmp)))))
+              ((eq 'caadr place-op) (list `(rplaca* (cadr ,tmp) (cons ,item (caadr ,tmp)))))
+              ((eq 'cadar place-op) (list `(rplaca* (cdar ,tmp) (cons ,item (cadar ,tmp)))))
+              ((eq 'caddr place-op) (list `(rplaca* (cddr ,tmp) (cons ,item (caddr ,tmp)))))
+
+              ((eq   'cdr place-op) (list `(rplacd*       ,tmp  (cons ,item (  cdr ,tmp)))))
+              ((eq  'cdar place-op) (list `(rplacd* ( car ,tmp) (cons ,item ( cdar ,tmp)))))
+              ((eq  'cddr place-op) (list `(rplacd* ( cdr ,tmp) (cons ,item ( cddr ,tmp)))))
+              ((eq 'cdaar place-op) (list `(rplacd* (caar ,tmp) (cons ,item (cdaar ,tmp)))))
+              ((eq 'cdadr place-op) (list `(rplacd* (cadr ,tmp) (cons ,item (cdadr ,tmp)))))
+              ((eq 'cddar place-op) (list `(rplacd* (cdar ,tmp) (cons ,item (cddar ,tmp)))))
+              ((eq 'cdddr place-op) (list `(rplacd* (cddr ,tmp) (cons ,item (cdddr ,tmp)))))
+
+              (t (fatal "only symbols and car..cdddr are supported for 'place'")))))))
+
+
+;;; (pop place) -> element
+;;;
+;;; pop reads the value of place, remembers the car of the list which
+;;; was retrieved, writes the cdr of the list back into the place,
+;;; and finally yields the car of the originally retrieved list.
+;(defmacro pop (place)
+;  (let ((tmp (gensym)))
+;    `(let ((,tmp ,place))
 
 
 ;;; (acons key datum alist) -> new-alist

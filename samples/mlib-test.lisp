@@ -37,14 +37,31 @@
 (define x nil)
 (define y nil)
 (tests
- (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
- (setf (car x) 'x (cadr y) (car x) (cdr x) y) =>  (1 X 3) 
- x =>  (X 1 X 3) 
- y =>  (1 X 3) 
- (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
+  (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
+  (setf (car x) 'x (cadr y) (car x) (cdr x) y) =>  (1 X 3) 
+  x =>  (X 1 X 3) 
+  y =>  (1 X 3) 
+  (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
 ; (psetf (car x) 'x (cadr y) (car x) (cdr x) y) =>  NIL 
 ; x =>  (X 1 A 3) 
 ; y =>  (1 A 3)
+
+  (setq x '(1 2 3)) => (1 2 3)
+  (setf (car x) 11) => 11
+)
+
+
+;;; test push
+(define llst nil)
+(tests
+  (setq llst '(nil)) =>  (NIL)
+  (push 1 (car llst)) =>  (1)
+  llst =>  ((1))
+  (push 1 (car llst)) =>  (1 1)
+  llst =>  ((1 1))
+  (setq x '(a (b c) d)) =>  (A (B C) D)
+  (push 5 (cadr x)) =>  (5 B C)  
+  x =>  (A (5 B C) D)
 )
 
 
