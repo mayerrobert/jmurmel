@@ -51,8 +51,10 @@
 )
 
 
-;;; test push
+;;; test push, pop
 (define llst nil)
+(define ctr nil)
+(defun place (l) (setq ctr (1+ ctr)) l)
 (tests
   (setq llst '(nil)) =>  (NIL)
   (push 1 (car llst)) =>  (1)
@@ -62,6 +64,30 @@
   (setq x '(a (b c) d)) =>  (A (B C) D)
   (push 5 (cadr x)) =>  (5 B C)  
   x =>  (A (5 B C) D)
+
+  (setq llst '(1 2 3)) => (1 2 3)
+  (setq ctr 0) => 0
+  (push 11 (cdr (place llst))) => (11 2 3)
+  llst => (1 11 2 3)
+  ctr => 1
+
+  (setq llst '((1 11) 2 3)) => ((1 11) 2 3)
+  (setq ctr 0) => 0
+  (pop (car (place llst))) => 1
+  llst => ((11) 2 3)
+  ctr => 1
+
+  (setq llst '(1 11 2 3)) => (1 11 2 3)
+  (setq ctr 0) => 0
+  (pop (cdr (place llst))) => 11
+  llst => (1 2 3)
+  ctr => 1
+
+  (setq llst '(1 11 2 3)) => (1 11 2 3)
+  (setq ctr 0) => 0
+  (pop (cddr (place llst))) => 2
+  llst => (1 11 3)
+  ctr => 1
 )
 
 

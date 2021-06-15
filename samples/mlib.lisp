@@ -8,7 +8,7 @@
 ;;;
 ;;; Provides:
 ;;;     caar..cdddr
-;;;     setf
+;;;     setf, push, pop
 ;;;     acons
 ;;;     not, and, or
 ;;;     abs, zerop, evenp, oddp
@@ -124,12 +124,29 @@
 ;;; pop reads the value of place, remembers the car of the list which
 ;;; was retrieved, writes the cdr of the list back into the place,
 ;;; and finally yields the car of the originally retrieved list.
-;(defmacro pop (place)
-;  (let ((tmp (gensym)))
-;    `(let ((,tmp ,place))
+(defmacro pop (place)
+  (if (symbolp place)
+        (let ((result (gensym)))
+          `(let ((,result (car ,place)))
+             (setq ,place (cdr ,place))
+             ,result))
+    (let ((lst (gensym))
+          (result (gensym))
+          (place-op (car place))
+          (place-arg (cadr place)))
+      (cond ((eq  'car place-op) `(let* ((,lst      ,place-arg)   (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+            ;((eq 'caar place-op) `(let* ((,lst (car ,place-arg))  (,result (car ,lst))) (rplaca (car ,lst)  (cdr ,lst)) ,result))
+
+            ((eq  'cdr place-op) `(let* ((,lst      ,place-arg)   (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cddr place-op) `(let* ((,lst (cdr ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+
+            (t (fatal "only symbols, car, cdr and cddr are supported for 'place'"))))))
 
 
 ;;; (acons key datum alist) -> new-alist
+;;;
+;;; Prepends alist with a new (key . datum) tuple
+;;; and returns the modified list.
 (defun acons (key datum alist)
   (cons (cons key datum) alist))
 
