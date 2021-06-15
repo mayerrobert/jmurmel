@@ -1,6 +1,24 @@
 ;;;; Tests for Murmel's default library "mlib".
 
-(require "mlib")
+;;; This file is valid Common Lisp as well as Murmel
+;;; with mlib.lisp. Some #+/#- feature expressions
+;;; are needed, tough, and some tests e.g. for threading
+;;; macros are murmel-only.
+;;;
+;;; It can be run with e.g. sbcl or abcl to test the tests
+;;; and after that with jmurmel to test mlib/jmurmel.
+;;;
+;;; Usage:
+;;;
+;;;     sbcl --script mlib-test.lisp
+;;;     abcl --batch --load mlib-test.lisp
+;;;
+;;;     java -jar jmurmel.jar mlib-test.lisp
+;;;
+
+#+murmel (require "mlib")
+#-murmel (defmacro define (n v) `(defparameter ,n ,v))
+#-murmel (defun writeln (&optional (o nil)) (when o (write o)) (terpri))
 
 (define *success-count* 0)
 (define *error-count* 0)
@@ -27,7 +45,12 @@
 ;;; (tests form1 => expected-result1
 ;;;        form2 => expected-result2
 ;;;        ...)
-(defmacro tests l
+#+murmel (defmacro tests l
+  (if l
+    `(append (assert-equal ',(caddr l) ,(car l))
+             (tests ,@(cdddr l)))))
+
+#-murmel (defmacro tests (&rest l)
   (if l
     `(append (assert-equal ',(caddr l) ,(car l))
              (tests ,@(cdddr l)))))
@@ -42,9 +65,6 @@
   x =>  (X 1 X 3) 
   y =>  (1 X 3) 
   (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
-; (psetf (car x) 'x (cadr y) (car x) (cdr x) y) =>  NIL 
-; x =>  (X 1 A 3) 
-; y =>  (1 A 3)
 
   (setq x '(1 2 3)) => (1 2 3)
   (setf (car x) 11) => 11
@@ -77,10 +97,40 @@
   llst => ((11) 2 3)
   ctr => 1
 
+  (setq llst '(((1 11) 22) 2 3)) => (((1 11) 22) 2 3)
+  (setq ctr 0) => 0
+  (pop (caar (place llst))) => 1
+  llst => (((11) 22) 2 3)
+  ctr => 1
+
+  (setq llst '(1 (2 22) 3)) => (1 (2 22) 3)
+  (setq ctr 0) => 0
+  (pop (cadr (place llst))) => 2
+  llst => (1 (22) 3)
+  ctr => 1
+
+  (setq llst '((((1 11))) 2 3)) => ((((1 11))) 2 3)
+  (pop (caaar (place llst))) => 1
+  llst => ((((11))) 2 3)
+
+  (setq llst '((0 (1 11)) 2 3)) => ((0 (1 11)) 2 3)
+  (pop (cadar (place llst))) => 1
+  llst => ((0 (11)) 2 3)
+
+  (setq llst '(-1 0 (1 11) 2 3)) => (-1 0 (1 11) 2 3)
+  (pop (caddr (place llst))) => 1
+  llst => (-1 0 (11) 2 3)
+
   (setq llst '(1 11 2 3)) => (1 11 2 3)
   (setq ctr 0) => 0
   (pop (cdr (place llst))) => 11
   llst => (1 2 3)
+  ctr => 1
+
+  (setq llst '((1 11) 2 3)) => ((1 11) 2 3)
+  (setq ctr 0) => 0
+  (pop (cdar (place llst))) => 11
+  llst => ((1) 2 3)
   ctr => 1
 
   (setq llst '(1 11 2 3)) => (1 11 2 3)
@@ -171,8 +221,8 @@
   ;(equal #c(3 -4.0) #c(3 -4)) => nil
   (equal (cons 'a 'b) (cons 'a 'c)) => nil
   (equal (cons 'a 'b) (cons 'a 'b)) => t
-  ;(equal #\A #\A) => t
-  ;(equal #\A #\a) => nil
+  (equal #\A #\A) => t
+  (equal #\A #\a) => nil
   (equal "Foo" "Foo") => t
   ;(equal "Foo" (copy-seq "Foo")) => t
   (equal "FOO" "foo") => nil
@@ -181,7 +231,7 @@
 )
 
 ; test when, unless
-(labels ((prin1 (form) (write form) form))
+(labels #+murmel((prin1 (form) (write form) form)) #-murmel ()
   (tests
     (when t 'hello) => hello
     (unless t 'hello) => nil
@@ -223,7 +273,7 @@
   (dolist (temp-one '(1 2 3 4) temp-two) (prepend temp-one temp-two)) => (4 3 2 1)
 
   (setq temp-two 0) => 0
-  (dolist (temp-one '(1 2 3 4)) (inc-var temp-two)) => nil
+  (dolist (temp-one '(1 2 3 4)) #-murmel (declare (ignore temp-one)) (inc-var temp-two)) => nil
   temp-two => 4
 
   (dolist (x '(a b c d)) (write x) (format t " ")) => nil ; >>  A B C D , => NIL
@@ -233,7 +283,7 @@
 ; test identity
 (tests
   (identity 101) =>  101
-  (mapcan identity (list (list 1 2 3) '(4 5 6))) =>  (1 2 3 4 5 6)
+  (mapcan #'identity (list (list 1 2 3) '(4 5 6))) =>  (1 2 3 4 5 6)
 )
 
 
@@ -250,6 +300,7 @@
 
 
 ; test complement
+#+murmel
 (tests
   ((complement zerop) 1) => t
   ((complement characterp) #\a) => nil
@@ -262,9 +313,9 @@
 (tests
   (member 2 '(1 2 3)) => (2 3)
   (member 'e '(a b c d)) => NIL
-  (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal) => ((1 . 1) (2 . 2) (3 . 3))
-  (member 'c '(a b c 1 2 3) eq) => (c 1 2 3)
-  (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b))) => (b c 1 2 3)
+  (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) #-murmel :test #'equal) => ((1 . 1) (2 . 2) (3 . 3))
+  (member 'c '(a b c 1 2 3) #-murmel :test #'eq) => (c 1 2 3)
+  (member 'b '(a b c 1 2 3) #-murmel :test (lambda (a b) (eq a b))) => (b c 1 2 3)
 )
 
 
@@ -282,15 +333,15 @@
 
 ; test mapcar
 (tests
-  (mapcar car '((1 a) (2 b) (3 c))) => (1 2 3)
-  (mapcar abs '(3 -4 2 -5 -6)) => (3.0 4.0 2.0 5.0 6.0)
-  (mapcar cons '(a b c) '(1 2 3)) => ((A . 1) (B . 2) (C . 3))
+  (mapcar #'car '((1 a) (2 b) (3 c))) => (1 2 3)
+  (mapcar #'abs '(3.0 -4.0 2.0 -5.0 -6.0)) => (3.0 4.0 2.0 5.0 6.0)
+  (mapcar #'cons '(a b c) '(1 2 3)) => ((A . 1) (B . 2) (C . 3))
 )
 
 
 ; test maplist
 (tests
-  (maplist append '(1 2 3 4) '(1 2) '(1 2 3)) => ((1 2 3 4 1 2 1 2 3) (2 3 4 2 2 3))
+  (maplist #'append '(1 2 3 4) '(1 2) '(1 2 3)) => ((1 2 3 4 1 2 1 2 3) (2 3 4 2 2 3))
   (maplist (lambda (x) (cons 'foo x)) '(a b c d)) => ((FOO A B C D) (FOO B C D) (FOO C D) (FOO D))
   (maplist (lambda (x) (if (member (car x) (cdr x)) 0 1)) '(a b a c d b c)) => (0 0 1 0 1 1 1)
   ;An entry is 1 if the corresponding element of the input
@@ -300,7 +351,7 @@
 ; test mapc
 (tests
   (define dummy nil) => dummy
-  (mapc (lambda x (setq dummy (append dummy x)))
+  (mapc (lambda #+murmel x #-murmel (&rest x) (setq dummy (append dummy x)))
         '(1 2 3 4)
         '(a b c d e)
         '(x y z)) => (1 2 3 4)
@@ -330,24 +381,24 @@
 
 ; test mapcon
 (tests
-  (mapcon list '(1 2 3 4)) =>  ((1 2 3 4) (2 3 4) (3 4) (4))
+  (mapcon #'list '(1 2 3 4)) =>  ((1 2 3 4) (2 3 4) (3 4) (4))
 )
 
 
 ; test every, some, notevery, notany
 (tests
-  (every characterp "abc") =>  t
-  (every char= "abcdefg" '(#\a #\b)) => t
-  (some     = '(1 2 3 4 5) '(5 4 3 2 1)) =>  t
-  (notevery < '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  nil
-  (notany   > '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  t
+  (every #'characterp "abc") =>  t
+  (every #'char= "abcdefg" '(#\a #\b)) => t
+  (some     #'= '(1 2 3 4 5) '(5 4 3 2 1)) =>  t
+  (notevery #'< '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  nil
+  (notany   #'> '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  t
 )
 
 
 ; test remove-if, remove-if-not, remove
 (tests
-  (remove-if oddp '(1 2 4 1 3 4 5)) => (2 4 4)
-  (remove-if (complement evenp) '(1 2 4 1 3 4 5)) => (2 4 4)
+  (remove-if #'oddp '(1 2 4 1 3 4 5)) => (2 4 4)
+  (remove-if (complement #'evenp) '(1 2 4 1 3 4 5)) => (2 4 4)
 
   (remove 4 '(1 3 4 5 9)) => (1 3 5 9)
   (remove 4 '(1 2 4 1 3 4 5)) => (1 2 1 3 5)
@@ -356,36 +407,37 @@
 
 ; test reduce
 (tests
-  (reduce * '(1 2 3 4 5)) =>  120.0
+  (reduce #'* '(1.0 2 3 4 5)) =>  120.0
 
   ;(reduce append '((1) (2)) :initial-value '(i n i t)) =>  (I N I T 1 2)
-  (reduce append (cons '(i n i t) '((1) (2)))) =>  (I N I T 1 2)
+  (reduce #'append (cons '(i n i t) '((1) (2)))) =>  (I N I T 1 2)
 
   ;(reduce append '((1) (2)) :from-end t :initial-value '(i n i t)) =>  (1 2 I N I T) 
-  (reduce append (append '((1) (2)) (list '(i n i t))) t) =>  (1 2 I N I T) 
+  (reduce #'append (append '((1) (2)) (list '(i n i t))) #-murmel :from-end t) =>  (1 2 I N I T) 
 
-  (reduce - '(1 2 3 4)) ;==  (- (- (- 1 2) 3) 4)
+  (reduce #'- '(1.0 2 3 4)) ;==  (- (- (- 1 2) 3) 4)
     =>  -8.0
-  (reduce - '(1 2 3 4) t)    ;Alternating sum: ==  (- 1 (- 2 (- 3 4)))
+  (reduce #'- '(1.0 2 3 4) #-murmel :from-end t)    ;Alternating sum: ==  (- 1 (- 2 (- 3 4)))
     =>  -2.0
-  (reduce + '()) =>  0.0
-  (reduce + '(3)) =>  3
-  (reduce + '(foo)) =>  FOO
-  (reduce list '(1 2 3 4)) =>  (((1 2) 3) 4)
-  (reduce list '(1 2 3 4) t) =>  (1 (2 (3 4)))
+  (reduce #'+ '()) =>  #+murmel 0.0 #-murmel 0
+  (reduce #'+ '(3)) =>  3
+  (reduce #'+ '(foo)) =>  FOO
+  (reduce #'list '(1 2 3 4)) =>  (((1 2) 3) 4)
+  (reduce #'list '(1 2 3 4) #-murmel :from-end t) =>  (1 (2 (3 4)))
 
   ;(reduce list '(1 2 3 4) :initial-value 'foo) =>  ((((foo 1) 2) 3) 4)
-  (reduce list (cons 'foo '(1 2 3 4))) =>  ((((foo 1) 2) 3) 4)
-  
+  (reduce #'list (cons 'foo '(1 2 3 4))) =>  ((((foo 1) 2) 3) 4)
+
   ;(reduce #'list '(1 2 3 4)
   ;     :from-end t :initial-value 'foo) =>  (1 (2 (3 (4 foo))))
-  (reduce list (append '(1 2 3 4) (list 'foo)) t) =>  (1 (2 (3 (4 foo))))
+  (reduce #'list (append '(1 2 3 4) (list 'foo)) #-murmel :from-end t) =>  (1 (2 (3 (4 foo))))
 )
 
 
 ; test with-gensyms
 ; define a "non-shortcircuiting logical and" as a macro
 ; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"
+#+murmel
 (defmacro logical-and-3 (a b c)
   (with-gensyms (result)
     `(let ((,result t))
@@ -394,6 +446,7 @@
        (if ,c nil (setq ,result nil))
        ,result)))
 
+#+murmel
 (tests
   (define result 1) ==> result; the symbol "result" is used in the macro, name-capturing must be avoided
   (logical-and-3 result 2 3) ==> t
@@ -402,6 +455,7 @@
 
 
 ; test thread-first
+#+murmel
 (tests
   (->) => nil
   (-> 200 (/ 2) (+ 7)) => 107.0
@@ -412,6 +466,7 @@
 
 
 ; test thread-last
+#+murmel
 (tests
   (->>) => nil
   (->> 200 (/ 2) (+ 7)) => 7.01
@@ -425,6 +480,7 @@
 
 
 ; test short-circuiting thread first
+#+murmel
 (let* ((mk-nil-args nil)
        (mk-nil (lambda args (setq mk-nil-args args) nil))
        (fail (lambda (args) (assert-equal t nil "function fail should not be called!"))))
@@ -435,6 +491,7 @@
 
 
 ; test short-circuiting thread last
+#+murmel
 (tests
   (and->> '(1 3 5) (mapcar 1+) (remove-if evenp) (reduce -)) => nil
     ; ->> would throw an error: "-" needs at least one arg
@@ -442,6 +499,7 @@
 
 
 ; more threading macros tests
+#+murmel
 (tests
   (->) => nil
   (->>) => nil
@@ -464,6 +522,7 @@
   (and->> 1 1+) => 2
 )
 
+#+murmel
 (let* ((f-args nil)
        (f (lambda (a1 a2 a3) (setq f-args (list a1 a2 a3)) a1)) ; f passes 1st arg and records args
        (l-args nil)
@@ -489,7 +548,16 @@
 
 ; Summary
 ; print succeeded and failed tests if any
+
 (writeln) (writeln)
-(if (zerop *error-count*)
-      (format t "mlib-test.lisp: %d asserts succeeded. Yay!%n" *success-count*)
+(write *error-count*) (format t "/") (write *success-count*) (format t " test(s) failed")
+(writeln)
+(if (= 0 *error-count*)
+      (format t "Success.")
+  (format t "Failure."))
+(writeln)
+
+
+#+murmel
+(unless (zerop *error-count*)
   (fatal (format nil "mlib-test.lisp: %d/%d asserts failed. D'oh!%n" *error-count* *success-count*)))

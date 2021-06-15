@@ -9,15 +9,14 @@
 ;;;
 ;;; Usage:
 ;;;
-;;;     scbl --script murmel-test.lisp
-;;;     abcl --batch --load samples\murmel-test.lisp
+;;;     sbcl --script murmel-test.lisp
+;;;     abcl --batch --load murmel-test.lisp
 ;;;
 ;;;     java -jar jmurmel.jar murmel-test.lisp
 ;;;
 ;;; or using the compiler:
 ;;;
-;;;     java -jar jmurmel.jar --jar murmel-test.lisp
-;;;     java -cp jmurmel.jar;a.jar MurmelProgram
+;;;     java -jar jmurmel.jar --run murmel-test.lisp
 ;;;
 
 #+murmel

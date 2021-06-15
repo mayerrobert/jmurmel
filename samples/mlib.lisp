@@ -7,6 +7,7 @@
 ;;;     (require "mlib")
 ;;;
 ;;; Provides:
+;;;
 ;;;     caar..cdddr
 ;;;     setf, push, pop
 ;;;     acons
@@ -20,7 +21,7 @@
 ;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
 ;;;     every, some, notevery, notany
 ;;;     remove-if, remove
-;;;     
+;;;
 ;;;     with-gensyms
 
 
@@ -134,13 +135,25 @@
           (result (gensym))
           (place-op (car place))
           (place-arg (cadr place)))
-      (cond ((eq  'car place-op) `(let* ((,lst      ,place-arg)   (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ;((eq 'caar place-op) `(let* ((,lst (car ,place-arg))  (,result (car ,lst))) (rplaca (car ,lst)  (cdr ,lst)) ,result))
+      (cond ((eq   'car place-op) `(let* ((,lst       ,place-arg)   (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq  'caar place-op) `(let* ((,lst  (car ,place-arg))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq  'cadr place-op) `(let* ((,lst  (cdr ,place-arg))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
 
-            ((eq  'cdr place-op) `(let* ((,lst      ,place-arg)   (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cddr place-op) `(let* ((,lst (cdr ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'caaar place-op) `(let* ((,lst (caar ,place-arg))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'caadr place-op) `(let* ((,lst (cadr ,place-arg))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'cadar place-op) `(let* ((,lst (cdar ,place-arg))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'caddr place-op) `(let* ((,lst (cddr ,place-arg))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
 
-            (t (fatal "only symbols, car, cdr and cddr are supported for 'place'"))))))
+            ((eq   'cdr place-op) `(let* ((,lst       ,place-arg)   (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq  'cdar place-op) `(let* ((,lst  (car ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq  'cddr place-op) `(let* ((,lst  (cdr ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+
+            ((eq 'cdaar place-op) `(let* ((,lst (caar ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cdadr place-op) `(let* ((,lst (cadr ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cddar place-op) `(let* ((,lst (cdar ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cdddr place-op) `(let* ((,lst (cddr ,place-arg))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+
+            (t (fatal "only symbols, car..cdddr are supported for 'place'"))))))
 
 
 ;;; (acons key datum alist) -> new-alist
