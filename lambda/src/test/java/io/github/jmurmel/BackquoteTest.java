@@ -77,6 +77,19 @@ public class BackquoteTest {
     }
 
 
+    /* todo 
+    (define c "C") ==> c
+    (define d "D") ==> d
+    `(a b ,(if t `,c `,d)) ==> sollte (A B "C") geben, gab aber Fehler
+
+    Error: eval: 'quasiquote' is not bound
+    error occurred in S-expression line 1:14..1:17: (quasiquote (unquote c))
+    error occurred in S-expression (list (if t (quasiquote (unquote c)) (quasiquote (unquote d))))
+     */
+    @Test
+    public void testBQinBQ() {
+        eval("(define c \"C\") (define d \"D\") `(a b ,(if t `,c `,d))", "(a b \"C\")");
+    }
 
     @Test
     public void testBQuotedList() {

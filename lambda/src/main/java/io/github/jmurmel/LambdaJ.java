@@ -951,7 +951,10 @@ public class LambdaJ {
                 else splice = false;
                 final int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                return cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                backquote--;
+                final Object o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                backquote++;
+                return o;
             }
             if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok);
             return tok;
