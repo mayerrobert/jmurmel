@@ -15,6 +15,11 @@
 ;;;
 ;;;     java -jar jmurmel.jar mlib-test.lisp
 ;;;
+;;; Notes:
+;;;
+;;; - Doesn't yet work with the compiler.
+;;; - Contains some occurrences of #'. These are needed
+;;;   for CL compatibility, #' is ignored by murmel.
 
 #+murmel (require "mlib")
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
@@ -54,6 +59,12 @@
   (if l
     `(append (assert-equal ',(caddr l) ,(car l))
              (tests ,@(cdddr l)))))
+
+
+;;; test destructuring-bind
+(tests
+  (destructuring-bind (a b c) '(1.0 2 3) (+ a b c)) => 6.0
+)
 
 
 ;;; test setf

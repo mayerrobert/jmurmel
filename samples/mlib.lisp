@@ -9,6 +9,8 @@
 ;;; Provides:
 ;;;
 ;;;     caar..cdddr
+;;;     rplaca*, rplacd*
+;;;     destructuring-bind
 ;;;     setf, push, pop
 ;;;     acons
 ;;;     not, and, or
@@ -41,8 +43,29 @@
 (defun cdddr (l) (cdr (cdr (cdr l))))
 
 
+;;; (rplaca* lst value) -> value
+;;;
+;;; Replace the car of lst by value and return value.
 (defun rplaca* (l v) (rplaca l v) v)
+
+
+;;; (rplacd* lst value) -> value
+;;;
+;;; Replace the cdr of lst by value and return value.
 (defun rplacd* (l v) (rplacd l v) v)
+
+
+;;; (destructuring-bind vars expression forms*)
+;;;
+;;; Murmel's destructuring-bind is a subset of CL's destructuring-bind,
+;;; trees are not supported, only lists are.
+;;;
+;;; destructuring-bind binds the variables specified in vars
+;;; to the corresponding values in the list resulting from the evaluation
+;;; of expression; then destructuring-bind evaluates forms. 
+(defmacro destructuring-bind (vars expression . forms)
+  `(apply (lambda ,vars ,@forms) ,expression))
+
 
 ;;; (setf pair*) -> result
 ;;;
@@ -134,21 +157,21 @@
           (result (gensym))
           (place-op (car place))
           (place-args (cdr place)))
-      (cond ((eq   'car place-op) `(let* ((,lst       ,@place-args)   (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq  'caar place-op) `(let* ((,lst  (car ,@place-args))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq  'cadr place-op) `(let* ((,lst  (cdr ,@place-args))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'caaar place-op) `(let* ((,lst (caar ,@place-args))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'caadr place-op) `(let* ((,lst (cadr ,@place-args))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'cadar place-op) `(let* ((,lst (cdar ,@place-args))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'caddr place-op) `(let* ((,lst (cddr ,@place-args))  (,result (caar ,lst))) (rplaca ,lst (cdar ,lst)) ,result))
+      (cond ((eq   'car place-op) `(let* ((,lst       ,@place-args)  (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq  'caar place-op) `(let* ((,lst  (car ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq  'cadr place-op) `(let* ((,lst  (cdr ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'caaar place-op) `(let* ((,lst (caar ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'caadr place-op) `(let* ((,lst (cadr ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'cadar place-op) `(let* ((,lst (cdar ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
+            ((eq 'caddr place-op) `(let* ((,lst (cddr ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
 
-            ((eq   'cdr place-op) `(let* ((,lst       ,@place-args)   (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq  'cdar place-op) `(let* ((,lst  (car ,@place-args))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq  'cddr place-op) `(let* ((,lst  (cdr ,@place-args))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cdaar place-op) `(let* ((,lst (caar ,@place-args))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cdadr place-op) `(let* ((,lst (cadr ,@place-args))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cddar place-op) `(let* ((,lst (cdar ,@place-args))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cdddr place-op) `(let* ((,lst (cddr ,@place-args))  (,result (cadr ,lst))) (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq   'cdr place-op) `(let* ((,lst       ,@place-args)  (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq  'cdar place-op) `(let* ((,lst  (car ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq  'cddr place-op) `(let* ((,lst  (cdr ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cdaar place-op) `(let* ((,lst (caar ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cdadr place-op) `(let* ((,lst (cadr ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cddar place-op) `(let* ((,lst (cdar ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
+            ((eq 'cdddr place-op) `(let* ((,lst (cddr ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
 
             (t (fatal "only symbols, car..cdddr are supported for 'place'"))))))
 
