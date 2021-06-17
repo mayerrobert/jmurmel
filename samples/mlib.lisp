@@ -1,8 +1,13 @@
 ;;;; Default library for Murmel
 ;;;
+;;; mlib's functions are modeled after Common Lisp, (often with reduced
+;;; functionality) plus some additional macros and functions.
+;;;
 ;;; Usage:
-;;; copy into the directory containing jmurmel.jar or into the directory specified with --libdir
-;;; and begin your file with
+;;;
+;;; Copy mlib.lisp into the directory containing jmurmel.jar
+;;; or into the directory specified with --libdir
+;;; and begin your source file with
 ;;;
 ;;;     (require "mlib")
 ;;;
@@ -23,8 +28,11 @@
 ;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
 ;;;     every, some, notevery, notany
 ;;;     remove-if, remove
+;;;     write-char, terpri
+;;;     prin1, princ, print, pprint
 ;;;
 ;;;     with-gensyms
+;;;     ->, -->, and->, and-->
 
 
 (defun  caar (l) (car (car l)))
@@ -341,6 +349,13 @@
            ,result)))))
 
 
+;(defmacro while (expr . body)
+;  `(let loop ()
+;     (when ,expr
+;        ,@body
+;        (loop))))
+
+
 ;;;  (identity object) -> object
 ;;;
 ;;; Returns its argument object.
@@ -585,6 +600,54 @@
       (f))))
 
 
+(defun write-char (c) (format t "%s" c))
+
+(defun terpri () (writeln) nil)
+(defun prin1 (o) (write o) o)
+(defun princ (o) (format t "%s" o) o)
+(defun print (o) (lnwrite o) o)
+
+
+;;; (pprint object) -> t
+;;;
+;;; Simple pretty printer,
+;;; based on https://picolisp.com/wiki/?prettyPrint .
+(defun pprint (x)
+  (labels
+    (
+     (size (l)
+       (if l
+             (if (consp l)
+                   (+ (size (car l)) (size (cdr l)))
+               1)
+         1))
+     (pp (x l)
+        (dotimes (ign (* l 3)) (write-char #\ ))
+        (if (< (size x) 6)
+              (write x)
+          (progn
+            (write-char #\()
+            (let loop ()
+              (when
+                (and
+                   (member
+                      (princ (pop x))
+                      '(lambda let defun define defmacro setq setf if when unless dotimes dolist))
+                   (< (size (car x)) 7))
+                (write-char #\ )
+                (loop)))
+            (let loop ()
+               (when x
+               (write-char #\Newline)
+               (if (atom x)
+                     (pp x (1+ l)))
+                 (progn (pp (pop x) (1+ l)) (loop))))
+            (write-char #\))
+            t))))
+    (writeln)
+    (pp x 0)))
+
+
 ;;; (with-gensyms (names*) forms*) -> result
 ;;;
 ;;; "with-gensyms" is a macro commonly used by Common Lispers
@@ -694,51 +757,3 @@
           `(let ((,temp ,init))
              (and ,@forms)))
     (car terms)))
-
-
-
-(defmacro while (expr . body)
-  `(let loop ()
-     (when ,expr
-        ,@body
-        (loop))))
-
-
-;;; (pprint object) -> t
-;;;
-;;; Simple pretty printer,
-;;; based on https://picolisp.com/wiki/?prettyPrint .
-(defun pprint (x)
-  (labels
-    ((write-char (c) (format t "%s" c))
-     (princ (o) (format t "%s" o) o)
-     (size (l)
-       (if l
-             (if (consp l)
-                   (+ (size (car l)) (size (cdr l)))
-               1)
-         1))
-     (pp (x l)
-        (dotimes (ign (* l 3)) (write-char #\ ))
-        (if (< (size x) 6)
-              (write x)
-          (progn
-            (write-char #\()
-            (while
-               (and
-                  (member
-                     (princ (pop x))
-                     '(lambda defun define defmacro setq setf if when unless dotimes dolist))
-                  (< (size (car x)) 7) )
-               (write-char #\ ) )
-            (while x
-               (write-char #\Newline)
-               (if (atom x)
-                     (progn (pp x (1+ l)) (setq x nil))
-                 (pp (pop x) (1+ l))))
-            (write-char #\))
-            t))))
-    (writeln)
-    (pp x 0)))
-
-(defmacro while)
