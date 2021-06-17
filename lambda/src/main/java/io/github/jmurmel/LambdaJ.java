@@ -1474,36 +1474,42 @@ public class LambdaJ {
                         if (letDynamic && !(operator == sLetStar)) throw new LambdaJError(true, "%s: malformed %s: dynamic only allowed with let*", operator, operator, form);
                         final boolean letStar  = operator == sLetStar;
                         final boolean letRec   = operator == sLetrec;
-                        final boolean namedLet = !letDynamic && symbolp(car(arguments));
+                        final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
 
                         final String op = letDynamic ? "let* dynamic" : (namedLet ? "named " : "") + operator;
                         final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
                         final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
-                        if (!consp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
+                        if (!listp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
 
-                        final Set<Object> seen = new HashSet<>();
-                        ConsCell extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
-                        for (Object binding: bindings) {
-                            if (!consp(binding))        throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
-                            final Object sym = car(binding);
-                            if (!symbolp(sym)) throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
-                            notReserved(op, sym);
-                            if (!listp(cdr(binding)))   throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
-                            if (!letStar) // let allows no duplicate let symbols
-                                if (seen.contains(sym)) throw new LambdaJError(true, "duplicate symbol %s", sym);
-                                else seen.add(sym);
+                        ConsCell extenv = env;
+                        if (bindings != null) {
+                            final Set<Object> seen = new HashSet<>();
+                            extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
+                            for (Object binding : bindings) {
+                                if (!consp(binding))
+                                    throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
+                                final Object sym = car(binding);
+                                if (!symbolp(sym))
+                                    throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                                notReserved(op, sym);
+                                if (!listp(cdr(binding)))
+                                    throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                                if (!letStar) // let allows no duplicate let symbols
+                                    if (seen.contains(sym)) throw new LambdaJError(true, "duplicate symbol %s", sym);
+                                    else seen.add(sym);
 
-                            ConsCell newBinding = null;
-                            if (letDynamic) newBinding = assoceq(sym, topEnv);
-                            else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
-                            final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
-                            if (letDynamic && newBinding != null) {
-                                restore = cons(cons(newBinding, cdr(newBinding)), restore);
-                                newBinding.rplacd(val); // todo hier ist das zu frueh, das macht effektiv ein let* dynamic
+                                ConsCell newBinding = null;
+                                if (letDynamic) newBinding = assoceq(sym, topEnv);
+                                else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
+                                final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                                if (letDynamic && newBinding != null) {
+                                    restore = cons(cons(newBinding, cdr(newBinding)), restore);
+                                    newBinding.rplacd(val); // hier ist das zu frueh, das macht effektiv ein let* dynamic
+                                }
+                                else if (letRec) newBinding.rplacd(val);
+                                else extenv = extendEnv(extenv, sym, val);
                             }
-                            else if (letRec) newBinding.rplacd(val);
-                            else        extenv = extendEnv(extenv, sym, val);
                         }
                         forms = (ConsCell)cdr(bindingsAndBodyForms);
                         if (namedLet) {
@@ -5089,10 +5095,11 @@ public class LambdaJ {
                 lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
                 bindings = (ConsCell)(car(args));
             }
-            for (Object binding: bindings) {
-                sb.append("\n        , ");
-                formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
-            }
+            if (bindings != null)
+                for (Object binding: bindings) {
+                    sb.append("\n        , ");
+                    formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
+                }
             sb.append(')');
         }
 
@@ -5121,15 +5128,20 @@ public class LambdaJ {
                 bodyForms = (ConsCell) cdr(args);
             }
 
-            final Set<String> seen = new HashSet<>();
-            for (Object binding: bindings) {
-                final String javaname = mangle(car(binding).toString(), rsfx);
-                if (seen.contains(javaname)) sb.append("        ");
-                else { sb.append("        Object "); seen.add(javaname); }
-                sb.append(javaname).append(" = ");
-                formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
-                env = extenv(car(binding), rsfx, env);
-                sb.append(";\n");
+            if (bindings != null) {
+                final Set<String> seen = new HashSet<>();
+                for (Object binding : bindings) {
+                    final String javaname = mangle(car(binding).toString(), rsfx);
+                    if (seen.contains(javaname)) sb.append("        ");
+                    else {
+                        sb.append("        Object ");
+                        seen.add(javaname);
+                    }
+                    sb.append(javaname).append(" = ");
+                    formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
+                    env = extenv(car(binding), rsfx, env);
+                    sb.append(";\n");
+                }
             }
             formsToJava(sb, bodyForms, env, topEnv, rsfx, false);
             if (named) sb.append("        return result").append(rsfx).append("; } } )");
@@ -5143,23 +5155,26 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction () {\n");
 
-            final Set<Object> seen = new HashSet<>();
             final ConsCell params = paramList(args);
-            for (Object letVar: params) {
-                if (seen.contains(letVar)) throw new LambdaJError(true, "duplicate symbol %s", letVar);
-                seen.add(letVar);
-                env = extenv(letVar, rsfx, env);
-                final String letVarName = javasym(letVar, env);
-                sb.append("        private Object ").append(letVarName).append(" = null;\n");
+            if (params != null) {
+                final Set<Object> seen = new HashSet<>();
+                for (Object letVar : params) {
+                    if (seen.contains(letVar)) throw new LambdaJError(true, "duplicate symbol %s", letVar);
+                    seen.add(letVar);
+                    env = extenv(letVar, rsfx, env);
+                    final String letVarName = javasym(letVar, env);
+                    sb.append("        private Object ").append(letVarName).append(" = null;\n");
+                }
             }
-
-            for (Object letVarAndForm: (ConsCell)(car(args))) {
-                final Object letVar = car(letVarAndForm);
-                final String letVarName = javasym(letVar, env);
-                sb.append("        { ").append(letVarName).append(" = ");
-                formToJava(sb, cadr(letVarAndForm), env, topEnv, rsfx, false);
-                sb.append("; }\n");
-            }
+            
+            if ((car(args)) != null)
+                for (Object letVarAndForm: (ConsCell)(car(args))) {
+                    final Object letVar = car(letVarAndForm);
+                    final String letVarName = javasym(letVar, env);
+                    sb.append("        { ").append(letVarName).append(" = ");
+                    formToJava(sb, cadr(letVarAndForm), env, topEnv, rsfx, false);
+                    sb.append("; }\n");
+                }
 
             sb.append("        @Override public Object apply(Object... args) {\n");
             sb.append("        Object result").append(rsfx).append(";\n");
@@ -5172,6 +5187,7 @@ public class LambdaJ {
         /** from a list of bindings extract a new list of symbols: ((symbol1 form1)...) -> (symbol1...) */
         // todo vgl. LambdaJ.extractParamList()
         private static ConsCell paramList(Object bindings) {
+            if (car(bindings) == null) return null;
             ConsCell params = null; ConsCell insertPos = null;
             for (Object binding: (ConsCell)(car(bindings))) {
                 if (params == null) { params = cons(null, null);          insertPos = params; }

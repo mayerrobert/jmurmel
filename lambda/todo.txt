@@ -1,3 +1,5 @@
+named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
+
 --add-feature
 -> z.B. jm --add-feature test
    -> damit kann man tests per feature expressions ein/ ausschalten

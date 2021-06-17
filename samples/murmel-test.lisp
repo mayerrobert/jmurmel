@@ -88,6 +88,16 @@
 
 ;;; Tests
 
+;;; test letXX
+(deftest let.1 (let () 1) 1)
+(deftest let.2 (let* () 2) 2)
+#+murmel (deftest let.3 (letrec () 3) 3)
+
+;;; test named letXX
+#+murmel (deftest namedlet.1 (let loop () (if nil (loop)) 2) 2)
+#+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) 2) 2)
+; todo (deftest namedlet.2 (letrec loop () (if nil (loop)) 2) 2)
+
 ;;; test eql
 (deftest eql.1 (eql 'a 'b)  nil)
 (deftest eql.2 (eql 'a 'a)  t)
