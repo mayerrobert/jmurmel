@@ -694,3 +694,51 @@
           `(let ((,temp ,init))
              (and ,@forms)))
     (car terms)))
+
+
+
+(defmacro while (expr . body)
+  `(let loop ()
+     (when ,expr
+        ,@body
+        (loop))))
+
+
+;;; (pprint object) -> t
+;;;
+;;; Simple pretty printer,
+;;; based on https://picolisp.com/wiki/?prettyPrint .
+(defun pprint (x)
+  (labels
+    ((write-char (c) (format t "%s" c))
+     (princ (o) (format t "%s" o) o)
+     (size (l)
+       (if l
+             (if (consp l)
+                   (+ (size (car l)) (size (cdr l)))
+               1)
+         1))
+     (pp (x l)
+        (dotimes (ign (* l 3)) (write-char #\ ))
+        (if (< (size x) 6)
+              (write x)
+          (progn
+            (write-char #\()
+            (while
+               (and
+                  (member
+                     (princ (pop x))
+                     '(lambda defun define defmacro setq setf if when unless dotimes dolist))
+                  (< (size (car x)) 7) )
+               (write-char #\ ) )
+            (while x
+               (write-char #\Newline)
+               (if (atom x)
+                     (progn (pp x (1+ l)) (setq x nil))
+                 (pp (pop x) (1+ l))))
+            (write-char #\))
+            t))))
+    (writeln)
+    (pp x 0)))
+
+(defmacro while)
