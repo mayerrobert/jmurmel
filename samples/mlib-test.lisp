@@ -86,18 +86,18 @@
 )
 
 
-;;; test incf, decf
+;;; test incf, decf, todo: *f, /f, +f and -f
 (define n 0)
 (tests inplace
   (incf n) =>  1
   n =>  1
-;  (decf n 3.0) =>  -2.0
-;  n =>  -2.0
-;  (decf n -5.0) =>  3.0
-;  (decf n) =>  2.0
-;  (incf n 0.5) =>  2.5
-;  (decf n) =>  1.5
-;  n =>  1.5
+  (decf n 3.0) =>  -2.0
+  n =>  -2.0
+  (decf n -5.0) =>  3.0
+  (decf n) =>  2.0
+  (incf n 0.5) =>  2.5
+  (decf n) =>  1.5
+  n =>  1.5
 )
 
 

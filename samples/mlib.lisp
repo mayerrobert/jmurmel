@@ -121,21 +121,15 @@
           (fatal "odd number of arguments to setf"))))
 
 
-;;; (incf place [delta-form]) -> new-value
-;;;
-;;; incf and decf are used for incrementing and decrementing
-;;; the value of place, respectively.
-;;;
-;;; The delta is added to (in the case of incf) or subtracted
-;;; from (in the case of decf) the number in place and the result
-;;; is stored in place.
-(defmacro incf (place . delta-form)
+; Helper macro to generate defmacro's for inplace modification macros.
+(defmacro inplace (name noarg arg)
+`(defmacro ,name (place . delta-form)
   (if (symbolp place)
-        `(setq ,place ,(if delta-form `(+ ,place ,(car delta-form)) `(1+ ,place)))
+        `(setq ,place ,(if delta-form `(,,@arg ,place ,(car delta-form)) `(,,@noarg ,place)))
     (let* ((tmp (gensym))
            (place-op (car place))
            (place-args (cdr place))
-           (delta (if delta-form `(+ (,place-op ,tmp) ,(car delta-form)) `(1+ (,place-op ,tmp)))))
+           (delta (if delta-form `(,,@arg (,place-op ,tmp) ,(car delta-form)) `(,,@noarg (,place-op ,tmp)))))
       `(let ((,tmp ,(cadr place)))
          ,(cond ((eq 'car   place-op) `(rplaca*       ,tmp  ,delta))
                 ((eq 'caar  place-op) `(rplaca* (car  ,tmp) ,delta))
@@ -153,7 +147,64 @@
                 ((eq 'cddar place-op) `(rplacd* (cdar ,tmp) ,delta))
                 ((eq 'cdddr place-op) `(rplacd* (cddr ,tmp) ,delta))
 
-                (t (fatal "only symbols and car..cdddr are supported for 'place'")))))))
+                (t (fatal "only symbols and car..cdddr are supported for 'place'"))))))))
+
+
+;;; (incf place [delta-form]) -> new-value
+;;; (decf place [delta-form]) -> new-value
+;;;
+;;; incf and decf are used for incrementing and decrementing
+;;; the value of place, respectively.
+;;;
+;;; The delta is added to (in the case of incf) or subtracted
+;;; from (in the case of decf) the number in place and the result
+;;; is stored in place.
+;;;
+;;; Without delta-form the return type of incf and decf will be
+;;; the type of the number in place, otherwise the return type will be float.
+(inplace incf (1+) (+))
+(inplace decf (1-) (-))
+
+
+;;; (*f place [delta-form]) -> new-value
+;;; (/f place [delta-form]) -> new-value
+;;;
+;;; *f and /f are used for multiplying and dividing
+;;; the value of place, respectively.
+;;;
+;;; The number in place is multiplied (in the case of *f) by delta
+;;; or divided (in the case of /f) by delta and the result
+;;; is stored in place.
+;;;
+;;; Without delta /f will return the reciprocal of the number in place,
+;;; *f will return the number in place.
+;;;
+;;; Without delta-form the return type of *f will be
+;;; the type of the number in place, otherwise the return type will be float.
+(inplace *f (identity) (*))
+(inplace /f (/) (/))
+
+
+;;; (+f place [delta-form]) -> new-value
+;;; (-f place [delta-form]) -> new-value
+;;;
+;;; +f and +f are used for adding and subtracting
+;;; to/ from the value of place, respectively.
+;;;
+;;; The delta is added (in the case of *f) to
+;;; or subtracted (in the case of /f) from the number in place
+;;; and the result is stored in place.
+;;;
+;;; Without delta -f will return the negation of the number in place,
+;;; +f will return the number in place.
+;;;
+;;; Without delta-form the return type of +f will be
+;;; the type of the number in place, otherwise the return type will be float.
+(inplace +f (identity) (+))
+(inplace -f (-) (-))
+
+; undef inplace
+(defmacro inplace)
 
 
 ;;; (push item place) -> new-place-value
@@ -552,6 +603,9 @@
 ;;; or nil if no applications yield non-nil.
 (mapx some or car cars nil nil)
 
+; undef mapx
+(defmacro mapx)
+
 
 ;;; (notevery function sequence+) -> boolean
 ;;;
@@ -571,9 +625,6 @@
 ;;; (notany predicate sequence+) == (not (some predicate sequence+))
 (defun notany (f seq . more)
   (not (apply every (cons f (cons seq more)))))
-
-; undef mapx
-(defmacro mapx)
 
 
 ;;; (remove pred list) -> list
