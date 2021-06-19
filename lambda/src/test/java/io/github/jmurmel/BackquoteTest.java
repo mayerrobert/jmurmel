@@ -11,49 +11,49 @@ public class BackquoteTest {
 
     @Test
     public void testNumber() {
-        expandOnce("1", "1");
+        assertExpansion("1", "1");
     }
 
     @Test
     public void testSymbol() {
-        expandOnce("aaa", "aaa");
+        assertExpansion("aaa", "aaa");
     }
 
     @Test
     public void testList() {
-        expandOnce("(aaa bbb ccc)", "(aaa bbb ccc)");
+        assertExpansion("(aaa bbb ccc)", "(aaa bbb ccc)");
     }
 
 
 
     @Test
     public void testQuotedNumber() {
-        expandOnce("'1", "(quote 1)");
+        assertExpansion("'1", "(quote 1)");
     }
 
     @Test
     public void testQuotedSymbol() {
-        expandOnce("'aaa", "(quote aaa)");
+        assertExpansion("'aaa", "(quote aaa)");
     }
 
     @Test
     public void testQuotedList() {
-        expandOnce("'(aaa bbb ccc)", "(quote (aaa bbb ccc))");
+        assertExpansion("'(aaa bbb ccc)", "(quote (aaa bbb ccc))");
     }
 
     @Test
     public void testListQuotedAtoms() {
-        expandOnce("('aaa bbb 'ccc)", "((quote aaa) bbb (quote ccc))");
+        assertExpansion("('aaa bbb 'ccc)", "((quote aaa) bbb (quote ccc))");
     }
 
     @Test
     public void testListQuotedList() {
-        expandOnce("('aaa bbb '(ccc ddd))", "((quote aaa) bbb (quote (ccc ddd)))");
+        assertExpansion("('aaa bbb '(ccc ddd))", "((quote aaa) bbb (quote (ccc ddd)))");
     }
 
     @Test
     public void testQuotedListQuotedList() {
-        expandOnce("'('aaa bbb '(ccc ddd))", "(quote ((quote aaa) bbb (quote (ccc ddd))))");
+        assertExpansion("'('aaa bbb '(ccc ddd))", "(quote ((quote aaa) bbb (quote (ccc ddd))))");
     }
 
 
@@ -61,23 +61,23 @@ public class BackquoteTest {
     @Test
     public void testBQuotedSymbol() {
         eval("`aaa", "aaa");
-        expandOnce("`aaa", "(quote aaa)");
+        assertExpansion("`aaa", "(quote aaa)");
     }
 
     @Test
     public void testBQuotedQuotedSymbol() {
         eval("`'aaa", "(quote aaa)");
-        //expandOnce("`'aaa", "(cons (quote quote) (cons (quote aaa) nil))");
+        assertExpansion("`'aaa", "(append (quote (quote)) (quote (aaa)))");
     }
 
     @Test
     public void testBQuotedUnquotedSymbol() {
         eval("(define aaa 'aval) `,aaa", "aval");
-        expandOnce("`,aaa", "aaa");
+        assertExpansion("`,aaa", "aaa");
     }
 
 
-    /* todo 
+    /*
     (define c "C") ==> c
     (define d "D") ==> d
     `(a b ,(if t `,c `,d)) ==> sollte (A B "C") geben, gab aber Fehler
@@ -94,19 +94,19 @@ public class BackquoteTest {
     @Test
     public void testBQuotedList() {
         eval("`(aaa bbb ccc)", "(aaa bbb ccc)");
-        //expandOnce("`(aaa bbb ccc)", "(cons (quote aaa) (cons (quote bbb) (cons (quote ccc) nil)))");
+        assertExpansion("`(aaa bbb ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote (ccc))))");
     }
 
     @Test
     public void testBQuotedDottedList() {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
-        //expandOnce("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
+        assertExpansion("`(aaa bbb . ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote ccc)))");
     }
 
     @Test
     public void testBQuotedListSplicedList() {
         eval("(define l '(1.0 2.0)) `(a ,@l b)", "(a 1.0 2.0 b)");
-        //expandOnce("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
+        assertExpansion("`(a ,@l b)", "(append (quote (a)) (append l (quote (b))))");
     }
 
     // sample from CLHS
@@ -116,13 +116,13 @@ public class BackquoteTest {
     @Test
     public void testCHLSBackQuote() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,c ,@d)", "((\"A\" b) \"C\" \"D\" \"DD\")");
-        //expandOnce("`((,a b) ,c ,@d)", "(cons (cons a (cons (quote b) nil)) (cons c (append d nil)))");
+        assertExpansion("`((,a b) ,c ,@d)", "(append (list (append (list a) (quote (b)))) (append (list c) d))");
     }
 
     @Test
     public void testCHLSMod() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,@d ,c)", "((\"A\" b) \"D\" \"DD\" \"C\")");
-        //expandOnce("`((,a b) ,@d ,c)", "(cons (cons a (cons (quote b) nil)) (append d (cons c nil)))");
+        assertExpansion("`((,a b) ,@d ,c)", "(append (list (append (list a) (quote (b)))) (append d (list c)))");
     }
 
     // sample from Ansi Common Lisp pp413
@@ -139,14 +139,18 @@ public class BackquoteTest {
     @Test
     public void testBBquotedSymbol() {
         eval("``a", "(quote a)");
-        //expandOnce("``a", "(append (quote (quote)) (append (quote (a)) nil))");
+        assertExpansion("``a", "(append (quote (quote)) (quote (a)))");
     }
 
     // ``(aaa ,bbb ,,ccc) =>
     @Test
     public void testX() {
-        //expandOnce("``(aaa ,bbb ,,ccc)", "falsch (quasiquote (cons (cons (quote aaa) (cons (quasiquote (cons (quote bbb) nil)) (cons (quasiquote (cons ccc nil)) nil))) nil))");
         eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(append (quote (aaa)) (append (list bbb) (list cccval)))");
+        assertExpansion("``(aaa ,bbb ,,ccc)", "(append (quote (append)) "
+                                                    + "(append (list (append (quote (quote)) (list (quote (aaa))))) "
+                                                            + "(list (append (quote (append)) "
+                                                                          + "(append (list (append (quote (list)) (quote (bbb)))) "
+                                                                                  + "(list (append (quote (list)) (list ccc))))))))");
     }
 
     @Test
@@ -177,30 +181,29 @@ public class BackquoteTest {
 
     @Test
     public void errortestUnquote() {
-        expandError("(,b)", "comma is not inside a backquote");
+        assertError("(,b)", "comma is not inside a backquote");
     }
 
     @Test
     public void errortestUnquoteSplice() {
-        expandError("`,@b", "can't splice here");
+        assertError("`,@b", "can't splice here");
     }
 
 
 
-    private void expandOnce(String expression, String expectedExpansion) {
+    private void assertExpansion(String expression, String expectedExpansion) {
         final Object expanded = expand(expression);
         final String expandedSexp = TestUtils.sexp(expanded);
         assertEquals(expectedExpansion, expandedSexp);
     }
 
-    private void expandError(String s, String expectedError) {
+    private void assertError(String s, String expectedError) {
         try {
             expand(s);
             fail("expected error " + expectedError);
         }
         catch (LambdaJ.LambdaJError e) {
-            if (expectedError != null)
-                assertTrue("expected <" + expectedError + "> but got <" + e.getMessage() + '>', e.getMessage().startsWith(expectedError));
+            assertTrue("expected <" + expectedError + "> but got <" + e.getMessage() + '>', e.getMessage().startsWith(expectedError));
         }
     }
 
