@@ -56,9 +56,7 @@
 ;;; (tests form1 => expected-result1
 ;;;        form2 => expected-result2
 ;;;        ...)
-(defmacro tests
- #+murmel (name . l)
- #-murmel (name &rest l)
+(defmacro tests (name . l)
   (if l
     `(append (assert-equal ',(caddr l) ,(car l) ,name)
              (tests ,name ,@(cdddr l)))))
@@ -69,6 +67,9 @@
   (destructuring-bind (a b c) '(1.0 2 3) (+ a b c)) => 6.0
 )
 
+
+(define ctr nil)
+(defun place (l) (setq ctr (1+ ctr)) l) ; return arg, incr number of invocations
 
 ;;; test setf
 (define x nil)
@@ -85,10 +86,23 @@
 )
 
 
+;;; test incf, decf
+(define n 0)
+(tests inplace
+  (incf n) =>  1
+  n =>  1
+;  (decf n 3.0) =>  -2.0
+;  n =>  -2.0
+;  (decf n -5.0) =>  3.0
+;  (decf n) =>  2.0
+;  (incf n 0.5) =>  2.5
+;  (decf n) =>  1.5
+;  n =>  1.5
+)
+
+
 ;;; test push, pop
 (define llst nil)
-(define ctr nil)
-(defun place (l) (setq ctr (1+ ctr)) l) ; return arg, incr number of invocations
 
 (tests push-pop
   (setq llst '(nil)) =>  (NIL)
@@ -313,12 +327,11 @@
 
 
 ; test complement
-#+murmel
 (tests complement
-  ((complement zerop) 1) => t
-  ((complement characterp) #\a) => nil
-  ((complement member) 'a '(a b c)) =>  nil
-  ((complement member) 'd '(a b c)) =>  t
+  (#-murmel funcall (complement #'zerop) 1) => t
+  (#-murmel funcall (complement #'characterp) #\a) => nil
+  (#-murmel funcall (complement #'member) 'a '(a b c)) =>  nil
+  (#-murmel funcall (complement #'member) 'd '(a b c)) =>  t
 )
 
 

@@ -100,25 +100,60 @@
                   (let* ((place (car args))
                          (place-op (car place))
                          (place-args (cdr place))
-                         (value (cadr args)))
-                    (cond ((eq 'car   place-op) `(rplaca*       ,@place-args  ,value))
-                          ((eq 'caar  place-op) `(rplaca* (car  ,@place-args) ,value))
-                          ((eq 'cadr  place-op) `(rplaca* (cdr  ,@place-args) ,value))
-                          ((eq 'caaar place-op) `(rplaca* (caar ,@place-args) ,value))
-                          ((eq 'caadr place-op) `(rplaca* (cadr ,@place-args) ,value))
-                          ((eq 'cadar place-op) `(rplaca* (cdar ,@place-args) ,value))
-                          ((eq 'caddr place-op) `(rplaca* (cddr ,@place-args) ,value))
+                         (value (cdr args)))
+                    (cond ((eq 'car   place-op) `(rplaca*       ,@place-args  ,@value))
+                          ((eq 'caar  place-op) `(rplaca* (car  ,@place-args) ,@value))
+                          ((eq 'cadr  place-op) `(rplaca* (cdr  ,@place-args) ,@value))
+                          ((eq 'caaar place-op) `(rplaca* (caar ,@place-args) ,@value))
+                          ((eq 'caadr place-op) `(rplaca* (cadr ,@place-args) ,@value))
+                          ((eq 'cadar place-op) `(rplaca* (cdar ,@place-args) ,@value))
+                          ((eq 'caddr place-op) `(rplaca* (cddr ,@place-args) ,@value))
 
-                          ((eq 'cdr   place-op) `(rplacd*       ,@place-args  ,value))
-                          ((eq 'cdar  place-op) `(rplacd* (car  ,@place-args) ,value))
-                          ((eq 'cddr  place-op) `(rplacd* (cdr  ,@place-args) ,value))
-                          ((eq 'cdaar place-op) `(rplacd* (caar ,@place-args) ,value))
-                          ((eq 'cdadr place-op) `(rplacd* (cadr ,@place-args) ,value))
-                          ((eq 'cddar place-op) `(rplacd* (cdar ,@place-args) ,value))
-                          ((eq 'cdddr place-op) `(rplacd* (cddr ,@place-args) ,value))
+                          ((eq 'cdr   place-op) `(rplacd*       ,@place-args  ,@value))
+                          ((eq 'cdar  place-op) `(rplacd* (car  ,@place-args) ,@value))
+                          ((eq 'cddr  place-op) `(rplacd* (cdr  ,@place-args) ,@value))
+                          ((eq 'cdaar place-op) `(rplacd* (caar ,@place-args) ,@value))
+                          ((eq 'cdadr place-op) `(rplacd* (cadr ,@place-args) ,@value))
+                          ((eq 'cddar place-op) `(rplacd* (cdar ,@place-args) ,@value))
+                          ((eq 'cdddr place-op) `(rplacd* (cddr ,@place-args) ,@value))
 
                           (t (fatal "only symbols and car..cdddr are supported for 'place'"))))))
           (fatal "odd number of arguments to setf"))))
+
+
+;;; (incf place [delta-form]) -> new-value
+;;;
+;;; incf and decf are used for incrementing and decrementing
+;;; the value of place, respectively.
+;;;
+;;; The delta is added to (in the case of incf) or subtracted
+;;; from (in the case of decf) the number in place and the result
+;;; is stored in place.
+(defmacro incf (place . delta-form)
+  (if (symbolp place)
+        `(setq ,place ,(if delta-form `(+ ,place ,(car delta-form)) `(1+ ,place)))
+    (let* ((tmp (gensym))
+           (place-op (car place))
+           (place-args (cdr place))
+           (delta (if delta-form `(+ (,place-op ,tmp) ,(car delta-form)) `(1+ (,place-op ,tmp)))))
+      `(let ((,tmp ,(cadr place)))
+         ,(cond ((eq 'car   place-op) `(rplaca*       ,tmp  ,delta))
+                ((eq 'caar  place-op) `(rplaca* (car  ,tmp) ,delta))
+                ((eq 'cadr  place-op) `(rplaca* (cdr  ,tmp) ,delta))
+                ((eq 'caaar place-op) `(rplaca* (caar ,tmp) ,delta))
+                ((eq 'caadr place-op) `(rplaca* (cadr ,tmp) ,delta))
+                ((eq 'cadar place-op) `(rplaca* (cdar ,tmp) ,delta))
+                ((eq 'caddr place-op) `(rplaca* (cddr ,tmp) ,delta))
+                                                                    
+                ((eq 'cdr   place-op) `(rplacd*       ,tmp  ,delta))
+                ((eq 'cdar  place-op) `(rplacd* (car  ,tmp) ,delta))
+                ((eq 'cddr  place-op) `(rplacd* (cdr  ,tmp) ,delta))
+                ((eq 'cdaar place-op) `(rplacd* (caar ,tmp) ,delta))
+                ((eq 'cdadr place-op) `(rplacd* (cadr ,tmp) ,delta))
+                ((eq 'cddar place-op) `(rplacd* (cdar ,tmp) ,delta))
+                ((eq 'cdddr place-op) `(rplacd* (cddr ,tmp) ,delta))
+
+                (t (fatal "only symbols and car..cdddr are supported for 'place'")))))))
 
 
 ;;; (push item place) -> new-place-value
@@ -130,24 +165,24 @@
         `(setq ,place (cons ,item ,place))
     (let ((tmp (gensym))
           (place-op (car place)))
-        `(let ((,tmp ,(cadr place)))
-           ,(cond ((eq   'car place-op) `(rplaca*       ,tmp  (cons ,item (  car ,tmp))))
-                  ((eq  'caar place-op) `(rplaca* ( car ,tmp) (cons ,item ( caar ,tmp))))
-                  ((eq  'cadr place-op) `(rplaca* ( cdr ,tmp) (cons ,item ( cadr ,tmp))))
-                  ((eq 'caaar place-op) `(rplaca* (caar ,tmp) (cons ,item (caaar ,tmp))))
-                  ((eq 'caadr place-op) `(rplaca* (cadr ,tmp) (cons ,item (caadr ,tmp))))
-                  ((eq 'cadar place-op) `(rplaca* (cdar ,tmp) (cons ,item (cadar ,tmp))))
-                  ((eq 'caddr place-op) `(rplaca* (cddr ,tmp) (cons ,item (caddr ,tmp))))
+      `(let ((,tmp ,(cadr place)))
+         ,(cond ((eq   'car place-op) `(rplaca*       ,tmp  (cons ,item (,place-op ,tmp))))
+                ((eq  'caar place-op) `(rplaca* ( car ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq  'cadr place-op) `(rplaca* ( cdr ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'caaar place-op) `(rplaca* (caar ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'caadr place-op) `(rplaca* (cadr ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'cadar place-op) `(rplaca* (cdar ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'caddr place-op) `(rplaca* (cddr ,tmp) (cons ,item (,place-op ,tmp))))
 
-                  ((eq   'cdr place-op) `(rplacd*       ,tmp  (cons ,item (  cdr ,tmp))))
-                  ((eq  'cdar place-op) `(rplacd* ( car ,tmp) (cons ,item ( cdar ,tmp))))
-                  ((eq  'cddr place-op) `(rplacd* ( cdr ,tmp) (cons ,item ( cddr ,tmp))))
-                  ((eq 'cdaar place-op) `(rplacd* (caar ,tmp) (cons ,item (cdaar ,tmp))))
-                  ((eq 'cdadr place-op) `(rplacd* (cadr ,tmp) (cons ,item (cdadr ,tmp))))
-                  ((eq 'cddar place-op) `(rplacd* (cdar ,tmp) (cons ,item (cddar ,tmp))))
-                  ((eq 'cdddr place-op) `(rplacd* (cddr ,tmp) (cons ,item (cdddr ,tmp))))
+                ((eq   'cdr place-op) `(rplacd*       ,tmp  (cons ,item (,place-op ,tmp))))
+                ((eq  'cdar place-op) `(rplacd* ( car ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq  'cddr place-op) `(rplacd* ( cdr ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'cdaar place-op) `(rplacd* (caar ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'cdadr place-op) `(rplacd* (cadr ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'cddar place-op) `(rplacd* (cdar ,tmp) (cons ,item (,place-op ,tmp))))
+                ((eq 'cdddr place-op) `(rplacd* (cddr ,tmp) (cons ,item (,place-op ,tmp))))
 
-                  (t (fatal "only symbols and car..cdddr are supported for 'place'")))))))
+                (t (fatal "only symbols and car..cdddr are supported for 'place'")))))))
 
 
 ;;; (pop place) -> element
