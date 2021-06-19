@@ -16,7 +16,9 @@
 ;;;     caar..cdddr
 ;;;     rplaca*, rplacd*
 ;;;     destructuring-bind
-;;;     setf, push, pop
+;;;     setf, incf, decf
+;;;     *f, /f, +f, -f
+;;;     push, pop
 ;;;     acons
 ;;;     not, and, or
 ;;;     abs, zerop, evenp, oddp
@@ -122,7 +124,7 @@
 
 
 ; Helper macro to generate defmacro's for inplace modification macros.
-(defmacro inplace (name noarg arg)
+(defmacro m%inplace (name noarg arg)
 `(defmacro ,name (place . delta-form)
   (if (symbolp place)
         `(setq ,place ,(if delta-form `(,,@arg ,place ,(car delta-form)) `(,,@noarg ,place)))
@@ -138,7 +140,7 @@
                 ((eq 'caadr place-op) `(rplaca* (cadr ,tmp) ,delta))
                 ((eq 'cadar place-op) `(rplaca* (cdar ,tmp) ,delta))
                 ((eq 'caddr place-op) `(rplaca* (cddr ,tmp) ,delta))
-                                                                    
+
                 ((eq 'cdr   place-op) `(rplacd*       ,tmp  ,delta))
                 ((eq 'cdar  place-op) `(rplacd* (car  ,tmp) ,delta))
                 ((eq 'cddr  place-op) `(rplacd* (cdr  ,tmp) ,delta))
@@ -162,8 +164,8 @@
 ;;;
 ;;; Without delta-form the return type of incf and decf will be
 ;;; the type of the number in place, otherwise the return type will be float.
-(inplace incf (1+) (+))
-(inplace decf (1-) (-))
+(m%inplace incf (1+) (+))
+(m%inplace decf (1-) (-))
 
 
 ;;; (*f place [delta-form]) -> new-value
@@ -181,8 +183,8 @@
 ;;;
 ;;; Without delta-form the return type of *f will be
 ;;; the type of the number in place, otherwise the return type will be float.
-(inplace *f (identity) (*))
-(inplace /f (/) (/))
+(m%inplace *f (identity) (*))
+(m%inplace /f (/) (/))
 
 
 ;;; (+f place [delta-form]) -> new-value
@@ -200,11 +202,11 @@
 ;;;
 ;;; Without delta-form the return type of +f will be
 ;;; the type of the number in place, otherwise the return type will be float.
-(inplace +f (identity) (+))
-(inplace -f (-) (-))
+(m%inplace +f (identity) (+))
+(m%inplace -f (-) (-))
 
-; undef inplace
-(defmacro inplace)
+; undef m%inplace
+(defmacro m%inplace)
 
 
 ;;; (push item place) -> new-place-value
@@ -510,7 +512,7 @@
 
 
 ; Helper macro to generate defuns for the various maxXX functions
-(defmacro mapx (name comb acc accn return-list lastelem)
+(defmacro m%mapx (name comb acc accn return-list lastelem)
   `(defun ,name (f l . more)
      (if more
            (labels ((none-nil (lists)
@@ -538,7 +540,7 @@
 ;;; and will applied to subsequent items of the given sequences.
 ;;; All function application results will be combined into a list
 ;;; which is the return value of mapcar.
-(mapx mapcar  cons    car cars nil nil)
+(m%mapx mapcar  cons    car cars nil nil)
 
 
 ;;; (maplist function sequence+) -> list
@@ -548,20 +550,20 @@
 ;;;
 ;;; All function application results will be combined into a list
 ;;; which is the return value of maplist.
-(mapx maplist cons    nil nil nil nil)
+(m%mapx maplist cons    nil nil nil nil)
 
 
 ;;; (mapc function sequence+) -> first-arg-list
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent cars items of the given sequences.
-(mapx mapc    progn   car cars t nil)
+(m%mapx mapc    progn   car cars t nil)
 
 
 ;;; (mapl function sequence+) -> first-arg-list
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
-(mapx mapl    progn   nil nil t nil)
+(m%mapx mapl    progn   nil nil t nil)
 
 
 ;;; (mapcan function sequence+) -> concatenated-results
@@ -571,7 +573,7 @@
 ;;;
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of mapcan.
-(mapx mapcan  append  car cars nil nil)
+(m%mapx mapcan  append  car cars nil nil)
 
 
 ;;; (mapcon function sequence+) -> concatenated-results
@@ -581,7 +583,7 @@
 ;;;
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of mapcon.
-(mapx mapcon  append  nil nil nil nil)
+(m%mapx mapcon  append  nil nil nil nil)
 
 
 ;;; (every function sequence+) -> boolean
@@ -591,7 +593,7 @@
 ;;;
 ;;; Immediately return nil if an application of function returns nil,
 ;;; t otherwise.
-(mapx every and car cars nil t)
+(m%mapx every and car cars nil t)
 
 
 ;;; (some function sequence+) -> result
@@ -601,10 +603,10 @@
 ;;;
 ;;; Immediately return the first non-nil-value of an application of function,
 ;;; or nil if no applications yield non-nil.
-(mapx some or car cars nil nil)
+(m%mapx some or car cars nil nil)
 
-; undef mapx
-(defmacro mapx)
+; undef m%mapx
+(defmacro m%mapx)
 
 
 ;;; (notevery function sequence+) -> boolean
