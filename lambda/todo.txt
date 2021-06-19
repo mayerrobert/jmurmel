@@ -1,3 +1,18 @@
+https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
+For your error handling, implement two things:
+
+    Some sort of non-local jump mechanism that allows you to "return" from arbitrary points on the stack.
+    Have the interpreter call a designated function whenever an error occurs. As far as your interpreter is concerned,
+    "error handling" just means calling the error handling function, without unwinding the stack or doing anything special.
+    By #1, the error handler can "return" from the original expression that triggered the error.
+
+With those building blocks, you can implement the equivalent of Common Lisp's condition and restart system entirely in Lisp.
+If you make it possible to inspect the stack from Lisp, you also gain the ability to write a debugger in Lisp.
+
+
+
+mlib: do macro, length funktion für strings und listen, funktion (char string n) -> nter character von string
+
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
 
 --add-feature

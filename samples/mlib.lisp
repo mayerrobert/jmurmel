@@ -24,6 +24,7 @@
 ;;;     abs, zerop, evenp, oddp
 ;;;     char=
 ;;;     equal
+;;;     prog1, prog2
 ;;;     when, unless, dotimes, dolist
 ;;;     identity, constantly, complement
 ;;;     member
@@ -367,6 +368,27 @@
   (or (eql a b)
       (and (stringp a) (stringp b) (string= a b))
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
+
+
+;;; (prog1 first-form forms*) -> result-1
+;;; (prog2 first-form second-forms forms*) -> result-2
+(defmacro prog1 (first-form . forms)
+  (if forms
+        (let ((result (gensym)))
+          `(let ((,result ,first-form))
+             ,@forms
+             ,result))
+    `,first-form))
+
+(defmacro prog2 (first-form second-form . forms)
+  (if forms
+        (let ((ignore (gensym))
+              (result (gensym)))
+          `(let ((,ignore ,first-form)
+                 (,result ,second-form))
+             ,@forms
+             ,result))
+    `(progn ,first-form ,second-form)))
 
 
 ;;; (when condition forms*) -> result
