@@ -313,6 +313,17 @@
 )
 
 
+; test do
+(tests do
+  (do ((temp-one 1 (1+ temp-one))
+       (temp-two 0 (1- temp-two)))
+      ((> (- temp-one temp-two) 5) temp-one)) =>  4
+ 
+  (do ((temp-one 1 (1+ temp-one))
+       (temp-two 0 (1+ temp-one)))
+      ((= 3 temp-two) temp-one)) =>  3
+)
+
 ; test dotimes
 (tests dotimes
   (dotimes (temp-one 10 temp-one)) => 10

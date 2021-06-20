@@ -25,7 +25,7 @@
 ;;;     char=
 ;;;     equal
 ;;;     prog1, prog2
-;;;     when, unless, dotimes, dolist
+;;;     when, unless, do, dotimes, dolist
 ;;;     identity, constantly, complement
 ;;;     member
 ;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
@@ -422,6 +422,28 @@
           (car body))))
 
 
+;;; (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;;
+;;; do iterates over a group of statements while a test condition holds.
+(defmacro do (var-defs test-and-result . forms)
+  (labels ((init-form (l)
+             (if (symbolp l) (list l nil)
+               (list (car l) (cadr l))))
+
+           (step-form (l)
+             (if (symbolp l) l
+               (if (caddr l) (caddr l)
+                 (car l)))))
+
+    (let ((loop (gensym)))
+      `(let ,loop (,@(mapcar init-form var-defs))
+         (if ,(car test-and-result)
+               (progn ,@(cdr test-and-result))
+           (progn
+             ,@forms
+             (,loop ,@(mapcar step-form var-defs))))))))
+
+
 ;;; (dotimes (var count-form [result-form]) statement*) -> result
 ;;;
 ;;; Similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
@@ -747,11 +769,11 @@
                 (write-char #\ )
                 (loop)))
             (let loop ()
-               (when x
-               (write-char #\Newline)
-               (if (atom x)
-                     (pp x (1+ l)))
-                 (progn (pp (pop x) (1+ l)) (loop))))
+              (when x
+                (write-char #\Newline)
+                (if (atom x)
+                      (pp x (1+ l)))
+                  (progn (pp (pop x) (1+ l)) (loop))))
             (write-char #\))
             t))))
     (writeln)
