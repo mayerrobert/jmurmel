@@ -313,7 +313,7 @@
 )
 
 
-; test do
+; test do, do*
 (tests do
   (do ((temp-one 1 (1+ temp-one))
        (temp-two 0 (1- temp-two)))
@@ -322,7 +322,12 @@
   (do ((temp-one 1 (1+ temp-one))
        (temp-two 0 (1+ temp-one)))
       ((= 3 temp-two) temp-one)) =>  3
+
+  (do* ((temp-one 1 (1+ temp-one))
+        (temp-two 0 (1+ temp-one)))
+       ((= 3 temp-two) temp-one)) =>  2
 )
+
 
 ; test dotimes
 (tests dotimes

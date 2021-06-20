@@ -11,7 +11,7 @@ If you make it possible to inspect the stack from Lisp, you also gain the abilit
 
 
 
-mlib: do* macro, length funktion für strings und listen, funktion (char string n) -> nter character von string
+mlib: length funktion für strings und listen, funktion (char string n) -> nter character von string
 
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
 

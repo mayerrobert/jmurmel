@@ -25,7 +25,7 @@
 ;;;     char=
 ;;;     equal
 ;;;     prog1, prog2
-;;;     when, unless, do, dotimes, dolist
+;;;     when, unless, do, do*, dotimes, dolist
 ;;;     identity, constantly, complement
 ;;;     member
 ;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
@@ -165,8 +165,8 @@
 ;;;
 ;;; Without delta-form the return type of incf and decf will be
 ;;; the type of the number in place, otherwise the return type will be float.
-(m%inplace incf (1+) (+))
-(m%inplace decf (1-) (-))
+(m%inplace incf ('1+) ('+))
+(m%inplace decf ('1-) ('-))
 
 
 ;;; (*f place [delta-form]) -> new-value
@@ -423,8 +423,9 @@
 
 
 ;;; (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;; (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
 ;;;
-;;; do iterates over a group of statements while a test condition holds.
+;;; do and do* iterate over a group of statements while "end-test-form" returns nil.
 (defmacro do (var-defs test-and-result . forms)
   (labels ((init-form (l)
              (if (symbolp l) (list l nil)
@@ -442,6 +443,25 @@
            (progn
              ,@forms
              (,loop ,@(mapcar step-form var-defs))))))))
+
+(defmacro do* (var-defs test-and-result . forms)
+  (labels ((init-form (l)
+             (if (symbolp l) (list l nil)
+               (list (car l) (cadr l))))
+
+           (step-form (l)
+             (if (symbolp l) nil
+               (if (caddr l) `((setq ,(car l) ,(caddr l)))))))
+
+    (let ((loop (gensym)))
+      `(let* (,@(mapcar init-form var-defs))
+         (let ,loop ()
+           (if ,(car test-and-result)
+                 (progn ,@(cdr test-and-result))
+             (progn
+               ,@forms
+               ,@(mapcan step-form var-defs)
+               (,loop))))))))
 
 
 ;;; (dotimes (var count-form [result-form]) statement*) -> result
