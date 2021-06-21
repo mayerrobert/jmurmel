@@ -13,7 +13,7 @@
 ;;;
 ;;; Provides:
 ;;;
-;;;     caar..cdddr
+;;;     caar..cdddr, nthcdr, nth
 ;;;     rplaca*, rplacd*
 ;;;     destructuring-bind
 ;;;     setf, incf, decf
@@ -22,7 +22,7 @@
 ;;;     acons
 ;;;     not, and, or
 ;;;     abs, zerop, evenp, oddp
-;;;     char=
+;;;     char=, char
 ;;;     equal
 ;;;     prog1, prog2
 ;;;     when, unless, do, do*, dotimes, dolist
@@ -31,6 +31,7 @@
 ;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
 ;;;     every, some, notevery, notany
 ;;;     remove-if, remove
+;;;     reduce
 ;;;     write-char, terpri
 ;;;     prin1, princ, print, pprint
 ;;;
@@ -52,6 +53,15 @@
 (defun cdadr (l) (cdr (car (cdr l))))
 (defun cddar (l) (cdr (cdr (car l))))
 (defun cdddr (l) (cdr (cdr (cdr l))))
+
+
+(defun nthcdr (n l)
+  (let loop ((n n) (l l))
+    (if (<= n 0) l
+      (loop (1- n) (cdr l)))))
+
+(defun nth (n l)
+  (car (nthcdr n l)))
 
 
 ;;; (rplaca* lst value) -> value
@@ -76,6 +86,17 @@
 ;;; of expression; then destructuring-bind evaluates forms. 
 (defmacro destructuring-bind (vars expression . forms)
   `(apply (lambda ,vars ,@forms) ,expression))
+
+
+;(defmacro with-keyword-args (keywords args . body)
+;  `(let* ((args ,args)
+;          ,(let loop ((keywords keywords)
+;                      (args nil))
+;             (if keywords
+;               (let ((maybekey (member (car keywords) args)))
+;                 (if maybekey `(,(car maybekey) ,(cadr maybekey)))))))
+;             
+;     ,@body))
 
 
 ;;; (setf pair*) -> result
@@ -356,6 +377,10 @@
                   t)
             nil))
     t))
+
+
+(char (str n)
+  (nth n str))
 
 
 ;;; (equal x y) -> boolean
@@ -766,13 +791,13 @@
 ;;; based on https://picolisp.com/wiki/?prettyPrint .
 (defun pprint (x)
   (labels
-    (
-     (size (l)
+    ((size (l)
        (if l
              (if (consp l)
                    (+ (size (car l)) (size (cdr l)))
                1)
          1))
+
      (pp (x l)
         (dotimes (ign (* l 3)) (write-char #\ ))
         (if (< (size x) 6)
@@ -784,7 +809,7 @@
                 (and
                    (member
                       (princ (pop x))
-                      '(lambda let defun define defmacro setq setf if when unless dotimes dolist))
+                      '(lambda let let* letrec defun define defmacro setq setf if when unless dotimes dolist))
                    (< (size (car x)) 7))
                 (write-char #\ )
                 (loop)))
@@ -796,6 +821,7 @@
                   (progn (pp (pop x) (1+ l)) (loop))))
             (write-char #\))
             t))))
+
     (writeln)
     (pp x 0)))
 
