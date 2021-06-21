@@ -1,5 +1,6 @@
-;;; Expand macros inside a form. Only macros defined
-;;; before the form will be expanded,
+;;;; Expand macros inside a form.
+;;;
+;;; Only macros defined before the form will be expanded,
 ;;; defmacro calls within the form are not considered.
 
 (require "mlib")

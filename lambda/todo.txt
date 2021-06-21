@@ -1,10 +1,12 @@
+setf & co um nthcdr und nth erweitern
+
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
 For your error handling, implement two things:
 
-    Some sort of non-local jump mechanism that allows you to "return" from arbitrary points on the stack.
-    Have the interpreter call a designated function whenever an error occurs. As far as your interpreter is concerned,
-    "error handling" just means calling the error handling function, without unwinding the stack or doing anything special.
-    By #1, the error handler can "return" from the original expression that triggered the error.
+    1 Some sort of non-local jump mechanism that allows you to "return" from arbitrary points on the stack.
+    2 Have the interpreter call a designated function whenever an error occurs. As far as your interpreter is concerned,
+      "error handling" just means calling the error handling function, without unwinding the stack or doing anything special.
+      By #1, the error handler can "return" from the original expression that triggered the error.
 
 With those building blocks, you can implement the equivalent of Common Lisp's condition and restart system entirely in Lisp.
 If you make it possible to inspect the stack from Lisp, you also gain the ability to write a debugger in Lisp.
@@ -12,6 +14,13 @@ If you make it possible to inspect the stack from Lisp, you also gain the abilit
 
 
 mlib: length funktion für strings und listen, funktion (char string n) -> nter character von string
+mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
+-> oder zusätzlich mapXX*?
+sollte apply eine dotted list akzeptieren?
+-> oder apply*?
+&+ liefert bei integer args die summe als integer mit 2s complement wraparound, auch &- &*
+-> oder +&, -&, *&, ggf auch /& für div
+
 
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
 
@@ -55,6 +64,32 @@ evenp, oddp mit x & 0x1 machen.
 push, pop
 
 sollte mlib equal einen fallback nach Objects.equals() haben?
+
+
+
+einige samples:
+JMurmel> (->> (mapcar print 'abcde) reverse list->string)
+#\a
+#\b
+#\c
+#\d
+#\e
+==> "edcba"
+
+JMurmel> (->> '(0 1 2) print (mapcar 1+) print (mapcar (lambda (n)(expt n 2))) print (reduce +) round)
+(0 1 2)
+(1 2 3)
+(1.0 4.0 9.0)
+==> 14
+
+JMurmel> (mapcar (lambda (n) (prog1 (-> n princ (->> 1+ 1+) princ (expt 2) round princ) (terpri))) '(0 1 2 3 4 5))
+024
+139
+2416
+3525
+4636
+5749
+==> (4 9 16 25 36 49)
 
 
 
