@@ -1,4 +1,4 @@
-setf & co um nthcdr und nth erweitern
+push & co auf get-setf-expansion umstellen
 
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
 For your error handling, implement two things:

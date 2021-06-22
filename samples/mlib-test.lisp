@@ -83,6 +83,22 @@
 
   (setq x '(1 2 3)) => (1 2 3)
   (setf (car x) 11) => 11
+
+  (setq x '(0 1 2 3)) => (0 1 2 3)
+  (setq ctr 0) => 0
+  (setf (nth 2 (place x)) 222) => 222
+  x => (0 1 222 3)
+  ctr => 1
+)
+
+#+murmel
+(tests setf.murmel
+  (setf (nthcdr 3 (place x)) '(33 44 55)) => (33 44 55)
+  x => (0 1 222 33 44 55)
+  ctr => 2
+
+  (setf (nthcdr 0 x) '(0.0 1.1)) => (0.0 1.1)
+  x => (0.0 1.1)
 )
 
 

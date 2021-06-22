@@ -123,13 +123,13 @@
               ((eq 'cdddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
 
               ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              
+
               ((eq 'nthcdr op)
                (let ((idx (gensym)))
                  `((,idx        ,read-var)
-                   (,(car args) (if (< ,idx 1) (fatal (format nil "invalid place (nthcdr %s)" ,idx)) (nthcdr (1- ,idx) ,(cadr args))))
+                   (,(car args) (if (< ,idx 1) nil (nthcdr (1- ,idx) ,(cadr args))))
                    (,store-var)
-                   (rplacd* ,read-var ,store-var)
+                   (if (< ,idx 1) (setf ,(cadr args) ,store-var) (rplacd* ,read-var ,store-var))
                    (cdr ,read-var))))
 
               (t (fatal "only symbols, car..cdddr, nth and nthcdr are supported for 'place'")))))))
@@ -159,7 +159,8 @@
                 (if (symbolp (car args))
                       `(setq ,(car args) ,(cadr args))
                   (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
-                    `(let* (,@(mapcar list vars vals) (,(car store-vars) ,@(cdr args)))
+                    `(let* (,@(mapcar list vars vals)
+                            (,(car store-vars) ,@(cdr args)))
                        ,writer-form))))
           (fatal "odd number of arguments to setf"))))
 
