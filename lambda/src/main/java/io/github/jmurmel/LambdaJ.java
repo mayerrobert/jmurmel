@@ -3551,18 +3551,18 @@ public class LambdaJ {
                 final Object exp = parser.readObj(true);
 
                 if (exp == null && parser.look == EOF
-                    || exp != null && ":q"  .equals(exp.toString())) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                    || exp != null && ":q"  .equalsIgnoreCase(exp.toString())) { System.out.println("bye."); System.out.println();  System.exit(0); }
                 if (exp != null) {
-                    if (":h"      .equals(exp.toString())) { showHelp();  continue; }
-                    if (":echo"   .equals(exp.toString())) { echoHolder.value = true; continue; }
-                    if (":noecho" .equals(exp.toString())) { echoHolder.value = false; continue; }
-                    if (":env"    .equals(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                    if (":res"    .equals(exp.toString())) { isInit = false; history.clear();  continue; }
-                    if (":l"      .equals(exp.toString())) { listHistory(history); continue; }
-                    if (":w"      .equals(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equals(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false)); continue; }
-                    if (":r"      .equals(exp.toString())) { runForms(parser, history, interpreter); continue; }
-                    if (":jar"    .equals(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":h"      .equalsIgnoreCase(exp.toString())) { showHelp();  continue; }
+                    if (":echo"   .equalsIgnoreCase(exp.toString())) { echoHolder.value = true; continue; }
+                    if (":noecho" .equalsIgnoreCase(exp.toString())) { echoHolder.value = false; continue; }
+                    if (":env"    .equalsIgnoreCase(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
+                    if (":res"    .equalsIgnoreCase(exp.toString())) { isInit = false; history.clear();  continue; }
+                    if (":l"      .equalsIgnoreCase(exp.toString())) { listHistory(history); continue; }
+                    if (":w"      .equalsIgnoreCase(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
+                    if (":java"   .equalsIgnoreCase(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":r"      .equalsIgnoreCase(exp.toString())) { runForms(parser, history, interpreter); continue; }
+                    if (":jar"    .equalsIgnoreCase(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
                 }
