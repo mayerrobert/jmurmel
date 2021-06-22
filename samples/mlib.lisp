@@ -16,6 +16,7 @@
 ;;;     caar..cdddr, nthcdr, nth
 ;;;     rplaca*, rplacd*
 ;;;     destructuring-bind
+;;;     get-setf-expansion
 ;;;     setf, incf, decf
 ;;;     *f, /f, +f, -f
 ;;;     push, pop
@@ -99,6 +100,41 @@
 ;     ,@body))
 
 
+;;; (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
+(defun get-setf-expansion (place)
+  (let ((read-var (gensym)) (store-var (gensym)))
+    (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
+      (let ((op (car place))
+            (args (cdr place)))
+        (cond ((eq   'car op)  `((,read-var) (        ,@args ) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq  'caar op)  `((,read-var) ((   car ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq  'cadr op)  `((,read-var) ((   cdr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq 'caaar op)  `((,read-var) ((  caar ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq 'caadr op)  `((,read-var) ((  cadr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq 'cadar op)  `((,read-var) ((  cdar ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq 'caddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+
+              ((eq   'cdr op)  `((,read-var) (        ,@args ) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq  'cdar op)  `((,read-var) ((   car ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq  'cddr op)  `((,read-var) ((   cdr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cdaar op)  `((,read-var) ((  caar ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cdadr op)  `((,read-var) ((  cadr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cddar op)  `((,read-var) ((  cdar ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cdddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+
+              ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              
+              ((eq 'nthcdr op)
+               (let ((idx (gensym)))
+                 `((,idx        ,read-var)
+                   (,(car args) (if (< ,idx 1) (fatal (format nil "invalid place (nthcdr %s)" ,idx)) (nthcdr (1- ,idx) ,(cadr args))))
+                   (,store-var)
+                   (rplacd* ,read-var ,store-var)
+                   (cdr ,read-var))))
+
+              (t (fatal "only symbols, car..cdddr, nth and nthcdr are supported for 'place'")))))))
+
+
 ;;; (setf pair*) -> result
 ;;;
 ;;; Takes pairs of arguments like SETQ. The first is a place and the second
@@ -119,29 +155,12 @@
                                     (if (cddr args)
                                           (loop (cddr args))))
                           (fatal "odd number of arguments to setf"))))
+
                 (if (symbolp (car args))
                       `(setq ,(car args) ,(cadr args))
-                  (let* ((place (car args))
-                         (place-op (car place))
-                         (place-args (cdr place))
-                         (value (cdr args)))
-                    (cond ((eq 'car   place-op) `(rplaca*       ,@place-args  ,@value))
-                          ((eq 'caar  place-op) `(rplaca* (car  ,@place-args) ,@value))
-                          ((eq 'cadr  place-op) `(rplaca* (cdr  ,@place-args) ,@value))
-                          ((eq 'caaar place-op) `(rplaca* (caar ,@place-args) ,@value))
-                          ((eq 'caadr place-op) `(rplaca* (cadr ,@place-args) ,@value))
-                          ((eq 'cadar place-op) `(rplaca* (cdar ,@place-args) ,@value))
-                          ((eq 'caddr place-op) `(rplaca* (cddr ,@place-args) ,@value))
-
-                          ((eq 'cdr   place-op) `(rplacd*       ,@place-args  ,@value))
-                          ((eq 'cdar  place-op) `(rplacd* (car  ,@place-args) ,@value))
-                          ((eq 'cddr  place-op) `(rplacd* (cdr  ,@place-args) ,@value))
-                          ((eq 'cdaar place-op) `(rplacd* (caar ,@place-args) ,@value))
-                          ((eq 'cdadr place-op) `(rplacd* (cadr ,@place-args) ,@value))
-                          ((eq 'cddar place-op) `(rplacd* (cdar ,@place-args) ,@value))
-                          ((eq 'cdddr place-op) `(rplacd* (cddr ,@place-args) ,@value))
-
-                          (t (fatal "only symbols and car..cdddr are supported for 'place'"))))))
+                  (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
+                    `(let* (,@(mapcar list vars vals) (,(car store-vars) ,@(cdr args)))
+                       ,writer-form))))
           (fatal "odd number of arguments to setf"))))
 
 
@@ -379,7 +398,7 @@
     t))
 
 
-(char (str n)
+(defun char (str n)
   (nth n str))
 
 
