@@ -1,8 +1,6 @@
 (funcall (lambda nil)) geht in sbcl, liefert nil
 -> ((lambda nil)) sollte in murmel gehen, liefert aber "Error: lambda: expected 2 arguments or more but got only 1" bzw npe im compiler
 
-push & co auf get-setf-expansion umstellen
-
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
 For your error handling, implement two things:
 

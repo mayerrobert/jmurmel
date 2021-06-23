@@ -1069,3 +1069,5 @@ murmel-test automatisch laufen lassen, am ende ggf. fatal
 =, <, > usw behandeln NaN nicht richtig:
 
 let loop sollte auch 0 bindings akzeptieren
+
+push & co auf get-setf-expansion umstellen

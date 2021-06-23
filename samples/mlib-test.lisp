@@ -104,6 +104,15 @@
   (incf n 0.5) =>  2.5
   (decf n) =>  1.5
   n =>  1.5
+  
+  (setq x '(0)) => (0)
+  (setq ctr 0) => 0
+  (incf (car (place x))) => 1
+  ctr => 1
+
+  (setq ctr 0) => 0
+  (incf (car (place x)) 2.0) => 3.0
+  ctr => 1
 )
 
 

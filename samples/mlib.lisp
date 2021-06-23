@@ -159,31 +159,15 @@
 
 ; Helper macro to generate defmacro's for inplace modification macros.
 (defmacro m%inplace (name noarg arg)
-`(defmacro ,name (place . delta-form)
-  (if (symbolp place)
-        `(setq ,place ,(if delta-form `(,,@arg ,place ,(car delta-form)) `(,,@noarg ,place)))
-    (let* ((tmp (gensym))
-           (place-op (car place))
-           (place-args (cdr place))
-           (delta (if delta-form `(,,@arg (,place-op ,tmp) ,(car delta-form)) `(,,@noarg (,place-op ,tmp)))))
-      `(let ((,tmp ,(cadr place)))
-         ,(cond ((eq 'car   place-op) `(rplaca*       ,tmp  ,delta))
-                ((eq 'caar  place-op) `(rplaca* (car  ,tmp) ,delta))
-                ((eq 'cadr  place-op) `(rplaca* (cdr  ,tmp) ,delta))
-                ((eq 'caaar place-op) `(rplaca* (caar ,tmp) ,delta))
-                ((eq 'caadr place-op) `(rplaca* (cadr ,tmp) ,delta))
-                ((eq 'cadar place-op) `(rplaca* (cdar ,tmp) ,delta))
-                ((eq 'caddr place-op) `(rplaca* (cddr ,tmp) ,delta))
-
-                ((eq 'cdr   place-op) `(rplacd*       ,tmp  ,delta))
-                ((eq 'cdar  place-op) `(rplacd* (car  ,tmp) ,delta))
-                ((eq 'cddr  place-op) `(rplacd* (cdr  ,tmp) ,delta))
-                ((eq 'cdaar place-op) `(rplacd* (caar ,tmp) ,delta))
-                ((eq 'cdadr place-op) `(rplacd* (cadr ,tmp) ,delta))
-                ((eq 'cddar place-op) `(rplacd* (cdar ,tmp) ,delta))
-                ((eq 'cdddr place-op) `(rplacd* (cddr ,tmp) ,delta))
-
-                (t (fatal "only symbols and car..cdddr are supported for 'place'"))))))))
+  `(defmacro ,name (place . delta-form)
+    (if (symbolp place)
+          `(setq ,place ,(if delta-form `(,,@arg ,place ,(car delta-form)) `(,,@noarg ,place)))
+      (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+          `(let* (,@(mapcar list vars vals)
+                 (,(car store-vars) ,(if delta-form
+                                           `(,,@arg ,reader-form ,(car delta-form))
+                                       `(,,@noarg ,reader-form))))
+             ,writer-form)))))
 
 
 ;;; (incf place [delta-form]) -> new-value
