@@ -91,16 +91,6 @@
   ctr => 1
 )
 
-#+murmel
-(tests setf.murmel
-  (setf (nthcdr 3 (place x)) '(33 44 55)) => (33 44 55)
-  x => (0 1 222 33 44 55)
-  ctr => 2
-
-  (setf (nthcdr 0 x) '(0.0 1.1)) => (0.0 1.1)
-  x => (0.0 1.1)
-)
-
 
 ;;; test incf, decf, todo: *f, /f, +f and -f
 (define n 0)
@@ -182,6 +172,15 @@
   (setq ctr 0) => 0
   (pop (cddr (place llst))) => 2
   llst => (1 11 3)
+  ctr => 1
+)
+
+
+(tests push-pop.2
+  (setq llst '((1))) => ((1))
+  (setq ctr 0) => 0
+  (push 11 (cdr (car (place llst)))) => (11)
+  llst => ((1 11))
   ctr => 1
 )
 

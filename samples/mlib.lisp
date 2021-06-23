@@ -124,15 +124,7 @@
 
               ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
 
-              ((eq 'nthcdr op)
-               (let ((idx (gensym)))
-                 `((,idx        ,read-var)
-                   (,(car args) (if (< ,idx 1) nil (nthcdr (1- ,idx) ,(cadr args))))
-                   (,store-var)
-                   (if (< ,idx 1) (setf ,(cadr args) ,store-var) (rplacd* ,read-var ,store-var))
-                   (cdr ,read-var))))
-
-              (t (fatal "only symbols, car..cdddr, nth and nthcdr are supported for 'place'")))))))
+              (t (fatal "only symbols, car..cdddr and nth are supported for 'place'")))))))
 
 
 ;;; (setf pair*) -> result
@@ -258,27 +250,10 @@
 (defmacro push (item place)
   (if (symbolp place)
         `(setq ,place (cons ,item ,place))
-    (let ((tmp (gensym))
-          (place-op (car place)))
-      `(let ((,tmp ,(cadr place)))
-         ,(cond ((eq   'car place-op) `(rplaca*       ,tmp  (cons ,item (,place-op ,tmp))))
-                ((eq  'caar place-op) `(rplaca* ( car ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq  'cadr place-op) `(rplaca* ( cdr ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'caaar place-op) `(rplaca* (caar ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'caadr place-op) `(rplaca* (cadr ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'cadar place-op) `(rplaca* (cdar ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'caddr place-op) `(rplaca* (cddr ,tmp) (cons ,item (,place-op ,tmp))))
-
-                ((eq   'cdr place-op) `(rplacd*       ,tmp  (cons ,item (,place-op ,tmp))))
-                ((eq  'cdar place-op) `(rplacd* ( car ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq  'cddr place-op) `(rplacd* ( cdr ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'cdaar place-op) `(rplacd* (caar ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'cdadr place-op) `(rplacd* (cadr ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'cddar place-op) `(rplacd* (cdar ,tmp) (cons ,item (,place-op ,tmp))))
-                ((eq 'cdddr place-op) `(rplacd* (cddr ,tmp) (cons ,item (,place-op ,tmp))))
-
-                (t (fatal "only symbols and car..cdddr are supported for 'place'")))))))
-
+    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+      `(let* (,@(mapcar list vars vals)
+              (,(car store-vars) (cons ,item ,reader-form)))
+         ,writer-form))))
 
 ;;; (pop place) -> element
 ;;;
@@ -286,32 +261,17 @@
 ;;; was retrieved, writes the cdr of the list back into the place,
 ;;; and finally yields the car of the originally retrieved list.
 (defmacro pop (place)
-  (if (symbolp place)
-        (let ((result (gensym)))
+  (let ((result (gensym)))
+    (if (symbolp place)
           `(let ((,result (car ,place)))
              (setq ,place (cdr ,place))
-             ,result))
-    (let ((lst (gensym))
-          (result (gensym))
-          (place-op (car place))
-          (place-args (cdr place)))
-      (cond ((eq   'car place-op) `(let* ((,lst       ,@place-args)  (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq  'caar place-op) `(let* ((,lst  (car ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq  'cadr place-op) `(let* ((,lst  (cdr ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'caaar place-op) `(let* ((,lst (caar ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'caadr place-op) `(let* ((,lst (cadr ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'cadar place-op) `(let* ((,lst (cdar ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-            ((eq 'caddr place-op) `(let* ((,lst (cddr ,@place-args)) (,result (caar ,lst)))  (rplaca ,lst (cdar ,lst)) ,result))
-
-            ((eq   'cdr place-op) `(let* ((,lst       ,@place-args)  (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq  'cdar place-op) `(let* ((,lst  (car ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq  'cddr place-op) `(let* ((,lst  (cdr ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cdaar place-op) `(let* ((,lst (caar ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cdadr place-op) `(let* ((,lst (cadr ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cddar place-op) `(let* ((,lst (cdar ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-            ((eq 'cdddr place-op) `(let* ((,lst (cddr ,@place-args)) (,result (cadr ,lst)))  (rplacd ,lst (cddr ,lst)) ,result))
-
-            (t (fatal "only symbols, car..cdddr are supported for 'place'"))))))
+             ,result)
+      (destructuring-bind (vars vals new writer-form reader-form) (get-setf-expansion place)
+        `(let* (,@(mapcar list vars vals)
+                (,@new (cdr ,reader-form))
+                (,result (car ,reader-form)))
+           ,writer-form
+           ,result)))))
 
 
 ;;; (acons key datum alist) -> new-alist
