@@ -13,7 +13,6 @@ If you make it possible to inspect the stack from Lisp, you also gain the abilit
 
 
 
-mlib: length funktion für strings und listen, funktion (char string n) -> nter character von string
 mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
 -> oder zusätzlich mapXX*?
 sollte apply eine dotted list akzeptieren?

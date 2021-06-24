@@ -35,6 +35,7 @@
 ;;;     reduce
 ;;;     write-char, terpri
 ;;;     prin1, princ, print, pprint
+;;;     list-length, length
 ;;;
 ;;;     with-gensyms
 ;;;     ->, -->, and->, and-->
@@ -788,6 +789,35 @@
 
     (writeln)
     (pp x 0)))
+
+
+;;; (list-length list-or-string) -> length
+;;;
+;;; Returns the length of list-or-string if it is a string or proper list.
+;;; Returns nil if list is a circular list.
+;;;
+;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
+;;; list-length could be implemented as follows:
+(defun list-length (x) 
+  (let loop ((n 0)         ; Counter 
+             (fast x)      ; Fast pointer: leaps by 2 
+             (slow x))     ; Slow pointer: leaps by 1 
+    ;; If fast pointer hits the end, return the count. 
+    (if (null fast) n
+      (if (null (cdr fast)) (1+ n)
+        ;; If fast pointer eventually equals slow pointer, 
+        ;;  then we must be stuck in a circular list. 
+        ;; (A deeper property is the converse: if we are 
+        ;;  stuck in a circular list, then eventually the 
+        ;;  fast pointer will equal the slow pointer. 
+        ;;  That fact justifies this implementation.) 
+        (if (and (eq fast slow) (> n 0)) nil
+          (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
+
+
+;;; (length sequence) -> length
+(defun length (s)
+  (list-length s))
 
 
 ;;; (with-gensyms (names*) forms*) -> result
