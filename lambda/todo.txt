@@ -1,3 +1,6 @@
+samples umsortieren: samples.murmel und samples.mlib
+-> gabriel vielleicht in beiden, in samples.mlib brauchts weniger anpassungen
+
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
 
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/

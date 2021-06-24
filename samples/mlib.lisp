@@ -361,7 +361,7 @@
 
 
 ;;; (prog1 first-form forms*) -> result-1
-;;; (prog2 first-form second-forms forms*) -> result-2
+;;; (prog2 first-form second-form forms*) -> result-2
 (defmacro prog1 (first-form . forms)
   (if forms
         (let ((result (gensym)))
