@@ -1071,3 +1071,6 @@ murmel-test automatisch laufen lassen, am ende ggf. fatal
 let loop sollte auch 0 bindings akzeptieren
 
 push & co auf get-setf-expansion umstellen
+
+(funcall (lambda nil)) geht in sbcl, liefert nil
+-> ((lambda nil)) sollte in murmel gehen, liefert aber "Error: lambda: expected 2 arguments or more but got only 1" bzw npe im compiler

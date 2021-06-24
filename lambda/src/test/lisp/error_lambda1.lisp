@@ -1,6 +1,6 @@
 ; no formal parameter list
 
-; error: lambda: expected 2 arguments or more but got only 1
+; error: lambda: expected a symbol or a list of symbols but got ((quote hello))
 
 ((lambda (write (quote hello)))
    (quote aaa))

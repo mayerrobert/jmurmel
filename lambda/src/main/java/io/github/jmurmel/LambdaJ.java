@@ -1334,7 +1334,7 @@ public class LambdaJ {
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     // shortcut for (define symbol (lambda (params...) forms...))
                     if (operator == sDefun) {
-                        nArgs("defun", arguments, 3);
+                        nArgs("defun", arguments, 2);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
                         continue tailcall;
                     }
@@ -1570,9 +1570,9 @@ public class LambdaJ {
                             catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
 
                         } else if (consp(func) && car(func) == sLambda) {
-                            final Object lambda = cdr(func);          // (params . (forms...))
-                            nArgs("lambda application", lambda, 2);
+                            final Object lambda = cdr(func);          // ((params...) (forms...))
                             final ConsCell closure = ((ConsCell)func).closure();
+                            if (closure == null) nArgs("lambda application", lambda, 1); // if closure != null then it was created by the special form lambda, no need to check again
                             env = zip(closure != null ? closure : env, car(lambda), argList);
 
                             if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
@@ -1733,12 +1733,12 @@ public class LambdaJ {
 
         if (car(paramsAndForms) == sDynamic) {
             final Object _paramsAndForms = cdr(paramsAndForms);
-            nArgs("lambda dynamic", _paramsAndForms, 2);
+            nArgs("lambda dynamic", _paramsAndForms, 1);
             symbolArgs("lambda dynamic", car(_paramsAndForms));
             noDuplicates(car(_paramsAndForms));
             return cons(sLambda, _paramsAndForms);
         }
-        nArgs("lambda", paramsAndForms, 2);
+        nArgs("lambda", paramsAndForms, 1);
         symbolArgs("lambda", car(paramsAndForms));
         noDuplicates(car(paramsAndForms));
 
@@ -4832,6 +4832,8 @@ public class LambdaJ {
         /// formsToJava - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms */
         private void formsToJava(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
+            if (forms == null) return; // e.g. the body of an empty lambda or function
+
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 final Object form = it.next();
@@ -5027,7 +5029,7 @@ public class LambdaJ {
 
         /** args = ((sym...) form...) */
         private void lambdaToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
+            sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(" = null;\n");
             final String expr = "(lambda " + printSEx(car(args)) + ')';
             env = params(sb, car(args), env, rsfx, expr);
             formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false);

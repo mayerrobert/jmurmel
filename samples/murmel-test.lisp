@@ -88,10 +88,15 @@
 
 ;;; Tests
 
+;;; test lambda
+#+murmel (deftest lambda.1 ((lambda nil)) nil)
+
+
 ;;; test letXX
 (deftest let.1 (let () 1) 1)
 (deftest let.2 (let* () 2) 2)
 #+murmel (deftest let.3 (letrec () 3) 3)
+
 
 ;;; test named letXX
 #+murmel (deftest namedlet.1 (let loop () (if nil (loop)) 2) 2)
