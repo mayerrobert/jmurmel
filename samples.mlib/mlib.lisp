@@ -1,9 +1,11 @@
-;;;; Default library for Murmel
+;;;; === mlib - default library for Murmel
+;;;
+;;; mlib adds common Lisp functions and macros to the core Murmel language.
 ;;;
 ;;; mlib's functions are modeled after Common Lisp, (often with reduced
 ;;; functionality) plus some additional macros and functions.
 ;;;
-;;; Usage:
+;;; = Usage:
 ;;;
 ;;; Copy mlib.lisp into the directory containing jmurmel.jar
 ;;; or into the directory specified with --libdir
@@ -11,7 +13,7 @@
 ;;;
 ;;;     (require "mlib")
 ;;;
-;;; Provides:
+;;; = Provides:
 ;;;
 ;;;     caar..cdddr, nthcdr, nth
 ;;;     rplaca*, rplacd*
@@ -41,6 +43,7 @@
 ;;;     ->, -->, and->, and-->
 
 
+;;; = caar..cdddr
 (defun  caar (l) (car (car l)))
 (defun  cadr (l) (car (cdr l)))
 (defun  cdar (l) (cdr (car l)))
@@ -57,6 +60,7 @@
 (defun cdddr (l) (cdr (cdr (cdr l))))
 
 
+;;; = nthcdr, nth
 (defun nthcdr (n l)
   (let loop ((n n) (l l))
     (if (<= n 0) l
@@ -66,19 +70,22 @@
   (car (nthcdr n l)))
 
 
-;;; (rplaca* lst value) -> value
+;;; = rplaca
+;;;     (rplaca* lst value) -> value
 ;;;
 ;;; Replace the car of lst by value and return value.
 (defun rplaca* (l v) (rplaca l v) v)
 
 
-;;; (rplacd* lst value) -> value
+;;; = rplacd
+;;;     (rplacd* lst value) -> value
 ;;;
 ;;; Replace the cdr of lst by value and return value.
 (defun rplacd* (l v) (rplacd l v) v)
 
 
-;;; (destructuring-bind vars expression forms*)
+;;; = destructuring-bind
+;;;     (destructuring-bind (vars*) (expressions*) forms*)
 ;;;
 ;;; Murmel's destructuring-bind is a subset of CL's destructuring-bind,
 ;;; trees are not supported, only lists are.
@@ -101,7 +108,8 @@
 ;     ,@body))
 
 
-;;; (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
+;;; = get-setf-expansion
+;;;     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
 (defun get-setf-expansion (place)
   (let ((read-var (gensym)) (store-var (gensym)))
     (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
@@ -128,7 +136,8 @@
               (t (fatal "only symbols, car..cdddr and nth are supported for 'place'")))))))
 
 
-;;; (setf pair*) -> result
+;;; = setf
+;;;     (setf pair*) -> result
 ;;;
 ;;; Takes pairs of arguments like SETQ. The first is a place and the second
 ;;; is the value that is supposed to go into that place. Returns the last
@@ -171,8 +180,9 @@
              ,writer-form)))))
 
 
-;;; (incf place [delta-form]) -> new-value
-;;; (decf place [delta-form]) -> new-value
+;;; = incf, decf
+;;;     (incf place [delta-form]) -> new-value
+;;;     (decf place [delta-form]) -> new-value
 ;;;
 ;;; incf and decf are used for incrementing and decrementing
 ;;; the value of place, respectively.
@@ -187,8 +197,9 @@
 (m%inplace decf ('1-) ('-))
 
 
-;;; (*f place [delta-form]) -> new-value
-;;; (/f place [delta-form]) -> new-value
+;;; = *f, /f
+;;;     (*f place [delta-form]) -> new-value
+;;;     (/f place [delta-form]) -> new-value
 ;;;
 ;;; *f and /f are used for multiplying and dividing
 ;;; the value of place, respectively.
@@ -206,8 +217,9 @@
 (m%inplace /f (/) (/))
 
 
-;;; (+f place [delta-form]) -> new-value
-;;; (-f place [delta-form]) -> new-value
+;;; = +f, -f
+;;;     (+f place [delta-form]) -> new-value
+;;;     (-f place [delta-form]) -> new-value
 ;;;
 ;;; +f and +f are used for adding and subtracting
 ;;; to/ from the value of place, respectively.
@@ -228,7 +240,8 @@
 (defmacro m%inplace)
 
 
-;;; (push item place) -> new-place-value
+;;; = push
+;;;     (push item place) -> new-place-value
 ;;;
 ;;; push prepends item to the list that is stored in place,
 ;;; stores the resulting list in place, and returns the list.
@@ -240,7 +253,9 @@
               (,(car store-vars) (cons ,item ,reader-form)))
          ,writer-form))))
 
-;;; (pop place) -> element
+
+;;; = pop
+;;;     (pop place) -> element
 ;;;
 ;;; pop reads the value of place, remembers the car of the list which
 ;;; was retrieved, writes the cdr of the list back into the place,
@@ -259,7 +274,8 @@
            ,result)))))
 
 
-;;; (acons key datum alist) -> new-alist
+;;; = acons
+;;;     (acons key datum alist) -> new-alist
 ;;;
 ;;; Prepends alist with a new (key . datum) tuple
 ;;; and returns the modified list.
@@ -267,14 +283,16 @@
   (cons (cons key datum) alist))
 
 
-;;; (not form) -> boolean
+;;; = not
+;;;     (not form) -> boolean
 ;;;
 ;;; Logical not.
 (defun not (e)
   (null e))
 
 
-;;; (and forms*) -> boolean
+;;; = and
+;;;     (and forms*) -> boolean
 ;;;
 ;;; Short-circuiting logical and.
 ;;; Return T unless any of the forms evaluate to NIL,
@@ -288,7 +306,8 @@
      t))
 
 
-;;; (or forms*) -> result
+;;; = or
+;;;     (or forms*) -> result
 ;;;
 ;;; Short-circuiting logical or.
 ;;; Return NIL unless any of the forms evaluate to non-NIL,
@@ -305,32 +324,37 @@
      nil))
 
 
-;;; (abs n) -> result
+;;; = abs
+;;;     (abs n) -> result
 ;;;
 ;;; Return the absoute value of a number.
 (defun abs (n)
   (if (< n 0) (- n) (+ n)))
 
 
-;;; (zerop number) -> boolean
+;;; = zerop
+;;;     (zerop number) -> boolean
 ;;;
 ;;; Is this number zero?
 (defun zerop (n) (= n 0))
 
 
-;;; (evenp number) -> boolean
+;;; = evenp
+;;;     (evenp number) -> boolean
 ;;;
 ;;; Is this number even?
 (defun evenp (n) (= 0.0 (mod n 2)))
 
 
-;;; (oddp number) -> boolean
+;;; = oddp
+;;;     (oddp number) -> boolean
 ;;;
 ;;; Is this number odd?
 (defun oddp (n) (= 1.0 (mod n 2)))
 
 
-;;; (char= characters+) -> boolean
+;;; = char=
+;;;     (char= characters+) -> boolean
 ;;;
 ;;; Return t if all of the arguments are the same character
 (defun char= (c . more)
@@ -344,11 +368,14 @@
     t))
 
 
+;;; = char
+;;;     (char string n) -> nth-character
 (defun char (str n)
   (nth n str))
 
 
-;;; (equal x y) -> boolean
+;;; = equal
+;;;     (equal x y) -> boolean
 ;;;
 ;;; Return t if any of the following is true
 ;;; a and b are eql
@@ -360,8 +387,9 @@
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
-;;; (prog1 first-form forms*) -> result-1
-;;; (prog2 first-form second-form forms*) -> result-2
+;;; = prog1, prog2
+;;;     (prog1 first-form forms*) -> result-1
+;;;     (prog2 first-form second-form forms*) -> result-2
 (defmacro prog1 (first-form . forms)
   (if forms
         (let ((result (gensym)))
@@ -381,7 +409,8 @@
     `(progn ,first-form ,second-form)))
 
 
-;;; (when condition forms*) -> result
+;;; = when
+;;;     (when condition forms*) -> result
 ;;;
 ;;; Execute forms if condition evaluates to true
 ;;; and return the result of the last form if any
@@ -396,7 +425,8 @@
           (car body))))
 
 
-;;; (unless condition forms*) -> result
+;;; = unless
+;;;     (unless condition forms*) -> result
 ;;;
 ;;; Execute forms if condition evaluates to false
 ;;; and return the result of the last form if any
@@ -412,8 +442,9 @@
           (car body))))
 
 
-;;; (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
-;;; (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;; = do, do*
+;;;     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;;     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
 ;;;
 ;;; do and do* iterate over a group of statements while "end-test-form" returns nil.
 (defmacro do (var-defs test-and-result . forms)
@@ -454,7 +485,8 @@
                (,loop))))))))
 
 
-;;; (dotimes (var count-form [result-form]) statement*) -> result
+;;; = dotimes
+;;;     (dotimes (var count-form [result-form]) statement*) -> result
 ;;;
 ;;; Similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
 (defmacro dotimes (exp . body)
@@ -473,7 +505,8 @@
                (,loop (1+ ,var)))))))))
 
 
-;;; (dolist (var list-form [result-form]) statement*) -> result
+;;; = dolist
+;;;     (dolist (var list-form [result-form]) statement*) -> result
 ;;;
 ;;; Similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
 (defmacro dolist (exp . body)
@@ -498,13 +531,15 @@
 ;        (loop))))
 
 
-;;;  (identity object) -> object
+;;; = identity
+;;;     (identity object) -> object
 ;;;
 ;;; Returns its argument object.
 (defun identity (x) x)
 
 
-;;; (constantly value) -> function
+;;; = constantly
+;;;     (constantly value) -> function
 ;;;
 ;;; constantly returns a function that accepts any number of arguments,
 ;;; that has no side-effects, and that always returns value. 
@@ -512,7 +547,8 @@
   (lambda arguments value))
 
 
-;;; (complement function) -> complement-function
+;;; = complement
+;;;     (complement function) -> complement-function
 ;;;
 ;;; complement returns a function that takes the same arguments as function,
 ;;; and has the same side-effect behavior as function, but returns only
@@ -523,7 +559,8 @@
     (null (apply f arguments))))
 
 
-;;; (member item list [test]) -> tail
+;;; = member
+;;;     (member item list [test]) -> tail
 ;;;
 ;;; member searches list for item or for a top-level element that
 ;;; satisfies the test.
@@ -532,6 +569,7 @@
 ;;; If "test" was omitted or nil then "eql" will be used.
 ;;;
 ;;; Example usage:
+;;;
 ;;;     (member 2 '(1 2 3))
 ;;;         ; => (2 3)
 ;;;     (member 'e '(a b c d))
@@ -552,7 +590,8 @@
       nil)))
 
 
-;;; (reverse sequence) -> reversed-sequence
+;;; = reverse
+;;;     (reverse sequence) -> reversed-sequence
 ;;;
 ;;; If sequence is a list then return a fresh list
 ;;; with elements in reversed order, if sequence
@@ -588,7 +627,8 @@
     ,@(when return-list '(l))))
 
 
-;;; (mapcar function sequence+) -> list
+;;; = mapcar
+;;;     (mapcar function sequence+) -> list
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent items of the given sequences.
@@ -597,7 +637,8 @@
 (m%mapx mapcar  cons    car cars nil nil)
 
 
-;;; (maplist function sequence+) -> list
+;;; = maplist
+;;;     (maplist function sequence+) -> list
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
@@ -607,20 +648,24 @@
 (m%mapx maplist cons    nil nil nil nil)
 
 
-;;; (mapc function sequence+) -> first-arg-list
+;;; = mapc
+;;;     (mapc function sequence+) -> first-arg
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent cars items of the given sequences.
 (m%mapx mapc    progn   car cars t nil)
 
 
-;;; (mapl function sequence+) -> first-arg-list
+;;; = mapl
+;;;     (mapl function sequence+) -> first-arg
+;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
 (m%mapx mapl    progn   nil nil t nil)
 
 
-;;; (mapcan function sequence+) -> concatenated-results
+;;; = mapcan
+;;;     (mapcan function sequence+) -> concatenated-results
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent items of the given sequences.
@@ -630,7 +675,8 @@
 (m%mapx mapcan  append  car cars nil nil)
 
 
-;;; (mapcon function sequence+) -> concatenated-results
+;;; = mapcon
+;;;     (mapcon function sequence+) -> concatenated-results
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
@@ -640,7 +686,8 @@
 (m%mapx mapcon  append  nil nil nil nil)
 
 
-;;; (every function sequence+) -> boolean
+;;; = every
+;;;     (every function sequence+) -> boolean
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
@@ -650,7 +697,8 @@
 (m%mapx every and car cars nil t)
 
 
-;;; (some function sequence+) -> result
+;;; = some
+;;;     (some function sequence+) -> result
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
@@ -663,7 +711,8 @@
 (defmacro m%mapx)
 
 
-;;; (notevery function sequence+) -> boolean
+;;; = notevery
+;;;     (notevery function sequence+) -> boolean
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
@@ -673,7 +722,8 @@
   (not (apply some (cons f (cons seq more)))))
 
 
-;;; (notany function sequence+) -> boolean
+;;; = notany
+;;;     (notany function sequence+) -> boolean
 ;;;
 ;;; "Function" must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
@@ -683,7 +733,8 @@
   (not (apply every (cons f (cons seq more)))))
 
 
-;;; (remove pred list) -> list
+;;; = remove-if
+;;;     (remove-if pred list) -> list
 ;;;
 ;;; Return a fresh list without the elements for which pred
 ;;; evaluates to non-nil.
@@ -696,7 +747,8 @@
     nil))
 
 
-;;; (remove elem list) -> list
+;;; = remove
+;;;     (remove elem list) -> list
 ;;;
 ;;; Return a fresh list without occurrences of elem.
 ;;; An occurrence is determined by eql.
@@ -709,7 +761,8 @@
     nil))
 
 
-;;; (reduce func sequence [from-end-p]) -> result
+;;; = reduce
+;;;     (reduce func sequence [from-end-p]) -> result
 ;;;
 ;;; If sequence is empty then "reduce" will return (f).
 ;;;
@@ -742,15 +795,22 @@
       (f))))
 
 
+;;; = write-char
 (defun write-char (c) (format t "%s" c))
 
+
+;;; = terpri, prin1, princ, print
 (defun terpri () (writeln) nil)
+
 (defun prin1 (o) (write o) o)
+
 (defun princ (o) (format t "%s" o) o)
+
 (defun print (o) (lnwrite o) o)
 
 
-;;; (pprint object) -> t
+;;; = pprint
+;;;     (pprint object) -> t
 ;;;
 ;;; Simple pretty printer,
 ;;; based on https://picolisp.com/wiki/?prettyPrint .
@@ -791,13 +851,13 @@
     (pp x 0)))
 
 
-;;; (list-length list-or-string) -> length
+;;; = list-length
+;;;     (list-length list-or-string) -> length
 ;;;
 ;;; Returns the length of list-or-string if it is a string or proper list.
 ;;; Returns nil if list is a circular list.
 ;;;
 ;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-;;; list-length could be implemented as follows:
 (defun list-length (x) 
   (let loop ((n 0)         ; Counter 
              (fast x)      ; Fast pointer: leaps by 2 
@@ -815,12 +875,14 @@
           (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
 
 
-;;; (length sequence) -> length
+;;; = length
+;;;     (length sequence) -> length
 (defun length (s)
   (list-length s))
 
 
-;;; (with-gensyms (names*) forms*) -> result
+;;; = with-gensyms
+;;;     (with-gensyms (names*) forms*) -> result
 ;;;
 ;;; "with-gensyms" is a macro commonly used by Common Lispers
 ;;; to help with avoiding name capture when writing macros.
@@ -832,7 +894,8 @@
      ,@body))
 
 
-;;; (-> forms*) -> result
+;;; = ->
+;;;     (-> forms*) -> result
 ;;;
 ;;; thread-first, inspired by https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
 ;;;
@@ -857,7 +920,8 @@
     (apply-partials (reverse (cdr terms)) (car terms))))
 
 
-;;; (->> forms*) -> result
+;;; = ->>
+;;;     (->> forms*) -> result
 ;;;
 ;;; thread-last
 ;;;
@@ -882,7 +946,8 @@
     (apply-partials (reverse (cdr terms)) (car terms))))
 
 
-;;; (and-> forms*) -> result
+;;; = and->
+;;;     (and-> forms*) -> result
 ;;;
 ;;; Short-circuiting thread-first
 ;;;
@@ -906,7 +971,8 @@
     (car terms)))
 
 
-;;; (and->> forms*) -> result
+;;; = and->>
+;;;     (and->> forms*) -> result
 ;;;
 ;;; Short circuiting thread-last
 ;;;

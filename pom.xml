@@ -53,6 +53,21 @@
                             </arguments>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>make-mlib-ref-md</id>
+                        <phase>install</phase> <!-- could also use phase "process-sources" -->
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <executable>sed</executable>
+                            <outputFile>mlib.md</outputFile>
+                            <arguments>
+                                <argument>-nf</argument>
+                                <argument>mlib-to-md.sed</argument>
+                                <argument>samples.mlib/mlib.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                     <!-- end of section that needs sed -->
                 </executions>
             </plugin>
