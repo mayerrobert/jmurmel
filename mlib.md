@@ -42,15 +42,23 @@ and begin your source file with
     with-gensyms
     ->, -->, and->, and-->
 ### caar..cdddr
+    (c..r lst) -> result
+
+c..r repeatedly apply car and/ or cdr as the name suggests.
 ### nthcdr, nth
-### rplaca
+    (nthcdr n lst) -> nth-tail
+    (nth n lst) -> nth-element
+
+nthcdr applies cdr n times and returns the result.
+nth works as if `(car (nth n lst))` was invoked.
+### rplaca*
     (rplaca* lst value) -> value
 
-Replace the car of lst by value and return value.
-### rplacd
+Replace the car of lst by value and return value (as opposed to rplaca which returns lst).
+### rplacd*
     (rplacd* lst value) -> value
 
-Replace the cdr of lst by value and return value.
+Replace the cdr of lst by value and return value (as opposed to rplacd which returns lst).
 ### destructuring-bind
     (destructuring-bind (vars*) (expressions*) forms*)
 

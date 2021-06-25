@@ -44,6 +44,9 @@
 
 
 ;;; = caar..cdddr
+;;;     (c..r lst) -> result
+;;;
+;;; c..r repeatedly apply car and/ or cdr as the name suggests.
 (defun  caar (l) (car (car l)))
 (defun  cadr (l) (car (cdr l)))
 (defun  cdar (l) (cdr (car l)))
@@ -61,6 +64,11 @@
 
 
 ;;; = nthcdr, nth
+;;;     (nthcdr n lst) -> nth-tail
+;;;     (nth n lst) -> nth-element
+;;;
+;;; nthcdr applies cdr n times and returns the result.
+;;; nth works as if `(car (nth n lst))` was invoked.
 (defun nthcdr (n l)
   (let loop ((n n) (l l))
     (if (<= n 0) l
@@ -70,17 +78,17 @@
   (car (nthcdr n l)))
 
 
-;;; = rplaca
+;;; = rplaca*
 ;;;     (rplaca* lst value) -> value
 ;;;
-;;; Replace the car of lst by value and return value.
+;;; Replace the car of lst by value and return value (as opposed to rplaca which returns lst).
 (defun rplaca* (l v) (rplaca l v) v)
 
 
-;;; = rplacd
+;;; = rplacd*
 ;;;     (rplacd* lst value) -> value
 ;;;
-;;; Replace the cdr of lst by value and return value.
+;;; Replace the cdr of lst by value and return value (as opposed to rplacd which returns lst).
 (defun rplacd* (l v) (rplacd l v) v)
 
 
