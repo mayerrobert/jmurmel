@@ -16,7 +16,7 @@
          form)
 
         ((eq 'quote (car form))
-         'form)
+         form)
 
         (t
          (let* ((expanded-args (let loop ((l (cdr form)))
