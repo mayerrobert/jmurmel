@@ -1,9 +1,9 @@
 # mlib - default library for Murmel
 
-mlib adds common Lisp functions and macros to the core Murmel language.
+mlib adds commonly used Lisp functions and macros to the core Murmel language.
 
-mlib's functions are modeled after Common Lisp, (often with reduced
-functionality) plus some additional macros and functions.
+Most of mlib's functions and macros are modeled after Common Lisp,
+(often with reduced functionality) plus some additional macros and functions.
 
 ### Usage:
 
