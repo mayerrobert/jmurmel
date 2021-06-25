@@ -1,45 +1,17 @@
-;;; http://www.lisperati.com/casting.html translated to murmel
+;;; http://www.lisperati.com/casting.html translated to murmel w/ mlib
 ;;; see adventure_cl.lisp for the original Common Lisp
-;;; see ../../samples.murmel/lisperati/adventure_murmel.lisp for a translation to murmel w/ mlib 
+;;; see ../../samples.murmel/lisperati/adventure_murmel.lisp for a translation to murmel w/o mlib 
+
+(require "mlib")
 
 (defmacro defparameter (sym val) `(define ,sym ,val))
-
-(defmacro and args
-   (if (null args)
-         t
-     (if (null (cdr args))
-           (car args)
-       `(if ,(car args)
-         (and ,@(cdr args))))))
-
-(defun not (x) (null x))
-
-(defun cadr (l) (car (cdr l)))
-(defun caddr (l) (car (cddr l)))
-(defun cddr (l) (cdr (cdr l)))
 
 (defun first (l) (car l))
 (defun second (l) (cadr l))
 (defun third (l) (caddr l))
 
-(defun mapcar (f l)
-  (if l (cons (f (car l)) (mapcar f (cdr l)))
-    nil))
-
 (defun remove-if-not (pred l)
-  (if l
-        (let ((obj (car l)))
-          (if (pred obj)
-                (cons obj (remove-if-not pred (cdr l)))
-            (remove-if-not pred (cdr l))))
-    nil))
-
-(defun member (obj l)
-  (if l
-        (if (eq obj (car l))
-              l
-          (member obj (cdr l)))
-    nil))
+  (remove-if (complement pred) l))
 
 
 
@@ -74,7 +46,7 @@
 (describe-path '(west door garden))
 
 (defun describe-paths (location map)
-  (apply append (mapcar describe-path (cddr (assoc location map)))))
+  (apply #'append (mapcar #'describe-path (cddr (assoc location map)))))
 
 (describe-paths 'living-room *map*)
 
@@ -84,7 +56,7 @@
 (is-at 'whiskey-bottle 'living-room *object-locations*)
 
 (defun describe-floor (loc objs obj-loc)
-  (apply append (mapcar (lambda (x)
+  (apply #'append (mapcar (lambda (x)
                             `(you see a ,x on the floor.))
                           (remove-if-not (lambda (x)
                                            (is-at x loc obj-loc))
@@ -103,7 +75,7 @@
 ; http://www.lisperati.com/walking.html
 (defun walk-direction (direction)
   (let ((next (assoc direction (cddr (assoc *location* *map*)))))
-    (cond (next (setq *location* (third next)) (look))
+    (cond (next (setf *location* (third next)) (look))
 	      (t    '(you cant go that way.)))))
 
 (walk-direction 'west)
@@ -118,8 +90,7 @@
 (walk east)
 
 (defun pickup-object (object)
-  (cond ((is-at object *location* *object-locations*) (define *object-locations* (cons (list object 'body) *object-locations*))
-                                                      `(you are now carrying the ,object))
+  (cond ((is-at object *location* *object-locations*) (push (list object 'body) *object-locations*) `(you are now carrying the ,object))
          (t '(you cannot get that.))))
 
 (defspel pickup (object)
@@ -151,11 +122,11 @@
             (t '(i cant ,',command like that.)))))
 
 (game-action weld chain bucket attic
-             (cond ((and (have 'bucket) (setq *chain-welded* 't)) '(the chain is now securely welded to the bucket.))
+             (cond ((and (have 'bucket) (setf *chain-welded* 't)) '(the chain is now securely welded to the bucket.))
                    (t '(you do not have a bucket.))))
 
 (game-action dunk bucket well garden
-             (cond (*chain-welded* (setq *bucket-filled* 't) '(the bucket is now full of water))
+             (cond (*chain-welded* (setf *bucket-filled* 't) '(the bucket is now full of water))
                    (t '(the water level is too low to reach.))))
 
 (game-action splash bucket wizard living-room
