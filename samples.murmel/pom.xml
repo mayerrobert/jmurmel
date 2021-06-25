@@ -9,7 +9,7 @@
     </parent>
 
     <groupId>io.github.jmurmel</groupId>
-    <artifactId>jmurmel-lib</artifactId>
+    <artifactId>samples.murmel</artifactId>
     <version>1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -27,7 +27,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>${exec-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>run-murmel-test</id>
@@ -44,7 +44,7 @@
                                 <classpath/>
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
-                                <argument>../samples/murmel-test.lisp</argument>
+                                <argument>murmel-test.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -65,29 +65,7 @@
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
                                 <argument>--run</argument>
-                                <argument>../samples/murmel-test.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>run-mlib-test</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-classpath</argument>
-                                <!-- automatically creates the classpath using all project dependencies,
-                                     also adding the project build directory -->
-                                <classpath/>
-                                <argument>io.github.jmurmel.LambdaJ</argument>
-                                <argument>--verbose</argument>
-                                <argument>--libdir</argument>
-                                <argument>../samples</argument>
-                                <argument>../samples/mlib-test.lisp</argument>
+                                <argument>murmel-test.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -107,8 +85,6 @@
                                 <classpath/>
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
-                                <argument>--libdir</argument>
-                                <argument>../samples</argument>
                                 <argument>../murmel-langref.lisp</argument>
                             </arguments>
                         </configuration>
@@ -122,7 +98,7 @@
                         </goals>
                         <configuration>
                             <executable>java</executable>
-                            <workingDirectory>../samples/gabriel</workingDirectory>
+                            <workingDirectory>gabriel</workingDirectory>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath/>
@@ -147,7 +123,7 @@
                         </goals>
                         <configuration>
                             <executable>java</executable>
-                            <workingDirectory>../samples/gabriel</workingDirectory>
+                            <workingDirectory>gabriel</workingDirectory>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath/>
@@ -178,7 +154,7 @@
                                 <classpath/>
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
-                                <argument>../samples/lisperati/adventure_murmel.lisp</argument>
+                                <argument>lisperati/adventure_murmel.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -191,7 +167,6 @@
                         </goals>
                         <configuration>
                             <executable>java</executable>
-                            <workingDirectory>../samples</workingDirectory>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath/>
@@ -212,7 +187,6 @@
                         </goals>
                         <configuration>
                             <executable>java</executable>
-                            <workingDirectory>../samples</workingDirectory>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath/>
@@ -225,24 +199,6 @@
                             </arguments>
                         </configuration>
                     </execution>
-
-                    <!-- generate murmel-langref.md from murmel-langref.lisp
-                         if "sed" is not available then this can be commented out -->
-                    <execution>
-                        <id>make-langref-md</id>
-                        <phase>install</phase> <!-- could also use phase "process-sources" -->
-                        <goals><goal>exec</goal></goals>
-                        <configuration>
-                            <executable>sed</executable>
-                            <outputFile>../murmel-langref.md</outputFile>
-                            <arguments>
-                                <argument>-nf</argument>
-                                <argument>../langref-to-md.sed</argument>
-                                <argument>../murmel-langref.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <!-- end of section that needs sed -->
                 </executions>
             </plugin>
         </plugins>

@@ -143,8 +143,8 @@ multiline comment.
 
 ; "nil" and "t" are pre-defined self-evaluating symbols
 
-nil
-t
+;     nil
+;     t
 
 ; "dynamic" is a pre-defined self-evaluating symbol that may be used
 ; in the `(lambda dynamic...` and `(let* dynamic...` forms, see below.
@@ -223,7 +223,7 @@ pi
 
 ; Shorthand for empty list
 
-nil
+;     nil
 
 ; an integer number
 ;

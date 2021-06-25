@@ -9,7 +9,7 @@ or one single Java source file.
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
 For more details on the language see [murmel-langref.md](murmel-langref.md),
-and [samples/mlib.lisp](samples/mlib.lisp) for Murmel's default library.
+and [samples/mlib.lisp](samples.murmel/mlib.lisp) for Murmel's default library.
 
 The interpreter, REPL, compiler as well as Jars with compiled Murmel all run on top of the JVM.
 Compilation is done as Murmel to Java source
@@ -99,7 +99,7 @@ You just wrote and ran a Murmel program!
 
 Now take it from there,
 e.g. read [murmel-langref.md](murmel-langref.md).  
-Or take a look at the example code in [samples/](samples/).  
+Or take a look at the example code in [samples/](samples.murmel/).  
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
@@ -256,7 +256,7 @@ Tail recursion, locale dependent number formatting
     "Factorial of 50 is 3.04141e+64"
     ==> t
 
-See [samples/](samples/) for more Murmel example code including usage of Murmel's turtle graphics.
+See [samples/](samples.murmel/) for more Murmel example code including usage of Murmel's turtle graphics.
 
 ## JMurmel Features
 The environment contains the symbols `nil` and `t` and the functions

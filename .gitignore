@@ -26,13 +26,11 @@ _$*
 *.ln
 core
 # CVS default ignores end
-/murmel.iml
 /.idea/
 /parent/definitions/definitions.iml
-/parent/jmh/jmh.iml
 /jmurmel-all.iml
 /parent/definitions/target/
 /target/
 /lambdajbm/jmurmelbm.iml
-/mlib/jmurmel-lib.iml
-/mlib/target/
+/samples.mlib/samples.mlib.iml
+/samples.murmel/samples.murmel.iml
