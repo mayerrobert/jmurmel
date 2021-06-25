@@ -5,6 +5,9 @@ The file `murmel-langref.lisp`
 is an executable language reference manual
 for Murmel, a single-namespace Lisp dialect.
 
+See also [Murmel's default library mlib](mlib.md) 
+which contains additional functions and macros.
+
 The file `murmel-langref.lisp` can be read as-is or run it with:
 
     $ java -jar jmurmel.jar --repl --echo < murmel-langref.lisp

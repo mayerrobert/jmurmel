@@ -1,6 +1,7 @@
-# mlib - default library for Murmel
+# Mlib - Default library for Murmel
 
-mlib adds commonly used Lisp functions and macros to the core Murmel language.
+mlib adds commonly used Lisp functions and macros to the
+[core Murmel language](murmel-langref.md).
 
 Most of mlib's functions and macros are modeled after Common Lisp,
 (often with reduced functionality) plus some additional macros and functions.
@@ -14,13 +15,12 @@ and begin your source file with
     (require "mlib")
 
 ### Provides:
+mlib provides the following Common Lisp-like functions and macros:
 
     caar..cdddr, nthcdr, nth
-    rplaca*, rplacd*
     destructuring-bind
     get-setf-expansion
     setf, incf, decf
-    *f, /f, +f, -f
     push, pop
     acons
     not, and, or
@@ -39,6 +39,10 @@ and begin your source file with
     prin1, princ, print, pprint
     list-length, length
 
+as well as the following additional functions and macros:
+
+    rplaca*, rplacd*
+    *f, /f, +f, -f
     with-gensyms
     ->, -->, and->, and-->
 ### caar..cdddr
