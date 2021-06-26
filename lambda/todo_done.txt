@@ -1076,3 +1076,6 @@ push & co auf get-setf-expansion umstellen
 -> ((lambda nil)) sollte in murmel gehen, liefert aber "Error: lambda: expected 2 arguments or more but got only 1" bzw npe im compiler
 
 mlib: length funktion für strings und listen, funktion (char string n) -> nter character von string
+
+samples umsortieren: samples.murmel und samples.mlib
+-> gabriel vielleicht in beiden, in samples.mlib brauchts weniger anpassungen
