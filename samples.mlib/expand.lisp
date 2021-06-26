@@ -29,13 +29,22 @@
 
         ((eq 'lambda (car form))
          `(lambda ,(cadr form)
-                  ,@(mapcar expand (cddr form))))
+                  ,(caddr form)
+                  ,@(mapcar expand (cdddr form))))
 
         ((eq 'define (car form))
          `(define ,(cadr form) ,(expand (caddr form))))
 
         ((eq 'defun (car form))
-         `(defun ,(cadr form) ,(caddr form) ,(expand (cadddr form))))
+         `(defun ,(cadr form) ,(caddr form) ,@(mapcar expand (cdddr form))))
+
+        ((eq 'defmacro (car form))
+         `(defmacro ,(cadr form) ,(caddr form) ,@(mapcar expand (cdddr form))))
+
+        ((member (car form) '(let let* letrec) eq)
+         (if (symbolp (cadr form))
+               `(,(car form) ,(cadr form) ,(caddr form) ,@(mapcar expand (cdddr form)))
+           `(,(car form) ,(cadr form) ,@(mapcar expand (cddr form)))))
 
         ((eq 'setq (car form))
          `(setq ,(cadr form) ,(expand (caddr form))))
