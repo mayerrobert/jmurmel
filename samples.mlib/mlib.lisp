@@ -109,17 +109,6 @@
   `(apply (lambda ,vars ,@forms) ,expression))
 
 
-;(defmacro with-keyword-args (keywords args . body)
-;  `(let* ((args ,args)
-;          ,(let loop ((keywords keywords)
-;                      (args nil))
-;             (if keywords
-;               (let ((maybekey (member (car keywords) args)))
-;                 (if maybekey `(,(car maybekey) ,(cadr maybekey)))))))
-;             
-;     ,@body))
-
-
 ;;; = get-setf-expansion
 ;;;     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
 (defun get-setf-expansion (place)
@@ -889,6 +878,8 @@
 
 ;;; = length
 ;;;     (length sequence) -> length
+;;;
+;;; Same as list-length.
 (defun length (s)
   (list-length s))
 
