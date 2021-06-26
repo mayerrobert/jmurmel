@@ -1,7 +1,16 @@
-;;;; Expand macros inside a form.
+;;;; Expand all macros inside a form.
 ;;;
-;;; Only macros defined before the form will be expanded,
-;;; defmacro calls within the form are not considered.
+;;; See https://legacy.cs.indiana.edu/ftp/scheme-repository/doc/misc/
+;;;
+;;; Expand is really only useful for writing macros as
+;;; a helper similar to macroexpand-1.
+;;;
+;;; Possible usage:
+;;;
+;;;     (pprint (expand 'form))
+;;;
+;;; Only macros already defined before the form will be expanded,
+;;; new macros defined by defmacro calls within the form are not considered.
 
 (require "mlib")
 
@@ -18,15 +27,22 @@
         ((eq 'quote (car form))
          form)
 
+        ((eq 'lambda (car form))
+         `(lambda ,(cadr form)
+                  ,@(mapcar expand (cddr form))))
+
+        ((eq 'define (car form))
+         `(define ,(cadr form) ,(expand (caddr form))))
+
+        ((eq 'defun (car form))
+         `(defun ,(cadr form) ,(caddr form) ,(expand (cadddr form))))
+
+        ((eq 'setq (car form))
+         `(setq ,(cadr form) ,(expand (caddr form))))
+
         (t
-         (let* ((expanded-args (let loop ((l (cdr form)))
-                                 (if (atom l)
-                                       l
-                                   (cons (expand (car l)) (loop (cdr l))))))
-                (form-expanded-args (cons (car form) expanded-args)))
-           (destructuring-bind
-             (ex changed)
-             (m%macroexpand-1 form-expanded-args)
-             (if changed
-                   (expand ex)
-               ex))))))
+         (destructuring-bind (ex changed)
+           (m%macroexpand-1 form)
+           (if changed
+                 (expand ex)
+             (mapcar expand form))))))
