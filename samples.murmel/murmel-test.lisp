@@ -103,6 +103,7 @@
 #+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) 2) 2)
 ; todo (deftest namedlet.2 (letrec loop () (if nil (loop)) 2) 2)
 
+
 ;;; test eql
 (deftest eql.1 (eql 'a 'b)  nil)
 (deftest eql.2 (eql 'a 'a)  t)

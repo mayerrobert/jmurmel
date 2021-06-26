@@ -4,6 +4,16 @@ ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
 
+
+
+mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
+-> oder zusätzlich mapXX*?
+sollte apply eine dotted list akzeptieren?
+-> oder apply*?
+&+ liefert bei integer args die summe als integer mit 2s complement wraparound, auch &- &*
+-> oder +&, -&, *&, ggf auch /& für div
+
+
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
 For your error handling, implement two things:
 
@@ -15,14 +25,6 @@ For your error handling, implement two things:
 With those building blocks, you can implement the equivalent of Common Lisp's condition and restart system entirely in Lisp.
 If you make it possible to inspect the stack from Lisp, you also gain the ability to write a debugger in Lisp.
 
-
-
-mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
--> oder zusätzlich mapXX*?
-sollte apply eine dotted list akzeptieren?
--> oder apply*?
-&+ liefert bei integer args die summe als integer mit 2s complement wraparound, auch &- &*
--> oder +&, -&, *&, ggf auch /& für div
 
 
 --add-feature

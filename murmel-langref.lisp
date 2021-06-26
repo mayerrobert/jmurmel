@@ -1,5 +1,5 @@
 ;;;
-;;; === Murmel Language Reference ====
+;;; === Murmel Language Reference =====
 ;;;
 ;;; The file `murmel-langref.lisp`
 ;;; is an executable language reference manual
@@ -18,6 +18,19 @@
 ;;;
 ;;; Murmel is WIP,
 ;;; please note the section "Known issues" at the end of this file.
+
+;;; == Quick links ====================
+
+;;; Special forms and functions available in Murmel
+;;; - [S-expressions](#s-expressions)
+;;; - [Predefined Symbols](#predefined-symbols)
+;;; - [Basic Special Forms](#basic-special-forms)
+;;; - [Additional Special Forms](#additional-special-forms)
+;;; - [Predefined Primitives](#predefined-primitives)
+;;; - [Predefined Graphics Primitives](#predefined-graphics-primitives)
+;;;
+;;; Additional functions that can be loaded with `(require "mlib")`
+;;; - [Mlib - Default library for Murmel](mlib.md)
 
 
 ;;; == Introduction ===================

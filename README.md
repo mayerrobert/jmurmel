@@ -99,7 +99,8 @@ You just wrote and ran a Murmel program!
 
 Now take it from there,
 e.g. read [murmel-langref.md](murmel-langref.md).  
-Or take a look at the example code in [samples/](samples.murmel/).  
+Or take a look at the example code in [samples.murmel/](samples.murmel)
+and [samples.mlib/](samples.mlib)
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
@@ -256,7 +257,9 @@ Tail recursion, locale dependent number formatting
     "Factorial of 50 is 3.04141e+64"
     ==> t
 
-See [samples/](samples.murmel/) for more Murmel example code including usage of Murmel's turtle graphics.
+See [samples.murmel/](samples.murmel) and [samples.mlib/](samples.mlib)
+for more Murmel example code
+including usage of Murmel's turtle graphics.
 
 ## JMurmel Features
 The environment contains the symbols `nil` and `t` and the functions
