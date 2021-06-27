@@ -2,8 +2,6 @@ apply ist eine special form die sich wie eine funktion verhält, sollte aber ein
 -> umbauen wie eval?!?
 ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
-named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
-
 
 
 mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
