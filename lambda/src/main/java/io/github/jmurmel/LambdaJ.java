@@ -372,7 +372,7 @@ public class LambdaJ {
         HAVE_STRING,         // turns on String support in the reader and string literals and string related functions in the interpreter
 
         HAVE_IO,             // read/ write, without it only the result will be printed
-        HAVE_UTIL,           // not, consp, listp, symbolp, assoc
+        HAVE_UTIL,           // consp, symbolp, listp, null, assoc
 
         HAVE_LEXC,           // use lexical environments with dynamic global environment
 
@@ -1502,7 +1502,9 @@ public class LambdaJ {
                                 ConsCell newBinding = null;
                                 if (letDynamic) newBinding = assoceq(sym, topEnv);
                                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
-                                final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl); // todo syntaxcheck dass binding nur symbol und eine form hat: in clisp ist nur eine form erlaubt, mehr gibt *** - LET: illegal variable specification (X (WRITE "in binding") 1)
+                                
+                                if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", op, op, printSEx(binding));
+                                final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl);
                                 if (letDynamic && newBinding != null) {
                                     restore = cons(cons(newBinding, cdr(newBinding)), restore);
                                     newBinding.rplacd(val); // hier ist das zu frueh, das macht effektiv ein let* dynamic
@@ -5101,6 +5103,7 @@ public class LambdaJ {
             if (bindings != null)
                 for (Object binding: bindings) {
                     sb.append("\n        , ");
+                    if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "let", "let", printSEx(binding));
                     formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
             sb.append(')');
@@ -5140,6 +5143,7 @@ public class LambdaJ {
                         seen.add(javaname);
                     }
                     sb.append(javaname).append(" = ");
+                    if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "let*", "let*", printSEx(binding));
                     formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                     env = extenv(car(binding), rsfx, env);
                     sb.append(";\n");
@@ -5184,6 +5188,7 @@ public class LambdaJ {
                     final Object letVar = car(letVarAndForm);
                     final String letVarName = javasym(letVar, env);
                     sb.append("        { ").append(letVarName).append(" = ");
+                    if (caddr(letVarAndForm) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "letrec", "letrec", printSEx(letVarAndForm));
                     formToJava(sb, cadr(letVarAndForm), env, topEnv, rsfx, false);
                     sb.append("; }\n");
                 }
