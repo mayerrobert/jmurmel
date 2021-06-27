@@ -17,34 +17,34 @@
 ;;; = Provides:
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
-;;;     caar..cdddr, nthcdr, nth
-;;;     destructuring-bind
-;;;     get-setf-expansion
-;;;     setf, incf, decf
-;;;     push, pop
-;;;     acons
-;;;     not, and, or
-;;;     abs, zerop, evenp, oddp
-;;;     char=, char
-;;;     equal
-;;;     prog1, prog2
-;;;     when, unless, do, do*, dotimes, dolist
-;;;     identity, constantly, complement
-;;;     member
-;;;     mapcar, maplist, mapc, mapl, mapcan, mapcon
-;;;     every, some, notevery, notany
-;;;     remove-if, remove
-;;;     reduce
-;;;     write-char, terpri
-;;;     prin1, princ, print, pprint
-;;;     list-length, length
+;;; - [caar..cdddr](#caarcdddr), [nthcdr, nth](#nthcdr-nth)
+;;; - [destructuring-bind](#destructuring-bind)
+;;; - [get-setf-expansion](#get-setf-expansion)
+;;; - [setf](#setf), [incf, decf](#incf-decf)
+;;; - [push](#push), [pop](#pop)
+;;; - [acons](#acons)
+;;; - [not](#not), [and](#and), [or](#or)
+;;; - [abs](#abs), [zerop](#zerop), [evenp](#evenp), [oddp](#oddp)
+;;; - [char=](#char), [char](#char-1)
+;;; - [equal](#equal)
+;;; - [prog1, prog2](#prog1-prog2)
+;;; - [when](#when), [unless](#unless), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
+;;; - [identity, constantly, complement](#identity)
+;;; - [member](#member)
+;;; - [mapcar, maplist, mapc, mapl, mapcan, mapcon](#mapcar)
+;;; - [every, some, notevery, notany](#every)
+;;; - [remove-if, remove](#remove-if)
+;;; - [reduce](#reduce)
+;;; - [write-char](#write-char)
+;;; - [terpri, prin1, princ, print, pprint](#terpri, prin1, princ, print)
+;;; - [list-length, length](#list-length)
 ;;;
 ;;; as well as the following additional functions and macros:
 ;;;
-;;;     rplaca*, rplacd*
-;;;     *f, /f, +f, -f
-;;;     with-gensyms
-;;;     ->, -->, and->, and-->
+;;; - [rplaca*, rplacd*](#rplaca)
+;;; - [*f, /f, +f, -f](#f-f)
+;;; - [with-gensyms](#with-gensyms)
+;;; - [->, -->, and->, and-->](#-)
 
 
 ;;; = caar..cdddr
