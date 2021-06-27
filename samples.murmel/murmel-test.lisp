@@ -101,7 +101,7 @@
 ;;; test named letXX
 #+murmel (deftest namedlet.1 (let loop () (if nil (loop)) 2) 2)
 #+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) 2) 2)
-#+murmel (deftest namedlet.2 (letrec loop () (if nil (loop)) 2) 2)
+#+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) 2) 2)
 
 
 ;;; test eql

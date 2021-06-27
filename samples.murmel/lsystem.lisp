@@ -1,7 +1,5 @@
 ;;; See https://en.wikipedia.org/wiki/L-system
 
-(defun 1- (n) (- n 1))
-
 (defun l-system (order size op)
   (if (= 0 order)
         (if (eq op 'X) nil

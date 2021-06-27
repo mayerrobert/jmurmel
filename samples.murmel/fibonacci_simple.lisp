@@ -4,8 +4,8 @@
           1
       (+ (recursive-fibonacci (- n 1)) (recursive-fibonacci (- n 2))))))
 
-(write ", recursive-fibonacci 35: ")
-(write (recursive-fibonacci 35))
+(format t "recursive-fibonacci 25: ")
+(write (recursive-fibonacci 25))
 
 (define iterative-fibonacci-tr
   (lambda (n i previous current)
@@ -17,5 +17,5 @@
   (lambda (n)
     (iterative-fibonacci-tr n 1 1 1)))
 
-(write "iterative-fibonacci 35: ")
-(write (iterative-fibonacci 35))
+(format t ", iterative-fibonacci 25: ")
+(write (iterative-fibonacci 25))

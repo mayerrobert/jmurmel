@@ -35,6 +35,8 @@
     (t 'error)))
 
 (defun run ()
+
+
   (let loop ((i 0))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
@@ -45,3 +47,4 @@
           (loop (1+ i)))))
 
 ;;; call:  (run)
+(run)

@@ -5,6 +5,7 @@
 ;;; derivative benchmark written by Vaughan Pratt.
 ;;; It uses a simple subset of Lisp and does a lot of
 ;;; CONSing.
+
 (defun deriv-aux (a) (list '/ (deriv a) a))
 
 (defun deriv (a)

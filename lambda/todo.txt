@@ -1,6 +1,14 @@
+bei mehreren files an der cmdline nur das ergebnis vom letzten ausgeben
+
 apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
 -> umbauen wie eval?!?
 ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
+
+warum ist assoc in jmurmel drin?
+-> assoc, rassoc jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
+-> assoc-if, rassoc-if
+-> support für plists (wie alists aber eq statt eql), symbol-plist wäre optional auch möglich (und get, getf, ...)
+https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
 
 
@@ -22,6 +30,7 @@ For your error handling, implement two things:
 
 With those building blocks, you can implement the equivalent of Common Lisp's condition and restart system entirely in Lisp.
 If you make it possible to inspect the stack from Lisp, you also gain the ability to write a debugger in Lisp.
+https://gigamonkeys.com/book/beyond-exception-handling-conditions-and-restarts.html
 
 
 

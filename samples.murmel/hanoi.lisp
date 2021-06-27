@@ -10,7 +10,7 @@
 ; some LISP functions that are missing in Murmel:
 
 (defun sub1 (i)
-  (1- i ))
+  (1- i))
 
 ; Helper to print the result of hanoi:
 ; print a list of lists, each on it's line
