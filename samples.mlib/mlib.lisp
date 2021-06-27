@@ -44,7 +44,7 @@
 ;;; - [rplaca*](#rplaca), [rplacd*](#rplacd)
 ;;; - [*f, /f, +f, -f](#f-f)
 ;;; - [with-gensyms](#with-gensyms)
-;;; - [->](#-), [-->](#--1), [and->](#and-), [and-->](#and--1)
+;;; - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
 
 
 ;;; = caar..cdddr
