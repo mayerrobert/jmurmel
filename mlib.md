@@ -29,22 +29,22 @@ mlib provides the following Common Lisp-like functions and macros:
 - [equal](#equal)
 - [prog1, prog2](#prog1-prog2)
 - [when](#when), [unless](#unless), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
-- [identity, constantly, complement](#identity)
+- [identity](#identity), [constantly](#constantly), [complement](#complement)
 - [member](#member)
-- [mapcar, maplist, mapc, mapl, mapcan, mapcon](#mapcar)
-- [every, some, notevery, notany](#every)
-- [remove-if, remove](#remove-if)
+- [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
+- [every](#every), [some](#some), [notevery](#notevery), [notany](#notany)
+- [remove-if](#remove-if), [remove](#remove)
 - [reduce](#reduce)
 - [write-char](#write-char)
-- [terpri, prin1, princ, print, pprint](#terpri, prin1, princ, print)
-- [list-length, length](#list-length)
+- [terpri, prin1, princ, print](#terpri-prin1-princ-print), [pprint](#pprint)
+- [list-length](#list-length), [length](#length)
 
 as well as the following additional functions and macros:
 
-- [rplaca*, rplacd*](#rplaca)
+- [rplaca*](#rplaca), [rplacd*](#rplacd)
 - [*f, /f, +f, -f](#f-f)
 - [with-gensyms](#with-gensyms)
-- [->, -->, and->, and-->](#-)
+- [->](#-), [-->](#--1), [and->](#and-), [and-->](#and--1)
 ### caar..cdddr
     (c..r lst) -> result
 
