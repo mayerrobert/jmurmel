@@ -337,6 +337,34 @@
 )
 
 
+; test case
+(define res nil)
+(tests case
+  (dolist (k '(1 2 3 :four #\v () t 'other))
+    (setq res (append res (list
+       (case k ((1 2) 'clause1)
+               (3 'clause2)
+               (nil 'no-keys-so-never-seen)
+               ((nil) 'nilslot)
+               ((:four #\v) 'clause4)
+               ((t) 'tslot)
+               (t 'others))
+       ))))
+  =>  NIL
+  res => (CLAUSE1 CLAUSE1 CLAUSE2 CLAUSE4 CLAUSE4 NILSLOT TSLOT OTHERS)
+   (defun add-em (x) (apply #'+ (mapcar #'decode x)))
+  =>  ADD-EM
+   (defun decode (x)
+     (case x
+       ((i uno) 1.0)
+       ((ii dos) 2.0)
+       ((iii tres) 3.0)
+       ((iv cuatro) 4.0)))
+  =>  DECODE
+   (add-em '(uno iii)) =>  4.0
+)
+
+
 ; test do, do*
 (tests do
   (do ((temp-one 1 (1+ temp-one))

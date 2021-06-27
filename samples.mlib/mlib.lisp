@@ -1,7 +1,7 @@
 ;;;; === Mlib - Default library for Murmel
 ;;;
 ;;; mlib adds commonly used Lisp functions and macros to the
-;;; [core Murmel language](murmel-langref.md).
+;;; [core Murmel language (see murmel-langref.md)](murmel-langref.md).
 ;;;
 ;;; Most of mlib's functions and macros are modeled after Common Lisp,
 ;;; (often with reduced functionality) plus some additional macros and functions.
@@ -28,7 +28,7 @@
 ;;; - [char=](#char), [char](#char-1)
 ;;; - [equal](#equal)
 ;;; - [prog1, prog2](#prog1-prog2)
-;;; - [when](#when), [unless](#unless), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
+;;; - [when](#when), [unless](#unless), [case](#case), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
 ;;; - [identity](#identity), [constantly](#constantly), [complement](#complement)
 ;;; - [member](#member)
 ;;; - [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
@@ -441,6 +441,25 @@
         (if (cdr body)
               (cons 'progn body)
           (car body))))
+
+
+;;; = case
+;;;      (case keyform (keys forms*)* (t forms*)?) -> result
+(defmacro case (keyform . clauses)
+  (labels ((do-clause (tmp clause)
+             (let ((keydesignator (car clause))
+                   (forms (cdr clause)))
+               (if keydesignator
+                     (if (consp keydesignator)
+                           `((member ,tmp ',keydesignator eq) ,@forms)
+                       (if (eq 't keydesignator)
+                             `(t ,@forms)
+                         `((eq ,tmp ,keydesignator) ,@forms)))))))
+    (if (atom keyform)
+          `(cond ,@(mapcar (lambda (clause) (do-clause keyform clause)) clauses))
+      (let ((tmp (gensym)))
+        `(let ((,tmp ,keyform))
+           (cond ,@(mapcar (lambda (clause) (do-clause tmp clause)) clauses)))))))
 
 
 ;;; = do, do*

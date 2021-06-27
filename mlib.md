@@ -1,7 +1,7 @@
 # Mlib - Default library for Murmel
 
 mlib adds commonly used Lisp functions and macros to the
-[core Murmel language](murmel-langref.md).
+[core Murmel language (see murmel-langref.md)](murmel-langref.md).
 
 Most of mlib's functions and macros are modeled after Common Lisp,
 (often with reduced functionality) plus some additional macros and functions.
@@ -28,7 +28,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - [char=](#char), [char](#char-1)
 - [equal](#equal)
 - [prog1, prog2](#prog1-prog2)
-- [when](#when), [unless](#unless), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
+- [when](#when), [unless](#unless), [case](#case), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
 - [identity](#identity), [constantly](#constantly), [complement](#complement)
 - [member](#member)
 - [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
@@ -209,6 +209,8 @@ and return the result of the last form if any
 Orherwise f condition evaluates to true,
 the forms are not evaluated and the return value
 of the unless-form is nil.
+### case
+     (case keyform (keys forms*)* (t forms*)?) -> result
 ### do, do*
     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
