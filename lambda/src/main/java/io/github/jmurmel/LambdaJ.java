@@ -4958,8 +4958,7 @@ public class LambdaJ {
 
                     ///     - progn
                     if (interpreter().sProgn == op) {
-                        if (args == null) sb.append("null");
-                        else prognToJava(sb, (ConsCell)args, env, topEnv, rsfx+1, isLast);
+                        prognToJava(sb, (ConsCell)args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
 
@@ -5041,11 +5040,13 @@ public class LambdaJ {
 
         private int ignoredCounter = 0;
         
-        // todo vielleicht funcall weglassen wenn forms nur 1 element hat oder null ist?
         private void prognToJava(WrappingWriter sb, ConsCell forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            sb.append((isLast ? "tailcall(" : "funcall(")).append("(MurmelFunction)(Object... ignored" + ignoredCounter++ + ") -> {\n        Object result").append(rsfx).append(" = null;\n");
-            formsToJava(sb, forms, env, topEnv, rsfx, false);
-            sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)\n");
+            if (cdr(forms) == null) formToJava(sb, car(forms), env, topEnv, rsfx, isLast);
+            else {
+                sb.append((isLast ? "tailcall(" : "funcall(")).append("(MurmelFunction)(Object... ignored").append(ignoredCounter++).append(") -> {\n        Object result").append(rsfx).append(" = null;\n");
+                formsToJava(sb, forms, env, topEnv, rsfx, false);
+                sb.append("        return result").append(rsfx).append(";\n        }, (Object[])null)");
+            }
         }
 
         /** args = (formsym (sym...) form...) */
