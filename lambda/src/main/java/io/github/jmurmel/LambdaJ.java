@@ -2880,7 +2880,7 @@ public class LambdaJ {
             env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
                   addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)(asChar("char-code", car(a))); },
-                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); }, // todo fehler werfen falls kein gueltiger char
+                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); },
                   addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
                   addBuiltin("string->list", (Primitive) LambdaJ::stringToList,
                   addBuiltin("list->string", (Primitive) LambdaJ::listToString,
@@ -3410,17 +3410,22 @@ public class LambdaJ {
             else {
                 interpreter.init(() -> -1, s -> {});
                 injectCommandlineArgs(interpreter, args);
+                Object result = null;
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
                     if (verbose) System.out.println("interpreting " + fileName + "...");
                     final Path p = Paths.get(fileName);
                     try (final Reader r = Files.newBufferedReader(p)) {
-                        interpretStream(interpreter, r::read, p, printResult, history);
+                        result = interpretStream(interpreter, r::read, p, printResult, history);
                     } catch (IOException e) {
                         System.err.println();
                         System.err.println(e);
                         System.exit(1);
                     }
+                }
+                if (result != null) {
+                    System.out.println();
+                    System.out.println("==> " + result);
                 }
             }
         }
@@ -3464,12 +3469,16 @@ public class LambdaJ {
             else {
                 interpreter.init(() -> -1, s -> {});
                 injectCommandlineArgs(interpreter, args);
-                interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
+                final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
+                if (result != null) {
+                    System.out.println();
+                    System.out.println("==> " + result);
+                }
             }
         }
     }
 
-    private static void interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
+    private static Object interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
         try {
             final SExpressionParser parser = (SExpressionParser)interpreter.symtab;
             parser.setInput(prog);
@@ -3491,14 +3500,12 @@ public class LambdaJ {
                     System.out.print("==> "); outWriter.printObj(result); System.out.println();
                 }
             }
-            if (result != null && !printResult) {
-                System.out.println();
-                System.out.println("==> " + result);
-            }
+            return result;
         } catch (LambdaJError e) {
             System.err.println();
             System.err.println(e);
             System.exit(1);
+            return null; // notreached
         }
     }
 

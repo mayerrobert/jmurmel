@@ -1081,3 +1081,5 @@ samples umsortieren: samples.murmel und samples.mlib
 -> gabriel vielleicht in beiden, in samples.mlib brauchts weniger anpassungen
 
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
+
+bei mehreren files an der cmdline nur das ergebnis vom letzten ausgeben
