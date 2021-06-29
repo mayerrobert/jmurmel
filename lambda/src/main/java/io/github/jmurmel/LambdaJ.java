@@ -3377,7 +3377,7 @@ public class LambdaJ {
         final List<String> files = args(args);
         if (!files.isEmpty()) {
             if (toJar || toJava) {
-                compileFiles(files, toJar, clsName, outDir);
+                compileFiles(files, toJar, clsName, libPath, outDir);
             }
             else if (run) {
                 final SExpressionParser parser = new SExpressionParser(interpreter.features, interpreter.trace, interpreter.tracer,
@@ -3449,7 +3449,7 @@ public class LambdaJ {
 
                 if (toJar) {
                     final String outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
-                    final boolean success = compileToJar(parser, program, clsName, outFile);
+                    final boolean success = compileToJar(parser, libPath, program, clsName, outFile);
                     if (success) System.out.println("compiled stdin to " + outFile);
                 }
                 else if (run) {
@@ -3462,7 +3462,7 @@ public class LambdaJ {
                 }
                 else {
                     final String outFile = clsName;
-                    final boolean success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir);
+                    final boolean success = compileToJava(StandardCharsets.UTF_8, parser, libPath, program, clsName, outDir);
                     if (success) System.out.println("compiled stdin to " + (outFile == null ? "MurmelProgram" : outFile.toString()));
                 }
             }
@@ -3569,9 +3569,9 @@ public class LambdaJ {
                     if (":res"    .equalsIgnoreCase(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equalsIgnoreCase(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equalsIgnoreCase(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equalsIgnoreCase(exp.toString())) { compileToJava(consoleCharset, parser, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":java"   .equalsIgnoreCase(exp.toString())) { compileToJava(consoleCharset, parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
                     if (":r"      .equalsIgnoreCase(exp.toString())) { runForms(parser, history, interpreter); continue; }
-                    if (":jar"    .equalsIgnoreCase(exp.toString())) { compileToJar(parser, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":jar"    .equalsIgnoreCase(exp.toString())) { compileToJar(parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
                 }
@@ -3626,7 +3626,7 @@ public class LambdaJ {
      *  if className is null "MurmelProgram" will be the class' name */
     private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter) {
         try {
-            final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir());
+            final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, interpreter.libDir, getTmpDir());
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
             final MurmelProgram prg = murmelClass.getDeclaredConstructor().newInstance();
             final long tStart = System.nanoTime();
@@ -3646,7 +3646,7 @@ public class LambdaJ {
     }
 
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
-    private static void compileFiles(final List<String> files, boolean toJar, String clsName, String outDir) {
+    private static void compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) {
         SExpressionParser parser = null;
         final List<Object> program = new ArrayList<>();
         for (String fileName: files) {
@@ -3671,10 +3671,10 @@ public class LambdaJ {
         final boolean success;
         if (toJar) {
             outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
-            success = compileToJar(parser, program, clsName, outFile);
+            success = compileToJar(parser, libPath, program, clsName, outFile);
         }
         else {
-            success = compileToJava(StandardCharsets.UTF_8, parser, program, clsName, outDir);
+            success = compileToJava(StandardCharsets.UTF_8, parser, libPath, program, clsName, outDir);
             if (clsName == null) clsName = "MurmelProgram";
             if (outDir == null) outDir = ".";
             outFile = outDir + '/' + clsName + ".java";
@@ -3689,8 +3689,8 @@ public class LambdaJ {
      *  <li>if filename is null the filename will be derived from the className
      *  <li>if filename not null then filename is interpreted as a base directory and the classname (with packages) will be appended
      *  </ul> */
-    private static boolean compileToJava(Charset charset, SymbolTable symtab, List<Object> history, Object className, Object filename) {
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, null);
+    private static boolean compileToJava(Charset charset, SymbolTable symtab, Path libDir, List<Object> history, Object className, Object filename) {
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libDir, null);
         final String clsName = className == null ? "MurmelProgram" : className.toString();
         //if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
@@ -3730,9 +3730,9 @@ public class LambdaJ {
         }
     }
 
-    private static boolean compileToJar(SymbolTable symtab, List<Object> history, Object className, Object jarFile) {
+    private static boolean compileToJar(SymbolTable symtab, Path libDir, List<Object> history, Object className, Object jarFile) {
         try {
-            final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, getTmpDir());
+            final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libDir, getTmpDir());
             final String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             final String clsName = className == null ? "MurmelProgram" : className.toString();
             System.out.println("compiling...");
@@ -4470,26 +4470,28 @@ public class LambdaJ {
     /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
-        private final LambdaJ.SymbolTable st;
+        private LambdaJ.SymbolTable st;
+        private final Path libDir;
         private final JavaCompilerHelper javaCompiler;
         private LambdaJ intp;
 
+        public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
+            this.st = st;
+            this.libDir = libDir;
+            this.javaCompiler = new JavaCompilerHelper(outPath);
+            for (String s: reservedWords) {
+                reservedSymbols.add(intern(s));
+            }
+        }
+
         private LambdaJ interpreter() {
             if (intp == null) {
-                intp = new LambdaJ();
+                intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, libDir);
                 intp.init(() -> -1, System.out::print);
                 intp.setSymtab(st);
                 intp.topEnv = intp.environment(null);
             }
             return intp;
-        }
-
-        public MurmelJavaCompiler(SymbolTable st, Path outPath) {
-            this.st = st;
-            this.javaCompiler = new JavaCompilerHelper(outPath);
-            for (String s: reservedWords) {
-                reservedSymbols.add(intern(s));
-            }
         }
 
 
@@ -4700,6 +4702,9 @@ public class LambdaJ {
             if (consp(form) && interpreter().macros.containsKey(car(form))) {
                 final Object expansion = interpreter().mexpand(car(form), (ConsCell) cdr(form), 0, 0, 0);
                 globalEnv = toplevelFormsToJava(ret, bodyForms, globals, globalEnv, expansion);
+            } else if (consp(form) && car(form) == interpreter().sLoad) {
+                nArgs("load", cdr(form), 1);
+                globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
             }
             else bodyForms.add(form);
 
@@ -4998,6 +5003,12 @@ public class LambdaJ {
                         return;
                     }
 
+                    if (interpreter().sLoad == op) {
+                        nArgs("load", args, 1);
+                        loadFile(false, "load", sb, car(args), env, topEnv, rsfx, isLast, null, null);
+                        return;
+                    }
+
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
                         final Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
@@ -5271,6 +5282,39 @@ public class LambdaJ {
                 params = cdr(params);
             }
             return env;
+        }
+
+        private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, ArrayList<Object> bodyForms, StringBuilder globals) {
+            if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
+            final String fileName = (String) argument;
+            final SymbolTable prevSymtab = st;
+            final Path prevPath = ((SExpressionParser)(interpreter().symtab)).filePath;
+            final Path p = interpreter().findFile(prevPath, fileName);
+            try (final Reader r = Files.newBufferedReader(p)) {
+                final SExpressionParser parser = new SExpressionParser(r::read) {
+                    @Override
+                    public LambdaJSymbol intern(LambdaJSymbol sym) {
+                        return prevSymtab.intern(sym);
+                    }
+                };
+                st = parser;
+                interpreter().symtab = parser;
+                for (;;) {
+                    final Object form = parser.readObj(true);
+                    if (form == null) break;
+
+                    if (pass1) topEnv = toplevelFormsToJava(sb, bodyForms, globals, topEnv, form);
+                    else formToJava(sb, form, _env, topEnv, rsfx, isLast);
+                }
+                return topEnv;
+            } catch (IOException e) {
+                throw new LambdaJError(true, "load: error reading file '%s': ", e.getMessage());
+            }
+            finally {
+                st = prevSymtab;
+                interpreter().symtab = prevSymtab;
+                ((SExpressionParser)(interpreter().symtab)).filePath = prevPath;
+            }
         }
 
         private static boolean properList(Object params) {

@@ -24,7 +24,7 @@ public class MurmelJavaCompilerTest {
         final Reader reader = new StringReader("(define a 2)");
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
         String java = w.toString();
@@ -39,7 +39,7 @@ public class MurmelJavaCompilerTest {
         final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
@@ -589,7 +589,7 @@ public class MurmelJavaCompilerTest {
         final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
         StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
@@ -603,7 +603,7 @@ public class MurmelJavaCompilerTest {
         final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         try {
             c.formsToJavaClass("Test", parser, null);
             fail("expected error " + expected + " but got no error");
@@ -619,7 +619,7 @@ public class MurmelJavaCompilerTest {
         final Reader reader = new StringReader(source);
         final SExpressionParser parser = new SExpressionParser(reader::read);
 
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, TestUtils.getTmpDir());
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         try {
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
             murmelClass.getDeclaredConstructor().newInstance().body();

@@ -18,6 +18,11 @@ sollte apply eine dotted list akzeptieren?
 -> oder +&, -&, *&, ggf auch /& für div
 
 
+parenscript (das ist eine empedded sprache CL -> Javascript) hat die funktion oder makro "chain"
+(chain console (log my-list)))) -> console.log(myList)
+-> eine ähnliche funktion/ special form könnte Java direkt in den generierten Code injecten
+
+
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
 For your error handling, implement two things:
 
