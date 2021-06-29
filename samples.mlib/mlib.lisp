@@ -56,15 +56,15 @@
 (defun  cdar (l) (cdr (car l)))
 (defun  cddr (l) (cdr (cdr l)))
 
-(defun caaar (l) (car (car (car l))))
-(defun caadr (l) (car (car (cdr l))))
-(defun cadar (l) (car (cdr (car l))))
-(defun caddr (l) (car (cdr (cdr l))))
+(defun caaar (l) (car (caar l)))
+(defun caadr (l) (car (cadr l)))
+(defun cadar (l) (car (cdar l)))
+(defun caddr (l) (car (cddr l)))
 
-(defun cdaar (l) (cdr (car (car l))))
-(defun cdadr (l) (cdr (car (cdr l))))
-(defun cddar (l) (cdr (cdr (car l))))
-(defun cdddr (l) (cdr (cdr (cdr l))))
+(defun cdaar (l) (cdr (caar l)))
+(defun cdadr (l) (cdr (cadr l)))
+(defun cddar (l) (cdr (cdar l)))
+(defun cdddr (l) (cdr (cddr l)))
 
 
 ;;; = nthcdr, nth
@@ -511,10 +511,10 @@
 ;;; Similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
 (defmacro dotimes (exp . body)
   (let ((var (car exp))
-        (countform (car (cdr exp)))
+        (countform (cadr exp))
         (count (gensym))
         (loop (gensym))
-        (result (car (cdr (cdr exp)))))
+        (result (caddr exp)))
     `(let ((,count ,countform))
        (if (<= ,count 0)
              (let ((,var 0)) ,result)
@@ -531,10 +531,10 @@
 ;;; Similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
 (defmacro dolist (exp . body)
   (let ((var (car exp))
-        (listform (car (cdr exp)))
+        (listform (cadr exp))
         (lst (gensym))
         (loop (gensym))
-        (result (car (cdr (cdr exp)))))
+        (result (caddr exp)))
     `(let ,loop ((,lst ,listform))
        (let ((,var (car ,lst)))
          (if ,lst
@@ -632,10 +632,10 @@
                       (if lists (and (car lists) (none-nil (cdr lists)))
                         t))
                     (cdrs (lists)
-                      (if lists (cons (cdr (car lists)) (cdrs (cdr lists)))
+                      (if lists (cons (cdar lists) (cdrs (cdr lists)))
                         nil))
                     (cars (lists)
-                      (if lists (cons (car (car lists)) (cars (cdr lists)))
+                      (if lists (cons (caar lists) (cars (cdr lists)))
                         nil)))
              (let loop ((args (cons l more)))
                (if (none-nil args)
