@@ -4972,7 +4972,7 @@ public class LambdaJ {
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
                     if (interpreter().sLabels == op) {
-                        labelsToJava(sb, args, env, topEnv, rsfx+1, isLast);
+                        labelsToJava(sb, (ConsCell)args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
 
@@ -5068,18 +5068,22 @@ public class LambdaJ {
         }
 
         /** args = (((symbol (sym...) form...)...) form...) */
-        private void labelsToJava(WrappingWriter sb, final Object args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
-            ConsCell env = _env;
+        private void labelsToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            final Object localFuncs = car(args);
+            if (localFuncs == null) {
+                prognToJava(sb, args, env, topEnv, rsfx, isLast);
+                return;
+            }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction() {\n");
 
-            final ConsCell params = paramList(args);
+            final ConsCell params = paramList(localFuncs);
             for (Object localFunc: params) {
                 env = extenv(localFunc, rsfx, env);
             }
 
-            for (Object symbolParamsAndBody: (ConsCell)(car(args))) {
+            for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
                 sb.append("        private Object ").append(javasym(car(symbolParamsAndBody), env)).append(" = ");
                 labelToJava(sb, symbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
@@ -5096,14 +5100,14 @@ public class LambdaJ {
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
                 // named let
-                final ConsCell params = paramList(cdr(args));
+                final ConsCell params = paramList(cadr(args));
                 sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
                 // regular let
-                final ConsCell params = paramList(args);
+                final ConsCell params = paramList(car(args));
                 sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
                 bindings = (ConsCell)(car(args));
@@ -5179,7 +5183,7 @@ public class LambdaJ {
             }
             else name = null;
             
-            final ConsCell params = paramList(args);
+            final ConsCell params = paramList(car(args));
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
@@ -5216,9 +5220,9 @@ public class LambdaJ {
         /** from a list of bindings extract a new list of symbols: ((symbol1 form1)...) -> (symbol1...) */
         // todo vgl. LambdaJ.extractParamList()
         private static ConsCell paramList(Object bindings) {
-            if (car(bindings) == null) return null;
+            if (bindings == null) return null;
             ConsCell params = null; ConsCell insertPos = null;
-            for (Object binding: (ConsCell)(car(bindings))) {
+            for (Object binding: (ConsCell)bindings) {
                 if (params == null) { params = cons(null, null);          insertPos = params; }
                 else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
                 insertPos.rplaca(car(binding));
