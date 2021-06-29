@@ -1450,7 +1450,7 @@ public class LambdaJ {
 
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (operator == sLabels) {
-                        nArgs("labels", arguments, 2);
+                        nArgs("labels", arguments, 1);
                         final ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
                         // stick the functions into the env
                         if (car(arguments) != null)
@@ -5069,9 +5069,12 @@ public class LambdaJ {
 
         /** args = (((symbol (sym...) form...)...) form...) */
         private void labelsToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (args == null) throw new LambdaJError(true, "%s: malformed %s: expected at least one argument", "labels", "labels");
+            
             final Object localFuncs = car(args);
-            if (localFuncs == null) {
-                prognToJava(sb, args, env, topEnv, rsfx, isLast);
+            if (localFuncs == null || (cddr(args) == null && atom(cadr(args)))) {
+                // no local functions or body is one single atom
+                prognToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
                 return;
             }
 
