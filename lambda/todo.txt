@@ -1,6 +1,4 @@
-apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
--> umbauen wie eval?!?
-ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
+getsym brauchts auch im compiler, z.b. für die funktion get-setf-expansion
 
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
@@ -9,6 +7,10 @@ warum ist assoc in jmurmel drin?
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
 
+
+apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
+-> umbauen wie eval?!?
+ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
 -> oder zusätzlich mapXX*?
@@ -69,8 +71,6 @@ compiler: alle defuns/ defines
    -> achtung bei macros
 
 filenamen in fehlermeldungen
-
-load im compiler
 
 compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
 evenp, oddp mit x & 0x1 machen.

@@ -4705,6 +4705,16 @@ public class LambdaJ {
             } else if (consp(form) && car(form) == interpreter().sLoad) {
                 nArgs("load", cdr(form), 1);
                 globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
+            } else if (consp(form) && car(form) == interpreter().sRequire) {
+                nArgs("require", cdr(form), 1, 2);
+                if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "require", printSEx(cdr(form)));
+                final Object modName = cadr(form);
+                if (!interpreter().modules.contains(modName)) {
+                    Object modFilePath = caddr(form);
+                    if (modFilePath == null) modFilePath = modName;
+                    globalEnv = loadFile(true,"require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
+                    interpreter().modules.add(modName);
+                }
             }
             else bodyForms.add(form);
 
@@ -5005,10 +5015,16 @@ public class LambdaJ {
 
                     if (interpreter().sLoad == op) {
                         nArgs("load", args, 1);
+                        // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
                         loadFile(false, "load", sb, car(args), env, topEnv, rsfx, isLast, null, null);
                         return;
                     }
 
+                    if (interpreter().sRequire == op) {
+                        // pass1 has replaced all toplevel (require)s with the file contents
+                        throw new LambdaJError("require as non-toplevel form is not implemented");
+                    }
+                    
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
                         final Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
