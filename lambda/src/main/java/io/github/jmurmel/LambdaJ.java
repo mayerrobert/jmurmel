@@ -4184,6 +4184,7 @@ public class LambdaJ {
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
         //public final Object macroexpand1       (Object... args) { return intp.macroexpand1(arraySlice(args)); }
+        public final Object _gensym (Object... args) { return intp.gensym(null); }
 
         public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
         public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
@@ -4548,7 +4549,7 @@ public class LambdaJ {
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
-                "trace", "untrace",
+                "gensym", "trace", "untrace",
                 "fatal",
         };
         private static final String[][] aliasedPrimitives = {
@@ -4642,7 +4643,7 @@ public class LambdaJ {
             Object form;
             while (null != (form = _forms.readObj())) {
                 try {
-                    globalEnv = toplevelFormsToJava(ret, bodyForms, globals, globalEnv, form);
+                    globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, form);
                 }
                 catch (LambdaJError e) {
                     throw new LambdaJError(false, e.getMessage(), form);
@@ -4685,13 +4686,15 @@ public class LambdaJ {
             ret.flush();
         }
 
-        private ConsCell toplevelFormsToJava(WrappingWriter ret, ArrayList<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
+        private ConsCell toplevelFormToJava(WrappingWriter ret, ArrayList<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
             if (consp(form)) {
                 final Object op = car(form);
                 if (op == interpreter().sDefine) {
                     globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
+                    interpreter().eval(form, null);
                 } else if (op == interpreter().sDefun) {
                     globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
+                    interpreter().eval(form, null);
                 } else if (op == interpreter().sDefmacro) {
                     final Object sym = cadr(form);
                     notReserved(sym);
@@ -4701,7 +4704,7 @@ public class LambdaJ {
 
             if (consp(form) && interpreter().macros.containsKey(car(form))) {
                 final Object expansion = interpreter().mexpand(car(form), (ConsCell) cdr(form), 0, 0, 0);
-                globalEnv = toplevelFormsToJava(ret, bodyForms, globals, globalEnv, expansion);
+                globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
             } else if (consp(form) && car(form) == interpreter().sLoad) {
                 nArgs("load", cdr(form), 1);
                 globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
@@ -4941,6 +4944,10 @@ public class LambdaJ {
                         return;
                     }
 
+                    if (interpreter().sSetQ == op) {
+                        sb.append("_fatal(\"setq is not yet supported\")");
+                        return;
+                    }
                     if (interpreter().sDefine == op) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
@@ -5059,6 +5066,15 @@ public class LambdaJ {
         /** write atoms that are not symbols */
         private static void atomToJava(WrappingWriter sb, Object form) {
             if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
+            else if (form instanceof Character) {
+                final char c = ((Character) form);
+                switch (c) {
+                case '\r': sb.append("'\\n'"); break;
+                case '\n': sb.append("'\\r'"); break;
+                default:
+                    sb.append('\'').append(c).append('\'');
+                }
+            }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else sb.append(printSEx(form));
         }
@@ -5087,7 +5103,7 @@ public class LambdaJ {
         private void labelToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("new MurmelFunction() {\n");
             env = extenv(car(args), rsfx, env);
-            sb.append("        private Object ").append(javasym(car(args), env)).append(" = (MurmelFunction)this::apply;\n");
+            sb.append("        private Object ").append(javasym(car(args), env)).append(" = (MurmelFunction)this::apply;\n"); // todo hier und noch 2x: "Object o = (MurmelFunction)this::apply" kann ersetzt werden durch "final Object x = this"  
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
             env = params(sb, cadr(args), env, rsfx, car(args).toString());
             formsToJava(sb, (ConsCell)cddr(args), env, topEnv, rsfx, false);
@@ -5319,7 +5335,7 @@ public class LambdaJ {
                     final Object form = parser.readObj(true);
                     if (form == null) break;
 
-                    if (pass1) topEnv = toplevelFormsToJava(sb, bodyForms, globals, topEnv, form);
+                    if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, form);
                     else formToJava(sb, form, _env, topEnv, rsfx, isLast);
                 }
                 return topEnv;
