@@ -1,4 +1,14 @@
-getsym brauchts auch im compiler, z.b. für die funktion get-setf-expansion
+(re-) define im compiler
+setq, rplaca, rplacd im compiler
+-> rplaca, rplacd erledigt
+
+compiler: alle defuns/ defines
+-> zähler mitlaufen lassen
+   im pass1 alle gen-methoden mit zähler als suffix generieren
+   im pass2 zähler erneut hochzählen und die entsprechende zuweisung generieren
+   -> achtung bei macros
+
+
 
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
@@ -19,6 +29,13 @@ sollte apply eine dotted list akzeptieren?
 &+ liefert bei integer args die summe als integer mit 2s complement wraparound, auch &- &*
 -> oder +&, -&, *&, ggf auch /& für div
 
+
+java interop:
+-> siehe https://clojure.atlassian.net/browse/CLJ-2365 und https://clojure.atlassian.net/browse/CLJ-2637
+Primitive und CompilerPrimitive könnten passende Java interfaces implementieren,
+  z.b. Callable, Runnable, Supplier, Consumer, Predicate, defuns und lambdas ebenso
+-> vielleicht sollte Primitive, CompilerPrimitive, MurmelFunction einfach diese interfaces erweitern, und die jeweiligen Methoden sind default methoden die auf murmelcode delegieren
+   Predicate.test(T) implementieren als apply(Objectt[0]) != null usw., wenn arity nicht stimmt (also der murmelcode will args) dann gibts eh automatisch einen rt error
 
 parenscript (das ist eine empedded sprache CL -> Javascript) hat die funktion oder makro "chain"
 (chain console (log my-list)))) -> console.log(myList)
@@ -63,12 +80,6 @@ funktion error (und/ oder exit) wirft eine exception die am programmende den err
          fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
 mlib-test vervollständigen
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
-
-compiler: alle defuns/ defines
--> zähler mitlaufen lassen
-   im pass1 alle gen-methoden mit zähler als suffix generieren
-   im pass2 zähler erneut hochzählen und die entsprechende zuweisung generieren
-   -> achtung bei macros
 
 filenamen in fehlermeldungen
 
@@ -119,12 +130,6 @@ siehe auch http://forum.ulisp.com/t/a-simple-object-system-for-ulisp/622
 -> stackoverflow ist wsl ok, sollte aber in eine Murmelfehlermeldung umgelenkt werden
 
 
-
-befehlszeilenoption zum kompilieren und laufen lassen
-
-(re-) define im compiler
-setq, rplaca, rplacd im compiler
--> rplaca, rplacd erledigt
 
 https://www.reddit.com/r/lisp/comments/lxlyvb/why_does_cl_have_such_a_strange_way_of_obtaining/gpo0swr/
 it is undefined behavior according to the ANSI spec to redefine a standard function

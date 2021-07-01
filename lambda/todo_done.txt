@@ -1047,6 +1047,8 @@ undefmacro
     )
 )
 
+befehlszeilenoption zum kompilieren und laufen lassen
+
 int-char gibts nicht, nur code-char, char-code und char-int (char-int == char-code)
 -> wieder zurückbenamsen
    fehler werfen falls kein character
@@ -1085,3 +1087,7 @@ named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist ->
 bei mehreren files an der cmdline nur das ergebnis vom letzten ausgeben
 
 load im compiler
+
+getsym brauchts auch im compiler, z.b. für die funktion get-setf-expansion
+
+atom2java: char und string unicode escapen: nur ascii, satzzeichen  und ziffern direkt ausgeben, rest als \u...

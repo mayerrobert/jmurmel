@@ -4687,7 +4687,7 @@ public class LambdaJ {
         }
 
         private ConsCell toplevelFormToJava(WrappingWriter ret, ArrayList<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
-            if (consp(form)) {
+            if (consp(form)) { // todo toplevel progn inline expandieren?
                 final Object op = car(form);
                 if (op == interpreter().sDefine) {
                     globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
@@ -4864,8 +4864,8 @@ public class LambdaJ {
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 final Object form = it.next();
-                ret.append("        // ").append(lineInfo(form)).append(printSEx(form)).append('\n');
-                ret.append("        loc = \"").append(lineInfo(form)).append(escapeString(printSEx(form))).append("\";\n");
+                //ret.append("        // ").append(lineInfo(form));      stringToJava(ret, printSEx(form)); ret.append('\n'); // nicht 2x stringToJava(ret, printSEx(form)) 
+                ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form)); ret.append("\";\n");
                 ret.append("        result").append(rsfx).append(" = ");
                 formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
                 ret.append(';').append('\n');
@@ -5069,14 +5069,37 @@ public class LambdaJ {
             else if (form instanceof Character) {
                 final char c = ((Character) form);
                 switch (c) {
-                case '\r': sb.append("'\\n'"); break;
-                case '\n': sb.append("'\\r'"); break;
+                case '\r': sb.append("'\\r'"); break;
+                case '\n': sb.append("'\\n'"); break;
+                case '\t': sb.append("'\\t'"); break;
+                case '\'': sb.append("'\\''"); break;
+                case '\\': sb.append("'\\''"); break;
                 default:
-                    sb.append('\'').append(c).append('\'');
+                    if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
+                    else sb.append((String.format("'\\u%04X'", (int)c)));
                 }
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
+            else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form); sb.append('"'); }
             else sb.append(printSEx(form));
+        }
+
+        private static void stringToJava(WrappingWriter sb, String s) {
+            if (s == null)   { sb.append("null"); return; }
+            if (s.isEmpty()) { sb.append("\"\""); return; }
+            
+            for (char c: s.toCharArray()) {
+                switch (c) {
+                case '\"': sb.append("\\\""); break;
+                case '\\': sb.append("\\\\");   break;
+                case '\r': sb.append("\\r");  break;
+                case '\n': sb.append("\\n");  break;
+                case '\t': sb.append("\\t");  break;
+                default:
+                    if (c >= 32 && c < 127) sb.append(c);
+                    else sb.append((String.format("\\u%04X", (int)c)));
+                }
+            }
         }
 
         /** args = ((sym...) form...) */
