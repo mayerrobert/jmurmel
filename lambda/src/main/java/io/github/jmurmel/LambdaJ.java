@@ -4257,8 +4257,8 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public final LambdaJSymbol intern(Object... args) {
-            return intp.symtab.intern(new LambdaJSymbol((String)args[0]));
+        public final LambdaJSymbol intern(String symName) {
+            return intp.symtab.intern(new LambdaJSymbol(symName));
         }
 
         public static ConsCell arraySlice(Object[] o, int offset) {
@@ -5103,8 +5103,8 @@ public class LambdaJ {
         private void labelToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("new MurmelFunction() {\n");
             env = extenv(car(args), rsfx, env);
-            sb.append("        private Object ").append(javasym(car(args), env)).append(" = (MurmelFunction)this::apply;\n"); // todo hier und noch 2x: "Object o = (MurmelFunction)this::apply" kann ersetzt werden durch "final Object x = this"  
-            sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
+            sb.append("        private final Object ").append(javasym(car(args), env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
+            sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(" = null;\n");
             env = params(sb, cadr(args), env, rsfx, car(args).toString());
             formsToJava(sb, (ConsCell)cddr(args), env, topEnv, rsfx, false);
             sb.append("        return result").append(rsfx).append("; } }");
@@ -5178,8 +5178,8 @@ public class LambdaJ {
                 // named let*: (let* sym ((sym form)...) forms...) -> Object
                 name = (LambdaJSymbol)car(args);
                 sb.append("new MurmelFunction() {\n"
-                        + "        private Object ").append(javasym(name, extenv(name, rsfx, env))).append(" = (MurmelFunction)this::apply;\n"
-                        + "        @Override public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
+                        + "        private final Object ").append(javasym(name, extenv(name, rsfx, env))).append(" = this;\n"
+                        + "        @Override public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(" = null;\n");
                 bindings = (ConsCell)(cadr(args));
                 bodyForms = (ConsCell) cddr(args);
             }
@@ -5253,10 +5253,10 @@ public class LambdaJ {
 
             if (name != null) {
                 env = extenv(name, rsfx, env);
-                sb.append("        private Object ").append(javasym(name, env)).append(" = (MurmelFunction)this::apply;\n");
+                sb.append("        private final Object ").append(javasym(name, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args) {\n");
-            sb.append("        Object result").append(rsfx).append(";\n");
+            sb.append("        Object result").append(rsfx).append(" = null;\n");
             formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
             sb.append("        return result").append(rsfx).append("; } } )");
         }

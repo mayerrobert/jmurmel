@@ -968,12 +968,10 @@ Murmel language:
 Compiler issues:
 
 - define/ defun only work as top level forms, use as non-toplevel form
-  will throw a "not-yet-implemented" error.
+  will throw a "not-yet-implemented" compiler error.
 - define-ing an already define-d symbol is not supported
-- setq is not supported
+- setq will throw a "not yet implemented" runtime error
 - let* dynamic is not supported
-- load is not supported
-- gensym only works inside macros
 
 
 ## Copyright 
