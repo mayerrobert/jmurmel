@@ -18,6 +18,8 @@ https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
 
 
+j.u.l logging iwie anbinden?
+
 apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
 -> umbauen wie eval?!?
 ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm

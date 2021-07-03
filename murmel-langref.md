@@ -679,7 +679,7 @@ Walltime in internal time units, relative to an arbitrary time base
 
     (get-internal-real-time)
 
-### (get-run-real-time) -> number
+### (get-internal-run-time) -> number
 
 User cpu time in internal time units
 

@@ -4337,6 +4337,8 @@ public class LambdaJ {
 
 
         private static Object[] toArray(Object o) {
+            if (o == null)
+                return new Object[0];
             if (o instanceof Object[])
                 return (Object[])o;
             return listToArray(o);
