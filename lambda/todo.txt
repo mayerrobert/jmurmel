@@ -1,6 +1,7 @@
 (re-) define im compiler
 setq, rplaca, rplacd im compiler
 -> rplaca, rplacd erledigt
+-> setq teilw erledigt (nur eins)
 
 compiler: alle defuns/ defines
 -> zähler mitlaufen lassen

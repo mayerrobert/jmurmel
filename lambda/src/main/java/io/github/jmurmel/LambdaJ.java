@@ -4624,7 +4624,8 @@ public class LambdaJ {
                 ret.append("package ").append(unitName.substring(0, dotpos)).append(";\n\n");
                 clsName = unitName.substring(dotpos+1);
             }
-            ret.append("import io.github.jmurmel.LambdaJ;\n"
+            ret.append("import java.util.function.Function;\n"
+                     + "import io.github.jmurmel.LambdaJ;\n"
                      + "import io.github.jmurmel.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                      + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
@@ -4928,9 +4929,10 @@ public class LambdaJ {
 
                     ///     - if
                     if (interpreter().sIf == op) {
-                        formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(" != null\n        ? "); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
-                        if (caddr(args) != null) { sb.append("\n        : "); formToJava(sb, caddr(args), env, topEnv, rsfx, isLast); }
-                        else sb.append("\n        : null");
+                        sb.append('(');
+                        formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(" != null\n        ? ("); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
+                        if (caddr(args) != null) { sb.append(")\n        : ("); formToJava(sb, caddr(args), env, topEnv, rsfx, isLast); sb.append("))"); }
+                        else sb.append(")\n        : null)");
                         return;
                     }
 
@@ -4938,8 +4940,9 @@ public class LambdaJ {
                     if (interpreter().sCond == op) {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
-                            sb.append("        : ("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(" != null)\n        ? ");
+                            sb.append("        : ("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(" != null)\n        ? (");
                             prognToJava(sb, (ConsCell)cdr(cond), env, topEnv, rsfx+1, isLast);
+                            sb.append(')');
                         }
                         sb.append("\n        : null");
                         return;
@@ -4952,24 +4955,37 @@ public class LambdaJ {
                     }
 
                     if (interpreter().sSetQ == op) {
-                        sb.append("_fatal(\"setq is not yet supported\")");
+                        //sb.append("_fatal(\"setq is not yet supported\")");
+                        
+                        // todo setq mit liste: (setq a 1 b 2...)
+                        requireSymbol(car(args));
+                        final String javaName = javasym(car(args), env);
+                        if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
+                            final String symName = mangle(car(args).toString(), 0);
+                            sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply(");
+                            formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+                            sb.append(")).get()");
+                        } else {
+                            sb.append(javaName).append(" = ");
+                            formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+                        }
                         return;
                     }
                     if (interpreter().sDefine == op) {
                         if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
-                        final Object sym = cadr(form);
+                        final Object sym = car(args);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
-                        final String javasym = mangle(cadr(form).toString(), 0);
+                        final String javasym = mangle(car(args).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
                         return;
                     }
                     if (interpreter().sDefun == op) {
                         if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
-                        final Object sym = cadr(form);
+                        final Object sym = car(args);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
-                        final String javasym = mangle(cadr(form).toString(), 0);
+                        final String javasym = mangle(car(args).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
                         return;
                     }
@@ -5329,15 +5345,17 @@ public class LambdaJ {
                     final Object param = car(params);
                     if (seen.contains(param)) throw new LambdaJError(true, "duplicate symbol %s", param);
                     seen.add(param);
-                    env = extenv(param, rsfx, env);
-                    sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
+                    //env = extenv(param, rsfx, env);
+                    //sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
+                    requireSymbol(param);
+                    env = extenvIntern((LambdaJSymbol)param, "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
                     if (seen.contains(params)) throw new LambdaJError(true, "duplicate symbol %s", params);
                     seen.add(params);
                     env = extenv(params, rsfx, env);
-                    if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = args").append(rsfx).append(";\n");
+                    if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");
                     else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
                     return env;
                 }

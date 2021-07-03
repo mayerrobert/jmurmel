@@ -160,6 +160,25 @@
                     </execution>
 
                     <execution>
+                        <id>run-compiled-lisperati</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>lisperati/adventure_murmel.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>run-samples</id>
                         <phase>test</phase>
                         <goals>

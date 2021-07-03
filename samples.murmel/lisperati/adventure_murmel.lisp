@@ -15,8 +15,8 @@
 (defun not (x) (null x))
 
 (defun cadr (l) (car (cdr l)))
-(defun caddr (l) (car (cddr l)))
 (defun cddr (l) (cdr (cdr l)))
+(defun caddr (l) (car (cddr l)))
 
 (defun first (l) (car l))
 (defun second (l) (cadr l))
@@ -118,7 +118,7 @@
 (walk east)
 
 (defun pickup-object (object)
-  (cond ((is-at object *location* *object-locations*) (define *object-locations* (cons (list object 'body) *object-locations*))
+  (cond ((is-at object *location* *object-locations*) (setq *object-locations* (cons (list object 'body) *object-locations*))
                                                       `(you are now carrying the ,object))
          (t '(you cannot get that.))))
 

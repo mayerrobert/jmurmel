@@ -51,7 +51,7 @@
                         </configuration>
                     </execution>
 
-                    <!--
+                    <!-- todo vielleicht gabriel samples auf mlib umbauen
                     <execution>
                         <id>run-gabriel</id>
                         <phase>test</phase>
@@ -102,6 +102,7 @@
                             </arguments>
                         </configuration>
                     </execution>
+                    -->
 
                     <execution>
                         <id>run-lisperati</id>
@@ -115,12 +116,34 @@
                                 <argument>-classpath</argument>
                                 <classpath/>
                                 <argument>io.github.jmurmel.LambdaJ</argument>
-                                <argument>- -verbose</argument>
-                                <argument>../samples.murmel/lisperati/adventure_murmel.lisp</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>../samples.mlib/lisperati/adventure_murmel.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
-                    -->
+
+                    <execution>
+                        <id>run-compiled-lisperati</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>../samples.mlib/lisperati/adventure_murmel.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
