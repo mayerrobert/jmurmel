@@ -38,6 +38,7 @@
 ;;; - [write-char](#write-char)
 ;;; - [terpri, prin1, princ, print](#terpri-prin1-princ-print), [pprint](#pprint)
 ;;; - [list-length](#list-length), [length](#length)
+;;; - [time](#time)
 ;;;
 ;;; as well as the following additional functions and macros:
 ;;;
@@ -901,6 +902,26 @@
 ;;; Same as list-length.
 (defun length (s)
   (list-length s))
+
+
+; helper function for time
+(defun call-with-timing (exp . args)
+  (let* ((tstart-real (get-internal-real-time))
+         (tstart-run  (get-internal-run-time))
+         (result (apply exp args))
+         (secs-real (/ (- (get-internal-real-time) tstart-real) internal-time-units-per-second))
+         (secs-run  (/ (- (get-internal-run-time)  tstart-run) internal-time-units-per-second)))
+    (format t "Evaluation took:%n  %g seconds of real time%n  %g seconds of total run time%n" secs-real secs-run)
+    result))
+
+
+;;; = time
+;;;     (time form) -> result
+;;;
+;;; time evaluates form and prints various timing data.
+(defmacro time (expr)
+  `(call-with-timing (lambda () ,expr)))
+
 
 
 ;;; = with-gensyms

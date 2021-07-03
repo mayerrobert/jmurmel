@@ -38,6 +38,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - [write-char](#write-char)
 - [terpri, prin1, princ, print](#terpri-prin1-princ-print), [pprint](#pprint)
 - [list-length](#list-length), [length](#length)
+- [time](#time)
 
 as well as the following additional functions and macros:
 
@@ -385,6 +386,10 @@ See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
     (length sequence) -> length
 
 Same as list-length.
+### time
+    (time form) -> result
+
+time evaluates form and prints various timing data.
 ### with-gensyms
     (with-gensyms (names*) forms*) -> result
 
