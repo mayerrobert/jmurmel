@@ -1251,8 +1251,8 @@ public class LambdaJ {
     private final Map<Object, ConsCell> macros = new HashMap<>();
     private final Set<Object> modules = new HashSet<>();
 
-    /// ###  evalquote - the heart of most if not all Lisp interpreters
-    private Object evalquote(Object form, ConsCell env, int stack, int level, int traceLvl) {
+    /// ###  eval - the heart of most if not all Lisp interpreters
+    private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
         Object func = null;
         Object result = null;
         Deque<Object> traceStack = null;
@@ -1323,7 +1323,7 @@ public class LambdaJ {
                         // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
                         //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
-                        final Object value = evalquote(cadr(arguments), env, stack, level, traceLvl);
+                        final Object value = eval(cadr(arguments), env, stack, level, traceLvl);
                         if (envEntry == null) insertFront(topEnv, symbol, value);
                         else envEntry.rplacd(value);
 
@@ -1350,7 +1350,7 @@ public class LambdaJ {
 
                             pairs = (ConsCell) cdr(pairs);
                             if (pairs == null) throw new LambdaJError(true, "%s: odd number of arguments", "setq");
-                            final Object value = evalquote(car(pairs), env, stack, level, traceLvl);
+                            final Object value = eval(car(pairs), env, stack, level, traceLvl);
                             if (envEntry == null)
                                 //insertFront(env, symbol, value);
                                 throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
@@ -1399,7 +1399,7 @@ public class LambdaJ {
                     /// eval - (if condform form optionalform) -> object
                     if (operator == sIf) {
                         nArgs("if", arguments, 2, 3);
-                        if (evalquote(car(arguments), env, stack, level, traceLvl) != null) {
+                        if (eval(car(arguments), env, stack, level, traceLvl) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (caddr(arguments) != null) {
                             form = caddr(arguments); isTc = true; continue tailcall;
@@ -1439,7 +1439,7 @@ public class LambdaJ {
                         if (arguments != null)
                             for (Object c: arguments) {
                                 if (!listp(c)) throw new LambdaJError(true, "%s: malformed cond: expected a list (condexpr forms...) but got %s", "cond", printSEx(c));
-                                if (evalquote(car(c), env, stack, level, traceLvl) != null) {
+                                if (eval(car(c), env, stack, level, traceLvl) != null) {
                                     forms = (ConsCell) cdr(c);
                                     break;
                                 }
@@ -1504,7 +1504,7 @@ public class LambdaJ {
                                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
                                 
                                 if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", op, op, printSEx(binding));
-                                final Object val = evalquote(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl);
+                                final Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl);
                                 if (letDynamic && newBinding != null) {
                                     restore = cons(cons(newBinding, cdr(newBinding)), restore);
                                     newBinding.rplacd(val); // hier ist das zu frueh, das macht effektiv ein let* dynamic
@@ -1539,8 +1539,8 @@ public class LambdaJ {
                         if (operator == sApply) {
                             twoArgs("apply", arguments);
 
-                            func = evalquote(car(arguments), env, stack, level, traceLvl);
-                            final Object _argList = evalquote(cadr(arguments), env, stack, level, traceLvl);
+                            func = eval(car(arguments), env, stack, level, traceLvl);
+                            final Object _argList = eval(cadr(arguments), env, stack, level, traceLvl);
                             if (!listp(_argList)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "apply", printSEx(_argList));
                             argList = (ConsCell)_argList;
                             // fall through to "actually perform..."
@@ -1548,7 +1548,7 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            func = evalquote(operator, env, stack, level, traceLvl);
+                            func = eval(operator, env, stack, level, traceLvl);
                             if (!listp(arguments)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "function application", printSEx(arguments));
                             argList = evlis(arguments, env, stack, level, traceLvl);
                             // fall through to "actually perform..."
@@ -1589,7 +1589,7 @@ public class LambdaJ {
                     /// eval - eval a list of forms
                     // todo dotted list wird cce geben
                     for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                        evalquote(car(forms), env, stack, level, traceLvl);
+                        eval(car(forms), env, stack, level, traceLvl);
                     if (forms != null) {
                         traceStack = push(operator, traceStack);
                         form = car(forms); isTc = true; func = null; continue tailcall;
@@ -1629,7 +1629,7 @@ public class LambdaJ {
         final ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
-            expansion = evalquote(macroform, menv, stack, level, traceLvl);
+            expansion = eval(macroform, menv, stack, level, traceLvl);
         return expansion;
     }
 
@@ -1714,7 +1714,7 @@ public class LambdaJ {
         ListConsCell insertPos = null;
         if (forms != null)
             for (Object form: forms) {
-                final ListConsCell currentArg = cons(evalquote(form, env, stack, level, traceLvl), null);
+                final ListConsCell currentArg = cons(eval(form, env, stack, level, traceLvl), null);
                 if (head == null) {
                     head = currentArg;
                     insertPos = head;
@@ -1788,7 +1788,7 @@ public class LambdaJ {
                 final Object form = parser.readObj(true);
                 if (form == null) break;
 
-                result = evalquote(form, topEnv, 0, 0, 0);
+                result = eval(form, topEnv, 0, 0, 0);
             }
             return result;
         } catch (IOException e) {
@@ -2136,7 +2136,7 @@ public class LambdaJ {
 
     private Object eval(Object form, Object env) {
         if (!listp(env)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", env);
-        return evalquote(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
+        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
     private ConsCell list(Object... a) {
@@ -3152,7 +3152,7 @@ public class LambdaJ {
         @Override
         public Object apply(Object... args) {
             if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-            return evalquote(cons(lambda, list(args)), env, 0, 0, 0);
+            return eval(cons(lambda, list(args)), env, 0, 0, 0);
         }
     }
 
@@ -3226,7 +3226,7 @@ public class LambdaJ {
         Object result = null;
         while (true) {
             final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
-            if (exp != null) result = evalquote(exp, topEnv, 0, 0, 0);
+            if (exp != null) result = eval(exp, topEnv, 0, 0, 0);
             else return result;
         }
     }
@@ -3236,7 +3236,7 @@ public class LambdaJ {
     /// JMurmel native embed API - Java calls Murmel
 
     /** Build environment, setup symbol table, Lisp reader and writer.
-     *  Needs to be called once before evalQuote() and evalScript(), not needed before interpretExpression/s  */
+     *  Needs to be called once before eval() and evalScript(), not needed before interpretExpression/s  */
     public SExpressionParser init(ReadSupplier in, WriteConsumer out) {
         final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
         setSymtab(parser);
@@ -3256,7 +3256,7 @@ public class LambdaJ {
         final SExpressionParser parser = init(in, out);
         final Object exp = parser.readObj();
         final long tStart = System.nanoTime();
-        final Object result = evalquote(exp, topEnv, 0, 0, 0);
+        final Object result = eval(exp, topEnv, 0, 0, 0);
         traceStats(System.nanoTime() - tStart);
         return result;
     }
@@ -3288,7 +3288,7 @@ public class LambdaJ {
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
             final long tStart = System.nanoTime();
-            final Object result = evalquote(exp, env, 0, 0, 0);
+            final Object result = eval(exp, env, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
             exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
@@ -3492,7 +3492,7 @@ public class LambdaJ {
                 if (history != null) history.add(form);
 
                 final long tStart = System.nanoTime();
-                result = interpreter.evalquote(form, interpreter.topEnv, 0, 0, 0);
+                result = interpreter.eval(form, interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 if (printResult) {
@@ -3577,7 +3577,7 @@ public class LambdaJ {
                 }
 
                 final long tStart = System.nanoTime();
-                final Object result = interpreter.evalquote(exp, env, 0, 0, 0);
+                final Object result = interpreter.eval(exp, env, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();

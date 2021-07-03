@@ -1,13 +1,13 @@
 Ideen zur Beschleunigung des Interpreters, eigentlich gehts immer um das Vermeiden der linearen Suche in assoc beim aufloesen von Symbols
 =========================================
 
-die ganzen havXXX() in evalQuote sollten unnoetig sein: wenn die special forms abgedreht sind, sind die sXXX == null,
+die ganzen havXXX() in eval sollten unnoetig sein: wenn die special forms abgedreht sind, sind die sXXX == null,
 und dann trifft das ganze if(sXXX) nicht zu
 ausserdem kann dann die elseif kette auf switch umgestellt werden?
 
 assoc beschleunigung xter anlauf:
--> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. evalquote muesste einen optionalen parameter bekommen,
-   wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in evalquote muesste die map geeignet ausnuetzen wnn != null
+-> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. eval muesste einen optionalen parameter bekommen,
+   wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in eval muesste die map geeignet ausnuetzen wnn != null
 -> oder: in defun werden symbole durch einen platzhalter ersetzt, der lazy aus dem environment befuellt wird
 
 statt environment als liste:
