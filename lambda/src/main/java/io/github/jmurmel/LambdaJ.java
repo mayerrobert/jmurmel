@@ -3633,8 +3633,11 @@ public class LambdaJ {
             final Object result = prg.body();
             final long tEnd = System.nanoTime();
             interpreter.traceJavaStats(tEnd - tStart);
-            System.out.println();
-            System.out.print("==> ");  interpreter.lispPrinter.printObj(result); System.out.println();
+            if (result != null) {
+                System.out.println();
+                System.out.print("==> ");  interpreter.lispPrinter.printObj(result);
+                System.out.println();
+            }
         }
         catch (LambdaJError e) {
             System.out.println("history NOT run as Java - error: " + e.getMessage());

@@ -19,25 +19,23 @@
 ;;;     java -jar jmurmel.jar --run murmel-test.lisp
 ;;;
 
-#+murmel
-(defun terpri () (writeln))
+#-murmel (defun writeln () (terpri))
+#-murmel (defmacro define (n v) `(defparameter ,n ,v))
 
 
 ;;; Test "framework":
 ;;;
-;;; - A list to hold test count and failure count
-;;;   (a list is used to hold results because compiled Murmel
-;;;    doesn't support setq yet).
+;;; - Global variables to hold test count and failure count.
 ;;; - The macro "deftest" to define test-name, test-form and expected result.
 
-#+murmel (define result '(0 . 0))
-#-murmel (defparameter result '(0 . 0))
+(define *failed* 0)
+(define *count* 0)
 
 (defun inc-failed ()
-  (rplaca result (1+ (car result))))
+  (setq *failed* (1+ *failed*)))
 
 (defun inc-count ()
-  (rplacd result (1+ (cdr result))))
+  (setq *count* (1+ *count*)))
 
 (defun tequal (a b)
   (if (eql a b)
@@ -61,9 +59,9 @@
        (inc-count)
        #-murmel
        (if (equal ,result ,expected-result) nil
-         (progn (inc-failed) (write ',name) (format t " equal test failed") (terpri)))
+         (progn (inc-failed) (write ',name) (format t " equal test failed") (writeln)))
        (if (tequal ,result ,expected-result) nil
-         (progn (inc-failed) (write ',name) (format t " tequal test failed") (terpri))))))
+         (progn (inc-failed) (write ',name) (format t " tequal test failed") (writeln))))))
 
 
 
@@ -87,6 +85,17 @@
 
 
 ;;; Tests
+
+(define *a* nil)
+(define *b* nil)
+(define *c* nil)
+
+
+;;; test setq
+(deftest setq.global (setq *a* 1) 1)
+(deftest setq.param (#-murmel funcall (lambda (a) (setq a 3)) 1) 3)
+(deftest setq.local (let ((a 1)) (setq a 3)) 3)
+
 
 ;;; test lambda
 #+murmel (deftest lambda.1 ((lambda nil)) nil)
@@ -152,7 +161,7 @@
 
 
 ;;; Murmel-only tests for various not-a-numbers.
-;;; In Common division by zero is signalled as an error.
+;;; In Common division by zero is signalled as a condition.
 #+murmel
 (let ((nan (/ 0 0))     ; NaN, not-a-number
       (ninf (/ -1 0))   ; -Infinity, negative infinity
@@ -196,11 +205,10 @@
 
 
 ;;; Print summary
-(write (car result)) (format t "/") (write (cdr result)) (format t " test(s) failed")
-(terpri)
-(if (= 0 (car result))
+(write *failed*) (format t "/") (write *count*) (format t " test(s) failed")
+(writeln)
+(if (= 0 *failed*)
       (format t "Success.")
   (format t "Failure."))
-(terpri)
 
-#+murmel (if (> (car result) 0) (fatal (format nil "%d/%d errors" (car result) (cdr result))))
+#+murmel (if (> *failed* 0) (fatal (format nil "%n%d/%d errors" *failed* *count*)))
