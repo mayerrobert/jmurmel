@@ -84,8 +84,17 @@
 )
 
 
-;;; Tests
+;;; Tests for core Murmel w/o mlib
 
+;;; todo basic special forms: quote, lambda
+
+;;; test lambda
+#+murmel (deftest lambda.1 ((lambda nil)) nil)
+
+
+;;; todo Additional Special Forms: define, defun, defmacro, setq, let, if, progn, cond, labels, apply
+
+;;; test define
 (define *a* nil)
 (define *b* nil)
 (define *c* nil)
@@ -96,10 +105,6 @@
 (deftest setq.global.2 (setq *a* 11 *b* 22 *c* 33) 33)
 (deftest setq.param    (#-murmel funcall (lambda (a) (setq a 3)) 1) 3)
 (deftest setq.local    (let ((a 1)) (setq a 3)) 3)
-
-
-;;; test lambda
-#+murmel (deftest lambda.1 ((lambda nil)) nil)
 
 
 ;;; test letXX
@@ -114,6 +119,8 @@
 #+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) 2) 2)
 
 
+;;; Primitives
+
 ;;; test eql
 (deftest eql.1 (eql 'a 'b)  nil)
 (deftest eql.2 (eql 'a 'a)  t)
@@ -121,16 +128,16 @@
 (deftest eql.4 (eql 3 3.0)  nil)
 (deftest eql.5 (eql 3.0 3.0)  t)
 ;(deftest eql.6 (eql #c(3 -4) #c(3 -4))  t)
-;(deftest eql.7 (eql #c(3 -4.0) #c(3 -4))  false)
+;(deftest eql.7 (eql #c(3 -4.0) #c(3 -4))  nil)
 (deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
 (deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
 (deftest eql.10 (eql '(a . b) '(a . b))  nil)
 (#+murmel define #-murmel defparameter x nil)
-; todo (deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
-; todo (deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
-;(deftest eql.13 (eql #\A #\A)  true)
+(deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
+(deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
+(deftest eql.13 (eql #\A #\A)  t)
 #+murmel (deftest eql.14 (eql "Foo" "Foo")  t) ; sbcl murmel-test.lisp -> nil, sbcl murmel-test.fasl -> t
-;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  false)
+;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  nil)
 (deftest eql.16 (eql "FOO" "foo")  nil)
 
 (deftest eql.17 (eql -0 -0) t)

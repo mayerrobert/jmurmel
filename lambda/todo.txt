@@ -1,6 +1,6 @@
---run soll nil nicht als result printen, :r schon
-
-(re-) define im compiler
+apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
+-> umbauen wie eval?!?
+ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 compiler: alle defuns/ defines, nicht nur toplevel
 -> zähler mitlaufen lassen
@@ -10,15 +10,14 @@ compiler: alle defuns/ defines, nicht nur toplevel
 -> das brauchts z.b. wenn makros define enthalten
 -> und/ oder makros pro toplevel form expandieren, toplevel progn auch
 
+(re-) define im compiler
+-> oder doch nicht? braucht man hauptsächlich im REPL
 
 warum ist assoc in jmurmel drin?
--> assoc, rassoc jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
+-> assoc, rassoc in mlib jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
 -> assoc-if, rassoc-if
 -> support für plists (wie alists aber eq statt eql), symbol-plist wäre optional auch möglich (und get, getf, ...)
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
-
-alte define syntax zusätzlich unterstützen:
-(define ((a 1) (b 2)))
 
 https://gigamonkeys.com/book/variables.html
 Each initialization form is either a list containing a variable name and an initial value form
@@ -27,13 +26,14 @@ The following LET form, for example, binds the three variables x, y, and z with 
 (let ((x 10) (y 20) z)
   ...)
 
+alte define syntax zusätzlich unterstützen:
+(define ((a 1) (b 2)))
+
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+
 
 
 j.u.l logging iwie anbinden?
-
-apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
--> umbauen wie eval?!?
-ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
 -> oder zusätzlich mapXX*?

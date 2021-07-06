@@ -1107,3 +1107,4 @@ setq, rplaca, rplacd im compiler
 -> setq teilw erledigt (nur eins)
 -> setq erledigt
 
+--run soll nil nicht als result printen, :r schon
