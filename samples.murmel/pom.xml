@@ -24,6 +24,32 @@
 
     <build>
         <plugins>
+
+            <plugin>
+                <!-- can't use exec-maven-plugin because that doesn't support input redirection -->
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>run-murmel-langref</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target name="run">
+                                <exec dir="${project.build.directory}" executable="java" input="../murmel-langref.lisp">
+                                    <arg value="-jar"/>
+                                    <arg file="../lambda/target/jmurmel.jar"/>
+                                    <arg value="--echo"/>
+                                    <arg value="--repl"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -66,26 +92,6 @@
                                 <argument>--verbose</argument>
                                 <argument>--run</argument>
                                 <argument>murmel-test.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>run-langref</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-classpath</argument>
-                                <!-- automatically creates the classpath using all project dependencies,
-                                     also adding the project build directory -->
-                                <classpath/>
-                                <argument>io.github.jmurmel.LambdaJ</argument>
-                                <argument>--verbose</argument>
-                                <argument>../murmel-langref.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>

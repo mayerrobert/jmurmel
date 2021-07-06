@@ -1,15 +1,14 @@
-(re-) define im compiler
-setq, rplaca, rplacd im compiler
--> rplaca, rplacd erledigt
--> setq teilw erledigt (nur eins)
+--run soll nil nicht als result printen, :r schon
 
-compiler: alle defuns/ defines
+(re-) define im compiler
+
+compiler: alle defuns/ defines, nicht nur toplevel
 -> zähler mitlaufen lassen
    im pass1 alle gen-methoden mit zähler als suffix generieren
    im pass2 zähler erneut hochzählen und die entsprechende zuweisung generieren
    -> achtung bei macros
 -> das brauchts z.b. wenn makros define enthalten
-
+-> und/ oder makros pro toplevel form expandieren, toplevel progn auch
 
 
 warum ist assoc in jmurmel drin?

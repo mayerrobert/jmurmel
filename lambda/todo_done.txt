@@ -1101,3 +1101,9 @@ java.lang.NullPointerException
         at io.github.jmurmel.LambdaJ$MurmelJavaProgram.funcall(LambdaJ.java:4277)
         at io.github.jmurmel.LambdaJ$MurmelJavaProgram.applyHelper(LambdaJ.java:4286)
         at MurmelProgram.runbody(MurmelProgram.java:127)
+
+setq, rplaca, rplacd im compiler
+-> rplaca, rplacd erledigt
+-> setq teilw erledigt (nur eins)
+-> setq erledigt
+

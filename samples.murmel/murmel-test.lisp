@@ -92,9 +92,10 @@
 
 
 ;;; test setq
-(deftest setq.global (setq *a* 1) 1)
-(deftest setq.param (#-murmel funcall (lambda (a) (setq a 3)) 1) 3)
-(deftest setq.local (let ((a 1)) (setq a 3)) 3)
+(deftest setq.global   (setq *a* 1) 1)
+(deftest setq.global.2 (setq *a* 11 *b* 22 *c* 33) 33)
+(deftest setq.param    (#-murmel funcall (lambda (a) (setq a 3)) 1) 3)
+(deftest setq.local    (let ((a 1)) (setq a 3)) 3)
 
 
 ;;; test lambda

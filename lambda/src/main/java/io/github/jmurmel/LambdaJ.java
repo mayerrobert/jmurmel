@@ -1340,9 +1340,7 @@ public class LambdaJ {
                     }
 
                     if (operator == sSetQ) {
-                        nArgs("setq", arguments, 2);
-                        ConsCell pairs = arguments;
-                        do {
+                        for (ConsCell pairs = arguments; pairs != null; ) {
                             final Object symbol = car(pairs);
                             if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "setq", printSEx(symbol));
                             notReserved("setq", symbol);
@@ -1357,7 +1355,7 @@ public class LambdaJ {
                             else envEntry.rplacd(value);
                             result = value;
                             pairs = (ConsCell) cdr(pairs);
-                        } while (pairs != null);
+                        }
                         return result;
                     }
 
@@ -4628,6 +4626,7 @@ public class LambdaJ {
                 clsName = unitName.substring(dotpos+1);
             }
             ret.append("import java.util.function.Function;\n"
+                     + "import java.util.function.Supplier;\n"
                      + "import io.github.jmurmel.LambdaJ;\n"
                      + "import io.github.jmurmel.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
@@ -4958,19 +4957,18 @@ public class LambdaJ {
                     }
 
                     if (interpreter().sSetQ == op) {
-                        //sb.append("_fatal(\"setq is not yet supported\")");
-                        
-                        // todo setq mit liste: (setq a 1 b 2...)
-                        requireSymbol(car(args));
-                        final String javaName = javasym(car(args), env);
-                        if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
-                            final String symName = mangle(car(args).toString(), 0);
-                            sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply(");
-                            formToJava(sb, cadr(args), env, topEnv, rsfx, false);
-                            sb.append(")).get()");
-                        } else {
-                            sb.append(javaName).append(" = ");
-                            formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+                        if (args == null) sb.append("null");
+                        else if (cddr(args) == null)
+                            setqToJava(sb, env, topEnv, rsfx, args);
+                        else {
+                            sb.append("((Supplier<Object>)(() -> {\n");
+                            String javaName = null;
+                            for (Object pairs = args; pairs != null; pairs = cddr(pairs)) {
+                                sb.append("        ");
+                                javaName = setqToJava(sb, env, topEnv, rsfx, pairs);
+                                sb.append(";\n");
+                            }
+                            sb.append("        return ").append(javaName).append(";})).get()");
                         }
                         return;
                     }
@@ -5146,6 +5144,27 @@ public class LambdaJ {
                 formsToJava(sb, forms, env, topEnv, rsfx, false);
                 sb.append("        }, (Object[])null)");
             }
+        }
+
+        private String setqToJava(WrappingWriter sb, ConsCell env, ConsCell topEnv, int rsfx, Object pairs) {
+            final Object symbol = car(pairs);
+            requireSymbol(symbol);
+            notReserved(symbol);
+            final String javaName = javasym(symbol, env);
+
+            if (cdr(pairs) == null) throw new LambdaJError(true, "%s: odd number of arguments", "setq");
+            final Object valueForm = cadr(pairs);
+
+            if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
+                final String symName = mangle(symbol.toString(), 0);
+                sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply(");
+                formToJava(sb, valueForm, env, topEnv, rsfx, false);
+                sb.append(")).get()");
+            } else {
+                sb.append(javaName).append(" = ");
+                formToJava(sb, valueForm, env, topEnv, rsfx, false);
+            }
+            return javaName;
         }
 
         /** args = (formsym (sym...) form...) */

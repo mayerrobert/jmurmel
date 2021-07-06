@@ -235,7 +235,7 @@ pi
 
 ; Empty list, printed as "nil"
 
-()
+;     ()
 
 ; Shorthand for empty list
 
@@ -470,7 +470,7 @@ pi
 ; in the directory that contains jmurmel.jar.
 
 (load "nul") ; ==> nil, NUL is Windows specific
-(load "lib") ; will search for lib.lisp
+;     (load "lib") ; will search for lib.lisp
 
 
 ;;; = (require module-name optional-file-path)
@@ -489,7 +489,7 @@ pi
 ; "module-name" and "optional-file-path" are not eval'd
 ; and must be strings.
 
-(require "mlib") ; will search for the file mlib.lisp
+;     (require "mlib") ; will search for the file mlib.lisp
                  ; unless the module "mlib" was already loaded
 
 
@@ -552,7 +552,7 @@ pi
 ; - a and b are the same characters
 
 (eql 2 2) ; => t
-(eql #\a (car "aaa") ; => t
+(eql #\a (car "aaa")) ; => t
 (eql -0.0 0.0) ; => nil
 
 ; = null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
@@ -573,7 +573,7 @@ pi
 
 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
-(assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ==> (nil 2)
+(assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ; ==> (nil 2)
 
 ; = (append lists...) -> list
 ;
@@ -970,7 +970,6 @@ pi
 ; - define/ defun only work as top level forms, use as non-toplevel form
 ;   will throw a "not-yet-implemented" compiler error.
 ; - define-ing an already define-d symbol is not supported
-; - setq only supports one assignment
 ; - let* dynamic is not supported
 
 
