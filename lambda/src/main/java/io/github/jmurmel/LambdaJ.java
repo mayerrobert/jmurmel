@@ -3402,7 +3402,7 @@ public class LambdaJ {
                 }
                 interpreter.init(System.in::read, System.out::print);
                 injectCommandlineArgs(interpreter, args);
-                runForms(parser, program, interpreter);
+                runForms(parser, program, interpreter, false);
                 return;
             }
             else {
@@ -3456,7 +3456,7 @@ public class LambdaJ {
                     interpreter.setReaderPrinter(parser, outWriter);
                     interpreter.topEnv = interpreter.environment(null);
                     injectCommandlineArgs(interpreter, args);
-                    runForms(parser, program, interpreter);
+                    runForms(parser, program, interpreter, false);
                 }
                 else {
                     final String outFile = clsName;
@@ -3568,7 +3568,7 @@ public class LambdaJ {
                     if (":l"      .equalsIgnoreCase(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equalsIgnoreCase(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
                     if (":java"   .equalsIgnoreCase(exp.toString())) { compileToJava(consoleCharset, parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
-                    if (":r"      .equalsIgnoreCase(exp.toString())) { runForms(parser, history, interpreter); continue; }
+                    if (":r"      .equalsIgnoreCase(exp.toString())) { runForms(parser, history, interpreter, true); continue; }
                     if (":jar"    .equalsIgnoreCase(exp.toString())) { compileToJar(parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
@@ -3622,7 +3622,7 @@ public class LambdaJ {
 
     /** compile history to a class and run compiled class.
      *  if className is null "MurmelProgram" will be the class' name */
-    private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter) {
+    private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter, boolean repl) {
         try {
             final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, interpreter.libDir, getTmpDir());
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
@@ -3631,7 +3631,7 @@ public class LambdaJ {
             final Object result = prg.body();
             final long tEnd = System.nanoTime();
             interpreter.traceJavaStats(tEnd - tStart);
-            if (result != null) {
+            if (repl || result != null) {
                 System.out.println();
                 System.out.print("==> ");  interpreter.lispPrinter.printObj(result);
                 System.out.println();
