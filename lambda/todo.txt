@@ -19,13 +19,6 @@ warum ist assoc in jmurmel drin?
 -> support für plists (wie alists aber eq statt eql), symbol-plist wäre optional auch möglich (und get, getf, ...)
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
-https://gigamonkeys.com/book/variables.html
-Each initialization form is either a list containing a variable name and an initial value form
-or--as a shorthand for initializing the variable to NIL--a plain variable name.
-The following LET form, for example, binds the three variables x, y, and z with initial values 10, 20, and NIL:
-(let ((x 10) (y 20) z)
-  ...)
-
 alte define syntax zusätzlich unterstützen:
 (define ((a 1) (b 2)))
 

@@ -75,13 +75,10 @@
 (deftest tequal.5 -0.0 -0.0)
 (deftest tequal.6 3.4 3.4)
 
-(deftest tequal.7 nil nil)
-(deftest tequal.8 '(a) '(a))
-(deftest tequal.9 '(a (b)) '(a (b)))
-(deftest tequal.10
-  (tequal '(a (b)) '(a (c)))
-  nil
-)
+(deftest tequal.7 nil  nil)
+(deftest tequal.8 '(a)  '(a))
+(deftest tequal.9 '(a (b))  '(a (b)))
+(deftest tequal.10 (tequal '(a (b)) '(a (c)))  nil)
 
 
 ;;; Tests for core Murmel w/o mlib
@@ -108,15 +105,24 @@
 
 
 ;;; test letXX
-(deftest let.1 (let () 1) 1)
-(deftest let.2 (let* () 2) 2)
-#+murmel (deftest let.3 (letrec () 3) 3)
+; no bindings
+(deftest let.1 (let () (1+ 1)) 2)
+(deftest let.2 (let* () (1+ 2)) 3)
+#+murmel (deftest let.3 (letrec () (1+ 3)) 4)
+
+(deftest let.4 (let (a) (list a)) '(nil))
+(deftest let.5 (let* (a) (list a)) '(nil))
+#+murmel (deftest let.6 (letrec (a) (list a)) '(nil))
+
+(deftest let.4 (let ((a 1) b) (list b a)) '(nil 1))
+(deftest let.5 (let* ((a 1) b) (list b a)) '(nil 1))
+#+murmel (deftest let.6 (letrec ((a 1) b) (list b a)) '(nil 1))
 
 
 ;;; test named letXX
-#+murmel (deftest namedlet.1 (let loop () (if nil (loop)) 2) 2)
-#+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) 2) 2)
-#+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) 2) 2)
+#+murmel (deftest namedlet.1 (let loop () (if nil (loop)) (1+ 1)) 2)
+#+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
+#+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
 
 
 ;;; Primitives

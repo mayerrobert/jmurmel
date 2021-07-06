@@ -1453,6 +1453,7 @@ public class LambdaJ {
                         // stick the functions into the env
                         if (car(arguments) != null)
                             for (Object binding: (ConsCell) car(arguments)) {
+                                if (!consp(binding)) throw new LambdaJError(true, "labels: malformed labels: expected a list (symbol (params...) forms...) but got %s", printSEx(binding));
                                 final ConsCell currentFunc = (ConsCell)binding;
                                 final Object currentSymbol = car(currentFunc);
                                 notReserved("labels", currentSymbol);
@@ -1485,14 +1486,22 @@ public class LambdaJ {
                             final Set<Object> seen = new HashSet<>();
                             extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
                             for (Object binding : bindings) {
-                                if (!consp(binding))
-                                    throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists but got %s", op, op, printSEx(binding));
-                                final Object sym = car(binding);
-                                if (!symbolp(sym))
-                                    throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                                final Object sym;
+                                final Object bindingForm;
+
+                                if (symbolp(binding)) {
+                                    sym = binding;
+                                    bindingForm = null;
+                                } else if (consp(binding)) {
+                                    sym = car(binding);
+                                    if (!symbolp(sym)) throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                                    if (!listp(cdr(binding))) throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+                                    bindingForm = cadr(binding);
+                                } else
+                                    throw new LambdaJError(true, "%s: malformed %s: expected bindings to contain lists an/or symbols but got %s", op, op, printSEx(binding));
+
                                 notReserved(op, sym);
-                                if (!listp(cdr(binding)))
-                                    throw new LambdaJError(true, "%s: malformed %s: expected binding to contain a symbol and a form but got %s", op, op, printSEx(binding));
+
                                 if (!letStar) // let allows no duplicate let symbols
                                     if (seen.contains(sym)) throw new LambdaJError(true, "duplicate symbol %s", sym);
                                     else seen.add(sym);
@@ -1502,7 +1511,7 @@ public class LambdaJ {
                                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
                                 
                                 if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", op, op, printSEx(binding));
-                                final Object val = eval(cadr(binding), letStar || letRec ? extenv : env, stack, level, traceLvl);
+                                final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                                 if (letDynamic && newBinding != null) {
                                     restore = cons(cons(newBinding, cdr(newBinding)), restore);
                                     newBinding.rplacd(val); // hier ist das zu frueh, das macht effektiv ein let* dynamic
@@ -5193,7 +5202,7 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction() {\n");
 
-            final ConsCell params = paramList(localFuncs);
+            final ConsCell params = paramList("labels", localFuncs, true);
             for (Object localFunc: params) {
                 env = extenv(localFunc, rsfx, env);
             }
@@ -5215,14 +5224,14 @@ public class LambdaJ {
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
                 // named let
-                final ConsCell params = paramList(cadr(args));
+                final ConsCell params = paramList("named let", cadr(args), false);
                 sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
                 // regular let
-                final ConsCell params = paramList(car(args));
+                final ConsCell params = paramList("let", car(args), false);
                 sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
                 bindings = (ConsCell)(car(args));
@@ -5263,7 +5272,16 @@ public class LambdaJ {
             if (bindings != null) {
                 final Set<String> seen = new HashSet<>();
                 for (Object binding : bindings) {
-                    final String javaname = mangle(car(binding).toString(), rsfx);
+                    final Object sym;
+                    final Object form;
+                    if (symbolp(bindings)) {
+                        sym = binding;
+                        form = null;
+                    } else {
+                        sym = car(binding);
+                        form = cadr(binding);
+                    }
+                    final String javaname = mangle(sym.toString(), rsfx);
                     if (seen.contains(javaname)) sb.append("        ");
                     else {
                         sb.append("        Object ");
@@ -5271,7 +5289,7 @@ public class LambdaJ {
                     }
                     sb.append(javaname).append(" = ");
                     if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "let*", "let*", printSEx(binding));
-                    formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
+                    formToJava(sb, form, env, topEnv, rsfx, false);
                     env = extenv(car(binding), rsfx, env);
                     sb.append(";\n");
                 }
@@ -5298,7 +5316,7 @@ public class LambdaJ {
             }
             else name = null;
             
-            final ConsCell params = paramList(car(args));
+            final ConsCell params = paramList("letrec", car(args), false);
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
@@ -5332,15 +5350,17 @@ public class LambdaJ {
 
 
 
-        /** from a list of bindings extract a new list of symbols: ((symbol1 form1)...) -> (symbol1...) */
+        /** from a list of bindings extract a new list of symbols: ((symbol1 form1)|symbol...) -> (symbol1...) */
         // todo vgl. LambdaJ.extractParamList()
-        private static ConsCell paramList(Object bindings) {
+        private static ConsCell paramList(String func, Object bindings, boolean lists) {
             if (bindings == null) return null;
             ConsCell params = null; ConsCell insertPos = null;
             for (Object binding: (ConsCell)bindings) {
                 if (params == null) { params = cons(null, null);          insertPos = params; }
                 else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
-                insertPos.rplaca(car(binding));
+                if (!lists && symbolp(binding)) insertPos.rplaca(binding);
+                else if (consp(binding)) insertPos.rplaca(car(binding));
+                else throw new LambdaJError(true, "%s: malformed: expected a binding but got %s", func, printSEx(binding));
             }
             return params;
         }

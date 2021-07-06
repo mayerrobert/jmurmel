@@ -1108,3 +1108,10 @@ setq, rplaca, rplacd im compiler
 -> setq erledigt
 
 --run soll nil nicht als result printen, :r schon
+
+https://gigamonkeys.com/book/variables.html
+Each initialization form is either a list containing a variable name and an initial value form
+or--as a shorthand for initializing the variable to NIL--a plain variable name.
+The following LET form, for example, binds the three variables x, y, and z with initial values 10, 20, and NIL:
+(let ((x 10) (y 20) z)
+  ...)
