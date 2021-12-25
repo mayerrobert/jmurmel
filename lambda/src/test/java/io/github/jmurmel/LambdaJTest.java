@@ -4,6 +4,7 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -160,7 +161,7 @@ public class LambdaJTest {
         Path cwd = Paths.get(".").toRealPath();
         System.out.println("LambdaJTest.runAllFiles() cwd: " + cwd);
         Path lispDir = Paths.get("src", "test", "lisp");
-        List<> files = Files.walk(lispDir)
+        List<Path> files = Files.walk(lispDir)
                 .filter(path -> path.toString().endsWith(".lisp"))
                 .collect(Collectors.toList());
 
