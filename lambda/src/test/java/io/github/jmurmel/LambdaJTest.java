@@ -9,10 +9,8 @@ import java.util.regex.Pattern;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static io.github.jmurmel.TestUtils.sexp;
+import static org.junit.Assert.*;
 
 public class LambdaJTest {
 
@@ -161,13 +159,20 @@ public class LambdaJTest {
         Path cwd = Paths.get(".").toRealPath();
         System.out.println("LambdaJTest.runAllFiles() cwd: " + cwd);
         Path lispDir = Paths.get("src", "test", "lisp");
-        int skipped = Files.walk(lispDir).filter(path -> path.toString()
-                .endsWith(".lisp")).mapToInt(LambdaJTest::runTest).sum();
+        try {
+            int skipped = Files.walk(lispDir)
+                    .filter(path -> path.toString().endsWith(".lisp"))
+                    .mapToInt(LambdaJTest::runTest).sum();
 
-        // files that contain neither "result:" nor "error:" will be skipped
-        // grep -L -E "(result:|error:)" *.lisp
-        // make sure that files won't be skipped because of a typo or extra space or something
-        assertEquals("number of skipped .lisp files has changed", 1, skipped);
+            // files that contain neither "result:" nor "error:" will be skipped
+            // grep -L -E "(result:|error:)" *.lisp
+            // make sure that files won't be skipped because of a typo or extra space or something
+            assertEquals("number of skipped .lisp files has changed", 1, skipped);
+        }
+        catch (StackOverflowError se) {
+            se.printStackTrace();
+            throw se;
+        }
     }
 
 
