@@ -1,3 +1,31 @@
+communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
+
+checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./xxx und mal als d:/.../xxx
+
+http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
+
+https://github.com/stassats/swank-gauche ist ein swank server für gauche,
+kamma vielleicht einen swank server für jmurmel abkupfern?!?
+siehe auch https://github.com/astine/swank-client/blob/master/swank-description.markdown
+
+#. form
+-> form wird zur read zeit ausgewertet
+
+https://github.com/sbcl/sbcl/blob/master/.github/workflows/windows.yml
+-> sbcl baut bei jedem push einen windows installer, der liegt dann als artefact beim workflow run, z.b. auf 
+   https://github.com/sbcl/sbcl/actions/runs/1034569455
+
+floor mit 2 parametern ist schon praktisch
+
+sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
+
+das suffix * wird für "sequentielle zuweisung" benutzt (let*, do*, prog*, ...)
+-> NICHT für rplaca* & co benutzen
+
+car und cdr auf strings und symbols macht nur probleme
+-> (list-length '(a . b)) -> 3 !?! sollte fehler geben
+-> ist auch blöd zum opencoden
+
 apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
 -> umbauen wie eval?!?
 ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
@@ -34,7 +62,7 @@ sollte apply eine dotted list akzeptieren?
 -> oder apply*?
 &+ liefert bei integer args die summe als integer mit 2s complement wraparound, auch &- &*
 -> oder +&, -&, *&, ggf auch /& für div
-
+    -> Swift hat anscheinend &+, &*, &<<, etc.
 
 java interop:
 -> siehe https://clojure.atlassian.net/browse/CLJ-2365 und https://clojure.atlassian.net/browse/CLJ-2637

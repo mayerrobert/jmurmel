@@ -1,3 +1,6 @@
+(min numbers...), (max numbers...), (gcd integers...), (lcm integers...)
+-> siehe https://www.youtube.com/watch?v=UVUjnzpQKUo
+
 utils: combine, list, nth, nhtcdr, c*r
 
 Hashmaps
