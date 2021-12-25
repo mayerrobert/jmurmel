@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -159,20 +160,20 @@ public class LambdaJTest {
         Path cwd = Paths.get(".").toRealPath();
         System.out.println("LambdaJTest.runAllFiles() cwd: " + cwd);
         Path lispDir = Paths.get("src", "test", "lisp");
-        try {
-            int skipped = Files.walk(lispDir)
-                    .filter(path -> path.toString().endsWith(".lisp"))
-                    .mapToInt(LambdaJTest::runTest).sum();
+        List<> files = Files.walk(lispDir)
+                .filter(path -> path.toString().endsWith(".lisp"))
+                .collect(Collectors.toList());
 
-            // files that contain neither "result:" nor "error:" will be skipped
-            // grep -L -E "(result:|error:)" *.lisp
-            // make sure that files won't be skipped because of a typo or extra space or something
-            assertEquals("number of skipped .lisp files has changed", 1, skipped);
+        int skipped = 0;
+        for (Path p: files) {
+            System.out.println("Invoking " + p);
+            skipped += runTest(p);
         }
-        catch (StackOverflowError se) {
-            se.printStackTrace();
-            throw se;
-        }
+
+        // files that contain neither "result:" nor "error:" will be skipped
+        // grep -L -E "(result:|error:)" *.lisp
+        // make sure that files won't be skipped because of a typo or extra space or something
+        assertEquals("number of skipped .lisp files has changed", 1, skipped);
     }
 
 
