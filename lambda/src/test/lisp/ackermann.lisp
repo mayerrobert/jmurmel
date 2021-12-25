@@ -2,7 +2,7 @@
 ; see https://stackoverflow.com/questions/37469378/y-combinator-implementation-scheme/37492667#37492667
 ; heavily recursive function, works, but takes too long with trace=env
 
-; result: 509.0
+; resultt: 509.0
 ; output: (empty)
 
 ; recursive function version

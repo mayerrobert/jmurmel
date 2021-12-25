@@ -174,7 +174,7 @@ public class LambdaJTest {
         // files that contain neither "result:" nor "error:" will be skipped
         // grep -L -E "(result:|error:)" *.lisp
         // make sure that files won't be skipped because of a typo or extra space or something
-        assertEquals("number of skipped .lisp files has changed", 1, skipped);
+        assertEquals("number of skipped .lisp files has changed", 2, skipped);
     }
 
 
@@ -288,10 +288,17 @@ public class LambdaJTest {
         System.out.println("-------------------------------------------------------");
 
         final String actualResult;
-        if (fileName.endsWith(".lisp")) {
-            actualResult = sexp(intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
-        } else {
-            actualResult = sexp(intp.interpretExpression(new StringReader(prog)::read, out::append));
+        try {
+            if (fileName.endsWith(".lisp")) {
+                actualResult = sexp(intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
+            } else {
+                actualResult = sexp(intp.interpretExpression(new StringReader(prog)::read, out::append));
+            }
+        }
+        catch (StackOverflowError se) {
+            System.out.println("stackoverflow in " + fileName);
+            se.printStackTrace(System.out);
+            throw se;
         }
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
