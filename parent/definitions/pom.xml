@@ -123,6 +123,9 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${surefire.version}</version>
+                    <configuration>
+                        <argLine>-Xms200m -Xmx500m -Xss1m</argLine>
+                    </configuration>
                 </plugin>
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
