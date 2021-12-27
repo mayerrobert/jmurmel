@@ -3411,8 +3411,8 @@ public class LambdaJ {
                 }
                 interpreter.init(System.in::read, System.out::print);
                 injectCommandlineArgs(interpreter, args);
-                runForms(parser, program, interpreter, false);
-                return;
+                final boolean success = runForms(parser, program, interpreter, false);
+                if (!success) System.exit(1);
             }
             else {
                 interpreter.init(() -> -1, s -> {});
@@ -3631,7 +3631,7 @@ public class LambdaJ {
 
     /** compile history to a class and run compiled class.
      *  if className is null "MurmelProgram" will be the class' name */
-    private static void runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter, boolean repl) {
+    private static boolean runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter, boolean repl) {
         try {
             final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, interpreter.libDir, getTmpDir());
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
@@ -3645,6 +3645,7 @@ public class LambdaJ {
                 System.out.print("==> ");  interpreter.lispPrinter.printObj(result);
                 System.out.println();
             }
+            return true;
         }
         catch (LambdaJError e) {
             System.out.println("history NOT run as Java - error: " + e.getMessage());
@@ -3653,6 +3654,7 @@ public class LambdaJ {
             System.out.println("history NOT run as Java - error: ");
             e.printStackTrace(System.out);
         }
+        return false;
     }
 
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
