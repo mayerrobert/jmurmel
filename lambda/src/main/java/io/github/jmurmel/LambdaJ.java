@@ -5317,8 +5317,9 @@ public class LambdaJ {
                 args = cdr(args);
             }
             else name = null;
-            
-            final ConsCell params = paramList("letrec", car(args), false);
+
+            final Object bindings = car(args);
+            final ConsCell params = paramList("letrec", bindings, false);
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
@@ -5330,13 +5331,21 @@ public class LambdaJ {
                 }
             }
             
-            if ((car(args)) != null)
-                for (Object letVarAndForm: (ConsCell)(car(args))) {
-                    final Object letVar = car(letVarAndForm);
-                    final String letVarName = javasym(letVar, env);
-                    sb.append("        { ").append(letVarName).append(" = ");
-                    if (caddr(letVarAndForm) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "letrec", "letrec", printSEx(letVarAndForm));
-                    formToJava(sb, cadr(letVarAndForm), env, topEnv, rsfx, false);
+            if (bindings != null)
+                for (Object binding: (ConsCell)bindings) {
+                    final Object sym;
+                    final Object form;
+                    if (symbolp(binding)) {
+                        sym = binding;
+                        form = null;
+                    } else {
+                        sym = car(binding);
+                        form = cadr(binding);
+                    }
+                    final String symName = javasym(sym, env);
+                    sb.append("        { ").append(symName).append(" = ");
+                    if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "letrec", "letrec", printSEx(binding));
+                    formToJava(sb, form, env, topEnv, rsfx, false);
                     sb.append("; }\n");
                 }
 
