@@ -1115,3 +1115,29 @@ or--as a shorthand for initializing the variable to NIL--a plain variable name.
 The following LET form, for example, binds the three variables x, y, and z with initial values 10, 20, and NIL:
 (let ((x 10) (y 20) z)
   ...)
+
+Vielleicht car, cdr, cons, ConsCell in eine Basisklasse LambdaJRuntime rausziehen?
+LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
+und ein Lisp Programm verwendet Lisp Runtime wie car, cdr, ... .
+Falls ein LambaJ Compiler kommt, wuerden erzeugte Java Programme dieselbe Runtime verwenden.
+Fuer interpretierte Programme gibts die Builtin-Wrapper, die Parameter-Checks machen und
+die Argument-Liste in Argumente wandeln.
+-> public static nested class LambdaJRuntime + "import static LambdaJ.*"
+   damit gaebs nur wenig Aenderungen in LambdaJ, und externer Code haette auch Zugriff mittels "import static LambdaJ.*" 
+
+
+let* mit einfacher syntax geht nicht im compiler:
+JMurmel> (let (a) (write a))
+nil
+==> t
+JMurmel> :r
+nil
+==> t
+JMurmel> :res
+JMurmel> (let* (a) (write a))
+nil
+==> t
+JMurmel> :r
+history NOT run as Java - error: not a symbol: a
+error occurred in S-expression line 1:1..1:20: (let* (a) (write a))
+JMurmel>

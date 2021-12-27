@@ -1,20 +1,7 @@
 
 
 
-communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
-
 checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./xxx und mal als d:/.../xxx
-
-https://github.com/stassats/swank-gauche ist ein swank server für gauche,
-kamma vielleicht einen swank server für jmurmel abkupfern?!?
-siehe auch https://github.com/astine/swank-client/blob/master/swank-description.markdown
-
-#. form
--> form wird zur read zeit ausgewertet
-
-https://github.com/sbcl/sbcl/blob/master/.github/workflows/windows.yml
--> sbcl baut bei jedem push einen windows installer, der liegt dann als artefact beim workflow run, z.b. auf 
-   https://github.com/sbcl/sbcl/actions/runs/1034569455
 
 sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
 
@@ -46,12 +33,25 @@ warum ist assoc in jmurmel drin?
 -> support für plists (wie alists aber eq statt eql), symbol-plist wäre optional auch möglich (und get, getf, ...)
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
-alte define syntax zusätzlich unterstützen:
-(define ((a 1) (b 2)))
-
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 
+
+alte define syntax zusätzlich unterstützen:
+(define ((a 1) (b 2)))
+
+communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
+
+https://github.com/stassats/swank-gauche ist ein swank server für gauche,
+kamma vielleicht einen swank server für jmurmel abkupfern?!?
+siehe auch https://github.com/astine/swank-client/blob/master/swank-description.markdown
+
+#. form
+-> form wird zur read zeit ausgewertet
+
+https://github.com/sbcl/sbcl/blob/master/.github/workflows/windows.yml
+-> sbcl baut bei jedem push einen windows installer, der liegt dann als artefact beim workflow run, z.b. auf 
+   https://github.com/sbcl/sbcl/actions/runs/1034569455
 
 j.u.l logging iwie anbinden?
 
@@ -749,31 +749,3 @@ Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() fl
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
 Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
     -> iterator ist erledigt
-
-
-
-Vielleicht car, cdr, cons, ConsCell in eine Basisklasse LambdaJRuntime rausziehen?
-LambdaJ koennte man als Lisp Programm sehen, das von Hand nach Java uebersetzt wurde,
-und ein Lisp Programm verwendet Lisp Runtime wie car, cdr, ... .
-Falls ein LambaJ Compiler kommt, wuerden erzeugte Java Programme dieselbe Runtime verwenden.
-Fuer interpretierte Programme gibts die Builtin-Wrapper, die Parameter-Checks machen und
-die Argument-Liste in Argumente wandeln.
--> public static nested class LambdaJRuntime + "import static LambdaJ.*"
-   damit gaebs nur wenig Aenderungen in LambdaJ, und externer Code haette auch Zugriff mittels "import static LambdaJ.*" 
-
-
-let* mit einfacher syntax geht nicht im compiler:
-JMurmel> (let (a) (write a))
-nil
-==> t
-JMurmel> :r
-nil
-==> t
-JMurmel> :res
-JMurmel> (let* (a) (write a))
-nil
-==> t
-JMurmel> :r
-history NOT run as Java - error: not a symbol: a
-error occurred in S-expression line 1:1..1:20: (let* (a) (write a))
-JMurmel>
