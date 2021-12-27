@@ -1,8 +1,9 @@
+
+
+
 communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
 
 checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./xxx und mal als d:/.../xxx
-
-http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
 
 https://github.com/stassats/swank-gauche ist ein swank server für gauche,
 kamma vielleicht einen swank server für jmurmel abkupfern?!?
@@ -14,8 +15,6 @@ siehe auch https://github.com/astine/swank-client/blob/master/swank-description.
 https://github.com/sbcl/sbcl/blob/master/.github/workflows/windows.yml
 -> sbcl baut bei jedem push einen windows installer, der liegt dann als artefact beim workflow run, z.b. auf 
    https://github.com/sbcl/sbcl/actions/runs/1034569455
-
-floor mit 2 parametern ist schon praktisch
 
 sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
 
@@ -761,3 +760,20 @@ Fuer interpretierte Programme gibts die Builtin-Wrapper, die Parameter-Checks ma
 die Argument-Liste in Argumente wandeln.
 -> public static nested class LambdaJRuntime + "import static LambdaJ.*"
    damit gaebs nur wenig Aenderungen in LambdaJ, und externer Code haette auch Zugriff mittels "import static LambdaJ.*" 
+
+
+let* mit einfacher syntax geht nicht im compiler:
+JMurmel> (let (a) (write a))
+nil
+==> t
+JMurmel> :r
+nil
+==> t
+JMurmel> :res
+JMurmel> (let* (a) (write a))
+nil
+==> t
+JMurmel> :r
+history NOT run as Java - error: not a symbol: a
+error occurred in S-expression line 1:1..1:20: (let* (a) (write a))
+JMurmel>

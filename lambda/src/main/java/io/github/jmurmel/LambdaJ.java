@@ -5274,7 +5274,7 @@ public class LambdaJ {
                 for (Object binding : bindings) {
                     final Object sym;
                     final Object form;
-                    if (symbolp(bindings)) {
+                    if (symbolp(binding)) {
                         sym = binding;
                         form = null;
                     } else {
@@ -5290,7 +5290,7 @@ public class LambdaJ {
                     sb.append(javaname).append(" = ");
                     if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", "let*", "let*", printSEx(binding));
                     formToJava(sb, form, env, topEnv, rsfx, false);
-                    env = extenv(car(binding), rsfx, env);
+                    env = extenv(sym, rsfx, env);
                     sb.append(";\n");
                 }
             }

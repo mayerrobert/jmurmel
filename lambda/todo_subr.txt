@@ -1,3 +1,7 @@
+http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
+
+floor mit 2 parametern ist schon praktisch
+
 (min numbers...), (max numbers...), (gcd integers...), (lcm integers...)
 -> siehe https://www.youtube.com/watch?v=UVUjnzpQKUo
 
