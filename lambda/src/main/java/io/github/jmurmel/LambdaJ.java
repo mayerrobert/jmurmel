@@ -2044,7 +2044,7 @@ public class LambdaJ {
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof Object[] ? (((Object[])o).length == 0 ? null : ((Object[])o)[0])
                                                  : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
-                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.charAt(0)
+                                                 : o instanceof LambdaJSymbol ? (((LambdaJSymbol)o).name.isEmpty() ? null : ((LambdaJSymbol)o).name.charAt(0))
                                                  : carCdrError("car", o); }
 
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
@@ -2065,7 +2065,7 @@ public class LambdaJ {
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
                                                  : o instanceof String ? (((String)o).length() <= 1 ? null : ((String)o).substring(1))
-                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.substring(1)
+                                                 : o instanceof LambdaJSymbol ? (((LambdaJSymbol)o).name.length() <= 1 ? null : ((LambdaJSymbol)o).name.substring(1))
                                                  : carCdrError("cdr", o); }
 
     private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }

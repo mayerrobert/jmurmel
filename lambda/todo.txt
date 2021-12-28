@@ -1,6 +1,8 @@
 checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./xxx und mal als d:/.../xxx
-
-sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
+-> syntax ist (require modulname optfilespec) -> object
+   gehasht wird "modulname", wenn verschiedene modulnamen verwendet werden, wirds 2x geladen
+   -> das ist eher schlecht, d.h. diese syntax ist schlecht, modulname sollte in der datei drinstehen, so wie in CL
+     -> warum brauchts überhaupt modulname + optfilespec? vielleicht besser modulname ODER filespec, und gehasht wird der kanonische pfad?!?
 
 car und cdr auf strings und symbols macht nur probleme
 -> (list-length '(a . b)) -> 3 !?! sollte fehler geben
@@ -33,6 +35,8 @@ trace sollte das symbol tracen. in der map steht aber die adresse der funktion, 
 und es wird nicht mehr getraced
 
 
+
+sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
 
 alte define syntax zusätzlich unterstützen:
 (define ((a 1) (b 2)))
