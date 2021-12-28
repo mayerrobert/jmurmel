@@ -1,12 +1,6 @@
-
-
-
 checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./xxx und mal als d:/.../xxx
 
 sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
-
-das suffix * wird für "sequentielle zuweisung" benutzt (let*, do*, prog*, ...)
--> NICHT für rplaca* & co benutzen
 
 car und cdr auf strings und symbols macht nur probleme
 -> (list-length '(a . b)) -> 3 !?! sollte fehler geben
@@ -34,6 +28,9 @@ warum ist assoc in jmurmel drin?
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+
+trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
+und es wird nicht mehr getraced
 
 
 
@@ -95,9 +92,6 @@ https://gigamonkeys.com/book/beyond-exception-handling-conditions-and-restarts.h
 
 im repl: rplaca, rplacd, setq veraendert die history (die aus conses besteht)
 -> :r fuehrt was anderes aus als der interpreter davor
-
-trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
-und es wird nicht mehr getraced
 
 as... konsequenter einsetzen statt numberArgs wenns nur um ein arg geht
 

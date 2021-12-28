@@ -1141,3 +1141,6 @@ JMurmel> :r
 history NOT run as Java - error: not a symbol: a
 error occurred in S-expression line 1:1..1:20: (let* (a) (write a))
 JMurmel>
+
+das suffix * wird für "sequentielle zuweisung" benutzt (let*, do*, prog*, ...)
+-> NICHT für rplaca* & co benutzen

@@ -42,7 +42,6 @@
 ;;;
 ;;; as well as the following additional functions and macros:
 ;;;
-;;; - [rplaca*](#rplaca), [rplacd*](#rplacd)
 ;;; - [*f, /f, +f, -f](#f-f)
 ;;; - [with-gensyms](#with-gensyms)
 ;;; - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
@@ -83,18 +82,20 @@
   (car (nthcdr n l)))
 
 
-;;; = rplaca*
-;;;     (rplaca* lst value) -> value
-;;;
-;;; Replace the car of lst by value and return value (as opposed to rplaca which returns lst).
-(defun rplaca* (l v) (rplaca l v) v)
+; m%rplaca
+;     (m%rplaca lst value) -> value
+;
+; Replace the car of lst by value and return value (as opposed to rplaca which returns lst).
+; Used in setf-expansions.
+(defun m%rplaca (l v) (rplaca l v) v)
 
 
-;;; = rplacd*
-;;;     (rplacd* lst value) -> value
-;;;
-;;; Replace the cdr of lst by value and return value (as opposed to rplacd which returns lst).
-(defun rplacd* (l v) (rplacd l v) v)
+; m%rplacd
+;     (m%rplacd lst value) -> value
+;
+; Replace the cdr of lst by value and return value (as opposed to rplacd which returns lst).
+; Used in setf-expansions.
+(defun m%rplacd (l v) (rplacd l v) v)
 
 
 ;;; = destructuring-bind
@@ -117,23 +118,23 @@
     (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
       (let ((op (car place))
             (args (cdr place)))
-        (cond ((eq   'car op)  `((,read-var) (        ,@args ) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              ((eq  'caar op)  `((,read-var) ((   car ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              ((eq  'cadr op)  `((,read-var) ((   cdr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              ((eq 'caaar op)  `((,read-var) ((  caar ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              ((eq 'caadr op)  `((,read-var) ((  cadr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              ((eq 'cadar op)  `((,read-var) ((  cdar ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
-              ((eq 'caddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+        (cond ((eq   'car op)  `((,read-var) (        ,@args ) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
+              ((eq  'caar op)  `((,read-var) ((   car ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
+              ((eq  'cadr op)  `((,read-var) ((   cdr ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
+              ((eq 'caaar op)  `((,read-var) ((  caar ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
+              ((eq 'caadr op)  `((,read-var) ((  cadr ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
+              ((eq 'cadar op)  `((,read-var) ((  cdar ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
+              ((eq 'caddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
 
-              ((eq   'cdr op)  `((,read-var) (        ,@args ) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
-              ((eq  'cdar op)  `((,read-var) ((   car ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
-              ((eq  'cddr op)  `((,read-var) ((   cdr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
-              ((eq 'cdaar op)  `((,read-var) ((  caar ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
-              ((eq 'cdadr op)  `((,read-var) ((  cadr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
-              ((eq 'cddar op)  `((,read-var) ((  cdar ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
-              ((eq 'cdddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (rplacd* ,read-var ,store-var) (cdr ,read-var)))
+              ((eq   'cdr op)  `((,read-var) (        ,@args ) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
+              ((eq  'cdar op)  `((,read-var) ((   car ,@args)) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
+              ((eq  'cddr op)  `((,read-var) ((   cdr ,@args)) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cdaar op)  `((,read-var) ((  caar ,@args)) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cdadr op)  `((,read-var) ((  cadr ,@args)) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cddar op)  `((,read-var) ((  cdar ,@args)) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
+              ((eq 'cdddr op)  `((,read-var) ((  cddr ,@args)) (,store-var) (m%rplacd ,read-var ,store-var) (cdr ,read-var)))
 
-              ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (rplaca* ,read-var ,store-var) (car ,read-var)))
+              ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
 
               (t (fatal "only symbols, car..cdddr and nth are supported for 'place'")))))))
 

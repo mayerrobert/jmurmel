@@ -42,7 +42,6 @@ mlib provides the following Common Lisp-like functions and macros:
 
 as well as the following additional functions and macros:
 
-- [rplaca*](#rplaca), [rplacd*](#rplacd)
 - [*f, /f, +f, -f](#f-f)
 - [with-gensyms](#with-gensyms)
 - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
@@ -56,14 +55,8 @@ c..r repeatedly apply car and/ or cdr as the name suggests.
 
 nthcdr applies cdr n times and returns the result.
 nth works as if `(car (nth n lst))` was invoked.
-### rplaca*
-    (rplaca* lst value) -> value
 
-Replace the car of lst by value and return value (as opposed to rplaca which returns lst).
-### rplacd*
-    (rplacd* lst value) -> value
 
-Replace the cdr of lst by value and return value (as opposed to rplacd which returns lst).
 ### destructuring-bind
     (destructuring-bind (vars*) (expressions*) forms*)
 
