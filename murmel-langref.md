@@ -473,7 +473,7 @@ in the directory that contains jmurmel.jar.
     (load "lib") ; will search for lib.lisp
 
 
-### (require module-name optional-file-path)
+### (require filespec)
 
 Load the given file once. Murmel maintains an internal
 set of loaded modules, and "require" will ignore
@@ -483,11 +483,7 @@ loading files that were already loaded by comparing
 When compiling Murmel "require" is performed at
 compile time.
 
-If "optional-file-path" is omitted or nil then
-"module-name" will be used as the file path.
-
-"module-name" and "optional-file-path" are not eval'd
-and must be strings.
+"filespec" is not eval'd and must be a string.
 
     (require "mlib") ; will search for the file mlib.lisp
                      ; unless the module "mlib" was already loaded

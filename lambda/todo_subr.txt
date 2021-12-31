@@ -1,3 +1,7 @@
+Helidon ist eine Art Application Server als Jar
+https://blogs.oracle.com/javamagazine/post/you-dont-always-need-an-application-server-to-run-jakarta-ee-applications?=2-
+HelidonSE hat ein eigenes API basierend auf Lambdas, HelidonMP kopiert man zu einer JEE app dazu
+
 http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
 
 floor mit 2 parametern ist schon praktisch

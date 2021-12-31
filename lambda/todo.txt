@@ -3,14 +3,14 @@ checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./x
    gehasht wird "modulname", wenn verschiedene modulnamen verwendet werden, wirds 2x geladen
    -> das ist eher schlecht, d.h. diese syntax ist schlecht, modulname sollte in der datei drinstehen, so wie in CL
      -> warum brauchts überhaupt modulname + optfilespec? vielleicht besser modulname ODER filespec, und gehasht wird der kanonische pfad?!?
+-> umbauen in (require filespec), gehasht wird der kanonische pfad
 
-car und cdr auf strings und symbols macht nur probleme
--> (list-length '(a . b)) -> 3 !?! sollte fehler geben
--> ist auch blöd zum opencoden
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
-apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
--> umbauen wie eval?!?
-ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
+
+
+trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
+und es wird nicht mehr getraced
 
 compiler: alle defuns/ defines, nicht nur toplevel
 -> zähler mitlaufen lassen
@@ -23,18 +23,21 @@ compiler: alle defuns/ defines, nicht nur toplevel
 (re-) define im compiler
 -> oder doch nicht? braucht man hauptsächlich im REPL
 
+
+
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc in mlib jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
 -> assoc-if, rassoc-if
 -> support für plists (wie alists aber eq statt eql), symbol-plist wäre optional auch möglich (und get, getf, ...)
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
-read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+car und cdr auf strings und symbols macht nur probleme
+-> (list-length '(a . b)) -> 3 !?! sollte fehler geben
+-> ist auch blöd zum opencoden
 
-trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
-und es wird nicht mehr getraced
-
-
+apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
+-> umbauen wie eval?!?
+ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
 

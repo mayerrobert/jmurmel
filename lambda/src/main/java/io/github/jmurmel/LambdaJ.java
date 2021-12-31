@@ -1405,19 +1405,16 @@ public class LambdaJ {
 
                     /// eval - (load filespec) -> object
                     } else if (operator == sLoad) {
-                        nArgs("load", arguments, 1);
+                        oneArg("load", arguments);
                         return loadFile("load", car(arguments));
 
-                    /// eval - (require modulname optfilespec) -> object
+                    /// eval - (require filespec) -> object
                     } else if (operator == sRequire) {
-                        nArgs("require", arguments, 1, 2);
-                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(arguments));
-                        final Object modName = car(arguments);
-                        if (!modules.contains(modName)) {
-                            Object modFilePath = cadr(arguments);
-                            if (modFilePath == null) modFilePath = modName;
-                            final Object ret = loadFile("require", modFilePath);
-                            modules.add(modName);
+                        oneArg("require", arguments);
+                        final Object filespec = car(arguments);
+                        if (!modules.contains(filespec)) {
+                            final Object ret = loadFile("require", filespec);
+                            modules.add(filespec);
                             return ret;
                         }
                         return null;
@@ -4725,13 +4722,10 @@ public class LambdaJ {
                 nArgs("load", cdr(form), 1);
                 globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
             } else if (consp(form) && car(form) == interpreter().sRequire) {
-                nArgs("require", cdr(form), 1, 2);
-                if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "require", printSEx(cdr(form)));
+                oneArg("require", cdr(form));
                 final Object modName = cadr(form);
                 if (!interpreter().modules.contains(modName)) {
-                    Object modFilePath = caddr(form);
-                    if (modFilePath == null) modFilePath = modName;
-                    globalEnv = loadFile(true,"require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
+                    globalEnv = loadFile(true,"require", ret, modName, null, globalEnv, -1, false, bodyForms, globals);
                     interpreter().modules.add(modName);
                 }
             }
