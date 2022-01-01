@@ -416,8 +416,8 @@
 ;;;     (when condition forms*) -> result
 ;;;
 ;;; Execute forms if condition evaluates to true
-;;; and return the result of the last form if any
-;;; Orherwise f condition evaluates to false,
+;;; and return the result of the last form if any.
+;;; Otherwise f condition evaluates to false,
 ;;; the forms are not evaluated and the return value
 ;;; of the when-form is nil.
 (defmacro when (condition . body)
@@ -432,8 +432,8 @@
 ;;;     (unless condition forms*) -> result
 ;;;
 ;;; Execute forms if condition evaluates to false
-;;; and return the result of the last form if any
-;;; Orherwise f condition evaluates to true,
+;;; and return the result of the last form if any.
+;;; Otherwise f condition evaluates to true,
 ;;; the forms are not evaluated and the return value
 ;;; of the unless-form is nil.
 (defmacro unless (condition . body)
