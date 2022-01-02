@@ -4,6 +4,8 @@ checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./x
    -> das ist eher schlecht, d.h. diese syntax ist schlecht, modulname sollte in der datei drinstehen, so wie in CL
      -> warum brauchts überhaupt modulname + optfilespec? vielleicht besser modulname ODER filespec, und gehasht wird der kanonische pfad?!?
 -> umbauen in (require filespec), gehasht wird der kanonische pfad
+  -> oder vielleicht doch "provide" so wie in CL und elisp?
+  -> in CL sind require und provide funktionen, ist aber schwierig im murmel compiler
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
@@ -25,6 +27,13 @@ compiler: alle defuns/ defines, nicht nur toplevel
 
 
 
+CL+J ist ein CFFI Binding CL nach Java: https://common-lisp.net/project/cl-plus-j/
+CL+J is a JNI based interface to a Java Virtual Machine through CFFI. It targets safe, exact and complete access to Java 
+from Common Lisp with as high integration as possible of the Java and CL respective runtime environments 
+(especially at the condition/exception level).
+CL+J uses a set of reader dispatch-macros to simplify the Java code interface. In CL+J the traditional "Hello World!" becomes:
+  (#_System.out.println (jstr "Hello World!"))
+
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc in mlib jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
 -> assoc-if, rassoc-if
@@ -45,6 +54,7 @@ alte define syntax zusätzlich unterstützen:
 (define ((a 1) (b 2)))
 
 communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
+siehe auch https://github.com/hawkir/calispel
 
 https://github.com/stassats/swank-gauche ist ein swank server für gauche,
 kamma vielleicht einen swank server für jmurmel abkupfern?!?
