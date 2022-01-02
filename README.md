@@ -52,7 +52,7 @@ See also "Known Issues" in [murmel-langref.md](murmel-langref.md).
 
 **Copyright**
 
-Murmel and JMurmel are Copyright (C) 2020-2021 Robert Mayer.
+Murmel and JMurmel are Copyright (C) 2020-2022 Robert Mayer.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see [LICENSE](LICENSE).
@@ -72,7 +72,7 @@ for a first peek at JMurmel (compiling Murmel won't work, tough, only the interp
 
 *(This section replicates the contents of `GETTING STARTED.txt`.)*
 
-Make sure you have Java 8+ installed (Java 8 is minimum, Java 16 is preferred).
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 17 is preferred).
 
 `java -version` will tell (GNU/linux or Unix or Mac users please adjust as appropriate):
 
