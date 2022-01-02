@@ -1144,3 +1144,12 @@ JMurmel>
 
 das suffix * wird für "sequentielle zuweisung" benutzt (let*, do*, prog*, ...)
 -> NICHT für rplaca* & co benutzen
+
+checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./xxx und mal als d:/.../xxx
+-> syntax ist (require modulname optfilespec) -> object
+   gehasht wird "modulname", wenn verschiedene modulnamen verwendet werden, wirds 2x geladen
+   -> das ist eher schlecht, d.h. diese syntax ist schlecht, modulname sollte in der datei drinstehen, so wie in CL
+     -> warum brauchts überhaupt modulname + optfilespec? vielleicht besser modulname ODER filespec, und gehasht wird der kanonische pfad?!?
+-> umbauen in (require filespec), gehasht wird der kanonische pfad
+  -> oder vielleicht doch "provide" so wie in CL und elisp?
+  -> in CL sind require und provide funktionen, ist aber schwierig im murmel compiler

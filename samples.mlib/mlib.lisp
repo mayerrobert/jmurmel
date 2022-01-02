@@ -47,6 +47,9 @@
 ;;; - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
 
 
+(provide "mlib")
+
+
 ;;; = caar..cdddr
 ;;;     (c..r lst) -> result
 ;;;

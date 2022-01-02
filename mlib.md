@@ -191,16 +191,16 @@ a and b are conses whose car and cdr are equal respectively
     (when condition forms*) -> result
 
 Execute forms if condition evaluates to true
-and return the result of the last form if any
-Orherwise f condition evaluates to false,
+and return the result of the last form if any.
+Otherwise f condition evaluates to false,
 the forms are not evaluated and the return value
 of the when-form is nil.
 ### unless
     (unless condition forms*) -> result
 
 Execute forms if condition evaluates to false
-and return the result of the last form if any
-Orherwise f condition evaluates to true,
+and return the result of the last form if any.
+Otherwise f condition evaluates to true,
 the forms are not evaluated and the return value
 of the unless-form is nil.
 ### case

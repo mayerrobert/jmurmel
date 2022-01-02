@@ -473,7 +473,7 @@ pi
 ;     (load "lib") ; will search for lib.lisp
 
 
-;;; = (require filespec)
+;;; = (require module-name optional-file-path)
 ;
 ; Load the given file once. Murmel maintains an internal
 ; set of loaded modules, and "require" will ignore
@@ -483,10 +483,20 @@ pi
 ; When compiling Murmel "require" is performed at
 ; compile time.
 ;
-; "filespec" is not eval'd and must be a string.
+; If "optional-file-path" is omitted or nil then
+; "module-name" will be used as the file path.
+;
+; "module-name" and "optional-file-path" are not eval'd
+; and must be strings.
 
 ;     (require "mlib") ; will search for the file mlib.lisp
                  ; unless the module "mlib" was already loaded
+
+
+;;; = (provide module-name)
+;
+; Set a file's modulename so that "require" won't
+; load it twice.
 
 
 ;;; == Function application ===========

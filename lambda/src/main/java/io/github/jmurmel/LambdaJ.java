@@ -1196,6 +1196,7 @@ public class LambdaJ {
 
             sLoad    = internReserved("load");
             sRequire = internReserved("require");
+            sProvide = internReserved("provide");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1214,7 +1215,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn, sLoad, sRequire;
+    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn, sLoad, sRequire, sProvide;
 
     private Supplier<Object> expTrue;
 
@@ -1408,15 +1409,23 @@ public class LambdaJ {
                         oneArg("load", arguments);
                         return loadFile("load", car(arguments));
 
-                    /// eval - (require filespec) -> object
+                    /// eval - (require modulname optfilespec) -> object
                     } else if (operator == sRequire) {
-                        oneArg("require", arguments);
-                        final Object filespec = car(arguments);
-                        if (!modules.contains(filespec)) {
-                            final Object ret = loadFile("require", filespec);
-                            modules.add(filespec);
-                            return ret;
+                        nArgs("require", arguments, 1, 2);
+                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(arguments));
+                        final Object modName = car(arguments);
+                        if (!modules.contains(modName)) {
+                            Object modFilePath = cadr(arguments);
+                            if (modFilePath == null) modFilePath = modName;
+                            return loadFile("require", modFilePath);
                         }
+                        return null;
+
+                    } else if (operator == sProvide) {
+                        oneArg("provide", arguments);
+                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(arguments));
+                        final Object modName = car(arguments);
+                        modules.add(modName);
                         return null;
                     }
 
@@ -4719,17 +4728,24 @@ public class LambdaJ {
                 final Object expansion = interpreter().mexpand(car(form), (ConsCell) cdr(form), 0, 0, 0);
                 globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
             } else if (consp(form) && car(form) == interpreter().sLoad) {
-                nArgs("load", cdr(form), 1);
+                oneArg("load", cdr(form));
                 globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
             } else if (consp(form) && car(form) == interpreter().sRequire) {
-                oneArg("require", cdr(form));
+                nArgs("require", cdr(form), 1, 2);
+                if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "require", printSEx(cdr(form)));
                 final Object modName = cadr(form);
                 if (!interpreter().modules.contains(modName)) {
-                    globalEnv = loadFile(true,"require", ret, modName, null, globalEnv, -1, false, bodyForms, globals);
+                    Object modFilePath = caddr(form);
+                    if (modFilePath == null) modFilePath = modName;
+                    globalEnv = loadFile(true,"require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
                     interpreter().modules.add(modName);
                 }
-            }
-            else bodyForms.add(form);
+            } else if (consp(form) && car(form) == interpreter().sProvide) {
+                oneArg("provide", cdr(form));
+                if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "provide", printSEx(cdr(form)));
+                final Object modName = cadr(form);
+                interpreter().modules.add(modName);
+            } else bodyForms.add(form);
 
             if (consp(form) && (car(form) == interpreter().sDefine || car(form) == interpreter().sDefun))
                 globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
@@ -5060,7 +5076,12 @@ public class LambdaJ {
                         // pass1 has replaced all toplevel (require)s with the file contents
                         throw new LambdaJError("require as non-toplevel form is not implemented");
                     }
-                    
+
+                    if (interpreter().sProvide == op) {
+                        // pass 2 shouldn't see this
+                        throw new LambdaJError("provide as non-toplevel form is not implemented");
+                    }
+
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
                         final Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
