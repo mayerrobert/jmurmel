@@ -26,8 +26,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -5561,13 +5559,10 @@ public class LambdaJ {
 /// used by MurmelJavaCompiler to compile the generated Java to an in-memory class and optionally a .jar file.
 class JavaCompilerHelper {
     private static final java.util.Map<String, String> ENV = Collections.singletonMap("create", "true");
-    private MurmelClassLoader murmelClassLoader;
+    private final MurmelClassLoader murmelClassLoader;
 
     JavaCompilerHelper(Path outPath) {
-        AccessController.doPrivileged((PrivilegedAction<?>) () -> {
-            murmelClassLoader = new MurmelClassLoader(outPath);
-            return null;
-        });
+        murmelClassLoader = new MurmelClassLoader(outPath);
     }
 
     @SuppressWarnings("unchecked")
