@@ -13,6 +13,7 @@
 ;;; new macros defined by defmacro calls within the form are not considered.
 
 (require "mlib")
+(provide "expand")
 
 (defun m%macroexpand-1 (ex)
   (let ((expanded (macroexpand-1 ex)))
