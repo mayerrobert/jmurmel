@@ -948,6 +948,12 @@ Error: line 2:0: unexpected ')'
 Macros: in ANSI Common Lisp, Paul Graham pp413 steht quasiquote expansion
 in https://icem.folkwang-uni.de/~finnendahl/cm_kurse/doc/schintro/schintro_130.html#SEC190 ist defmacro skizziert
 
+http://www.gigamonkeys.com/book/macros-defining-your-own.html
+(defmacro when (condition . body) (list 'if condition (cons 'progn body)))
+
+JMurmel> (macroexpand-1 '(when (= 1 2) (write "hello ") (write "world")))
+==> (if (= 1 2) (progn (write "hello ") (write "world")))
+
 1e3 wird als symbol gelesen
 -> doublePattern stimmt nicht
 

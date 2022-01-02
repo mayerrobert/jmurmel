@@ -1,4 +1,3 @@
-
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 
@@ -181,12 +180,6 @@ gensym im compiler (momentan gehts nur in macros)
 
 1\234 sollte als symbol gelesen werden
 
-http://www.gigamonkeys.com/book/macros-defining-your-own.html
-(defmacro when (condition . body) (list 'if condition (cons 'progn body)))
-
-JMurmel> (macroexpand-1 '(when (= 1 2) (write "hello ") (write "world")))
-==> (if (= 1 2) (progn (write "hello ") (write "world")))
-
 
 Macros im compiler
 -> http://clhs.lisp.se/Body/m_defmac.htm:
@@ -331,8 +324,6 @@ JSR223 vielleicht in ein zweites jar verpacken?
 
 
 tests von lis.py verpacken
-
-mit maven replace regex aus murmelref.lisp eine murmelref.md datei erzeugen
 
 eval, interpretExpressions & Co aendern:
 - einige init methoden die setzen in, out, environment, symboltable
