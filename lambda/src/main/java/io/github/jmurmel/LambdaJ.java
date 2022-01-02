@@ -1417,7 +1417,9 @@ public class LambdaJ {
                         if (!modules.contains(modName)) {
                             Object modFilePath = cadr(arguments);
                             if (modFilePath == null) modFilePath = modName;
-                            return loadFile("require", modFilePath);
+                            Object ret = loadFile("require", modFilePath);
+                            if (!modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+                            return ret;
                         }
                         return null;
 
@@ -4738,7 +4740,7 @@ public class LambdaJ {
                     Object modFilePath = caddr(form);
                     if (modFilePath == null) modFilePath = modName;
                     globalEnv = loadFile(true,"require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
-                    interpreter().modules.add(modName);
+                    if (!interpreter().modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
                 }
             } else if (consp(form) && car(form) == interpreter().sProvide) {
                 oneArg("provide", cdr(form));
