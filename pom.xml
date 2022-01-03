@@ -5,19 +5,19 @@
         <groupId>io.github.jmurmel.parent</groupId>
         <artifactId>definitions</artifactId>
         <relativePath>./parent/definitions/pom.xml</relativePath>
-        <version>1.1</version>
+        <version>1.2-SNAPSHOT</version>
     </parent>
 
     <groupId>io.github.jmurmel</groupId>
     <artifactId>jmurmel-all</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
         <url>https://github.com/mayerrobert/jmurmel/blob/master</url>
         <connection>scm:git:git://github.com/mayerrobert/jmurmel.git</connection>
         <developerConnection>scm:git:git@github.com:mayerrobert/jmurmel.git</developerConnection>
-        <tag>jmurmel-all-1.1</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <modules>
