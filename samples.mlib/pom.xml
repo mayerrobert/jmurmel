@@ -5,19 +5,19 @@
         <groupId>io.github.jmurmel.parent</groupId>
         <artifactId>definitions</artifactId>
         <relativePath>../parent/definitions/pom.xml</relativePath>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1</version>
     </parent>
 
     <groupId>io.github.jmurmel</groupId>
     <artifactId>samples.mlib</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
     <packaging>pom</packaging>
 
     <dependencies>
         <dependency>
             <groupId>io.github.jmurmel</groupId>
             <artifactId>jmurmel</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.1</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
@@ -41,7 +41,7 @@
                                 <argument>-classpath</argument>
                                 <!-- automatically creates the classpath using all project dependencies,
                                      also adding the project build directory -->
-                                <classpath/>
+                                <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
                                 <argument>--libdir</argument>
@@ -114,7 +114,7 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
-                                <classpath/>
+                                <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
                                 <argument>--libdir</argument>
@@ -134,7 +134,7 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
-                                <classpath/>
+                                <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
                                 <argument>--run</argument>
