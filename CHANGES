@@ -1,0 +1,9 @@
+
+Changes in JMurmel-1.1 relative to JMurmel-1.0
+
+ * feature expressions #+, #-, and, or, not
+ * reader macros #b #o #f for binary, oct and hex, #\ for characters
+ * load, require, provide
+ * default library "mlib"
+ * documentation in markdown (murmel-langref.md, mlib.md)
+ * numerous bugfixes
