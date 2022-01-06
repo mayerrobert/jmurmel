@@ -36,9 +36,9 @@
     <rule ref="category/java/bestpractices.xml/LooseCoupling"/>
     <!-- <rule ref="category/java/bestpractices.xml/MethodReturnsInternalArray" /> -->
     <rule ref="category/java/bestpractices.xml/MissingOverride"/>
-    <rule ref="category/java/bestpractices.xml/OneDeclarationPerLine"/>
+    <!--<rule ref="category/java/bestpractices.xml/OneDeclarationPerLine"/>-->
     <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation"/>
-    <rule ref="category/java/bestpractices.xml/PreserveStackTrace"/>
+    <!--<rule ref="category/java/bestpractices.xml/PreserveStackTrace"/>-->
     <!-- <rule ref="category/java/bestpractices.xml/ReplaceEnumerationWithIterator" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/ReplaceHashtableWithMap" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/ReplaceVectorWithList" /> -->
@@ -60,12 +60,26 @@
     <!-- NAMING CONVENTIONS -->
     <rule ref="category/java/codestyle.xml/ClassNamingConventions"/>
     <!--<rule ref="category/java/codestyle.xml/FieldNamingConventions" />-->
-    <rule ref="category/java/codestyle.xml/FormalParameterNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/FormalParameterNamingConventions">
+        <properties>
+            <property name="methodParameterPattern" value="[_a-z][_a-zA-Z0-9]*" />
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/GenericsNaming"/>
     <!-- <rule ref="category/java/codestyle.xml/LinguisticNaming" /> -->
-    <rule ref="category/java/codestyle.xml/LocalVariableNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/LocalVariableNamingConventions">
+        <properties>
+            <property name="localVarPattern" value="[_a-z][_a-zA-Z0-9]*" />
+            <property name="finalVarPattern" value="[_a-z][_a-zA-Z0-9]*" />
+        </properties>
+    </rule>
     <!-- <rule ref="category/java/codestyle.xml/LongVariable" /> -->
-    <rule ref="category/java/codestyle.xml/MethodNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions">
+        <properties>
+            <property name="methodPattern" value="[_a-z][_a-zA-Z0-9]*" />
+            <property name="staticPattern" value="[_a-z][_a-zA-Z0-9]*" />
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/PackageCase"/>
     <!-- <rule ref="category/java/codestyle.xml/ShortClassName" /> -->
     <!-- <rule ref="category/java/codestyle.xml/ShortMethodName" /> -->
@@ -88,7 +102,7 @@
     <!-- <rule ref="category/java/codestyle.xml/CallSuperInConstructor" /> -->
     <!-- <rule ref="category/java/codestyle.xml/CommentDefaultAccessModifier" /> -->
     <!-- <rule ref="category/java/codestyle.xml/ConfusingTernary" /> -->
-    <rule ref="category/java/codestyle.xml/ControlStatementBraces"/>
+    <!--<rule ref="category/java/codestyle.xml/ControlStatementBraces"/>-->
     <!--<rule ref="category/java/codestyle.xml/DefaultPackage"/> deprecated since 6.35.0 -->
     <!-- <rule ref="category/java/codestyle.xml/EmptyMethodInAbstractClassShouldBeAbstract" /> -->
     <rule ref="category/java/codestyle.xml/ExtendsObject"/>
@@ -100,7 +114,7 @@
     <rule ref="category/java/codestyle.xml/NoPackage"/>
     <!-- <rule ref="category/java/codestyle.xml/UseUnderscoresInNumericLiterals" /> -->
     <!-- <rule ref="category/java/codestyle.xml/OnlyOneReturn" /> -->
-    <!-- <rule ref="category/java/codestyle.xml/PrematureDeclaration" /> -->
+    <!--<rule ref="category/java/codestyle.xml/PrematureDeclaration" />-->
     <!-- <rule ref="category/java/codestyle.xml/SuspiciousConstantFieldName" /> -->
     <!-- <rule ref="category/java/codestyle.xml/TooManyStaticImports" /> -->
     <rule ref="category/java/codestyle.xml/UnnecessaryAnnotationValueElement"/>
@@ -173,11 +187,11 @@
 
 
 
-    <rule ref="category/java/errorprone.xml/AssignmentInOperand">
+    <!--<rule ref="category/java/errorprone.xml/AssignmentInOperand">
         <properties>
             <property name="allowWhile" value="true"/>
         </properties>
-    </rule>
+    </rule>-->
     <rule ref="category/java/errorprone.xml/AssignmentToNonFinalStatic"/>
     <rule ref="category/java/errorprone.xml/AvoidAccessibilityAlteration"/>
     <!-- <rule ref="category/java/errorprone.xml/AvoidAssertAsIdentifier" /> -->
@@ -206,7 +220,7 @@
     <rule ref="category/java/errorprone.xml/CloneMethodReturnTypeMustMatchClassName"/>
     <!-- <rule ref="category/java/errorprone.xml/CloneThrowsCloneNotSupportedException"/> deprecated since 6.35.0 -->
     <rule ref="category/java/errorprone.xml/CloseResource"/>
-    <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals"/>
+    <!--<rule ref="category/java/errorprone.xml/CompareObjectsWithEquals"/>-->
     <rule ref="category/java/errorprone.xml/ComparisonWithNaN"/>
     <!-- <rule ref="category/java/errorprone.xml/ConstructorCallsOverridableMethod" /> -->
     <!-- <rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis" /> -->
@@ -224,7 +238,7 @@
     <!-- <rule ref="category/java/errorprone.xml/FinalizeOverloaded" /> -->
     <!-- <rule ref="category/java/errorprone.xml/FinalizeShouldBeProtected" /> -->
     <rule ref="category/java/errorprone.xml/IdempotentOperations"/>
-    <rule ref="category/java/errorprone.xml/ImplicitSwitchFallThrough"/>
+    <!--<rule ref="category/java/errorprone.xml/ImplicitSwitchFallThrough"/>-->
     <rule ref="category/java/errorprone.xml/InstantiationToGetClass"/>
     <!-- <rule ref="category/java/errorprone.xml/InvalidLogMessageFormat" /> -->
     <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
@@ -242,7 +256,7 @@
     <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode"/>
     <rule ref="category/java/errorprone.xml/ProperCloneImplementation"/>
     <rule ref="category/java/errorprone.xml/ProperLogger"/>
-    <rule ref="category/java/errorprone.xml/ReturnEmptyCollectionRatherThanNull"/>
+    <!--<rule ref="category/java/errorprone.xml/ReturnEmptyCollectionRatherThanNull"/>-->
     <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
     <!-- <rule ref="category/java/errorprone.xml/SimpleDateFormatNeedsLocale" /> -->
     <rule ref="category/java/errorprone.xml/SingleMethodSingleton"/>
