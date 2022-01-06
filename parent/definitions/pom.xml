@@ -33,6 +33,8 @@
         <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
 
+        <maven-pmd-plugin.version>3.15.0</maven-pmd-plugin.version>
+
         <!-- report maven-plugins -->
         <maven-reports-plugin.version>3.1.2</maven-reports-plugin.version>
         <maven-jxr-plugin.version>3.1.1</maven-jxr-plugin.version>
@@ -140,6 +142,19 @@
 						<includeTests>false</includeTests>
 					</configuration>
 				</plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>${maven-pmd-plugin.version}</version>
+                    <!-- need to override old dependency, see https://issues.apache.org/jira/browse/MPMD-325 -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.ow2.asm</groupId>
+                            <artifactId>asm</artifactId>
+                            <version>9.2</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
