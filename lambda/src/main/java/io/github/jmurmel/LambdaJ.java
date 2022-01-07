@@ -4706,7 +4706,7 @@ public class LambdaJ {
             ret.flush();
         }
 
-        private ConsCell toplevelFormToJava(WrappingWriter ret, ArrayList<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
+        private ConsCell toplevelFormToJava(WrappingWriter ret, List<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
             if (consp(form)) { // todo toplevel progn inline expandieren?
                 final Object op = car(form);
                 if (op == interpreter().sDefine) {
@@ -5431,7 +5431,7 @@ public class LambdaJ {
             return env;
         }
 
-        private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, ArrayList<Object> bodyForms, StringBuilder globals) {
+        private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
             if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
             final String fileName = (String) argument;
             final SymbolTable prevSymtab = st;
