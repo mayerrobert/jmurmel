@@ -121,7 +121,7 @@ public class LambdaJ {
         final URL url = cl.getResource("META-INF/MANIFEST.MF");
         if (url == null) versionInfo = "unknown";
         else {
-            try (final InputStream is = url.openStream()) {
+            try (InputStream is = url.openStream()) {
                 final Manifest manifest = new Manifest(is);
                 versionInfo = manifest.getMainAttributes().getValue("Implementation-Version");
             } catch (IOException e) {
@@ -135,7 +135,7 @@ public class LambdaJ {
     static {
         Path path;
         try {
-            Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            final Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             if (Files.isDirectory(p)) {
                 path = p;
             }
@@ -625,7 +625,7 @@ public class LambdaJ {
                 if (charOrCharactername.length() == 1) return charOrCharactername.charAt(0);
                 if (isLong(charOrCharactername)) {
                     try {
-                        int n = Integer.parseInt(charOrCharactername);
+                        final int n = Integer.parseInt(charOrCharactername);
                         if (n > 126) return (char)n;
                     } catch (NumberFormatException e) {
                         throw new ParseError("line %d:%d: '%s' following #\\ is not a valid number", lineNo, charNo, charOrCharactername);
@@ -638,7 +638,7 @@ public class LambdaJ {
 
             // #| ... multiline comment ending with |#
             case '|':
-                int ln = lineNo, cn = charNo;
+                final int ln = lineNo, cn = charNo;
                 while (look != EOF) {
                     // note single & to avoid short-circuiting
                     if (look == '|' & (look = getchar(false)) == '#') {
@@ -692,7 +692,7 @@ public class LambdaJ {
                 look = getchar(false);
             }
             final String ret = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
-            if (ret.isEmpty()) throw new ParseError("line %d:%d: EOF after #%c", lineNo, charNo, (int)macroChar);
+            if (ret.isEmpty()) throw new ParseError("line %d:%d: EOF after #%c", lineNo, charNo, macroChar);
             return ret;
         }
 
@@ -1364,8 +1364,7 @@ public class LambdaJ {
                         notReserved("defmacro", macroName);
                         final int arglen = length(arguments);
                         if (arglen == 1) {
-                            Object prev = macros.remove(macroName);
-                            return prev != null ? macroName : null;
+                            return macros.remove(macroName) != null ? macroName : null;
                         }
                         else if (arglen == 3) {
                             final ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
@@ -1415,7 +1414,7 @@ public class LambdaJ {
                         if (!modules.contains(modName)) {
                             Object modFilePath = cadr(arguments);
                             if (modFilePath == null) modFilePath = modName;
-                            Object ret = loadFile("require", modFilePath);
+                            final Object ret = loadFile("require", modFilePath);
                             if (!modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
                             return ret;
                         }
@@ -1475,8 +1474,8 @@ public class LambdaJ {
                     /// eval - (let* optsymbol? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
-                        final boolean letDynamic = (car(arguments)) == sDynamic;
-                        if (letDynamic && !(operator == sLetStar)) throw new LambdaJError(true, "%s: malformed %s: dynamic only allowed with let*", operator, operator, form);
+                        final boolean letDynamic = car(arguments) == sDynamic;
+                        if (letDynamic && operator != sLetStar) throw new LambdaJError(true, "%s: malformed %s: dynamic only allowed with let*", operator, operator, form);
                         final boolean letStar  = operator == sLetStar;
                         final boolean letRec   = operator == sLetrec;
                         final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
@@ -1629,7 +1628,7 @@ public class LambdaJ {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
             }
             for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
-                ConsCell entry = (ConsCell) caar(c);
+                final ConsCell entry = (ConsCell) caar(c);
                 entry.rplacd(cdar(c));
             }
         }
@@ -1788,7 +1787,7 @@ public class LambdaJ {
         final SymbolTable prevSymtab = symtab;
         final Path prevPath = ((SExpressionParser)symtab).filePath;
         final Path p = findFile(prevPath, fileName);
-        try (final Reader r = Files.newBufferedReader(p)) {
+        try (Reader r = Files.newBufferedReader(p)) {
             final SExpressionParser parser = new SExpressionParser(r::read) {
                 @Override
                 public LambdaJSymbol intern(LambdaJSymbol sym) {
@@ -2892,8 +2891,8 @@ public class LambdaJ {
         if (haveString()) {
             env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
-                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)(asChar("char-code", car(a))); },
-                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)(asInt("code-char", car(a))); },
+                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)asChar("char-code", car(a)); },
+                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)asInt("code-char", car(a)); },
                   addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
                   addBuiltin("string->list", (Primitive) LambdaJ::stringToList,
                   addBuiltin("list->string", (Primitive) LambdaJ::listToString,
@@ -2984,13 +2983,13 @@ public class LambdaJ {
             env = addBuiltin("pi",      Math.PI,
                   env);
 
-            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 1); return cl_round(((Number)car(args))); },
+            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 1); return cl_round((Number)car(args)); },
                   addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); },
                   addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); },
                   addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 1); return cl_truncate((Number)car(args)); },
                   env))));
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return truncate(cl_round(((Number)car(args)))); },
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return truncate(cl_round((Number)car(args))); },
                   addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return truncate(Math.floor(((Number)car(args)).doubleValue())); },
                   addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return truncate(Math.ceil (((Number)car(args)).doubleValue())); },
                   addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 1); return truncate(cl_truncate((Number)car(args))); },
@@ -3090,7 +3089,7 @@ public class LambdaJ {
 
     private static Number inc(Number n) {
         if (n instanceof Long) {
-            long l;
+            final long l;
             if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
             return l + 1;
         }
@@ -3099,7 +3098,7 @@ public class LambdaJ {
 
     private static Number dec(Number n) {
         if (n instanceof Long) {
-            long l;
+            final long l;
             if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
             return l - 1;
         }
@@ -3283,7 +3282,7 @@ public class LambdaJ {
         final Parser parser = new SExpressionParser(features, trace, tracer, program, null, true);
         final ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
-        return interpretExpressions(parser, inReader, outWriter, (_symtab) -> null);
+        return interpretExpressions(parser, inReader, outWriter, symtab -> null);
     }
 
     /** <p>Build environment, repeatedly read an expression from {@code parser} and invoke {@code eval()} until EOF,
@@ -3401,7 +3400,7 @@ public class LambdaJ {
                     if ("--".equals(fileName)) continue;
                     if (verbose) System.out.println("compiling " + fileName + "...");
                     final Path p = Paths.get(fileName);
-                    try (final Reader r = Files.newBufferedReader(p)) {
+                    try (Reader r = Files.newBufferedReader(p)) {
                         while (true) {
                             parser.setInput(r::read);
                             parser.filePath = p;
@@ -3428,7 +3427,7 @@ public class LambdaJ {
                     if ("--".equals(fileName)) continue;
                     if (verbose) System.out.println("interpreting " + fileName + "...");
                     final Path p = Paths.get(fileName);
-                    try (final Reader r = Files.newBufferedReader(p)) {
+                    try (Reader r = Files.newBufferedReader(p)) {
                         result = interpretStream(interpreter, r::read, p, printResult, history);
                     } catch (IOException e) {
                         System.err.println();
@@ -3467,16 +3466,15 @@ public class LambdaJ {
                 }
                 else if (run) {
                     interpreter.setSymtab(parser);
-                    ObjectWriter outWriter = makeWriter(System.out::print);
+                    final ObjectWriter outWriter = makeWriter(System.out::print);
                     interpreter.setReaderPrinter(parser, outWriter);
                     interpreter.topEnv = interpreter.environment(null);
                     injectCommandlineArgs(interpreter, args);
                     runForms(parser, program, interpreter, false);
                 }
                 else {
-                    final String outFile = clsName;
                     final boolean success = compileToJava(StandardCharsets.UTF_8, parser, libPath, program, clsName, outDir);
-                    if (success) System.out.println("compiled stdin to " + (outFile == null ? "MurmelProgram" : outFile.toString()));
+                    if (success) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
                 }
             }
             else {
@@ -3671,7 +3669,7 @@ public class LambdaJ {
             if ("--".equals(fileName)) continue;
             final Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
-            try (final Reader reader = Files.newBufferedReader(p)) {
+            try (Reader reader = Files.newBufferedReader(p)) {
                 if (parser == null) parser = new SExpressionParser(reader::read);
                 else parser.setInput(reader::read);
                 while (true) {
@@ -3730,8 +3728,8 @@ public class LambdaJ {
         }
 
         final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-        try (final OutputStream os = Files.newOutputStream(p);
-             final WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
+        try (OutputStream os = Files.newOutputStream(p);
+             WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
             System.out.println("compiling...");
             c.formsToJavaSource(writer, clsName, history);
             System.out.println("compiled to Java file '" + p + '\'');
@@ -4175,7 +4173,7 @@ public class LambdaJ {
         public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",      args.length); return Math.log10(dbl(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",        args.length); return Math.exp  (dbl(args[0])); }
-        public final Number   _signum  (Object... args) { oneArg("signum",     args.length); number(args[0]); return cl_signum((Number)(args[0])); }
+        public final Number   _signum  (Object... args) { oneArg("signum",     args.length); number(args[0]); return cl_signum((Number)args[0]); }
         public final double   _expt    (Object... args) { twoArg("expt",       args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
         public final double   _mod     (Object... args) { twoArg("mod",        args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
         public final double   _rem     (Object... args) { twoArg("rem",        args.length); return cl_rem(dbl(args[0]), dbl(args[1])); }
@@ -5014,7 +5012,7 @@ public class LambdaJ {
                     if (interpreter().sDefmacro == op) {
                         if (rsfx != 0) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
-                        Object result = interpreter().eval(form, null);
+                        final Object result = interpreter().eval(form, null);
                         if (result != null) sb.append("intern(\"").append(sym).append("\")");
                         else sb.append("null");
                         return;
@@ -5117,7 +5115,7 @@ public class LambdaJ {
         private static void atomToJava(WrappingWriter sb, Object form) {
             if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else if (form instanceof Character) {
-                final char c = ((Character) form);
+                final char c = (Character) form;
                 switch (c) {
                 case '\r': sb.append("'\\r'"); break;
                 case '\n': sb.append("'\\n'"); break;
@@ -5126,7 +5124,7 @@ public class LambdaJ {
                 case '\\': sb.append("'\\''"); break;
                 default:
                     if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
-                    else sb.append((String.format("'\\u%04X'", (int)c)));
+                    else sb.append(String.format("'\\u%04X'", (int)c));
                 }
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
@@ -5147,7 +5145,7 @@ public class LambdaJ {
                 case '\t': sb.append("\\t");  break;
                 default:
                     if (c >= 32 && c < 127) sb.append(c);
-                    else sb.append((String.format("\\u%04X", (int)c)));
+                    else sb.append(String.format("\\u%04X", (int)c));
                 }
             }
         }
@@ -5166,7 +5164,7 @@ public class LambdaJ {
         private void prognToJava(WrappingWriter sb, ConsCell forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             if (cdr(forms) == null) formToJava(sb, car(forms), env, topEnv, rsfx, isLast);
             else {
-                sb.append((isLast ? "tailcall(" : "funcall(")).append("(MurmelFunction)(Object... ignored").append(ignoredCounter++).append(") -> {\n        Object result").append(rsfx).append(";\n");
+                sb.append(isLast ? "tailcall(" : "funcall(").append("(MurmelFunction)(Object... ignored").append(ignoredCounter++).append(") -> {\n        Object result").append(rsfx).append(";\n");
                 formsToJava(sb, forms, env, topEnv, rsfx, false);
                 sb.append("        }, (Object[])null)");
             }
@@ -5251,7 +5249,7 @@ public class LambdaJ {
                 final ConsCell params = paramList("let", car(args), false);
                 sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
-                bindings = (ConsCell)(car(args));
+                bindings = (ConsCell)car(args);
             }
             if (bindings != null)
                 for (Object binding: bindings) {
@@ -5275,15 +5273,15 @@ public class LambdaJ {
                 sb.append("new MurmelFunction() {\n"
                         + "        private final Object ").append(javasym(name, extenv(name, rsfx, env))).append(" = this;\n"
                         + "        @Override public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-                bindings = (ConsCell)(cadr(args));
-                bodyForms = (ConsCell) cddr(args);
+                bindings = (ConsCell)cadr(args);
+                bodyForms = (ConsCell)cddr(args);
             }
             else {
                 // regular let*: (let* ((sym form)...) forms...) -> Object
                 name = null;
                 sb.append("(MurmelFunction)(args").append(rsfx).append(") -> {\n        Object result").append(rsfx).append(";\n");
-                bindings = (ConsCell)(car(args));
-                bodyForms = (ConsCell) cdr(args);
+                bindings = (ConsCell)car(args);
+                bodyForms = (ConsCell)cdr(args);
             }
 
             if (bindings != null) {
@@ -5437,9 +5435,9 @@ public class LambdaJ {
             if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
             final String fileName = (String) argument;
             final SymbolTable prevSymtab = st;
-            final Path prevPath = ((SExpressionParser)(interpreter().symtab)).filePath;
+            final Path prevPath = ((SExpressionParser)interpreter().symtab).filePath;
             final Path p = interpreter().findFile(prevPath, fileName);
-            try (final Reader r = Files.newBufferedReader(p)) {
+            try (Reader r = Files.newBufferedReader(p)) {
                 final SExpressionParser parser = new SExpressionParser(r::read) {
                     @Override
                     public LambdaJSymbol intern(LambdaJSymbol sym) {
@@ -5462,7 +5460,7 @@ public class LambdaJ {
             finally {
                 st = prevSymtab;
                 interpreter().symtab = prevSymtab;
-                ((SExpressionParser)(interpreter().symtab)).filePath = prevPath;
+                ((SExpressionParser)interpreter().symtab).filePath = prevPath;
             }
         }
 
@@ -5471,7 +5469,7 @@ public class LambdaJ {
             if (!listp(params)) return false;
             for (;;) {
                 if (params == null) return true;
-                Object rest = cdr(params);
+                final Object rest = cdr(params);
                 if (!listp(cdr(params))) return false;
                 params = rest;
             }
@@ -5558,7 +5556,7 @@ public class LambdaJ {
 /// class JavaCompilerHelper - a helper class that wraps the Java system compiler in tools.jar,
 /// used by MurmelJavaCompiler to compile the generated Java to an in-memory class and optionally a .jar file.
 class JavaCompilerHelper {
-    private static final java.util.Map<String, String> ENV = Collections.singletonMap("create", "true");
+    private static final Map<String, String> ENV = Collections.singletonMap("create", "true");
     private final MurmelClassLoader murmelClassLoader;
 
     JavaCompilerHelper(Path outPath) {
@@ -5578,10 +5576,10 @@ class JavaCompilerHelper {
         mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_TITLE, LambdaJ.ENGINE_NAME);
         mf.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, LambdaJ.ENGINE_VERSION);
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
-        mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
+        mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
 
         /*
-        try (final JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
+        try (JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
             final String[] dirs = className.split("\\.");
             final StringBuilder path = new StringBuilder();
             for (int i = 0; i < dirs.length; i++) {
@@ -5611,10 +5609,10 @@ class JavaCompilerHelper {
 
         Files.deleteIfExists(zipPath);
 
-        try (final FileSystem zipfs = FileSystems.newFileSystem(uri, ENV)) {
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, ENV)) {
             Files.createDirectory(zipfs.getPath("META-INF/"));
 
-            try (final OutputStream out = Files.newOutputStream(zipfs.getPath("META-INF/MANIFEST.MF"))) {
+            try (OutputStream out = Files.newOutputStream(zipfs.getPath("META-INF/MANIFEST.MF"))) {
                 mf.write(out);
             }
             copyFolder(murmelClassLoader.getOutPath(), zipfs.getPath("/"));
@@ -5626,7 +5624,7 @@ class JavaCompilerHelper {
 
     void cleanup() throws IOException {
         //System.out.println("cleanup " + murmelClassLoader.getOutPath().toString());
-        try (final Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
+        try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
             // delete directory including files and sub-folders
             files.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
@@ -5636,7 +5634,7 @@ class JavaCompilerHelper {
     }
 
     private static void copyFolder(Path src, Path dest) throws IOException {
-        try (final Stream<Path> stream = Files.walk(src)) {
+        try (Stream<Path> stream = Files.walk(src)) {
             stream.forEachOrdered(sourcePath -> {
                 try {
                     final Path subSource = src.relativize(sourcePath);
@@ -5656,7 +5654,7 @@ class JavaCompilerHelper {
     Class<?> javaToClass(String className, String javaSource) throws Exception {
         final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
         if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
-        try (final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null)) {
+        try (StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null)) {
             final List<String> options = Collections.singletonList("-g"/*, "-source", "1.8", "-target", "1.8"*/);
             fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));
             //                                     out       diag  opt      classes
@@ -5681,7 +5679,7 @@ class JavaSourceFromString extends SimpleJavaFileObject {
      * @param code the source code for the compilation unit represented by this file object
      */
     JavaSourceFromString(String name, String code) {
-        super(java.net.URI.create("string:///" + name.replace('.','/') + Kind.SOURCE.extension), Kind.SOURCE);
+        super(URI.create("string:///" + name.replace('.','/') + Kind.SOURCE.extension), Kind.SOURCE);
         this.code = code;
     }
 
