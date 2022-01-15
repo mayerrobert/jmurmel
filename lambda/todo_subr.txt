@@ -1,3 +1,6 @@
+IO vielleicht auf NIO2 Channels aufsetzen? https://blogs.oracle.com/javamagazine/post/java-nio-nio2-buffers-channels-async-future-callback
+Concurrent access to file I/O is handled by the interface java.nio.channels.SeekableByteChannel. The main implementation of this interface (FileChannel) can hold the current position of where you are reading from a file, as well as the position in the file that you are writing to. This means you can have multiple threads reading from and/or writing to the same channel at different positions, making for faster file I/O.
+
 Helidon ist eine Art Application Server als Jar
 https://blogs.oracle.com/javamagazine/post/you-dont-always-need-an-application-server-to-run-jakarta-ee-applications?=2-
 HelidonSE hat ein eigenes API basierend auf Lambdas, HelidonMP kopiert man zu einer JEE app dazu
