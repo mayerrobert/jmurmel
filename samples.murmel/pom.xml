@@ -28,7 +28,7 @@
             <plugin>
                 <!-- can't use exec-maven-plugin because that doesn't support input redirection -->
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>${maven-antrun-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>run-murmel-langref</id>
