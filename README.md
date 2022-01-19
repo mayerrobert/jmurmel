@@ -23,12 +23,9 @@ a macro facility,
 backquote expansion including nested backquotes,
 JSR223 support,
 turtle- and bitmap graphics
-and garbage collection c/o Java.
+and garbage collection c/o JVM.
 
 **Goals, Priorities**
-
-At this time Murmel is a personal project,
-don't expect it to be an industrial strength Lisp in the near future.
 
 Murmel is inspired by Common Lisp, i.e. when in doubt try to do it the Common Lisp way.
 It should be relatively easy to port a program from Murmel to Common Lisp,
@@ -44,6 +41,9 @@ Murmel and JMurmel currently have the following priorities:
   compared to the previous items
 
 **Status**
+
+At this time Murmel is a personal project,
+don't expect it to be an industrial strength Lisp in the near future.
 
 Both the language Murmel as well as the interpreter/ compiler JMurmel
 currently are work in progress.
@@ -69,6 +69,19 @@ and run
     C:\> java Lambdaj.java
 
 for a first peek at JMurmel (compiling Murmel won't work, tough, only the interpreter works that way).
+
+**Optional: building from source**
+
+Clone the repo and build using maven:
+
+    C:\> git clone https://github.com/mayerrobert/jmurmel.git
+    ...
+    C:\> cd jmurmel
+    C:\jmurmel> mvn package
+
+The resulting jar will be up in `lambda\target\jmurmel.jar`
+
+**Quickstart using a precompiled version**
 
 *(This section replicates the contents of `GETTING STARTED.txt`.)*
 
@@ -98,19 +111,12 @@ At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look
 You just wrote and ran a Murmel program!
 
 Now take it from there,
-e.g. read [murmel-langref.md](murmel-langref.md).  
+e.g. read [murmel-langref.md](murmel-langref.md) and [mlib.md](mlib.md).  
 Or take a look at the example code in [samples.murmel/](samples.murmel)
 and [samples.mlib/](samples.mlib)
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
-
-| [Standalone use](#standalone-use)
-| [Embedded use](#embedded-use)
-| [Examples](#examples)
-| [Features](#jmurmel-features)
-| [Customization](#customization)
-| 
 
 ## Standalone use
 
