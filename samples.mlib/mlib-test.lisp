@@ -558,6 +558,14 @@
 )
 
 
+; test compose1
+#+murmel
+(tests compose1
+  ((compose1 - sqrt) 10) => -3.1622776601683795
+  ((compose1 1+ 1+ truncate +) 1 2 3) => 8
+)
+
+
 ; test with-gensyms
 ; define a "non-shortcircuiting logical and" as a macro
 ; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"

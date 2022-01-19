@@ -43,6 +43,7 @@
 ;;; as well as the following additional functions and macros:
 ;;;
 ;;; - [*f, /f, +f, -f](#f-f)
+;;; - [compose1](#compose1)
 ;;; - [with-gensyms](#with-gensyms)
 ;;; - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
 
@@ -926,6 +927,23 @@
 (defmacro time (expr)
   `(call-with-timing (lambda () ,expr)))
 
+
+;;; = compose1
+;;;     (compose1 func1 funcs*) -> function
+;;;
+;;; Returns a procedure that composes the given functions, applying the last function first
+;;; and the first function last. The compose1 function allows the last function to consume
+;;; any number of values, internal value passing is a single value.
+;;;
+;;; The input arity of the last function is unrestricted, and it becomes the corresponding arity
+;;; of the resulting composition.
+;;;
+;;; When exactly one function is given, it is returned.
+(defun compose1 (f . more)
+  (if more
+        (let ((g (apply compose1 more)))
+          (lambda args (f (apply g args))))
+    f))
 
 
 ;;; = with-gensyms
