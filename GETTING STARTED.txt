@@ -4,7 +4,7 @@ Getting started
 
 To run your first Murmel program use these steps:
 
-Make sure you have Java 8+ installed (Java 8 is minimum, Java 15 is preferred
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 17 is preferred
 as it is considerably faster). JDK (including tools.jar) is preferred over JRE,
 without tools.jar only interpreter mode is possible.
 
