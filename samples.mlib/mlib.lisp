@@ -647,8 +647,8 @@
                (if (none-nil args)
                      (,comb (apply f ,(if accn (list accn 'args) 'args)) (loop (cdrs args)))
                  ,lastelem)))
-       (let loop ((f f) (l l))
-         (if l (,comb (f ,(if acc (list acc 'l) 'l)) (loop f (cdr l)))
+       (let loop ((l l))
+         (if l (,comb (f ,(if acc (list acc 'l) 'l)) (loop (cdr l)))
            ,lastelem)))
     ,@(when return-list '(l))))
 
