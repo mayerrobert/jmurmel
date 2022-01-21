@@ -15,6 +15,7 @@ and begin your source file with
     (require "mlib")
 
 ### Provides:
+
 mlib provides the following Common Lisp-like functions and macros:
 
 - [caar..cdddr](#caarcdddr), [nthcdr, nth](#nthcdr-nth)
@@ -30,8 +31,8 @@ mlib provides the following Common Lisp-like functions and macros:
 - [prog1, prog2](#prog1-prog2)
 - [when](#when), [unless](#unless), [case](#case), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
 - [identity](#identity), [constantly](#constantly), [complement](#complement)
-- [member](#member)
-- [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
+- [member](#member), [reverse](#reverse)
+- [map-into](#map-into), [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
 - [every](#every), [some](#some), [notevery](#notevery), [notany](#notany)
 - [remove-if](#remove-if), [remove](#remove)
 - [reduce](#reduce)
@@ -262,6 +263,15 @@ Example usage:
 If sequence is a list then return a fresh list
 with elements in reversed order, if sequence
 is a string then return a fresh reversed string.
+### map-into
+    (map-into result-list function list*) -> result-list
+
+Destructively modifies result-list to contain the results
+of applying function to each element in the argument lists in turn.
+The iteration terminates when the shortest list (of any of
+the lists or the result-list) is exhausted.
+
+If result-list is nil, map-into returns nil.
 ### mapcar
     (mapcar function sequence+) -> list
 

@@ -455,6 +455,20 @@
   ))
 
 
+; test map-into
+(let ((l (list 0 0 0 0 0)) (k '(one two three)) (n 0))
+  (tests map-into
+    (map-into l #'1+ l) => (1 1 1 1 1)
+    l => (1 1 1 1 1)
+    (map-into l #'+ l '(10.0 20.0 30.0)) => (11.0 21.0 31.0 1 1)
+    (map-into l #'truncate l) => (11 21 31 1 1)
+    (map-into l #'cons k l) => ((one . 11) (two . 21) (three . 31) 1 1)
+    k => (one two three)
+    (map-into l (lambda () (setq n (1+ n)))) => (1 2 3 4 5)
+    n => 5
+  ))
+
+
 ; test mapcar
 (tests mapcar
   (mapcar #'car '((1 a) (2 b) (3 c))) => (1 2 3)

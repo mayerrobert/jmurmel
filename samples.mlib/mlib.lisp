@@ -15,6 +15,7 @@
 ;;;     (require "mlib")
 ;;;
 ;;; = Provides:
+;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
 ;;; - [caar..cdddr](#caarcdddr), [nthcdr, nth](#nthcdr-nth)
@@ -30,8 +31,8 @@
 ;;; - [prog1, prog2](#prog1-prog2)
 ;;; - [when](#when), [unless](#unless), [case](#case), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
 ;;; - [identity](#identity), [constantly](#constantly), [complement](#complement)
-;;; - [member](#member)
-;;; - [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
+;;; - [member](#member), [reverse](#reverse)
+;;; - [map-into](#map-into), [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
 ;;; - [every](#every), [some](#some), [notevery](#notevery), [notany](#notany)
 ;;; - [remove-if](#remove-if), [remove](#remove)
 ;;; - [reduce](#reduce)
@@ -628,6 +629,50 @@
                lp)))
     (if (stringp l) (list->string (rev l nil))
       (rev l nil))))
+
+
+;;; = map-into
+;;;     (map-into result-list function list*) -> result-list
+;;;
+;;; Destructively modifies result-list to contain the results
+;;; of applying function to each element in the argument lists in turn.
+;;; The iteration terminates when the shortest list (of any of
+;;; the lists or the result-list) is exhausted.
+;;;
+;;; If result-list is nil, map-into returns nil.
+(defun map-into (result func . lists)
+  (when result
+
+     (if (cdr lists)
+           ; 2 or more lists given
+           (labels ((none-nil (lists)
+                      (if lists (and (car lists) (none-nil (cdr lists)))
+                        t))
+                    (cdrs (lists)
+                      (if lists (cons (cdar lists) (cdrs (cdr lists)))
+                        nil))
+                    (cars (lists)
+                      (if lists (cons (caar lists) (cars (cdr lists)))
+                        nil)))
+             (let loop ((r result) (l lists))
+               (when (and r (none-nil l))
+                 (rplaca r (apply func (cars l)))
+                 (loop (cdr r) (cdrs l)))))
+
+      (if lists
+            ; 1 list given
+            (let loop ((r result) (l (car lists)))
+              (when (and r l)
+                (rplaca r (func (car l)))
+                (loop (cdr r) (cdr l))))
+
+        ; 0 lists given
+        (let loop ((r result))
+          (when r
+            (rplaca r (func))
+            (loop (cdr r))))))
+
+  result))
 
 
 ; Helper macro to generate defuns for the various maxXX functions
