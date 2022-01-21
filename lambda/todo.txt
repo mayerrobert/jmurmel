@@ -2,6 +2,9 @@ read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 
 
+https://github.com/cl21/cl21 ist Common Lisp 2021
+-> neuerfindungen in Murmel sollten dagegen gecheckt werden, z.B. hash literals (defvar *hash* #H())
+
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
 
