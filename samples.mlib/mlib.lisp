@@ -640,6 +640,8 @@
 ;;; the lists or the result-list) is exhausted.
 ;;;
 ;;; If result-list is nil, map-into returns nil.
+;;;
+;;; Similar to CL map-into http://clhs.lisp.se/Body/f_map_in.htm
 (defun map-into (result func . lists)
   (when result
 
