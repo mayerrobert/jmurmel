@@ -68,7 +68,7 @@ and run
 
     C:\> java Lambdaj.java
 
-for a first peek at JMurmel (compiling Murmel won't work, tough, only the interpreter works that way).
+for a first peek at JMurmel (compiling Murmel won't work, though, only the interpreter works that way).
 
 **Optional: building from source**
 
@@ -79,7 +79,7 @@ Clone the repo and build using maven:
     C:\> cd jmurmel
     C:\jmurmel> mvn package
 
-The resulting jar will be up in `lambda\target\jmurmel.jar`
+The resulting jar will end up in `lambda\target\jmurmel.jar`
 
 **Quickstart using a precompiled version**
 

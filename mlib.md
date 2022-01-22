@@ -271,7 +271,7 @@ of applying function to each element in the argument lists in turn.
 The iteration terminates when the shortest list (of any of
 the lists or the result-list) is exhausted.
 
-If result-list is nil, map-into returns nil.
+If result-list is nil, "map-into" returns nil.
 
 Similar to CL map-into http://clhs.lisp.se/Body/f_map_in.htm
 ### mapcar
@@ -358,22 +358,22 @@ An occurrence is determined by eql.
 ### reduce
     (reduce func sequence [from-end-p]) -> result
 
-If sequence is empty then "reduce" will return (f).
+If sequence is empty then "reduce" will return (func).
 
-Otherwise if sequence contains one element then "reduce will
+Otherwise if sequence contains one element then "reduce" will
 return this element.
 
 Otherwise if from-end is omitted or nil then
-f will be called with the first two elements
+func will be called with the first two elements
 of the sequence and subsequently with the previous result
 and the next element, and "reduce" will return the last
-result from f.
+result from func.
 
 Otherwise if from-end is given and non-nil then
-f will be called with the last two elements
+func will be called with the last two elements
 of the sequence and subsequently with the previous result
 and the previous element, and "reduce" will return the last
-result from f.
+result from func.
 ### write-char
 ### terpri, prin1, princ, print
 ### pprint

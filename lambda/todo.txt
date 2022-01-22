@@ -5,6 +5,11 @@ read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 https://github.com/cl21/cl21 ist Common Lisp 2021
 -> neuerfindungen in Murmel sollten dagegen gecheckt werden, z.B. hash literals (defvar *hash* #H())
 
+Lambdaj hat assoceq, Emacs Lisp hat assq, ggf umbenamsen, evtl. als primitive anbieten
+assoc, delete, member, rassoc, remove use eql in Common Lisp
+In Emacs Lisp they have counterparts that use eq instead: assq, delq, memq, rassq, remq
+-> siehe https://yoo2080.wordpress.com/2013/08/16/differences-between-common-lisp-and-emacs-lisp/
+
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
 
