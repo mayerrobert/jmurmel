@@ -81,8 +81,8 @@ knows a corresponding setting form, which currently are:
 - symbols
 - car..cdddr
 ### incf, decf
-    (incf place [delta-form]) -> new-value
-    (decf place [delta-form]) -> new-value
+    (incf place delta-form*) -> new-value
+    (decf place delta-form*) -> new-value
 
 incf and decf are used for incrementing and decrementing
 the value of place, respectively.
@@ -94,8 +94,8 @@ is stored in place.
 Without delta-form the return type of incf and decf will be
 the type of the number in place, otherwise the return type will be float.
 ### *f, /f
-    (*f place [delta-form]) -> new-value
-    (/f place [delta-form]) -> new-value
+    (*f place delta-form*) -> new-value
+    (/f place delta-form*) -> new-value
 
 *f and /f are used for multiplying and dividing
 the value of place, respectively.
@@ -110,8 +110,8 @@ Without delta /f will return the reciprocal of the number in place,
 Without delta-form the return type of *f will be
 the type of the number in place, otherwise the return type will be float.
 ### +f, -f
-    (+f place [delta-form]) -> new-value
-    (-f place [delta-form]) -> new-value
+    (+f place delta-form*) -> new-value
+    (-f place delta-form*) -> new-value
 
 +f and +f are used for adding and subtracting
 to/ from the value of place, respectively.
@@ -272,6 +272,8 @@ The iteration terminates when the shortest list (of any of
 the lists or the result-list) is exhausted.
 
 If result-list is nil, map-into returns nil.
+
+Similar to CL map-into http://clhs.lisp.se/Body/f_map_in.htm
 ### mapcar
     (mapcar function sequence+) -> list
 

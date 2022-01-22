@@ -179,18 +179,18 @@
 (defmacro m%inplace (name noarg arg)
   `(defmacro ,name (place . delta-form)
     (if (symbolp place)
-          `(setq ,place ,(if delta-form `(,,@arg ,place ,(car delta-form)) `(,,@noarg ,place)))
+          `(setq ,place ,(if delta-form `(,,@arg ,place ,@delta-form) `(,,@noarg ,place)))
       (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
           `(let* (,@(mapcar list vars vals)
                  (,(car store-vars) ,(if delta-form
-                                           `(,,@arg ,reader-form ,(car delta-form))
+                                           `(,,@arg ,reader-form ,@delta-form)
                                        `(,,@noarg ,reader-form))))
              ,writer-form)))))
 
 
 ;;; = incf, decf
-;;;     (incf place [delta-form]) -> new-value
-;;;     (decf place [delta-form]) -> new-value
+;;;     (incf place delta-form*) -> new-value
+;;;     (decf place delta-form*) -> new-value
 ;;;
 ;;; incf and decf are used for incrementing and decrementing
 ;;; the value of place, respectively.
@@ -206,8 +206,8 @@
 
 
 ;;; = *f, /f
-;;;     (*f place [delta-form]) -> new-value
-;;;     (/f place [delta-form]) -> new-value
+;;;     (*f place delta-form*) -> new-value
+;;;     (/f place delta-form*) -> new-value
 ;;;
 ;;; *f and /f are used for multiplying and dividing
 ;;; the value of place, respectively.
@@ -226,8 +226,8 @@
 
 
 ;;; = +f, -f
-;;;     (+f place [delta-form]) -> new-value
-;;;     (-f place [delta-form]) -> new-value
+;;;     (+f place delta-form*) -> new-value
+;;;     (-f place delta-form*) -> new-value
 ;;;
 ;;; +f and +f are used for adding and subtracting
 ;;; to/ from the value of place, respectively.
