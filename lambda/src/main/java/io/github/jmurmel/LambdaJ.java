@@ -4114,9 +4114,9 @@ public class LambdaJ {
         public static final Object _pi = Math.PI;
 
         /// predefined aliased global variables
-        // itups doesn't have a leading _ because it is avaliable under an alias name
+        // internal-time-units-per-second: itups doesn't have a leading _ because it is avaliable under an alias name
         public static final Object itups = 1e9;
-        // *COMMAND-LINE-ARGUMENT-LIST*
+        // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
 
         /// predefined primitives
