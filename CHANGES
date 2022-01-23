@@ -1,4 +1,10 @@
 
+Changes in JMurmel-1.2 relative to JMurmel-1.1
+
+ * mlib: added functions compose1, map-into
+ * mlib: inplace modification macros (incf, decf...) now process 0 or more args (was: 0 or 1)
+
+
 Changes in JMurmel-1.1 relative to JMurmel-1.0
 
  * feature expressions #+, #-, and, or, not
