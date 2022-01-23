@@ -580,6 +580,14 @@
 )
 
 
+; test curry and rcurry
+#+murmel
+(tests curry
+  ((curry - 3 2) 1) => 0.0
+  ((rcurry - 3 2) 1) => -4.0
+)
+
+
 ; test with-gensyms
 ; define a "non-shortcircuiting logical and" as a macro
 ; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"

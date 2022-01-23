@@ -44,6 +44,7 @@
 ;;; functions inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
 ;;; - [compose](#compose)
+;;; - [curry](#curry), [rcurry](#rcurry)
 ;;; - [with-gensyms](#with-gensyms)
 ;;;
 ;;; as well as the following additional functions and macros:
@@ -997,6 +998,22 @@
     f))
 
 
+;;; = curry
+;;;     (curry func args*) -> function
+;;;
+;;; Returns a function that applies args and the arguments it is called with to func.
+(defun curry (func . args)
+  (lambda callargs (apply func (append args callargs))))
+
+ 
+;;; = rcurry
+;;;     (rcurry func args*) -> function
+;;;
+;;; Returns a function that applies the arguments it is called with and args to func.
+(defun rcurry (func . args)
+  (lambda callargs (apply func (append callargs args))))
+
+ 
 ;;; = with-gensyms
 ;;;     (with-gensyms (names*) forms*) -> result
 ;;;

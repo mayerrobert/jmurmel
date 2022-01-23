@@ -181,7 +181,8 @@ or if you want to interpret a file and then go into REPL:
     C:\> jm --repl hanoi.lisp
 
 Or use JMurmel from within Emacs: add `(setq inferior-lisp-program "jm --tty")`
-to your `.emacs` file and do `M-x (run-lisp)`.
+to your `.emacs` file and do `M-x (run-lisp)`
+and use `C-M-x` to eval Murmel S-expressions.
 
 ## Embedded use
 

@@ -44,6 +44,7 @@ mlib provides the following Common Lisp-like functions and macros:
 functions inspired by [Alexandria](https://alexandria.common-lisp.dev):
 
 - [compose](#compose)
+- [curry](#curry), [rcurry](#rcurry)
 - [with-gensyms](#with-gensyms)
 
 as well as the following additional functions and macros:
@@ -411,6 +412,14 @@ The input arity of the last function is unrestricted, and it becomes the corresp
 of the resulting composition.
 
 When exactly one function is given, it is returned.
+### curry
+    (curry func args*) -> function
+
+Returns a function that applies args and the arguments it is called with to func.
+### rcurry
+    (rcurry func args*) -> function
+
+Returns a function that applies the arguments it is called with and args to func.
 ### with-gensyms
     (with-gensyms (names*) forms*) -> result
 
