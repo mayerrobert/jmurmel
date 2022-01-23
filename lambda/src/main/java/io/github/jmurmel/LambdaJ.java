@@ -1269,7 +1269,7 @@ public class LambdaJ {
                 /// eval - lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
                     if (form == null) return null;
-                    final ConsCell envEntry = assoceq(form, env);
+                    final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
                         if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", form);
@@ -1317,7 +1317,7 @@ public class LambdaJ {
                         final Object symbol = car(arguments);
                         if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "define", printSEx(symbol));
                         notReserved("define", symbol);
-                        final ConsCell envEntry = assoceq(symbol, topEnv);
+                        final ConsCell envEntry = assq(symbol, topEnv);
 
                         // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
                         //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
@@ -1343,7 +1343,7 @@ public class LambdaJ {
                             final Object symbol = car(pairs);
                             if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "setq", printSEx(symbol));
                             notReserved("setq", symbol);
-                            final ConsCell envEntry = assoceq(symbol, env);
+                            final ConsCell envEntry = assq(symbol, env);
 
                             pairs = (ConsCell) cdr(pairs);
                             if (pairs == null) throw new LambdaJError(true, "%s: odd number of arguments", "setq");
@@ -1512,7 +1512,7 @@ public class LambdaJ {
                                     else seen.add(sym);
 
                                 ConsCell newBinding = null;
-                                if (letDynamic) newBinding = assoceq(sym, topEnv);
+                                if (letDynamic) newBinding = assq(sym, topEnv);
                                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
                                 
                                 if (caddr(binding) != null) throw new LambdaJError(true, "%s: malformed %s: illegal variable specification %s", op, op, printSEx(binding));
@@ -1833,7 +1833,7 @@ public class LambdaJ {
         if (traced == null) traced = new HashMap<>();
         for (Object sym: symbols) {
             if (!symbolp(sym)) throw new LambdaJError(true, "trace: can't trace %s: not a symbol", printSEx(sym));
-            final ConsCell envEntry = assoceq(sym, topEnv);
+            final ConsCell envEntry = assq(sym, topEnv);
             if (envEntry == null) throw new LambdaJError(true, "trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
@@ -1846,7 +1846,7 @@ public class LambdaJ {
         if (traced != null) {
             for (Object sym: symbols) {
                 if (symbolp(sym)) {
-                    final ConsCell envEntry = assoceq(sym, topEnv);
+                    final ConsCell envEntry = assq(sym, topEnv);
                     if (envEntry != null) {
                         final boolean wasTraced = traced.remove(cdr(envEntry)) != null;
                         if (wasTraced) ret = cons(sym, ret);
@@ -1862,7 +1862,7 @@ public class LambdaJ {
     private Deque<Object> push(Object op, Deque<Object> traceStack) {
         if (traced == null) return traceStack;
         if (op instanceof LambdaJSymbol) {
-            final ConsCell entry = assoceq(op, topEnv);
+            final ConsCell entry = assq(op, topEnv);
             if (entry == null) return traceStack;
             op = cdr(entry);
         }
@@ -2114,9 +2114,9 @@ public class LambdaJ {
     }
 
     /** note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
-    private static ConsCell assoceq(Object atom, Object maybeList) {
+    private static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
-        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
+        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assq", printSEx(maybeList));
         for (Object env: (ConsCell) maybeList) {
             if (env != null) {
                 final ConsCell _env = (ConsCell) env;
@@ -3146,7 +3146,7 @@ public class LambdaJ {
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
-        final ConsCell envEntry = assoceq(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
+        final ConsCell envEntry = assq(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
         if (envEntry != null) return cdr(envEntry);
         throw new LambdaJError(true, "%s: '%s' is not bound", "getValue", globalSymbol);
     }
@@ -4795,7 +4795,7 @@ public class LambdaJ {
         private Set<String> implicitDecl;
         private String javasym(Object form, ConsCell env) {
             if (form == null) form = intern("nil");
-            final ConsCell symentry = assoceq(form, env);
+            final ConsCell symentry = assq(form, env);
             if (symentry == null) {
                 if (passTwo) throw new LambdaJError(true, "undefined symbol %s", form.toString());
                 System.err.println("implicit declaration of " + form);
@@ -4810,7 +4810,7 @@ public class LambdaJ {
         }
 
         private void notDefined(String func, Object sym, ConsCell env) {
-            final ConsCell prevEntry = assoceq(sym, env);
+            final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
                 notReserved((LambdaJSymbol) car(prevEntry));
                 throw new LambdaJError(true, "%s: can't redefine symbol %s", func, sym);
@@ -4819,7 +4819,7 @@ public class LambdaJ {
 
         private void defined(String func, Object sym, ConsCell env) {
             if (sym == null) sym = intern("nil");
-            final ConsCell symentry = assoceq(sym, env);
+            final ConsCell symentry = assq(sym, env);
             if (symentry == null) throw new LambdaJError(true, "%s: undefined symbol %s", func, sym.toString());
         }
 
