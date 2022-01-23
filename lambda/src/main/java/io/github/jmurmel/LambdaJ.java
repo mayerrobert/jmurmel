@@ -740,12 +740,12 @@ public class LambdaJ {
             return false;
         }
 
-        private static final Object LP = new String("(");
-        private static final Object RP = new String(")");
-        private static final Object DOT = new String(".");
-        private static final Object SQ = new String("'");
-        private static final Object BQ = new String("`");
-        private static final Object COMMA = new String(",");
+        private static final Object LP = new Object();    // (
+        private static final Object RP = new Object();    // )
+        private static final Object DOT = new Object();   // .
+        private static final Object SQ = new Object();    // '
+        private static final Object BQ = new Object();    // `
+        private static final Object COMMA = new Object(); // ,
 
         private void readToken() {
             for (;;) {
@@ -5121,7 +5121,7 @@ public class LambdaJ {
                 case '\n': sb.append("'\\n'"); break;
                 case '\t': sb.append("'\\t'"); break;
                 case '\'': sb.append("'\\''"); break;
-                case '\\': sb.append("'\\''"); break;
+                case '\\': sb.append("'\\\\'"); break;
                 default:
                     if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
                     else sb.append(String.format("'\\u%04X'", (int)c));
