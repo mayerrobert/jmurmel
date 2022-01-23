@@ -2947,7 +2947,7 @@ public class LambdaJ {
                   addBuiltin("symbolp", (Primitive) a -> { oneArg("symbolp", a);  return boolResult(symbolp(car(a))); },
                   addBuiltin("listp",   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); },
                   addBuiltin("null",    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); },
-                  addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), car(cdr(a))); },
+                  addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
                   env))))));
 
