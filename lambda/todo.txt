@@ -2,14 +2,6 @@ read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 
 
-https://github.com/cl21/cl21 ist Common Lisp 2021
--> neuerfindungen in Murmel sollten dagegen gecheckt werden, z.B. hash literals (defvar *hash* #H())
-
-Lambdaj hat assoceq, Emacs Lisp hat assq, ggf umbenamsen, evtl. als primitive anbieten
-assoc, delete, member, rassoc, remove use eql in Common Lisp
-In Emacs Lisp they have counterparts that use eq instead: assq, delq, memq, rassq, remq
--> siehe https://yoo2080.wordpress.com/2013/08/16/differences-between-common-lisp-and-emacs-lisp/
-
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
 
@@ -25,13 +17,6 @@ compiler: alle defuns/ defines, nicht nur toplevel
 -> oder doch nicht? braucht man hauptsächlich im REPL
 
 
-
-CL+J ist ein CFFI Binding CL nach Java: https://common-lisp.net/project/cl-plus-j/
-CL+J is a JNI based interface to a Java Virtual Machine through CFFI. It targets safe, exact and complete access to Java 
-from Common Lisp with as high integration as possible of the Java and CL respective runtime environments 
-(especially at the condition/exception level).
-CL+J uses a set of reader dispatch-macros to simplify the Java code interface. In CL+J the traditional "Hello World!" becomes:
-  (#_System.out.println (jstr "Hello World!"))
 
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc in mlib jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
@@ -76,16 +61,26 @@ sollte apply eine dotted list akzeptieren?
 -> oder +&, -&, *&, ggf auch /& für div
     -> Swift hat anscheinend &+, &*, &<<, etc.
 
+
+
 java interop:
 -> siehe https://clojure.atlassian.net/browse/CLJ-2365 und https://clojure.atlassian.net/browse/CLJ-2637
 Primitive und CompilerPrimitive könnten passende Java interfaces implementieren,
   z.b. Callable, Runnable, Supplier, Consumer, Predicate, defuns und lambdas ebenso
 -> vielleicht sollte Primitive, CompilerPrimitive, MurmelFunction einfach diese interfaces erweitern, und die jeweiligen Methoden sind default methoden die auf murmelcode delegieren
-   Predicate.test(T) implementieren als apply(Objectt[0]) != null usw., wenn arity nicht stimmt (also der murmelcode will args) dann gibts eh automatisch einen rt error
+   Predicate.test(T) implementieren als apply(Object[0]) != null usw., wenn arity nicht stimmt (also der murmelcode will args) dann gibts eh automatisch einen rt error
 
 parenscript (das ist eine empedded sprache CL -> Javascript) hat die funktion oder makro "chain"
 (chain console (log my-list)))) -> console.log(myList)
 -> eine ähnliche funktion/ special form könnte Java direkt in den generierten Code injecten
+
+CL+J ist ein CFFI Binding CL nach Java: https://common-lisp.net/project/cl-plus-j/
+CL+J is a JNI based interface to a Java Virtual Machine through CFFI. It targets safe, exact and complete access to Java 
+from Common Lisp with as high integration as possible of the Java and CL respective runtime environments 
+(especially at the condition/exception level).
+CL+J uses a set of reader dispatch-macros to simplify the Java code interface. In CL+J the traditional "Hello World!" becomes:
+  (#_System.out.println (jstr "Hello World!"))
+
 
 
 https://www.reddit.com/r/ProgrammingLanguages/comments/nsktgu/i_built_a_lisp/h0uadn4/
@@ -125,9 +120,6 @@ mlib-test vervollständigen
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
 
 filenamen in fehlermeldungen
-
-compose, conjoin, ... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
-evenp, oddp mit x & 0x1 machen.
 
 sollte mlib equal einen fallback nach Objects.equals() haben?
 

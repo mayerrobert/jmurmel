@@ -1,3 +1,15 @@
+compose, conjoin, curry, rcurry... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
+-> compose1 umbenamsen, alexandria passt intern auch nur primary value
+evenp, oddp mit x & 0x1 machen.
+
+https://github.com/cl21/cl21 ist Common Lisp 2021
+-> neuerfindungen in Murmel sollten dagegen gecheckt werden, z.B. hash literals (defvar *hash* #H())
+
+Lambdaj hat assoceq, Emacs Lisp hat assq, ggf umbenamsen, evtl. als primitive anbieten
+assoc, delete, member, rassoc, remove use eql in Common Lisp
+In Emacs Lisp they have counterparts that use eq instead: assq, delq, memq, rassq, remq
+-> siehe https://yoo2080.wordpress.com/2013/08/16/differences-between-common-lisp-and-emacs-lisp/
+
 IO vielleicht auf NIO2 Channels aufsetzen? https://blogs.oracle.com/javamagazine/post/java-nio-nio2-buffers-channels-async-future-callback
 Concurrent access to file I/O is handled by the interface java.nio.channels.SeekableByteChannel. The main implementation of this interface (FileChannel) can hold the current position of where you are reading from a file, as well as the position in the file that you are writing to. This means you can have multiple threads reading from and/or writing to the same channel at different positions, making for faster file I/O.
 
@@ -11,8 +23,6 @@ floor mit 2 parametern ist schon praktisch
 
 (min numbers...), (max numbers...), (gcd integers...), (lcm integers...)
 -> siehe https://www.youtube.com/watch?v=UVUjnzpQKUo
-
-utils: combine, list, nth, nhtcdr, c*r
 
 Hashmaps
 -> make-hash-table
