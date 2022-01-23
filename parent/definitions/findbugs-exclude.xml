@@ -1,0 +1,10 @@
+<FindBugsFilter>
+    <Match>
+        <!--
+        don't check SecurityManager issues
+        DP: Classloaders should only be created inside doPrivileged block
+        DP: Method invoked that should be only be invoked inside a doPrivileged block
+        -->
+        <Bug code="DP" />
+    </Match>
+</FindBugsFilter>

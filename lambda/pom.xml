@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>io.github.jmurmel.parent</groupId>
-		<artifactId>definitions</artifactId>
-		<relativePath>../parent/definitions/pom.xml</relativePath>
-		<version>1.2-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>io.github.jmurmel.parent</groupId>
+        <artifactId>definitions</artifactId>
+        <relativePath>../parent/definitions/pom.xml</relativePath>
+        <version>1.2-SNAPSHOT</version>
+    </parent>
 
     <groupId>io.github.jmurmel</groupId>
     <artifactId>jmurmel</artifactId>
@@ -22,10 +22,10 @@
 
     <properties>
         <maven.build.timestamp.format>yyyyMMdd_HHmm</maven.build.timestamp.format>
-	</properties>
+    </properties>
 
-	<build>
-	    <plugins>
+    <build>
+        <plugins>
             <plugin>
                 <!-- see https://github.com/git-commit-id/git-commit-id-maven-plugin
                      and https://github.com/git-commit-id/git-commit-id-maven-plugin/blob/master/maven/docs/using-the-plugin.md -->
@@ -60,8 +60,8 @@
             </plugin>
 
             <plugin>
-	        <groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-surefire-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
 
             <configuration>
                 <excludes>
@@ -69,34 +69,34 @@
                 </excludes>
             </configuration>
 
-			<!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an junit tests.
-			     damit wird der junit runner aktiviert -->
-	        <dependencies>
-	          <dependency>
-	            <groupId>org.apache.maven.surefire</groupId>
-	            <artifactId>surefire-junit47</artifactId>
-	            <version>${surefire.version}</version>
-	          </dependency>
-	        </dependencies>
-	      </plugin>
+            <!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an junit tests.
+                 damit wird der junit runner aktiviert -->
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.maven.surefire</groupId>
+                <artifactId>surefire-junit47</artifactId>
+                <version>${surefire.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
 
-		  <plugin>
-	        <groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-jar-plugin</artifactId>
-	        <configuration>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <configuration>
                 <finalName>jmurmel</finalName>
-				<archive>
-					<manifest>
-						<!-- <addClasspath>true</addClasspath> -->
-						<mainClass>io.github.jmurmel.LambdaJ</mainClass>
-					</manifest>
+                <archive>
+                    <manifest>
+                        <!-- <addClasspath>true</addClasspath> -->
+                        <mainClass>io.github.jmurmel.LambdaJ</mainClass>
+                    </manifest>
                     <manifestEntries>
                         <Automatic-Module-Name>io.github.jmurmel</Automatic-Module-Name>
                         <Implementation-Version>Version ${project.version}/Built from ${git.commit.id.describe} ${git.commit.time}/Built by ${user.name} ${git.build.time}</Implementation-Version>
                     </manifestEntries>
-				</archive>
-			</configuration>
-		  </plugin>
+                </archive>
+            </configuration>
+          </plugin>
             
           <plugin>
               <groupId>org.apache.maven.plugins</groupId>
@@ -150,12 +150,12 @@
                     <quiet>true</quiet>
                     <show>public</show>
                     <linksource>true</linksource>
-	                <additionalparam>-Xdoclint:all -Xdoclint:-missing</additionalparam>
-	                <additionalOptions>-Xdoclint:all -Xdoclint:-missing</additionalOptions>
-	                <additionalJOptions>
-	                    <additionalJOption>-Xdoclint:all</additionalJOption>
-	                    <additionalJOption>-Xdoclint:-missing</additionalJOption>
-	                </additionalJOptions>
+                    <additionalparam>-Xdoclint:all -Xdoclint:-missing</additionalparam>
+                    <additionalOptions>-Xdoclint:all -Xdoclint:-missing</additionalOptions>
+                    <additionalJOptions>
+                        <additionalJOption>-Xdoclint:all</additionalJOption>
+                        <additionalJOption>-Xdoclint:-missing</additionalJOption>
+                    </additionalJOptions>
                 </configuration>
                 <reportSets>
                     <reportSet>
