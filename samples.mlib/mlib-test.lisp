@@ -572,11 +572,11 @@
 )
 
 
-; test compose1
+; test compose
 #+murmel
-(tests compose1
-  ((compose1 - sqrt) 10) => -3.1622776601683795
-  ((compose1 1+ 1+ truncate +) 1 2 3) => 8
+(tests compose
+  ((compose - sqrt) 10) => -3.1622776601683795
+  ((compose 1+ 1+ truncate +) 1 2 3) => 8
 )
 
 

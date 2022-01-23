@@ -41,11 +41,14 @@ mlib provides the following Common Lisp-like functions and macros:
 - [list-length](#list-length), [length](#length)
 - [time](#time)
 
+functions inspired by [Alexandria](https://alexandria.common-lisp.dev):
+
+- [compose](#compose)
+- [with-gensyms](#with-gensyms)
+
 as well as the following additional functions and macros:
 
 - [*f, /f, +f, -f](#f-f)
-- [compose1](#compose1)
-- [with-gensyms](#with-gensyms)
 - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
 ### caar..cdddr
     (c..r lst) -> result
@@ -397,11 +400,11 @@ Same as list-length.
     (time form) -> result
 
 time evaluates form and prints various timing data.
-### compose1
-    (compose1 func1 funcs*) -> function
+### compose
+    (compose func1 funcs*) -> function
 
-Returns a procedure that composes the given functions, applying the last function first
-and the first function last. The compose1 function allows the last function to consume
+Returns a function that composes the given functions, applying the last function first
+and the first function last. The compose function allows the last function to consume
 any number of values, internal value passing is a single value.
 
 The input arity of the last function is unrestricted, and it becomes the corresponding arity
