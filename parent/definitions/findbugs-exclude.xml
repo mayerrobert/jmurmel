@@ -1,4 +1,6 @@
 <FindBugsFilter>
+    <!-- see http://findbugs.sourceforge.net/manual/filter.html
+         and http://findbugs.sourceforge.net/bugDescriptions.html -->
     <Match>
         <!--
         don't check SecurityManager issues

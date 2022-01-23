@@ -77,7 +77,7 @@
 ;;;     (nth n lst) -> nth-element
 ;;;
 ;;; nthcdr applies cdr n times and returns the result.
-;;; nth works as if `(car (nth n lst))` was invoked.
+;;; nth works as if `(car (nthcdr n lst))` was invoked.
 (defun nthcdr (n l)
   (let loop ((n n) (l l))
     (if (<= n 0) l
@@ -154,6 +154,7 @@
 ;;;
 ;;; - symbols
 ;;; - car..cdddr
+;;; - nth
 (defmacro setf args
   (if args
         (if (cdr args)

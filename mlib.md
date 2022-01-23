@@ -56,7 +56,7 @@ c..r repeatedly apply car and/ or cdr as the name suggests.
     (nth n lst) -> nth-element
 
 nthcdr applies cdr n times and returns the result.
-nth works as if `(car (nth n lst))` was invoked.
+nth works as if `(car (nthcdr n lst))` was invoked.
 
 
 ### destructuring-bind
@@ -80,6 +80,7 @@ knows a corresponding setting form, which currently are:
 
 - symbols
 - car..cdddr
+- nth
 ### incf, decf
     (incf place delta-form*) -> new-value
     (decf place delta-form*) -> new-value
