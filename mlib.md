@@ -54,32 +54,32 @@ as well as the following additional functions and macros:
 ### caar..cdddr
     (c..r lst) -> result
 
-c..r repeatedly apply car and/ or cdr as the name suggests.
+`c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
 ### nthcdr, nth
     (nthcdr n lst) -> nth-tail
     (nth n lst) -> nth-element
 
-nthcdr applies cdr n times and returns the result.
-nth works as if `(car (nthcdr n lst))` was invoked.
+`nthcdr` applies `cdr` n times and returns the result.
+`nth` works as if `(car (nthcdr n lst))` was invoked.
 
 
 ### destructuring-bind
     (destructuring-bind (vars*) (expressions*) forms*)
 
-Murmel's destructuring-bind is a subset of CL's destructuring-bind,
+Murmel's `destructuring-bind` is a subset of CL's `destructuring-bind`,
 trees are not supported, only lists are.
 
-destructuring-bind binds the variables specified in vars
+`destructuring-bind` binds the variables specified in `vars`
 to the corresponding values in the list resulting from the evaluation
-of expression; then destructuring-bind evaluates forms. 
+of `expressions`; then `destructuring-bind` evaluates `forms`. 
 ### get-setf-expansion
     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
 ### setf
     (setf pair*) -> result
 
-Takes pairs of arguments like SETQ. The first is a place and the second
+Takes pairs of arguments like `setq`. The first is a place and the second
 is the value that is supposed to go into that place. Returns the last
-value. The place argument may be any of the access forms for which SETF
+value. The place argument may be any of the access forms for which `setf`
 knows a corresponding setting form, which currently are:
 
 - symbols
@@ -89,62 +89,62 @@ knows a corresponding setting form, which currently are:
     (incf place delta-form*) -> new-value
     (decf place delta-form*) -> new-value
 
-incf and decf are used for incrementing and decrementing
-the value of place, respectively.
+`incf` and `decf` are used for incrementing and decrementing
+the value of `place`, respectively.
 
-The delta is added to (in the case of incf) or subtracted
-from (in the case of decf) the number in place and the result
-is stored in place.
+The delta is added to (in the case of `incf`) or subtracted
+from (in the case of `decf`) the number in `place` and the result
+is stored in `place`.
 
-Without delta-form the return type of incf and decf will be
-the type of the number in place, otherwise the return type will be float.
+Without `delta-form` the return type of `incf` and `decf` will be
+the type of the number in `place`, otherwise the return type will be float.
 ### *f, /f
     (*f place delta-form*) -> new-value
     (/f place delta-form*) -> new-value
 
-*f and /f are used for multiplying and dividing
-the value of place, respectively.
+`*f` and `/f` are used for multiplying and dividing
+the value of `place`, respectively.
 
-The number in place is multiplied (in the case of *f) by delta
-or divided (in the case of /f) by delta and the result
+The number in `place` is multiplied (in the case of `*f`) by delta
+or divided (in the case of `/f`) by delta and the result
 is stored in place.
 
-Without delta /f will return the reciprocal of the number in place,
-*f will return the number in place.
+Without `delta-form` `/f` will return the reciprocal of the number in `place`,
+`*f` will return the number in `place`.
 
-Without delta-form the return type of *f will be
-the type of the number in place, otherwise the return type will be float.
+Without `delta-form` the return type of `*f` will be
+the type of the number in `place`, otherwise the return type will be float.
 ### +f, -f
     (+f place delta-form*) -> new-value
     (-f place delta-form*) -> new-value
 
-+f and +f are used for adding and subtracting
-to/ from the value of place, respectively.
+`+f` and `+f` are used for adding and subtracting
+to/ from the value of `place`, respectively.
 
-The delta is added (in the case of *f) to
-or subtracted (in the case of /f) from the number in place
-and the result is stored in place.
+The delta is added (in the case of `*f`) to
+or subtracted (in the case of `/f`) from the number in `place`
+and the result is stored in `place`.
 
-Without delta -f will return the negation of the number in place,
-+f will return the number in place.
+Without `delta-form` `-f` will return the negation of the number in `place`,
+`+f` will return the number in `place`.
 
-Without delta-form the return type of +f will be
-the type of the number in place, otherwise the return type will be float.
+Without `delta-form` the return type of `+f` will be
+the type of the number in `place`, otherwise the return type will be float.
 ### push
     (push item place) -> new-place-value
 
-push prepends item to the list that is stored in place,
-stores the resulting list in place, and returns the list.
+`push` prepends `item` to the list that is stored in `place`,
+stores the resulting list in `place`, and returns the list.
 ### pop
     (pop place) -> element
 
-pop reads the value of place, remembers the car of the list which
-was retrieved, writes the cdr of the list back into the place,
+`pop` reads the value of `place`, remembers the car of the list which
+was retrieved, writes the cdr of the list back into the `place`,
 and finally yields the car of the originally retrieved list.
 ### acons
     (acons key datum alist) -> new-alist
 
-Prepends alist with a new (key . datum) tuple
+Prepends alist with a new `(key . datum)` tuple
 and returns the modified list.
 ### not
     (not form) -> boolean
@@ -154,14 +154,14 @@ Logical not.
     (and forms*) -> boolean
 
 Short-circuiting logical and.
-Return T unless any of the forms evaluate to NIL,
-NIL otherwise.
+Return `t` unless any of the `forms` evaluate to `nil`,
+`nil` otherwise.
 ### or
     (or forms*) -> result
 
 Short-circuiting logical or.
-Return NIL unless any of the forms evaluate to non-NIL,
-the result of the first form returning non-NIL otherwise.
+Return `nil` unless any of the `forms` evaluate to non-nil,
+the result of the first form returning non-nil otherwise.
 ### abs
     (abs n) -> result
 
@@ -181,74 +181,75 @@ Is this number odd?
 ### char=
     (char= characters+) -> boolean
 
-Return t if all of the arguments are the same character
+Return `t` if all of the arguments are the same character.
 ### char
     (char string n) -> nth-character
 ### equal
-    (equal x y) -> boolean
+    (equal a b) -> boolean
 
-Return t if any of the following is true
-a and b are eql
-a and b are strings, characters or symbols and have the same text value
-a and b are conses whose car and cdr are equal respectively
+Return t if any of the following is true:
+
+- `a` and `b` are `eql`
+- `a` and `b` are strings, characters or symbols and have the same text value
+- `a` and `b` are conses whose car and cdr are `equal` respectively
 ### prog1, prog2
     (prog1 first-form forms*) -> result-1
     (prog2 first-form second-form forms*) -> result-2
 ### when
     (when condition forms*) -> result
 
-Execute forms if condition evaluates to true
+Execute `forms` if `condition` evaluates to true
 and return the result of the last form if any.
-Otherwise f condition evaluates to false,
+Otherwise if `condition` evaluates to false,
 the forms are not evaluated and the return value
-of the when-form is nil.
+of the when-form is `nil`.
 ### unless
     (unless condition forms*) -> result
 
-Execute forms if condition evaluates to false
+Execute `forms` if `condition` evaluates to false
 and return the result of the last form if any.
-Otherwise f condition evaluates to true,
+Otherwise if `condition` evaluates to true,
 the forms are not evaluated and the return value
-of the unless-form is nil.
+of the unless-form is `nil`.
 ### case
      (case keyform (keys forms*)* (t forms*)?) -> result
 ### do, do*
     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
 
-do and do* iterate over a group of statements while "end-test-form" returns nil.
+`do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
 ### dotimes
     (dotimes (var count-form [result-form]) statement*) -> result
 
-Similar to CL dotimes http://clhs.lisp.se/Body/m_dotime.htm
+Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm
 ### dolist
     (dolist (var list-form [result-form]) statement*) -> result
 
-Similar to CL dolist http://clhs.lisp.se/Body/m_dolist.htm
+Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
 ### identity
     (identity object) -> object
 
-Returns its argument object.
+`identity` returns its argument `object`.
 ### constantly
     (constantly value) -> function
 
-constantly returns a function that accepts any number of arguments,
-that has no side-effects, and that always returns value. 
+`constantly` returns a function that accepts any number of arguments,
+that has no side-effects, and that always returns `value`.
 ### complement
     (complement function) -> complement-function
 
-complement returns a function that takes the same arguments as function,
-and has the same side-effect behavior as function, but returns only
+`complement` returns a function that takes the same arguments as `function`,
+and has the same side-effect behavior as `function`, but returns only
 a single value: a boolean with the opposite truth value of that
-which would be returned as the value of function.
+which would be returned as the value of `function`.
 ### member
     (member item list [test]) -> tail
 
-member searches list for item or for a top-level element that
-satisfies the test.
+`member` searches list for `item` or for a top-level element that
+satisfies the `test`.
 
-"test" if given must be a function that takes to arguments.
-If "test" was omitted or nil then "eql" will be used.
+`test` if given must be a function that takes to arguments.
+If `test` was omitted or `nil` then `eql` will be used.
 
 Example usage:
 
@@ -265,120 +266,120 @@ Example usage:
 ### reverse
     (reverse sequence) -> reversed-sequence
 
-If sequence is a list then return a fresh list
-with elements in reversed order, if sequence
+If `sequence` is a list then return a fresh list
+with elements in reversed order, if `sequence`
 is a string then return a fresh reversed string.
 ### map-into
     (map-into result-list function list*) -> result-list
 
-Destructively modifies result-list to contain the results
-of applying function to each element in the argument lists in turn.
+Destructively modifies `result-list` to contain the results
+of applying `function` to each element in the argument lists in turn.
 The iteration terminates when the shortest list (of any of
 the lists or the result-list) is exhausted.
 
-If result-list is nil, "map-into" returns nil.
+If `result-list` is `nil`, `map-into` returns `nil`.
 
 Similar to CL map-into http://clhs.lisp.se/Body/f_map_in.htm
 ### mapcar
     (mapcar function sequence+) -> list
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will applied to subsequent items of the given sequences.
-All function application results will be combined into a list
-which is the return value of mapcar.
+All `function` application results will be combined into a list
+which is the return value of `mapcar`.
 ### maplist
     (maplist function sequence+) -> list
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will applied to subsequent tails of the given sequences.
 
-All function application results will be combined into a list
-which is the return value of maplist.
+All `function` application results will be combined into a list
+which is the return value of `maplist`.
 ### mapc
     (mapc function sequence+) -> first-arg
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will applied to subsequent cars items of the given sequences.
 ### mapl
     (mapl function sequence+) -> first-arg
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will applied to subsequent tails of the given sequences.
 ### mapcan
     (mapcan function sequence+) -> concatenated-results
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will applied to subsequent items of the given sequences.
 
 All function application results will be concatenated to a list
-which is the return value of mapcan.
+which is the return value of `mapcan`.
 ### mapcon
     (mapcon function sequence+) -> concatenated-results
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will applied to subsequent tails of the given sequences.
 
 All function application results will be concatenated to a list
-which is the return value of mapcon.
+which is the return value of `mapcon`.
 ### every
     (every function sequence+) -> boolean
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will be applied to subsequent items of the given sequences.
 
-Immediately return nil if an application of function returns nil,
-t otherwise.
+Immediately return `nil` if an application of function returns `nil`,
+`t` otherwise.
 ### some
     (some function sequence+) -> result
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will be applied to subsequent items of the given sequences.
 
-Immediately return the first non-nil-value of an application of function,
-or nil if no applications yield non-nil.
+Immediately return the first non-nil-value of an application of `function`,
+or `nil` if no applications yield non-nil.
 ### notevery
     (notevery function sequence+) -> boolean
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will be applied to subsequent items of the given sequences.
 
-(notevery predicate sequence+) == (not (every predicate sequence+))
+    (notevery predicate sequence+) == (not (every predicate sequence+))
 ### notany
     (notany function sequence+) -> boolean
 
-"Function" must accept as many arguments as sequences are given,
+`function` must accept as many arguments as sequences are given,
 and will be applied to subsequent items of the given sequences.
 
-(notany predicate sequence+) == (not (some predicate sequence+))
+    (notany predicate sequence+) == (not (some predicate sequence+))
 ### remove-if
     (remove-if pred list) -> list
 
-Return a fresh list without the elements for which pred
+Return a fresh list without the elements for which `pred`
 evaluates to non-nil.
 ### remove
     (remove elem list) -> list
 
-Return a fresh list without occurrences of elem.
-An occurrence is determined by eql.
+Return a fresh list without occurrences of `elem`.
+An occurrence is determined by `eql`.
 ### reduce
     (reduce func sequence [from-end-p]) -> result
 
-If sequence is empty then "reduce" will return (func).
+If `sequence` is empty then `reduce` will return `(func)`.
 
-Otherwise if sequence contains one element then "reduce" will
+Otherwise if `sequence` contains one element then `reduce` will
 return this element.
 
-Otherwise if from-end is omitted or nil then
-func will be called with the first two elements
-of the sequence and subsequently with the previous result
-and the next element, and "reduce" will return the last
-result from func.
+Otherwise if `from-end-p` is omitted or `nil` then
+`func` will be called with the first two elements
+of the `sequence` and subsequently with the previous result
+and the next element, and `reduce` will return the last
+result from `func`.
 
-Otherwise if from-end is given and non-nil then
-func will be called with the last two elements
-of the sequence and subsequently with the previous result
-and the previous element, and "reduce" will return the last
-result from func.
+Otherwise if `from-end-p` is given and non-nil then
+`func` will be called with the last two elements
+of the `sequence` and subsequently with the previous result
+and the previous element, and `reduce` will return the last
+result from `func`.
 ### write-char
 ### terpri, prin1, princ, print
 ### pprint
@@ -389,18 +390,18 @@ based on https://picolisp.com/wiki/?prettyPrint .
 ### list-length
     (list-length list-or-string) -> length
 
-Returns the length of list-or-string if it is a string or proper list.
-Returns nil if list is a circular list.
+Returns the length of `list-or-string` if it is a string or proper list.
+Returns `nil` if `list.or-string` is a circular list.
 
 See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
 ### length
     (length sequence) -> length
 
-Same as list-length.
+Same as `list-length`.
 ### time
     (time form) -> result
 
-time evaluates form and prints various timing data.
+`time` evaluates `form` and prints various timing data.
 ### compose
     (compose func1 funcs*) -> function
 
@@ -415,15 +416,15 @@ When exactly one function is given, it is returned.
 ### curry
     (curry func args*) -> function
 
-Returns a function that applies args and the arguments it is called with to func.
+Returns a function that applies `args` and the arguments it is called with to `func`.
 ### rcurry
     (rcurry func args*) -> function
 
-Returns a function that applies the arguments it is called with and args to func.
+Returns a function that applies the arguments it is called with and `args` to `func`.
 ### with-gensyms
     (with-gensyms (names*) forms*) -> result
 
-"with-gensyms" is a macro commonly used by Common Lispers
+`with-gensyms` is a macro commonly used by Common Lispers
 to help with avoiding name capture when writing macros.
 See "Practical Common Lisp, Peter Seibel"
 (http://www.gigamonkeys.com/book/macros-defining-your-own.html)
@@ -446,7 +447,7 @@ Usage is illustrated by:
 
 thread-last
 
-Same as -> but inserts first form as last argument of the second form, and so forth.
+Same as `->` but inserts first form as last argument of the second form, and so forth.
 
 Usage is illustrated by:
 
@@ -460,14 +461,14 @@ Usage is illustrated by:
 
 Short-circuiting thread-first
 
-Same as -> but if one function returns nil then the remaining
-functions are not called and the overall result is nil.
+Same as `->` but if one function returns `nil` then the remaining
+functions are not called and the overall result is `nil`.
 
 ### and->>
     (and->> forms*) -> result
 
 Short circuiting thread-last
 
-Same as ->> but if one function returns nil then the remaining
-functions are not called and the overall result is nil.
+Same as `->>` but if one function returns nil then the remaining
+functions are not called and the overall result is `nil`.
 
