@@ -313,7 +313,7 @@ pi ; ==> 3.141592653589793
 
 ;;; = (defmacro name (params...) forms...) -> symbol<br/>(defmacro name) -> prev-name
 ;
-; Defines a macro, similar to CL's defmacro.
+; Defines a macro, similar to CL's `defmacro`.
 ; Macros are somewhat similar to functions:
 ; On a function application the functions's arguments
 ; are eval'd and the result of the function will be used as is.
@@ -375,9 +375,9 @@ pi ; ==> 3.141592653589793
 
 ;;; = (let* dynamic ((symbol bindingform)...) bodyforms...) -> object
 ;
-; Similar to "let" except: globals are not shadowed but temporarily
+; Similar to `let` except: globals are not shadowed but temporarily
 ; bound to the given value, and the previous value is restored when
-; leaving the scope of the let form.
+; leaving the scope of the `let` form.
 ; I.e. "let* dynamic" treats globals as "special".
 
 (define *g* 'global)
@@ -423,7 +423,7 @@ pi ; ==> 3.141592653589793
 ; is the value returned by the last form or nil
 ; in case of an empty file.
 ;
-; When compiling Murmel "load" is performed at
+; When compiling Murmel `load` is performed at
 ; compile time.
 ;
 ; "filespec" is not eval'd and must be a string.
