@@ -3,12 +3,13 @@
 ;;;
 ;;; The file `murmel-langref.lisp`
 ;;; is an executable language reference manual
-;;; for Murmel, a single-namespace Lisp dialect.
+;;; for Murmel, a single-namespace Lisp dialect
+;;; insipred by Common Lisp.
 ;;;
-;;; See also [Murmel's default library mlib](mlib.md) 
+;;; See also Murmel's default library [Mlib](mlib.md) 
 ;;; which contains additional functions and macros.
 ;;;
-;;; The file `murmel-langref.lisp` can be read as-is or run it with:
+;;; The file `murmel-langref.lisp` can be read as-is or run with:
 ;;;
 ;;;     $ java -jar jmurmel.jar --repl --echo < murmel-langref.lisp
 ;;;
@@ -16,16 +17,17 @@
 ;;;
 ;;;     $ sed -nf langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 ;;;
-;;; Murmel is WIP,
-;;; please note the section "Known issues" at the end of this file.
+;;; Murmel is WIP, please note the section
+;;; [Known issues](#known-issues) at the end of this file.
 
 ;;; == Quick links ====================
 
-;;; Special forms and functions available in Murmel
 ;;; - [S-expressions](#s-expressions)
+;;; - [Comments](#comments)
 ;;; - [Predefined Symbols](#predefined-symbols)
 ;;; - [Basic Special Forms](#basic-special-forms)
 ;;; - [Additional Special Forms](#additional-special-forms)
+;;; - [Backquote - fill-in templates](#backquote)
 ;;; - [Predefined Primitives](#predefined-primitives)
 ;;; - [Predefined Graphics Primitives](#predefined-graphics-primitives)
 ;;;
@@ -50,20 +52,12 @@
 ;;; and the prompt `JMurmel>`.
 
 
-;;; == Disclaimer =====================
-;;;
-;;; In order to understand and make use of this Reference Manual
-;;; one should probably at least know some Lisp.
-;;; This manual does not attempt to be a Lisp or Murmel tutorial.
+;;; == S-expressions ==================
 
-
-;;; == Terminology ====================
-;;;
-;;; = S-expressions vs. forms
 ;;; Murmel is a Lisp dialect. As such the language isn't
 ;;; really defined in terms of program text but in terms
 ;;; of in-memory objects (lists, symbols and other atoms)
-;;; that are acceptable to eval.
+;;; that are acceptable to `eval`.
 ;;;
 ;;; That said, JMurmel's default reader turns S-expressions
 ;;; from the input stream into equivalent in-memory objects. So
@@ -74,19 +68,9 @@
 ;;; (as well as their textual representation as S-expressions)
 ;;; are referred to as "forms".
 ;;;
-;;; = Surface representation vs. internal representation
-;;; This is really the same discussion as "S-expressions vs. forms".
-;;; JMurmel adds S-Expressions as a surface representation
-;;; to Murmel.
-;;;
-
-
-;;; == S-expressions ==================
-
 ;;; The following are S-expressions that JMurmel's reader
 ;;; will accept and transform into in-memory objects.
-;;; Valid S-expressions may or may not be "forms" (eval w/o error),
-;;; see "Terminology" for a discussion of form vs. S-expressions.
+;;; Valid S-expressions may or may not be "forms" (eval w/o error).
 
 ; = Atoms that are not symbols
 
@@ -112,11 +96,11 @@
 
 ; A dotted list
 
-'(a . (b . (c . d)))  ; ==> (a . (b . (c . d)))
+'(a . (b . (c . d)))
 
 ; Shorthand for dotted list
 
-'(a b c . d)          ; ==> (a b c . d)
+'(a b c . d)
 
 ; A proper list
 
@@ -126,28 +110,14 @@
 
 '(a b c)              ; ==> (a b c)
 
-; Backquote "\`" starts "fill-in templates":
-; backquote, comma and comma-at work similar to CL,
-; except: comma-dot is not supported.
 
-(define a 'a-val) (define b 'b-val) (define c 'c-val)
-(define d '(d-val1 d-val2))
-`((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
-
-(define y 'b) (define l '(a b))
-(eval ``(,a ,,@l ,,y)) ; ==> (a-val a-val b-val b-val)
-
-(define x '(1 2 3))
-`(normal= ,x splicing= ,@x see?) ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
-
-`(normal= ,x fakesplicing= . ,x) ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
-
-; One line comments are started with ';', i.e. everything between a semicolon
+;;; == Comments =======================
+; One line comments are started with `;`, i.e. everything between a semicolon
 ; and the end of the line is ignored:
 
 ;     ; this is a comment
 
-; Multiline comments are started with '#|' and end with '|#':
+; Multiline comments are started with `#|` and end with `|#`:
 
 #|
 This is a
@@ -157,25 +127,40 @@ multiline comment.
 
 ;;; == Predefined Symbols =============
 
-; "nil" and "t" are pre-defined self-evaluating symbols
+; `nil` and `t` are pre-defined self-evaluating symbols
 
 ;     nil
 ;     t
 
-; "dynamic" is a pre-defined self-evaluating symbol that may be used
+; Murmel treats the symbols `nil` and `t` the same way
+; as Mr. Moon specified them in a Memo (see "The Evolution
+; of Lisp pp 62"):
+;
+; > NIL is a symbol, the empty list, and the distinguished
+; > "false" value. SYMBOLP, ATOM, and LISTP are true of it;
+; > CONSP is not. CAR, CDR, and EVAL of NIL are NIL.
+; > NIL may not be used as a function, nor as a variable.
+; >
+; > T is a symbol and the default "true" value used by predicates that
+; > are not semi-predicates (i.e., that don’t return "meaningful" values
+; > when they are true.) EVAL of T is T. T may not be used as a variable.
+; > T is a keyword recognized by certain functions, such as FORMAT.
+
+
+; `dynamic` is a pre-defined self-evaluating symbol that may be used
 ; in the `(lambda dynamic...` and `(let* dynamic...` forms, see below.
 
-dynamic
+dynamic ; ==> dynamic
 
 ; `internal-time-units-per-second` contains the resolution
 ; of the time related functions, see below.
 
-internal-time-units-per-second
+internal-time-units-per-second ; ==> 1.0E9
 
 ; `pi` contains the value of the mathematical constant pi
 ; in double precision.
 
-pi
+pi ; ==> 3.141592653589793
 
 
 ;;; == Basic Special Forms ============
@@ -216,7 +201,7 @@ pi
 ;;; 64bit integer numbers, strings and characters. Custom primitives
 ;;; may support additional atoms.
 
-; A symbol. Murmel treats symbols case-insensitive.
+; Murmel treats symbols case-insensitive.
 ; Symbol names are of arbitrary length, however only the
 ; first 30 chars are significant.
 ;
@@ -264,23 +249,6 @@ pi
 
 "a string literal"
 "another 'literal' \"string literal\""
-
-
-;;; == NIL and T ======================
-
-; Murmel treats the symbols NIL and T the same way
-; as Mr. Moon specified them in a Memo (see "The Evolution
-; of Lisp pp 62"):
-;
-; "NIL is a symbol, the empty list, and the distinguished
-; "false" value. SYMBOLP, ATOM, and LISTP are true of it;
-; CONSP is not. CAR, CDR, and EVAL of NIL are NIL.
-; NIL may not be used as a function, nor as a variable."
-;
-; "T is a symbol and the default "true" value used by predicates that
-; are not semi-predicates (i.e., that don’t return "meaningful" values
-; when they are true.) EVAL of T is T. T may not be used as a variable.
-; T is a keyword recognized by certain functions, such as FORMAT."
 
 
 ;;; == Reserved words =================
@@ -368,7 +336,8 @@ pi
 
 ;;; = (setq symbol value...) -> last-value
 ;
-; Updates the value of the given global or local symbols which must be already defined.
+; Updates the value of the given global or local symbols which must be
+; already defined.
 
 (define a nil)
 (let ((b nil) (c nil))
@@ -507,6 +476,25 @@ pi
 ; the eval'd operands
 ;
 ;     (operatorform operands...)
+
+
+;;; == Backquote ======================
+
+; Backquote "\`" starts "fill-in templates":
+; backquote, comma and comma-at work similar to CL,
+; except: comma-dot is not supported.
+
+(define a 'a-val) (define b 'b-val) (define c 'c-val)
+(define d '(d-val1 d-val2))
+`((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
+
+(define y 'b) (define l '(a b))
+(eval ``(,a ,,@l ,,y)) ; ==> (a-val a-val b-val b-val)
+
+(define x '(1 2 3))
+`(normal= ,x splicing= ,@x see?) ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
+
+`(normal= ,x fakesplicing= . ,x) ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
 
 
 ;;; == Predefined Primitives ==========
