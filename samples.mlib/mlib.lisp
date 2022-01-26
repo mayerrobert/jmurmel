@@ -18,45 +18,45 @@
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
-;;; - [caar..cdddr](#caarcdddr), [nthcdr, nth](#nthcdr-nth)
-;;; - [destructuring-bind](#destructuring-bind)
-;;; - [get-setf-expansion](#get-setf-expansion)
-;;; - [setf](#setf), [incf, decf](#incf-decf)
-;;; - [push](#push), [pop](#pop)
-;;; - [acons](#acons)
-;;; - [not](#not), [and](#and), [or](#or)
-;;; - [abs](#abs), [zerop](#zerop), [evenp](#evenp), [oddp](#oddp)
-;;; - [char=](#char), [char](#char-1)
-;;; - [equal](#equal)
-;;; - [prog1, prog2](#prog1-prog2)
-;;; - [when](#when), [unless](#unless), [case](#case), [do, do*](#do-do), [dotimes](#dotimes), [dolist](#dolist)
-;;; - [identity](#identity), [constantly](#constantly), [complement](#complement)
-;;; - [member](#member), [reverse](#reverse)
-;;; - [map-into](#map-into), [mapcar](#mapcar), [maplist](#maplist), [mapc](#mapc), [mapl](#mapl), [mapcan](#mapcan), [mapcon](#mapcon)
-;;; - [every](#every), [some](#some), [notevery](#notevery), [notany](#notany)
-;;; - [remove-if](#remove-if), [remove](#remove)
-;;; - [reduce](#reduce)
-;;; - [write-char](#write-char)
-;;; - [terpri, prin1, princ, print](#terpri-prin1-princ-print), [pprint](#pprint)
-;;; - [list-length](#list-length), [length](#length)
-;;; - [time](#time)
+;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+;;; - [destructuring-bind](#macro-destructuring-bind)
+;;; - [get-setf-expansion](#function-get-setf-expansion)
+;;; - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
+;;; - [push](#macro-push), [pop](#macro-pop)
+;;; - [acons](#function-acons)
+;;; - [not](#function-not), [and](#macro-and), [or](#macro-or)
+;;; - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
+;;; - [char=](#function-char), [char](#function-char-1)
+;;; - [equal](#function-equal)
+;;; - [prog1, prog2](#macro-prog1-prog2)
+;;; - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
+;;; - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
+;;; - [member](#function-member), [reverse](#function-reverse)
+;;; - [map-into](#function-map-into), [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+;;; - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
+;;; - [remove-if](#function-remove-if), [remove](#function-remove)
+;;; - [reduce](#function-reduce)
+;;; - [write-char](#function-write-char)
+;;; - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
+;;; - [list-length](#function-list-length), [length](#function-length)
+;;; - [time](#macro-time)
 ;;;
-;;; functions inspired by [Alexandria](https://alexandria.common-lisp.dev):
+;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
-;;; - [compose](#compose)
-;;; - [curry](#curry), [rcurry](#rcurry)
-;;; - [with-gensyms](#with-gensyms)
+;;; - [compose](#function-compose)
+;;; - [curry](#function-curry), [rcurry](#function-rcurry)
+;;; - [with-gensyms](#macro-with-gensyms)
 ;;;
 ;;; as well as the following additional functions and macros:
 ;;;
-;;; - [*f, /f, +f, -f](#f-f)
-;;; - [->](#-), [->>](#--1), [and->](#and-), [and->>](#and--1)
+;;; - [*f, /f, +f, -f](#macro-f-f)
+;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 
 
 (provide "mlib")
 
 
-;;; = caar..cdddr
+;;; = Function: caar..cdddr
 ;;;     (c..r lst) -> result
 ;;;
 ;;; `c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
@@ -76,7 +76,7 @@
 (defun cdddr (l) (cdr (cddr l)))
 
 
-;;; = nthcdr, nth
+;;; = Function: nthcdr, nth
 ;;;     (nthcdr n lst) -> nth-tail
 ;;;     (nth n lst) -> nth-element
 ;;;
@@ -107,7 +107,7 @@
 (defun m%rplacd (l v) (rplacd l v) v)
 
 
-;;; = destructuring-bind
+;;; = Macro: destructuring-bind
 ;;;     (destructuring-bind (vars*) (expressions*) forms*)
 ;;;
 ;;; Murmel's `destructuring-bind` is a subset of CL's `destructuring-bind`,
@@ -120,7 +120,7 @@
   `(apply (lambda ,vars ,@forms) ,expression))
 
 
-;;; = get-setf-expansion
+;;; = Function: get-setf-expansion
 ;;;     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
 (defun get-setf-expansion (place)
   (let ((read-var (gensym)) (store-var (gensym)))
@@ -148,7 +148,7 @@
               (t (fatal "only symbols, car..cdddr and nth are supported for 'place'")))))))
 
 
-;;; = setf
+;;; = Macro: setf
 ;;;     (setf pair*) -> result
 ;;;
 ;;; Takes pairs of arguments like `setq`. The first is a place and the second
@@ -193,7 +193,7 @@
              ,writer-form)))))
 
 
-;;; = incf, decf
+;;; = Macro: incf, decf
 ;;;     (incf place delta-form*) -> new-value
 ;;;     (decf place delta-form*) -> new-value
 ;;;
@@ -210,7 +210,7 @@
 (m%inplace decf ('1-) ('-))
 
 
-;;; = *f, /f
+;;; = Macro: *f, /f
 ;;;     (*f place delta-form*) -> new-value
 ;;;     (/f place delta-form*) -> new-value
 ;;;
@@ -230,7 +230,7 @@
 (m%inplace /f (/) (/))
 
 
-;;; = +f, -f
+;;; = Macro: +f, -f
 ;;;     (+f place delta-form*) -> new-value
 ;;;     (-f place delta-form*) -> new-value
 ;;;
@@ -253,7 +253,7 @@
 (defmacro m%inplace)
 
 
-;;; = push
+;;; = Macro: push
 ;;;     (push item place) -> new-place-value
 ;;;
 ;;; `push` prepends `item` to the list that is stored in `place`,
@@ -267,7 +267,7 @@
          ,writer-form))))
 
 
-;;; = pop
+;;; = Macro: pop
 ;;;     (pop place) -> element
 ;;;
 ;;; `pop` reads the value of `place`, remembers the car of the list which
@@ -287,7 +287,7 @@
            ,result)))))
 
 
-;;; = acons
+;;; = Function: acons
 ;;;     (acons key datum alist) -> new-alist
 ;;;
 ;;; Prepends alist with a new `(key . datum)` tuple
@@ -296,7 +296,7 @@
   (cons (cons key datum) alist))
 
 
-;;; = not
+;;; = Function: not
 ;;;     (not form) -> boolean
 ;;;
 ;;; Logical not.
@@ -304,7 +304,7 @@
   (null e))
 
 
-;;; = and
+;;; = Macro: and
 ;;;     (and forms*) -> boolean
 ;;;
 ;;; Short-circuiting logical and.
@@ -319,7 +319,7 @@
      t))
 
 
-;;; = or
+;;; = Macro: or
 ;;;     (or forms*) -> result
 ;;;
 ;;; Short-circuiting logical or.
@@ -337,7 +337,7 @@
      nil))
 
 
-;;; = abs
+;;; = Function: abs
 ;;;     (abs n) -> result
 ;;;
 ;;; Return the absoute value of a number.
@@ -345,28 +345,28 @@
   (if (< n 0) (- n) (+ n)))
 
 
-;;; = zerop
+;;; = Function: zerop
 ;;;     (zerop number) -> boolean
 ;;;
 ;;; Is this number zero?
 (defun zerop (n) (= n 0))
 
 
-;;; = evenp
+;;; = Function: evenp
 ;;;     (evenp number) -> boolean
 ;;;
 ;;; Is this number even?
 (defun evenp (n) (= 0.0 (mod n 2)))
 
 
-;;; = oddp
+;;; = Function: oddp
 ;;;     (oddp number) -> boolean
 ;;;
 ;;; Is this number odd?
 (defun oddp (n) (= 1.0 (mod n 2)))
 
 
-;;; = char=
+;;; = Function: char=
 ;;;     (char= characters+) -> boolean
 ;;;
 ;;; Return `t` if all of the arguments are the same character.
@@ -381,13 +381,13 @@
     t))
 
 
-;;; = char
+;;; = Function: char
 ;;;     (char string n) -> nth-character
 (defun char (str n)
   (nth n str))
 
 
-;;; = equal
+;;; = Function: equal
 ;;;     (equal a b) -> boolean
 ;;;
 ;;; Return t if any of the following is true:
@@ -401,7 +401,7 @@
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
-;;; = prog1, prog2
+;;; = Macro: prog1, prog2
 ;;;     (prog1 first-form forms*) -> result-1
 ;;;     (prog2 first-form second-form forms*) -> result-2
 (defmacro prog1 (first-form . forms)
@@ -423,7 +423,7 @@
     `(progn ,first-form ,second-form)))
 
 
-;;; = when
+;;; = Macro: when
 ;;;     (when condition forms*) -> result
 ;;;
 ;;; Execute `forms` if `condition` evaluates to true
@@ -439,7 +439,7 @@
           (car body))))
 
 
-;;; = unless
+;;; = Macro: unless
 ;;;     (unless condition forms*) -> result
 ;;;
 ;;; Execute `forms` if `condition` evaluates to false
@@ -456,7 +456,7 @@
           (car body))))
 
 
-;;; = case
+;;; = Macro: case
 ;;;      (case keyform (keys forms*)* (t forms*)?) -> result
 (defmacro case (keyform . clauses)
   (labels ((do-clause (tmp clause)
@@ -475,7 +475,7 @@
            (cond ,@(mapcar (lambda (clause) (do-clause tmp clause)) clauses)))))))
 
 
-;;; = do, do*
+;;; = Macro: do, do*
 ;;;     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
 ;;;     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
 ;;;
@@ -518,7 +518,7 @@
                (,loop))))))))
 
 
-;;; = dotimes
+;;; = Macro: dotimes
 ;;;     (dotimes (var count-form [result-form]) statement*) -> result
 ;;;
 ;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm
@@ -538,7 +538,7 @@
                (,loop (1+ ,var)))))))))
 
 
-;;; = dolist
+;;; = Macro: dolist
 ;;;     (dolist (var list-form [result-form]) statement*) -> result
 ;;;
 ;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
@@ -564,14 +564,14 @@
 ;        (loop))))
 
 
-;;; = identity
+;;; = Function: identity
 ;;;     (identity object) -> object
 ;;;
 ;;; `identity` returns its argument `object`.
 (defun identity (x) x)
 
 
-;;; = constantly
+;;; = Function: constantly
 ;;;     (constantly value) -> function
 ;;;
 ;;; `constantly` returns a function that accepts any number of arguments,
@@ -580,7 +580,7 @@
   (lambda arguments value))
 
 
-;;; = complement
+;;; = Function: complement
 ;;;     (complement function) -> complement-function
 ;;;
 ;;; `complement` returns a function that takes the same arguments as `function`,
@@ -592,7 +592,7 @@
     (null (apply f arguments))))
 
 
-;;; = member
+;;; = Function: member
 ;;;     (member item list [test]) -> tail
 ;;;
 ;;; `member` searches list for `item` or for a top-level element that
@@ -623,7 +623,7 @@
       nil)))
 
 
-;;; = reverse
+;;; = Function: reverse
 ;;;     (reverse sequence) -> reversed-sequence
 ;;;
 ;;; If `sequence` is a list then return a fresh list
@@ -637,7 +637,7 @@
       (rev l nil))))
 
 
-;;; = map-into
+;;; = Function: map-into
 ;;;     (map-into result-list function list*) -> result-list
 ;;;
 ;;; Destructively modifies `result-list` to contain the results
@@ -706,7 +706,7 @@
     ,@(when return-list '(l))))
 
 
-;;; = mapcar
+;;; = Function: mapcar
 ;;;     (mapcar function sequence+) -> list
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -716,7 +716,7 @@
 (m%mapx mapcar  cons    car cars nil nil)
 
 
-;;; = maplist
+;;; = Function: maplist
 ;;;     (maplist function sequence+) -> list
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -727,7 +727,7 @@
 (m%mapx maplist cons    nil nil nil nil)
 
 
-;;; = mapc
+;;; = Function: mapc
 ;;;     (mapc function sequence+) -> first-arg
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -735,7 +735,7 @@
 (m%mapx mapc    progn   car cars t nil)
 
 
-;;; = mapl
+;;; = Function: mapl
 ;;;     (mapl function sequence+) -> first-arg
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -743,7 +743,7 @@
 (m%mapx mapl    progn   nil nil t nil)
 
 
-;;; = mapcan
+;;; = Function: mapcan
 ;;;     (mapcan function sequence+) -> concatenated-results
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -754,7 +754,7 @@
 (m%mapx mapcan  append  car cars nil nil)
 
 
-;;; = mapcon
+;;; = Function: mapcon
 ;;;     (mapcon function sequence+) -> concatenated-results
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -765,7 +765,7 @@
 (m%mapx mapcon  append  nil nil nil nil)
 
 
-;;; = every
+;;; = Function: every
 ;;;     (every function sequence+) -> boolean
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -776,7 +776,7 @@
 (m%mapx every and car cars nil t)
 
 
-;;; = some
+;;; = Function: some
 ;;;     (some function sequence+) -> result
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -790,7 +790,7 @@
 (defmacro m%mapx)
 
 
-;;; = notevery
+;;; = Function: notevery
 ;;;     (notevery function sequence+) -> boolean
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -801,7 +801,7 @@
   (not (apply some (cons f (cons seq more)))))
 
 
-;;; = notany
+;;; = Function: notany
 ;;;     (notany function sequence+) -> boolean
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
@@ -812,7 +812,7 @@
   (not (apply every (cons f (cons seq more)))))
 
 
-;;; = remove-if
+;;; = Function: remove-if
 ;;;     (remove-if pred list) -> list
 ;;;
 ;;; Return a fresh list without the elements for which `pred`
@@ -826,7 +826,7 @@
     nil))
 
 
-;;; = remove
+;;; = Function: remove
 ;;;     (remove elem list) -> list
 ;;;
 ;;; Return a fresh list without occurrences of `elem`.
@@ -840,7 +840,7 @@
     nil))
 
 
-;;; = reduce
+;;; = Function: reduce
 ;;;     (reduce func sequence [from-end-p]) -> result
 ;;;
 ;;; If `sequence` is empty then `reduce` will return `(func)`.
@@ -874,11 +874,15 @@
       (f))))
 
 
-;;; = write-char
-(defun write-char (c) (format t "%s" c))
+;;; = Function: write-char
+;;;     (write-char c) -> c
+;;;
+;;; `write-char` outputs `c` to stdout.
+(defun write-char (c)
+  (format t "%c" c) c)
 
 
-;;; = terpri, prin1, princ, print
+;;; = Function: terpri, prin1, princ, print
 (defun terpri () (writeln) nil)
 
 (defun prin1 (o) (write o) o)
@@ -888,7 +892,7 @@
 (defun print (o) (lnwrite o) o)
 
 
-;;; = pprint
+;;; = Function: pprint
 ;;;     (pprint object) -> t
 ;;;
 ;;; Simple pretty printer,
@@ -930,7 +934,7 @@
     (pp x 0)))
 
 
-;;; = list-length
+;;; = Function: list-length
 ;;;     (list-length list-or-string) -> length
 ;;;
 ;;; Returns the length of `list-or-string` if it is a string or proper list.
@@ -954,7 +958,7 @@
           (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
 
 
-;;; = length
+;;; = Function: length
 ;;;     (length sequence) -> length
 ;;;
 ;;; Same as `list-length`.
@@ -973,7 +977,7 @@
     result))
 
 
-;;; = time
+;;; = Macro: time
 ;;;     (time form) -> result
 ;;;
 ;;; `time` evaluates `form` and prints various timing data.
@@ -981,7 +985,7 @@
   `(call-with-timing (lambda () ,expr)))
 
 
-;;; = compose
+;;; = Function: compose
 ;;;     (compose func1 funcs*) -> function
 ;;;
 ;;; Returns a function that composes the given functions, applying the last function first
@@ -999,7 +1003,7 @@
     f))
 
 
-;;; = curry
+;;; = Function: curry
 ;;;     (curry func args*) -> function
 ;;;
 ;;; Returns a function that applies `args` and the arguments it is called with to `func`.
@@ -1007,7 +1011,7 @@
   (lambda callargs (apply func (append args callargs))))
 
  
-;;; = rcurry
+;;; = Function: rcurry
 ;;;     (rcurry func args*) -> function
 ;;;
 ;;; Returns a function that applies the arguments it is called with and `args` to `func`.
@@ -1015,7 +1019,7 @@
   (lambda callargs (apply func (append callargs args))))
 
  
-;;; = with-gensyms
+;;; = Macro: with-gensyms
 ;;;     (with-gensyms (names*) forms*) -> result
 ;;;
 ;;; `with-gensyms` is a macro commonly used by Common Lispers
@@ -1028,7 +1032,7 @@
      ,@body))
 
 
-;;; = ->
+;;; = Macro: ->
 ;;;     (-> forms*) -> result
 ;;;
 ;;; thread-first, inspired by https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
@@ -1054,7 +1058,7 @@
     (apply-partials (reverse (cdr terms)) (car terms))))
 
 
-;;; = ->>
+;;; = Macro: ->>
 ;;;     (->> forms*) -> result
 ;;;
 ;;; thread-last
@@ -1080,7 +1084,7 @@
     (apply-partials (reverse (cdr terms)) (car terms))))
 
 
-;;; = and->
+;;; = Macro: and->
 ;;;     (and-> forms*) -> result
 ;;;
 ;;; Short-circuiting thread-first
@@ -1105,7 +1109,7 @@
     (car terms)))
 
 
-;;; = and->>
+;;; = Macro: and->>
 ;;;     (and->> forms*) -> result
 ;;;
 ;;; Short circuiting thread-last
