@@ -22,8 +22,6 @@ Murmel is WIP, please note the section
 
 ## Quick links 
 
-- [S-expressions](#s-expressions)
-- [Comments](#comments)
 - [Predefined Symbols](#predefined-symbols)
 - [Basic Special Forms](#basic-special-forms)
 - [Additional Special Forms](#additional-special-forms)
@@ -37,17 +35,17 @@ Additional functions that can be loaded with `(require "mlib")`
 
 ## Introduction 
 
-"Hello, World!" program:
+"Hello, World!" program written in Murmel:
 
-    (write "Hello, World!")
+    (format t "Hello, World!")
 
 The program text above when run in the REPL should print the famous
 
-    "Hello, World!"
+    Hello, World!
 
-followed by the result
+followed by the result of `format`
 
-    ==> t
+    ==> nil
 
 and the prompt `JMurmel>`.
 
@@ -70,7 +68,8 @@ are referred to as "forms".
 
 The following are S-expressions that JMurmel's reader
 will accept and transform into in-memory objects.
-Valid S-expressions may or may not be "forms" (eval w/o error).
+Valid S-expressions may or may not be "forms"
+(i.e. may or may not eval w/o error).
 
 ### Atoms that are not symbols
 
@@ -89,6 +88,9 @@ Valid S-expressions may or may not be "forms" (eval w/o error).
 A single quote is a shorthand for (quote an-expression)
 
     'an-expression
+
+
+### Conses (pairs) and lists
 
 A dotted pair
 
@@ -112,12 +114,13 @@ Shorthand for a proper list
 
 
 ## Comments 
+
 One line comments are started with `;`, i.e. everything between a semicolon
 and the end of the line is ignored:
 
     ; this is a comment
 
-Multiline comments are started with `#|` and end with `|#`:
+Multiline comments are started with `#|` and ended with `|#`:
 
     #|
     This is a
@@ -127,10 +130,11 @@ Multiline comments are started with `#|` and end with `|#`:
 
 ## Predefined Symbols 
 
-`nil` and `t` are pre-defined self-evaluating symbols
+### `nil` and `t`
+`nil` and `t` are pre-defined self-evaluating symbols.
 
-    nil
-    t
+    nil ; ==> nil
+    t   ; ==> t
 
 Murmel treats the symbols `nil` and `t` the same way
 as Mr. Moon specified them in a Memo (see "The Evolution
@@ -147,46 +151,64 @@ of Lisp pp 62"):
 > T is a keyword recognized by certain functions, such as FORMAT.
 
 
+### dynamic
 `dynamic` is a pre-defined self-evaluating symbol that may be used
 in the `(lambda dynamic...` and `(let* dynamic...` forms, see below.
 
     dynamic ; ==> dynamic
 
+
+### internal-time-units-per-second
 `internal-time-units-per-second` contains the resolution
 of the time related functions, see below.
 
     internal-time-units-per-second ; ==> 1.0E9
 
+
+### pi
 `pi` contains the value of the mathematical constant pi
 in double precision.
 
     pi ; ==> 3.141592653589793
 
 
+### *command-line-argument-list*
+`*command-line-argument-list*` contains all command line arguments
+to the Murmel program. Below example illustrates this:
+
+    C:\> java -jar jmurmel.jar -- a b c
+    ...
+    JMurmel> *command-line-argument-list*
+    
+    ==> ("a" "b" "c")
+    JMurmel>
+
+
 ## Basic Special Forms 
 
-### (quote form) -> form
+### quote
+    (quote form) -> form
 
-quote returns a form w/o evaluating it
+`quote` returns a form without evaluating it.
 
     (quote a-symbol) ; ==> a-symbol
 
-### (lambda (params...) forms...) -> closure
+### lambda
+    (lambda (params...) forms...) -> closure
 
-When a lambda is created by the special form "lambda"
-the lexical environment is captured at the time of lambda creation.
-
-Arguments to the special form "lambda" are not evaluated.
+When a lambda is created by the special form `lambda`
+then the lexical environment is captured at the time of lambda creation.
+Arguments to the special form `lambda` are not evaluated.
 
     (lambda (p1 p2) p1)
 
-lambda with varargs:
+`lambda` with varargs:
 If paramlist is a symbol then all arguments will be
 packed into a list and bound to the symbol.
 If paramlist is a dotted list then remaining arguments
 will be bound to the last parameter.
 The list containing optional arguments is immutable,
-i.e. using rplaca and rplacd is undefined behaviour.
+i.e. using `rplaca` and `rplacd` is undefined behaviour.
 
     (lambda popt (write popt)) ; no mandatory arguments
     (lambda (p1 p2 . prest) (write prest)) ; two mandatory arguments
@@ -196,7 +218,6 @@ i.e. using rplaca and rplacd is undefined behaviour.
 
 Murmel supports symbols and lists as well as other atoms
 that are not symbols.
-
 These other atoms are double precision floating point numbers,
 64bit integer numbers, strings and characters. Custom primitives
 may support additional atoms.
@@ -218,7 +239,7 @@ but
     '*a-sample-symbol*
     'a\ symbol\ with\ spaces!
 
-Empty list, printed as "nil"
+Empty list, printed as `nil`
 
     ()
 
@@ -226,9 +247,7 @@ Shorthand for empty list
 
     nil
 
-an integer number
-
-tokens that consist of a sign or digit followed by digits
+Tokens that consist of a sign or digit followed by digits
 are interpreted as 64bit integer numbers (java.lang.Long)
 
     1
@@ -253,7 +272,7 @@ Stringliterals of the same value are coalesced (interned).
 
 ## Reserved words 
 
-In addition to NIL and T some symbols are reserved, i.e.
+In addition to `nil` and `t` some symbols are reserved, i.e.
 may not be used as a function nor as a variable:
 
     nil, t,
@@ -276,7 +295,7 @@ temporarily replaced by a local or dynamic binding, though).
 
 Murmel's local bindings are lexical, i.e. a symbol is bound to
 a newly created variable when a let/let*/letrec/lambda form
-is executed. The symbol's binding as well as the associated variable
+is evaluated. The symbol's binding as well as the associated variable
 are removed when leaving the lexical scope of the `let/let*/letrec/lambda`
 form, restoring any previously existing binding (which may have
 been local or global).
@@ -287,13 +306,13 @@ Except: `let* dynamic` will treat global symbols as "special", see below.
 
 ### (define symbol object) -> symbol
 
-define binds symbols in the global environment with
+`define` binds symbols in the global environment with
 memory locations that hold values.
-Murmel's define is somewhat similar to Common Lisp's defparameter
+Murmel's `define` is somewhat similar to Common Lisp's `defparameter`
 except:
 
-CL's defparameter creates special global variables while
-Murmel's define creates global variables that can be
+CL's `defparameter` creates special global variables while
+Murmel's `define` creates global variables that can be
 lexically hidden by e.g. a let-binding.
 
 The first argument is not evaluated, the second one is.
@@ -303,17 +322,19 @@ The first argument is not evaluated, the second one is.
 
 ### (defun symbol (params...) forms...) -> symbol
 
-defun is a shorthand for defining functions
+`defun` is a shorthand for defining functions:
+
     (defun symbol (params...) forms...)
        <=>
     (define symbol (lambda (params...) forms...))
-arguments to defun are not evaluated
+
+Arguments to `defun` are not evaluated.
 
     (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
 ### (defmacro name (params...) forms...) -> symbol<br/>(defmacro name) -> prev-name
 
-Defines a macro, similar to CL's `defmacro`.
+`defmacro` defines a macro, similar to CL's `defmacro`.
 Macros are somewhat similar to functions:
 On a function application the functions's arguments
 are eval'd and the result of the function will be used as is.
@@ -336,7 +357,7 @@ defined macros.
 
 ### (setq symbol value...) -> last-value
 
-Updates the value of the given global or local symbols which must be
+`setq` updates the value of the given global or local symbols which must be
 already defined.
 
     (define a nil)
@@ -358,14 +379,14 @@ already defined.
 
 ### (let optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 
-Works similar to CL's "let" with the addition
+Works similar to CL's `let` with the addition
 of Scheme's "named let".
-The let-bound variables "symbol" as well as "optsymbol" - if given -
+The let-bound variables `symbol` as well as `optsymbol` - if given -
 are bound inside bodyforms.
-"optsymbol" will be bound inside "bodyforms" to a lambda
+`optsymbol` will be bound inside `bodyforms` to a lambda
 whose parameters are the let-variables and whose code is
-"bodyforms". Therefore "optsymbol" can be used for
-recursive calls within "bodyforms".
+`bodyforms`. Therefore `optsymbol` can be used for
+recursive calls within `bodyforms`.
 
     (let loop ((x 3)
                (msg "hi"))
@@ -378,7 +399,7 @@ recursive calls within "bodyforms".
 Similar to `let` except: globals are not shadowed but temporarily
 bound to the given value, and the previous value is restored when
 leaving the scope of the `let` form.
-I.e. "let* dynamic" treats globals as "special".
+I.e. `let* dynamic` treats globals as "special".
 
     (define *g* 'global)
     (defun f () (write *g*))
@@ -387,8 +408,8 @@ I.e. "let* dynamic" treats globals as "special".
 
 ### (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 
-Works like let (see above) with the addition:
-each bindingform "sees" the previous symbols. If multiple
+Works like `let` (see above) with the addition:
+each `bindingform` "sees" the previous symbols. If multiple
 let-bindings use the same symbol the last one hides
 preceeding ones.
 
@@ -426,15 +447,15 @@ in case of an empty file.
 When compiling Murmel `load` is performed at
 compile time.
 
-"filespec" is not eval'd and must be a string.
+`filespec` is not eval'd and must be a string.
 Unless filespec ends with ".lisp" the file extension
 ".lisp" will be appended.
 If filespec is an absolute path then it will be used as is.
 Otherwise the file will be searched in the same directory
-as the file that contains the "load" and after that
-in "libdir" (set with --libdir, libdir defaults to the
+as the file that contains the `load` and after that
+in "libdir" (set with `--libdir`, libdir defaults to the
 directory containing jmurmel.jar).
-If "load" is entered into the REPL then the file
+If `load` is entered into the REPL then the file
 will be searched in the current directory and then
 in the directory that contains jmurmel.jar.
 
@@ -445,17 +466,17 @@ in the directory that contains jmurmel.jar.
 ### (require module-name optional-file-path)
 
 Load the given file once. Murmel maintains an internal
-set of loaded modules, and "require" will ignore
+set of loaded modules, and `require` will ignore
 loading files that were already loaded by comparing
-"module-name" to the set of already loaded modules.
+`module-name` to the set of already loaded modules.
 
-When compiling Murmel "require" is performed at
+When compiling Murmel `require` is performed at
 compile time.
 
-If "optional-file-path" is omitted or nil then
-"module-name" will be used as the file path.
+If `optional-file-path` is omitted or nil then
+`module-name` will be used as the file path.
 
-"module-name" and "optional-file-path" are not eval'd
+`module-name` and `optional-file-path` are not eval'd
 and must be strings.
 
     (require "mlib") ; will search for the file mlib.lisp
@@ -464,7 +485,7 @@ and must be strings.
 
 ### (provide module-name)
 
-Set a file's modulename so that "require" won't
+Set a file's modulename so that `require` won't
 load it twice.
 
 
@@ -523,11 +544,11 @@ Replace the value of the CAR or CDR slot of a cons cell.
 
 ### (eval form) -> object<br/> (eval form env) -> object
 
-"form" will be eval'd, it must return a form.
-The optional argument "env" will be eval'd, it must return a list of (symbol . value).
-If the optional argument "env" is omitted or nil
+`form` will be eval'd, it must return a form.
+The optional argument `env` will be eval'd, it must return a list of `(symbol . value)`.
+If the optional argument `env` is omitted or `nil`
 then the environment for the recursive eval is "all predefined global symbols"
-else it is the concatenation of "env" and all predefined globals
+else it is the concatenation of `env` and all predefined globals
 
     (eval '(+ 1 2)) ; ==> 3.0
     (eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
@@ -535,32 +556,34 @@ else it is the concatenation of "env" and all predefined globals
 
 ### (eq x y) -> boolean
 
-Returns t if x and y are the same object, nil otherwise.
+Returns `t` if `x` and `y` are the same object, `nil` otherwise.
 
-(eql x y) -> boolean
+### (eql x y) -> boolean
 
-Return t if any of the following is true
+Return `t` if any of the following is true
 
-- a and b are eq
-- a and b are numbers of the same type and have the same value
-- a and b are the same characters
+- `a` and `b` are `eq`
+- `a` and `b` are numbers of the same type and have the same value
+- `a` and `b` are the same characters
 
-    (eql 2 2) ; => t
-    (eql #\a (car "aaa")) ; => t
-    (eql -0.0 0.0) ; => nil
+Examples:
+
+    (eql 2 2) ; ==> t
+    (eql #\a (car "aaa")) ; ==> t
+    (eql -0.0 0.0) ; ==> nil
 
 ### null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
 
 ### (assoc key alist) -> cons or nil
 
-assoc takes a key and a list of key/value tupels (lists or conses).
-The return value is the first cons whose car is equal(*) to "key"
-or nil if no such cons was found. nil-elements in "alist" are ignored.
+`assoc` takes a key and a list of key/value tupels (lists or conses).
+The return value is the first cons whose car is equal(*) to `key`
+or `nil` if no such cons was found. `nil`-elements in `alist` are ignored.
 
-(*) assoc compares two items as if eql was used.
-    assoc considers two items as "equal" if
+(*) `assoc` compares two items as if eql was used.
+    `assoc` considers two items as "equal" if
 
-- Both are "eq" (are the same object)
+- Both are `eq` (are the same object)
 - Both are integers or floats or characters respectively and have the same value
 
 Examples:
@@ -571,7 +594,7 @@ Examples:
 
 ### (append lists...) -> list
 
-append nondestructively append it's arguments. All arguments except the last
+`append` nondestructively append it's arguments. All arguments except the last
 are shallow copied, all arguments except the last must be lists.
 
     (append)                    ; ==> nil
@@ -583,10 +606,10 @@ are shallow copied, all arguments except the last must be lists.
 
 ### +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
 
-The math operators accept numbers only, log only takes 1 argument,
+The math operators accept numbers only, `log` only takes 1 argument,
 but otherwise should work similar to CL.
 All numeric operators return a double.
-eg. (+ number number) -> double
+eg. `(+ number number) -> double`.
 
     (+ 1 1) ; ==> 2.0
 
@@ -602,20 +625,20 @@ Increment and decrement return the same type as the argument.
 These functions take one argument and return an integer value or an exception
 if the value cannot be represented by a long
 (NaN, Infinite, integer overflow or underflow),
-eg. (floor number) -> long
+eg. `(floor number) -> long`
 
     (floor 1.1) ; ==> 1
 
 ### fround, ftruncate, ffloor, fceiling
 
 These functions take one argument and return an integer value as a double,
-eg. (ffloor number) -> double
+eg. `(ffloor number) -> double`
 
     (ffloor 1.1) ; ==> 1.0
 
 ### (signum number) -> signed-prototype
 
-signum determines a numerical value that indicates whether
+`signum` determines a numerical value that indicates whether
 number is negative, zero, or positive. 
 
     (signum 0)    ; => 0
@@ -638,9 +661,9 @@ The numeric comparison operators take one or more number arguments.
 
 ### (macroexpand-1 quoted-form) -> expanded form
 
-macroexpand-1 is a simplified version of CL's macroexpand-1.
+`macroexpand-1` is a simplified version of CL's `macroexpand-1`.
 It is only supported in interpreted code.
-If the operator of the list "quoted-form" is a macroname then
+If the operator of the list `quoted-form` is a macroname then
 the macrocall will be expanded, e.g.:
 
     (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
@@ -648,6 +671,7 @@ the macrocall will be expanded, e.g.:
 
 ### (gensym) -> uninterned symbol
 
+Return a new unique symbol.
     (gensym)
 
 ### read, write, writeln, lnwrite
@@ -658,9 +682,9 @@ The following expression reads the expression immediately following it
 
     (write (read)) "Hello!"
 
-writeln and lnwrite accept one optional argument
-writeln will write the argument if given and non-nil, followed by a newline
-lnwrite will write a newline followed by the argument if given and non-nil,
+`writeln` and `lnwrite` accept one optional argument.  
+`writeln` will write the argument if given, followed by a newline.  
+`lnwrite` will write a newline followed by the argument if given,
 followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
 
     (writeln "Hello, ")
@@ -711,20 +735,20 @@ NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
 
 ### format, format-locale
 
-format t writes a formatted string to stdout and returns nil.
+`format t` writes a formatted string to stdout and returns `nil`.
 format's parameters work as java.lang.String.format().
 
     (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-format-locale works similar to format except it has an additional
-first string parameter that should be a locale, nil means use Java's
+`format-locale` works similar to format except it has an additional
+first string parameter that should be a locale, `nil` means use Java's
 default locale.
 
     (format-locale t
        "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-format nil and format-locale nil work similar
-to format and format-locale except they don't write to stdout
+`format nil` and `format-locale nil` work similar
+to `format` and `format-locale` except they don't write to stdout
 but return the string
 
     (format-locale nil
@@ -756,7 +780,7 @@ A frame has state: open/closed, current x/y position, current linecolor,
 current turtle angle and background color.
 
 One can use several frames but only one is the "current-frame". All functions
-(except make-frame) have an optional last parameter "frame" that can be used
+(except `make-frame`) have an optional last parameter `frame` that can be used
 to select which frame to operate on (if omitted or `nil` then the current frame is used).
 
 Hint: if graphics primitives are slow then maybe switching to OpenGL
@@ -810,9 +834,9 @@ reset-frame ... reset pen to "down", turtle position and angle, color and bgcolo
 clear-frame ... reset frame and discard frame contents  
 repaint-frame ... force full repaint  
 flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible  
-pen-up ... subsequent line operations will only move the position
-pen-down ... subsequent line operations will have visible effect
-push-pos ... save current position and angle
+pen-up ... subsequent line operations will only move the position  
+pen-down ... subsequent line operations will have visible effect  
+push-pos ... save current position and angle  
 pop-pos ... restore previous position and angle
 
 The above functions all take one optional frame parameter. If omitted or nil
@@ -836,11 +860,11 @@ Writes str at current position, does not change position.
 
 ### (left  deg optional-frame) -> frame</br>(right deg optional-frame) -> frame
 
-Increase/ decrease current angle by "deg" degrees, does not change position.
+Increase/ decrease current angle by `deg` degrees, does not change position.
 
 ### (forward len optional-frame) -> frame
 
-If pen is down then this function paints a line of length "len" from current
+If pen is down then this function paints a line of length `len` from current
 position in current direction, changes position.
 If pen is up then only the position is changed.
 
@@ -867,11 +891,11 @@ and release the resources associated with the bitmap.
 
 ### (rgb-to-pixel r g b) -> 24bit color value acceptable to set-pixel
 
-r, g and b are 0..255
+`r`, `g` and `b` are 0..255
 
 ### (hsb-to-pixel h s b) ; -> 24bit color value acceptable to set-pixel
 
-h, s and b are 0..1.0
+`h`, `s` and `b` are 0..1.0
 
 ### (set-pixel x y color-as-24-bit optional-frame) -> frame
 
@@ -889,7 +913,7 @@ JMurmel adds some extra features to Murmel which are listed below.
 For experimentation purposes the interpreter also supports
 lambdas that are not lexical closures.
 
-When the optional keyword "dynamic" is given then
+When the optional keyword `dynamic` is given then
 no environment is captured, and lambdas - when applied -
 get the dynamic environment.
 
@@ -912,7 +936,7 @@ disable many of Murmel's forms, predefined variables, ... .
 These commandline parameters can be used to experiment
 with an even more reduced Lisp.
 
-See 'jmurmel --help-features'
+See `jmurmel --help-features`.
 
 
 ## Additional JMurmel special forms and primitives 
@@ -931,15 +955,15 @@ interpreter primities).
 
 ### (:: classname methodname paramclass...) -> primitive
 
-The primitive "::" will return a newly created primitive
-that is implemented by the method "methodname" of the Java class
-"classname" that has the formal parameters "paramclass...".
-Parameters to "::" must be strings.
+The primitive `::` will return a newly created primitive
+that is implemented by the method `methodname` of the Java class
+`classname` that has the formal parameters `paramclass...`.
+Parameters to `::` must be strings.
 
     (:: "java.lang.System" "currentTimeMillis")
 
 When invoking primitives created by "::" the first argument must be
-a Java object of the primitive's method's class or nil for static methods:
+a Java object of the primitive's method's class or `nil` for static methods:
 invoke static method:
 
     (define ctm (:: "java.lang.System" "currentTimeMillis"))  
