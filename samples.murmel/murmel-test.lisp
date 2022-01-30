@@ -124,6 +124,10 @@
 #+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
 #+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
 
+;;; let over lambda
+#+murmel (define f (let ((ctr 0)) (lambda () (setq ctr (1+ ctr)))))
+#+murmel (deftest closure.1 (list (f) (f) (f)) '(1 2 3))
+
 
 ;;; Primitives
 
