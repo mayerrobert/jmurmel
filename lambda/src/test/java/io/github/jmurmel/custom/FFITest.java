@@ -12,7 +12,7 @@ public class FFITest {
     @Test
     public void testGetValue() {
         LambdaJ interp = new LambdaJ();
-        interp.interpretExpression(new StringReader("(define *global* 42.0)")::read, (s) -> { return; });
+        interp.interpretExpression(new StringReader("(define *global* 42.0)")::read, s -> {});
 
         Object value = interp.getValue("*global*");
         assertEquals(42.0, value);
@@ -22,7 +22,7 @@ public class FFITest {
     public void testPrimitive() {
         LambdaJ interp = new LambdaJ();
         // must interpret *something* so that environment will be set up. "()->-1" is a ReadSupplier that returns EOF
-        interp.interpretExpression(() -> -1, (s) -> { return; });
+        interp.interpretExpression(() -> -1, s -> {});
 
         LambdaJ.MurmelFunction add = interp.getFunction("+");
         Object result = add.apply(1, 2);
@@ -32,7 +32,7 @@ public class FFITest {
     @Test
     public void testLambda() {
         LambdaJ interp = new LambdaJ();
-        interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, (s) -> { return; });
+        interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, s -> {});
 
         LambdaJ.MurmelFunction add = interp.getFunction("f");
         Object result = add.apply(2, 3);

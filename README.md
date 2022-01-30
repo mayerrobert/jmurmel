@@ -198,7 +198,7 @@ Minimal "Hello, World!" example:
     @Test
     public void testMinimal() {
         Object result = new LambdaJ()
-            .interpretExpression(new StringReader("(cons 'Hello,\\ World! nil)")::read, (s) -> { return; });
+            .interpretExpression(new StringReader("(cons 'Hello,\\ World! nil)")::read, s -> {});
         assertEquals("(Hello, World!)", result.toString());
     }
 
@@ -234,7 +234,7 @@ Java calls JMurmel function:
     @Test
     public void testCallMurmelFromJava() {
         LambdaJ interp = new LambdaJ();
-        interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, (s) -> { return; });
+        interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, s -> {});
 
         MurmelFunction add = interp.getFunction("f");
         Object result = add.apply(2, 3);

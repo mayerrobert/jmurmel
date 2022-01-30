@@ -14,7 +14,7 @@ public class EmbedTest {
 
         String source = "(defun myadd (lhs rhs) (+ lhs rhs))\n"
                                              + "(myadd 1 2)";
-        LambdaJ.MurmelProgram prog = interpreter.formsToInterpretedProgram(source, () -> -1, s -> { return; });
+        LambdaJ.MurmelProgram prog = interpreter.formsToInterpretedProgram(source, () -> -1, s -> {});
 
 
         // perform tests

@@ -11,7 +11,7 @@ public class EmbeddedMinimalTest {
 
     @Test
     public void testMinimal() {
-        Object result = new LambdaJ().interpretExpression(new StringReader("\"Hello, World!\"")::read, s -> { return; });
+        Object result = new LambdaJ().interpretExpression(new StringReader("\"Hello, World!\"")::read, s -> {});
         assertEquals("Hello, World!", result.toString());
     }
 }
