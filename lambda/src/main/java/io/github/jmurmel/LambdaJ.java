@@ -3226,7 +3226,6 @@ public class LambdaJ {
     /** <p>evalScript is for JSR-223 support.
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
-    @SuppressWarnings("resource")
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (symtab == null) {
             setSymtab(new SExpressionParser(features, trace, tracer, in::read, null, true));
@@ -3248,7 +3247,8 @@ public class LambdaJ {
     /// JMurmel native embed API - Java calls Murmel
 
     /** Build environment, setup symbol table, Lisp reader and writer.
-     *  Needs to be called once before eval() and evalScript(), not needed before interpretExpression/s  */
+     *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} and {@link #evalScript(Reader, Reader, Writer)},
+     *  not needed before interpretExpression/s  */
     public SExpressionParser init(ReadSupplier in, WriteConsumer out) {
         final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
         setSymtab(parser);
