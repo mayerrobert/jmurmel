@@ -1249,12 +1249,16 @@ public class LambdaJ {
 
     /** Build environment, setup symbol table, Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
-    private SExpressionParser init(ReadSupplier in, WriteConsumer out) {
+    private Parser init(ReadSupplier in, WriteConsumer out) {
         final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
-        setSymtab(parser);
         final ObjectWriter outWriter = makeWriter(out);
+        return init(parser, outWriter, null);
+    }
+
+    private Parser init(Parser parser, ObjectWriter outWriter, ConsCell customEnv) {
+        setSymtab(parser);
         setReaderPrinter(parser, outWriter);
-        topEnv = environment(null);
+        topEnv = environment(customEnv);
         nCells = 0; maxEnvLen = 0;
         return parser;
     }
@@ -3264,7 +3268,7 @@ public class LambdaJ {
      *  will read S-expressions from {@code in} as well,
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        final SExpressionParser parser = init(in, out);
+        final Parser parser = init(in, out);
         final Object exp = parser.readObj();
         final long tStart = System.nanoTime();
         final Object result = eval(exp, topEnv, 0, 0, 0);
@@ -3281,7 +3285,7 @@ public class LambdaJ {
         final Parser parser = new SExpressionParser(features, trace, tracer, program, null, true);
         final ObjectReader inReader = new SExpressionParser(features, TraceLevel.TRC_NONE, null, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
-        return interpretExpressions(parser, inReader, outWriter, symtab -> null);
+        return interpretExpressions(parser, inReader, outWriter, null);
     }
 
     /** <p>Build environment, repeatedly read an expression from {@code parser} and invoke {@code eval()} until EOF,
@@ -3290,16 +3294,12 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
      *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
-        nCells = 0; maxEnvLen = 0;
-        setSymtab(parser);
-        setReaderPrinter(parser, outWriter);
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser);
-        final ConsCell env = environment(customEnvironment);
-        topEnv = env;
+        init(parser, outWriter, customEnvironment);
         Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
             final long tStart = System.nanoTime();
-            final Object result = eval(exp, env, 0, 0, 0);
+            final Object result = eval(exp, topEnv, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
             exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
