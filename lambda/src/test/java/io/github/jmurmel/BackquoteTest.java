@@ -191,13 +191,13 @@ public class BackquoteTest {
 
 
 
-    private void assertExpansion(String expression, String expectedExpansion) {
+    private static void assertExpansion(String expression, String expectedExpansion) {
         final Object expanded = expand(expression);
         final String expandedSexp = TestUtils.sexp(expanded);
         assertEquals(expectedExpansion, expandedSexp);
     }
 
-    private void assertError(String s, String expectedError) {
+    private static void assertError(String s, String expectedError) {
         try {
             expand(s);
             fail("expected error " + expectedError);
@@ -207,15 +207,12 @@ public class BackquoteTest {
         }
     }
 
-    private Object expand(String s) {
-        final LambdaJ intp = new LambdaJ();
-        intp.init(new StringReader(s)::read, x -> { return; });
-        final LambdaJ.ObjectReader reader = intp.getLispReader();
-        Object o = reader.readObj();
-        return o;
+    private static Object expand(String s) {
+        final LambdaJ.ObjectReader reader = new LambdaJ.SExpressionParser(new StringReader(s)::read);
+        return reader.readObj();
     }
 
-    private void eval(String exp, String expectedResult) {
+    private static void eval(String exp, String expectedResult) {
         LambdaJTest.runTest("backquotetest.lisp", exp, expectedResult, null);
     }
 }

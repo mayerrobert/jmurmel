@@ -19,7 +19,6 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
 
     final JMurmelScriptEngineFactory factory;
     final LambdaJ murmel;
-    boolean isInit;
 
     public JMurmelScriptEngine() {
         this(null);
@@ -37,10 +36,6 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
 
     @Override
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
-        if (!isInit) {
-            murmel.init(() -> -1, s -> { });
-            isInit = true;
-        }
         final Reader stdIn = context.getReader();
         final Writer stdOut = context.getWriter();
         final Object ret = murmel.evalScript(reader, stdIn, stdOut);

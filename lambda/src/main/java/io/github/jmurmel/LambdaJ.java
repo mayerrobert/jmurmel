@@ -1247,6 +1247,18 @@ public class LambdaJ {
     /// ### Global environment - define'd symbols go into this list
     private ConsCell topEnv;
 
+    /** Build environment, setup symbol table, Lisp reader and writer.
+     *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
+    private SExpressionParser init(ReadSupplier in, WriteConsumer out) {
+        final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
+        setSymtab(parser);
+        final ObjectWriter outWriter = makeWriter(out);
+        setReaderPrinter(parser, outWriter);
+        topEnv = environment(null);
+        nCells = 0; maxEnvLen = 0;
+        return parser;
+    }
+
     private final Map<Object, ConsCell> macros = new HashMap<>();
     private final Set<Object> modules = new HashSet<>();
 
@@ -3245,19 +3257,6 @@ public class LambdaJ {
 
 
     /// JMurmel native embed API - Java calls Murmel
-
-    /** Build environment, setup symbol table, Lisp reader and writer.
-     *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} and {@link #evalScript(Reader, Reader, Writer)},
-     *  not needed before interpretExpression/s  */
-    public SExpressionParser init(ReadSupplier in, WriteConsumer out) {
-        final SExpressionParser parser = new SExpressionParser(features, trace, tracer, in, null, true);
-        setSymtab(parser);
-        final ObjectWriter outWriter = makeWriter(out);
-        setReaderPrinter(parser, outWriter);
-        topEnv = environment(null);
-        nCells = 0; maxEnvLen = 0;
-        return parser;
-    }
 
     /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
      *
