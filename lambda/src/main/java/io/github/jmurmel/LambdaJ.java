@@ -4368,10 +4368,10 @@ public class LambdaJ {
 
         // car cdr ... bis gt waren special forms und der generierte code enthielt aufrufe
         // -> car, cdr, cons usw waren "open coded", koennte man wieder machen
-        private static Object car (Object l)  { return LambdaJ.car(l); }
-        private static Object cdr (Object l)  { return LambdaJ.cdr(l); }
+        protected static Object car (Object l)  { return LambdaJ.car(l); }
+        protected static Object cdr (Object l)  { return LambdaJ.cdr(l); }
 
-        private static double dbl(Object n) {
+        protected static double dbl(Object n) {
             number(n);
             return ((Number)n).doubleValue();
         }
@@ -4900,6 +4900,10 @@ public class LambdaJ {
             }
         }
 
+        private boolean isSymbol(Object op, String s) {
+            return op != null && s.equals(op.toString());
+        }
+        
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
         private void formToJava(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             try {
@@ -4917,29 +4921,31 @@ public class LambdaJ {
                     final Object op = car(form);
                     final Object args = cdr(form);
 
-//                    // * some functions and operators are compiled inline:
-//                    //     - number operators
-//                    if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, rsfx); return; }
-//                    if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, rsfx); return; }
-//                    if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, rsfx); return; }
-//                    if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, rsfx); return; }
-//
-//                    //     - number compare operators
-//                    if (isSymbol(op, "="))  { compareNum(sb, "numbereq", args, env, rsfx); return; }
-//                    if (isSymbol(op, "<"))  { compareNum(sb, "lt",       args, env, rsfx); return; }
-//                    if (isSymbol(op, "<=")) { compareNum(sb, "le",       args, env, rsfx); return; }
-//                    if (isSymbol(op, ">=")) { compareNum(sb, "ge",       args, env, rsfx); return; }
-//                    if (isSymbol(op, ">"))  { compareNum(sb, "gt",       args, env, rsfx); return; }
-//
-//                    //     - cons, car, cdr
-//                    if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
-//                    if (isSymbol(op, "cdr"))  { sb.append("cdr(");  formToJava(sb, car(args), env, rsfx); sb.append(")"); return; }
-//                    if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')'); return; }
-//
-//                    //     - eq, not
-//                    if (isSymbol(op, "eq"))   { compareOp(sb, "==", car(args), cadr(args), env, rsfx); return; }
-//                    if (isSymbol(op, "null")) { compareOp(sb, "==", car(args), null, env, rsfx); return; }
+                    if (false) {
+                        // * some functions and operators are compiled inline:
+                        //     - number operators
+                        if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return; }
 
+                        //     - number compare operators
+                        if (isSymbol(op, "="))  { compareNum(sb, "numbereq", args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "<"))  { compareNum(sb, "lt",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "<=")) { compareNum(sb, "le",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, ">=")) { compareNum(sb, "ge",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, ">"))  { compareNum(sb, "gt",       args, env, topEnv, rsfx); return; }
+
+                        //     - cons, car, cdr
+                        if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "cdr"))  { sb.append("cdr(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
+                                                                           formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
+
+                        //     - eq, not
+                        if (isSymbol(op, "eq"))   { compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "null")) { compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
+                    }
 
 
                     /// * special forms:
@@ -5474,45 +5480,53 @@ public class LambdaJ {
             }
         }
 
-//        /** generate boolean op for one or two args */
-//        private void compareOp(WrappingWriter sb, String pred, Object lhs, Object rhs, ConsCell env, int rsfx) {
-//            sb.append('(').append('(');
-//            formToJava(sb, lhs, env, rsfx);
-//            sb.append(' ').append(pred).append(' ');
-//            if (rhs == null) sb.append("null"); else formToJava(sb, rhs, env, rsfx);
-//            sb.append(") ").append(" ? _t : null)");
-//        }
-//
-//        /** compare two numbers */
-//        private void compareNum(WrappingWriter sb, String pred, Object args, ConsCell env, int rsfx) {
-//            sb.append(pred).append('('); formToJava(sb, car(args), env, rsfx); sb.append(", "); formToJava(sb, cadr(args), env, rsfx); sb.append(')');
-//        }
-//
-//        /** generate double operator for zero or more number args */
-//        private void addDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, int rsfx) {
-//            sb.append('(').append(start);
-//            if (args != null) for (Object arg: (ConsCell)args) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
-//            sb.append(')');
-//        }
-//
-//        /** generate double operator for one or more number args */
-//        private void subDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, int rsfx) {
-//            sb.append('(');
-//            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, rsfx); }
-//            else {
-//                asDouble(sb, car(args), env, rsfx);
-//                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, rsfx); }
-//            }
-//            sb.append(')');
-//        }
-//
-//        /** eval form and change to double */
-//        private void asDouble(WrappingWriter sb, Object form, ConsCell env, int rsfx) {
-//            if (form == null) throw new LambdaJError("not a number: nil");
-//            if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
-//            else if (form instanceof Double) sb.append(form.toString());
-//            else { sb.append("dbl("); formToJava(sb, form, env, rsfx); sb.append(')'); }
-//        }
+        /** generate boolean op for one or two args */
+        private void compareOp(WrappingWriter sb, String pred, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append('(').append('(');
+            formToJava(sb, lhs, env, topEnv, rsfx, false);
+            sb.append(' ').append(pred).append(' ');
+            if (rhs == null) sb.append("null"); else formToJava(sb, rhs, env, topEnv, rsfx, false);
+            sb.append(") ").append(" ? _t : null)");
+        }
+
+        /** compare two numbers */
+        private void compareNum(WrappingWriter sb, String pred, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append(pred).append('('); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')');
+        }
+
+        /** generate double operator for zero or more number args */
+        private void addDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append('(');
+            if (args == null) sb.append(start);
+            else {
+                boolean first = true;
+                for (Object arg: (ConsCell)args) {
+                    if (first) first = false;
+                    else sb.append(' ').append(op).append(' ');
+                    asDouble(sb, arg, env, topEnv, rsfx);
+                }
+            }
+            sb.append(')');
+        }
+
+        /** generate double operator for one or more number args */
+        private void subDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append('(');
+            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, topEnv, rsfx); }
+            else {
+                asDouble(sb, car(args), env, topEnv, rsfx);
+                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, topEnv, rsfx); }
+            }
+            sb.append(')');
+        }
+
+        /** eval form and change to double */
+        private void asDouble(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (form == null) throw new LambdaJError("not a number: nil");
+            if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
+            else if (form instanceof Double) sb.append(form.toString());
+            else { sb.append("dbl("); formToJava(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
+        }
 
         private static void quotedFormToJava(WrappingWriter sb, Object form) {
             if (form == null || "nil".equals(form.toString())) { sb.append("null"); }
