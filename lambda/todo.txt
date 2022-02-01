@@ -1,7 +1,3 @@
-in compiliertem code werden nur die ersten 2 operanden verglichen, Compilerprimitive und opencoded ist falsch
--> vergleichoperatoren sind binary, sollten n-ary sein
--> (= 1 1 2) ; ==> t
--> fixen + tests in murmel-test
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 

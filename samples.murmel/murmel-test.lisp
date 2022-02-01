@@ -170,6 +170,15 @@
 (deftest test-numbereq.7 (= -0.0 -0.0) t)
 (deftest test-numbereq.8 (= -0.0 0.0)  t)
 
+(deftest test-numbereq.9  (= 1 1 1 1 1)  t)
+(deftest test-numbereq.10 (= 1 1 1 1 2)  nil)
+(deftest test-numbereq.11 (= 1 1.0 1e0)  t)
+(deftest test-numbereq.12 (= 1 1.0 1e1)  nil)
+
+(deftest test-ne.1  (/= 1 2 3)  t)
+(deftest test-ne.2  (/= 1 2 2)  nil)
+(deftest test-ne.2  (/= 1 2 2.0)  nil)
+
 
 ;;; test +
 (deftest test-add-minus-zero
