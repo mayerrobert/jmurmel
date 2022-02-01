@@ -169,6 +169,8 @@ public class LambdaJ {
     private static final String[] FEATURES = {
             "murmel", "jvm", "ieee-floating-point"
     };
+
+    private int speed = 1;
     
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
@@ -1195,6 +1197,13 @@ public class LambdaJ {
             sLoad    = internReserved("load");
             sRequire = internReserved("require");
             sProvide = internReserved("provide");
+
+            sDeclaim =  intern("declaim");
+            sOptimize = intern("optimize");
+            sSpeed =    intern("speed");
+            sDebug =    intern("debug");
+            sSafety =   intern("safety");
+            sSpace =    intern("space");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1213,7 +1222,9 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sSetQ, sApply, sProgn, sLoad, sRequire, sProvide;
+    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
+            sSetQ, sApply, sProgn, sLoad, sRequire, sProvide,
+            sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
 
     private Supplier<Object> expTrue;
 
@@ -1391,6 +1402,10 @@ public class LambdaJ {
                         else throw new LambdaJError(true, "defmacro: syntax error", printSEx(form));
                     }
 
+                    if (operator == sDeclaim) {
+                        declaim(level, arguments);
+                        return null;
+                    }
 
 
                     /// eval - special forms that run expressions
@@ -1646,6 +1661,19 @@ public class LambdaJ {
             for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
                 final ConsCell entry = (ConsCell) caar(c);
                 entry.rplacd(cdar(c));
+            }
+        }
+    }
+
+    private void declaim(int level, ConsCell arguments) {
+        if (level != 1) throw new LambdaJError("declaim: must be a toplevel form");
+        if (caar(arguments) == sOptimize) {
+            Object rest = cdar(arguments);
+            ConsCell speedCons = assq(sSpeed, rest);
+            if (speedCons != null) {
+                Object speedo = cadr(speedCons);
+                if (!(speedo instanceof Number)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speedo);
+                speed = ((Number)speedo).intValue();
             }
         }
     }
@@ -2129,7 +2157,8 @@ public class LambdaJ {
         return list;
     }
 
-    /** note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
+    /** return the cons whose car is eq to {@code atom}
+     *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     private static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assq", printSEx(maybeList));
@@ -4656,6 +4685,7 @@ public class LambdaJ {
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
+            int prevSpeed = interpreter().speed;
             passTwo = false;
             implicitDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
@@ -4697,6 +4727,7 @@ public class LambdaJ {
                      + "    protected Object runbody() {\n        Object result0;\n");
 
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
+            interpreter().speed = prevSpeed;
             passTwo = true;
             formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
 
@@ -4739,9 +4770,13 @@ public class LambdaJ {
                 }
             } else if (consp(form) && car(form) == interpreter().sProvide) {
                 oneArg("provide", cdr(form));
-                if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "provide", printSEx(cdr(form)));
+                if (!stringp(cadr(form)))
+                    throw new LambdaJError(true, "%s: expected a string argument but got %s", "provide", printSEx(cdr(form)));
                 final Object modName = cadr(form);
                 interpreter().modules.add(modName);
+            } else if (consp(form) && car(form) == interpreter().sDeclaim) {
+                interpreter().declaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
+                bodyForms.add(form);
             } else bodyForms.add(form);
 
             if (consp(form) && (car(form) == interpreter().sDefine || car(form) == interpreter().sDefun))
@@ -4900,7 +4935,7 @@ public class LambdaJ {
             }
         }
 
-        private boolean isSymbol(Object op, String s) {
+        private static boolean isSymbol(Object op, String s) {
             return op != null && s.equals(op.toString());
         }
         
@@ -4921,8 +4956,8 @@ public class LambdaJ {
                     final Object op = car(form);
                     final Object args = cdr(form);
 
-                    if (false) {
-                        // * some functions and operators are compiled inline:
+                    if (interpreter().speed >= 1) {
+                        // * some functions and operators are opencoded:
                         //     - number operators
                         if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return; }
@@ -5083,6 +5118,12 @@ public class LambdaJ {
                     if (interpreter().sProvide == op) {
                         // pass 2 shouldn't see this
                         throw new LambdaJError("provide as non-toplevel form is not implemented");
+                    }
+
+                    if (interpreter().sDeclaim == op) {
+                        interpreter().declaim(rsfx+1, (ConsCell)args); // todo kann der cast je schiefgehen? kann form eine dotted list sein
+                        sb.append("null");
+                        return;
                     }
 
                     /// * macro expansion
@@ -5491,7 +5532,14 @@ public class LambdaJ {
 
         /** compare two numbers */
         private void compareNum(WrappingWriter sb, String pred, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append(pred).append('('); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')');
+            //sb.append(pred).append('('); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')');
+            sb.append(pred).append('(');
+            formToJava(sb, car(args), env, topEnv, rsfx, false);
+            if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
+                sb.append(", ");
+                formToJava(sb, arg, env, topEnv, rsfx, false);
+            }
+            sb.append(')');
         }
 
         /** generate double operator for zero or more number args */

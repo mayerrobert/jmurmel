@@ -489,6 +489,12 @@ Set a file's modulename so that `require` won't
 load it twice.
 
 
+### (declaim (optimize ...
+
+`declaim` currently only supports `optimize`, others will be ignored.
+`optimize` only supports speed, others will be ignored.
+
+
 ## Function application 
 
 ### function call

@@ -1,3 +1,7 @@
+ein programm das nur nil enthält führt zu java compilerfehler
+nil
+:r
+-> fehler
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 

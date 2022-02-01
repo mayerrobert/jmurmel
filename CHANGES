@@ -3,6 +3,8 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
 
  * mlib: added functions compose, map-into, curry, rcurry
  * mlib: inplace modification macros (incf, decf...) now process 0 or more args (was: 0 or 1)
+ * (declaim (optimize...
+ * some functions are opencoded in compiled code
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0
