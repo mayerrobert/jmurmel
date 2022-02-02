@@ -26,7 +26,8 @@
         <plugins>
 
             <plugin>
-                <!-- can't use exec-maven-plugin because that doesn't support input redirection -->
+                <!-- can't use exec-maven-plugin because that doesn't support input redirection
+                     ant exec task: https://ant.apache.org/manual/Tasks/exec.html -->
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>${maven-antrun-plugin.version}</version>
                 <executions>
@@ -38,7 +39,7 @@
                         </goals>
                         <configuration>
                             <target name="run">
-                                <exec dir="${project.build.directory}" executable="java" input="../murmel-langref.lisp">
+                                <exec dir="${project.build.directory}" executable="java" input="../murmel-langref.lisp" failonerror="true">
                                     <arg value="-jar" />
                                     <arg file="../lambda/target/jmurmel.jar" />
                                     <arg value="--echo" />
