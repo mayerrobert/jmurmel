@@ -4966,6 +4966,7 @@ public class LambdaJ {
 
                         //     - number compare operators
                         if (isSymbol(op, "="))  { compareNum(sb, "numbereq", args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "/=")) { compareNum(sb, "ne",       args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "<"))  { compareNum(sb, "lt",       args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "<=")) { compareNum(sb, "le",       args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, ">=")) { compareNum(sb, "ge",       args, env, topEnv, rsfx); return; }
