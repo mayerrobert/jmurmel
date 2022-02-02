@@ -821,8 +821,8 @@ pi ; ==> 3.141592653589793
 ; If padding is omitted or nil then 40 will be used.
 ; The newly created frame will not yet be visible (see open-frame below).
 
-(let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
-  (make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
+;     (let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
+;       (make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
 
 ; = (current-frame) -> frame
 ;
@@ -852,13 +852,13 @@ pi ; ==> 3.141592653589793
 ;
 ; Set color for following lines, color must be >= 0 and <= 12
 
-(color 1) ; ==> frame
+;     (color 1) ; ==> frame
 
 ; = (bgcolor color optional-frame) -> frame
 ;
 ; Set background color for frame, color must be >= 0 and <= 12
 
-(bgcolor 0) ; ==> frame
+;     (bgcolor 0) ; ==> frame
 
 ; = (text str optional-frame) -> frame
 ;
@@ -879,10 +879,10 @@ pi ; ==> 3.141592653589793
 ; These functions take two arguments denoting the new position
 ; and an optional frame argument.
 
-(define new-x 1)
-(define new-y 2)
-(define optional-frame nil)
-(line-rel new-x new-y optional-frame) ; ==> frame
+;     (define new-x 1)
+;     (define new-y 2)
+;     (define optional-frame nil)
+;     (line-rel new-x new-y optional-frame) ; ==> frame
 
 ; = (make-bitmap w h optional-frame) -> frame
 ;
