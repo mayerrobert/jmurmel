@@ -40,6 +40,7 @@
                         <configuration>
                             <target name="run">
                                 <exec dir="${project.build.directory}" executable="java" input="../murmel-langref.lisp" failonerror="true">
+                                    <arg value="-Djava.awt.headless=true" />
                                     <arg value="-jar" />
                                     <arg file="../lambda/target/jmurmel.jar" />
                                     <arg value="--echo" />
@@ -57,6 +58,29 @@
                 <version>${exec-maven-plugin.version}</version>
                 <executions>
                     <execution>
+                        <id>run-compiled-murmel-langref</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>..</workingDirectory>
+                            <arguments>
+                                <argument>-Djava.awt.headless=true</argument>
+                                <argument>-classpath</argument>
+                                <!-- automatically creates the classpath using all project dependencies,
+                                     also adding the project build directory -->
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>murmel-langref.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>run-murmel-test</id>
                         <phase>test</phase>
                         <goals>
@@ -66,8 +90,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
-                                <!-- automatically creates the classpath using all project dependencies,
-                                     also adding the project build directory -->
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
@@ -86,8 +108,6 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
-                                <!-- automatically creates the classpath using all project dependencies,
-                                     also adding the project build directory -->
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
