@@ -4,6 +4,8 @@
 ;;;
 ;;;     jm --run julia.lisp
 
+;(declaim (optimize (speed 0)))
+
 (define W 600)
 (define H 400)
 
@@ -65,6 +67,8 @@
 
 (open-frame)
 
+(define *start* (get-internal-cpu-time))
+
 (let xloop ((x 0))
   (let yloop ((y 0))
     (let* ((zx (+ (/ (* 1.5 (- x (/ w 2)))
@@ -78,3 +82,6 @@
       (if (< y (1- h)) (yloop (1+ y)))))
   (flush-frame)
   (if (< x (1- w)) (xloop (1+ x))))
+
+(format t "Used CPU: %g ms%n" (/ (- (get-internal-cpu-time) *start*)
+                                 (/ internal-time-units-per-second 1000)))
