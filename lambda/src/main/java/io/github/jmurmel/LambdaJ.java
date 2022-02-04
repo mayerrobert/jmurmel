@@ -4976,11 +4976,15 @@ public class LambdaJ {
                         if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                         if (isSymbol(op, "cdr"))  { sb.append("cdr(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                         if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
-                                                                           formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
+                                                                        formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
 
                         //     - eq, not
                         if (isSymbol(op, "eq"))   { compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
                         if (isSymbol(op, "null")) { compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
+
+                        // inc, dec
+                        if (isSymbol(op, "1+"))   { sb.append("inc(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "1-"))   { sb.append("dec(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                     }
 
 
