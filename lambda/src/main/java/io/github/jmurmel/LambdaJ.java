@@ -2135,6 +2135,10 @@ public class LambdaJ {
     private static boolean  integerp(Object o) { return o instanceof Long; }
     private static boolean  characterp(Object o) { return o instanceof Character; }
 
+    // these *should* have no usages as these checks would be superfluous
+    private static boolean  consp(ConsCell c)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
+    private static boolean  listp(ConsCell c)  { return true; } // todo
+
     /** return a string with "line x:y..xx:yy: " */
     private static String lineInfo(Object form) {
         if (!(form instanceof SExpConsCell)) return "";
@@ -5012,7 +5016,7 @@ public class LambdaJ {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
                             sb.append("        : ("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(" != null)\n        ? (");
-                            prognToJava(sb, (ConsCell)cdr(cond), env, topEnv, rsfx+1, isLast);
+                            prognToJava(sb, cdr(cond), env, topEnv, rsfx+1, isLast);
                             sb.append(')');
                         }
                         sb.append("\n        : null");
@@ -5080,14 +5084,14 @@ public class LambdaJ {
 
                     ///     - progn
                     if (interpreter().sProgn == op) {
-                        prognToJava(sb, (ConsCell)args, env, topEnv, rsfx+1, isLast);
+                        prognToJava(sb, args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
                     if (interpreter().sLabels == op) {
-                        labelsToJava(sb, (ConsCell)args, env, topEnv, rsfx+1, isLast);
+                        labelsToJava(sb, args, env, topEnv, rsfx+1, isLast);
                         return;
                     }
 
@@ -5217,7 +5221,9 @@ public class LambdaJ {
 
         private int ignoredCounter = 0;
         
-        private void prognToJava(WrappingWriter sb, ConsCell forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void prognToJava(WrappingWriter sb, Object args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (!listp(args)) throw new LambdaJError(true, "%s: malformed %s - expected a list of forms but got %s", "progn", "progn", printSEx(args));
+            final ConsCell forms = (ConsCell)args;
             if (cdr(forms) == null) formToJava(sb, car(forms), env, topEnv, rsfx, isLast);
             else {
                 sb.append(isLast ? "tailcall(" : "funcall(").append("(MurmelFunction)(Object... ignored").append(ignoredCounter++).append(") -> {\n        Object result").append(rsfx).append(";\n");
@@ -5260,13 +5266,16 @@ public class LambdaJ {
         }
 
         /** args = (((symbol (sym...) form...)...) form...) */
-        private void labelsToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (args == null) throw new LambdaJError(true, "%s: malformed %s: expected at least one argument", "labels", "labels");
-            
+        private void labelsToJava(WrappingWriter sb, final Object a, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (!listp(a)) throw new LambdaJError(true, "%s: malformed %s: expected a list (((symbol (sym...) form...)...) form...) but got %s", "labels", "labels", printSEx(a));
+            if (a == null) throw new LambdaJError(true, "%s: malformed %s: expected at least one argument", "labels", "labels");
+
+            final ConsCell args = (ConsCell)a;
+
             final Object localFuncs = car(args);
             if (localFuncs == null || (cddr(args) == null && atom(cadr(args)))) {
                 // no local functions or body is one single atom
-                prognToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
+                prognToJava(sb, cdr(args), env, topEnv, rsfx, isLast);
                 return;
             }
 
