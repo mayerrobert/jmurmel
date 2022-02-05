@@ -4732,18 +4732,28 @@ public class LambdaJ {
         }
 
         private ConsCell toplevelFormToJava(WrappingWriter ret, List<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
-            if (consp(form)) { // todo toplevel progn inline expandieren?
-                final Object op = car(form);
+            if (consp(form)) {
+                final ConsCell formAsCons = (ConsCell)form;
+                final Object op = car(formAsCons);
                 if (op == interpreter().sDefine) {
-                    globalEnv = defineToJava(ret, (ConsCell) form, globalEnv);
-                    interpreter().eval(form, null);
+                    globalEnv = defineToJava(ret, formAsCons, globalEnv);
+                    interpreter().eval(formAsCons, null);
                 } else if (op == interpreter().sDefun) {
-                    globalEnv = defunToJava(ret, (ConsCell) form, globalEnv);
-                    interpreter().eval(form, null);
+                    globalEnv = defunToJava(ret, formAsCons, globalEnv);
+                    interpreter().eval(formAsCons, null);
                 } else if (op == interpreter().sDefmacro) {
-                    final Object sym = cadr(form);
+                    final Object sym = cadr(formAsCons);
                     notReserved(sym);
-                    interpreter().eval(form, null);
+                    interpreter().eval(formAsCons, null);
+                } else if (op == interpreter().sProgn) {
+                    // oplevel progn will be replaced by the forms it contains
+                    final Object body = cdr(formAsCons);
+                    if (consp(body)) {
+                        for (Object prognForm: (ConsCell)body) {
+                            globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, prognForm);
+                        }
+                        return globalEnv;
+                    }
                 }
             }
 
