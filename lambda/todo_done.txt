@@ -1159,3 +1159,6 @@ checken was passiert wenn require 2x die gleiche datei bekommt, aber mal als ./x
 -> umbauen in (require filespec), gehasht wird der kanonische pfad
   -> oder vielleicht doch "provide" so wie in CL und elisp?
   -> in CL sind require und provide funktionen, ist aber schwierig im murmel compiler
+
+bei progn usw castet der compiler args auf ConsCell
+-> (progn . 1) -> CCE

@@ -1,5 +1,3 @@
-bei progn usw castet der compiler args auf ConsCell
--> (progn . 1) -> CCE
 
 compiler: bei opencoded wie car sollte argumentanzahl zur compilezeit gecheckt werden, dafür aber nicht zur laufzeit
 -> derzeit wird zur compilezeit nix gecheckt, dafür werden z.t. die "normalen" funktionen mit argcheck eingebaut

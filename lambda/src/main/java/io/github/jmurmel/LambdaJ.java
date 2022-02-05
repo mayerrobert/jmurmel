@@ -1464,7 +1464,6 @@ public class LambdaJ {
 
                     /// eval - (progn forms...) -> object
                     if (operator == sProgn) {
-                        if (!listp(arguments)) throw new LambdaJError(true, "%s: malformed progn: expected a list of forms but got %s", "progn", printSEx(arguments));
                         forms = arguments;
                         // fall through to "eval a list of forms"
 
@@ -1514,8 +1513,9 @@ public class LambdaJ {
                         final String op = letDynamic ? "let* dynamic" : (namedLet ? "named " : "") + operator;
                         final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
-                        final ConsCell bindings = (ConsCell)car(bindingsAndBodyForms);
-                        if (!listp(bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(car(bindingsAndBodyForms)));
+                        final Object _bindings = car(bindingsAndBodyForms);
+                        if (!listp(_bindings)) throw new LambdaJError(true, "%s: malformed %s: expected a list of bindings but got %s", op, op, printSEx(_bindings));
+                        final ConsCell bindings = (ConsCell)_bindings;
 
                         ConsCell extenv = env;
                         if (bindings != null) {
@@ -1592,7 +1592,6 @@ public class LambdaJ {
                         /// eval - (operatorform argforms...) -> object
                         } else {
                             func = eval(operator, env, stack, level, traceLvl);
-                            if (!listp(arguments)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "function application", printSEx(arguments));
                             argList = evlis(arguments, env, stack, level, traceLvl);
                             // fall through to "actually perform..."
                         }
@@ -2136,8 +2135,9 @@ public class LambdaJ {
     private static boolean  characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
+    // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
     private static boolean  consp(ConsCell c)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
-    private static boolean  listp(ConsCell c)  { return true; } // todo
+    private static boolean  listp(ConsCell c)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
 
     /** return a string with "line x:y..xx:yy: " */
     private static String lineInfo(Object form) {
@@ -2153,7 +2153,7 @@ public class LambdaJ {
         return n;
     }
 
-    /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw eror instead:
+    /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
      * (nthcdr 3 '(0 . 1))) -> Error: Attempted to take CDR of 1. */
     private static Object nthcdr(int n, Object list) {
         if (list == null) return null;
