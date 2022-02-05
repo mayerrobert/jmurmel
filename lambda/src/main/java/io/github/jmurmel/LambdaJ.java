@@ -4215,7 +4215,9 @@ public class LambdaJ {
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
         public final Number   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
+        public static Number  inc1     (Object arg)     {                                         number(arg);     return LambdaJ.inc((Number)arg); }
         public final Number   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
+        public static Number  dec1     (Object arg)     {                                         number(arg);     return LambdaJ.dec((Number)arg); }
 
         public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
         public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
@@ -4992,8 +4994,8 @@ public class LambdaJ {
                         if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
 
                         // inc, dec
-                        if (isSymbol(op, "1+"))   { sb.append("inc(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                        if (isSymbol(op, "1-"))   { sb.append("dec(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "1+"))   { oneArg("1+", args);  sb.append("inc1(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "1-"))   { oneArg("1-", args);  sb.append("dec1(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                     }
 
 
