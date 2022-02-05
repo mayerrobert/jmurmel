@@ -4149,8 +4149,13 @@ public class LambdaJ {
 
         /// predefined primitives
         public final Object   _car     (Object... args) { oneArg("car",        args.length); return car(args[0]); }
+        public static final Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
+
         public final Object   _cdr     (Object... args) { oneArg("cdr",        args.length); return cdr(args[0]); }
+        public static final Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
+
         public final ConsCell _cons    (Object... args) { twoArg("cons",       args.length); return cons(args[0], args[1]); }
+        public static final ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
 
         public final Object   _rplaca  (Object... args) { return cl_rplaca(arraySlice(args)); }
         public final Object   _rplacd  (Object... args) { return cl_rplacd(arraySlice(args)); }
@@ -4194,9 +4199,6 @@ public class LambdaJ {
         public final Object   stringToList (Object... args) { oneArg("string->list",   args.length); return LambdaJ.stringToList(arraySlice(args)); }
         public final Object   listToString (Object... args) { oneArg("list->string",   args.length); return LambdaJ.listToString(arraySlice(args)); }
 
-        public final Object   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
-        public final Object   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
-
         public final double   _sqrt    (Object... args) { oneArg("sqrt",       args.length); return Math.sqrt (dbl(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",      args.length); return Math.log10(dbl(args[0])); }
@@ -4208,6 +4210,9 @@ public class LambdaJ {
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
+        public final Number   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
+        public final Number   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
+
         public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
         public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
 
@@ -4389,16 +4394,6 @@ public class LambdaJ {
         }
 
 
-
-        /** used by _cons() and by code generated from quotedFormToJava() */
-        public static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); }
-
-
-
-        // car cdr ... bis gt waren special forms und der generierte code enthielt aufrufe
-        // -> car, cdr, cons usw waren "open coded", koennte man wieder machen
-        protected static Object car (Object l)  { return LambdaJ.car(l); }
-        protected static Object cdr (Object l)  { return LambdaJ.cdr(l); }
 
         protected static double dbl(Object n) {
             number(n);
@@ -4961,26 +4956,26 @@ public class LambdaJ {
                         //     - number operators
                         if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "-")) { nArgs("-",  args, 1); subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "/")) { nArgs("/",  args, 1); subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return; }
 
                         //     - number compare operators
-                        if (isSymbol(op, "="))  { compareNum(sb, "numbereq", args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "/=")) { compareNum(sb, "ne",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "<"))  { compareNum(sb, "lt",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "<=")) { compareNum(sb, "le",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, ">=")) { compareNum(sb, "ge",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, ">"))  { compareNum(sb, "gt",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "="))  { nArgs("=",  args, 1); compareNum(sb, "numbereq", args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "/=")) { nArgs("/=", args, 1); compareNum(sb, "ne",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "<"))  { nArgs("<",  args, 1); compareNum(sb, "lt",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "<=")) { nArgs("<=", args, 1); compareNum(sb, "le",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, ">=")) { nArgs(">=", args, 1); compareNum(sb, "ge",       args, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, ">"))  { nArgs(">",  args, 1); compareNum(sb, "gt",       args, env, topEnv, rsfx); return; }
 
                         //     - cons, car, cdr
-                        if (isSymbol(op, "car"))  { sb.append("car(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                        if (isSymbol(op, "cdr"))  { sb.append("cdr(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                        if (isSymbol(op, "cons")) { sb.append("cons("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
-                                                                        formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
+                        if (isSymbol(op, "car"))  { oneArg("car", args);   sb.append("car(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "cdr"))  { oneArg("cdr", args);   sb.append("cdr(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
+                        if (isSymbol(op, "cons")) { twoArgs("cons", args); sb.append("cons("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
+                                                                           formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
 
                         //     - eq, not
-                        if (isSymbol(op, "eq"))   { compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "null")) { compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
 
                         // inc, dec
                         if (isSymbol(op, "1+"))   { sb.append("inc(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
@@ -5576,6 +5571,7 @@ public class LambdaJ {
         /** eval form and change to double */
         private void asDouble(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null) throw new LambdaJError("not a number: nil");
+            if (form instanceof Character || form instanceof String) throw new LambdaJError(true, "not a number: %s", printSEx(form));
             if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("dbl("); formToJava(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
