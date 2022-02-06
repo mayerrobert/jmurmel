@@ -4153,13 +4153,13 @@ public class LambdaJ {
 
         /// predefined primitives
         public final Object   _car     (Object... args) { oneArg("car",        args.length); return car(args[0]); }
-        public static final Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
+        public static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
 
         public final Object   _cdr     (Object... args) { oneArg("cdr",        args.length); return cdr(args[0]); }
-        public static final Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
+        public static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
 
         public final ConsCell _cons    (Object... args) { twoArg("cons",       args.length); return cons(args[0], args[1]); }
-        public static final ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
+        public static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
 
         public final Object   _rplaca  (Object... args) { return cl_rplaca(arraySlice(args)); }
         public final Object   _rplacd  (Object... args) { return cl_rplacd(arraySlice(args)); }

@@ -1166,3 +1166,5 @@ bei progn usw castet der compiler args auf ConsCell
 compiler: bei opencoded wie car sollte argumentanzahl zur compilezeit gecheckt werden, dafür aber nicht zur laufzeit
 -> derzeit wird zur compilezeit nix gecheckt, dafür werden z.t. die "normalen" funktionen mit argcheck eingebaut
 
+lambda calls haben im generierten code einen argCheck. bei let & Co ist der argcheck unnoetig
+-> ist doch nötig, ausser es würde zur compilezeit gecheckt

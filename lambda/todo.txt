@@ -1,4 +1,12 @@
-lambda calls haben im generierten code einen argCheck. bei let & Co ist der argcheck unnoetig
+progn toplevel expandierung kann ggf. in prognToJava gemacht werden?
+
+statt überall "throw new LambdaJError(..."
+-> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
+-> ggf. später statt exception optional einen handler aufrufen -> condition system
+  -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
+     wenn handler gerufen werden, schauts anders aus 
+
+mit optimize speed 0 und 1 testen
 
 ein programm das nur nil enthält führt zu java compilerfehler
 nil
@@ -8,6 +16,28 @@ nil
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 
+
+Lisp Quine: https://de.wikipedia.org/wiki/Quine_(Computerprogramm)
+JMurmel> ((lambda (x)
+  (list x (list (quote quote) x)))
+ (quote
+    (lambda (x)
+      (list x (list (quote quote) x)))))
+
+==> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
+
+oder (stimmt nicht ganz): (define s "(define s %c%s%c) (format t s #\" s #\")") (format t s #\" s #\")
+ergebnis:                 (define s "(define s %c%s%c) (format t s #" s #")") (format t s #" s #")
+
+oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))") (format t s (code-char 34) s (code-char 34))
+
+
+
+der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
+
+mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
+-> ggf. eine funktion um einen frame in eine datei zu schreiben? und headlessp
+   und bei headless erstellt make-frame nur linecomponent, d.h. alles geht auch headless bis auf open-frame
 
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
