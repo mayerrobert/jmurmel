@@ -4960,6 +4960,7 @@ public class LambdaJ {
         
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
         private void formToJava(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            rsfx++;
             try {
 
                 /// * symbols
@@ -5014,8 +5015,8 @@ public class LambdaJ {
 
                     ///     - if
                     if (interpreter().sIf == op) {
-                        sb.append('(');
-                        formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(" != null\n        ? ("); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
+                        sb.append("((");
+                        formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(") != null\n        ? ("); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
                         if (caddr(args) != null) { sb.append(")\n        : ("); formToJava(sb, caddr(args), env, topEnv, rsfx, isLast); sb.append("))"); }
                         else sb.append(")\n        : null)");
                         return;
@@ -5025,8 +5026,8 @@ public class LambdaJ {
                     if (interpreter().sCond == op) {
                         sb.append("false ? null\n");
                         for (Object cond: (ConsCell)args) {
-                            sb.append("        : ("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(" != null)\n        ? (");
-                            prognToJava(sb, cdr(cond), env, topEnv, rsfx+1, isLast);
+                            sb.append("        : (("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
+                            prognToJava(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
                         }
                         sb.append("\n        : null");
@@ -5035,7 +5036,7 @@ public class LambdaJ {
 
                     ///     - lambda
                     if (interpreter().sLambda == op) {
-                        lambdaToJava(sb, args, env, topEnv, rsfx+1);
+                        lambdaToJava(sb, args, env, topEnv, rsfx);
                         return;
                     }
 
@@ -5048,7 +5049,7 @@ public class LambdaJ {
                             String javaName = null;
                             for (Object pairs = args; pairs != null; pairs = cddr(pairs)) {
                                 sb.append("        ");
-                                javaName = setqToJava(sb, env, topEnv, rsfx, pairs);
+                                javaName = setqToJava(sb, env, topEnv, rsfx-1, pairs);
                                 sb.append(";\n");
                             }
                             sb.append("        return ").append(javaName).append(";})).get()");
@@ -5056,7 +5057,7 @@ public class LambdaJ {
                         return;
                     }
                     if (interpreter().sDefine == op) {
-                        if (rsfx != 0) throw new LambdaJError("define as non-toplevel form is not yet implemented");
+                        if (rsfx != 1) throw new LambdaJError("define as non-toplevel form is not yet implemented");
                         final Object sym = car(args);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
@@ -5065,7 +5066,7 @@ public class LambdaJ {
                         return;
                     }
                     if (interpreter().sDefun == op) {
-                        if (rsfx != 0) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
+                        if (rsfx != 1) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
                         final Object sym = car(args);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
@@ -5074,7 +5075,7 @@ public class LambdaJ {
                         return;
                     }
                     if (interpreter().sDefmacro == op) {
-                        if (rsfx != 0) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
+                        if (rsfx != 1) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
                         final Object result = interpreter().eval(form, null);
                         if (result != null) sb.append("intern(\"").append(sym).append("\")");
@@ -5094,14 +5095,14 @@ public class LambdaJ {
 
                     ///     - progn
                     if (interpreter().sProgn == op) {
-                        prognToJava(sb, args, env, topEnv, rsfx+1, isLast);
+                        prognToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
                     if (interpreter().sLabels == op) {
-                        labelsToJava(sb, args, env, topEnv, rsfx+1, isLast);
+                        labelsToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
@@ -5115,7 +5116,7 @@ public class LambdaJ {
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
                     if (interpreter().sLetStar == op) {
-                        letStarToJava(sb, args, env, topEnv, rsfx+1, isLast);
+                        letStarToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
@@ -5123,14 +5124,14 @@ public class LambdaJ {
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
                     if (interpreter().sLetrec == op) {
-                        letrecToJava(sb, args, env, topEnv, rsfx+1, isLast);
+                        letrecToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     if (interpreter().sLoad == op) {
                         nArgs("load", args, 1);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
-                        loadFile(false, "load", sb, car(args), env, topEnv, rsfx, isLast, null, null);
+                        loadFile(false, "load", sb, car(args), env, topEnv, rsfx-1, isLast, null, null);
                         return;
                     }
 
@@ -5145,7 +5146,7 @@ public class LambdaJ {
                     }
 
                     if (interpreter().sDeclaim == op) {
-                        interpreter().declaim(rsfx+1, (ConsCell)args); // todo kann der cast je schiefgehen? kann form eine dotted list sein
+                        interpreter().declaim(rsfx, (ConsCell)args); // todo kann der cast je schiefgehen? kann form eine dotted list sein
                         sb.append("null");
                         return;
                     }
@@ -5153,7 +5154,7 @@ public class LambdaJ {
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
                         final Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
-                        formToJava(sb, expansion, env, topEnv, rsfx, isLast);
+                        formToJava(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
 
@@ -5183,7 +5184,8 @@ public class LambdaJ {
 
         /** write atoms that are not symbols */
         private static void atomToJava(WrappingWriter sb, Object form) {
-            if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
+            //if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
+            if (form instanceof Long) sb.append("Long.valueOf(").append(Long.toString((Long) form)).append(')');
             else if (form instanceof Character) {
                 final char c = (Character) form;
                 switch (c) {

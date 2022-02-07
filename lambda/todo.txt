@@ -1,7 +1,9 @@
 mlib-test: tests constantly wieder entkommentieren
 -> defmacro als nicht-toplevel form und macroexpand-1 im compiler
 
-Compiler let*: let* dynamic sollte als unsupported angemeckert werden
+Compiler: setq in closures gibt code der nicht kompiliert: final or effectively final...
+
+Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
 
 statt überall "throw new LambdaJError(..."
 -> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
