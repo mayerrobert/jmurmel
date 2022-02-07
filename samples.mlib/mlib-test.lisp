@@ -195,8 +195,8 @@
 
 
 ;;; test acons
+(define alist '()) ; => alist
 (tests acons
-  (define alist '()) => alist
   (acons 1 "one" alist) => ((1 . "one"))
   alist => NIL
   (setq alist (acons 1 "one" (acons 2 "two" alist))) => ((1 . "one") (2 . "two"))
@@ -285,8 +285,8 @@
 
 
 ; test prog1, prog2
+(define temp 1) ; =>  temp
 (tests prog
-  (define temp 1) =>  temp
   (prog1 temp (print temp) (incf temp) (print temp))
   ; >>  1
   ; >>  2
@@ -336,9 +336,18 @@
           (if (not (oddp x)) (inc-var x) (list x)))) => ((4) NIL (5) NIL 6 (6) 7 (7))
 )
 
-
 ; test case
 (define res nil)
+
+(defun decode (x)
+  (case x
+    ((i uno) 1.0)
+    ((ii dos) 2.0)
+    ((iii tres) 3.0)
+    ((iv cuatro) 4.0))) ; =>  DECODE
+
+(defun add-em (x) (apply #'+ (mapcar #'decode x))) ; =>  ADD-EM
+
 (tests case
   (dolist (k '(1 2 3 :four #\v () t 'other))
     (setq res (append res (list
@@ -352,16 +361,7 @@
        ))))
   =>  NIL
   res => (CLAUSE1 CLAUSE1 CLAUSE2 CLAUSE4 CLAUSE4 NILSLOT TSLOT OTHERS)
-   (defun add-em (x) (apply #'+ (mapcar #'decode x)))
-  =>  ADD-EM
-   (defun decode (x)
-     (case x
-       ((i uno) 1.0)
-       ((ii dos) 2.0)
-       ((iii tres) 3.0)
-       ((iv cuatro) 4.0)))
-  =>  DECODE
-   (add-em '(uno iii)) =>  4.0
+  (add-em '(uno iii)) =>  4.0
 )
 
 
@@ -382,9 +382,9 @@
 
 
 ; test dotimes
+(define temp-two 0) ; => temp-two
 (tests dotimes
   (dotimes (temp-one 10 temp-one)) => 10
-  (define temp-two 0) => temp-two
   (dotimes (temp-one 10 t) (inc-var temp-two)) => t
   temp-two => 10
   (let ((loop "loop") (result nil)) (dotimes (i 3 result) (setq result (cons loop result))))
@@ -394,7 +394,7 @@
 
 ; test dolist
 (tests dolist
-  (define temp-two '()) => temp-two
+  (setq temp-two '()) => nil
   (dolist (temp-one '(1 2 3 4) temp-two) (push temp-one temp-two)) => (4 3 2 1)
 
   (setq temp-two 0) => 0
@@ -487,8 +487,8 @@
 )
 
 ; test mapc
+(define dummy nil) ; => dummy
 (tests mapc
-  (define dummy nil) => dummy
   (mapc (lambda #+murmel x #-murmel (&rest x) (setq dummy (append dummy x)))
         '(1 2 3 4)
         '(a b c d e)
@@ -592,6 +592,7 @@
 ; define a "non-shortcircuiting logical and" as a macro
 ; uses "with-gensyms" so that the macro expansion does NOT contain a variable "result"
 #+murmel
+(progn
 (defmacro logical-and-3 (a b c)
   (with-gensyms (result)
     `(let ((,result t))
@@ -600,12 +601,11 @@
        (if ,c nil (setq ,result nil))
        ,result)))
 
-#+murmel
+(define result 1) ; => result; the symbol "result" is used in the macro, name-capturing must be avoided
 (tests with-gensyms
-  (define result 1) ==> result; the symbol "result" is used in the macro, name-capturing must be avoided
-  (logical-and-3 result 2 3) ==> t
-  result ==> 1 ; global variable is not affected by the macro
-)
+  (logical-and-3 result 2 3) => t
+  result => 1 ; global variable is not affected by the macro
+))
 
 
 ; test thread-first
@@ -614,7 +614,7 @@
   (->) => nil
   (-> 200 (/ 2) (+ 7)) => 107.0
   (macroexpand-1 '(-> 200 (/ 2) (+ 7)))
-    ==> (+ (/ 200 2) 7)
+    => (+ (/ 200 2) 7)
   (-> 107 code-char char-code) => 107
 )
 
@@ -625,7 +625,7 @@
   (->>) => nil
   (->> 200 (/ 2) (+ 7)) => 7.01
   (macroexpand-1 '(->> 200 (/ 2) (+ 7)))
-    ==> (+ 7 (/ 2 200))
+    => (+ 7 (/ 2 200))
   (->> 107 code-char char-code) => 107
   (->> '(1 2 3) (mapcar (lambda (n) (expt n 2))) (reduce +)) => 14.0
   (->> '(1 2 3) (mapcar 1+) (reduce +)) => 9.0
