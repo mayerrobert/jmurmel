@@ -968,7 +968,7 @@ pi ; ==> 3.141592653589793
 
 (:: "java.lang.System" "currentTimeMillis")
 
-; When invoking primitives created by "::" the first argument must be
+; When invoking primitives created by `::` the first argument must be
 ; a Java object of the primitive's method's class or `nil` for static methods:
 ; invoke static method:
 

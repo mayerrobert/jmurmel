@@ -1168,3 +1168,6 @@ compiler: bei opencoded wie car sollte argumentanzahl zur compilezeit gecheckt w
 
 lambda calls haben im generierten code einen argCheck. bei let & Co ist der argcheck unnoetig
 -> ist doch nötig, ausser es würde zur compilezeit gecheckt
+
+progn toplevel expandierung kann ggf. in prognToJava gemacht werden?
+-> nein, kann nicht, weil die forms die ein toplevel progn enthält als toplevel forms behandelt werden sollen
