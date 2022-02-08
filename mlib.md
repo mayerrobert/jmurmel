@@ -213,6 +213,14 @@ the forms are not evaluated and the return value
 of the unless-form is `nil`.
 ### Macro: case
      (case keyform (keys forms*)* (t forms*)?) -> result
+
+`keys` can be a single key or a list of keys, keys will not be evaluated.
+`keyform` will be matched against `keys` using `eql`, the `forms` of the
+matching clause will be eval'd and the last form determines the result.
+Subsequent clauses will be ignored.
+
+A clause with a key that is a single `t` is used as the default clause
+if no key matches.
 ### Macro: do, do*
     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result

@@ -458,16 +458,26 @@
 
 ;;; = Macro: case
 ;;;      (case keyform (keys forms*)* (t forms*)?) -> result
+;;;
+;;; `keys` can be a single key or a list of keys, keys will not be evaluated.
+;;; `keyform` will be matched against `keys` using `eql`, the `forms` of the
+;;; matching clause will be eval'd and the last form determines the result.
+;;; Subsequent clauses will be ignored.
+;;;
+;;; A clause with a key that is a single `t` is used as the default clause
+;;; if no key matches.
 (defmacro case (keyform . clauses)
   (labels ((do-clause (tmp clause)
              (let ((keydesignator (car clause))
                    (forms (cdr clause)))
                (if keydesignator
                      (if (consp keydesignator)
-                           `((member ,tmp ',keydesignator eq) ,@forms)
+                           (if (cdr keydesignator)
+                                 `((member ,tmp ',keydesignator eql) ,@forms)
+                             `((eql ,tmp ',(car keydesignator)) ,@forms))
                        (if (eq 't keydesignator)
                              `(t ,@forms)
-                         `((eq ,tmp ,keydesignator) ,@forms)))))))
+                         `((eql ,tmp ',keydesignator) ,@forms)))))))
     (if (atom keyform)
           `(cond ,@(mapcar (lambda (clause) (do-clause keyform clause)) clauses))
       (let ((tmp (gensym)))

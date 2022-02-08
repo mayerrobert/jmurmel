@@ -1174,3 +1174,16 @@ progn toplevel expandierung kann ggf. in prognToJava gemacht werden?
 
 mlib-test: tests constantly wieder entkommentieren
 -> defmacro als nicht-toplevel form und macroexpand-1 im compiler
+
+mlib: case sollte mit eql checken?
+CLHS sagt "These macros allow the conditional execution of a body of forms in a clause that is selected by matching the test-key on the basis of its identity."
+SBCL macht eql:
+D:\robert\projects\jmurmel>sbcl220
+* (macroexpand-1 '(case a ((1) 'one) (2 'two) ((3 4) 'threeorfour) (t 'other)))
+(LET ((#:G430 A))
+  (DECLARE (IGNORABLE #:G430))
+  (COND ((OR (EQL #:G430 '1)) NIL 'ONE) ((EQL #:G430 '2) NIL 'TWO)
+        ((OR (EQL #:G430 '3) (EQL #:G430 '4)) NIL 'THREEORFOUR) (T NIL 'OTHER)))
+T
+*
+-> mlib sollte wohl auch eql nehmen, und key listen mit nur einem element von member auf eql umstellen
