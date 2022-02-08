@@ -60,6 +60,10 @@ compiler: alle defuns/ defines, nicht nur toplevel
 
 
 
+assert, error: https://google.github.io/styleguide/lispguide.xml?showone=Assertions_and_Conditions#Assertions_and_Conditions
+function error: http://clhs.lisp.se/Body/f_error.htm
+macro assert: http://clhs.lisp.se/Body/m_assert.htm
+
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc in mlib jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
 -> assoc-if, rassoc-if

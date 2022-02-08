@@ -413,11 +413,10 @@
 
 
 ; test constantly
+(defmacro with-vars (vars . forms)
+  `((lambda ,vars ,@forms) ,@(mapcar (constantly nil) vars))) ; => WITH-VARS
 (tests constantly
   (mapcar (constantly 3) '(a b c d)) =>  (3 3 3 3)
-
-  (defmacro with-vars (vars . forms)
-    `((lambda ,vars ,@forms) ,@(mapcar (constantly nil) vars))) => WITH-VARS
 
   (macroexpand-1 '(with-vars (a b) (setq a 3 b (* a a)) (list a b)))
     => ((LAMBDA (A B) (SETQ A 3 B (* A A)) (LIST A B)) NIL NIL)

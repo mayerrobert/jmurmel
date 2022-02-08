@@ -1667,10 +1667,10 @@ public class LambdaJ {
     private void declaim(int level, ConsCell arguments) {
         if (level != 1) throw new LambdaJError("declaim: must be a toplevel form");
         if (caar(arguments) == sOptimize) {
-            Object rest = cdar(arguments);
-            ConsCell speedCons = assq(sSpeed, rest);
+            final Object rest = cdar(arguments);
+            final ConsCell speedCons = assq(sSpeed, rest);
             if (speedCons != null) {
-                Object speedo = cadr(speedCons);
+                final Object speedo = cadr(speedCons);
                 if (!(speedo instanceof Number)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speedo);
                 speed = ((Number)speedo).intValue();
             }
@@ -2136,8 +2136,8 @@ public class LambdaJ {
 
     // these *should* have no usages as these checks would be superfluous
     // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
-    private static boolean  consp(ConsCell c)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
-    private static boolean  listp(ConsCell c)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
+    private static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
+    private static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
 
     private static void errorMalformed(String func, String msg) {
         throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
@@ -4973,8 +4973,10 @@ public class LambdaJ {
                 }
 
                 if (consp(form)) {
-                    final Object op = car(form);
-                    final Object args = cdr(form);
+                    final ConsCell formCons = (ConsCell)form;
+                    final Object op = car(formCons);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                    if (!listp(cdr(formCons))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
+                    final ConsCell args = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
                     if (interpreter().speed >= 1) {
                         // * some functions and operators are opencoded:
@@ -5025,7 +5027,7 @@ public class LambdaJ {
                     ///     - cond
                     if (interpreter().sCond == op) {
                         sb.append("false ? null\n");
-                        for (Object cond: (ConsCell)args) {
+                        for (Object cond: args) {
                             sb.append("        : (("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
                             prognToJava(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
@@ -5040,6 +5042,7 @@ public class LambdaJ {
                         return;
                     }
 
+                    ///     - setq
                     if (interpreter().sSetQ == op) {
                         if (args == null) sb.append("null");
                         else if (cddr(args) == null)
@@ -5106,8 +5109,8 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - let: (let ((sym form)...) forms...) -> Object
-                    ///     - named let: (let sym ((sym form)...) forms...) -> Object
+                    ///     - let: (let ((sym form)...) forms...) -> object
+                    ///     - named let: (let sym ((sym form)...) forms...) -> object
                     if (interpreter().sLet == op) {
                         letToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
@@ -5146,15 +5149,22 @@ public class LambdaJ {
                     }
 
                     if (interpreter().sDeclaim == op) {
-                        interpreter().declaim(rsfx, (ConsCell)args); // todo kann der cast je schiefgehen? kann form eine dotted list sein
+                        interpreter().declaim(rsfx, args);
                         sb.append("null");
                         return;
                     }
 
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
-                        final Object expansion = interpreter().mexpand(op, (ConsCell) args, 0, 0, 0);
+                        final Object expansion = interpreter().mexpand(op, args, 0, 0, 0);
                         formToJava(sb, expansion, env, topEnv, rsfx-1, isLast);
+                        return;
+                    }
+
+                    /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
+                    if (isSymbol(op, "macroexpand-1")) {
+                        if (interpreter().sQuote != caar(args)) throw new LambdaJError("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        quotedFormToJava(sb, intp.macroexpand1((ConsCell)cdar(args)));
                         return;
                     }
 
@@ -5162,7 +5172,7 @@ public class LambdaJ {
                     sb.append(isLast ? "tailcall(" : "funcall(");
                     formToJava(sb, op, env, topEnv, rsfx, false);
                     if (args != null) {
-                        for (Object arg: (ConsCell)args) {
+                        for (Object arg: args) {
                             sb.append("\n        , ");
                             formToJava(sb, arg, env, topEnv, rsfx, false);
                         }
@@ -5223,7 +5233,7 @@ public class LambdaJ {
         }
 
         /** args = ((sym...) form...) */
-        private void lambdaToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void lambdaToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
             final String expr = "(lambda " + printSEx(car(args)) + ')';
             env = params(sb, car(args), env, rsfx, expr);
@@ -5278,11 +5288,8 @@ public class LambdaJ {
         }
 
         /** args = (((symbol (sym...) form...)...) form...) */
-        private void labelsToJava(WrappingWriter sb, final Object a, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (!listp(a)) errorMalformed("labels", "a list (((symbol (sym...) form...)...) form...)", a);
-            if (a == null) errorMalformed("labels", "expected at least one argument");
-
-            final ConsCell args = (ConsCell)a;
+        private void labelsToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (args == null) errorMalformed("labels", "expected at least one argument");
 
             final Object localFuncs = car(args);
             if (localFuncs == null || (cddr(args) == null && atom(cadr(args)))) {
@@ -5312,7 +5319,7 @@ public class LambdaJ {
         }
 
         /** let and named let */
-        private void letToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void letToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
                 // named let
@@ -5338,7 +5345,7 @@ public class LambdaJ {
         }
 
         /** let* and named let* */
-        private void letStarToJava(WrappingWriter sb, final Object args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void letStarToJava(WrappingWriter sb, final ConsCell args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
             ConsCell env = _env;
             final ConsCell bindings, bodyForms;
             final LambdaJSymbol name;
@@ -5393,18 +5400,19 @@ public class LambdaJ {
         }
 
         /** args = ([name] ((symbol form)...) forms...) */
-        private void letrecToJava(WrappingWriter sb, Object args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void letrecToJava(WrappingWriter sb, ConsCell args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
             ConsCell env = _env;
 
             final LambdaJSymbol name;
-            
+
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction () {\n");
 
             if (car(args) instanceof LambdaJSymbol) {
                 // named let*: (let* sym ((sym form)...) forms...) -> Object
                 name = (LambdaJSymbol) car(args);
-                args = cdr(args);
+                if (!listp(cdr(args))) errorMalformed("named letrec", "a list of bindings", cdr(args));
+                args = (ConsCell)cdr(args);
             }
             else name = null;
 
@@ -5562,8 +5570,7 @@ public class LambdaJ {
         }
 
         /** compare two numbers */
-        private void compareNum(WrappingWriter sb, String pred, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
-            //sb.append(pred).append('('); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')');
+        private void compareNum(WrappingWriter sb, String pred, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append(pred).append('(');
             formToJava(sb, car(args), env, topEnv, rsfx, false);
             if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
@@ -5574,12 +5581,12 @@ public class LambdaJ {
         }
 
         /** generate double operator for zero or more number args */
-        private void addDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void addDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append('(');
             if (args == null) sb.append(start);
             else {
                 boolean first = true;
-                for (Object arg: (ConsCell)args) {
+                for (Object arg: args) {
                     if (first) first = false;
                     else sb.append(' ').append(op).append(' ');
                     asDouble(sb, arg, env, topEnv, rsfx);
@@ -5589,7 +5596,7 @@ public class LambdaJ {
         }
 
         /** generate double operator for one or more number args */
-        private void subDbl(WrappingWriter sb, String op, double start, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, topEnv, rsfx); }
             else {

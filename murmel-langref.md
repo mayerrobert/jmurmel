@@ -995,6 +995,7 @@ Compiler issues:
   will throw a "not-yet-implemented" compiler error.
 - define-ing an already define-d symbol is not supported
 - let* dynamic is not supported
+- macroexpand-1 is limited to quoted forms
 
 
 ## Copyright 
