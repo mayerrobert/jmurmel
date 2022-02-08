@@ -991,7 +991,7 @@ Murmel language:
 
 Compiler issues:
 
-- define/ defun only work as top level forms, use as non-toplevel form
+- define/ defun/ defmacro only work as top level forms, use as non-toplevel form
   will throw a "not-yet-implemented" compiler error.
 - define-ing an already define-d symbol is not supported
 - let* dynamic is not supported

@@ -1171,3 +1171,6 @@ lambda calls haben im generierten code einen argCheck. bei let & Co ist der argc
 
 progn toplevel expandierung kann ggf. in prognToJava gemacht werden?
 -> nein, kann nicht, weil die forms die ein toplevel progn enthält als toplevel forms behandelt werden sollen
+
+mlib-test: tests constantly wieder entkommentieren
+-> defmacro als nicht-toplevel form und macroexpand-1 im compiler
