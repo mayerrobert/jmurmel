@@ -5,7 +5,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
  * (declaim (optimize...
  * some functions are opencoded in compiled code
- * limited support for macroexpand-1 in compiled code
+ * add limited support for macroexpand-1 in compiled code (quoted forms only)
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

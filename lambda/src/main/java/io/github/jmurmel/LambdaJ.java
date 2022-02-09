@@ -5409,7 +5409,7 @@ public class LambdaJ {
             sb.append("new MurmelFunction () {\n");
 
             if (car(args) instanceof LambdaJSymbol) {
-                // named let*: (let* sym ((sym form)...) forms...) -> Object
+                // named letrec: (letrec sym ((sym form)...) forms...) -> Object
                 name = (LambdaJSymbol) car(args);
                 if (!listp(cdr(args))) errorMalformed("named letrec", "a list of bindings", cdr(args));
                 args = (ConsCell)cdr(args);
