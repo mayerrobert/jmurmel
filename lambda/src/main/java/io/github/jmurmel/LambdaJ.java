@@ -5616,7 +5616,7 @@ public class LambdaJ {
         }
 
         private static void quotedFormToJava(WrappingWriter sb, Object form) {
-            if (form == null || "nil".equals(form.toString())) { sb.append("null"); }
+            if (form == null || "nil".equals(form.toString())) { sb.append("_nil"); }
 
             else if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); }
             else if (atom(form))    { atomToJava(sb, form); }
