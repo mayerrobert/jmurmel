@@ -1187,3 +1187,8 @@ D:\robert\projects\jmurmel>sbcl220
 T
 *
 -> mlib sollte wohl auch eql nehmen, und key listen mit nur einem element von member auf eql umstellen
+
+Compiler: setq in closures gibt code der nicht kompiliert: final or effectively final...
+(let* (a) (progn (setq a 1) a)) ist das einfachste beispiel dafür: let* hat Java variablen, das geht nicht, letrec hat members, das würde gehen
+  -> unittest machen
+-> letRecToJava reusen, aber das environment zu anderem zeitpunkt befüllen (nicht alle vor der initialisierung sondern zug um zug)

@@ -41,6 +41,7 @@
 
 ; helper function for assert-equal macro
 (defun do-assert-equal (expected actual msg)
+  ;(format t "test %s: " msg) (writeln actual)
   (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
     (writeln)

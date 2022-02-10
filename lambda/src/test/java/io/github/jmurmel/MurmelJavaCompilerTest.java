@@ -388,6 +388,18 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testLetStarSetq() throws Exception {
+        MurmelProgram program = compile("(let* (a) (progn (setq a 1) a))");
+        assertNotNull("failed to compile let* to class", program);
+        assertEquals("let* produced wrong result", 1L, program.body());
+    }
+
+    @Test
+    public void testLetStarError() throws Exception {
+        compileError("(let* ((a b) (b 2)) a)", "undefined symbol");
+    }
+
+    @Test
     public void testNamedLetStar() throws Exception {
         MurmelProgram program = compile("(let* loop ((a 1) (b a)) (if (> b a) (loop b a)) b)");
         assertNotNull("failed to compile namd let* to class", program);
@@ -449,6 +461,8 @@ public class MurmelJavaCompilerTest {
         assertEquals("labelsmutual produced wrong result", 5L, program.body());
     }
 
+    
+    
     @Test
     public void testJavaStatic() throws Exception {
         MurmelProgram program = compile("((:: \"java.lang.System\" \"currentTimeMillis\"))");
@@ -464,7 +478,7 @@ public class MurmelJavaCompilerTest {
         assertEquals("javainstance produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
-    //@Test todo macroexpand-1 is interpreter only
+    @Test
     public void testMacroexpand() throws Exception {
         MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
                                       + "(macroexpand-1 '(add2 3))");
@@ -576,7 +590,7 @@ public class MurmelJavaCompilerTest {
     @Test
     public void testGensym() throws Exception {
         String source = "(defmacro m (x1 x2) (let ((y1 (gensym)) (y2 (gensym))) `(let ((,y1 ,x1) (,y2 ,x2)) (+ ,y1 ,y2)))) "
-                //+ "(macroexpand-1 '(m 2 3)) "
+                + "(macroexpand-1 '(m 2 3)) "
                 + "(m 2 3)";
         MurmelProgram program = compile(source);
         assertNotNull("failed to compile gensym to class:", program);

@@ -226,10 +226,10 @@ public class LambdaJ {
         public static ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
 
         public abstract Object car();
-        public Object rplaca(Object car) { throw new UnsupportedOperationException(); }
+        public Object rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
 
         public abstract Object cdr();
-        public Object rplacd(Object cdr) { throw new UnsupportedOperationException(); }
+        public Object rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
 
         ConsCell closure() { return null; }
     }
@@ -4137,6 +4137,9 @@ public class LambdaJ {
             try {
                 return runbody();
             }
+            catch (UnsupportedOperationException e) {
+                throw new LambdaJError(e.getMessage() + "\nUnsupported operation occured in " + loc);
+            }
             catch (LambdaJError e) {
                 return rterror(e);
             }
@@ -4192,7 +4195,14 @@ public class LambdaJ {
         public final Object _floatp    (Object... args) { oneArg("floatp",     args.length); return floatp    (args[0]) ? _t : null; }
 
         public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
-        public final ConsCell _list    (Object... args) { return arraySlice(args); }
+        public final ConsCell _list    (Object... args) {
+            if (args == null || args.length == 0) return null;
+            final ListBuilder ret = new ListBuilder();
+            for (Object arg: args) {
+                ret.append(arg);
+            }
+            return (ConsCell)ret.first(); // todo ist der cast safe?
+        }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
         public final double   _fround   (Object... args) { oneArg("fround",      args.length); return cl_round(dbl(args[0])); }
@@ -5119,7 +5129,7 @@ public class LambdaJ {
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
                     if (interpreter().sLetStar == op) {
-                        letStarToJava(sb, args, env, topEnv, rsfx, isLast);
+                        letrecToJava(false, sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
@@ -5127,7 +5137,7 @@ public class LambdaJ {
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
                     if (interpreter().sLetrec == op) {
-                        letrecToJava(sb, args, env, topEnv, rsfx, isLast);
+                        letrecToJava(true, sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
@@ -5345,6 +5355,7 @@ public class LambdaJ {
         }
 
         /** let* and named let* */
+        /*
         private void letStarToJava(WrappingWriter sb, final ConsCell args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
             ConsCell env = _env;
             final ConsCell bindings, bodyForms;
@@ -5398,11 +5409,13 @@ public class LambdaJ {
             if (name != null) sb.append("        } } )");
             else              sb.append("        } )");
         }
+        */
 
-        /** args = ([name] ((symbol form)...) forms...) */
-        private void letrecToJava(WrappingWriter sb, ConsCell args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
-            ConsCell env = _env;
-
+        /**
+         * let* and letrec
+         * args = ([name] ((symbol form)...) forms...) */
+        private void letrecToJava(boolean letrec, WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            final String op;
             final LambdaJSymbol name;
 
             sb.append(isLast ? "tailcall(" : "funcall(");
@@ -5410,22 +5423,31 @@ public class LambdaJ {
 
             if (car(args) instanceof LambdaJSymbol) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
+                op = letrec ? "named letrec" : "named let*";
                 name = (LambdaJSymbol) car(args);
-                if (!listp(cdr(args))) errorMalformed("named letrec", "a list of bindings", cdr(args));
+                if (!listp(cdr(args))) errorMalformed(op, "a list of bindings", cdr(args));
                 args = (ConsCell)cdr(args);
             }
-            else name = null;
+            else {
+                name = null;
+                op = letrec ? "letrec" : "let*";
+            }
 
             final Object bindings = car(args);
-            final ConsCell params = paramList("letrec", bindings, false);
+            final ConsCell params = paramList(op, bindings, false);
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
-                    if (seen.contains(letVar)) throw new LambdaJError(true, "duplicate symbol %s", letVar);
-                    seen.add(letVar);
-                    env = extenv(letVar, rsfx, env);
-                    final String letVarName = javasym(letVar, env);
-                    sb.append("        private Object ").append(letVarName).append(" = null;\n");
+                    if (seen.contains(letVar)) {
+                        if (letrec) throw new LambdaJError(true, "duplicate symbol %s", letVar);
+                    }
+                    else {
+                        seen.add(letVar);
+                        final ConsCell _env = extenv(letVar, rsfx, env);
+                        if (letrec) env = _env;
+                        final String letVarName = javasym(letVar, _env);
+                        sb.append("        private Object ").append(letVarName).append(" = null;\n");
+                    }
                 }
             }
             
@@ -5440,10 +5462,11 @@ public class LambdaJ {
                         sym = car(binding);
                         form = cadr(binding);
                     }
-                    final String symName = javasym(sym, env);
+                    final String symName = mangle(sym.toString(), rsfx);
                     sb.append("        { ").append(symName).append(" = ");
-                    if (caddr(binding) != null) errorMalformed("letrec", "illegal variable specification " + printSEx(binding));
+                    if (caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
                     formToJava(sb, form, env, topEnv, rsfx, false);
+                    if (!letrec) env = extenv(sym, rsfx, env);
                     sb.append("; }\n");
                 }
 

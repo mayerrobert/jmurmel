@@ -1,9 +1,4 @@
-
-Compiler: setq in closures gibt code der nicht kompiliert: final or effectively final...
-(let* (a) (progn (setq a 1) a)) ist das einfachste beispiel dafür: let* hat Java variablen, das geht nicht, letrec hat members, das würde gehen
-  -> unittest machen
--> letRecToJava reusen, aber das environment zu anderem zeitpunkt befüllen (nicht alle vor der initialisierung sondern zug um zug)
--> letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
 Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
 
