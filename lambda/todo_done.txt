@@ -1192,3 +1192,5 @@ Compiler: setq in closures gibt code der nicht kompiliert: final or effectively 
 (let* (a) (progn (setq a 1) a)) ist das einfachste beispiel dafür: let* hat Java variablen, das geht nicht, letrec hat members, das würde gehen
   -> unittest machen
 -> letRecToJava reusen, aber das environment zu anderem zeitpunkt befüllen (nicht alle vor der initialisierung sondern zug um zug)
+
+mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)

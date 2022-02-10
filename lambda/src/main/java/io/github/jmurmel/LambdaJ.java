@@ -278,6 +278,8 @@ public class LambdaJ {
             public Object next() {
                 final Object _cursor;
                 if ((_cursor = cursor) == null) throw new NoSuchElementException();
+                if (_cursor instanceof ArraySlice)
+                    throw new LambdaJError("ListConsCell contains an ArraySlice which is not yet implemented");
                 if (_cursor instanceof ListConsCell) {
                     final ListConsCell list = (ListConsCell)_cursor;
                     if (list.cdr() == coll) cursor = null; // circle detected, stop here
@@ -2038,6 +2040,8 @@ public class LambdaJ {
             public Object next() {
                 if (cursor == -1 || coll.arry == null) throw new NoSuchElementException();
                 final Object ret = coll.arry[cursor++];
+                if (ret instanceof ListConsCell)
+                    throw new LambdaJError("ArraySlice contains a ListConsCell which is not yet implemented");
                 if (cursor == coll.arry.length)  cursor = -1;
                 return ret;
             }
@@ -2229,7 +2233,8 @@ public class LambdaJ {
         if (lhs == null) return rhs;
         if (!consp(lhs)) throw new LambdaJError(true, "append2: first argument %s is not a list", lhs);
         ListConsCell ret = null, insertPos = null;
-        for (Object o: (ConsCell)lhs) {
+        for (Object rest = lhs; rest != null; rest = cdr(rest)) {
+            final Object o = listp(rest) ? car(rest) : rest;
             if (ret == null) {
                 ret = cons(o, null);
                 insertPos = ret;
@@ -2238,6 +2243,7 @@ public class LambdaJ {
                 insertPos.rplacd(cons(o, null));
                 insertPos = (ListConsCell) insertPos.cdr();
             }
+            if (!consp(rest)) break;
         }
         insertPos.rplacd(rhs);
         return ret;
@@ -2265,7 +2271,8 @@ public class LambdaJ {
         }
         if (!listp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
-        ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
+        //((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
+        for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
         return ret.toArray();
     }
 

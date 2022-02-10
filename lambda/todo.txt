@@ -1,3 +1,9 @@
+Iterator von ListConsCell und ArraySlice funktionieren nicht bei Mischungen aus ListConsCell und ArraySlice
+gaben falsches ergebnis, werfen jetzt exceptions.
+umbau von iterator auf cdr hat den nachteil, dass cdr(ArraySlice) jedesmal new ArraySlice macht, wirkt sich u.a.
+in der Murmel funktion append und listToArray aus
+-> reparieren oder ausbauen
+ 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
 Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
@@ -160,7 +166,6 @@ ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, ob
 funktion error (und/ oder exit) wirft eine exception die am programmende den errorlevel bestimmt
          fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
 mlib-test vervollständigen
-mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
 
 filenamen in fehlermeldungen
 
