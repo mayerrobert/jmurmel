@@ -1,3 +1,5 @@
+argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
+
 rplaca für ArraySlice sollte nicht schwer sein
 -> rplacd ist problematisch: man könnte ins array an der richtigen stelle was anderes reinpatchen, aber wenns andere arrayslices mit demselben array gibt (mit anfang NACH der rplacd stelle), dann wirkt sich rplacd auf die anderen ArraySlices ggf. nicht richtig aus
 

@@ -4711,7 +4711,7 @@ public class LambdaJ {
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
-            int prevSpeed = interpreter().speed;
+            final int prevSpeed = interpreter().speed;
             passTwo = false;
             implicitDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
@@ -5211,16 +5211,15 @@ public class LambdaJ {
 
         /** write atoms that are not symbols */
         private static void atomToJava(WrappingWriter sb, Object form) {
-            //if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
-            if (form instanceof Long) sb.append("Long.valueOf(").append(Long.toString((Long) form)).append(')');
+            if (form instanceof Long) sb.append("Long.valueOf(").append(Long.toString((Long) form)).append(')');  // must use an object so that eql etc. will work
             else if (form instanceof Character) {
                 final char c = (Character) form;
                 switch (c) {
+                case '\'': sb.append("'\\''"); break;
+                case '\\': sb.append("'\\\\'"); break;
                 case '\r': sb.append("'\\r'"); break;
                 case '\n': sb.append("'\\n'"); break;
                 case '\t': sb.append("'\\t'"); break;
-                case '\'': sb.append("'\\''"); break;
-                case '\\': sb.append("'\\\\'"); break;
                 default:
                     if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
                     else sb.append(String.format("'\\u%04X'", (int)c));
@@ -5310,7 +5309,7 @@ public class LambdaJ {
 
             final Object localFuncs = car(args);
             if (localFuncs == null || (cddr(args) == null && atom(cadr(args)))) {
-                // no local functions or body is one single atom
+                // no local functions or body is one single atom (the latter can't use the functions so skip them
                 prognToJava(sb, cdr(args), env, topEnv, rsfx, isLast);
                 return;
             }
@@ -5360,63 +5359,6 @@ public class LambdaJ {
                 }
             sb.append(')');
         }
-
-        /** let* and named let* */
-        /*
-        private void letStarToJava(WrappingWriter sb, final ConsCell args, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast) {
-            ConsCell env = _env;
-            final ConsCell bindings, bodyForms;
-            final LambdaJSymbol name;
-            sb.append(isLast ? "tailcall(" : "funcall(");
-
-            if (car(args) instanceof LambdaJSymbol) {
-                // named let*: (let* sym ((sym form)...) forms...) -> Object
-                name = (LambdaJSymbol)car(args);
-                sb.append("new MurmelFunction() {\n"
-                        + "        private final Object ").append(javasym(name, extenv(name, rsfx, env))).append(" = this;\n"
-                        + "        @Override public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-                bindings = (ConsCell)cadr(args);
-                bodyForms = (ConsCell)cddr(args);
-            }
-            else {
-                // regular let*: (let* ((sym form)...) forms...) -> Object
-                name = null;
-                sb.append("(MurmelFunction)(args").append(rsfx).append(") -> {\n        Object result").append(rsfx).append(";\n");
-                bindings = (ConsCell)car(args);
-                bodyForms = (ConsCell)cdr(args);
-            }
-
-            if (bindings != null) {
-                final Set<String> seen = new HashSet<>();
-                for (Object binding : bindings) {
-                    final Object sym;
-                    final Object form;
-                    if (symbolp(binding)) {
-                        sym = binding;
-                        form = null;
-                    } else {
-                        sym = car(binding);
-                        form = cadr(binding);
-                    }
-                    final String javaname = mangle(sym.toString(), rsfx);
-                    if (seen.contains(javaname)) sb.append("        ");
-                    else {
-                        sb.append("        Object ");
-                        seen.add(javaname);
-                    }
-                    sb.append(javaname).append(" = ");
-                    if (caddr(binding) != null) errorMalformed("let*", "illegal variable specification " + printSEx(binding));
-                    formToJava(sb, form, env, topEnv, rsfx, false);
-                    env = extenv(sym, rsfx, env);
-                    sb.append(";\n");
-                }
-            }
-            if (name != null) env = extenv(name, rsfx, env);
-            formsToJava(sb, bodyForms, env, topEnv, rsfx, false);
-            if (name != null) sb.append("        } } )");
-            else              sb.append("        } )");
-        }
-        */
 
         /**
          * let* and letrec
