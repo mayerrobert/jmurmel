@@ -207,8 +207,8 @@ pi ; ==> 3.141592653589793
 ; packed into a list and bound to the symbol.
 ; If paramlist is a dotted list then remaining arguments
 ; will be bound to the last parameter.
-; The list containing optional arguments is immutable,
-; i.e. using `rplaca` and `rplacd` is undefined behaviour.
+; The list containing optional arguments cannot be used
+; as an argument to `rplacd`.
 
 (lambda popt (write popt)) ; no mandatory arguments
 (lambda (p1 p2 . prest) (write prest)) ; two mandatory arguments

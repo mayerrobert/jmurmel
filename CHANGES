@@ -9,6 +9,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
  * fixed "append" for compiled code
+ * fixed using rplaca on varargs list
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

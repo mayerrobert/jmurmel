@@ -2068,7 +2068,10 @@ public class LambdaJ {
         }
 
         @Override public Object     car() { return (arry == null || arry.length <= offset) ? null : arry[offset]; }
+        @Override public Object rplaca(Object car) { arry[offset] = car; return this; }
+
         @Override public ArraySlice cdr() { return (arry == null || arry.length <= offset+1) ? null : new ArraySlice(this); }
+
         @Override public String toString() { return printSEx(true, false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 

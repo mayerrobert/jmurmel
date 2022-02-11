@@ -166,6 +166,14 @@ public class MurmelJavaCompilerTest {
         assertEquals("cons5 produced wrong result", "((1 . 2) 3 4 . 5)", TestUtils.sexp(program.body()));
     }
 
+    // a will be an ArrayList, test rplaca
+    @Test
+    public void testRplaca() throws Exception {
+        MurmelProgram program = compile("(defun f a (rplaca (cdr a) 1) a) (f 11 22 33)");
+        assertNotNull("failed to compile rplacd to class", program);
+        assertEquals("rplaca produced wrong result", "(11 1 33)", TestUtils.sexp(program.body()));
+    }
+
     @Test
     public void testRplacd() throws Exception {
         MurmelProgram program = compile("(define l '(0 . 0)) (rplacd l 1)");

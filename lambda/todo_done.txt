@@ -1194,3 +1194,5 @@ Compiler: setq in closures gibt code der nicht kompiliert: final or effectively 
 -> letRecToJava reusen, aber das environment zu anderem zeitpunkt befüllen (nicht alle vor der initialisierung sondern zug um zug)
 
 mlib-test auch mit compiler laufen lassen (sobalds load und setq gibt)
+
+rplaca für ArraySlice sollte nicht schwer sein

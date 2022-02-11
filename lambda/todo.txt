@@ -1,8 +1,5 @@
 argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
 
-rplaca für ArraySlice sollte nicht schwer sein
--> rplacd ist problematisch: man könnte ins array an der richtigen stelle was anderes reinpatchen, aber wenns andere arrayslices mit demselben array gibt (mit anfang NACH der rplacd stelle), dann wirkt sich rplacd auf die anderen ArraySlices ggf. nicht richtig aus
-
 Iterator von ListConsCell und ArraySlice funktionieren nicht bei Mischungen aus ListConsCell und ArraySlice
 gaben falsches ergebnis, werfen jetzt exceptions.
 umbau von iterator auf cdr hat den nachteil, dass cdr(ArraySlice) jedesmal new ArraySlice macht, wirkt sich u.a.
@@ -56,6 +53,10 @@ mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
 
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
+
+rplacd für ArraySlice ist problematisch: man könnte ins array an der richtigen stelle was anderes reinpatchen,
+aber wenns andere arrayslices mit demselben array gibt (mit anfang NACH der rplacd stelle), dann wirkt sich rplacd
+auf die anderen ArraySlices ggf. nicht richtig aus
 
 compiler: alle defuns/ defines, nicht nur toplevel
 -> zähler mitlaufen lassen
