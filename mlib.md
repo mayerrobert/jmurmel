@@ -8,8 +8,8 @@ Most of mlib's functions and macros are modeled after Common Lisp,
 
 ### Usage:
 
-Copy mlib.lisp into the directory containing jmurmel.jar
-or into the directory specified with --libdir
+Copy `mlib.lisp` into the directory containing `jmurmel.jar`
+or into the directory specified with `--libdir`
 and begin your source file with
 
     (require "mlib")
@@ -107,7 +107,7 @@ the value of `place`, respectively.
 
 The number in `place` is multiplied (in the case of `*f`) by delta
 or divided (in the case of `/f`) by delta and the result
-is stored in place.
+is stored in `place`.
 
 Without `delta-form` `/f` will return the reciprocal of the number in `place`,
 `*f` will return the number in `place`.
@@ -144,7 +144,7 @@ and finally yields the car of the originally retrieved list.
 ### Function: acons
     (acons key datum alist) -> new-alist
 
-Prepends alist with a new `(key . datum)` tuple
+Prepends `alist` with a new `(key . datum)` tuple
 and returns the modified list.
 ### Function: not
     (not form) -> boolean
@@ -184,10 +184,12 @@ Is this number odd?
 Return `t` if all of the arguments are the same character.
 ### Function: char
     (char string n) -> nth-character
+
+Return the n-th character of the string `string`, `n` is 0-based.
 ### Function: equal
     (equal a b) -> boolean
 
-Return t if any of the following is true:
+Return `t` if any of the following is true:
 
 - `a` and `b` are `eql`
 - `a` and `b` are strings, characters or symbols and have the same text value
@@ -202,7 +204,7 @@ Execute `forms` if `condition` evaluates to true
 and return the result of the last form if any.
 Otherwise if `condition` evaluates to false,
 the forms are not evaluated and the return value
-of the when-form is `nil`.
+of the `when`-form is `nil`.
 ### Macro: unless
     (unless condition forms*) -> result
 
@@ -210,7 +212,7 @@ Execute `forms` if `condition` evaluates to false
 and return the result of the last form if any.
 Otherwise if `condition` evaluates to true,
 the forms are not evaluated and the return value
-of the unless-form is `nil`.
+of the `unless`-form is `nil`.
 ### Macro: case
      (case keyform (keys forms*)* (t forms*)?) -> result
 
@@ -256,7 +258,7 @@ which would be returned as the value of `function`.
 `member` searches list for `item` or for a top-level element that
 satisfies the `test`.
 
-`test` if given must be a function that takes to arguments.
+`test` if given must be a function that takes two arguments.
 If `test` was omitted or `nil` then `eql` will be used.
 
 Example usage:

@@ -8,8 +8,8 @@
 ;;;
 ;;; = Usage:
 ;;;
-;;; Copy mlib.lisp into the directory containing jmurmel.jar
-;;; or into the directory specified with --libdir
+;;; Copy `mlib.lisp` into the directory containing `jmurmel.jar`
+;;; or into the directory specified with `--libdir`
 ;;; and begin your source file with
 ;;;
 ;;;     (require "mlib")
@@ -102,7 +102,7 @@
 ; m%rplacd
 ;     (m%rplacd lst value) -> value
 ;
-; Replace the cdr of `lst` by value and return value (as opposed to `rplacd` which returns `lst`).
+; Replace the cdr of `lst` by `value` and return `value` (as opposed to `rplacd` which returns `lst`).
 ; Used in setf-expansions.
 (defun m%rplacd (l v) (rplacd l v) v)
 
@@ -219,7 +219,7 @@
 ;;;
 ;;; The number in `place` is multiplied (in the case of `*f`) by delta
 ;;; or divided (in the case of `/f`) by delta and the result
-;;; is stored in place.
+;;; is stored in `place`.
 ;;;
 ;;; Without `delta-form` `/f` will return the reciprocal of the number in `place`,
 ;;; `*f` will return the number in `place`.
@@ -290,7 +290,7 @@
 ;;; = Function: acons
 ;;;     (acons key datum alist) -> new-alist
 ;;;
-;;; Prepends alist with a new `(key . datum)` tuple
+;;; Prepends `alist` with a new `(key . datum)` tuple
 ;;; and returns the modified list.
 (defun acons (key datum alist)
   (cons (cons key datum) alist))
@@ -300,8 +300,7 @@
 ;;;     (not form) -> boolean
 ;;;
 ;;; Logical not.
-(defun not (e)
-  (null e))
+(define not null) ; this should be faster than (defun not (e) (null e))
 
 
 ;;; = Macro: and
@@ -383,6 +382,8 @@
 
 ;;; = Function: char
 ;;;     (char string n) -> nth-character
+;;;
+;;; Return the n-th character of the string `string`, `n` is 0-based.
 (defun char (str n)
   (nth n str))
 
@@ -390,7 +391,7 @@
 ;;; = Function: equal
 ;;;     (equal a b) -> boolean
 ;;;
-;;; Return t if any of the following is true:
+;;; Return `t` if any of the following is true:
 ;;;
 ;;; - `a` and `b` are `eql`
 ;;; - `a` and `b` are strings, characters or symbols and have the same text value
@@ -430,7 +431,7 @@
 ;;; and return the result of the last form if any.
 ;;; Otherwise if `condition` evaluates to false,
 ;;; the forms are not evaluated and the return value
-;;; of the when-form is `nil`.
+;;; of the `when`-form is `nil`.
 (defmacro when (condition . body)
   (list 'if
         condition
@@ -446,7 +447,7 @@
 ;;; and return the result of the last form if any.
 ;;; Otherwise if `condition` evaluates to true,
 ;;; the forms are not evaluated and the return value
-;;; of the unless-form is `nil`.
+;;; of the `unless`-form is `nil`.
 (defmacro unless (condition . body)
   (list 'if
         condition
@@ -608,7 +609,7 @@
 ;;; `member` searches list for `item` or for a top-level element that
 ;;; satisfies the `test`.
 ;;;
-;;; `test` if given must be a function that takes to arguments.
+;;; `test` if given must be a function that takes two arguments.
 ;;; If `test` was omitted or `nil` then `eql` will be used.
 ;;;
 ;;; Example usage:
@@ -808,7 +809,7 @@
 ;;;
 ;;;     (notevery predicate sequence+) == (not (every predicate sequence+))
 (defun notevery (f seq . more)
-  (not (apply some (cons f (cons seq more)))))
+  (null (apply some (cons f (cons seq more)))))
 
 
 ;;; = Function: notany
@@ -819,7 +820,7 @@
 ;;;
 ;;;     (notany predicate sequence+) == (not (some predicate sequence+))
 (defun notany (f seq . more)
-  (not (apply every (cons f (cons seq more)))))
+  (null (apply every (cons f (cons seq more)))))
 
 
 ;;; = Function: remove-if
