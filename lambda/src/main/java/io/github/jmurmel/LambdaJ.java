@@ -1730,6 +1730,7 @@ public class LambdaJ {
      *    construct a list (param arg)
      *    stick above list in front of the environment
      *  return extended environment</pre> */
+    // todo vgl CL pairlis
     private ConsCell zip(ConsCell env, Object paramList, ConsCell args) {
         if (paramList == null && args == null) return env; // shortcut for no params/ no args
 
