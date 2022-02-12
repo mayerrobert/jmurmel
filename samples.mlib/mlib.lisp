@@ -53,6 +53,7 @@
 ;;;
 ;;; as well as the following additional functions and macros:
 ;;;
+;;; - [unzip-tails](#function-unzip-tails)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 
@@ -664,8 +665,22 @@
 ;;;     (unzip nil) ; ==> nil
 ;;;
 ;;; Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
+;;;
+;;; See also: [unzip-tails](#function-unzip-tails).
 (defun unzip (lists)
   (if lists (cons (caar lists) (unzip (cdr lists)))
+    nil))
+
+
+;;; = Function: unzip-tails
+;;;     (unzip-tails lst) -> result-list
+;;;
+;;; `unzip-tails` takes a list of lists, and returns a list
+;;; containing the `cdr`s of each such list.
+;;;
+;;; See also: [unzip](#function-unzip).
+(defun unzip-tails (lists)
+  (if lists (cons (cdar lists) (unzip-tails (cdr lists)))
     nil))
 
 
@@ -687,14 +702,11 @@
            ; 2 or more lists given
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
-                        t))
-                    (cdrs (lists)
-                      (if lists (cons (cdar lists) (cdrs (cdr lists)))
-                        nil)))
+                        t)))
              (let loop ((r result) (l lists))
                (when (and r (none-nil l))
                  (rplaca r (apply func (unzip l)))
-                 (loop (cdr r) (cdrs l)))))
+                 (loop (cdr r) (unzip-tails l)))))
 
       (if lists
             ; 1 list given
@@ -718,13 +730,10 @@
      (if more
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
-                        t))
-                    (cdrs (lists)
-                      (if lists (cons (cdar lists) (cdrs (cdr lists)))
-                        nil)))
+                        t)))
              (let loop ((args (cons l more)))
                (if (none-nil args)
-                     (,comb (apply f ,(if accn (list accn 'args) 'args)) (loop (cdrs args)))
+                     (,comb (apply f ,(if accn (list accn 'args) 'args)) (loop (unzip-tails args)))
                  ,lastelem)))
        (let loop ((l l))
          (if l (,comb (f ,(if acc (list acc 'l) 'l)) (loop (cdr l)))

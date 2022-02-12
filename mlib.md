@@ -53,6 +53,7 @@ functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
 
 as well as the following additional functions and macros:
 
+- [unzip-tails](#function-unzip-tails)
 - [*f, /f, +f, -f](#macro-f-f)
 - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 ### Function: caar..cdddr
@@ -295,6 +296,15 @@ e.g.:
     (unzip nil) ; ==> nil
 
 Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
+
+See also: [unzip-tails](#function-unzip-tails).
+### Function: unzip-tails
+    (unzip-tails lst) -> result-list
+
+`unzip-tails` takes a list of lists, and returns a list
+containing the `cdr`s of each such list.
+
+See also: [unzip](#function-unzip).
 ### Function: map-into
     (map-into result-list function list*) -> result-list
 
