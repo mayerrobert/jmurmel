@@ -47,6 +47,10 @@ functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev
 - [curry](#function-curry), [rcurry](#function-rcurry)
 - [with-gensyms](#macro-with-gensyms)
 
+functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
+
+- [unzip](#function-unzip)
+
 as well as the following additional functions and macros:
 
 - [*f, /f, +f, -f](#macro-f-f)
@@ -279,6 +283,18 @@ Example usage:
 If `sequence` is a list then return a fresh list
 with elements in reversed order, if `sequence`
 is a string then return a fresh reversed string.
+### Function: unzip
+    (unzip lst) -> result-list
+
+`unzip` takes a list of lists, and returns a list
+containing the initial element of each such list,
+e.g.:
+
+    (unzip '((1 2) (11 22) (111 222))) ; ==> (1 11 111)
+    (unzip '(nil nil nil)) ; ==> (nil nil nil)
+    (unzip nil) ; ==> nil
+
+Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
 ### Function: map-into
     (map-into result-list function list*) -> result-list
 
@@ -289,7 +305,7 @@ the lists or the result-list) is exhausted.
 
 If `result-list` is `nil`, `map-into` returns `nil`.
 
-Similar to CL map-into http://clhs.lisp.se/Body/f_map_in.htm
+Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 ### Function: mapcar
     (mapcar function sequence+) -> list
 

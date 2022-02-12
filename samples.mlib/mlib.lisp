@@ -47,6 +47,10 @@
 ;;; - [curry](#function-curry), [rcurry](#function-rcurry)
 ;;; - [with-gensyms](#macro-with-gensyms)
 ;;;
+;;; functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
+;;;
+;;; - [unzip](#function-unzip)
+;;;
 ;;; as well as the following additional functions and macros:
 ;;;
 ;;; - [*f, /f, +f, -f](#macro-f-f)
@@ -648,6 +652,23 @@
       (rev l nil))))
 
 
+;;; = Function: unzip
+;;;     (unzip lst) -> result-list
+;;;
+;;; `unzip` takes a list of lists, and returns a list
+;;; containing the initial element of each such list,
+;;; e.g.:
+;;;
+;;;     (unzip '((1 2) (11 22) (111 222))) ; ==> (1 11 111)
+;;;     (unzip '(nil nil nil)) ; ==> (nil nil nil)
+;;;     (unzip nil) ; ==> nil
+;;;
+;;; Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
+(defun unzip (lists)
+  (if lists (cons (caar lists) (unzip (cdr lists)))
+    nil))
+
+
 ;;; = Function: map-into
 ;;;     (map-into result-list function list*) -> result-list
 ;;;
@@ -658,7 +679,7 @@
 ;;;
 ;;; If `result-list` is `nil`, `map-into` returns `nil`.
 ;;;
-;;; Similar to CL map-into http://clhs.lisp.se/Body/f_map_in.htm
+;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 (defun map-into (result func . lists)
   (when result
 
@@ -669,13 +690,10 @@
                         t))
                     (cdrs (lists)
                       (if lists (cons (cdar lists) (cdrs (cdr lists)))
-                        nil))
-                    (cars (lists)
-                      (if lists (cons (caar lists) (cars (cdr lists)))
                         nil)))
              (let loop ((r result) (l lists))
                (when (and r (none-nil l))
-                 (rplaca r (apply func (cars l)))
+                 (rplaca r (apply func (unzip l)))
                  (loop (cdr r) (cdrs l)))))
 
       (if lists
@@ -703,9 +721,6 @@
                         t))
                     (cdrs (lists)
                       (if lists (cons (cdar lists) (cdrs (cdr lists)))
-                        nil))
-                    (cars (lists)
-                      (if lists (cons (caar lists) (cars (cdr lists)))
                         nil)))
              (let loop ((args (cons l more)))
                (if (none-nil args)
@@ -724,7 +739,7 @@
 ;;; and will applied to subsequent items of the given sequences.
 ;;; All `function` application results will be combined into a list
 ;;; which is the return value of `mapcar`.
-(m%mapx mapcar  cons    car cars nil nil)
+(m%mapx mapcar  cons    car unzip nil nil)
 
 
 ;;; = Function: maplist
@@ -743,7 +758,7 @@
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent cars items of the given sequences.
-(m%mapx mapc    progn   car cars t nil)
+(m%mapx mapc    progn   car unzip t nil)
 
 
 ;;; = Function: mapl
@@ -762,7 +777,7 @@
 ;;;
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of `mapcan`.
-(m%mapx mapcan  append  car cars nil nil)
+(m%mapx mapcan  append  car unzip nil nil)
 
 
 ;;; = Function: mapcon
@@ -784,7 +799,7 @@
 ;;;
 ;;; Immediately return `nil` if an application of function returns `nil`,
 ;;; `t` otherwise.
-(m%mapx every and car cars nil t)
+(m%mapx every and car unzip nil t)
 
 
 ;;; = Function: some
@@ -795,7 +810,7 @@
 ;;;
 ;;; Immediately return the first non-nil-value of an application of `function`,
 ;;; or `nil` if no applications yield non-nil.
-(m%mapx some or car cars nil nil)
+(m%mapx some or car unzip nil nil)
 
 ; undef m%mapx
 (defmacro m%mapx)
