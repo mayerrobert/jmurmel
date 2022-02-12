@@ -78,7 +78,8 @@ macro assert: http://clhs.lisp.se/Body/m_assert.htm
 warum ist assoc in jmurmel drin?
 -> assoc, rassoc in mlib jeweils mit optionalem predicate (rassoc ist reverse lookup, sucht statt im car im cdr)
 -> assoc-if, rassoc-if
--> support für plists (wie alists aber eq statt eql), symbol-plist wäre optional auch möglich (und get, getf, ...)
+-> support für plists (ähnlich alists aber alist hat tupel, plist hat abwechselnd key und value in einer flachen liste plus eq statt eql),
+   symbol-plist wäre optional auch möglich (und get, getf, ...). get verarbeitet symbol plist, getf verarbeitet alleinstehende plists
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
 car und cdr auf strings und symbols macht nur probleme
