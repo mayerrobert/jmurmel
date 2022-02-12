@@ -264,22 +264,37 @@ public class LambdaJ {
         }
 
         public Object first() { return first; }
+        
+        public static Object of(Object... elems) {
+            if (elems == null || elems.length == 0) return null;
+            return new ArraySlice(elems, 0);
+        }
     }
 
     private static class ListConsCell extends ConsCell {
         private static class ListConsCellIterator implements Iterator<Object> {
             private final ListConsCell coll;
+            private Iterator<Object> delegate;
             private Object cursor;
 
             private ListConsCellIterator(ListConsCell coll) { this.coll = coll; cursor = coll; }
-            @Override public boolean hasNext() { return cursor != null; }
+            @Override public boolean hasNext() {
+                if (delegate != null) return delegate.hasNext();
+                return cursor != null;
+            }
 
             @Override
             public Object next() {
+                if (delegate != null) return delegate.next();
                 final Object _cursor;
                 if ((_cursor = cursor) == null) throw new NoSuchElementException();
-                if (_cursor instanceof ArraySlice)
-                    throw new LambdaJError("ListConsCell contains an ArraySlice which is not yet implemented");
+                if (_cursor instanceof ArraySlice) {
+                    // a ListConsCell based list can contain an ArraySlice as the last cdr
+                    // (i.e. a list starts as conses and is continued by an ArraySlice.
+                    // An ArraySlice can not be continued by conses
+                    delegate = ((ArraySlice)_cursor).iterator();
+                    return delegate.next();
+                }
                 if (_cursor instanceof ListConsCell) {
                     final ListConsCell list = (ListConsCell)_cursor;
                     if (list.cdr() == coll) cursor = null; // circle detected, stop here

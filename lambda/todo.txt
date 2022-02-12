@@ -1,12 +1,4 @@
 argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
-
-Iterator von ListConsCell und ArraySlice funktionieren nicht bei Mischungen aus ListConsCell und ArraySlice
-gaben falsches ergebnis, werfen jetzt exceptions.
-umbau von iterator auf cdr hat den nachteil, dass cdr(ArraySlice) jedesmal new ArraySlice macht, wirkt sich u.a.
-in der Murmel funktion append und listToArray aus
--> reparieren oder ausbauen
--> ggf. statt zweier Iteratoren einen Iterator im Interface, der ListConsCell UND ArraySlice versteht?
--> vielleicht auch forAll ausprogrammieren?
  
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 

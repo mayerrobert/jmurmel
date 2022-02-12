@@ -1,6 +1,7 @@
 package io.github.jmurmel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -11,57 +12,83 @@ public class ConsTest {
     // '("a" "b" "c")
     @Test
     public void build() {
-        Object l = listBuilder().append("a").append("b").append("c").first();
+        final Object l = listBuilder().append("a").append("b").append("c").first();
         assertEquals("(\"a\" \"b\" \"c\")", TestUtils.sexp(l));
     }
 
     // '()
     @Test
     public void buildNothing() {
-        Object l = listBuilder().first();
-        assertEquals(null, l);
+        final Object l = listBuilder().first();
+        assertNull(l);
         assertEquals("nil", TestUtils.sexp(l));
     }
 
     // '(nil)
     @Test
     public void buildNil() {
-        Object l = listBuilder().append(null).first();
+        final Object l = listBuilder().append(null).first();
         assertEquals("(nil)", TestUtils.sexp(l));
     }
 
     // '(nil nil)
     @Test
     public void buildNilNil() {
-        Object l = listBuilder().append(null).append(null).first();
+        final Object l = listBuilder().append(null).append(null).first();
         assertEquals("(nil nil)", TestUtils.sexp(l));
     }
 
     @Test
     public void buildNilListNil() {
-        Object l = listBuilder().append(null).append(listBuilder().append(null).first()).first();
+        final Object l = listBuilder().append(null).append(listBuilder().append(null).first()).first();
         assertEquals("(nil (nil))", TestUtils.sexp(l));
     }
 
     // '("a" "b" . "c")
     @Test
     public void buildDottedList() {
-        Object l = listBuilder().append("a").append("b").appendLast("c").first();
+        final Object l = listBuilder().append("a").append("b").appendLast("c").first();
         assertEquals("(\"a\" \"b\" . \"c\")", TestUtils.sexp(l));
     }
 
     // '(nil nil . nil)
     @Test
     public void buildDottedListNil() {
-        Object l = listBuilder().append(null).append(null).appendLast(null).first();
+        final Object l = listBuilder().append(null).append(null).appendLast(null).first();
         assertEquals("(nil nil)", TestUtils.sexp(l));
     }
 
     // '(nil . nil)
     @Test
     public void buildNilDotNil() {
-        Object l = listBuilder().append(null).appendLast(null).first();
+        final Object l = listBuilder().append(null).appendLast(null).first();
         assertEquals("(nil)", TestUtils.sexp(l));
+    }
+
+    @Test
+    public void testAppendConsSlice() {
+        final Object l = listBuilder().append(1).append(2).appendLast(LambdaJ.ListBuilder.of(3, 4, 5)).first();
+        assertEquals("(1 2 3 4 5)", TestUtils.sexp(l));
+    }
+
+    @Test
+    public void testConsSlice() {
+        final Object l = listBuilder().append(1).append(2).append(LambdaJ.ListBuilder.of(3, 4, 5)).first();
+        assertEquals("(1 2 (3 4 5))", TestUtils.sexp(l));
+    }
+
+    @Test
+    public void testSliceCons() {
+        final Object l = LambdaJ.ListBuilder.of(1, 2, 3, listBuilder().append(4).append(5).first());
+        assertEquals("(1 2 3 (4 5))", TestUtils.sexp(l));
+    }
+
+    @Test
+    public void testAppendConsSliceIterator() {
+        final LambdaJ.ConsCell l = (LambdaJ.ConsCell)listBuilder().append(1).append(2).appendLast(LambdaJ.ListBuilder.of(3, 4, 5)).first();
+        final StringBuilder sb = new StringBuilder();
+        l.forEach(sb::append);
+        assertEquals("12345", sb.toString());
     }
 
 
