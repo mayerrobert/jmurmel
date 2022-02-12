@@ -6,7 +6,7 @@
 ;;; Most of mlib's functions and macros are modeled after Common Lisp,
 ;;; (often with reduced functionality) plus some additional macros and functions.
 ;;;
-;;; = Usage:
+;;; == Usage
 ;;;
 ;;; Copy `mlib.lisp` into the directory containing `jmurmel.jar`
 ;;; or into the directory specified with `--libdir`
@@ -14,7 +14,7 @@
 ;;;
 ;;;     (require "mlib")
 ;;;
-;;; = Provides:
+;;; == `mlib` functions and macros
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
