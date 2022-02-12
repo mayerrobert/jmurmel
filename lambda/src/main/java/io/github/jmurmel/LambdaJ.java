@@ -1401,7 +1401,7 @@ public class LambdaJ {
                             macros.put(result, closure);
                             return result;
                         }
-                        else throw new LambdaJError(true, "defmacro: syntax error", printSEx(form));
+                        else errorMalformed("defmacro", printSEx(form));
                     }
 
                     if (operator == sDeclaim) {
@@ -1534,8 +1534,7 @@ public class LambdaJ {
                                     sym = car(binding);
                                     bindingForm = cadr(binding);
                                 } else {
-                                    errorMalformed(op, "bindings to contain lists and/or symbols", binding);
-                                    sym = null; bindingForm = null; // notreached as errorMalformed doesn't return
+                                    throw errorMalformed(op, "bindings to contain lists and/or symbols", binding);
                                 }
 
                                 notReserved(op, sym);
@@ -2146,11 +2145,11 @@ public class LambdaJ {
     private static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
     private static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
 
-    private static void errorMalformed(String func, String msg) {
+    private static RuntimeException errorMalformed(String func, String msg) {
         throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
     }
 
-    private static void errorMalformed(String func, String expected, Object actual) {
+    private static RuntimeException errorMalformed(String func, String expected, Object actual) {
         throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
     }
 
@@ -2169,7 +2168,7 @@ public class LambdaJ {
     }
 
     /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
-     * (nthcdr 3 '(0 . 1))) -> Error: Attempted to take CDR of 1. */
+     * (nthcdr 3 '(0 . 1)) -> Error: Attempted to take CDR of 1. */
     private static Object nthcdr(int n, Object list) {
         if (list == null) return null;
         for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
