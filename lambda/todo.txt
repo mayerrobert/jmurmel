@@ -1,7 +1,3 @@
-argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
- 
-letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
-
 Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
 
 statt überall "throw new LambdaJError(..."
@@ -12,12 +8,7 @@ statt überall "throw new LambdaJError(..."
 
 mit optimize speed 0 und 1 testen
 
-ein programm das nur nil enthält führt zu java compilerfehler
-nil
-:r
--> fehler
-
-read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
 
 
 
@@ -37,7 +28,18 @@ oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))"
 
 
 
-der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
+ein programm das nur nil enthält führt zu java compilerfehler
+nil
+:r
+-> fehler
+
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+
+
+
+argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
+ 
+letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
 mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
 -> ggf. eine funktion um einen frame in eine datei zu schreiben? und headlessp

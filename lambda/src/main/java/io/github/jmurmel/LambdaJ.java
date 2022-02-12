@@ -2266,14 +2266,25 @@ public class LambdaJ {
     /** append args non destructively, all args except the last are shallow copied, all args except the last must be a list */
     // todo CL macht deep copy bei allen args ausser dem letzten, alle args ausser dem letzten muessen proper lists sein (murmel behandelt dotted und proper lists gleich)
     private Object append(Object... args) {
-        if (args == null || args.length == 0) return null;
-        if (args.length == 1) return args[0];
+        final int nArgs;
+        if (args == null || (nArgs = args.length) == 0) return null;
+        if (nArgs == 1) return args[0];
         if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
-        Object ret = args[0];
-        for (int i = 1; i < args.length; i++) {
-            ret = append2(ret, args[i]); // todo optimieren: bei n args wird n-1 mal kopiert -> insertpos mitfuehren
+        
+        int first = 0;
+        while (first < nArgs-1 && args[first] == null) first++; // skip leading nil args if any
+        
+        ListBuilder lb = null;
+        for (int i = first; i < nArgs - 1; i++) {
+            final Object o = args[i];
+            if (o == null) continue;
+            if (!consp(o)) throw new LambdaJError(true, "append: argument %d is not a list: %s", i+1, printSEx(o));
+            if (lb == null) lb = new ListBuilder();
+            for (Object obj: (ConsCell)o) { nCells++; lb.append(obj); };
         }
-        return ret;
+        if (lb == null) return args[first];
+        lb.appendLast(args[nArgs-1]);
+        return lb.first();
     }
 
     private static Object[] listToArray(Object maybeList) {
