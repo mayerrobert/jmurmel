@@ -5464,7 +5464,7 @@ public class LambdaJ {
 
         /** let dynamic and let* dynamic */
         private void letDynamicToJava(boolean letStar, WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
+            sb.append(isLast ? "tailcall(" : "funcall(");
 
             sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n        Object result").append(rsfx+1).append(";\n");
 
@@ -5473,21 +5473,30 @@ public class LambdaJ {
             if (params != null) {
                 final String expr = "(let dynamic " + printSEx(params) + ')';
                 final ConsCell _env = params(sb, params, env, rsfx + 1, expr);
-                for (Object sym : params) {
+                Iterator<Object> bi = ((ConsCell)bindings).iterator();
+                for (Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
+                    Object sym = iterator.next();
                     final String globalName = mangle(sym.toString(), 0);
-                    sb.append("        final CompilerGlobal old").append(sym.toString()).append(" = ").append(globalName).append(";\n");
+                    sb.append("        final CompilerGlobal old").append(sym.toString()).append(rsfx+1).append(" = ").append(globalName).append(";\n");
+                    if (letStar) {
+                        final Object binding = bi.next();
+                        sb.append("        ").append(javasym(sym, _env)).append(" = ");
+                        formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
+                        sb.append(";\n");
+                    }
                     sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
                 }
                 sb.append("        try {\n");
             }
 
-            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx+1, false);
+            // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
+            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx+1, params != null);
 
             if (params != null) {
                 sb.append("        }\n");
                 sb.append("        finally {\n");
                 for (Object sym : params) {
-                    sb.append("        ").append(mangle(sym.toString(), 0)).append(" = ").append("old").append(sym.toString()).append(";\n");
+                    sb.append("        ").append(mangle(sym.toString(), 0)).append(" = ").append("old").append(sym.toString()).append(rsfx+1).append(";\n");
                 }
                 sb.append("        }\n");
             }
@@ -5498,7 +5507,8 @@ public class LambdaJ {
                 for (Object binding: (ConsCell)bindings) {
                     sb.append("\n        , ");
                     if (caddr(binding) != null) errorMalformed("let", "illegal variable specification " + printSEx(binding));
-                    formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
+                    if (letStar) sb.append("(Object)null");
+                    else formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
             sb.append(')');
         }

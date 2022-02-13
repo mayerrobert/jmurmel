@@ -1206,3 +1206,5 @@ in der Murmel funktion append und listToArray aus
 -> vielleicht auch forAll ausprogrammieren?
 
 Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
+
+compiler: let* dynamic ist eigentlich let dynamic

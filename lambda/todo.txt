@@ -1,8 +1,13 @@
-compiler: let* dynamic ist eigentlich let dynamic
+compiler let/ let* dynamic: doppelte bindings abweisen bzw. behandeln
 
 (let* dynamic ((a 1)) a) sollte eig einen fehler geben, geht aber im interpreter?!?
 
+isSymbol sollte intern("+") == op verwenden ?!?
 
+
+
+
+ 
 (f 1 2 . l) könnte als flacher call verarbeitet werden: ". l" wird durch den inhalt von l ersetzt
 -> kann man das kompilieren? wie?
 -> müsste wohl nach (apply f (append '(1 2) l)) entzuckert werden
@@ -22,8 +27,6 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
 
 compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
 
-isSymbol sollte intern("+") == op verwenden ?!?
- 
 samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
 

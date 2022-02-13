@@ -161,7 +161,7 @@
                                 <argument>00_tak_apo.lisp</argument>
                                 <argument>3.01_tak.lisp</argument>
                                 <argument>3.01_takeuchi.lisp</argument>
-                                <!-- todo <argument>3.02_stak.lisp</argument>-->
+                                <argument>3.02_stak.lisp</argument>
                                 <argument>3.04_takl.lisp</argument>
                                 <argument>3.10_deriv.lisp</argument>
                             </arguments>
