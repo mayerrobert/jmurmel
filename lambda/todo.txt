@@ -1,16 +1,40 @@
-Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
+compiler: let* dynamic ist eigentlich let dynamic
 
-statt überall "throw new LambdaJError(..."
--> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
--> ggf. später statt exception optional einen handler aufrufen -> condition system
-  -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
-     wenn handler gerufen werden, schauts anders aus 
-
-mit optimize speed 0 und 1 testen
-
-der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
+(let* dynamic ((a 1)) a) sollte eig einen fehler geben, geht aber im interpreter?!?
 
 
+(f 1 2 . l) könnte als flacher call verarbeitet werden: ". l" wird durch den inhalt von l ersetzt
+-> kann man das kompilieren? wie?
+-> müsste wohl nach (apply f (append '(1 2) l)) entzuckert werden
+-> kompilieren ginge, aber eine macro expansion phase wäre wohl unmöglich,
+   weil man erst nach der macroexpansion phase weiss, was die macroparameter sind.
+   (apply macro...) geht aus demselben grund nicht
+   -> man müsste dotted list für alle special forms inkl. makros verweigern,
+      dotted list ist für application in den meisten lisps verboten, d.h. dotted list
+      nur für function application zulassen wäre eine erweiterung, keine änderung
+      (Murmel schluckt/ erlaubt aber stillschweigend dotted lists, behandelt sie wie proper lists)
+
+wär hübsch für rekursiven aufruf einer varargs funktion:
+(defun f (a b . c)
+  (f a b . c)
+-> eigentlich nicht nur für rekursive aufrufe sondern für alle aufrufe, wo eine vararg funktion ihre argumente wohinschicken will
+
+
+compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
+
+isSymbol sollte intern("+") == op verwenden ?!?
+ 
+samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
+
+
+
+mit Class.forName() könnte man eine Klasse mit Custom Primitives laden.
+-> der bestehende customenvironment trick geht eh nur im interpreter?!? wär dann nicht mehr nötig
+Class.forName() könnte auch absplitten des Compilers in eine andere Klasse ermöglichen, dann würde das verbleibende LambdaJ immer noch als single source file funktionieren
+
+(asynclet threadpool-symbol ((sym form)...) forms)
+-> die binding-forms würden asynchron in threads laufen, sym wäre ein promise, innerhalb forms würde sym ggf. blockieren
+-> threadpool kann normale threads oder loom threads liefern, nil wäre irgendein defaultpool
 
 Lisp Quine: https://de.wikipedia.org/wiki/Quine_(Computerprogramm)
 JMurmel> ((lambda (x)
@@ -28,6 +52,15 @@ oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))"
 
 
 
+statt überall "throw new LambdaJError(..."
+-> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
+-> ggf. später statt exception optional einen handler aufrufen -> condition system
+  -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
+     wenn handler gerufen werden, schauts anders aus 
+
+mit optimize speed 0 und 1 testen
+
+
 ein programm das nur nil enthält führt zu java compilerfehler
 nil
 :r
@@ -37,9 +70,12 @@ read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 
 
+der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
+
 argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
  
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 
 mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
 -> ggf. eine funktion um einen frame in eine datei zu schreiben? und headlessp

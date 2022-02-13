@@ -5154,14 +5154,20 @@ public class LambdaJ {
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
                     if (interpreter().sLet == op) {
-                        letToJava(sb, args, env, topEnv, rsfx, isLast);
+                        if (car(args) == interpreter().sDynamic)
+                            letDynamicToJava(false, sb, args, env, topEnv, rsfx, isLast);
+                        else
+                            letToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
                     if (interpreter().sLetStar == op) {
-                        letrecToJava(false, sb, args, env, topEnv, rsfx, isLast);
+                        if (car(args) == interpreter().sDynamic)
+                            letDynamicToJava(true, sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
+                        else
+                            letrecToJava(false, sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
@@ -5317,13 +5323,13 @@ public class LambdaJ {
         }
 
         /** args = (formsym (sym...) form...) */
-        // beim aufruf aus labels koennte das ein lambda sein ohne "private final Object xxx = this", wird aber auch fuer named let benutzt 
         private void labelToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("new MurmelFunction() {\n");
-            env = extenv(car(args), rsfx, env);
-            sb.append("        private final Object ").append(javasym(car(args), env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
+            final Object symbol = car(args);
+            env = extenv(symbol, rsfx, env);
+            sb.append("        private final Object ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-            env = params(sb, cadr(args), env, rsfx, car(args).toString());
+            env = params(sb, cadr(args), env, rsfx, symbol.toString());
             formsToJava(sb, (ConsCell)cddr(args), env, topEnv, rsfx, false);
             sb.append("        } }");
         }
@@ -5361,18 +5367,19 @@ public class LambdaJ {
 
         /** let and named let */
         private void letToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
+
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
                 // named let
+                if (car(args) == interpreter().sDynamic) errorMalformed("let", "dynamic only allowed with let*");
                 final ConsCell params = paramList("named let", cadr(args), false);
-                sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
                 // regular let
                 final ConsCell params = paramList("let", car(args), false);
-                sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
                 lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
                 bindings = (ConsCell)car(args);
             }
@@ -5397,6 +5404,7 @@ public class LambdaJ {
 
             if (car(args) instanceof LambdaJSymbol) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
+                if (car(args) == interpreter().sDynamic) errorMalformed("letrec", "dynamic only allowed with let*");
                 op = letrec ? "named letrec" : "named let*";
                 name = (LambdaJSymbol) car(args);
                 if (!listp(cdr(args))) errorMalformed(op, "a list of bindings", cdr(args));
@@ -5452,6 +5460,47 @@ public class LambdaJ {
             sb.append("        Object result").append(rsfx).append(";\n");
             formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
             sb.append("        } } )");
+        }
+
+        /** let dynamic and let* dynamic */
+        private void letDynamicToJava(boolean letStar, WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            sb.append(isLast ? "tailcall(" : "funcall("); // todo kein tailcall/funcall bei leerem body?
+
+            sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n        Object result").append(rsfx+1).append(";\n");
+
+            final Object bindings = car(args);
+            final ConsCell params = paramList("let dynamic", bindings, false); // todo argcheck disablen
+            if (params != null) {
+                final String expr = "(let dynamic " + printSEx(params) + ')';
+                final ConsCell _env = params(sb, params, env, rsfx + 1, expr);
+                for (Object sym : params) {
+                    final String globalName = mangle(sym.toString(), 0);
+                    sb.append("        final CompilerGlobal old").append(sym.toString()).append(" = ").append(globalName).append(";\n");
+                    sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                }
+                sb.append("        try {\n");
+            }
+
+            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx+1, false);
+
+            if (params != null) {
+                sb.append("        }\n");
+                sb.append("        finally {\n");
+                for (Object sym : params) {
+                    sb.append("        ").append(mangle(sym.toString(), 0)).append(" = ").append("old").append(sym.toString()).append(";\n");
+                }
+                sb.append("        }\n");
+            }
+
+            sb.append("        })");
+
+            if (bindings != null)
+                for (Object binding: (ConsCell)bindings) {
+                    sb.append("\n        , ");
+                    if (caddr(binding) != null) errorMalformed("let", "illegal variable specification " + printSEx(binding));
+                    formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
+                }
+            sb.append(')');
         }
 
 

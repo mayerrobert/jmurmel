@@ -6,6 +6,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * (declaim (optimize...
  * some functions are opencoded in compiled code
  * add limited support for macroexpand-1 in compiled code (quoted forms only)
+ * support let* dynamic
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
  * fixed "append" for compiled code

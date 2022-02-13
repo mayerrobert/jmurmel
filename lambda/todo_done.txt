@@ -1204,3 +1204,5 @@ in der Murmel funktion append und listToArray aus
 -> reparieren oder ausbauen
 -> ggf. statt zweier Iteratoren einen Iterator im Interface, der ListConsCell UND ArraySlice versteht?
 -> vielleicht auch forAll ausprogrammieren?
+
+Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
