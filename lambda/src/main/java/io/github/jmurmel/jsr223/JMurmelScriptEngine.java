@@ -14,7 +14,7 @@ import javax.script.ScriptException;
 
 import io.github.jmurmel.LambdaJ;
 
-/** JSR-223 wraper for JMurmel */
+/** JSR-223 wrapper for JMurmel */
 public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptEngine {
 
     final JMurmelScriptEngineFactory factory;
