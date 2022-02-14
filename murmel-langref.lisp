@@ -394,18 +394,6 @@ pi ; ==> 3.141592653589793
       (write msg)
     (progn (write (floor x)) (loop (- x 1) msg))))
 
-;;; = (let* dynamic ((symbol bindingform)...) bodyforms...) -> object
-;
-; Similar to `let` except: globals are not shadowed but temporarily
-; bound to the given value, and the previous value is restored when
-; leaving the scope of the `let` form.
-; I.e. `let* dynamic` treats globals as "special".
-
-(define *g* 'global)
-(defun f () (write *g*))
-(let* dynamic ((*g* 'temp)) (f)) ; f will write temp
-*g* ; ==> 'global
-
 ;;; = (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 ;
 ; Works like `let` (see above) with the addition:
@@ -420,6 +408,18 @@ pi ; ==> 3.141592653589793
   (if (= x 0)
       (write msg)
     (progn (write (floor x)) (loop 0 0 (- x 1) msg))))
+
+;;; = (let* dynamic ((symbol bindingform)...) bodyforms...) -> object
+;
+; Similar to `let*` except: globals are not shadowed but temporarily
+; bound to the given value, and the previous value is restored when
+; leaving the scope of the `let` form.
+; I.e. `let* dynamic` treats globals as "special".
+
+(define *g* 'global)
+(defun f () (write *g*))
+(let* dynamic ((*g* 'temp)) (f)) ; f will write temp
+*g* ; ==> 'global
 
 ;;; = (letrec ((symbol bindingform)...) bodyforms...) -> object
 ;
