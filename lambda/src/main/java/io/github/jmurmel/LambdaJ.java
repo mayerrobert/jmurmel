@@ -1555,8 +1555,7 @@ public class LambdaJ {
                                 notReserved(op, sym);
 
                                 if (!letStar) // let allows no duplicate let symbols
-                                    if (seen.contains(sym)) errorMalformed(op, "duplicate symbol " + sym);
-                                    else seen.add(sym);
+                                    if (!seen.add(sym)) errorMalformed(op, "duplicate symbol " + sym);
 
                                 ConsCell newBinding = null;
                                 if (letDynamic) newBinding = assq(sym, topEnv);
@@ -1809,12 +1808,12 @@ public class LambdaJ {
             final Object _paramsAndForms = cdr(paramsAndForms);
             nArgs("lambda dynamic", _paramsAndForms, 1);
             symbolArgs("lambda dynamic", car(_paramsAndForms));
-            noDuplicates(car(_paramsAndForms));
+            noDuplicates("lambda dynamic", car(_paramsAndForms));
             return cons(sLambda, _paramsAndForms);
         }
         nArgs("lambda", paramsAndForms, 1);
         symbolArgs("lambda", car(paramsAndForms));
-        noDuplicates(car(paramsAndForms));
+        noDuplicates("lambda", car(paramsAndForms));
 
         if (haveLexC()) return makeClosure(paramsAndForms, env);
         return form;
@@ -2280,7 +2279,7 @@ public class LambdaJ {
             if (o == null) continue;
             if (!consp(o)) throw new LambdaJError(true, "append: argument %d is not a list: %s", i+1, printSEx(o));
             if (lb == null) lb = new ListBuilder();
-            for (Object obj: (ConsCell)o) { nCells++; lb.append(obj); };
+            for (Object obj: (ConsCell)o) { nCells++; lb.append(obj); }
         }
         if (lb == null) return args[first];
         lb.appendLast(args[nArgs-1]);
@@ -2481,7 +2480,7 @@ public class LambdaJ {
         }
     }
 
-    /** 'a' must be a symbol or a proper or dotted list of only symbols (empty list is fine, too).
+    /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols. */
     private void symbolArgs(String func, Object a) {
         if (symbolp(a)) return;
@@ -2495,21 +2494,19 @@ public class LambdaJ {
             a = cdr(a);
             if (a == null) return; // end of a proper list, everything a-ok, move along
             if (atom(a)) {
-                if (!symbolp(a)) throw new LambdaJError(true, "%s: expected a symbol or a list of symbols but got %s", func, printSEx(a));
+                if (!symbolp(a)) errorMalformed(func, "a symbol or a list of symbols", a);
                 notReserved(func, a);
                 return; // that was the end of a dotted list, everything a-ok, move along
             }
         }
     }
 
-    private static void noDuplicates(Object symList) {
+    private static void noDuplicates(String func, Object symList) {
         if (symList == null) return;
         if (!consp(symList)) return;
         final Set<Object> seen = new HashSet<>();
-        for (Object o: (ConsCell)symList) {
-            if (seen.contains(o)) throw new LambdaJError(true, "duplicate symbol %s", o);
-            else seen.add(o);
-        }
+        for (Object o: (ConsCell)symList)
+            if (!seen.add(o)) errorMalformed(func, "duplicate symbol " + o);
     }
 
     ///
@@ -5155,7 +5152,7 @@ public class LambdaJ {
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
                     if (interpreter().sLet == op) {
                         if (car(args) == interpreter().sDynamic)
-                            letDynamicToJava(false, sb, args, env, topEnv, rsfx, isLast);
+                            letDynamicToJava(false, sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
                         else
                             letToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
@@ -5420,11 +5417,10 @@ public class LambdaJ {
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
-                    if (seen.contains(letVar)) {
-                        if (letrec) throw new LambdaJError(true, "duplicate symbol %s", letVar);
+                    if (!seen.add(letVar)) {
+                        if (letrec) errorMalformed(op, "duplicate symbol " + letVar);
                     }
                     else {
-                        seen.add(letVar);
                         final ConsCell _env = extenv(letVar, rsfx, env);
                         if (letrec) env = _env;
                         final String letVarName = javasym(letVar, _env);
@@ -5471,13 +5467,16 @@ public class LambdaJ {
             final Object bindings = car(args);
             final ConsCell params = paramList("let dynamic", bindings, false); // todo argcheck disablen
             if (params != null) {
+                final Set<Object> seenSymbols = new HashSet<>();
                 final String expr = "(let dynamic " + printSEx(params) + ')';
                 final ConsCell _env = params(sb, params, env, rsfx + 1, expr);
-                Iterator<Object> bi = ((ConsCell)bindings).iterator();
-                for (Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
-                    Object sym = iterator.next();
+                final Iterator<Object> bi = ((ConsCell)bindings).iterator();
+                for (final Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
+                    final Object sym = iterator.next();
+                    final boolean seen = !seenSymbols.add(sym);
+                    if (!letStar && seen) errorMalformed("let", "duplicate symbol " + sym);
                     final String globalName = mangle(sym.toString(), 0);
-                    sb.append("        final CompilerGlobal old").append(sym.toString()).append(rsfx+1).append(" = ").append(globalName).append(";\n");
+                    sb.append(seen ? "        old" : "        final CompilerGlobal old").append(sym.toString()).append(rsfx+1).append(" = ").append(globalName).append(";\n");
                     if (letStar) {
                         final Object binding = bi.next();
                         sb.append("        ").append(javasym(sym, _env)).append(" = ");
@@ -5550,8 +5549,7 @@ public class LambdaJ {
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
                     final Object param = car(params);
-                    if (seen.contains(param)) throw new LambdaJError(true, "duplicate symbol %s", param);
-                    seen.add(param);
+                    if (!seen.add(param)) throw new LambdaJError(true, "duplicate symbol %s", param);
                     //env = extenv(param, rsfx, env);
                     //sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
                     requireSymbol(param);
@@ -5559,13 +5557,14 @@ public class LambdaJ {
                 }
 
                 else if (symbolp(params)) {
-                    if (seen.contains(params)) throw new LambdaJError(true, "duplicate symbol %s", params);
-                    seen.add(params);
+                    if (!seen.add(params)) throw new LambdaJError(true, "duplicate symbol %s", params);
                     env = extenv(params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");
                     else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
                     return env;
                 }
+                
+                else errorMalformed("parameter list", "a symbol or a list of symbols", params);
 
                 params = cdr(params);
             }
