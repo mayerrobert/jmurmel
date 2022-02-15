@@ -1,5 +1,3 @@
-(let* dynamic ((a 1)) a) sollte eig einen fehler geben, geht aber im interpreter?!?
-
 write, writeln, lnwrite sollten optionalen parameter "print-escape" bekommen, default t
 
 compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig

@@ -4895,6 +4895,10 @@ public class LambdaJ {
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
             else if (!passTwo) implicitDecl.remove(form.toString());
+            return getJavasym(symentry);
+        }
+
+        private String getJavasym(ConsCell symentry) {
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
             else javasym = (String)cdr(symentry);
@@ -5464,49 +5468,63 @@ public class LambdaJ {
 
             sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n        Object result").append(rsfx+1).append(";\n");
 
+            boolean hasGlobal = false;
+            
             final Object bindings = car(args);
             final ConsCell params = paramList(letStar ? "let* dynamic" : "let dynamic", bindings, false);
+            ConsCell _env = env;
             if (params != null) {
                 if (letStar) {
-                    ConsCell _env = env;
                     int n = 0;
                     final Set<Object> seenSymbols = new HashSet<>();
                     final Iterator<Object> bi = ((ConsCell)bindings).iterator();
                     for (final Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
                         final Object sym = iterator.next();
                         final boolean seen = !seenSymbols.add(sym);
-                        if (!seen) _env = extenvIntern((LambdaJSymbol)sym, "args" + (rsfx+1) + "[" + n++ + "]", env);
-                        final String globalName = mangle(sym.toString(), 0);
-                        sb.append(seen ? "        old" : "        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                        final String javaName;
+                        if (!seen) javaName = "args" + (rsfx + 1) + "[" + n++ + "]";
+                        else javaName = javasym(sym, _env);
 
+                        final String globalName;
+                        final ConsCell maybeGlobal = assq(sym, topEnv);
+                        if (maybeGlobal != null) {
+                            hasGlobal = true;
+                            globalName = mangle(sym.toString(), 0);
+                            sb.append(seen ? "        old" : "        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                        }
+                        else globalName = null;
+                        
                         final Object binding = bi.next();
-                        sb.append("        ").append(javasym(sym, _env)).append(" = ");
+                        sb.append("        ").append(javaName).append(" = ");
                         formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                         sb.append(";\n");
+                        if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, env);
 
-                        sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                        if (maybeGlobal != null) sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
                     }
                 }
                 else {
                     final String expr = "(let dynamic" + " " + printSEx(params) + ')';
-                    final ConsCell _env = params(sb, params, env, rsfx + 1, expr); // todo argcheck disablen
+                    _env = params(sb, params, env, rsfx + 1, expr); // todo argcheck disablen
                     for (final Object sym: params) {
                         final String globalName = mangle(sym.toString(), 0);
                         sb.append("        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
                         sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
                     }
                 }
-                sb.append("        try {\n");
+                if (hasGlobal) sb.append("        try {\n");
             }
 
             // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx+1, params != null); // todo _env oder env?
+            formsToJava(sb, (ConsCell)cdr(args), _env, topEnv, rsfx+1, params != null);
 
-            if (params != null) {
+            if (hasGlobal) {
                 sb.append("        }\n");
                 sb.append("        finally {\n");
                 for (Object sym : params) {
-                    sb.append("        ").append(mangle(sym.toString(), 0)).append(" = ").append("old").append(sym.toString()).append(rsfx+1).append(";\n");
+                    final ConsCell maybeGlobal = assq(sym, topEnv);
+                    if (maybeGlobal != null)
+                        sb.append("        ").append(mangle(sym.toString(), 0)).append(" = ").append("old").append(sym.toString()).append(rsfx + 1).append(";\n");
                 }
                 sb.append("        }\n");
             }

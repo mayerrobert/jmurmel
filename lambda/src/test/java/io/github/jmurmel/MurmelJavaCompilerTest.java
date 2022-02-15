@@ -443,7 +443,19 @@ public class MurmelJavaCompilerTest {
         StringBuilder out = new StringBuilder();
         program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
         program.body();
-        assertEquals("letrec produced wrong output", "333312", out.toString());
+        assertEquals("let* dynamic produced wrong output", "333312", out.toString());
+    }
+
+    // let* dynamic, 1 global, 1 local
+    @Test
+    public void testLetStarDynamic2() throws Exception {
+        MurmelProgram program = compile("(define a nil) (defun f (x) (write (+ a x))) (let* dynamic ((a 11) (b 22)) (f b))");
+        assertNotNull("failed to compile let* dynamic to class", program);
+
+        StringBuilder out = new StringBuilder();
+        program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
+        program.body();
+        assertEquals("let* dynamic produced wrong output", "33.0", out.toString());
     }
 
     // body calls one local function
