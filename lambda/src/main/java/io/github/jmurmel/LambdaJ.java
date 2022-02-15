@@ -4993,8 +4993,8 @@ public class LambdaJ {
             }
         }
 
-        private static boolean isSymbol(Object op, String s) {
-            return op != null && s.equals(op.toString());
+        private boolean isSymbol(Object op, String s) {
+            return op == interpreter().intern(s);
         }
         
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:

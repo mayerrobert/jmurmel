@@ -1208,3 +1208,7 @@ in der Murmel funktion append und listToArray aus
 Compiler: let* dynamic sollte als unsupported angemeckert werden (oder supported werden)
 
 compiler: let* dynamic ist eigentlich let dynamic
+
+compiler let/ let* dynamic: doppelte bindings abweisen bzw. behandeln
+
+isSymbol sollte intern("+") == op verwenden ?!?

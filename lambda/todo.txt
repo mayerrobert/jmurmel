@@ -1,10 +1,8 @@
-compiler let/ let* dynamic: doppelte bindings abweisen bzw. behandeln
-
 (let* dynamic ((a 1)) a) sollte eig einen fehler geben, geht aber im interpreter?!?
 
 write, writeln, lnwrite sollten optionalen parameter "print-escape" bekommen, default t
 
-isSymbol sollte intern("+") == op verwenden ?!?
+compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
 
 
 
@@ -26,8 +24,6 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
   (f a b . c)
 -> eigentlich nicht nur für rekursive aufrufe sondern für alle aufrufe, wo eine vararg funktion ihre argumente wohinschicken will
 
-
-compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
 
 samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
