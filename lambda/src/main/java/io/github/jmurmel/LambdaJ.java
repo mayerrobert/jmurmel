@@ -5465,31 +5465,42 @@ public class LambdaJ {
             sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n        Object result").append(rsfx+1).append(";\n");
 
             final Object bindings = car(args);
-            final ConsCell params = paramList("let dynamic", bindings, false); // todo argcheck disablen
+            final ConsCell params = paramList(letStar ? "let* dynamic" : "let dynamic", bindings, false);
             if (params != null) {
-                final Set<Object> seenSymbols = new HashSet<>();
-                final String expr = "(let dynamic " + printSEx(params) + ')';
-                final ConsCell _env = params(sb, params, env, rsfx + 1, expr);
-                final Iterator<Object> bi = ((ConsCell)bindings).iterator();
-                for (final Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
-                    final Object sym = iterator.next();
-                    final boolean seen = !seenSymbols.add(sym);
-                    if (!letStar && seen) errorMalformed("let", "duplicate symbol " + sym);
-                    final String globalName = mangle(sym.toString(), 0);
-                    sb.append(seen ? "        old" : "        final CompilerGlobal old").append(sym.toString()).append(rsfx+1).append(" = ").append(globalName).append(";\n");
-                    if (letStar) {
+                if (letStar) {
+                    ConsCell _env = env;
+                    int n = 0;
+                    final Set<Object> seenSymbols = new HashSet<>();
+                    final Iterator<Object> bi = ((ConsCell)bindings).iterator();
+                    for (final Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
+                        final Object sym = iterator.next();
+                        final boolean seen = !seenSymbols.add(sym);
+                        if (!seen) _env = extenvIntern((LambdaJSymbol)sym, "args" + (rsfx+1) + "[" + n++ + "]", env);
+                        final String globalName = mangle(sym.toString(), 0);
+                        sb.append(seen ? "        old" : "        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+
                         final Object binding = bi.next();
                         sb.append("        ").append(javasym(sym, _env)).append(" = ");
                         formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                         sb.append(";\n");
+
+                        sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
                     }
-                    sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                }
+                else {
+                    final String expr = "(let dynamic" + " " + printSEx(params) + ')';
+                    final ConsCell _env = params(sb, params, env, rsfx + 1, expr); // todo argcheck disablen
+                    for (final Object sym: params) {
+                        final String globalName = mangle(sym.toString(), 0);
+                        sb.append("        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                        sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                    }
                 }
                 sb.append("        try {\n");
             }
 
             // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx+1, params != null);
+            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx+1, params != null); // todo _env oder env?
 
             if (params != null) {
                 sb.append("        }\n");
