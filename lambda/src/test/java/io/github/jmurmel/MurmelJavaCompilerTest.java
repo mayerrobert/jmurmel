@@ -435,6 +435,17 @@ public class MurmelJavaCompilerTest {
         assertEquals("letrec2 produced wrong result", 1L, program.body());
     }
 
+    @Test
+    public void testLetStarDynamic() throws Exception {
+        MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write a) (write b)) (let* dynamic ((a 33) (b a)) (f)) (f)");
+        assertNotNull("failed to compile let* dynamic to class", program);
+        
+        StringBuilder out = new StringBuilder();
+        program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
+        program.body();
+        assertEquals("letrec produced wrong output", "333312", out.toString());
+    }
+
     // body calls one local function
     @Test
     public void testLabels() throws Exception {
