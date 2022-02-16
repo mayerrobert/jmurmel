@@ -251,7 +251,7 @@
     <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass"/>
     <!-- <rule ref="category/java/errorprone.xml/MoreThanOneLogger" /> -->
     <rule ref="category/java/errorprone.xml/NonCaseLabelInSwitchStatement"/>
-    <rule ref="category/java/errorprone.xml/NonStaticInitializer"/>
+    <!-- <rule ref="category/java/errorprone.xml/NonStaticInitializer"/> -->
     <!-- <rule ref="category/java/errorprone.xml/NullAssignment" /> -->
     <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode"/>
     <rule ref="category/java/errorprone.xml/ProperCloneImplementation"/>
@@ -292,7 +292,7 @@
     <rule ref="category/java/errorprone.xml/EmptyWhileStmt"/>
 
 
-    <!-- <rule ref="category/java/multithreading.xml/AvoidSynchronizedAtMethodLevel" /> -->
+    <rule ref="category/java/multithreading.xml/AvoidSynchronizedAtMethodLevel" />
     <rule ref="category/java/multithreading.xml/AvoidThreadGroup"/>
     <rule ref="category/java/multithreading.xml/AvoidUsingVolatile"/>
     <!-- <rule ref="category/java/multithreading.xml/DoNotUseThreads" /> -->
@@ -321,13 +321,13 @@
     <!--<rule ref="category/java/performance.xml/RedundantFieldInitializer"/>-->
     <!-- <rule ref="category/java/performance.xml/SimplifyStartsWith" /> -->
     <!-- <rule ref="category/java/performance.xml/StringInstantiation" /> -->
-    <!-- <rule ref="category/java/performance.xml/StringToString" /> -->
+    <rule ref="category/java/performance.xml/StringToString" />
     <!--<rule ref="category/java/performance.xml/TooFewBranchesForASwitchStatement"/>-->
     <!-- <rule ref="category/java/performance.xml/UseArrayListInsteadOfVector" /> -->
     <!-- <rule ref="category/java/performance.xml/UseArraysAsList" /> -->
     <!-- <rule ref="category/java/performance.xml/UseIndexOfChar" /> -->
     <!-- <rule ref="category/java/performance.xml/UseIOStreamsWithApacheCommonsFileItem" /> -->
-    <!-- <rule ref="category/java/performance.xml/UselessStringValueOf" /> -->
+    <rule ref="category/java/performance.xml/UselessStringValueOf" />
     <!-- <rule ref="category/java/performance.xml/UseStringBufferForStringAppends" /> -->
     <!-- <rule ref="category/java/performance.xml/UseStringBufferLength" /> -->
 
