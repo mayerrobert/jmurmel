@@ -5508,9 +5508,12 @@ public class LambdaJ {
                     final String expr = "(let dynamic" + " " + printSEx(params) + ')';
                     _env = params(sb, params, env, rsfx + 1, expr, false);
                     for (final Object sym: params) {
-                        final String globalName = mangle(sym.toString(), 0);
-                        sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
-                        sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                        final ConsCell maybeGlobal = assq(sym, topEnv);
+                        if (maybeGlobal != null) {
+                            final String globalName = mangle(sym.toString(), 0);
+                            sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                            sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                        }
                     }
                 }
                 if (hasGlobal) sb.append("        try {\n");
