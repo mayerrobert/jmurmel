@@ -5478,8 +5478,7 @@ public class LambdaJ {
                     int n = 0;
                     final Set<Object> seenSymbols = new HashSet<>();
                     final Iterator<Object> bi = ((ConsCell)bindings).iterator();
-                    for (final Iterator<Object> iterator = params.iterator(); iterator.hasNext(); ) {
-                        final Object sym = iterator.next();
+                    for (final Object sym: params) {
                         final boolean seen = !seenSymbols.add(sym);
                         final String javaName;
                         if (!seen) javaName = "args" + (rsfx + 1) + "[" + n++ + "]";
@@ -5488,9 +5487,11 @@ public class LambdaJ {
                         final String globalName;
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
-                            hasGlobal = true;
                             globalName = mangle(sym.toString(), 0);
-                            sb.append(seen ? "        old" : "        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                            if (!seen) {
+                                hasGlobal = true;
+                                sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                            }
                         }
                         else globalName = null;
                         

@@ -133,6 +133,11 @@
           (list *a* *b* *c*))
   '(123 456 789 1 2 3))
 
+(deftest letdynamic.2
+  (append (let* #+murmel dynamic ((*a* 123) (*a* 456) (*a* 789)) (globals-as-list))
+            (list *a* *b* *c*))
+    '(789 2 3 1 2 3))
+
 
 ;;; let over lambda
 #+murmel (define f (let ((ctr 0)) (lambda () (setq ctr (1+ ctr)))))
