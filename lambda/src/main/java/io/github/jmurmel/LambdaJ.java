@@ -5490,7 +5490,7 @@ public class LambdaJ {
                         if (maybeGlobal != null) {
                             hasGlobal = true;
                             globalName = mangle(sym.toString(), 0);
-                            sb.append(seen ? "        old" : "        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                            sb.append(seen ? "        old" : "        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
                         }
                         else globalName = null;
                         
@@ -5508,7 +5508,7 @@ public class LambdaJ {
                     _env = params(sb, params, env, rsfx + 1, expr); // todo argcheck disablen
                     for (final Object sym: params) {
                         final String globalName = mangle(sym.toString(), 0);
-                        sb.append("        final CompilerGlobal old").append(sym.toString()).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                        sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
                         sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
                     }
                 }
@@ -5523,8 +5523,10 @@ public class LambdaJ {
                 sb.append("        finally {\n");
                 for (Object sym : params) {
                     final ConsCell maybeGlobal = assq(sym, topEnv);
-                    if (maybeGlobal != null)
-                        sb.append("        ").append(mangle(sym.toString(), 0)).append(" = ").append("old").append(sym.toString()).append(rsfx + 1).append(";\n");
+                    if (maybeGlobal != null) {
+                        final String globalName = mangle(sym.toString(), 0);
+                        sb.append("        ").append(globalName).append(" = ").append("old").append(globalName).append(rsfx + 1).append(";\n");
+                    }
                 }
                 sb.append("        }\n");
             }

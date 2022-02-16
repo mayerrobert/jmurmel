@@ -124,6 +124,16 @@
 #+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
 #+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
 
+
+;;; test let* dynamic
+(setq *a* 1 *b* 2 *c* 3)
+(defun globals-as-list () (list *a* *b* *c*)) 
+(deftest letdynamic.1
+  (append (let* #+murmel dynamic ((*a* 123) (*b* 456) (*c* 789)) (globals-as-list))
+          (list *a* *b* *c*))
+  '(123 456 789 1 2 3))
+
+
 ;;; let over lambda
 #+murmel (define f (let ((ctr 0)) (lambda () (setq ctr (1+ ctr)))))
 #+murmel (deftest closure.1 (list (f) (f) (f)) '(1 2 3))
