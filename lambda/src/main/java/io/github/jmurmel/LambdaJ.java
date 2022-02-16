@@ -5522,11 +5522,15 @@ public class LambdaJ {
             if (hasGlobal) {
                 sb.append("        }\n");
                 sb.append("        finally {\n");
+                final Set<Object> seenSymbols = new HashSet<>();
                 for (Object sym : params) {
-                    final ConsCell maybeGlobal = assq(sym, topEnv);
-                    if (maybeGlobal != null) {
-                        final String globalName = mangle(sym.toString(), 0);
-                        sb.append("        ").append(globalName).append(" = ").append("old").append(globalName).append(rsfx + 1).append(";\n");
+                    final boolean seen = !seenSymbols.add(sym);
+                    if (!seen) {
+                        final ConsCell maybeGlobal = assq(sym, topEnv);
+                        if (maybeGlobal != null) {
+                            final String globalName = mangle(sym.toString(), 0);
+                            sb.append("        ").append(globalName).append(" = ").append("old").append(globalName).append(rsfx + 1).append(";\n");
+                        }
                     }
                 }
                 sb.append("        }\n");
