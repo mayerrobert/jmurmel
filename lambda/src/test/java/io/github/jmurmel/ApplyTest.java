@@ -132,7 +132,7 @@ public class ApplyTest {
 
     @Test
     public void evalEnvError() {
-        LambdaJTest.runErrorTest("String", "(eval 'x '2)", "eval: expected 'env' to be a list but got 2.0");
+        LambdaJTest.runErrorTest("String", "(eval 'x '2)", "eval: malformed eval: expected 'env' to be a list but got 2.0");
     }
 
 

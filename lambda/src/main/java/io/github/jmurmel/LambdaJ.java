@@ -113,7 +113,7 @@ public class LambdaJ {
     /// ## Public interfaces and an exception class to use the interpreter from Java
 
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
-    public static final String LANGUAGE_VERSION = "1.0-SNAPSHOT";
+    public static final String LANGUAGE_VERSION = "1.2";
     public static final String ENGINE_VERSION;
     static {
         String versionInfo;
@@ -148,7 +148,6 @@ public class LambdaJ {
                     System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
                 }
             }
-            //System.out.println("murmeldir: " + path);
         }
         catch (URISyntaxException e) {
             System.out.println("cannot get Murmel dir: " + e.getMessage());
@@ -167,7 +166,7 @@ public class LambdaJ {
     };
 
     private static final String[] FEATURES = {
-            "murmel", "jvm", "ieee-floating-point"
+            "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
     };
 
     private int speed = 1;
@@ -1385,12 +1384,12 @@ public class LambdaJ {
                     if (operator == sSetQ) {
                         for (ConsCell pairs = arguments; pairs != null; ) {
                             final Object symbol = car(pairs);
-                            if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "setq", printSEx(symbol));
+                            if (!symbolp(symbol)) errorMalformed("setq", "a symbol", symbol);
                             notReserved("setq", symbol);
                             final ConsCell envEntry = assq(symbol, env);
 
                             pairs = (ConsCell) cdr(pairs);
-                            if (pairs == null) throw new LambdaJError(true, "%s: odd number of arguments", "setq");
+                            if (pairs == null) errorMalformed("setq", "odd number of arguments");
                             final Object value = eval(car(pairs), env, stack, level, traceLvl);
                             if (envEntry == null)
                                 //insertFront(env, symbol, value);
@@ -1434,7 +1433,7 @@ public class LambdaJ {
                         if (cdr(arguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
                         else {
                             final Object additionalEnv = cadr(arguments);
-                            if (!listp(additionalEnv)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", additionalEnv);
+                            if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
                             env = (ConsCell) append2(additionalEnv, topEnv);
                         }
                         isTc = true; continue tailcall;
@@ -1448,16 +1447,18 @@ public class LambdaJ {
                         } else if (caddr(arguments) != null) {
                             form = caddr(arguments); isTc = true; continue tailcall;
                         } else { result = null; return null; } // condition eval'd to false, no else form
+                    }
 
                     /// eval - (load filespec) -> object
-                    } else if (operator == sLoad) {
+                    if (operator == sLoad) {
                         oneArg("load", arguments);
                         return loadFile("load", car(arguments));
+                    }
 
-                    /// eval - (require modulname optfilespec) -> object
-                    } else if (operator == sRequire) {
+                    /// eval - (require modulename optfilespec) -> object
+                    if (operator == sRequire) {
                         nArgs("require", arguments, 1, 2);
-                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(arguments));
+                        if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
                         final Object modName = car(arguments);
                         if (!modules.contains(modName)) {
                             Object modFilePath = cadr(arguments);
@@ -1467,10 +1468,12 @@ public class LambdaJ {
                             return ret;
                         }
                         return null;
+                    }
 
-                    } else if (operator == sProvide) {
+                    /// eval - (provide modulename) -> nil
+                    if (operator == sProvide) {
                         oneArg("provide", arguments);
-                        if (!stringp(car(arguments))) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(arguments));
+                        if (!stringp(car(arguments))) errorMalformed("provide", "a string argument", arguments);
                         final Object modName = car(arguments);
                         modules.add(modName);
                         return null;
@@ -2001,7 +2004,7 @@ public class LambdaJ {
                 evFunc = fmtEvFunc(evFunc);
 
                 final String pfx = pfx(stack, level);
-                tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + ") exp:           " + printSEx(exp));
+                tracer.println(pfx + ' ' + evFunc + " (" + stack + '/' + level + ") exp:           " + printSEx(exp));
                 if (trace.ge(TraceLevel.TRC_ENV)) {
                     tracer.println(pfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
                 }
@@ -2016,7 +2019,7 @@ public class LambdaJ {
             if (trace.ge(TraceLevel.TRC_EVAL)) {
                 evFunc = fmtEvFunc(evFunc);
                 final String pfx = pfx(stack, level);
-                tracer.println(pfx + " " + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
+                tracer.println(pfx + ' ' + evFunc + " (" + stack + '/' + level + ") done, exp was: " + printSEx(exp));
             }
         }
     }
@@ -2223,7 +2226,7 @@ public class LambdaJ {
     }
 
     private Object eval(Object form, Object env) {
-        if (!listp(env)) throw new LambdaJError(true, "eval: expected 'env' to be a list but got %s", env);
+        if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
         return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
@@ -5505,7 +5508,7 @@ public class LambdaJ {
                     }
                 }
                 else {
-                    final String expr = "(let dynamic" + " " + printSEx(params) + ')';
+                    final String expr = "(let dynamic " + printSEx(params) + ')';
                     _env = params(sb, params, env, rsfx + 1, expr, false);
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = assq(sym, topEnv);
