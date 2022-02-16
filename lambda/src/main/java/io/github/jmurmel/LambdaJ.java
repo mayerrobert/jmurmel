@@ -4963,7 +4963,7 @@ public class LambdaJ {
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
                     + "        final MurmelFunction func = (args0) -> {\n");
-            final ConsCell extenv = params(sb, params, env, 0, javasym);
+            final ConsCell extenv = params(sb, params, env, 0, javasym, true);
             sb.append("        Object result0;\n");
             formsToJava(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
@@ -5081,7 +5081,7 @@ public class LambdaJ {
 
                     ///     - lambda
                     if (interpreter().sLambda == op) {
-                        lambdaToJava(sb, args, env, topEnv, rsfx);
+                        lambdaToJava(sb, args, env, topEnv, rsfx, true);
                         return;
                     }
 
@@ -5281,10 +5281,10 @@ public class LambdaJ {
         }
 
         /** args = ((sym...) form...) */
-        private void lambdaToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void lambdaToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean argCheck) {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n        Object result").append(rsfx).append(";\n");
             final String expr = "(lambda " + printSEx(car(args)) + ')';
-            env = params(sb, car(args), env, rsfx, expr);
+            env = params(sb, car(args), env, rsfx, expr, argCheck);
             formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false);
             sb.append("        })");
         }
@@ -5330,7 +5330,7 @@ public class LambdaJ {
             env = extenv(symbol, rsfx, env);
             sb.append("        private final Object ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n        Object result").append(rsfx).append(";\n");
-            env = params(sb, cadr(args), env, rsfx, symbol.toString());
+            env = params(sb, cadr(args), env, rsfx, symbol.toString(), true);
             formsToJava(sb, (ConsCell)cddr(args), env, topEnv, rsfx, false);
             sb.append("        } }");
         }
@@ -5381,7 +5381,7 @@ public class LambdaJ {
             else {
                 // regular let
                 final ConsCell params = paramList("let", car(args), false);
-                lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1);
+                lambdaToJava(sb, cons(params, cdr(args)), env, topEnv, rsfx+1, false);
                 bindings = (ConsCell)car(args);
             }
             if (bindings != null)
@@ -5506,7 +5506,7 @@ public class LambdaJ {
                 }
                 else {
                     final String expr = "(let dynamic" + " " + printSEx(params) + ')';
-                    _env = params(sb, params, env, rsfx + 1, expr); // todo argcheck disablen
+                    _env = params(sb, params, env, rsfx + 1, expr, false);
                     for (final Object sym: params) {
                         final String globalName = mangle(sym.toString(), 0);
                         sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
@@ -5566,9 +5566,9 @@ public class LambdaJ {
         }
 
         /** generate variables from arg array */
-        private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr) {
+        private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
             if (paramList == null) {
-                sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
+                if (check) sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
                 return env;
             }
 
@@ -5576,9 +5576,9 @@ public class LambdaJ {
                 // (lambda a forms...) - style varargs
             }
             else if (!properList(paramList)) {
-                sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
+                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
             }
-            else sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
+            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
 
             final Set<Object> seen = new HashSet<>();
             int n = 0;

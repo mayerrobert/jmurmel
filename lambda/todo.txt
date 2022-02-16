@@ -2,8 +2,6 @@ let dynamic im interpreter, und gabriel 3.02_stak.lisp vereinfachen
 
 write, writeln, lnwrite sollten optionalen parameter "print-escape" bekommen, default t
 
-compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
-
 
 
 
