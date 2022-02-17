@@ -1524,13 +1524,13 @@ public class LambdaJ {
                     /// eval - (let* optsymbol? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
-                        final boolean letDynamic = car(arguments) == sDynamic;
-                        if (letDynamic && operator != sLetStar) errorMalformed(operator.toString(), "dynamic only allowed with let*");
                         final boolean letStar  = operator == sLetStar;
                         final boolean letRec   = operator == sLetrec;
+                        final boolean letDynamic = car(arguments) == sDynamic;
+                        if (letDynamic && letRec) errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
                         final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
 
-                        final String op = letDynamic ? "let* dynamic" : (namedLet ? "named " : "") + operator;
+                        final String op = letDynamic ? (operator + " dynamic") : (namedLet ? "named " : "") + operator;
                         final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
                         final Object _bindings = car(bindingsAndBodyForms);
@@ -1540,6 +1540,7 @@ public class LambdaJ {
                         ConsCell extenv = env;
                         if (bindings != null) {
                             final Set<Object> seen = new HashSet<>();
+                            ConsCell newValues = null; // used for let dynamic
                             extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
                             for (Object binding : bindings) {
                                 final Object sym;
@@ -1557,8 +1558,10 @@ public class LambdaJ {
 
                                 notReserved(op, sym);
 
-                                if (!letStar) // let allows no duplicate let symbols
-                                    if (!seen.add(sym)) errorMalformed(op, "duplicate symbol " + sym);
+                                boolean isNewSymbol = seen.add(sym);
+                                if (!letStar) { // let and letrec don't allow duplicate symbols
+                                    if (!isNewSymbol) errorMalformed(op, "duplicate symbol " + sym);
+                                }
 
                                 ConsCell newBinding = null;
                                 if (letDynamic) newBinding = assq(sym, topEnv);
@@ -1567,11 +1570,16 @@ public class LambdaJ {
                                 if (caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
                                 final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                                 if (letDynamic && newBinding != null) {
-                                    restore = cons(cons(newBinding, cdr(newBinding)), restore);
-                                    newBinding.rplacd(val); // hier ist das zu frueh, das macht effektiv ein let* dynamic
+                                    if (isNewSymbol) restore = cons(cons(newBinding, cdr(newBinding)), restore);
+                                    if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
+                                    else newValues = cons((cons(newBinding, val)), newValues);
                                 }
                                 else if (letRec) newBinding.rplacd(val);
                                 else extenv = extendEnv(extenv, sym, val);
+                            }
+                            if (newValues != null) for (Object o: newValues) {
+                                ConsCell c = (ConsCell)o;
+                                ((ConsCell)car(c)).rplacd(cdr(c));
                             }
                         }
                         forms = (ConsCell)cdr(bindingsAndBodyForms);
@@ -5513,6 +5521,7 @@ public class LambdaJ {
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
+                            hasGlobal = true;
                             final String globalName = mangle(sym.toString(), 0);
                             sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
                             sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");

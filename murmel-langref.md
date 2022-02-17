@@ -394,6 +394,23 @@ recursive calls within `bodyforms`.
           (write msg)
         (progn (write (floor x)) (loop (- x 1) msg))))
 
+### (let dynamic ((symbol bindingform)...) bodyforms...) -> object
+
+Similar to `let` except: globals are not shadowed but temporarily
+bound to the given value, and the previous value is restored when
+leaving the scope of the `let` form.
+I.e. `let dynamic` treats globals as "special".
+
+    (define a 1)
+    (define b 2)
+    (defun f () (write (cons a b)))
+
+    (f)
+    (let dynamic ((a 11) (b a))
+      (f))
+    (f)
+will print (1 . 2)(11 . 1)(1 . 2)
+
 ### (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
 
 Works like `let` (see above) with the addition:
@@ -413,7 +430,7 @@ preceeding ones.
 
 Similar to `let*` except: globals are not shadowed but temporarily
 bound to the given value, and the previous value is restored when
-leaving the scope of the `let` form.
+leaving the scope of the `let*` form.
 I.e. `let* dynamic` treats globals as "special".
 
     (define *g* 'global)
@@ -421,7 +438,7 @@ I.e. `let* dynamic` treats globals as "special".
     (let* dynamic ((*g* 'temp)) (f)) ; f will write temp
     *g* ; ==> 'global
 
-### (letrec ((symbol bindingform)...) bodyforms...) -> object
+### (letrec optsybol? ((symbol bindingform)...) bodyforms...) -> object
 
 `letrec` works like `let` and `let*` except each bindingform "sees"
 all other let symbols as well as it's own symbol.

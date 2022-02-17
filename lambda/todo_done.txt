@@ -1216,3 +1216,5 @@ isSymbol sollte intern("+") == op verwenden ?!?
 (let* dynamic ((a 1)) a) sollte eig einen fehler geben, geht aber im interpreter?!?
 
 compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
+
+let dynamic im interpreter

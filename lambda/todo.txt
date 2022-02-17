@@ -1,4 +1,4 @@
-let dynamic im interpreter, und gabriel 3.02_stak.lisp vereinfachen
+gabriel 3.02_stak.lisp vereinfachen
 
 write, writeln, lnwrite sollten optionalen parameter "print-escape" bekommen, default t
 
@@ -27,6 +27,10 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
 
 samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
+
+"inline java" könnte man (im compiler) in etwa so machen
+(java (a b c) "return a + b + c;")
+-> (MurmelFunction)(args) -> { /*argCheck(args.length, 3);*/ Object a = args[0]; Object b = args[1]; Object c = args[2]; return a + b + c: }
 
 
 mit Class.forName() könnte man eine Klasse mit Custom Primitives laden.

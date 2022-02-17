@@ -436,6 +436,17 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testLetDynamic() throws Exception {
+        MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write (cons a b))) (f) (let dynamic ((a 11) (b a)) (f)) (f)");
+        assertNotNull("failed to compile let dynamic to class", program);
+
+        StringBuilder out = new StringBuilder();
+        program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
+        program.body();
+        assertEquals("let dynamic produced wrong output", "(1 . 2)(11 . 1)(1 . 2)", out.toString());
+    }
+
+    @Test
     public void testLetStarDynamic() throws Exception {
         MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write a) (write b)) (let* dynamic ((a 33) (b a)) (f)) (f)");
         assertNotNull("failed to compile let* dynamic to class", program);
