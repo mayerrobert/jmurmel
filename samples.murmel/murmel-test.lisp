@@ -125,18 +125,37 @@
 #+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
 
 
-;;; test let* dynamic
 (setq *a* 1 *b* 2 *c* 3)
-(defun globals-as-list () (list *a* *b* *c*)) 
+(defun globals-as-list ()
+  (list *a* *b* *c*)) 
+
+;;; test let dynamic
 (deftest letdynamic.1
+  (append (let #+murmel dynamic ((*a* 123) (*b* *a*) (*c* (1+ *c*))) (globals-as-list))
+          (list *a* *b* *c*))
+  '(123 1 4 1 2 3))
+
+(deftest letdynamic.2
+  (append (let #+murmel dynamic ((*a* 123) (*b* *a*) (*c* (1+ *c*))) (append (globals-as-list) (setq *a* 1111 *b* 2222 *c* nil)))
+          (list *a* *b* *c*))
+  '(123 1 4 1 2 3))
+
+
+;;; test let* dynamic
+(deftest let*dynamic.1
   (append (let* #+murmel dynamic ((*a* 123) (*b* 456) (*c* 789)) (globals-as-list))
           (list *a* *b* *c*))
   '(123 456 789 1 2 3))
 
-(deftest letdynamic.2
+(deftest let*dynamic.2
   (append (let* #+murmel dynamic ((*a* 123) (*a* 456) (*a* 789)) (globals-as-list))
             (list *a* *b* *c*))
     '(789 2 3 1 2 3))
+
+(deftest let*dynamic.3
+  (append (let* #+murmel dynamic ((*a* 123) (*a* 456) (*b* *a*)) (globals-as-list))
+            (list *a* *b* *c*))
+    '(456 456 3 1 2 3))
 
 
 ;;; let over lambda
