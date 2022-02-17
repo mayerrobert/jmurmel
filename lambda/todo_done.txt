@@ -1218,3 +1218,5 @@ isSymbol sollte intern("+") == op verwenden ?!?
 compiler: argcheck bei let/ let*/ letrec sollte unnötig sein? bei named... ist es nötig
 
 let dynamic im interpreter
+
+gabriel 3.02_stak.lisp vereinfachen

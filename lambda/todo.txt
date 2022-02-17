@@ -1,6 +1,4 @@
-gabriel 3.02_stak.lisp vereinfachen
-
-write, writeln, lnwrite sollten optionalen parameter "print-escape" bekommen, default t
+write, writeln, lnwrite sollten optionalen parameter "print-escape-p" bekommen, default t
 
 opencoden im interpreter
 
