@@ -8,6 +8,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * add limited support for "macroexpand-1" in compiled code (quoted forms only)
  * support "let dynamic" and "let* dynamic"
    (before only "let* dynamic" in interpreted code was supported)
+ * write, writeln, lnwrite now accept an optional parameter print-escape-p
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
  * fixed "append" for compiled code

@@ -699,13 +699,21 @@ Return a new unique symbol.
 
 ### read, write, writeln, lnwrite
 
+    (read) -> obj
+    (write   obj  print-escape-p?) -> t
+    (writeln obj? print-escape-p?) -> t
+    (lnwrite obj? print-escape-p?) -> t
+
 Both expressions as well as data are read from stdin.
 The following expression reads the expression immediately following it
 (in this case the expression to be read is the string "Hello!").
 
     (write (read)) "Hello!"
 
-`writeln` and `lnwrite` accept one optional argument.  
+`write` accepts an optional boolean argument `print-escape-p`.
+`writeln` and `lnwrite` accept an optional argument `obj`
+and an optional boolean argument `print-escape-p`.
+
 `writeln` will write the argument if given, followed by a newline.  
 `lnwrite` will write a newline followed by the argument if given,
 followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
@@ -713,6 +721,10 @@ followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
     (writeln "Hello, ")
     (writeln)
     (writeln "World!")
+
+`write`, `writeln` and `lnwrite` will escape atoms by default,
+the optioal parameter `print-escape-p` can be used to turn off escaping.
+    (writeln "Hello, World!" nil)
 
 ### (get-internal-real-time) -> number
 

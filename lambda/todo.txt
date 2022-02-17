@@ -1,5 +1,3 @@
-write, writeln, lnwrite sollten optionalen parameter "print-escape-p" bekommen, default t
-
 opencoden im interpreter
 
 
