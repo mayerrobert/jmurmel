@@ -135,8 +135,11 @@
           (list *a* *b* *c*))
   '(123 1 4 1 2 3))
 
+; changes to globals in a let dynamic form will be undone
 (deftest letdynamic.2
-  (append (let #+murmel dynamic ((*a* 123) (*b* *a*) (*c* (1+ *c*))) (append (globals-as-list) (setq *a* 1111 *b* 2222 *c* nil)))
+  (append (let #+murmel dynamic ((*a* 123) (*b* *a*) (*c* (1+ *c*)))
+            (append (globals-as-list)
+                    (setq *a* 1111 *b* 2222 *c* nil)))
           (list *a* *b* *c*))
   '(123 1 4 1 2 3))
 
