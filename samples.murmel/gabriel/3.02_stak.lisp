@@ -11,23 +11,21 @@
     (stak-aux)))
 
 (defun stak-aux ()
-  ;(write x) (write y) (writeln z)
   (if (not (< y x))
         z
-    (let ((oldx x) (oldy y) (oldz z))
-      (let* dynamic
-        ((x (let* dynamic ((x (1- x))
-                          (y y)
-                          (z z))
-             (stak-aux)))
-         (y (let* dynamic ((x (1- y))
-                          (y z)
-                          (z oldx))
-             (stak-aux)))
-         (z (let* dynamic ((x (1- z))
-                          (y oldx)
-                          (z oldy))
-             (stak-aux))))
-        (stak-aux)))))
+    (let dynamic
+      ((x (let dynamic ((x (1- x))
+                (y y)
+                (z z))
+            (stak-aux)))
+       (y (let dynamic ((x (1- y))
+                (y z)
+                (z x))
+            (stak-aux)))
+       (z (let dynamic ((x (1- z))
+                (y x)
+                (z y))
+            (stak-aux))))
+      (stak-aux))))
 
 (write (stak 18 12 6)) ; ==> 7

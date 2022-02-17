@@ -10,7 +10,6 @@
   (stak-aux))
 
 (defun stak-aux ()
-  ;(write x) (write y) (write z) (terpri)
   (if (not (< y x))
         z
     (let
