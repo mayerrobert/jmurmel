@@ -3077,7 +3077,8 @@ public class LambdaJ {
                   addBuiltin("null",    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); },
                   addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
-                  env))))));
+                  addBuiltin("eql", (Primitive) a -> { twoArgs("eql", a);   return boolResult(cl_eql(car(a), cadr(a))); },
+                  env)))))));
 
             env = addBuiltin("append",  (Primitive) a -> append(listToArray(a)),
                   env);
@@ -3156,8 +3157,7 @@ public class LambdaJ {
 
         if (haveEq()) {
             env = addBuiltin("eq", (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); },
-                  addBuiltin("eql", (Primitive) a -> { twoArgs("eql", a);   return boolResult(cl_eql(car(a), cadr(a))); },
-                  env));
+                  env);
         }
 
         if (haveCons()) {
@@ -3687,7 +3687,7 @@ public class LambdaJ {
                     if (":h"      .equalsIgnoreCase(exp.toString())) { showHelp();  continue; }
                     if (":echo"   .equalsIgnoreCase(exp.toString())) { echoHolder.value = true; continue; }
                     if (":noecho" .equalsIgnoreCase(exp.toString())) { echoHolder.value = false; continue; }
-                    if (":env"    .equalsIgnoreCase(exp.toString())) { System.out.println(env.toString()); System.out.println("env length: " + length(env));  System.out.println(); continue; }
+                    if (":env"    .equalsIgnoreCase(exp.toString())) { System.out.println(env); System.out.println("env length: " + length(env));  System.out.println(); continue; }
                     if (":res"    .equalsIgnoreCase(exp.toString())) { isInit = false; history.clear();  continue; }
                     if (":l"      .equalsIgnoreCase(exp.toString())) { listHistory(history); continue; }
                     if (":w"      .equalsIgnoreCase(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
@@ -3993,6 +3993,8 @@ public class LambdaJ {
     }
 
     private static void injectCommandlineArgs(LambdaJ intp, String[] args) {
+        if (intp.topEnv == null) return; // empty environment probably because of commandline argument --lambda
+
         int n = 0;
         for (String arg: args) {
             n++;

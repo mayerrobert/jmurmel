@@ -1226,3 +1226,5 @@ write, writeln, lnwrite sollten optionalen parameter "print-escape-p" bekommen, 
 speed auf 0 wenn reduzierte features?
 
 eql opencoden
+
+jm --lambda kracht, jm --lambda+ geht
