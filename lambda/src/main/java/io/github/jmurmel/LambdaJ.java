@@ -1219,7 +1219,7 @@ public class LambdaJ {
             sRequire = internReserved("require");
             sProvide = internReserved("provide");
 
-            sDeclaim =  intern("declaim"); // todo reserve?
+            sDeclaim =  internReserved("declaim");
             sOptimize = intern("optimize");
             sSpeed =    intern("speed");
             sDebug =    intern("debug");

@@ -277,7 +277,7 @@ may not be used as a function nor as a variable:
 
     nil, t,
     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
-    setq, apply, progn, defmacro
+    setq, apply, progn, defmacro, declaim
 
 
 ## Variables and Scope 

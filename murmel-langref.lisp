@@ -277,7 +277,7 @@ pi ; ==> 3.141592653589793
 ;
 ;     nil, t,
 ;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
-;     setq, apply, progn, defmacro
+;     setq, apply, progn, defmacro, declaim
 
 
 ;;; == Variables and Scope ============
