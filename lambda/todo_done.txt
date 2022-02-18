@@ -1230,3 +1230,5 @@ eql opencoden
 jm --lambda kracht, jm --lambda+ geht
 
 assq exposen
+
+opencoden im interpreter

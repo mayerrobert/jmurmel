@@ -1226,12 +1226,27 @@ public class LambdaJ {
             sSafety =   intern("safety");
             sSpace =    intern("space");
 
+            sNeq =     intern("=");
+            sNe  =     intern("/=");
+            sLt  =     intern("<");
+            sLe  =     intern("<=");
+            sGe  =     intern(">=");
+            sGt  =     intern(">");
+            
+            sAdd =     intern("+");
+            sMul =     intern("*");
+            sSub =     intern("-");
+            sDiv =     intern("/");
+            
             sCar =     intern("car");
             sCdr =     intern("cdr");
             sCons =    intern("cons");
             sEq =      intern("eq");
             sEql =     intern("eql");
             sNull =    intern("null");
+            
+            sInc =     intern("1+");
+            sDec =     intern("1-");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1255,7 +1270,7 @@ public class LambdaJ {
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for opencoded functions */
-    private LambdaJSymbol sCar, sCdr, sCons, sEq, sEql, sNull;
+    private LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec;
 
     private Supplier<Object> expTrue;
 
@@ -1634,13 +1649,32 @@ public class LambdaJ {
                         } else {
                             argList = evlis(arguments, env, stack, level, traceLvl);
                             if (speed >= 1) {
-                                if (operator == sCar)  { oneArg ("car", argList);   return caar(argList); }
-                                if (operator == sCdr)  { oneArg ("cdr", argList);   return cdar(argList); }
+                                // bringt ein bisserl performance (1x weniger eval und environment lookup).
+                                // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
+                                // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
+
+                                if (operator == sAdd)  { return makeAddOp(argList, "+", 0.0, (lhs, rhs) -> lhs + rhs); } 
+                                if (operator == sMul)  { return makeAddOp(argList, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
+                                if (operator == sSub)  { return makeSubOp(argList, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
+                                if (operator == sDiv)  { return makeSubOp(argList, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
+                                
+                                if (operator == sNeq)  { return compare(argList, "=",  (d1, d2) -> d1 == d2); }
+                                if (operator == sNe)   { return compare(argList, "/=", (d1, d2) -> d1 != d2); }
+                                if (operator == sLt)   { return compare(argList, "<",  (d1, d2) -> d1 <  d2);  }
+                                if (operator == sLe)   { return compare(argList, "<=", (d1, d2) -> d1 <= d2); }
+                                if (operator == sGe)   { return compare(argList, ">=", (d1, d2) -> d1 >= d2); }
+                                if (operator == sGt)   { return compare(argList, ">",  (d1, d2) -> d1 >  d2);  }
+
+                                if (operator == sCar)  { oneArg ("car",  argList);  return caar(argList); }
+                                if (operator == sCdr)  { oneArg ("cdr",  argList);  return cdar(argList); }
                                 if (operator == sCons) { twoArgs("cons", argList);  return cons(car(argList), cadr(argList)); }
 
-                                if (operator == sEq)   { twoArgs("eq", argList);    return boolResult(car(argList) == cadr(argList)); }
-                                if (operator == sEql)  { twoArgs("eql", argList);   return boolResult(cl_eql(car(argList), cadr(argList))); }
+                                if (operator == sEq)   { twoArgs("eq",   argList);  return boolResult(car(argList) == cadr(argList)); }
+                                if (operator == sEql)  { twoArgs("eql",  argList);  return boolResult(cl_eql(car(argList), cadr(argList))); }
                                 if (operator == sNull) { oneArg ("null", argList);  return boolResult(car(argList) == null); }
+
+                                if (operator == sInc)  { oneNumber("1+", argList);  return inc((Number)car(argList)); }
+                                if (operator == sDec)  { oneNumber("1-", argList);  return dec((Number)car(argList)); }
                             }
                             func = eval(operator, env, stack, level, traceLvl);
                             // fall through to "actually perform..."

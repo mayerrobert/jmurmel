@@ -1,9 +1,4 @@
-opencoden im interpreter
 
-
-
-
- 
 (f 1 2 . l) könnte als flacher call verarbeitet werden: ". l" wird durch den inhalt von l ersetzt
 -> kann man das kompilieren? wie?
 -> müsste wohl nach (apply f (append '(1 2) l)) entzuckert werden
