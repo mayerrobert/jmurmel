@@ -1224,6 +1224,12 @@ public class LambdaJ {
             sDebug =    intern("debug");
             sSafety =   intern("safety");
             sSpace =    intern("space");
+
+            sCar =     intern("car");
+            sCdr =     intern("cdr");
+            sCons =    intern("cons");
+            sEq =      intern("eq");
+            sNull =    intern("null");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1245,6 +1251,9 @@ public class LambdaJ {
     private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
             sSetQ, sApply, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
+    
+    /** well known symbols for opencoded functions */
+    private LambdaJSymbol sCar, sCdr, sCons, sEq, sNull;
 
     private Supplier<Object> expTrue;
 
@@ -1621,8 +1630,16 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            func = eval(operator, env, stack, level, traceLvl);
                             argList = evlis(arguments, env, stack, level, traceLvl);
+                            if (speed >= 1) {
+                                if (operator == sCar)  { oneArg ("car", argList);   return caar(argList); }
+                                if (operator == sCdr)  { oneArg ("cdr", argList);   return cdar(argList); }
+                                if (operator == sCons) { twoArgs("cons", argList);  return cons(car(argList), cadr(argList)); }
+
+                                if (operator == sEq)   { twoArgs("eq", argList);    return boolResult(car(argList) == cadr(argList)); }
+                                if (operator == sNull) { oneArg ("null", argList);  return boolResult(car(argList) == null); }
+                            }
+                            func = eval(operator, env, stack, level, traceLvl);
                             // fall through to "actually perform..."
                         }
 
@@ -3141,8 +3158,8 @@ public class LambdaJ {
         }
 
         if (haveCons()) {
-            env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    if (car(a) == null) return null; return caar(a); },
-                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    if (car(a) == null) return null; return cdar(a); },
+            env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    return caar(a); },
+                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
                   addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
                   env)));
         }
@@ -5049,14 +5066,14 @@ public class LambdaJ {
                     final ConsCell args = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
                     if (interpreter().speed >= 1) {
-                        // * some functions and operators are opencoded:
-                        //     - number operators
+                        /// * some functions and operators are opencoded:
+                        ///     - number operators
                         if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "-")) { nArgs("-",  args, 1); subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "/")) { nArgs("/",  args, 1); subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return; }
 
-                        //     - number compare operators
+                        ///     - number compare operators
                         if (isSymbol(op, "="))  { nArgs("=",  args, 1); compareNum(sb, "numbereq", args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "/=")) { nArgs("/=", args, 1); compareNum(sb, "ne",       args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, "<"))  { nArgs("<",  args, 1); compareNum(sb, "lt",       args, env, topEnv, rsfx); return; }
@@ -5064,17 +5081,17 @@ public class LambdaJ {
                         if (isSymbol(op, ">=")) { nArgs(">=", args, 1); compareNum(sb, "ge",       args, env, topEnv, rsfx); return; }
                         if (isSymbol(op, ">"))  { nArgs(">",  args, 1); compareNum(sb, "gt",       args, env, topEnv, rsfx); return; }
 
-                        //     - cons, car, cdr
+                        ///     - cons, car, cdr
                         if (isSymbol(op, "car"))  { oneArg("car", args);   sb.append("car(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                         if (isSymbol(op, "cdr"))  { oneArg("cdr", args);   sb.append("cdr(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                         if (isSymbol(op, "cons")) { twoArgs("cons", args); sb.append("cons("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
                                                                            formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
 
-                        //     - eq, not
+                        ///     - eq, not
                         if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
                         if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
 
-                        // inc, dec
+                        ///     - inc, dec
                         if (isSymbol(op, "1+"))   { oneArg("1+", args);  sb.append("inc1(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                         if (isSymbol(op, "1-"))   { oneArg("1-", args);  sb.append("dec1(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
                     }
