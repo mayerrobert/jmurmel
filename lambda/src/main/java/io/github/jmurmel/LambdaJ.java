@@ -442,6 +442,7 @@ public class LambdaJ {
         this.tracer = tracer != null ? tracer : System.err::println;
         if (libDir != null) this.libDir = libDir;
         else this.libDir = murmelDir;
+        if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
     }
 
 
@@ -1218,7 +1219,7 @@ public class LambdaJ {
             sRequire = internReserved("require");
             sProvide = internReserved("provide");
 
-            sDeclaim =  intern("declaim");
+            sDeclaim =  intern("declaim"); // todo reserve?
             sOptimize = intern("optimize");
             sSpeed =    intern("speed");
             sDebug =    intern("debug");
@@ -1229,6 +1230,7 @@ public class LambdaJ {
             sCdr =     intern("cdr");
             sCons =    intern("cons");
             sEq =      intern("eq");
+            sEql =     intern("eql");
             sNull =    intern("null");
         }
 
@@ -1253,7 +1255,7 @@ public class LambdaJ {
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for opencoded functions */
-    private LambdaJSymbol sCar, sCdr, sCons, sEq, sNull;
+    private LambdaJSymbol sCar, sCdr, sCons, sEq, sEql, sNull;
 
     private Supplier<Object> expTrue;
 
@@ -1637,6 +1639,7 @@ public class LambdaJ {
                                 if (operator == sCons) { twoArgs("cons", argList);  return cons(car(argList), cadr(argList)); }
 
                                 if (operator == sEq)   { twoArgs("eq", argList);    return boolResult(car(argList) == cadr(argList)); }
+                                if (operator == sEql)  { twoArgs("eql", argList);   return boolResult(cl_eql(car(argList), cadr(argList))); }
                                 if (operator == sNull) { oneArg ("null", argList);  return boolResult(car(argList) == null); }
                             }
                             func = eval(operator, env, stack, level, traceLvl);
@@ -4246,6 +4249,7 @@ public class LambdaJ {
         public final Object _eval      (Object... args) { onetwoArg("eval",    args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public final Object _eq        (Object... args) { twoArg("eq",         args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArg("eql",        args.length); return cl_eql(args[0], args[1]) ? _t : null; }
+        public final Object eql       (Object o1, Object o2) { return cl_eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",       args.length); return args[0] == null ? _t : null; }
 
         public final Object _write     (Object... args) { onetwoArg("write",   args.length);  intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
@@ -5089,6 +5093,8 @@ public class LambdaJ {
 
                         ///     - eq, not
                         if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
+                        if (isSymbol(op, "eql"))  { twoArgs("eql", args); sb.append("eql("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
+                                                       formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
                         if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
 
                         ///     - inc, dec

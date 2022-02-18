@@ -1,6 +1,7 @@
-opencoden im interpreter
-eql opencoden
+jm --lambda kracht, jm --lambda+ geht
 
+opencoden im interpreter
+assq exposen
 
 
 

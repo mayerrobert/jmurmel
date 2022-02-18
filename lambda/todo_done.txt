@@ -1222,3 +1222,7 @@ let dynamic im interpreter
 gabriel 3.02_stak.lisp vereinfachen
 
 write, writeln, lnwrite sollten optionalen parameter "print-escape-p" bekommen, default t
+
+speed auf 0 wenn reduzierte features?
+
+eql opencoden
