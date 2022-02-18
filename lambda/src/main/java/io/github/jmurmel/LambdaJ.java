@@ -1189,6 +1189,7 @@ public class LambdaJ {
 
     public static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
+    private static final Object NOT_HANDLED = "cannot opencode";
 
     /** Look up the symbols for special forms only once. Also start to build the table of reserved words. */
     private void setSymtab(SymbolTable symtab) {
@@ -1326,7 +1327,7 @@ public class LambdaJ {
     /// ###  eval - the heart of most if not all Lisp interpreters
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
         Object func = null;
-        Object result = null;
+        Object result = null;  /* should be assigned even if followed by a "return" because it will be used in the "finally" clause*/
         Deque<Object> traceStack = null;
         ConsCell restore = null;
         boolean isTc = false;
@@ -1341,7 +1342,7 @@ public class LambdaJ {
 
                 /// eval - lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
-                    if (form == null) return null;
+                    if (form == null) { result = null; return null; }
                     final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
@@ -1364,7 +1365,6 @@ public class LambdaJ {
                     final ConsCell arguments = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
 
-
                     /// eval - special forms
 
                     /// eval - (quote exp) -> exp
@@ -1380,6 +1380,20 @@ public class LambdaJ {
                         return makeClosureFromForm(formCons, env);
                     }
 
+                    if (operator == sSetQ) {
+                        result = evalSetq(arguments, env, stack, level, traceLvl);
+                        return result;
+                    }
+
+                    if (operator == sDefmacro) {
+                        result = evalDefmacro(arguments, env, form);
+                        return result;
+                    }
+
+                    if (operator == sDeclaim) {
+                        result = declaim(level, arguments);
+                        return result;
+                    }
 
 
                     /// eval - special forms that change the global environment
@@ -1411,48 +1425,6 @@ public class LambdaJ {
                         continue tailcall;
                     }
 
-                    if (operator == sSetQ) {
-                        for (ConsCell pairs = arguments; pairs != null; ) {
-                            final Object symbol = car(pairs);
-                            if (!symbolp(symbol)) errorMalformed("setq", "a symbol", symbol);
-                            notReserved("setq", symbol);
-                            final ConsCell envEntry = assq(symbol, env);
-
-                            pairs = (ConsCell) cdr(pairs);
-                            if (pairs == null) errorMalformed("setq", "odd number of arguments");
-                            final Object value = eval(car(pairs), env, stack, level, traceLvl);
-                            if (envEntry == null)
-                                //insertFront(env, symbol, value);
-                                throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
-                            else envEntry.rplacd(value);
-                            result = value;
-                            pairs = (ConsCell) cdr(pairs);
-                        }
-                        return result;
-                    }
-
-                    if (operator == sDefmacro) {
-                        nArgs("defmacro", arguments, 1);
-                        final Object macroName = car(arguments);
-                        notReserved("defmacro", macroName);
-                        final int arglen = length(arguments);
-                        if (arglen == 1) {
-                            return macros.remove(macroName) != null ? macroName : null;
-                        }
-                        else if (arglen == 3) {
-                            final ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
-                            result = macroName;
-                            macros.put(result, closure);
-                            return result;
-                        }
-                        else errorMalformed("defmacro", printSEx(form));
-                    }
-
-                    if (operator == sDeclaim) {
-                        declaim(level, arguments);
-                        return null;
-                    }
-
 
                     /// eval - special forms that run expressions
 
@@ -1482,31 +1454,20 @@ public class LambdaJ {
                     /// eval - (load filespec) -> object
                     if (operator == sLoad) {
                         oneArg("load", arguments);
-                        return loadFile("load", car(arguments));
+                        result = loadFile("load", car(arguments));
+                        return result;
                     }
 
                     /// eval - (require modulename optfilespec) -> object
                     if (operator == sRequire) {
-                        nArgs("require", arguments, 1, 2);
-                        if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
-                        final Object modName = car(arguments);
-                        if (!modules.contains(modName)) {
-                            Object modFilePath = cadr(arguments);
-                            if (modFilePath == null) modFilePath = modName;
-                            final Object ret = loadFile("require", modFilePath);
-                            if (!modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
-                            return ret;
-                        }
-                        return null;
+                        result = evalRequire(arguments);
+                        return result;
                     }
 
                     /// eval - (provide modulename) -> nil
                     if (operator == sProvide) {
-                        oneArg("provide", arguments);
-                        if (!stringp(car(arguments))) errorMalformed("provide", "a string argument", arguments);
-                        final Object modName = car(arguments);
-                        modules.add(modName);
-                        return null;
+                        result = evalProvide(arguments);
+                        return result;
                     }
 
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
@@ -1550,8 +1511,8 @@ public class LambdaJ {
                         // fall through to "eval a list of forms"
 
 
-                    /// eval - (let optsymbol? (bindings...) bodyforms...) -> object
-                    /// eval - (let* optsymbol? (bindings...) bodyforms...) -> object
+                    /// eval - (let {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
+                    /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
                         final boolean letStar  = operator == sLetStar;
@@ -1649,32 +1610,8 @@ public class LambdaJ {
                         } else {
                             argList = evlis(arguments, env, stack, level, traceLvl);
                             if (speed >= 1) {
-                                // bringt ein bisserl performance (1x weniger eval und environment lookup).
-                                // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
-                                // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
-
-                                if (operator == sAdd)  { return makeAddOp(argList, "+", 0.0, (lhs, rhs) -> lhs + rhs); } 
-                                if (operator == sMul)  { return makeAddOp(argList, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
-                                if (operator == sSub)  { return makeSubOp(argList, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
-                                if (operator == sDiv)  { return makeSubOp(argList, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
-                                
-                                if (operator == sNeq)  { return compare(argList, "=",  (d1, d2) -> d1 == d2); }
-                                if (operator == sNe)   { return compare(argList, "/=", (d1, d2) -> d1 != d2); }
-                                if (operator == sLt)   { return compare(argList, "<",  (d1, d2) -> d1 <  d2);  }
-                                if (operator == sLe)   { return compare(argList, "<=", (d1, d2) -> d1 <= d2); }
-                                if (operator == sGe)   { return compare(argList, ">=", (d1, d2) -> d1 >= d2); }
-                                if (operator == sGt)   { return compare(argList, ">",  (d1, d2) -> d1 >  d2);  }
-
-                                if (operator == sCar)  { oneArg ("car",  argList);  return caar(argList); }
-                                if (operator == sCdr)  { oneArg ("cdr",  argList);  return cdar(argList); }
-                                if (operator == sCons) { twoArgs("cons", argList);  return cons(car(argList), cadr(argList)); }
-
-                                if (operator == sEq)   { twoArgs("eq",   argList);  return boolResult(car(argList) == cadr(argList)); }
-                                if (operator == sEql)  { twoArgs("eql",  argList);  return boolResult(cl_eql(car(argList), cadr(argList))); }
-                                if (operator == sNull) { oneArg ("null", argList);  return boolResult(car(argList) == null); }
-
-                                if (operator == sInc)  { oneNumber("1+", argList);  return inc((Number)car(argList)); }
-                                if (operator == sDec)  { oneNumber("1-", argList);  return dec((Number)car(argList)); }
+                                result = openCode(operator, argList);
+                                if (result != NOT_HANDLED) return result;
                             }
                             func = eval(operator, env, stack, level, traceLvl);
                             // fall through to "actually perform..."
@@ -1748,7 +1685,67 @@ public class LambdaJ {
         }
     }
 
-    private void declaim(int level, ConsCell arguments) {
+    private Object evalSetq(ConsCell arguments, ConsCell env, int stack, int level, int traceLvl) {
+        Object res = null;
+        for (ConsCell pairs = arguments; pairs != null; ) {
+            final Object symbol = car(pairs);
+            if (!symbolp(symbol)) errorMalformed("setq", "a symbol", symbol);
+            notReserved("setq", symbol);
+            final ConsCell envEntry = assq(symbol, env);
+
+            pairs = (ConsCell) cdr(pairs);
+            if (pairs == null) errorMalformed("setq", "odd number of arguments");
+            final Object value = eval(car(pairs), env, stack, level, traceLvl);
+            if (envEntry == null)
+                //insertFront(env, symbol, value);
+                throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
+            else envEntry.rplacd(value);
+            res = value;
+            pairs = (ConsCell) cdr(pairs);
+        }
+        return res;
+    }
+
+    private Object evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
+        nArgs("defmacro", arguments, 1);
+        final Object macroName = car(arguments);
+        notReserved("defmacro", macroName);
+        final int arglen = length(arguments);
+        if (arglen == 1) {
+            return macros.remove(macroName) != null ? macroName : null;
+        }
+        else if (arglen == 3) {
+            final ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
+            macros.put(macroName, closure);
+            return macroName;
+        }
+        else errorMalformed("defmacro", printSEx(form));
+        return null; // notreached
+    }
+
+    private Object evalRequire(ConsCell arguments) {
+        nArgs("require", arguments, 1, 2);
+        if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
+        final Object modName = car(arguments);
+        if (!modules.contains(modName)) {
+            Object modFilePath = cadr(arguments);
+            if (modFilePath == null) modFilePath = modName;
+            final Object ret = loadFile("require", modFilePath);
+            if (!modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+            return ret;
+        }
+        return null;
+    }
+
+    private Object evalProvide(ConsCell arguments) {
+        oneArg("provide", arguments);
+        if (!stringp(car(arguments))) errorMalformed("provide", "a string argument", arguments);
+        final Object modName = car(arguments);
+        modules.add(modName);
+        return null;
+    }
+
+    private Object declaim(int level, ConsCell arguments) {
         if (level != 1) throw new LambdaJError("declaim: must be a toplevel form");
         if (caar(arguments) == sOptimize) {
             final Object rest = cdar(arguments);
@@ -1759,6 +1756,7 @@ public class LambdaJ {
                 speed = ((Number)speedo).intValue();
             }
         }
+        return null;
     }
 
     private Object mexpand(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
@@ -1770,6 +1768,37 @@ public class LambdaJ {
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, stack, level, traceLvl);
         return expansion;
+    }
+
+    private Object openCode(Object op, ConsCell args) {
+        // bringt ein bisserl performance (1x weniger eval und environment lookup).
+        // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
+        // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
+
+        if (op == sAdd)  { return makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
+        if (op == sMul)  { return makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
+        if (op == sSub)  { return makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
+        if (op == sDiv)  { return makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
+
+        if (op == sNeq)  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
+        if (op == sNe)   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
+        if (op == sLt)   { return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
+        if (op == sLe)   { return compare(args, "<=", (d1, d2) -> d1 <= d2); }
+        if (op == sGe)   { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
+        if (op == sGt)   { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
+
+        if (op == sCar)  { oneArg ("car",  args);  return caar(args); }
+        if (op == sCdr)  { oneArg ("cdr",  args);  return cdar(args); }
+        if (op == sCons) { twoArgs("cons", args);  return cons(car(args), cadr(args)); }
+
+        if (op == sEq)   { twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
+        if (op == sEql)  { twoArgs("eql",  args);  return boolResult(cl_eql(car(args), cadr(args))); }
+        if (op == sNull) { oneArg ("null", args);  return boolResult(car(args) == null); }
+
+        if (op == sInc)  { oneNumber("1+", args);  return inc((Number)car(args)); }
+        if (op == sDec)  { oneNumber("1-", args);  return dec((Number)car(args)); }
+
+        return NOT_HANDLED;
     }
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
