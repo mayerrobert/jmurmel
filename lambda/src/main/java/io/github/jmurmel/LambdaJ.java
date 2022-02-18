@@ -3076,9 +3076,10 @@ public class LambdaJ {
                   addBuiltin("listp",   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); },
                   addBuiltin("null",    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); },
                   addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
+                  addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",  a);   return assq(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
                   addBuiltin("eql", (Primitive) a -> { twoArgs("eql", a);   return boolResult(cl_eql(car(a), cadr(a))); },
-                  env)))))));
+                  env))))))));
 
             env = addBuiltin("append",  (Primitive) a -> append(listToArray(a)),
                   env);
@@ -4269,6 +4270,7 @@ public class LambdaJ {
         public final Object _floatp    (Object... args) { oneArg("floatp",     args.length); return floatp    (args[0]) ? _t : null; }
 
         public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
+        public final ConsCell _assq    (Object... args) { twoArg("assq",       args.length); return assq(args[0], args[1]); }
         public final ConsCell _list    (Object... args) {
             if (args == null || args.length == 0) return null;
             final ListBuilder ret = new ListBuilder();
@@ -4689,7 +4691,7 @@ public class LambdaJ {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 "eval", "eq", "eql", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
-                "assoc", "list", "append",
+                "assoc", "assq", "list", "append",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",

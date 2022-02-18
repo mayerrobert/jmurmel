@@ -21,6 +21,7 @@
 
 #-murmel (defun writeln () (terpri))
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
+#-murmel (defun assq (key alist) (assoc key alist :test #'eq))
 
 
 ;;; Test "framework":
@@ -193,6 +194,11 @@
 
 (deftest eql.17 (eql -0.0 -0.0) t)
 (deftest eql.18 (eql -0.0 0.0) nil)
+
+
+;;; test assq
+(deftest assq.1 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))  '(a-key 3))
+(deftest assq.2 (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
 
 
 ;;; test number comparison operators

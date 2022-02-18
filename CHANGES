@@ -1,14 +1,17 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
- * mlib: added functions compose, map-into, curry, rcurry
- * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
- * "(declaim (optimize..."
- * some functions are opencoded
- * add limited support for "macroexpand-1" in compiled code (quoted forms only)
  * support "let dynamic" and "let* dynamic"
    (before only "let* dynamic" in interpreted code was supported)
+ * add function "assq"
  * write, writeln, lnwrite now accept an optional parameter print-escape-p
+ * "(declaim (optimize..."
+
+ * mlib: added functions compose, map-into, curry, rcurry
+ * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
+
+ * add limited support for "macroexpand-1" in compiled code (quoted forms only)
+ * some functions are opencoded
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
  * fixed "append" for compiled code

@@ -615,6 +615,10 @@ pi ; ==> 3.141592653589793
 (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
 (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ; ==> (nil 2)
 
+; = (assq key alist) -> cons or nil
+;
+; `assq` is similar to `assoc` except `assq` compares keys using `eq`.
+
 ; = (append lists...) -> list
 ;
 ; `append` nondestructively append it's arguments. All arguments except the last
