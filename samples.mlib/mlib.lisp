@@ -44,6 +44,7 @@
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
 ;;; - [compose](#function-compose)
+;;; - [conjoin](#function-conjoin)
 ;;; - [curry](#function-curry), [rcurry](#function-rcurry)
 ;;; - [with-gensyms](#macro-with-gensyms)
 ;;;
@@ -1036,6 +1037,29 @@
         (let ((g (apply compose more)))
           (lambda args (f (apply g args))))
     f))
+
+
+;;; = Function: conjoin
+;;;     (conjoin predicate more-predicates*) -> function
+;;;
+;;; Returns a function that applies each of `predicate` and `more-predicates`
+;;; functions in turn to its arguments, returning `nil` if any of the predicates
+;;; returns false, without calling the remaining predicates. If none of the
+;;; predicates returns false, returns the value of the last predicate.
+(defun conjoin (predicate . more-predicates)
+  (if more-predicates
+
+        (lambda arguments
+          (and (apply predicate arguments)
+               (let loop ((tail (cdr more-predicates))
+                          (head (car more-predicates)))
+                 (if tail
+                       (if (apply head arguments)
+                             (loop (cdr tail) (car tail))
+                         nil)
+                   (apply head arguments)))))
+
+    predicate))
 
 
 ;;; = Function: curry

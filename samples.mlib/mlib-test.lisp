@@ -580,6 +580,25 @@
 )
 
 
+; test conjoin
+#+murmel
+(tests conjoin
+    (let ((conjunction (conjoin #'consp
+                                (lambda (x)
+                                  (stringp (car x)))
+                                (lambda (x)
+                                  (char (car x) 0)))))
+      (list (#-murmel funcall conjunction 'zot)
+            (#-murmel funcall conjunction '(foo))
+            (#-murmel funcall conjunction '("foo"))))
+    => (nil nil #\f)
+
+    (let ((conjunction (conjoin #'zerop)))
+      (list (#-murmel funcall conjunction 0)
+            (#-murmel funcall conjunction 1)))
+    => (t nil))
+
+
 ; test curry and rcurry
 #+murmel
 (tests curry

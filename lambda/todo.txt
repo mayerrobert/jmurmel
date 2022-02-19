@@ -1,3 +1,5 @@
+mlib: conjoin, disjoin
+
 
 (f 1 2 . l) könnte als flacher call verarbeitet werden: ". l" wird durch den inhalt von l ersetzt
 -> kann man das kompilieren? wie?

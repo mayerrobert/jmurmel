@@ -44,6 +44,7 @@ mlib provides the following Common Lisp-like functions and macros:
 functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 
 - [compose](#function-compose)
+- [conjoin](#function-conjoin)
 - [curry](#function-curry), [rcurry](#function-rcurry)
 - [with-gensyms](#macro-with-gensyms)
 
@@ -452,6 +453,13 @@ The input arity of the last function is unrestricted, and it becomes the corresp
 of the resulting composition.
 
 When exactly one function is given, it is returned.
+### Function: conjoin
+    (conjoin predicate more-predicates*) -> function
+
+Returns a function that applies each of `predicate` and `more-predicates`
+functions in turn to its arguments, returning `nil` if any of the predicates
+returns false, without calling the remaining predicates. If none of the
+predicates returns false, returns the value of the last predicate.
 ### Function: curry
     (curry func args*) -> function
 
