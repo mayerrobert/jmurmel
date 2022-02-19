@@ -1,16 +1,16 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
- * support "let dynamic" and "let* dynamic"
-   (before only "let* dynamic" in interpreted code was supported)
- * add function "assq"
- * write, writeln, lnwrite now accept an optional parameter print-escape-p
- * "(declaim (optimize..."
+ * added "let dynamic" and "let* dynamic"
+   (before 1.2 only "let* dynamic" in interpreted code was supported)
+ * added function assq
+ * added  an optional parameter print-escape-p for write, writeln, lnwrite
+ * added "(declaim (optimize..."
 
- * mlib: added functions compose, conjoin, map-into, curry, rcurry
+ * mlib: added functions compose, conjoin, disjoin, map-into, curry, rcurry
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
- * add limited support for "macroexpand-1" in compiled code (quoted forms only)
+ * added limited support for "macroexpand-1" in compiled code (quoted forms only)
  * some functions are opencoded
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
@@ -20,10 +20,10 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0
 
- * feature expressions #+, #-, and, or, not
- * reader macros #b #o #f for binary, oct and hex, #\ for characters,
+ * added feature expressions #+, #-, and, or, not
+ * added reader macros #b #o #f for binary, oct and hex, #\ for characters,
    accept (and ignore) #'
- * load, require, provide
- * default library "mlib"
- * documentation in markdown (murmel-langref.md, mlib.md)
- * numerous bugfixes
+ * added load, require, provide
+ * added default library "mlib"
+ * added documentation in markdown (murmel-langref.md, mlib.md)
+ * fixed numerous bugs

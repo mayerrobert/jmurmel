@@ -1232,3 +1232,5 @@ jm --lambda kracht, jm --lambda+ geht
 assq exposen
 
 opencoden im interpreter
+
+mlib: conjoin, disjoin

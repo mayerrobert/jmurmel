@@ -44,7 +44,7 @@
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
 ;;; - [compose](#function-compose)
-;;; - [conjoin](#function-conjoin)
+;;; - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 ;;; - [curry](#function-curry), [rcurry](#function-rcurry)
 ;;; - [with-gensyms](#macro-with-gensyms)
 ;;;
@@ -1060,6 +1060,21 @@
                    (apply head arguments)))))
 
     predicate))
+
+
+;;; = Function: disjoin
+;;;     (disjoin predicate more-predicates*) -> function
+;;;
+;;; Returns a function that applies each of `predicate` and `more-predicates`
+;;; functions in turn to its arguments, returning the value of the first
+;;; predicate that returns true, without calling the remaining predicates.
+;;; If none of the predicates returns true, `nil` is returned.
+(defun disjoin (predicate . more-predicates)
+  (lambda arguments
+    (or (apply predicate arguments)
+        (some (lambda (p)
+                (apply p arguments))
+          more-predicates))))
 
 
 ;;; = Function: curry

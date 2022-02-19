@@ -599,6 +599,28 @@
     => (t nil))
 
 
+; test disjoin
+#+murmel (define :cons ':cons)
+#+murmel (define :string ':string)
+
+#+murmel
+(tests disjoin
+    (let ((disjunction (disjoin (lambda (x)
+                                  (and (consp x) :cons))
+                                (lambda (x)
+                                  (and (stringp x) :string)))))
+      (list (#-murmel funcall disjunction 'zot)
+            (#-murmel funcall disjunction '(foo bar))
+            (#-murmel funcall disjunction "test")))
+  => (nil :cons :string)
+
+
+    (let ((disjunction (disjoin #'zerop)))
+      (list (#-murmel funcall disjunction 0)
+            (#-murmel funcall disjunction 1)))
+  => (t nil))
+
+
 ; test curry and rcurry
 #+murmel
 (tests curry
