@@ -1391,7 +1391,7 @@ public class LambdaJ {
                     }
 
                     if (operator == sDeclaim) {
-                        result = declaim(level, arguments);
+                        result = evalDeclaim(level, arguments);
                         return result;
                     }
 
@@ -1522,8 +1522,7 @@ public class LambdaJ {
                         // fall through to "eval a list of forms"
 
                     } else if (macros.containsKey(operator)) {
-                        if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(env));
-                        form = mexpand(operator, arguments, stack, level, traceLvl);
+                        form = evalMacro(operator, arguments, stack, level, traceLvl);
                         isTc = true; continue tailcall;
                     }
 
@@ -1549,7 +1548,7 @@ public class LambdaJ {
                         } else {
                             argList = evlis(arguments, env, stack, level, traceLvl);
                             if (speed >= 1) {
-                                result = opencode(operator, argList);
+                                result = evalOpencode(operator, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
                             func = eval(operator, env, stack, level, traceLvl);
@@ -1579,7 +1578,7 @@ public class LambdaJ {
                             if (closure == null) nArgs("lambda application", lambda, 1); // if closure != null then it was created by the special form lambda, no need to check again
                             env = zip(closure != null ? closure : env, car(lambda), argList);
 
-                            if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(env));
+                            if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
                             forms = (ConsCell) cdr(lambda);
                             // fall through to "eval a list of forms"
 
@@ -1684,7 +1683,7 @@ public class LambdaJ {
         return null;
     }
 
-    private Object declaim(int level, ConsCell arguments) {
+    private Object evalDeclaim(int level, ConsCell arguments) {
         if (level != 1) throw new LambdaJError("declaim: must be a toplevel form");
         if (caar(arguments) == sOptimize) {
             final Object rest = cdar(arguments);
@@ -1766,7 +1765,9 @@ public class LambdaJ {
         return new ConsCell[] {_forms, extenv, restore};
     }
     
-    private Object mexpand(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
+    private Object evalMacro(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
+        if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
+
         final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
         nArgs("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
@@ -1777,7 +1778,7 @@ public class LambdaJ {
         return expansion;
     }
 
-    private Object opencode(Object op, ConsCell args) {
+    private Object evalOpencode(Object op, ConsCell args) {
         // bringt ein bisserl performance (1x weniger eval und environment lookup).
         // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
         // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
@@ -2837,7 +2838,7 @@ public class LambdaJ {
         final Object operator = caar(args);
         if (!macros.containsKey(operator)) return car(args);
         final ConsCell arguments = (ConsCell) cdar(args);
-        return mexpand(operator, arguments, 0, 0, 0);
+        return evalMacro(operator, arguments, 0, 0, 0);
     }
 
     private int gensymCounter;
@@ -4926,7 +4927,7 @@ public class LambdaJ {
             }
 
             if (consp(form) && interpreter().macros.containsKey(car(form))) {
-                final Object expansion = interpreter().mexpand(car(form), (ConsCell) cdr(form), 0, 0, 0);
+                final Object expansion = interpreter().evalMacro(car(form), (ConsCell) cdr(form), 0, 0, 0);
                 globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
             } else if (consp(form) && car(form) == interpreter().sLoad) {
                 oneArg("load", cdr(form));
@@ -4948,7 +4949,7 @@ public class LambdaJ {
                 final Object modName = cadr(form);
                 interpreter().modules.add(modName);
             } else if (consp(form) && car(form) == interpreter().sDeclaim) {
-                interpreter().declaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
+                interpreter().evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
                 bodyForms.add(form);
             } else bodyForms.add(form);
 
@@ -5282,14 +5283,14 @@ public class LambdaJ {
                     }
 
                     if (interpreter().sDeclaim == op) {
-                        interpreter().declaim(rsfx, args);
+                        interpreter().evalDeclaim(rsfx, args);
                         sb.append("null");
                         return;
                     }
 
                     /// * macro expansion
                     if (intp != null && intp.macros.containsKey(op)) {
-                        final Object expansion = interpreter().mexpand(op, args, 0, 0, 0);
+                        final Object expansion = interpreter().evalMacro(op, args, 0, 0, 0);
                         formToJava(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
