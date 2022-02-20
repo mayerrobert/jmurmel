@@ -1494,20 +1494,9 @@ public class LambdaJ {
 
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (operator == sLabels) {
-                        nArgs("labels", arguments, 1);
-                        final ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
-                        // stick the functions into the env
-                        if (car(arguments) != null)
-                            for (Object binding: (ConsCell) car(arguments)) {
-                                if (!consp(binding)) errorMalformed("labels", "a list (symbol (params...) forms...)", binding);
-                                final ConsCell currentFunc = (ConsCell)binding;
-                                final Object currentSymbol = car(currentFunc);
-                                notReserved("labels", currentSymbol);
-                                final ConsCell lambda = makeClosure(cdr(currentFunc), extEnv);
-                                insertFront(extEnv, currentSymbol, lambda);
-                            }
-                        forms = (ConsCell) cdr(arguments);
-                        env = extEnv;
+                        final ConsCell[] ret = evalLabels(arguments, env);
+                        forms = ret[0];
+                        env = ret[1];
                         // fall through to "eval a list of forms"
 
 
@@ -1695,6 +1684,23 @@ public class LambdaJ {
             }
         }
         return null;
+    }
+
+    private ConsCell[] evalLabels(ConsCell arguments, ConsCell env) {
+        nArgs("labels", arguments, 1);
+        final ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
+        // stick the functions into the env
+        if (car(arguments) != null)
+            for (Object binding: (ConsCell) car(arguments)) {
+                if (!consp(binding)) errorMalformed("labels", "a list (symbol (params...) forms...)", binding);
+                final ConsCell currentFunc = (ConsCell)binding;
+                final Object currentSymbol = car(currentFunc);
+                notReserved("labels", currentSymbol);
+                final ConsCell lambda = makeClosure(cdr(currentFunc), extEnv);
+                insertFront(extEnv, currentSymbol, lambda);
+            }
+        final ConsCell[] ret = new ConsCell[] { (ConsCell) cdr(arguments), extEnv};
+        return ret;
     }
 
     private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
