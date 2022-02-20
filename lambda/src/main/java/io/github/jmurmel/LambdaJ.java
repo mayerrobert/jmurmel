@@ -1610,7 +1610,7 @@ public class LambdaJ {
                         } else {
                             argList = evlis(arguments, env, stack, level, traceLvl);
                             if (speed >= 1) {
-                                result = openCode(operator, argList);
+                                result = opencode(operator, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
                             func = eval(operator, env, stack, level, traceLvl);
@@ -1770,15 +1770,15 @@ public class LambdaJ {
         return expansion;
     }
 
-    private Object openCode(Object op, ConsCell args) {
+    private Object opencode(Object op, ConsCell args) {
         // bringt ein bisserl performance (1x weniger eval und environment lookup).
         // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
         // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
 
-        if (op == sAdd)  { return makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
-        if (op == sMul)  { return makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
-        if (op == sSub)  { return makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
-        if (op == sDiv)  { return makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
+        if (op == sAdd)  { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
+        if (op == sMul)  { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
+        if (op == sSub)  { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
+        if (op == sDiv)  { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
 
         if (op == sNeq)  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
         if (op == sNe)   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
@@ -2764,8 +2764,8 @@ public class LambdaJ {
         return expTrue.get();
     }
 
-    /** generate operator for zero or more args */
-    private static Object makeAddOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
+    /** operator for zero or more args */
+    private static Object addOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         numberArgs(opName, args);
         if (car(args) == null) return startVal;
         double result = ((Number)car(args)).doubleValue();
@@ -2774,8 +2774,8 @@ public class LambdaJ {
         return result;
     }
 
-    /** generate operator for one or more args */
-    private static Object makeSubOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
+    /** operator for one or more args */
+    private static Object subOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
         oneOrMoreNumbers(opName, args);
         double result = ((Number)car(args)).doubleValue();
         if (cdr(args) == null) return op.applyAsDouble(startVal, result);
@@ -2839,39 +2839,32 @@ public class LambdaJ {
     }
 
     private String format(ConsCell a) {
-        final String func = "format";
-        nArgs(func, a, 2);
-        final boolean toString = car(a) == null;
-        a = (ConsCell) cdr(a);
-        stringArg(func, "second argument", a);
-        final String s = (String) car(a);
-        final Object[] args = listToArray(cdr(a));
-        try {
-            if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
-            if (!haveIO()) throw new LambdaJError(true, "%s: I/O is disabled", func);
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
-            lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
-            return null;
-        } catch (IllegalFormatException e) {
-            throw new LambdaJError(true, "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
-        }
+        return format(false, a);
     }
 
     private String formatLocale(ConsCell a) {
-        final String func = "format-locale";
-        nArgs(func, a, 3);
+        return format(true, a);
+    }
+
+    private String format(boolean locale, ConsCell a) {
+        final String func = locale ? "format-locale" : "format";
+        nArgs(func, a, locale ? 3 : 2);
         final boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
 
         final String locString;
-        if (car(a) != null) {
-            stringArg(func, "first argument", a);
-            locString = (String) car(a);
-        } else locString = null;
+        if (locale) {
+            if (car(a) != null) {
+                stringArg(func, "first argument", a);
+                locString = (String)car(a);
+            } else locString = null;
+            a = (ConsCell)cdr(a);
+        }
+        else locString = null;
 
-        stringArg(func, "third argument", (ConsCell) cdr(a));
-        final String s = (String) cadr(a);
-        final Object[] args = listToArray(cddr(a));
+        stringArg(func, locale ? "third argument" : "second argument", a);
+        final String s = (String) car(a);
+        final Object[] args = listToArray(cdr(a));
         try {
             if (locString == null) {
                 if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
@@ -3212,10 +3205,10 @@ public class LambdaJ {
                   addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
                   env))))));
 
-            env = addBuiltin("+",       (Primitive) args -> makeAddOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
-                  addBuiltin("-",       (Primitive) args -> makeSubOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
-                  addBuiltin("*",       (Primitive) args -> makeAddOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
-                  addBuiltin("/",       (Primitive) args -> makeSubOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
+            env = addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
+                  addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
+                  addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
+                  addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
                   env))));
         }
 
@@ -5303,7 +5296,7 @@ public class LambdaJ {
 
                     /// * some functions and operators are opencoded:
                     if (interpreter().speed >= 1) {
-                        if (openCode(sb, op, args, env, topEnv, rsfx)) return;
+                        if (opencode(sb, op, args, env, topEnv, rsfx)) return;
                     }
 
                     /// * function call
@@ -5744,7 +5737,7 @@ public class LambdaJ {
             }
         }
 
-        private boolean openCode(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private boolean opencode(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
