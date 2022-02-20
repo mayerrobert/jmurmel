@@ -1,6 +1,4 @@
 
-letXX aus eval rausziehen, return tupel(form, extenv)
-
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 
 --no-nil geht nicht richtig: reparieren oder ausbauen

@@ -1515,71 +1515,10 @@ public class LambdaJ {
                     /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
-                        final boolean letStar  = operator == sLetStar;
-                        final boolean letRec   = operator == sLetrec;
-                        final boolean letDynamic = car(arguments) == sDynamic;
-                        if (letDynamic && letRec) errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
-                        final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
-
-                        final String op = letDynamic ? (operator + " dynamic") : (namedLet ? "named " : "") + operator;
-                        final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
-
-                        final Object _bindings = car(bindingsAndBodyForms);
-                        if (!listp(_bindings)) errorMalformed(op, "a list of bindings", _bindings);
-                        final ConsCell bindings = (ConsCell)_bindings;
-
-                        ConsCell extenv = env;
-                        if (bindings != null) {
-                            final Set<Object> seen = new HashSet<>();
-                            ConsCell newValues = null; // used for let dynamic
-                            extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
-                            for (Object binding : bindings) {
-                                final Object sym;
-                                final Object bindingForm;
-
-                                if (symbolp(binding)) {
-                                    sym = binding;
-                                    bindingForm = null;
-                                } else if (consp(binding) && symbolp(car(binding)) && listp(cdr(binding))) {
-                                    sym = car(binding);
-                                    bindingForm = cadr(binding);
-                                } else {
-                                    throw errorMalformed(op, "bindings to contain lists and/or symbols", binding);
-                                }
-
-                                notReserved(op, sym);
-
-                                boolean isNewSymbol = seen.add(sym);
-                                if (!letStar) { // let and letrec don't allow duplicate symbols
-                                    if (!isNewSymbol) errorMalformed(op, "duplicate symbol " + sym);
-                                }
-
-                                ConsCell newBinding = null;
-                                if (letDynamic) newBinding = assq(sym, topEnv);
-                                else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
-                                
-                                if (caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
-                                final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
-                                if (letDynamic && newBinding != null) {
-                                    if (isNewSymbol) restore = cons(cons(newBinding, cdr(newBinding)), restore);
-                                    if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
-                                    else newValues = cons((cons(newBinding, val)), newValues);
-                                }
-                                else if (letRec) newBinding.rplacd(val);
-                                else extenv = extendEnv(extenv, sym, val);
-                            }
-                            if (newValues != null) for (Object o: newValues) {
-                                ConsCell c = (ConsCell)o;
-                                ((ConsCell)car(c)).rplacd(cdr(c));
-                            }
-                        }
-                        forms = (ConsCell)cdr(bindingsAndBodyForms);
-                        if (namedLet) {
-                            final ConsCell bodyParams = extractParamList(op, bindings);
-                            final Object bodyForms = makeClosure(cons(bodyParams, forms), extenv);   // (optsymbol . (lambda (params bodyforms)))
-                            insertFront(extenv, car(arguments), bodyForms);
-                        }
-                        env = extenv;
+                        ConsCell[] ret = evalLet(operator, arguments, env, restore, stack, level, traceLvl);
+                        forms = ret[0];
+                        env = ret[1];
+                        restore = ret[2];
                         // fall through to "eval a list of forms"
 
                     } else if (macros.containsKey(operator)) {
@@ -1759,6 +1698,74 @@ public class LambdaJ {
         return null;
     }
 
+    private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
+        final boolean letStar  = operator == sLetStar;
+        final boolean letRec   = operator == sLetrec;
+        final boolean letDynamic = car(arguments) == sDynamic;
+        if (letDynamic && letRec) throw errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
+        final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
+
+        final String op = letDynamic ? (operator + " dynamic") : (namedLet ? "named " : "") + operator;
+        final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
+
+        final Object _bindings = car(bindingsAndBodyForms);
+        if (!listp(_bindings)) throw errorMalformed(op, "a list of bindings", _bindings);
+        final ConsCell bindings = (ConsCell)_bindings;
+
+        ConsCell extenv = env;
+        if (bindings != null) {
+            final Set<Object> seen = new HashSet<>();
+            ConsCell newValues = null; // used for let dynamic
+            extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
+            for (Object binding : bindings) {
+                final Object sym;
+                final Object bindingForm;
+
+                if (symbolp(binding)) {
+                    sym = binding;
+                    bindingForm = null;
+                } else if (consp(binding) && symbolp(car(binding)) && listp(cdr(binding))) {
+                    sym = car(binding);
+                    bindingForm = cadr(binding);
+                } else {
+                    throw errorMalformed(op, "bindings to contain lists and/or symbols", binding);
+                }
+
+                notReserved(op, sym);
+
+                boolean isNewSymbol = seen.add(sym);
+                if (!letStar) { // let and letrec don't allow duplicate symbols
+                    if (!isNewSymbol) throw errorMalformed(op, "duplicate symbol " + sym);
+                }
+
+                ConsCell newBinding = null;
+                if (letDynamic) newBinding = assq(sym, topEnv);
+                else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
+
+                if (caddr(binding) != null) throw errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
+                if (letDynamic && newBinding != null) {
+                    if (isNewSymbol) restore = cons(cons(newBinding, cdr(newBinding)), restore);
+                    if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
+                    else newValues = cons(cons(newBinding, val), newValues);
+                }
+                else if (letRec) newBinding.rplacd(val);
+                else extenv = extendEnv(extenv, sym, val);
+            }
+            if (newValues != null) for (Object o: newValues) {
+                ConsCell c = (ConsCell)o;
+                ((ConsCell)car(c)).rplacd(cdr(c));
+            }
+        }
+        final ConsCell _forms = (ConsCell)cdr(bindingsAndBodyForms);
+        if (namedLet) {
+            final ConsCell bodyParams = extractParamList(op, bindings);
+            final Object bodyForms = makeClosure(cons(bodyParams, _forms), extenv);   // (optsymbol . (lambda (params bodyforms)))
+            insertFront(extenv, car(arguments), bodyForms);
+        }
+        return new ConsCell[] {_forms, extenv, restore};
+    }
+    
     private Object mexpand(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
         final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))

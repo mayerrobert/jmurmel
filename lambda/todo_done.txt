@@ -1244,3 +1244,5 @@ makeAddOp() und makeSubOp(): richtig benamsen und beschreiben. die generieren ke
 
 format und formatLocale in eine methode zusammenziehen (mit boolean flag "locale")
 -> sind großteils copy&paste
+
+letXX aus eval rausziehen, return tupel(form, extenv)
