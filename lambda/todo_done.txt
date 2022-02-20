@@ -1234,3 +1234,8 @@ assq exposen
 opencoden im interpreter
 
 mlib: conjoin, disjoin
+
+in formToJava:
+-> methoden openCodeFuncall() und openCodeFuncall2() rausrefactoren (mit oder ohne argcheck?)
+-> ggf. den argcheck der opencoded operatoren aus formToJava rausschieben
+-> den ganzen opencode block nach unten zu functioncall schieben, ggf. in eine methode rausziehen, ggf. tabellengesteuert?

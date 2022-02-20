@@ -5136,39 +5136,6 @@ public class LambdaJ {
                     if (!listp(cdr(formCons))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
                     final ConsCell args = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
-                    if (interpreter().speed >= 1) {
-                        /// * some functions and operators are opencoded:
-                        ///     - number operators
-                        if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "-")) { nArgs("-",  args, 1); subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "/")) { nArgs("/",  args, 1); subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return; }
-
-                        ///     - number compare operators
-                        if (isSymbol(op, "="))  { nArgs("=",  args, 1); compareNum(sb, "numbereq", args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "/=")) { nArgs("/=", args, 1); compareNum(sb, "ne",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "<"))  { nArgs("<",  args, 1); compareNum(sb, "lt",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "<=")) { nArgs("<=", args, 1); compareNum(sb, "le",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, ">=")) { nArgs(">=", args, 1); compareNum(sb, "ge",       args, env, topEnv, rsfx); return; }
-                        if (isSymbol(op, ">"))  { nArgs(">",  args, 1); compareNum(sb, "gt",       args, env, topEnv, rsfx); return; }
-
-                        ///     - cons, car, cdr
-                        if (isSymbol(op, "car"))  { oneArg("car", args);   sb.append("car(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                        if (isSymbol(op, "cdr"))  { oneArg("cdr", args);   sb.append("cdr(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                        if (isSymbol(op, "cons")) { twoArgs("cons", args); sb.append("cons("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
-                                                                           formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
-
-                        ///     - eq, not
-                        if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return; }
-                        if (isSymbol(op, "eql"))  { twoArgs("eql", args); sb.append("eql("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(", ");
-                                                       formToJava(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return; }
-                        if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return; }
-
-                        ///     - inc, dec
-                        if (isSymbol(op, "1+"))   { oneArg("1+", args);  sb.append("inc1(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                        if (isSymbol(op, "1-"))   { oneArg("1-", args);  sb.append("dec1(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return; }
-                    }
-
 
                     /// * special forms:
 
@@ -5332,6 +5299,11 @@ public class LambdaJ {
                         if (interpreter().sQuote != caar(args)) throw new LambdaJError("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
                         quotedFormToJava(sb, intp.macroexpand1((ConsCell)cdar(args)));
                         return;
+                    }
+
+                    /// * some functions and operators are opencoded:
+                    if (interpreter().speed >= 1) {
+                        if (openCode(sb, op, args, env, topEnv, rsfx)) return;
                     }
 
                     /// * function call
@@ -5772,6 +5744,33 @@ public class LambdaJ {
             }
         }
 
+        private boolean openCode(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+
+            if (isSymbol(op, "="))  { compareNum(sb, "=", "numbereq", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "/=")) { compareNum(sb, "/=", "ne",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<"))  { compareNum(sb, "<",  "lt",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<=")) { compareNum(sb, "<=", "le",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">=")) { compareNum(sb, ">=", "ge",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">"))  { compareNum(sb, ">",  "gt",      args, env, topEnv, rsfx); return true; }
+
+            if (isSymbol(op, "car"))  { funcall1(sb, "car",  args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "cdr"))  { funcall1(sb, "cdr",  args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "cons")) { funcall2(sb, "cons", args, env, topEnv, rsfx); return true; }
+
+            if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "eql"))  { funcall2(sb, "eql", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return true; }
+
+            if (isSymbol(op, "1+"))   { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "1-"))   { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
+
+            return false;
+        }
+
         /** generate boolean op for one or two args */
         private void compareOp(WrappingWriter sb, String pred, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append('(').append('(');
@@ -5782,7 +5781,8 @@ public class LambdaJ {
         }
 
         /** compare two numbers */
-        private void compareNum(WrappingWriter sb, String pred, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void compareNum(WrappingWriter sb, String op, String pred, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            nArgs(op,  args, 1);
             sb.append(pred).append('(');
             formToJava(sb, car(args), env, topEnv, rsfx, false);
             if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
@@ -5809,6 +5809,7 @@ public class LambdaJ {
 
         /** generate double operator for one or more number args */
         private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            nArgs(op,  args, 1);
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, topEnv, rsfx); }
             else {
@@ -5818,6 +5819,23 @@ public class LambdaJ {
             sb.append(')');
         }
 
+        private void funcall1(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            funcall1(sb, func, func, args, env, topEnv, rsfx);
+        }
+
+        private void funcall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            oneArg(murmel, args);
+            sb.append(func).append("(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")");
+        }
+        
+        private void funcall2(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            twoArgs(func, args);
+            sb.append(func).append("(");
+            formToJava(sb, car(args), env, topEnv, rsfx, false);
+            sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+            sb.append(')');
+        }
+        
         /** eval form and change to double */
         private void asDouble(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null) throw new LambdaJError("not a number: nil");
