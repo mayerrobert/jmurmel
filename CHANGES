@@ -1,7 +1,7 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
- * added "let dynamic" and "let* dynamic"
+ * added more complete support for "let dynamic" and "let* dynamic"
    (before 1.2 only "let* dynamic" in interpreted code was supported)
  * added function assq
  * added  an optional parameter print-escape-p for write, writeln, lnwrite
@@ -16,6 +16,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * fixed compiled "let*"
  * fixed "append" for compiled code
  * fixed using rplaca on varargs list
+ * fixed/ cleaned up feature-flags
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

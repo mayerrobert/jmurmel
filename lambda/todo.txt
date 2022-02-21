@@ -1,5 +1,8 @@
-feature-flags: nil und t sollte nicht sofort wegfallen, erst bei --lambda+
-usage korrigieren: let, let*, ...
+turtle?
+gesondertes flag für setq, rplaca, rplacd? --no-mut
+backquotes, append, assoc, assq
+gesondertes flag für defmacro?
+
 
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 

@@ -385,6 +385,8 @@ public class LambdaJ {
 
         HAVE_XTRA,           // extra special forms such as if
 
+        HAVE_FFI,            // ::
+        
         HAVE_NUMBERS,        // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
 
         HAVE_DOUBLE,         // turns on Double support in the reader, you'll want NUMBERS as well
@@ -400,8 +402,8 @@ public class LambdaJ {
         HAVE_LAMBDA     { @Override public int bits() { return 0; } },
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
-        HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits(); } },
-        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_XTRA.bits()
+        HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits(); } },
+        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
                                                                | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits()
                                                                | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_UTIL.bits(); } },
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
@@ -416,6 +418,7 @@ public class LambdaJ {
     private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
     private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
     private boolean haveXtra()    { return (features & Features.HAVE_XTRA.bits())    != 0; }
+    private boolean haveFFI()     { return (features & Features.HAVE_FFI.bits())     != 0; }
     private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits()) != 0; }
     private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
     private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
@@ -3166,9 +3169,10 @@ public class LambdaJ {
                   env)))))));
 
             env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
-
+        }
+        
+        if (haveFFI()) {
             env = addBuiltin("::", (Primitive) LambdaJ::findJavaMethod, env);
-
         }
 
         if (haveAtom()) {
@@ -3989,6 +3993,7 @@ public class LambdaJ {
         if (hasFlag("--no-nil", args))      features &= ~Features.HAVE_NIL.bits();
         if (hasFlag("--no-t", args))        features &= ~Features.HAVE_T.bits();
         if (hasFlag("--no-extra", args))    features &= ~Features.HAVE_XTRA.bits();
+        if (hasFlag("--no-ffi", args))      features &= ~Features.HAVE_FFI.bits();
         if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_NUMBERS.bits() | Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
         if (hasFlag("--no-string", args))   features &= ~Features.HAVE_STRING.bits();
         if (hasFlag("--no-io", args))       features &= ~Features.HAVE_IO.bits();
@@ -4162,47 +4167,50 @@ public class LambdaJ {
     private static void showFeatureUsage() {
         System.out.println("Feature flags:\n"
                 + "\n"
-                + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
-                + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
-                + "--no-extra ....  no special forms 'eval', 'if', 'define', 'defun',\n"
-                + "                 'letrec', 'progn'\n"
+                + "--no-ffi ......  no function '::'\n"
+                + "--no-extra ....  no special forms eval, if, define, defun, defmacro,\n"
+                + "                 let, let*, letrec, progn, setq, rplaca, rplacd,\n"
+                + "                 load, require, provide, declaim\n"
+                + "                 no primitive functions trace, untrace, macroexpand-1\n"
                 + "--no-number ...  no number support\n"
                 + "--no-string ...  no string support\n"
-                + "--no-io .......  no primitive functions read/ write/ writeln/\n"
-                + "                 format/ format-locale\n"
-                + "--no-util .....  no primitive functions consp/ symbolp/ listp/ null/ assoc/\n"
-                + "                 format/ format-locale\n"
+                + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
+                + "--no-util .....  no primitive functions consp, symbolp, listp, null, assoc,\n"
+                + "                 format, format-locale\n"
                 + "                 no time related primitives\n"
                 + "\n"
                 + "--min+ ........  turn off all above features, leaving a Lisp\n"
-                + "                 with 10 primitives:\n"
+                + "                 with 10 special forms and primitives:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
-                + "                   the special form quote\n"
-                + "                   atom, eq, cons, car, cdr, lambda, apply, cond, labels\n"
+                + "                   the special forms quote, lambda, cond, labels\n"
+                + "                   the primitive functions atom, eq, cons, car, cdr, apply\n"
+                + "                   the symbols nil, t\n"
                 + "\n"
-                + "--no-apply ....  no special form 'apply'\n"
+                + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
+                + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
+                + "--no-apply ....  no function 'apply'\n"
                 + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
                 + "\n"
                 + "--min .........  turn off all above features, leaving a Lisp with\n"
-                + "                 8 special forms/ primitives:\n"
+                + "                 8 special forms and primitives:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
-                + "                   the special form quote\n"
-                + "                   atom, eq, cons, car, cdr, lambda, cond\n"
+                + "                   the special forms quote, lambda, cond\n"
+                + "                   the primitive functions atom, eq, cons, car, cdr\n"
                 + "\n"
                 + "--no-cons .....  no primitive functions cons/ car/ cdr\n"
                 + "--no-cond .....  no special form 'cond'\n"
                 + "\n"
                 + "--lambda+ .....  turn off pretty much everything except Lambda calculus,\n"
-                + "                 leaving a Lisp with 4 primitives:\n"
+                + "                 leaving a Lisp with 4 special forms and primitives:\n"
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
-                + "                   the special form quote\n"
-                + "                   atom, eq, lambda\n"
+                + "                   the special form quote, lambda\n"
+                + "                   the primitive functions atom, eq\n"
                 + "\n"
                 + "--no-atom .....  no primitive function 'atom'\n"
                 + "--no-eq .......  no primitive function 'eq'\n"
@@ -4213,7 +4221,7 @@ public class LambdaJ {
                 + "                   S-expressions\n"
                 + "                   symbols and cons-cells (i.e. lists)\n"
                 + "                   function application\n"
-                + "                   lambda\n"
+                + "                   the special form lambda\n"
                 + "\n"
                 + "\n"
                 + "--XX-dyn ......  Use dynamic environments instead of Murmel's\n"

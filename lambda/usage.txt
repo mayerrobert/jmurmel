@@ -48,47 +48,50 @@ Flags for REPL:
 
 Feature flags:
 
---no-nil ......  don't predefine symbol nil (hint: use '()' instead)
---no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
---no-extra ....  no special forms 'eval', 'if', 'define', 'defun',
-                 'letrec', 'progn'
+--no-ffi ......  no function '::'
+--no-extra ....  no special forms eval, if, define, defun, defmacro,
+                 let, let*, letrec, progn, setq, rplaca, rplacd,
+                 load, require, provide, declaim
+                 no primitive functions trace, untrace, macroexpand-1
 --no-number ...  no number support
 --no-string ...  no string support
---no-io .......  no primitive functions read/ write/ writeln/
-                 format/ format-locale
---no-util .....  no primitive functions consp/ symbolp/ listp/ null/ assoc/
-                 format/ format-locale
+--no-io .......  no primitive functions read, write, writeln, lnwrite,
+--no-util .....  no primitive functions consp, symbolp, listp, null, assoc,
+                 format, format-locale
                  no time related primitives
 
 --min+ ........  turn off all above features, leaving a Lisp
-                 with 10 primitives:
+                 with 10 special forms and primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
-                   the special form quote
-                   atom, eq, cons, car, cdr, lambda, apply, cond, labels
+                   the special forms quote, lambda, cond, labels
+                   the primitive functions atom, eq, cons, car, cdr, apply
+                   the symbols nil, t
 
---no-apply ....  no special form 'apply'
+--no-nil ......  don't predefine symbol nil (hint: use '()' instead)
+--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
+--no-apply ....  no function 'apply'
 --no-labels ...  no special form 'labels' (hint: use Y-combinator instead)
 
 --min .........  turn off all above features, leaving a Lisp with
-                 8 special forms/ primitives:
+                 8 special forms and primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
-                   the special form quote
-                   atom, eq, cons, car, cdr, lambda, cond
+                   the special forms quote, lambda, cond
+                   the primitive functions atom, eq, cons, car, cdr
 
 --no-cons .....  no primitive functions cons/ car/ cdr
 --no-cond .....  no special form 'cond'
 
 --lambda+ .....  turn off pretty much everything except Lambda calculus,
-                 leaving a Lisp with 4 primitives:
+                 leaving a Lisp with 4 special forms and primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
-                   the special form quote
-                   atom, eq, lambda
+                   the special form quote, lambda
+                   the primitive functions atom, eq
 
 --no-atom .....  no primitive function 'atom'
 --no-eq .......  no primitive function 'eq'
@@ -99,7 +102,7 @@ Feature flags:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
-                   lambda
+                   the special form lambda
 
 
 --XX-dyn ......  Use dynamic environments instead of Murmel's

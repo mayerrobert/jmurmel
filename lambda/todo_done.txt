@@ -1248,3 +1248,7 @@ format und formatLocale in eine methode zusammenziehen (mit boolean flag "locale
 letXX aus eval rausziehen, return tupel(form, extenv)
 
 --no-nil geht nicht richtig: reparieren oder ausbauen
+
+feature-flags: nil und t sollte nicht sofort wegfallen, erst bei --lambda+
+usage korrigieren: let, let*, ...
+--no-ffi
