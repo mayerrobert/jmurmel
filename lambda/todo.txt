@@ -1,13 +1,21 @@
+feature-flags: nil und t sollte nicht sofort wegfallen, erst bei --lambda+
+usage korrigieren: let, let*, ...
 
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
-
---no-nil geht nicht richtig: reparieren oder ausbauen
 
 floor, ffloor mit zweitem optionalen parameter? [f]ceiling, mod, rem, [f]truncate detto
 -> bei opencoding im compiler: nach floor1 oder floor2 expandieren, je nachdem ob 1 oder 2 argumente
 
 ggf. den langen switch für getsymbol nicht mehr dynamisch generieren sondern hardcodieren? und einen unittest schreiben dass alles da ist?
 
+
+der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
+für opencoded functions 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen
+
+
+compiler: tests für verschachtelte let dynamic
+ggf. bei let dynamic als endcall zumindest warnen dass TCO nicht gemacht wird
+ggf. für let dynamic statt try/finally eine restore liste basteln, und die wird irgendwie von tailcall abgearbeitet
 
 
 
@@ -29,10 +37,19 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
 -> eigentlich nicht nur für rekursive aufrufe sondern für alle aufrufe, wo eine vararg funktion ihre argumente wohinschicken will
 
 -> im interpreter bräuchte man das wsl. nur in evlis einbauen?
-
+-> und im compiler in funcall/tailcall zur laufzeit appenden? und in opencode!
+   -> vielleicht doch besser desugar?
+-> aufpassen, dass nicht (f a b) 1x argumente evaluiert und (f a . b) 2x
 
 samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
+
+die wellknown symbols (special forms wie let & co, und opencoded functions)
+werden static final und in eine static final liste gesteckt,
+eine neue symboltable fängt nicht bei nil an sondern bei eben dieser static final liste (nur die interned strings)
+damit kann der interpreter (und evalOpencode) auf switch umgestellt werden.
+weiterer vorteil: mehrere LambdaJ instanzen sharen die wellknown symbols
+-> funkt aber nur mit LambdaJ symboltable, wenn man eine eigene nimmt, weiss die nix von diesen symbols
 
 feature headless und ggf gui
 -> nein, features sollten nicht erst zur laufzeit ermittelt werden?

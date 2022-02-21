@@ -1246,3 +1246,5 @@ format und formatLocale in eine methode zusammenziehen (mit boolean flag "locale
 -> sind großteils copy&paste
 
 letXX aus eval rausziehen, return tupel(form, extenv)
+
+--no-nil geht nicht richtig: reparieren oder ausbauen

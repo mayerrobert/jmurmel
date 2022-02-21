@@ -543,6 +543,7 @@ public class LambdaJ {
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
         private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
         private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
+        private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
 
         @Override public void setInput(ReadSupplier input) { in = input; init = false; }
 
@@ -918,7 +919,8 @@ public class LambdaJ {
             }
             if (!tokEscape && tok instanceof LambdaJSymbol && "nil".equalsIgnoreCase(tok.toString())) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
-                return null;
+                if (haveNil()) return null;
+                else return intern((LambdaJSymbol)tok);
             }
             if (symbolp(tok)) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
