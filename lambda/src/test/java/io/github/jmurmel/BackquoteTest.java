@@ -145,12 +145,19 @@ public class BackquoteTest {
     // ``(aaa ,bbb ,,ccc) =>
     @Test
     public void testX() {
-        eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(append (quote (aaa)) (append (list bbb) (list cccval)))");
-        assertExpansion("``(aaa ,bbb ,,ccc)", "(append (quote (append)) "
-                                                    + "(append (list (append (quote (quote)) (list (quote (aaa))))) "
-                                                            + "(list (append (quote (append)) "
-                                                                          + "(append (list (append (quote (list)) (quote (bbb)))) "
-                                                                                  + "(list (append (quote (list)) (list ccc))))))))");
+        // without optimization
+        // eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(append (quote (aaa)) (append (list bbb) (list cccval)))");
+        // assertExpansion("``(aaa ,bbb ,,ccc)", "(append (quote (append)) "
+        //                                             + "(append (list (append (quote (quote)) (list (quote (aaa))))) "
+        //                                                     + "(list (append (quote (append)) "
+        //                                                                   + "(append (list (append (quote (list)) (quote (bbb)))) "
+        //                                                                           + "(list (append (quote (list)) (list ccc))))))))");
+
+        // with optimization (append (list lhs) (list rhs)) -> (list lhs rhs)
+        eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(append (quote (aaa)) (list bbb cccval))");
+        assertExpansion("``(aaa ,bbb ,,ccc)", "(append (quote (append))" 
+                                                   + " (list (append (quote (quote)) (list (quote (aaa))))" 
+                                                         + " (append (quote (list)) (append (quote (bbb)) (list ccc)))))");
     }
 
     @Test

@@ -1114,7 +1114,9 @@ public class LambdaJ {
                 return qq_expand(qq_expand(cadr(xCons)));
 
             if (cdr(xCons) == null) return qq_expand_list(op);
-            return list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons)));
+            
+            //return list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons)));
+            return optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
         }
 
         /*
@@ -1150,7 +1152,20 @@ public class LambdaJ {
                 return qq_expand_list(qq_expand(cadr(xCons)));
 
             if (cdr(xCons) == null) return list(sList, qq_expand_list(op));
-            return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
+
+            //return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
+            return list(sList, optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons))));
+        }
+
+        /** create a form that will append lhs and rhs: "(append lhs rhs)"
+         * For a special case the form will be optimized:
+         * (append (list lhsX) (list rhsX)) -> (list lhsX rhsX)
+         */
+        private ConsCell optimizedAppend(Object lhs, Object rhs) {
+            if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cddr(rhs) == null)
+                return list(sList, cadr(lhs), cadr(rhs));
+            else
+                return list(sAppend, lhs, rhs);
         }
 
 
