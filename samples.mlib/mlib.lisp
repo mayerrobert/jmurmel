@@ -5,7 +5,7 @@
 ;;;
 ;;; Most of mlib's functions and macros are modeled after Common Lisp,
 ;;; (often with reduced functionality) plus some additional macros and functions.
-;;;
+
 ;;; == Usage
 ;;;
 ;;; Copy `mlib.lisp` into the directory containing `jmurmel.jar`
@@ -13,7 +13,7 @@
 ;;; and begin your source file with
 ;;;
 ;;;     (require "mlib")
-;;;
+
 ;;; == `mlib` functions and macros
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
@@ -101,7 +101,8 @@
 ;;; = Function: last
 ;;;     (last lst) -> last-cons-or-nil
 ;;;
-;;; `last` returns the last cons of a list or `nil` for the empty list.
+;;; `last` returns the last cons of a proper or dotted list
+;;; or `nil` for the empty list.
 (defun last (lst)
   (if (consp (cdr lst)) (last (cdr lst))
     lst))
@@ -1143,7 +1144,6 @@
 ;;;       ; ==> (h (g (f 1)))
 ;;;     (macroexpand-1 '(-> 1 (f farg) (g garg) (h harg)))
 ;;;       ; ==> (h (g (f 1 farg) garg) harg)
-;;;
 (defmacro -> terms
   (labels ((apply-partials (partials expr)
              (if partials
@@ -1169,7 +1169,6 @@
 ;;;       ; ==> (h (g (f 1)))
 ;;;     (macroexpand-1 '(->> 1 (f farg) (g garg) (h harg)))
 ;;;       ; ==> (h harg (g garg (f farg 1)))
-;;;
 (defmacro ->> terms
   (labels ((apply-partials (partials expr)
              (if partials
@@ -1189,7 +1188,6 @@
 ;;;
 ;;; Same as `->` but if one function returns `nil` then the remaining
 ;;; functions are not called and the overall result is `nil`.
-;;;
 (defmacro and-> terms
   (if (cdr terms)
         (let* ((temp (gensym))
@@ -1214,7 +1212,6 @@
 ;;;
 ;;; Same as `->>` but if one function returns nil then the remaining
 ;;; functions are not called and the overall result is `nil`.
-;;;
 (defmacro and->> terms
   (if (cdr terms)
         (let* ((temp (gensym))
