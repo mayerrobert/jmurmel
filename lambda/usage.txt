@@ -56,8 +56,8 @@ Feature flags:
 --no-number ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read, write, writeln, lnwrite,
---no-util .....  no primitive functions consp, symbolp, listp, null, assoc,
-                 format, format-locale
+--no-util .....  no primitive functions consp, symbolp, listp, null,
+                 append, assoc, assq, format, format-locale
                  no time related primitives
 
 --min+ ........  turn off all above features, leaving a Lisp
