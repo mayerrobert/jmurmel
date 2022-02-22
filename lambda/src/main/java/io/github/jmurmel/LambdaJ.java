@@ -1409,7 +1409,7 @@ public class LambdaJ {
                 else if (consp(form)) {
                     final ConsCell formCons = (ConsCell)form;
                     operator = car(formCons);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(formCons))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
+                    if (!listp(cdr(formCons))) errorMalformed("eval", "an operand list to follow operator " + operator, cdr(formCons));
                     final ConsCell arguments = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
 
@@ -1450,7 +1450,7 @@ public class LambdaJ {
                     if (operator == sDefine) {
                         twoArgs("define", arguments);
                         final Object symbol = car(arguments);
-                        if (!symbolp(symbol)) throw new LambdaJError(true, "%s: not a symbol: %s", "define", printSEx(symbol));
+                        if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
                         notReserved("define", symbol);
                         final ConsCell envEntry = assq(symbol, topEnv);
 
@@ -1575,9 +1575,9 @@ public class LambdaJ {
                             twoArgs("apply", arguments);
 
                             func = eval(car(arguments), env, stack, level, traceLvl);
-                            final Object _argList = eval(cadr(arguments), env, stack, level, traceLvl);
-                            if (!listp(_argList)) throw new LambdaJError(true, "%s: expected an argument list but got %s", "apply", printSEx(_argList));
-                            argList = (ConsCell)_argList;
+                            final Object maybeArgList = eval(cadr(arguments), env, stack, level, traceLvl);
+                            if (!listp(maybeArgList)) errorMalformed("apply", "an argument list", maybeArgList);
+                            argList = (ConsCell)maybeArgList;
                             // fall through to "actually perform..."
 
                         /// eval - function call
@@ -1601,13 +1601,11 @@ public class LambdaJ {
                             continue tailcall;
 
                         } else if (primp(func)) {
-                            try { result = applyPrimitive((Primitive) func, argList, stack, level); return result; }
-                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
+                            result = applyPrimitive((Primitive) func, argList, stack, level); return result;
 
                         } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
                             // compiled function or compiler runtime func
-                            try { result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level); return result; }
-                            catch (LambdaJError e) { throw new LambdaJError(e.getMessage()); }
+                            result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level); return result;
 
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // ((params...) (forms...))
@@ -1721,7 +1719,7 @@ public class LambdaJ {
     }
 
     private Object evalDeclaim(int level, ConsCell arguments) {
-        if (level != 1) throw new LambdaJError("declaim: must be a toplevel form");
+        if (level != 1) errorMalformed("declaim", "must be a toplevel form");
         if (caar(arguments) == sOptimize) {
             final Object rest = cdar(arguments);
             final ConsCell speedCons = assq(sSpeed, rest);
@@ -2429,10 +2427,10 @@ public class LambdaJ {
         if (args == null || (nArgs = args.length) == 0) return null;
         if (nArgs == 1) return args[0];
         if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
-        
+
         int first = 0;
         while (first < nArgs-1 && args[first] == null) first++; // skip leading nil args if any
-        
+
         ListBuilder lb = null;
         for (int i = first; i < nArgs - 1; i++) {
             final Object o = args[i];
@@ -5382,7 +5380,7 @@ public class LambdaJ {
                     sb.append(')');
                     return;
                 }
-                throw new LambdaJError("compile-to-java: form not implemented: " + printSEx(form));
+                throw new LambdaJError("formToJava: form not implemented: " + printSEx(form));
 
             }
             catch (LambdaJError e) {
