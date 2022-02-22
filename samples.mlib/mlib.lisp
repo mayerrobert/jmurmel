@@ -18,7 +18,7 @@
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
-;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last)
 ;;; - [destructuring-bind](#macro-destructuring-bind)
 ;;; - [get-setf-expansion](#function-get-setf-expansion)
 ;;; - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
@@ -43,6 +43,7 @@
 ;;;
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
+;;; - [circular-list](#function-circular-list)
 ;;; - [compose](#function-compose)
 ;;; - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 ;;; - [curry](#function-curry), [rcurry](#function-rcurry)
@@ -95,6 +96,15 @@
 
 (defun nth (n l)
   (car (nthcdr n l)))
+
+
+;;; = Function: last
+;;;     (last lst) -> last-cons-or-nil
+;;;
+;;; `last` returns the last cons of a list or `nil` for the empty list.
+(defun last (lst)
+  (if (consp (cdr lst)) (last (cdr lst))
+    lst))
 
 
 ; m%rplaca
@@ -1019,6 +1029,20 @@
 ;;; `time` evaluates `form` and prints various timing data.
 (defmacro time (expr)
   `(call-with-timing (lambda () ,expr)))
+
+
+;;; = Function: circular-list
+;;;     (circular-list elems*) -> circular-list
+;;;
+;;; Creates a circular list of elements.
+(defun circular-list elems
+  (if elems
+        (let ((start (let loop ((elem elems))
+                       (if elem (cons (car elem) (loop (cdr elem)))
+                         nil))))
+          (rplacd (last start) start)
+          start)
+   nil))
 
 
 ;;; = Function: compose

@@ -1,7 +1,7 @@
-turtle?
+gesondertes flag für turtle?
 gesondertes flag für setq, rplaca, rplacd? --no-mut
-backquotes, append, assoc, assq
 gesondertes flag für defmacro?
+backquotes, append, assoc, assq
 
 
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles

@@ -18,7 +18,7 @@ and begin your source file with
 
 mlib provides the following Common Lisp-like functions and macros:
 
-- [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+- [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last)
 - [destructuring-bind](#macro-destructuring-bind)
 - [get-setf-expansion](#function-get-setf-expansion)
 - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
@@ -43,6 +43,7 @@ mlib provides the following Common Lisp-like functions and macros:
 
 functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 
+- [circular-list](#function-circular-list)
 - [compose](#function-compose)
 - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 - [curry](#function-curry), [rcurry](#function-rcurry)
@@ -67,6 +68,10 @@ as well as the following additional functions and macros:
 
 `nthcdr` applies `cdr` n times and returns the result.
 `nth` works as if `(car (nthcdr n lst))` was invoked.
+### Function: last
+    (last lst) -> last-cons-or-nil
+
+`last` returns the last cons of a list or `nil` for the empty list.
 
 
 ### Macro: destructuring-bind
@@ -442,6 +447,10 @@ Same as `list-length`.
     (time form) -> result
 
 `time` evaluates `form` and prints various timing data.
+### Function: circular-list
+    (circular-list elems*) -> circular-list
+
+Creates a circular list of elements.
 ### Function: compose
     (compose func1 funcs*) -> function
 

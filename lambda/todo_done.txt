@@ -1252,3 +1252,9 @@ letXX aus eval rausziehen, return tupel(form, extenv)
 feature-flags: nil und t sollte nicht sofort wegfallen, erst bei --lambda+
 usage korrigieren: let, let*, ...
 --no-ffi
+
+mlib: (require srfi/1)
+      (circular-list 1 2 3)
+oder alexandria: 
+Function: circular-list &rest elements
+    Creates a circular list of elements. 

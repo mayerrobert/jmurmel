@@ -63,6 +63,14 @@
              (tests ,name ,@(cdddr l)))))
 
 
+;;: test last
+(tests last
+  (last nil) => nil
+  (last '(1 2 3)) => (3)
+  (last '(1 2 3 4 . 5)) => (4 . 5)
+)
+
+
 ;;; test destructuring-bind
 (tests destructuring-bind
   (destructuring-bind (a b c) '(1.0 2 3) (+ a b c)) => 6.0
@@ -569,6 +577,15 @@
   ;(reduce #'list '(1 2 3 4)
   ;     :from-end t :initial-value 'foo) =>  (1 (2 (3 (4 foo))))
   (reduce #'list (append '(1 2 3 4) (list 'foo)) #-murmel :from-end t) =>  (1 (2 (3 (4 foo))))
+)
+
+
+; test circular-list
+#+murmel
+(tests circular-list
+  (circular-list) => nil
+  ; (circular-list nil) => (nil #<circular-list>)  ; reader chokes on #<circular-list>
+  (nth 21 (circular-list 1 2 3)) => 1
 )
 
 
