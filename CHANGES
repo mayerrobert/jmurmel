@@ -17,6 +17,8 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * fixed "append" for compiled code
  * fixed using rplaca on varargs list
  * fixed/ cleaned up feature-flags
+ 
+ * backquote expansion generates more effivcient code
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

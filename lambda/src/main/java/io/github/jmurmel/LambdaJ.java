@@ -914,6 +914,7 @@ public class LambdaJ {
         private final Object sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
         private final Object sAppend         = intern(new LambdaJSymbol("append"));
         private final Object sList           = intern(new LambdaJSymbol("list"));
+        private final Object sCons           = intern(new LambdaJSymbol("cons"));
         private final Object sNil            = intern(new LambdaJSymbol("nil"));
 
         private Object readObject(int startLine, int startChar) {
@@ -1165,14 +1166,22 @@ public class LambdaJ {
          * (append (list lhsX) (list rhsX)) -> (list lhsX rhsX)
          * (append (list lhsX) (list rhs1 rhs2)) -> (list lhsX rhs1 rhs2)
          * (append (list lhsX) (list rhs1 rhs2 rhs3)) -> (list lhsX rhs1 rhs2 rhs3)
+         * 
+         * (append (list lhsX) rhs) -> (cons lhsX rhs)
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
             if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cddr(rhs) == null)
                 return list(sList, cadr(lhs), cadr(rhs));
+
             else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cdddr(rhs) == null)
                 return list(sList, cadr(lhs), cadr(rhs), caddr(rhs));
+
             else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cdr(cdddr(rhs)) == null)
                 return list(sList, cadr(lhs), cadr(rhs), caddr(rhs), cadddr(rhs));
+
+            else if (car(lhs) == sList && cddr(lhs) == null)
+                return list(sCons, cadr(lhs), rhs);
+
             else
                 return list(sAppend, lhs, rhs);
         }
