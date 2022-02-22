@@ -914,6 +914,7 @@ public class LambdaJ {
         private final Object sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
         private final Object sAppend         = intern(new LambdaJSymbol("append"));
         private final Object sList           = intern(new LambdaJSymbol("list"));
+        private final Object sNil            = intern(new LambdaJSymbol("nil"));
 
         private Object readObject(int startLine, int startChar) {
             if (tok == null) {
@@ -1136,8 +1137,10 @@ public class LambdaJ {
                 (t `'(,x))))
         */
         private Object qq_expand_list(Object x) {
+            if (x == null) return list(sList, sNil);
             if (atom(x))
-                return quote(list(x, null));
+                //return quote(list(x, null));
+                return list(sList, quote(x));
 
             final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
@@ -1158,12 +1161,18 @@ public class LambdaJ {
         }
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
-         * For a special case the form will be optimized:
+         * For some special case the form will be optimized:
          * (append (list lhsX) (list rhsX)) -> (list lhsX rhsX)
+         * (append (list lhsX) (list rhs1 rhs2)) -> (list lhsX rhs1 rhs2)
+         * (append (list lhsX) (list rhs1 rhs2 rhs3)) -> (list lhsX rhs1 rhs2 rhs3)
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
             if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cddr(rhs) == null)
                 return list(sList, cadr(lhs), cadr(rhs));
+            else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cdddr(rhs) == null)
+                return list(sList, cadr(lhs), cadr(rhs), caddr(rhs));
+            else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cdr(cdddr(rhs)) == null)
+                return list(sList, cadr(lhs), cadr(rhs), caddr(rhs), cadddr(rhs));
             else
                 return list(sAppend, lhs, rhs);
         }
@@ -1182,6 +1191,14 @@ public class LambdaJ {
 
         private static ConsCell list(Object o1, Object o2, Object o3) {
             return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, null)));
+        }
+
+        private static ConsCell list(Object o1, Object o2, Object o3, Object o4) {
+            return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, new ListConsCell(o4, null))));
+        }
+
+        private static ConsCell list(Object o1, Object o2, Object o3, Object o4, Object o5) {
+            return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, new ListConsCell(o4, new ListConsCell(o5, null)))));
         }
     }
 

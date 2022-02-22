@@ -67,7 +67,8 @@ public class BackquoteTest {
     @Test
     public void testBQuotedQuotedSymbol() {
         eval("`'aaa", "(quote aaa)");
-        assertExpansion("`'aaa", "(append (quote (quote)) (quote (aaa)))");
+        //assertExpansion("`'aaa", "(append (quote (quote)) (quote (aaa)))");
+        assertExpansion("`'aaa", "(list (quote quote) (quote aaa))");
     }
 
     @Test
@@ -94,19 +95,22 @@ public class BackquoteTest {
     @Test
     public void testBQuotedList() {
         eval("`(aaa bbb ccc)", "(aaa bbb ccc)");
-        assertExpansion("`(aaa bbb ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote (ccc))))");
+        //assertExpansion("`(aaa bbb ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote (ccc))))");
+        assertExpansion("`(aaa bbb ccc)", "(list (quote aaa) (quote bbb) (quote ccc))");
     }
 
     @Test
     public void testBQuotedDottedList() {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
-        assertExpansion("`(aaa bbb . ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote ccc)))");
+        //assertExpansion("`(aaa bbb . ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote ccc)))");
+        assertExpansion("`(aaa bbb . ccc)", "(append (list (quote aaa)) (append (list (quote bbb)) (quote ccc)))");
     }
 
     @Test
     public void testBQuotedListSplicedList() {
         eval("(define l '(1.0 2.0)) `(a ,@l b)", "(a 1.0 2.0 b)");
-        assertExpansion("`(a ,@l b)", "(append (quote (a)) (append l (quote (b))))");
+        //assertExpansion("`(a ,@l b)", "(append (quote (a)) (append l (quote (b))))");
+        assertExpansion("`(a ,@l b)", "(append (list (quote a)) (append l (list (quote b))))");
     }
 
     // sample from CLHS
@@ -116,13 +120,15 @@ public class BackquoteTest {
     @Test
     public void testCHLSBackQuote() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,c ,@d)", "((\"A\" b) \"C\" \"D\" \"DD\")");
-        assertExpansion("`((,a b) ,c ,@d)", "(append (list (append (list a) (quote (b)))) (append (list c) d))");
+        //assertExpansion("`((,a b) ,c ,@d)", "(append (list (append (list a) (quote (b)))) (append (list c) d))");
+        assertExpansion("`((,a b) ,c ,@d)", "(append (list (list a (quote b))) (append (list c) d))");
     }
 
     @Test
     public void testCHLSMod() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,@d ,c)", "((\"A\" b) \"D\" \"DD\" \"C\")");
-        assertExpansion("`((,a b) ,@d ,c)", "(append (list (append (list a) (quote (b)))) (append d (list c)))");
+        //assertExpansion("`((,a b) ,@d ,c)", "(append (list (append (list a) (quote (b)))) (append d (list c)))");
+        assertExpansion("`((,a b) ,@d ,c)", "(append (list (list a (quote b))) (append d (list c)))");
     }
 
     // sample from Ansi Common Lisp pp413
@@ -139,7 +145,9 @@ public class BackquoteTest {
     @Test
     public void testBBquotedSymbol() {
         eval("``a", "(quote a)");
-        assertExpansion("``a", "(append (quote (quote)) (quote (a)))");
+        //assertExpansion("``a", "(append (quote (quote)) (quote (a)))");
+        // with optimization
+        assertExpansion("``a", "(list (quote quote) (quote a))");
     }
 
     // ``(aaa ,bbb ,,ccc) =>
@@ -153,11 +161,12 @@ public class BackquoteTest {
         //                                                                   + "(append (list (append (quote (list)) (quote (bbb)))) "
         //                                                                           + "(list (append (quote (list)) (list ccc))))))))");
 
-        // with optimization (append (list lhs) (list rhs)) -> (list lhs rhs)
-        eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(append (quote (aaa)) (list bbb cccval))");
-        assertExpansion("``(aaa ,bbb ,,ccc)", "(append (quote (append))" 
-                                                   + " (list (append (quote (quote)) (list (quote (aaa))))" 
-                                                         + " (append (quote (list)) (append (quote (bbb)) (list ccc)))))");
+        // with optimization
+        eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(list (quote aaa) bbb cccval)");
+        assertExpansion("``(aaa ,bbb ,,ccc)", "(list (quote list) " 
+                                                  + "(list (quote quote) (quote aaa)) " 
+                                                  + "(quote bbb) " 
+                                                  + "ccc)");
     }
 
     @Test
