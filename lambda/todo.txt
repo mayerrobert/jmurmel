@@ -1,4 +1,3 @@
-gesondertes flag für turtle?
 gesondertes flag für setq, rplaca, rplacd? --no-mut
 gesondertes flag für defmacro?
 backquotes, append, assoc, assq

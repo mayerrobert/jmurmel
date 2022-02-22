@@ -394,6 +394,7 @@ public class LambdaJ {
         HAVE_STRING,         // turns on String support in the reader and string literals and string related functions in the interpreter
 
         HAVE_IO,             // read/ write, without it only the result will be printed
+        HAVE_GUI,            // turtle and bitmap graphics
         HAVE_UTIL,           // consp, symbolp, listp, null, assoc
 
         HAVE_LEXC,           // use lexical environments with dynamic global environment
@@ -405,7 +406,7 @@ public class LambdaJ {
         HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits(); } },
         HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
                                                                | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits()
-                                                               | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_UTIL.bits(); } },
+                                                               | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_GUI.bits() | HAVE_UTIL.bits(); } },
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
         ;
 
@@ -422,6 +423,7 @@ public class LambdaJ {
     private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits()) != 0; }
     private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
     private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
+    private boolean haveGui()     { return (features & Features.HAVE_GUI.bits())      != 0; }
     private boolean haveUtil()    { return (features & Features.HAVE_UTIL.bits())    != 0; }
     private boolean haveApply()   { return (features & Features.HAVE_APPLY.bits())   != 0; }
     private boolean haveCons()    { return (features & Features.HAVE_CONS.bits())    != 0; }
@@ -3078,7 +3080,9 @@ public class LambdaJ {
                   addBuiltin("writeln", (Primitive) a -> { nArgs("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
                   addBuiltin("lnwrite", (Primitive) a -> { nArgs("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
                   env))));
-
+            }
+        
+        if (haveGui()) {
             final Primitive makeFrame = a -> {
                 stringArg("make-frame", "first arg", a);
                 final String title = car(a).toString();
@@ -4038,6 +4042,7 @@ public class LambdaJ {
         if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_NUMBERS.bits() | Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
         if (hasFlag("--no-string", args))   features &= ~Features.HAVE_STRING.bits();
         if (hasFlag("--no-io", args))       features &= ~Features.HAVE_IO.bits();
+        if (hasFlag("--no-gui", args))      features &= ~Features.HAVE_GUI.bits();
         if (hasFlag("--no-util", args))     features &= ~Features.HAVE_UTIL.bits();
 
         if (hasFlag("--no-labels", args))   features &= ~Features.HAVE_LABELS.bits();
@@ -4208,7 +4213,8 @@ public class LambdaJ {
     private static void showFeatureUsage() {
         System.out.println("Feature flags:\n"
                 + "\n"
-                + "--no-ffi ......  no function '::'\n"
+                + "--no-ffi ......  no function '::'\n" 
+                + "--no-gui ......  no turtle or bitmap graphics\n"
                 + "--no-extra ....  no special forms eval, if, define, defun, defmacro,\n"
                 + "                 let, let*, letrec, progn, setq, rplaca, rplacd,\n"
                 + "                 load, require, provide, declaim\n"

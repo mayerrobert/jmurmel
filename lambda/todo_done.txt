@@ -1258,3 +1258,5 @@ mlib: (require srfi/1)
 oder alexandria: 
 Function: circular-list &rest elements
     Creates a circular list of elements. 
+
+gesondertes flag für turtle?

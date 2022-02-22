@@ -49,6 +49,7 @@ Flags for REPL:
 Feature flags:
 
 --no-ffi ......  no function '::'
+--no-gui ......  no turtle or bitmap graphics
 --no-extra ....  no special forms eval, if, define, defun, defmacro,
                  let, let*, letrec, progn, setq, rplaca, rplacd,
                  load, require, provide, declaim
