@@ -951,7 +951,7 @@ public class LambdaJ {
                     return list;
                 }
                 catch (ParseError e) {
-                    throw new LambdaJError(e.getMessage() + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                    errorReaderError(e.getMessage() + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 }
             }
             if (!tokEscape && tok == SQ) {
@@ -964,26 +964,31 @@ public class LambdaJ {
                 skipWs();
                 final int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                backquote++;
-                final Object exp = readObject(_startLine, _startChar);
                 final Object o;
-                if (backquote == 1) o = qq_expand(exp);
-                else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
-                backquote--;
+                try {
+                    backquote++;
+                    final Object exp = readObject(_startLine, _startChar);
+                    if (backquote == 1) o = qq_expand(exp);
+                    else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
+                }
+                finally { backquote--; }
                 return o;
             }
             if (!tokEscape && tok == COMMA) {
                 if (backquote == 0)
-                    throw new LambdaJError("comma is not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                    errorReaderError("comma is not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
                 skipWs();
                 final boolean splice;
                 if (look == '@') { splice = true; look = getchar(); }
                 else splice = false;
                 final int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                backquote--;
-                final Object o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
-                backquote++;
+                final Object o;
+                try {
+                    backquote--;
+                    o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                }
+                finally { backquote++; }
                 return o;
             }
             if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok);
@@ -2315,6 +2320,10 @@ public class LambdaJ {
     // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
     private static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
     private static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
+
+    private static RuntimeException errorReaderError(String msg) {
+        throw new LambdaJError(msg);
+    }
 
     private static RuntimeException errorMalformed(String func, String msg) {
         throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
