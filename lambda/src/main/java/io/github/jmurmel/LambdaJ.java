@@ -968,7 +968,12 @@ public class LambdaJ {
                 try {
                     backquote++;
                     final Object exp = readObject(_startLine, _startChar);
-                    if (backquote == 1) o = qq_expand(exp);
+                    if (backquote == 1) {
+                        o = qq_expand(exp);
+                        //System.out.println("bq expansion in:  (backquote " + printSEx(exp) + ')');
+                        //System.out.println("bq expansion out: " + printSEx(o));
+                        //System.out.println();
+                    }
                     else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
                 }
                 finally { backquote--; }
@@ -1170,24 +1175,20 @@ public class LambdaJ {
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
          * For some special case the form will be optimized:
-         * (append (list lhsX) (list rhsX)) -> (list lhsX rhsX)
-         * (append (list lhsX) (list rhs1 rhs2)) -> (list lhsX rhs1 rhs2)
-         * (append (list lhsX) (list rhs1 rhs2 rhs3)) -> (list lhsX rhs1 rhs2 rhs3)
-         * 
-         * (append (list lhsX) rhs) -> (cons lhsX rhs)
+         *
+         * (append (list lhsX) (list rhsX...)) -> (list lhsX rhsX...)
+         * (append (list lhsX) rhs)            -> (cons lhsX rhs) ; todo koennte auch (list* lhsX rhs) sein und list* wuerde von weiteren regeln erfasst: (append (list lhsX) (list* rhsX...)) -> (list* lhsX rhsX...) 
+         * (append lhs (list rhsX))            -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
-            if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cddr(rhs) == null)
-                return list(sList, cadr(lhs), cadr(rhs));
-
-            else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cdddr(rhs) == null)
-                return list(sList, cadr(lhs), cadr(rhs), caddr(rhs));
-
-            else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList && cdr(cdddr(rhs)) == null)
-                return list(sList, cadr(lhs), cadr(rhs), caddr(rhs), cadddr(rhs));
+            if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList)
+                return new ListConsCell(sList, new ListConsCell(cadr(lhs), cdr(rhs)));
 
             else if (car(lhs) == sList && cddr(lhs) == null)
                 return list(sCons, cadr(lhs), rhs);
+
+            else if (car(rhs) == sList && cddr(rhs) == null)
+                return list(sAppend, lhs, list(sCons, cadr(rhs), null));
 
             else
                 return list(sAppend, lhs, rhs);
@@ -1207,14 +1208,6 @@ public class LambdaJ {
 
         private static ConsCell list(Object o1, Object o2, Object o3) {
             return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, null)));
-        }
-
-        private static ConsCell list(Object o1, Object o2, Object o3, Object o4) {
-            return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, new ListConsCell(o4, null))));
-        }
-
-        private static ConsCell list(Object o1, Object o2, Object o3, Object o4, Object o5) {
-            return new ListConsCell(o1, new ListConsCell(o2, new ListConsCell(o3, new ListConsCell(o4, new ListConsCell(o5, null)))));
         }
     }
 

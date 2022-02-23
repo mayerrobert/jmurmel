@@ -112,7 +112,8 @@ public class BackquoteTest {
         eval("(define l '(1.0 2.0)) `(a ,@l b)", "(a 1.0 2.0 b)");
         //assertExpansion("`(a ,@l b)", "(append (quote (a)) (append l (quote (b))))");
         //assertExpansion("`(a ,@l b)", "(append (list (quote a)) (append l (list (quote b))))");
-        assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (list (quote b))))");
+        //assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (list (quote b))))");
+        assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
     }
 
     // sample from CLHS
@@ -132,7 +133,8 @@ public class BackquoteTest {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,@d ,c)", "((\"A\" b) \"D\" \"DD\" \"C\")");
         //assertExpansion("`((,a b) ,@d ,c)", "(append (list (append (list a) (quote (b)))) (append d (list c)))");
         //assertExpansion("`((,a b) ,@d ,c)", "(append (list (list a (quote b))) (append d (list c)))");
-        assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (list c)))");
+        //assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (list c)))");
+        assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
     }
 
     // sample from Ansi Common Lisp pp413

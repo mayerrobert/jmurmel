@@ -64,3 +64,7 @@ auswertet
 vielleicht doch eine option fuer eol, die interpreter UND compilierte programme auswerten? default ins kompilierte programm reinschreiben?
 oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatcht
 -> oder so lassen, weil interpreter, compiler und kompilate die System property line.separator auswerten
+
+in qq_expand_list statt 1-element listen cons(x, null)
+optimize dahingehend erweitern (oder ändern?), dass nicht nur list sondern auch cons erkannt wird
+-> ggf. können die patterns (list lhsX) nicht mehr auftreten, nur mehr (cons lhsX nil)
