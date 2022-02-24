@@ -1242,6 +1242,7 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
+        sNil =                         intern("nil");
         sLambda =                      internReserved("lambda");
         sDynamic =                     intern("dynamic");
 
@@ -1312,7 +1313,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
+    private LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
             sSetQ, sApply, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
@@ -5909,8 +5910,8 @@ public class LambdaJ {
             else { sb.append("dbl("); formToJava(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
         }
 
-        private static void quotedFormToJava(WrappingWriter sb, Object form) {
-            if (form == null || "nil".equals(form.toString())) { sb.append("_nil"); }
+        private void quotedFormToJava(WrappingWriter sb, Object form) {
+            if (form == null || interpreter().sNil == form) { sb.append("_nil"); }
 
             else if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); }
             else if (atom(form))    { atomToJava(sb, form); }
