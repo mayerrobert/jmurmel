@@ -3,15 +3,15 @@
 ;;;
 ;;; Run with
 ;;;
-;;;     C:\> jm samples\ackermann_bm\ack_murmel.lisp
+;;;     C:\> jm ack_murmel.lisp
 ;;;
 ;;; or compile and run with
 ;;;
-;;;     C:\> jm --run samples\ackermann_bm\ack_murmel.lisp
+;;;     C:\> jm --run ack_murmel.lisp
 ;;;
 ;;; or
 ;;;
-;;;     C:\> jm --jar samples\ackermann_bm\ack_murmel.lisp
+;;;     C:\> jm --jar ack_murmel.lisp
 ;;;     C:\> java -jar a.jar
 
 (defun Z (f)

@@ -3,16 +3,16 @@
 ;;;
 ;;; Run with
 ;;;
-;;;     C:\> abcl --load samples\ackermann_bm\ack_cl.lisp
+;;;     C:\> abcl --batch --load ack_cl.lisp
 ;;;
 ;;; or within the abcl repl compile and run with
 ;;;
 ;;;     C:\> abcl
-;;;     CL-USER(1): :cl samples\ackermann_bm\ack_cl.lisp
+;;;     CL-USER(1): :cl ack_cl.lisp
 ;;;
 ;;; or
 ;;;
-;;;     C:\> sbcl --script samples\ackermann_bm\ack_cl.lisp
+;;;     C:\> sbcl --script ack_cl.lisp
 
 (defun Z (f)
   (funcall (lambda (g)

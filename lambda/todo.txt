@@ -1,3 +1,7 @@
+00_tak_apo: null waere opencoded, not nicht. compiliert ist null doppelt so schnell, interpretiert wirds 40% schneller
+
+CL sleep uebernimmt sekunden, Murmel internal time units ?!?
+
 gesondertes flag für setq, rplaca, rplacd? --no-mut
 gesondertes flag für defmacro?
 backquotes, append, assoc, assq
