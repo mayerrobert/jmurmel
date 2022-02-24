@@ -72,6 +72,8 @@ SRFI 197 hat chain operator & Co, siehe https://srfi.schemers.org/srfi-197/srfi-
 -> (MurmelFunction)(args) -> { /*argCheck(args.length, 3);*/ Object a = args[0]; Object b = args[1]; Object c = args[2]; return a + b + c: }
 
 
+https://www.reddit.com/r/scheme/comments/somz8y/tail_calls_for_native_targets/
+
 mit Class.forName() könnte man eine Klasse mit Custom Primitives laden.
 -> der bestehende customenvironment trick geht eh nur im interpreter?!? wär dann nicht mehr nötig
 Class.forName() könnte auch absplitten des Compilers in eine andere Klasse ermöglichen, dann würde das verbleibende LambdaJ immer noch als single source file funktionieren

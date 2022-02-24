@@ -1295,6 +1295,9 @@ public class LambdaJ {
             
             sInc =     intern("1+");
             sDec =     intern("1-");
+
+            sList =    intern("list");
+            sListStar= intern("list*");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1318,7 +1321,7 @@ public class LambdaJ {
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for opencoded functions */
-    private LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec;
+    private LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sList, sListStar;
 
     private Supplier<Object> expTrue;
 
@@ -1572,11 +1575,16 @@ public class LambdaJ {
                         /// eval - (apply form argform) -> object
                         if (operator == sApply) {
                             twoArgs("apply", arguments);
-
-                            func = eval(car(arguments), env, stack, level, traceLvl);
+                            final Object applyFunc = car(arguments);
+                            func = eval(applyFunc, env, stack, level, traceLvl);
                             final Object maybeArgList = eval(cadr(arguments), env, stack, level, traceLvl);
                             if (!listp(maybeArgList)) errorMalformed("apply", "an argument list", maybeArgList);
                             argList = (ConsCell)maybeArgList;
+                            if (speed >= 1 && symbolp(applyFunc)) {
+                                // func = eval(... was performed unneccesarily
+                                result = evalOpencode(applyFunc, argList);
+                                if (result != NOT_HANDLED) return result;
+                            }
                             // fall through to "actually perform..."
 
                         /// eval - function call
@@ -1856,6 +1864,8 @@ public class LambdaJ {
 
         if (op == sInc)  { oneNumber("1+", args);  return inc((Number)car(args)); }
         if (op == sDec)  { oneNumber("1-", args);  return dec((Number)car(args)); }
+
+        if (op == sList) { return args; }
 
         return NOT_HANDLED;
     }
@@ -4451,12 +4461,12 @@ public class LambdaJ {
                                                        if (args.length == 1) return 1.0 / dbl(args[0]);
                                                        double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
-        public final Object numbereq(Object... args) { return compare("=", args,  (d1, d2) -> d1 == d2); }
-        public final Object lt      (Object... args) { return compare("<", args,  (d1, d2) -> d1 <  d2); }
+        public final Object numbereq(Object... args) { return compare("=",  args, (d1, d2) -> d1 == d2); }
+        public final Object lt      (Object... args) { return compare("<",  args, (d1, d2) -> d1 <  d2); }
         public final Object le      (Object... args) { return compare("<=", args, (d1, d2) -> d1 <= d2); }
         public final Object ge      (Object... args) { return compare(">=", args, (d1, d2) -> d1 >= d2); }
-        public final Object gt      (Object... args) { return compare(">", args,  (d1, d2) -> d1 >  d2); }
-        public final Object ne      (Object... args) { return compare(">", args,  (d1, d2) -> d1 != d2); }
+        public final Object gt      (Object... args) { return compare(">",  args, (d1, d2) -> d1 >  d2); }
+        public final Object ne      (Object... args) { return compare("/=", args, (d1, d2) -> d1 != d2); }
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
@@ -4613,7 +4623,7 @@ public class LambdaJ {
 
 
 
-        private static Object[] toArray(Object o) {
+        protected static Object[] toArray(Object o) {
             if (o == null)
                 return new Object[0];
             if (o instanceof Object[])
@@ -4622,6 +4632,12 @@ public class LambdaJ {
         }
 
 
+
+        protected static ConsCell lst(Object lst) {
+            if (lst == null) return null;
+            if (!(lst instanceof ConsCell)) throw new LambdaJError(true, "not a list: ", lst);
+            return (ConsCell)lst;
+        }
 
         protected static double dbl(Object n) {
             number(n);
@@ -5280,6 +5296,9 @@ public class LambdaJ {
 
                     ///     - apply
                     if (interpreter().sApply == op) {
+                        if (interpreter().speed >= 1 && symbolp(car(args))) {
+                            if (opencodeApply(sb, car(args), (ConsCell)cdr(args), env, topEnv, rsfx)) return;
+                        }
                         sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
                         formToJava(sb, car(args), env, topEnv, rsfx, false);
                         sb.append("\n        , ");
@@ -5809,18 +5828,36 @@ public class LambdaJ {
             }
         }
 
+        /** opencode "list" and avoid trampoline for other primitives */
+        private boolean opencodeApply(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (isSymbol(op, "list")) { sb.append("lst("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return true; }
+
+            for (String prim: primitives)          if (isSymbol(op, prim))    { opencodeApplyHelper(sb, "_" + prim,  args, env, topEnv, rsfx);  return true; }
+            for (String[] prim: aliasedPrimitives) if (isSymbol(op, prim[0])) { opencodeApplyHelper(sb, prim[1],  args, env, topEnv, rsfx);  return true; }
+            
+            return false;
+        }
+
+        private void opencodeApplyHelper(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append(func).append("(toArray(");
+            formToJava(sb, car(args), env, topEnv, rsfx, false);
+            sb.append("))");
+        }
+
+        /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
+        // todo if-kette durch schleife ersetzen vgl. opencodeApply
         private boolean opencode(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "="))  { compareNum(sb, "=", "numbereq", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "/=")) { compareNum(sb, "/=", "ne",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<"))  { compareNum(sb, "<",  "lt",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<=")) { compareNum(sb, "<=", "le",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">=")) { compareNum(sb, ">=", "ge",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">"))  { compareNum(sb, ">",  "gt",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "="))  { funcallVarargs(1, sb, "=", "numbereq", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "/=")) { funcallVarargs(1, sb, "/=", "ne",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<"))  { funcallVarargs(1, sb, "<",  "lt",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<=")) { funcallVarargs(1, sb, "<=", "le",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">=")) { funcallVarargs(1, sb, ">=", "ge",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">"))  { funcallVarargs(1, sb, ">",  "gt",      args, env, topEnv, rsfx); return true; }
 
             if (isSymbol(op, "car"))  { funcall1(sb, "car",  args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "cdr"))  { funcall1(sb, "cdr",  args, env, topEnv, rsfx); return true; }
@@ -5833,6 +5870,15 @@ public class LambdaJ {
             if (isSymbol(op, "1+"))   { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "1-"))   { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
 
+            if (isSymbol(op, "list")) {
+                if (args == null) { // no args
+                    sb.append("null");  return true;
+                }
+                if (cdr(args) == null) { // one arg
+                    sb.append("cons(");  formToJava(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
+                }
+                funcallVarargs(0, sb, "list", "_list", args, env, topEnv, rsfx); return true;
+            }
             return false;
         }
 
@@ -5845,14 +5891,15 @@ public class LambdaJ {
             sb.append(") ").append(" ? _t : null)");
         }
 
-        /** compare two numbers */
-        private void compareNum(WrappingWriter sb, String op, String pred, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            nArgs(op,  args, 1);
-            sb.append(pred).append('(');
-            formToJava(sb, car(args), env, topEnv, rsfx, false);
-            if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
-                sb.append(", ");
-                formToJava(sb, arg, env, topEnv, rsfx, false);
+        private void funcallVarargs(int minArgs, WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (minArgs > 0) nArgs(murmel,  args, minArgs);
+            sb.append(func).append("(");
+            if (args != null) {
+                formToJava(sb, car(args), env, topEnv, rsfx, false);
+                if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
+                    sb.append(", ");
+                    formToJava(sb, arg, env, topEnv, rsfx, false);
+                }
             }
             sb.append(')');
         }
@@ -5900,7 +5947,7 @@ public class LambdaJ {
             sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false);
             sb.append(')');
         }
-        
+
         /** eval form and change to double */
         private void asDouble(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null) throw new LambdaJError("not a number: nil");
