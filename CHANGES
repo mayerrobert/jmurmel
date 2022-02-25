@@ -3,7 +3,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
 
  * added more complete support for "let dynamic" and "let* dynamic"
    (before 1.2 only "let* dynamic" in interpreted code was supported)
- * added function assq
+ * added functions assq, list*
  * added  an optional parameter print-escape-p for write, writeln, lnwrite
  * added "(declaim (optimize..."
 

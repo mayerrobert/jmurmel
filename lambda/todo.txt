@@ -169,7 +169,12 @@ ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
 
 alte define syntax zusätzlich unterstützen:
-(define ((a 1) (b 2)))
+(define ((a 1) (b 2))) ???
+
+interlisp hat
+(DEFINEQ
+  (DESTRUCTIVE
+    (LAMBDA  (n  m)
 
 communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
 siehe auch https://github.com/hawkir/calispel

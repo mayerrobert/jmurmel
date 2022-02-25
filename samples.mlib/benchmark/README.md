@@ -14,3 +14,8 @@ To run as compiled Murmel use e.g.:
 To run with SBCL use e.g.:
 
     C:>...\benchmark> sbcl --script 3.01_tak.lisp
+
+
+== References
+
+"Performance and Evaluation of Lisp Systems, Richard P. Gabriel, 1985".
