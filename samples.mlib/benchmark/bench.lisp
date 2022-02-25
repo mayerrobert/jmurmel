@@ -46,9 +46,10 @@
          (count (do-run f 1 endtime))
          (end (get-internal-real-time))
          (elapsed-seconds (/ (- end start) internal-time-units-per-second))
-         (iterations-per-second (/ count elapsed-seconds)))
+         (iterations-per-second (/ count elapsed-seconds))
+         (seconds-per-iteration (/ elapsed-seconds count)))
     (format t
-            #+murmel "%n%n%s: did %d iterations in %g seconds walltime, %g iterations / second%n"
-            #-murmel "~%~%~A: did ~D iterations in ~F seconds walltime, ~F iterations / second~%"
-            name count elapsed-seconds iterations-per-second)
+            #+murmel "%n%n%s: did %d iterations in %g seconds walltime, %g iterations/second, %g milliseconds/iteration%n"
+            #-murmel "~%~%~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, ~F milliseconds/iteration~%"
+            name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration))
     iterations-per-second))
