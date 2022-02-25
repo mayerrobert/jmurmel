@@ -18,7 +18,7 @@
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
-;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last)
+;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last), [nconc](#function-nconc)
 ;;; - [destructuring-bind](#macro-destructuring-bind)
 ;;; - [get-setf-expansion](#function-get-setf-expansion)
 ;;; - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
@@ -106,6 +106,33 @@
 (defun last (lst)
   (if (consp (cdr lst)) (last (cdr lst))
     lst))
+
+
+;;; = Function: nconc
+;;;     (nconc lists*) -> concatenated-list
+;;;
+;;; `nconc` concatenates lists, each list but the last is modified.
+;;; If no lists are supplied, `nconc` returns `nil`.
+;;; Each argument but the last must be a proper list.
+(defun nconc lists
+  (if lists
+        (if (car lists)
+              (progn
+                (if (cdr lists)
+                      (let loop ((append-to (car lists))
+                                 (lists (cdr lists)))
+                        (if (car lists)
+                              (progn
+                                (if (cdr lists)
+                                      (rplacd (last append-to) (loop (car lists) (cdr lists)))
+                                  (rplacd (last append-to) (car lists)))
+                                append-to)
+                          (if (cdr lists)
+                                (loop append-to (cdr lists))
+                            append-to))))
+                (car lists))
+          (apply nconc (cdr lists)))
+    nil))
 
 
 ; m%rplaca

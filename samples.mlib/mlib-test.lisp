@@ -63,11 +63,44 @@
              (tests ,name ,@(cdddr l)))))
 
 
-;;: test last
+;;; test last
 (tests last
   (last nil) => nil
   (last '(1 2 3)) => (3)
   (last '(1 2 3 4 . 5)) => (4 . 5)
+)
+
+
+;;; test nconc
+(define x nil)
+(define y nil)
+(define foo nil)
+(define bar nil)
+(define baz nil)
+(tests nconc
+  (nconc) =>  NIL
+  (setq x '(a b c)) =>  (A B C)
+  (setq y '(d e f)) =>  (D E F)
+  (nconc x y) =>  (A B C D E F)
+  x =>  (A B C D E F)
+
+  (setq foo (list 'a 'b 'c 'd 'e)
+        bar (list 'f 'g 'h 'i 'j)
+        baz (list 'k 'l 'm)) =>  (K L M)
+  (setq foo (nconc foo bar baz)) =>  (A B C D E F G H I J K L M)
+  foo =>  (A B C D E F G H I J K L M)
+  bar =>  (F G H I J K L M)
+  baz =>  (K L M)
+
+  (setq foo (list 'a 'b 'c 'd 'e)
+        bar (list 'f 'g 'h 'i 'j)
+        baz (list 'k 'l 'm)) =>  (K L M)
+  (setq foo (nconc nil foo bar nil baz)) =>  (A B C D E F G H I J K L M) 
+  foo =>  (A B C D E F G H I J K L M)
+  bar =>  (F G H I J K L M)
+  baz =>  (K L M)
+  
+  (nconc nil (list 1 2 3) nil) => (1 2 3)
 )
 
 
@@ -81,8 +114,6 @@
 (defun place (l) (setq ctr (1+ ctr)) l) ; return arg, incr number of invocations
 
 ;;; test setf
-(define x nil)
-(define y nil)
 (tests setf
   (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
   (setf (car x) 'x (cadr y) (car x) (cdr x) y) =>  (1 X 3) 

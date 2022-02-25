@@ -19,7 +19,7 @@ and begin your source file with
 
 mlib provides the following Common Lisp-like functions and macros:
 
-- [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last)
+- [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last), [nconc](#function-nconc)
 - [destructuring-bind](#macro-destructuring-bind)
 - [get-setf-expansion](#function-get-setf-expansion)
 - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
@@ -77,6 +77,13 @@ as well as the following additional functions and macros:
 
 `last` returns the last cons of a proper or dotted list
 or `nil` for the empty list.
+
+### Function: nconc
+    (nconc lists*) -> concatenated-list
+
+`nconc` concatenates lists, each list but the last is modified.
+If no lists are supplied, `nconc` returns `nil`.
+Each argument but the last must be a proper list.
 
 ### Macro: destructuring-bind
     (destructuring-bind (vars*) (expressions*) forms*)

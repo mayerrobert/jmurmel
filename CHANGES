@@ -7,7 +7,8 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * added  an optional parameter print-escape-p for write, writeln, lnwrite
  * added "(declaim (optimize..."
 
- * mlib: added functions last, circular-list, compose, conjoin, disjoin, map-into, curry, rcurry
+ * mlib: added functions last, circular-list, compose, conjoin, disjoin,
+   map-into, curry, rcurry, nconc
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
  * added limited support for "macroexpand-1" in compiled code (quoted forms only)
