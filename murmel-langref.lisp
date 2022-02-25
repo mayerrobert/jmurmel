@@ -565,6 +565,20 @@ pi ; ==> 3.141592653589793
 (rplaca l 11) ; ==> (11 2)
 (rplacd l 22) ; ==> (11 . 22)
 
+;;; = (list elems*) -> list<br/>(list* elems+) -> atom-or-dotted-list
+;
+; `list` will create a list consisting of it's arguments,
+; `list*` will create a dotted list.
+
+(list) ; ==> nil
+(list 1) ; ==> (1)
+(list 1 2 3) ; ==> (1 2 3)
+
+;(list*) ; ==> error
+(list* 1) ; ==> 1
+(list* 1 2 3) ; ==> (1 2 . 3)
+
+
 ;;; = (eval form) -> object<br/> (eval form env) -> object
 ;
 ; `form` will be eval'd, it must return a form.

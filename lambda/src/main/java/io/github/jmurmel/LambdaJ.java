@@ -1866,6 +1866,7 @@ public class LambdaJ {
         if (op == sDec)  { oneNumber("1-", args);  return dec((Number)car(args)); }
 
         if (op == sList) { return args; }
+        if (op == sListStar) { return listStar(args); }
 
         return NOT_HANDLED;
     }
@@ -2357,6 +2358,18 @@ public class LambdaJ {
         if (list == null) return null;
         for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
         return list;
+    }
+
+    private Object listStar(ConsCell args) {
+        nArgs("list*", args, 1);
+        if (cdr(args) == null) return car(args);
+        if (cddr(args) == null) return cons(car(args), cadr(args));
+        final ListBuilder b = new ListBuilder();
+        for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
+            b.append(car(args));
+        }
+        b.appendLast(car(args));
+        return b.first();
     }
 
     /** return the cons whose car is eq to {@code atom}
@@ -3207,10 +3220,11 @@ public class LambdaJ {
                   addBuiltin("listp",   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); },
                   addBuiltin("null",    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); },
                   addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
-                  addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",  a);   return assq(car(a), cadr(a)); },
+                  addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",   a);  return assq(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
-                  addBuiltin("eql", (Primitive) a -> { twoArgs("eql", a);   return boolResult(cl_eql(car(a), cadr(a))); },
-                  env))))))));
+                  addBuiltin("list*",   (Primitive) a -> { return listStar(a); }, 
+                  addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(cl_eql(car(a), cadr(a))); },
+                  env)))))))));
 
             env = addBuiltin("append",  (Primitive) a -> append(listToArray(a)),
                   env);
@@ -4417,6 +4431,7 @@ public class LambdaJ {
             }
             return (ConsCell)ret.first(); // todo ist der cast safe?
         }
+        public final Object listStar   (Object... args) { return intp.listStar(arraySlice(args)); }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
         public final double   _fround   (Object... args) { oneArg("fround",      args.length); return cl_round(dbl(args[0])); }
@@ -4447,9 +4462,9 @@ public class LambdaJ {
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
         public final Number   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
-        public static Number  inc1     (Object arg)     {                                         number(arg);     return LambdaJ.inc((Number)arg); }
+        public static Number  inc1     (Object arg)     {                                    number(arg);     return LambdaJ.inc((Number)arg); }
         public final Number   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
-        public static Number  dec1     (Object arg)     {                                         number(arg);     return LambdaJ.dec((Number)arg); }
+        public static Number  dec1     (Object arg)     {                                    number(arg);     return LambdaJ.dec((Number)arg); }
 
         public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
         public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
@@ -4848,6 +4863,7 @@ public class LambdaJ {
             {"1+", "inc"}, {"1-", "dec"},
             {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
             {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
+            {"list*", "listStar"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
@@ -5878,6 +5894,27 @@ public class LambdaJ {
                     sb.append("cons(");  formToJava(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
                 funcallVarargs(0, sb, "list", "_list", args, env, topEnv, rsfx); return true;
+            }
+
+            if (isSymbol(op, "list*")) {
+                nArgs("list*", args, 1);
+                if (cdr(args) == null) { formToJava(sb, car(args), env, topEnv, rsfx, false); return true; }
+                if (cddr(args) == null) {
+                    sb.append("cons(");
+                    formToJava(sb, car(args), env, topEnv, rsfx, false);
+                    sb.append(", ");
+                    formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+                    sb.append(')');
+                    return true;
+                }
+                sb.append("new ListBuilder()");
+                for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
+                    sb.append(".append(");
+                    formToJava(sb, car(args), env, topEnv, rsfx, false);
+                    sb.append(")\n        ");
+                }
+                sb.append(".appendLast("); formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(").first()");
+                return true;
             }
             return false;
         }
