@@ -2026,6 +2026,7 @@ public class LambdaJ {
                     return prevSymtab.intern(sym);
                 }
             };
+            parser.filePath = p;
             symtab = parser;
             Object result = null;
             for (;;) {
@@ -3756,7 +3757,8 @@ public class LambdaJ {
         try {
             final SExpressionParser parser = (SExpressionParser)interpreter.symtab;
             parser.setInput(prog);
-            final ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, fileName, true);
+            parser.filePath = fileName;
+            final ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, null, true);
             final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
             Object result = null;

@@ -1,5 +1,3 @@
-load sucht nicht im directory vom file sondern im libdir
-
 CL sleep uebernimmt sekunden, Murmel internal time units ?!?
 
 

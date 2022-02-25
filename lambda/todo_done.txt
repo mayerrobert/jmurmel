@@ -1260,3 +1260,5 @@ Function: circular-list &rest elements
     Creates a circular list of elements. 
 
 gesondertes flag für turtle?
+
+load sucht nicht im directory vom file sondern im libdir
