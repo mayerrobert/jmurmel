@@ -926,7 +926,9 @@
 ;;;
 ;;; `write-char` outputs `c` to stdout.
 (defun write-char (c)
-  (format t "%c" c) c)
+  (if (characterp c)
+        (write c nil)
+    (fatal "not a character")) c)
 
 
 ;;; = Function: terpri, prin1, princ, print
@@ -934,7 +936,7 @@
 
 (defun prin1 (o) (write o) o)
 
-(defun princ (o) (format t "%s" o) o)
+(defun princ (o) (write o nil) o)
 
 (defun print (o) (lnwrite o) o)
 
