@@ -104,7 +104,8 @@ public class BackquoteTest {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
         //assertExpansion("`(aaa bbb . ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote ccc)))");
         //assertExpansion("`(aaa bbb . ccc)", "(append (list (quote aaa)) (append (list (quote bbb)) (quote ccc)))");
-        assertExpansion("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
+        //assertExpansion("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
+        assertExpansion("`(aaa bbb . ccc)", "(list* (quote aaa) (quote bbb) (quote ccc))");
     }
 
     @Test
@@ -113,7 +114,8 @@ public class BackquoteTest {
         //assertExpansion("`(a ,@l b)", "(append (quote (a)) (append l (quote (b))))");
         //assertExpansion("`(a ,@l b)", "(append (list (quote a)) (append l (list (quote b))))");
         //assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (list (quote b))))");
-        assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
+        //assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
+        assertExpansion("`(a ,@l b)", "(list* (quote a) (append l (cons (quote b) nil)))");
     }
 
     // sample from CLHS
@@ -125,7 +127,8 @@ public class BackquoteTest {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,c ,@d)", "((\"A\" b) \"C\" \"D\" \"DD\")");
         //assertExpansion("`((,a b) ,c ,@d)", "(append (list (append (list a) (quote (b)))) (append (list c) d))");
         //assertExpansion("`((,a b) ,c ,@d)", "(append (list (list a (quote b))) (append (list c) d))");
-        assertExpansion("`((,a b) ,c ,@d)", "(cons (list a (quote b)) (cons c d))");
+        //assertExpansion("`((,a b) ,c ,@d)", "(cons (list a (quote b)) (cons c d))");
+        assertExpansion("`((,a b) ,c ,@d)", "(list* (list a (quote b)) c d)");
     }
 
     @Test
@@ -134,7 +137,8 @@ public class BackquoteTest {
         //assertExpansion("`((,a b) ,@d ,c)", "(append (list (append (list a) (quote (b)))) (append d (list c)))");
         //assertExpansion("`((,a b) ,@d ,c)", "(append (list (list a (quote b))) (append d (list c)))");
         //assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (list c)))");
-        assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
+        //assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
+        assertExpansion("`((,a b) ,@d ,c)", "(list* (list a (quote b)) (append d (cons c nil)))");
     }
 
     // sample from Ansi Common Lisp pp413

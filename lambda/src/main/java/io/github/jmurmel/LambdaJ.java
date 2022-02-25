@@ -916,6 +916,7 @@ public class LambdaJ {
         private final Object sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
         private final Object sAppend         = intern(new LambdaJSymbol("append"));
         private final Object sList           = intern(new LambdaJSymbol("list"));
+        private final Object sListStar       = intern(new LambdaJSymbol("list*"));
         private final Object sCons           = intern(new LambdaJSymbol("cons"));
         private final Object sNil            = intern(new LambdaJSymbol("nil"));
 
@@ -1176,16 +1177,20 @@ public class LambdaJ {
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
          * For some special case the form will be optimized:
          *
-         * (append (list lhsX) (list rhsX...)) -> (list lhsX rhsX...)
-         * (append (list lhsX) rhs)            -> (cons lhsX rhs) ; todo koennte auch (list* lhsX rhs) sein und list* wuerde von weiteren regeln erfasst: (append (list lhsX) (list* rhsX...)) -> (list* lhsX rhsX...) 
-         * (append lhs (list rhsX))            -> (append lhs (cons rhsX nil))
+         * (append (list lhsX) (list rhsX...))  -> (list lhsX rhsX...)
+         * (append (list lhsX) (list* rhsX...)) -> (list* lhsX rhsX...)
+         * (append (list lhsX) rhs)             -> (list* lhsX rhs)  
+         * (append lhs (list rhsX))             -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
             if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList)
                 return new ListConsCell(sList, new ListConsCell(cadr(lhs), cdr(rhs)));
 
+            else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sListStar)
+                return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
+
             else if (car(lhs) == sList && cddr(lhs) == null)
-                return list(sCons, cadr(lhs), rhs);
+                return list(sListStar, cadr(lhs), rhs);
 
             else if (car(rhs) == sList && cddr(rhs) == null)
                 return list(sAppend, lhs, list(sCons, cadr(rhs), null));
