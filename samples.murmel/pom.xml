@@ -99,6 +99,25 @@
                     </execution>
 
                     <execution>
+                        <id>run-murmel-test-speed0</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>speed0.lisp</argument>
+                                <argument>murmel-test.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>run-compiled-murmel-test</id>
                         <phase>test</phase>
                         <goals>
@@ -112,6 +131,26 @@
                                 <argument>io.github.jmurmel.LambdaJ</argument>
                                 <argument>--verbose</argument>
                                 <argument>--run</argument>
+                                <argument>murmel-test.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-compiled-murmel-test-speed0</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>speed0.lisp</argument>
                                 <argument>murmel-test.lisp</argument>
                             </arguments>
                         </configuration>
