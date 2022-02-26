@@ -4670,6 +4670,18 @@ public class LambdaJ {
             return ((Number)n).doubleValue();
         }
 
+        protected static long truncate(double d) {
+            return LambdaJ.truncate(d);
+        }
+
+        protected static double cl_truncate(double d) {
+            return LambdaJ.cl_truncate(d);
+        }
+
+        protected static double cl_round(double d) {
+            return LambdaJ.cl_round(d);
+        }
+
         private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
         private Object compare(String op, Object[] args, DoubleBiPred pred) {
@@ -5874,12 +5886,22 @@ public class LambdaJ {
         }
 
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
-        // todo if-kette durch schleife ersetzen vgl. opencodeApply
+        // todo if-kette durch schleife ersetzen vgl. opencodeApply, oder zumindest mit einer schleife normale calls ohne trampoline generieren
         private boolean opencode(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+
+            if (isSymbol(op, "round"))     { divisionOp(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
+            if (isSymbol(op, "floor"))     { divisionOp(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
+            if (isSymbol(op, "ceiling"))   { divisionOp(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
+            if (isSymbol(op, "truncate"))  { divisionOp(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
+
+            if (isSymbol(op, "fround"))    { divisionOp(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
+            if (isSymbol(op, "ffloor"))    { divisionOp(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
+            if (isSymbol(op, "fceiling"))  { divisionOp(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
+            if (isSymbol(op, "ftruncate")) { divisionOp(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
             if (isSymbol(op, "="))  { funcallVarargs(1, sb, "=", "numbereq", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "/=")) { funcallVarargs(1, sb, "/=", "ne",      args, env, topEnv, rsfx); return true; }
@@ -5930,6 +5952,25 @@ public class LambdaJ {
                 return true;
             }
             return false;
+        }
+
+        /** 2 args: divide 2 numbers and apply "javaOp" to the result
+         *  1 arg: apply "javaOp" to the number
+         */
+        private void divisionOp(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
+            nArgs(murmel, args, 1, 2);
+            if (asLong) sb.append("truncate(");
+            sb.append(javaOp).append("(dbl(");
+            if (cdr(args) == null) {
+                formToJava(sb, car(args), env, topEnv, rsfx, false);
+            }
+            else {
+                formToJava(sb, car(args), env, topEnv, rsfx, false);
+                sb.append(") / dbl(");
+                formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+            }
+            sb.append("))");
+            if (asLong) sb.append(')');
         }
 
         /** generate boolean op for one or two args */

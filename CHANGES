@@ -14,7 +14,8 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
  * backquote expansion generates more efficient code
- * some functions are opencoded
+ * some functions are "opencoded" (i.e. trampolines and/ or argcount checks are omitted,
+   regular Java code is emitted instead)
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
  * fixed "append" for compiled code
