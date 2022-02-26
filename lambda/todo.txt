@@ -11,9 +11,6 @@ backquotes, append, assoc, assq
 
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 
-floor, ffloor mit zweitem optionalen parameter? [f]ceiling, mod, rem, [f]truncate detto
--> bei opencoding im compiler: nach floor1 oder floor2 expandieren, je nachdem ob 1 oder 2 argumente
-
 ggf. den langen switch für getsymbol nicht mehr dynamisch generieren sondern hardcodieren? und einen unittest schreiben dass alles da ist?
 
 

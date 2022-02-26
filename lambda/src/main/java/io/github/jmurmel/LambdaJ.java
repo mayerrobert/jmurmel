@@ -3265,16 +3265,16 @@ public class LambdaJ {
             env = addBuiltin("pi",      Math.PI,
                   env);
 
-            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 1); return cl_round((Number)car(args)); },
-                  addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 1); return Math.floor(((Number)car(args)).doubleValue()); },
-                  addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 1); return Math.ceil (((Number)car(args)).doubleValue()); },
-                  addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 1); return cl_truncate((Number)car(args)); },
+            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 2); return cl_round   (quot12(args)); },
+                  addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 2); return Math.floor (quot12(args)); },
+                  addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 2); return Math.ceil  (quot12(args)); },
+                  addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 2); return cl_truncate(quot12(args)); },
                   env))));
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 1); return truncate(cl_round((Number)car(args))); },
-                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 1); return truncate(Math.floor(((Number)car(args)).doubleValue())); },
-                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 1); return truncate(Math.ceil (((Number)car(args)).doubleValue())); },
-                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 1); return truncate(cl_truncate((Number)car(args))); },
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return truncate(cl_round   (quot12(args))); },
+                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 2); return truncate(Math.floor (quot12(args))); },
+                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 2); return truncate(Math.ceil  (quot12(args))); },
+                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 2); return truncate(cl_truncate(quot12(args))); },
                   env))));
 
             env = addBuiltin("1+",      (Primitive) args -> { oneNumber("1+", args); return inc((Number)car(args)); },
@@ -3323,6 +3323,10 @@ public class LambdaJ {
         return env;
     }
 
+    private static double quot12(ConsCell args) {
+        return cdr(args) == null ? ((Number)car(args)).doubleValue() : ((Number)car(args)).doubleValue() / ((Number)cadr(args)).doubleValue();
+    }
+
     private static boolean cl_eql(Object o1, Object o2) {
         if (o1 == o2) return true;
         if (numberp(o1) && numberp(o2)
@@ -3338,14 +3342,14 @@ public class LambdaJ {
     /** produce a quotient that has been rounded to the nearest mathematical integer;
      *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
      *  then the quotient has been rounded to the even (divisible by two) integer. */
-    private static double cl_round(Number n) {
-        return Math.rint(n.doubleValue());
+    private static double cl_round(double n) {
+        return Math.rint(n);
     }
 
-    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer of the same sign as the mathematical quotient,
+    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
+     *  of the same sign as the mathematical quotient,
      *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
-    private static double cl_truncate(Number n) {
-        final double d = n.doubleValue();
+    private static double cl_truncate(double d) {
         return d < 0.0 ? Math.ceil(d) : Math.floor(d);
     }
 
@@ -4441,15 +4445,15 @@ public class LambdaJ {
         public final Object listStar   (Object... args) { return intp.listStar(arraySlice(args)); }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
-        public final double   _fround   (Object... args) { oneArg("fround",      args.length); return cl_round(dbl(args[0])); }
-        public final double   _ffloor   (Object... args) { oneArg("ffloor",      args.length); return Math.floor(dbl(args[0])); }
-        public final double   _fceiling (Object... args) { oneArg("fceiling",    args.length); return Math.ceil (dbl(args[0])); }
-        public final double   _ftruncate(Object... args) { oneArg("ftruncate",   args.length); return cl_truncate(dbl(args[0])); }
+        public final double   _fround   (Object... args) { onetwoArg("fround",   args.length); return cl_round   (quot12(args)); }
+        public final double   _ffloor   (Object... args) { onetwoArg("ffloor",   args.length); return Math.floor (quot12(args)); }
+        public final double   _fceiling (Object... args) { onetwoArg("fceiling", args.length); return Math.ceil  (quot12(args)); }
+        public final double   _ftruncate(Object... args) { onetwoArg("ftruncate",args.length); return cl_truncate(quot12(args)); }
 
-        public final long     _round   (Object... args) { oneArg("round",      args.length); return truncate(cl_round(dbl(args[0]))); }
-        public final long     _floor   (Object... args) { oneArg("floor",      args.length); return truncate(Math.floor(dbl(args[0]))); }
-        public final long     _ceiling (Object... args) { oneArg("ceiling",    args.length); return truncate(Math.ceil (dbl(args[0]))); }
-        public final long     _truncate(Object... args) { oneArg("truncate",   args.length); return truncate(cl_truncate(dbl(args[0]))); }
+        public final long     _round   (Object... args) { onetwoArg("round",     args.length); return truncate(cl_round   (quot12(args))); }
+        public final long     _floor   (Object... args) { onetwoArg("floor",     args.length); return truncate(Math.floor (quot12(args))); }
+        public final long     _ceiling (Object... args) { onetwoArg("ceiling",   args.length); return truncate(Math.ceil  (quot12(args))); }
+        public final long     _truncate(Object... args) { onetwoArg("truncate",  args.length); return truncate(cl_truncate(quot12(args))); }
 
         public final Object   charInt  (Object... args) { oneArg("char-code",  args.length); return (long)asChar("char-code", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",  args.length); return (char)asInt("code-char", args[0]); }
@@ -4665,6 +4669,8 @@ public class LambdaJ {
             number(n);
             return ((Number)n).doubleValue();
         }
+
+        private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
         private Object compare(String op, Object[] args, DoubleBiPred pred) {
             oneOrMoreNumbers(op, args);

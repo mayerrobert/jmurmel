@@ -3,23 +3,23 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
 
  * added more complete support for "let dynamic" and "let* dynamic"
    (before 1.2 only "let* dynamic" in interpreted code was supported)
- * added functions assq, list*
- * added  an optional parameter print-escape-p for write, writeln, lnwrite
- * added "(declaim (optimize..."
+ * added primitive functions assq, list*
+ * added an optional parameter print-escape-p for primitive functions write, writeln, lnwrite
+ * added special form "(declaim (optimize..."
+ * added limited support for "macroexpand-1" in compiled code (quoted forms only)
+ * [f]round, [f]floor, [f]ceiling and [f]truncate now support 1 or 2 arguments (was: 1)
 
  * mlib: added functions last, circular-list, compose, conjoin, disjoin,
    map-into, curry, rcurry, nconc
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
- * added limited support for "macroexpand-1" in compiled code (quoted forms only)
+ * backquote expansion generates more efficient code
  * some functions are opencoded
  * fixed compiler primitive "list" to return a mutable list
  * fixed compiled "let*"
  * fixed "append" for compiled code
  * fixed using rplaca on varargs list
  * fixed/ cleaned up feature-flags
- 
- * backquote expansion generates more effivcient code
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

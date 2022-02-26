@@ -662,7 +662,7 @@ Increment and decrement return the same type as the argument.
 
 ### round, truncate, floor, ceiling
 
-These functions take one argument and return an integer value or an exception
+These functions take one or two arguments and return an integer value or an exception
 if the value cannot be represented by a long
 (NaN, Infinite, integer overflow or underflow),
 eg. `(floor number) -> long`
@@ -671,7 +671,7 @@ eg. `(floor number) -> long`
 
 ### fround, ftruncate, ffloor, fceiling
 
-These functions take one argument and return an integer value as a double,
+These functions take one or two arguments and return an integer value as a double,
 eg. `(ffloor number) -> double`
 
     (ffloor 1.1) ; ==> 1.0

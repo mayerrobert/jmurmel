@@ -1,5 +1,3 @@
-compose, conjoin, curry, rcurry... siehe https://common-lisp.net/project/alexandria/draft/alexandria.html
--> compose1 umbenamsen, alexandria passt intern auch nur primary value
 evenp, oddp mit x & 0x1 machen.
 
 https://github.com/cl21/cl21 ist Common Lisp 2021
@@ -18,8 +16,6 @@ https://blogs.oracle.com/javamagazine/post/you-dont-always-need-an-application-s
 HelidonSE hat ein eigenes API basierend auf Lambdas, HelidonMP kopiert man zu einer JEE app dazu
 
 http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
-
-floor mit 2 parametern ist schon praktisch
 
 (min numbers...), (max numbers...), (gcd integers...), (lcm integers...)
 -> siehe https://www.youtube.com/watch?v=UVUjnzpQKUo
