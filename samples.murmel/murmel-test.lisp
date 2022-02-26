@@ -84,13 +84,14 @@
 
 ;;; Tests for core Murmel w/o mlib
 
-;;; todo basic special forms: quote, lambda
+;;; basic special forms: quote, lambda
 
 ;;; test lambda
-#+murmel (deftest lambda.1 ((lambda nil)) nil)
+(deftest lambda.1 (#-murmel funcall (lambda nil)) nil)
 
 
-;;; todo Additional Special Forms: define, defun, defmacro, setq, let, if, progn, cond, labels, apply
+;;; Additional special forms: define, defun, defmacro, setq, let, if, progn, cond, labels, apply, load, require, provide
+;;; todo cond, labels, apply, load, require, provide
 
 ;;; test define
 (define *a* nil)
@@ -163,11 +164,15 @@
 
 
 ;;; let over lambda
-#+murmel (define f (let ((ctr 0)) (lambda () (setq ctr (1+ ctr)))))
-#+murmel (deftest closure.1 (list (f) (f) (f)) '(1 2 3))
+#+murmel
+(progn
+  (define f (let ((ctr 0)) (lambda () (setq ctr (1+ ctr)))))
+  (deftest closure.1 (list (f) (f) (f)) '(1 2 3))
+)
 
 
 ;;; Primitives
+;;; todo remaining primitives
 
 ;;; test eql
 (deftest eql.1 (eql 'a 'b)  nil)
@@ -180,7 +185,7 @@
 (deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
 (deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
 (deftest eql.10 (eql '(a . b) '(a . b))  nil)
-(#+murmel define #-murmel defparameter x nil)
+(define x nil)
 (deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
 (deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
 (deftest eql.13 (eql #\A #\A)  t)
@@ -197,8 +202,13 @@
 
 
 ;;; test assq
-(deftest assq.1 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))  '(a-key 3))
-(deftest assq.2 (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
+(deftest assq.1 (assq 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))  '(a-key 3))
+(deftest assq.2 (assq nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
+
+
+;;; test assoc
+(deftest assoc.1 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))  '(a-key 3))
+(deftest assoc.2 (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
 
 
 ;;; test number comparison operators
@@ -227,10 +237,7 @@
 
 
 ;;; test +
-(deftest test-add-minus-zero
-  (+ -0.0 -0.0)
-  -0.0
-)
+(deftest test-add-minus-zero (+ -0.0 -0.0)  -0.0)
 
 
 ;;; Murmel-only tests for various not-a-numbers.
@@ -241,7 +248,7 @@
       (pinf (/ 1 0)))   ; Infinity, positive infinity
 
   (deftest inf.lt (< ninf -1.0 0.0 pinf) t)
-  
+
   (deftest inf.add1  (+ ninf ninf) ninf)
   (deftest inf.add2  (+ ninf -1.0) ninf)
   (deftest inf.add3  (+ ninf  0.0) ninf)
