@@ -2,8 +2,12 @@ CL sleep uebernimmt sekunden, Murmel internal time units ?!?
 
 
 
-viellecht variablen von typ ConsCell mit präfix c
 GETTING STARTED löschen (auch aus jmurmel.github.io)?
+
+vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
+die methoden im compiler, die code ausspucken umbenamsen: emit...
+truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
+
 
 00_tak_apo: null waere opencoded, not nicht. compiliert ist null doppelt so schnell, interpretiert wirds 40% schneller
 

@@ -1038,8 +1038,8 @@ pi ; ==> 3.141592653589793
 ;
 ; Compiler issues:
 ;
-; - define/ defun/ defmacro only work as top level forms, use as non-toplevel form
-;   will throw a "not-yet-implemented" compiler error.
+; - define/ defun/ defmacro only work as top level forms or within a `progn` form,
+;   other use as non-toplevel form will throw a "not-yet-implemented" compiler error.
 ; - define-ing an already define-d symbol is not supported
 ; - macroexpand-1 is limited to quoted forms
 
