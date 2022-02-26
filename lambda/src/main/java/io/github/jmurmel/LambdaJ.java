@@ -1559,10 +1559,10 @@ public class LambdaJ {
                     /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
-                        ConsCell[] ret = evalLet(operator, arguments, env, restore, stack, level, traceLvl);
-                        forms = ret[0];
-                        env = ret[1];
-                        restore = ret[2];
+                        final ConsCell[] formsAndEnv = evalLet(operator, arguments, env, restore, stack, level, traceLvl);
+                        forms = formsAndEnv[0];
+                        env = formsAndEnv[1];
+                        restore = formsAndEnv[2];
                         // fall through to "eval a list of forms"
 
                     } else if (macros.containsKey(operator)) {
@@ -1757,8 +1757,7 @@ public class LambdaJ {
                 final ConsCell lambda = makeClosure(cdr(currentFunc), extEnv);
                 insertFront(extEnv, currentSymbol, lambda);
             }
-        final ConsCell[] ret = new ConsCell[] { (ConsCell) cdr(arguments), extEnv};
-        return ret;
+        return new ConsCell[]{ (ConsCell) cdr(arguments), extEnv};
     }
 
     private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
@@ -1796,7 +1795,7 @@ public class LambdaJ {
 
                 notReserved(op, sym);
 
-                boolean isNewSymbol = seen.add(sym);
+                final boolean isNewSymbol = seen.add(sym);
                 if (!letStar) { // let and letrec don't allow duplicate symbols
                     if (!isNewSymbol) throw errorMalformed(op, "duplicate symbol " + sym);
                 }
@@ -1816,7 +1815,7 @@ public class LambdaJ {
                 else extenv = extendEnv(extenv, sym, val);
             }
             if (newValues != null) for (Object o: newValues) {
-                ConsCell c = (ConsCell)o;
+                final ConsCell c = (ConsCell)o;
                 ((ConsCell)car(c)).rplacd(cdr(c));
             }
         }
@@ -2893,14 +2892,14 @@ public class LambdaJ {
     private void write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
         if (printEscape) lispPrinter.printObj(arg);
-        else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(arg, printEscape)));
+        else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(arg, false)));
     }
 
     private void writeln(final ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
         if (arg != null) {
             if (printEscape) lispPrinter.printObj(car(arg));
-            else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), printEscape)));
+            else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), false)));
         }
         lispPrinter.printEol();
     }
@@ -2910,7 +2909,7 @@ public class LambdaJ {
         lispPrinter.printEol();
         if (arg != null) {
             if (printEscape) lispPrinter.printObj(car(arg));
-            else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), printEscape)));
+            else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), false)));
             lispPrinter.printString(" ");
         }
     }
@@ -3228,7 +3227,7 @@ public class LambdaJ {
                   addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
                   addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",   a);  return assq(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
-                  addBuiltin("list*",   (Primitive) a -> { return listStar(a); }, 
+                  addBuiltin("list*",   (Primitive) a -> listStar(a), 
                   addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(cl_eql(car(a), cadr(a))); },
                   env)))))))));
 
@@ -5635,15 +5634,13 @@ public class LambdaJ {
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
-                    if (!seen.add(letVar)) {
-                        if (letrec) errorMalformed(op, "duplicate symbol " + letVar);
-                    }
-                    else {
+                    if (seen.add(letVar)) {
                         final ConsCell _env = extenv(letVar, rsfx, env);
                         if (letrec) env = _env;
                         final String letVarName = javasym(letVar, _env);
                         sb.append("        private Object ").append(letVarName).append(" = null;\n");
                     }
+                    else if (letrec) errorMalformed(op, "duplicate symbol " + letVar);
                 }
             }
             
@@ -5695,8 +5692,8 @@ public class LambdaJ {
                     for (final Object sym: params) {
                         final boolean seen = !seenSymbols.add(sym);
                         final String javaName;
-                        if (!seen) javaName = "args" + (rsfx + 1) + "[" + n++ + "]";
-                        else javaName = javasym(sym, _env);
+                        if (seen) javaName = javasym(sym, _env);
+                        else javaName = "args" + (rsfx + 1) + "[" + n++ + "]";
 
                         final String globalName;
                         final ConsCell maybeGlobal = assq(sym, topEnv);
