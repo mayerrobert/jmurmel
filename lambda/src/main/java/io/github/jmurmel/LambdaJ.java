@@ -5900,20 +5900,20 @@ public class LambdaJ {
             if (isSymbol(op, "fceiling"))  { divisionOp(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
             if (isSymbol(op, "ftruncate")) { divisionOp(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (isSymbol(op, "="))  { funcallVarargs(1, sb, "=", "numbereq", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "/=")) { funcallVarargs(1, sb, "/=", "ne",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<"))  { funcallVarargs(1, sb, "<",  "lt",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<=")) { funcallVarargs(1, sb, "<=", "le",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">=")) { funcallVarargs(1, sb, ">=", "ge",      args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">"))  { funcallVarargs(1, sb, ">",  "gt",      args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "="))  { funcallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "/=")) { funcallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<"))  { funcallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<=")) { funcallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">=")) { funcallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">"))  { funcallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "car"))  { funcall1(sb, "car",  args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "cdr"))  { funcall1(sb, "cdr",  args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "car"))  { funcall1(sb, "car",  "car", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "cdr"))  { funcall1(sb, "cdr",  "cdr", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "cons")) { funcall2(sb, "cons", args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, "==", car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
             if (isSymbol(op, "eql"))  { funcall2(sb, "eql", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, "==", car(args), null, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, car(args), null, env, topEnv, rsfx); return true; }
 
             if (isSymbol(op, "1+"))   { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "1-"))   { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
@@ -5925,7 +5925,7 @@ public class LambdaJ {
                 if (cdr(args) == null) { // one arg
                     sb.append("cons(");  formToJava(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
-                funcallVarargs(0, sb, "list", "_list", args, env, topEnv, rsfx); return true;
+                funcallVarargs(sb, "list", "_list", 0, args, env, topEnv, rsfx); return true;
             }
 
             if (isSymbol(op, "list*")) {
@@ -5971,25 +5971,12 @@ public class LambdaJ {
         }
 
         /** generate boolean op for one or two args */
-        private void compareOp(WrappingWriter sb, String pred, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append('(').append('(');
+        private void compareOp(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append("((");
             formToJava(sb, lhs, env, topEnv, rsfx, false);
-            sb.append(' ').append(pred).append(' ');
+            sb.append(" == ");
             if (rhs == null) sb.append("null"); else formToJava(sb, rhs, env, topEnv, rsfx, false);
-            sb.append(") ").append(" ? _t : null)");
-        }
-
-        private void funcallVarargs(int minArgs, WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (minArgs > 0) nArgs(murmel,  args, minArgs);
-            sb.append(func).append("(");
-            if (args != null) {
-                formToJava(sb, car(args), env, topEnv, rsfx, false);
-                if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
-                    sb.append(", ");
-                    formToJava(sb, arg, env, topEnv, rsfx, false);
-                }
-            }
-            sb.append(')');
+            sb.append(") ? _t : null)");
         }
 
         /** generate double operator for zero or more number args */
@@ -6019,20 +6006,30 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        private void funcall1(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            funcall1(sb, func, func, args, env, topEnv, rsfx);
+        private void funcallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (minArgs > 0) nArgs(murmel,  args, minArgs);
+            funcallHelper(sb, func, func, args, env, topEnv, rsfx);
         }
 
         private void funcall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             oneArg(murmel, args);
-            sb.append(func).append("(");  formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(")");
+            funcallHelper(sb, func, func, args, env, topEnv, rsfx);
         }
         
         private void funcall2(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(func, args);
-            sb.append(func).append("(");
-            formToJava(sb, car(args), env, topEnv, rsfx, false);
-            sb.append(", "); formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+            funcallHelper(sb, func, func, args, env, topEnv, rsfx);
+        }
+
+        private void funcallHelper(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append(murmel).append("(");
+            if (args != null) {
+                formToJava(sb, car(args), env, topEnv, rsfx, false);
+                if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
+                    sb.append(", ");
+                    formToJava(sb, arg, env, topEnv, rsfx, false);
+                }
+            }
             sb.append(')');
         }
 
