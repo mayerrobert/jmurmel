@@ -1,3 +1,5 @@
+Profiling:
+==========
 CPU Profiler:  D:>java -agentlib:hprof=cpu=samples,interval=20,depth=3 -jar ..\..\lambda\target\jmurmel.jar --run --libdir .. 3.08_destru.lisp
 Heap Profiler: D:>java -agentlib:hprof=heap=sites                      -jar ..\..\lambda\target\jmurmel.jar --run --libdir .. 3.08_destru.lisp
 
@@ -5,9 +7,8 @@ siehe https://docs.oracle.com/javase/8/docs/technotes/samples/hprof.html
 
 
 
-MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
-Ggf. mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
-nicht so viele Object[] instanzieren.
+D:\jmurmel\samples.mlib\benchmark>java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar ..\..\lambda\target\jmurmel.jar --libdir .. --run 3.08_destru.lisp > comp.txt
+
 
 
 Profiling vgl. https://www.reddit.com/r/java/comments/kgcsfl/is_it_possible_with_significant_gc_load_to_have/ggf01nq/
@@ -19,7 +20,12 @@ If you run with
 you can see where most of the allocation occurs, settings=profile will add a percent or so (depending on the application).
 
 
-java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\jmurmel.jar test_ack.lisp
+
+Ideen:
+======
+MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
+Ggf. mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
+nicht so viele Object[] instanzieren.
 
 
 instanceof ist schnell bei einem Treffer, ggf. langsamer wenn das Objekt eine abgeleitete Klasse ist
