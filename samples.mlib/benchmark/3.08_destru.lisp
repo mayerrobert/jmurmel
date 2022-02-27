@@ -42,4 +42,4 @@
                                   (rplaca a i))))))))))))
 ;;; call:  (destructive 600. 50.)
 
-(bench "destru" (destructive 600 50) *default-duration*)  ; => 7
+(bench "destru" (destructive 600 50) *default-duration*)

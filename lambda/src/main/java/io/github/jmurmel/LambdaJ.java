@@ -4407,8 +4407,19 @@ public class LambdaJ {
         public final ConsCell _cons    (Object... args) { twoArg("cons",       args.length); return cons(args[0], args[1]); }
         public static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
 
-        public final Object   _rplaca  (Object... args) { return cl_rplaca(arraySlice(args)); }
-        public final Object   _rplacd  (Object... args) { return cl_rplacd(arraySlice(args)); }
+        public final Object   _rplaca  (Object... args) { twoArg("rplaca", args.length);  return rplaca(args[0], args[1]); }
+        public static Object rplaca(Object l, Object newCar) {
+            final ConsCell list = asList("rplaca", l);
+            list.rplaca(newCar);
+            return list;
+        }
+
+        public final Object   _rplacd  (Object... args) { twoArg("rplacd", args.length);  return rplacd(args[0], args[1]); }
+        public static Object rplacd(Object l, Object newCdr) {
+            final ConsCell list = asList("rplacd", l);
+            list.rplacd(newCdr);
+            return list;
+        }
 
         public final Object _eval      (Object... args) { onetwoArg("eval",    args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public final Object _eq        (Object... args) { twoArg("eq",         args.length); return args[0] == args[1] ? _t : null; }
@@ -5345,7 +5356,7 @@ public class LambdaJ {
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 final Object form = it.next();
-                ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form)); ret.append("\";\n        ");
+                ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        ");
                 if (it.hasNext()) ret.append("result").append(rsfx).append(" = ");
                 else ret.append("return ");
                 formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
@@ -5591,15 +5602,18 @@ public class LambdaJ {
                 }
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
-            else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form); sb.append('"'); }
+            else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }
             else sb.append(printSEx(form));
         }
 
-        private static void stringToJava(WrappingWriter sb, String s) {
+        private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
             if (s == null)   { sb.append("null"); return; }
             if (s.isEmpty()) { sb.append("\"\""); return; }
-            
-            for (char c: s.toCharArray()) {
+
+            final int length = s.length();
+            for (int i = 0; i < length; i++) {
+                if (maxlen > 0 && i == maxlen) { sb.append("..."); return; }
+                char c = s.charAt(i);
                 switch (c) {
                 case '\"': sb.append("\\\""); break;
                 case '\\': sb.append("\\\\");   break;
@@ -6030,6 +6044,8 @@ public class LambdaJ {
             if (isSymbol(op, "car"))  { funcall1(sb, "car",  "car", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "cdr"))  { funcall1(sb, "cdr",  "cdr", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "cons")) { funcall2(sb, "cons", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "rplaca")) { funcall2(sb, "rplaca", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "rplacd")) { funcall2(sb, "rplacd", args, env, topEnv, rsfx); return true; }
 
             if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
             if (isSymbol(op, "eql"))  { funcall2(sb, "eql", args, env, topEnv, rsfx); return true; }

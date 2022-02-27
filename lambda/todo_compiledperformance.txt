@@ -1,3 +1,10 @@
+CPU Profiler:  D:>java -agentlib:hprof=cpu=samples,interval=20,depth=3 -jar ..\..\lambda\target\jmurmel.jar --run --libdir .. 3.08_destru.lisp
+Heap Profiler: D:>java -agentlib:hprof=heap=sites                      -jar ..\..\lambda\target\jmurmel.jar --run --libdir .. 3.08_destru.lisp
+
+siehe https://docs.oracle.com/javase/8/docs/technotes/samples/hprof.html
+
+
+
 MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
 Ggf. mehrere CompilerPrimitive0, 1, 2, 3 fuer 0/ 1/ 2/ 3 Parameter statt Object..., dann wuerde der generierte Code
 nicht so viele Object[] instanzieren.
