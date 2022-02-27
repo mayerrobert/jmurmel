@@ -4354,7 +4354,6 @@ public class LambdaJ {
         @Override public final ObjectReader getLispReader()  { return intp.getLispReader(); }
         @Override public final ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
         @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { intp.setReaderPrinter(lispStdin, lispStdout); }
-        @Override public abstract Object getValue(String globalSymbol);
 
         @Override
         public final MurmelFunction getFunction(String func) {
@@ -4793,6 +4792,116 @@ public class LambdaJ {
                 System.exit(1);
             }
         }
+        
+        @Override public Object getValue(String symbol) {
+            switch (symbol) {
+            case "nil": return _nil;
+            case "t": return _t;
+            case "pi": return _pi;
+            case "internal-time-units-per-second": return itups;
+            case "*command-line-argument-list*": return commandlineArgumentList;
+            case "car": return (CompilerPrimitive)this::_car;
+            case "cdr": return (CompilerPrimitive)this::_cdr;
+            case "cons": return (CompilerPrimitive)this::_cons;
+            case "rplaca": return (CompilerPrimitive)this::_rplaca;
+            case "rplacd": return (CompilerPrimitive)this::_rplacd;
+            case "eval": return (CompilerPrimitive)this::_eval;
+            case "eq": return (CompilerPrimitive)this::_eq;
+            case "eql": return (CompilerPrimitive)this::_eql;
+            case "null": return (CompilerPrimitive)this::_null;
+            case "write": return (CompilerPrimitive)this::_write;
+            case "writeln": return (CompilerPrimitive)this::_writeln;
+            case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
+            case "atom": return (CompilerPrimitive)this::_atom;
+            case "consp": return (CompilerPrimitive)this::_consp;
+            case "listp": return (CompilerPrimitive)this::_listp;
+            case "symbolp": return (CompilerPrimitive)this::_symbolp;
+            case "numberp": return (CompilerPrimitive)this::_numberp;
+            case "stringp": return (CompilerPrimitive)this::_stringp;
+            case "characterp": return (CompilerPrimitive)this::_characterp;
+            case "integerp": return (CompilerPrimitive)this::_integerp;
+            case "floatp": return (CompilerPrimitive)this::_floatp;
+            case "assoc": return (CompilerPrimitive)this::_assoc;
+            case "assq": return (CompilerPrimitive)this::_assq;
+            case "list": return (CompilerPrimitive)this::_list;
+            case "append": return (CompilerPrimitive)this::_append;
+            case "round": return (CompilerPrimitive)this::_round;
+            case "floor": return (CompilerPrimitive)this::_floor;
+            case "ceiling": return (CompilerPrimitive)this::_ceiling;
+            case "truncate": return (CompilerPrimitive)this::_truncate;
+            case "fround": return (CompilerPrimitive)this::_fround;
+            case "ffloor": return (CompilerPrimitive)this::_ffloor;
+            case "fceiling": return (CompilerPrimitive)this::_fceiling;
+            case "ftruncate": return (CompilerPrimitive)this::_ftruncate;
+            case "sqrt": return (CompilerPrimitive)this::_sqrt;
+            case "log": return (CompilerPrimitive)this::_log;
+            case "log10": return (CompilerPrimitive)this::_log10;
+            case "exp": return (CompilerPrimitive)this::_exp;
+            case "expt": return (CompilerPrimitive)this::_expt;
+            case "mod": return (CompilerPrimitive)this::_mod;
+            case "rem": return (CompilerPrimitive)this::_rem;
+            case "signum": return (CompilerPrimitive)this::_signum;
+            case "gensym": return (CompilerPrimitive)this::_gensym;
+            case "trace": return (CompilerPrimitive)this::_trace;
+            case "untrace": return (CompilerPrimitive)this::_untrace;
+            case "fatal": return (CompilerPrimitive)this::_fatal;
+            case "+": return (CompilerPrimitive)this::add;
+            case "*": return (CompilerPrimitive)this::mul;
+            case "-": return (CompilerPrimitive)this::sub;
+            case "/": return (CompilerPrimitive)this::quot;
+            case "=": return (CompilerPrimitive)this::numbereq;
+            case "<=": return (CompilerPrimitive)this::le;
+            case "<": return (CompilerPrimitive)this::lt;
+            case ">=": return (CompilerPrimitive)this::ge;
+            case ">": return (CompilerPrimitive)this::gt;
+            case "/=": return (CompilerPrimitive)this::ne;
+            case "1+": return (CompilerPrimitive)this::inc;
+            case "1-": return (CompilerPrimitive)this::dec;
+            case "format": return (CompilerPrimitive)this::format;
+            case "format-locale": return (CompilerPrimitive)this::formatLocale;
+            case "char-code": return (CompilerPrimitive)this::charInt;
+            case "code-char": return (CompilerPrimitive)this::intChar;
+            case "string=": return (CompilerPrimitive)this::stringeq;
+            case "string->list": return (CompilerPrimitive)this::stringToList;
+            case "list->string": return (CompilerPrimitive)this::listToString;
+            case "list*": return (CompilerPrimitive)this::listStar;
+            case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
+            case "get-internal-run-time": return (CompilerPrimitive)this::getInternalRunTime;
+            case "get-internal-cpu-time": return (CompilerPrimitive)this::getInternalCpuTime;
+            case "sleep": return (CompilerPrimitive)this::sleep;
+            case "get-universal-time": return (CompilerPrimitive)this::getUniversalTime;
+            case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
+            case "::": return (CompilerPrimitive)this::jambda;
+            case "make-frame": return (CompilerPrimitive)this::makeFrame;
+            case "open-frame": return (CompilerPrimitive)this::openFrame;
+            case "close-frame": return (CompilerPrimitive)this::closeFrame;
+            case "reset-frame": return (CompilerPrimitive)this::resetFrame;
+            case "clear-frame": return (CompilerPrimitive)this::clearFrame;
+            case "repaint-frame": return (CompilerPrimitive)this::repaintFrame;
+            case "flush-frame": return (CompilerPrimitive)this::flushFrame;
+            case "current-frame": return (CompilerPrimitive)this::currentFrame;
+            case "push-pos": return (CompilerPrimitive)this::pushPos;
+            case "pop-pos": return (CompilerPrimitive)this::popPos;
+            case "pen-up": return (CompilerPrimitive)this::penUp;
+            case "pen-down": return (CompilerPrimitive)this::penDown;
+            case "color": return (CompilerPrimitive)this::color;
+            case "bgcolor": return (CompilerPrimitive)this::bgColor;
+            case "text": return (CompilerPrimitive)this::text;
+            case "right": return (CompilerPrimitive)this::right;
+            case "left": return (CompilerPrimitive)this::left;
+            case "forward": return (CompilerPrimitive)this::forward;
+            case "move-to": return (CompilerPrimitive)this::moveTo;
+            case "line-to": return (CompilerPrimitive)this::lineTo;
+            case "move-rel": return (CompilerPrimitive)this::moveRel;
+            case "line-rel": return (CompilerPrimitive)this::lineRel;
+            case "make-bitmap": return (CompilerPrimitive)this::makeBitmap;
+            case "discard-bitmap": return (CompilerPrimitive)this::discardBitmap;
+            case "set-pixel": return (CompilerPrimitive)this::setPixel;
+            case "rgb-to-pixel": return (CompilerPrimitive)this::rgbToPixel;
+            case "hsb-to-pixel": return (CompilerPrimitive)this::hsbToPixel;
+            default: throw new LambdaJError(true, "%s: '%s' is undefined", "getValue", symbol);
+            }
+        }
     }
 
 
@@ -4998,14 +5107,19 @@ public class LambdaJ {
             ret.append("    @Override public Object getValue(String symbol) {\n");
             if (globals.length() > 0) ret.append("        switch (symbol) {\n").append(globals).append("        }\n");
 
-            ret.append("        switch (symbol) {\n");
-            for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
-            for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
-            for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (CompilerPrimitive)rt()::_").append(prim).append(";\n");
-            for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (CompilerPrimitive)rt()::").append(alias[1]).append(";\n");
-            ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
-                     + "        }\n"
-                     + "    }\n\n"
+            if (false) {
+                ret.append("        switch (symbol) {\n");
+                for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
+                for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
+                for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (CompilerPrimitive)rt()::_").append(prim).append(";\n");
+                for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (CompilerPrimitive)rt()::").append(alias[1]).append(";\n");
+                ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
+                         + "        }\n");
+            }
+            else {
+                ret.append("        return super.getValue(symbol);\n");
+            }
+            ret.append("    }\n\n"
                      + "    // toplevel forms\n"
                      + "    protected Object runbody() {\n        Object result0;\n");
 

@@ -7,6 +7,7 @@ GETTING STARTED löschen (auch aus jmurmel.github.io)?
 vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
+for(...toCharArray) durch normales for ersetzen
 
 generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredNN
 
@@ -19,7 +20,7 @@ backquotes, append, assoc, assq
 
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 
-ggf. den langen switch für getsymbol nicht mehr dynamisch generieren sondern hardcodieren? und einen unittest schreiben dass alles da ist?
+einen unittest schreiben dass MurmelJavaProgram.getValue() alle globals enthaelt
 
 
 der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
