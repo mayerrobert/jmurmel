@@ -4554,12 +4554,12 @@ public class LambdaJ {
         public final Object discardBitmap      (Object... args) { final ConsCell a = arraySlice(args); nArgs("discard-bitmap",  a, 0, 1); return intp.asFrame("discard-bitmap", car(a))  .discardBitmap();   }
 
         public final Object setPixel           (Object... args) { final ConsCell a = arraySlice(args); nArgs("set-pixel",       a, 3, 4); return intp.asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel",  car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  }
-        public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length); numbers(args[0], args[1], args[2]);
+        public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
                                                                   final int r = asInt("rgb-to-pixel", args[0]);
                                                                   final int g = asInt("rgb-to-pixel", args[1]);
                                                                   final int b = asInt("rgb-to-pixel", args[2]);
                                                                   return (r<<16) | (g<<8) | b; }
-        public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length); numbers(args[0], args[1], args[2]);
+        public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
                                                                   final float hue = asFloat("hsb-to-pixel", args[0]);
                                                                   final float sat = asFloat("hsb-to-pixel", args[1]);
                                                                   final float bri = asFloat("hsb-to-pixel", args[2]);
@@ -4756,7 +4756,9 @@ public class LambdaJ {
 
         /** error if n is not of type number */
         private static void number(Object n) {
-            if (!(n instanceof Number)) notANumber(n);
+            if (n instanceof Double) return;
+            if (n instanceof Long) return;
+            notANumber(n);
         }
 
         /** error if any arg is not of type number */
@@ -4954,12 +4956,11 @@ public class LambdaJ {
             }
             ret.append("import java.util.function.Function;\n"
                      + "import java.util.function.Supplier;\n"
-                     + "import io.github.jmurmel.LambdaJ;\n"
                      + "import io.github.jmurmel.LambdaJ.*;\n\n"
                      + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                      + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                      + "    public static void main(String[] args) {\n"
-                     + "        ").append(clsName).append(" program = new ").append(clsName).append("();\n"
+                     + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"
                      + "        program.commandlineArgumentList = arraySlice(args);\n"
                      + "        main(program);\n"
                      + "    }\n\n");
@@ -4994,10 +4995,8 @@ public class LambdaJ {
             interpreter().macros.clear(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
 
             // generate getValue() for embed API
-            ret.append("    @Override public Object getValue(String symbol) {\n"
-                     + "        switch (symbol) {\n")
-               .append(globals)
-               .append("        }\n");
+            ret.append("    @Override public Object getValue(String symbol) {\n");
+            if (globals.length() > 0) ret.append("        switch (symbol) {\n").append(globals).append("        }\n");
 
             ret.append("        switch (symbol) {\n");
             for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
@@ -5224,10 +5223,16 @@ public class LambdaJ {
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 final Object form = it.next();
-                //ret.append("        // ").append(lineInfo(form));      stringToJava(ret, printSEx(form)); ret.append('\n'); // nicht 2x stringToJava(ret, printSEx(form)) 
-                ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form)); ret.append("\";\n");
-                if (it.hasNext()) ret.append("        result").append(rsfx).append(" = ");
-                else              ret.append("        return ");
+                ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form)); ret.append("\";\n        ");
+                if (it.hasNext()) {
+                    if (atom(form)
+                        || car(form) == interpreter().sIf || car(form) == interpreter().sCond || car(form) == interpreter().sProgn || car(form) == interpreter().sLabels
+                        || car(form) == interpreter().sDeclaim || car(form) == interpreter().sLoad || car(form) == interpreter().sProvide)
+                        // atoms, forms that may be emitted as an atom and forms that will be emitted as ?: need to be emitted in an assignment
+                        ret.append("result").append(rsfx).append(" = ");
+                }
+                else
+                    ret.append("return ");
                 formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
                 ret.append(";\n");
             }
@@ -5638,7 +5643,7 @@ public class LambdaJ {
                         final ConsCell _env = extenv(letVar, rsfx, env);
                         if (letrec) env = _env;
                         final String letVarName = javasym(letVar, _env);
-                        sb.append("        private Object ").append(letVarName).append(" = null;\n");
+                        sb.append("        private Object ").append(letVarName).append(";\n");
                     }
                     else if (letrec) errorMalformed(op, "duplicate symbol " + letVar);
                 }
@@ -6050,7 +6055,7 @@ public class LambdaJ {
 
             else if (consp(form)) {
                 // use a builder to avoid stackoverflow at runtime on long lists. nested lists still are recursive at compiletime as well as runtime, tough
-                sb.append("new LambdaJ.ListBuilder()");
+                sb.append("new ListBuilder()");
                 for (Object o = form; ; o = cdr(o)) {
                     if (cdr(o) != null) {
                         sb.append("\n        .append("); quotedFormToJava(sb, car(o)); sb.append(')');

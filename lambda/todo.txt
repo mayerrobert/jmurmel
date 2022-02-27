@@ -8,6 +8,7 @@ vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
 
+generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredNN
 
 00_tak_apo: null waere opencoded, not nicht. compiliert ist null doppelt so schnell, interpretiert wirds 40% schneller
 
