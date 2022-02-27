@@ -6034,21 +6034,27 @@ public class LambdaJ {
             if (isSymbol(op, "fceiling"))  { divisionOp(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
             if (isSymbol(op, "ftruncate")) { divisionOp(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (isSymbol(op, "="))  { funcallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "/=")) { funcallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<"))  { funcallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<=")) { funcallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">=")) { funcallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">"))  { funcallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "="))  { if (binOp(sb, "==", args, env, topEnv, rsfx)) return true;
+                                      funcallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "/=")) { if (binOp(sb, "!=", args, env, topEnv, rsfx)) return true;
+                                      funcallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<"))  { if (binOp(sb, "<", args, env, topEnv, rsfx)) return true;
+                                      funcallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "<=")) { if (binOp(sb, "<=", args, env, topEnv, rsfx)) return true;
+                                      funcallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">=")) { if (binOp(sb, ">=", args, env, topEnv, rsfx)) return true;
+                                      funcallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, ">"))  { if (binOp(sb, ">", args, env, topEnv, rsfx)) return true;
+                                      funcallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "car"))  { funcall1(sb, "car",  "car", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "cdr"))  { funcall1(sb, "cdr",  "cdr", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "cons")) { funcall2(sb, "cons", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "rplaca")) { funcall2(sb, "rplaca", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "rplacd")) { funcall2(sb, "rplacd", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "car"))    { funcall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "cdr"))    { funcall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "cons"))   { funcall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "rplaca")) { funcall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "rplacd")) { funcall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
 
             if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "eql"))  { funcall2(sb, "eql", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "eql"))  { funcall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, car(args), null, env, topEnv, rsfx); return true; }
 
             if (isSymbol(op, "1+"))   { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
@@ -6144,21 +6150,21 @@ public class LambdaJ {
 
         private void funcallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (minArgs > 0) nArgs(murmel,  args, minArgs);
-            funcallHelper(sb, func, func, args, env, topEnv, rsfx);
+            funcallHelper(sb, func, args, env, topEnv, rsfx);
         }
 
         private void funcall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             oneArg(murmel, args);
-            funcallHelper(sb, func, func, args, env, topEnv, rsfx);
+            funcallHelper(sb, func, args, env, topEnv, rsfx);
         }
         
-        private void funcall2(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            twoArgs(func, args);
-            funcallHelper(sb, func, func, args, env, topEnv, rsfx);
+        private void funcall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            twoArgs(murmel, args);
+            funcallHelper(sb, func, args, env, topEnv, rsfx);
         }
 
-        private void funcallHelper(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append(murmel).append("(");
+        private void funcallHelper(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append(func).append("(");
             if (args != null) {
                 formToJava(sb, car(args), env, topEnv, rsfx, false);
                 if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
@@ -6167,6 +6173,17 @@ public class LambdaJ {
                 }
             }
             sb.append(')');
+        }
+
+        /** if args has two arguments then emit a binary operator (double, double) -> boolean */
+        private boolean binOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (cdr(args) == null || cddr(args) != null) return false;
+            sb.append("(");
+            asDouble(sb, car(args), env, topEnv, rsfx);
+            sb.append(" ").append(func).append(" ");
+            asDouble(sb, cadr(args), env, topEnv, rsfx);
+            sb.append(" ? _t : null)");
+            return true;
         }
 
         /** eval form and change to double */
