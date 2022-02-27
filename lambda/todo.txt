@@ -7,6 +7,7 @@ GETTING STARTED löschen (auch aus jmurmel.github.io)?
 vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
+-> checkedD2L
 for(...toCharArray) durch normales for ersetzen
 
 generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredNN
@@ -24,7 +25,7 @@ einen unittest schreiben dass MurmelJavaProgram.getValue() alle globals enthaelt
 
 
 der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
-für opencoded functions 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen
+für opencoded functions argcount check 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen
 
 
 compiler: tests für verschachtelte let dynamic
@@ -81,6 +82,7 @@ SRFI 197 hat chain operator & Co, siehe https://srfi.schemers.org/srfi-197/srfi-
 
 
 https://www.reddit.com/r/scheme/comments/somz8y/tail_calls_for_native_targets/
+https://github.com/edn-format/edn ist so ne art erweiterte S-expressions spec
 
 mit Class.forName() könnte man eine Klasse mit Custom Primitives laden.
 -> der bestehende customenvironment trick geht eh nur im interpreter?!? wär dann nicht mehr nötig

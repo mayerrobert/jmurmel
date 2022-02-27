@@ -5047,6 +5047,7 @@ public class LambdaJ {
         /** Compile the Murmel compilation unit to Java source for a standalone application class {@code unitName}
          *  with a "public static void main()" */
         public void formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
+            quotedForms.clear();  qCounter = 0;
             ConsCell predefinedEnv = null;
             for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
             for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
@@ -5128,8 +5129,15 @@ public class LambdaJ {
             passTwo = true;
             formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
 
-            ret.append("    }\n"
-                     + "}\n");
+            ret.append("    }\n");
+            
+            int ctr = 0;
+            for (String quotedForm: quotedForms) {
+                ret.append("    private final Object q").append(ctr).append(" = ").append(quotedForm).append(";\n");
+                ctr++;
+            }
+
+            ret.append("}\n");
             ret.flush();
         }
 
@@ -5338,15 +5346,8 @@ public class LambdaJ {
             while (it.hasNext()) {
                 final Object form = it.next();
                 ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form)); ret.append("\";\n        ");
-                if (it.hasNext()) {
-                    if (atom(form)
-                        || car(form) == interpreter().sIf || car(form) == interpreter().sCond || car(form) == interpreter().sProgn || car(form) == interpreter().sLabels
-                        || car(form) == interpreter().sDeclaim || car(form) == interpreter().sLoad || car(form) == interpreter().sProvide)
-                        // atoms, forms that may be emitted as an atom and forms that will be emitted as ?: need to be emitted in an assignment
-                        ret.append("result").append(rsfx).append(" = ");
-                }
-                else
-                    ret.append("return ");
+                if (it.hasNext()) ret.append("result").append(rsfx).append(" = ");
+                else ret.append("return ");
                 formToJava(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
                 ret.append(";\n");
             }
@@ -5393,9 +5394,9 @@ public class LambdaJ {
 
                     ///     - cond
                     if (interpreter().sCond == op) {
-                        sb.append("false ? null\n");
+                        sb.append("false ? null");
                         for (Object cond: args) {
-                            sb.append("        : (("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
+                            sb.append("\n        : (("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
                             prognToJava(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
                         }
@@ -6161,29 +6162,45 @@ public class LambdaJ {
             else { sb.append("dbl("); formToJava(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
         }
 
+
+        private int qCounter;
+        private final ArrayList<String> quotedForms = new ArrayList<>();
+        
         private void quotedFormToJava(WrappingWriter sb, Object form) {
             if (form == null || interpreter().sNil == form) { sb.append("_nil"); }
 
-            else if (symbolp(form)) { sb.append("intern(\"").append(form.toString()).append("\")"); }
+            else if (symbolp(form)) {
+                final String s = new StringBuilder().append("intern(\"").append(form.toString()).append("\")").toString();
+                int prev = quotedForms.indexOf(s);
+                if (prev == -1) {
+                    sb.append("q").append(qCounter++);
+                    quotedForms.add(s);
+                }
+                else sb.append("q").append(prev);
+            }
             else if (atom(form))    { atomToJava(sb, form); }
 
             else if (consp(form)) {
+                final StringWriter b = new StringWriter();
+                final WrappingWriter qsb = new WrappingWriter(b);
                 // use a builder to avoid stackoverflow at runtime on long lists. nested lists still are recursive at compiletime as well as runtime, tough
-                sb.append("new ListBuilder()");
+                qsb.append("new ListBuilder()");
                 for (Object o = form; ; o = cdr(o)) {
                     if (cdr(o) != null) {
-                        sb.append("\n        .append("); quotedFormToJava(sb, car(o)); sb.append(')');
+                        qsb.append("\n        .append("); quotedFormToJava(qsb, car(o)); qsb.append(')');
                         if (!consp(cdr(o))) {
-                            sb.append("\n        .appendLast("); quotedFormToJava(sb, cdr(o)); sb.append(')');
+                            qsb.append("\n        .appendLast("); quotedFormToJava(qsb, cdr(o)); qsb.append(')');
                             break;
                         }
                     }
                     else {
-                        sb.append("\n        .append("); quotedFormToJava(sb, car(o)); sb.append(')');
+                        qsb.append("\n        .append("); quotedFormToJava(qsb, car(o)); qsb.append(')');
                         break;
                     }
                 }
-                sb.append("\n        .first()");
+                qsb.append("\n        .first()");
+                sb.append("q").append(qCounter++);
+                quotedForms.add(b.toString());
             }
 
             else throw new LambdaJError("quote: internal error");
