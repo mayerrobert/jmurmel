@@ -40,7 +40,11 @@
           name (#-murmel funcall f))
 
   (if (> *warmup-duration* 0)
-    (do-run f 1 (+ (get-internal-real-time) (* seconds internal-time-units-per-second))))
+    (progn
+      (do-run f 1 (+ (get-internal-real-time) (* seconds internal-time-units-per-second)))
+      (format t "warmup done.")
+      #+murmel (writeln)
+      #-murmel (terpri)))
 
   (let* ((start (get-internal-real-time))
          (endtime (+ start (* seconds internal-time-units-per-second)))
