@@ -2611,7 +2611,10 @@ public class LambdaJ {
         if (s.name.isEmpty()) return "";
 
         final StringBuilder ret = new StringBuilder();
-        for (char c: s.name.toCharArray()) {
+        final String name = s.name;
+        final int len = name.length();
+        for (int i = 0; i < len; i++) {
+            final char c = name.charAt(i);
             switch (c) {
             case '|':  ret.append('\\').append('|'); break;
             default: ret.append(c);
@@ -2626,7 +2629,9 @@ public class LambdaJ {
         if (s.isEmpty()) return "";
 
         final StringBuilder ret = new StringBuilder();
-        for (char c: s.toCharArray()) {
+        final int len = s.length();
+        for (int i = 0; i < len; i++) {
+            final char c = s.charAt(i);
             switch (c) {
             case '\"':  ret.append('\\').append('\"'); break;
             case '\\': ret.append('\\').append('\\'); break;
@@ -3402,10 +3407,12 @@ public class LambdaJ {
     private static Object stringToList(ConsCell a) {
         oneArg("string->list", a);
         final ListBuilder ret = new ListBuilder();
-        for (char c: asString("string->list", car(a)).toCharArray()) {
-            ret.append(c);
+        final String s = asString("string->list", car(a));
+        final int len = s.length();
+        for (int i = 0; i < len; i++) {
+            ret.append(s.charAt(i));
         }
-        return ret.first;
+        return ret.first();
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
@@ -5244,7 +5251,9 @@ public class LambdaJ {
         /** replace chars that are not letters */
         private static String mangle(String symname, int sfx) {
             final StringBuilder mangled = new StringBuilder();
-            for (char c: symname.toCharArray()) {
+            final int len = symname.length();
+            for (int i = 0; i < len; i++) {
+                final char c = symname.charAt(i);
                 if (c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
                 else mangled.append('_').append((int)c).append('_');
             }
