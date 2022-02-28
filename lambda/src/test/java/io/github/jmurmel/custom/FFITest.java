@@ -25,7 +25,7 @@ public class FFITest {
         interp.interpretExpression(() -> -1, s -> {});
 
         LambdaJ.MurmelFunction add = interp.getFunction("+");
-        Object result = add.apply(1, 2);
+        Object result = add.apply(1L, 2L);
         assertEquals(3.0, result);
     }
 
@@ -35,7 +35,7 @@ public class FFITest {
         interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, s -> {});
 
         LambdaJ.MurmelFunction add = interp.getFunction("f");
-        Object result = add.apply(2, 3);
+        Object result = add.apply(2L, 3L);
         assertEquals(6.0, result);
     }
 }

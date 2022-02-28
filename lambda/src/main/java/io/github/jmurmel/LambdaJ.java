@@ -1736,9 +1736,9 @@ public class LambdaJ {
             final Object rest = cdar(arguments);
             final ConsCell speedCons = assq(sSpeed, rest);
             if (speedCons != null) {
-                final Object speedo = cadr(speedCons);
-                if (!(speedo instanceof Number)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speedo);
-                speed = ((Number)speedo).intValue();
+                final Object speed = cadr(speedCons);
+                if (!numberp(speed)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speed);
+                this.speed = ((Number)speed).intValue();
             }
         }
         return null;
@@ -2320,7 +2320,7 @@ public class LambdaJ {
     private static boolean  symbolp(Object o)  { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
     private static boolean  listp(Object o)    { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
     private static boolean  primp(Object o)    { return o instanceof Primitive; }
-    private static boolean  numberp(Object o)  { return o instanceof Number; }
+    private static boolean  numberp(Object o)  { return o instanceof Long || o instanceof Double; }
     private static boolean  stringp(Object o)  { return o instanceof String; }
     private static boolean  floatp(Object o)   { return o instanceof Double; }
     private static boolean  integerp(Object o) { return o instanceof Long; }
@@ -2803,21 +2803,32 @@ public class LambdaJ {
 
     /** Return {@code a} as a float, error if {@code a} is not a number. */
     private static float asFloat(String func, Object a) {
-        if (!(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        number(func, a);
         return ((Number)a).floatValue();
     }
 
     /** Return {@code a} as a double, error if {@code a} is not a number. */
     private static double asDouble(String func, Object a) {
-        if (!(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        number(func, a);
         return ((Number)a).doubleValue();
     }
 
     /** Return {@code a} as an int, error if {@code a} is not a number. */
     private static int asInt(String func, Object a) {
-        if (!(a instanceof Number)) throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(a));
+        number(func, a);
         return ((Number)a).intValue();
     }
+
+    /** error if n is not of type number */
+    private static void number(String func, Object n) {
+        if (numberp(n)) return;
+        notANumber(func, n);
+    }
+
+    private static void notANumber(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
+    }
+
 
     /** Return {@code c} as a Character, error if {@code c} is not a Character. */
     private static Character asChar(String func, Object c) {
@@ -4771,22 +4782,13 @@ public class LambdaJ {
 
         /** error if n is not of type number */
         private static void number(Object n) {
-            if (n instanceof Double) return;
-            if (n instanceof Long) return;
+            if (numberp(n)) return;
             notANumber(n);
-        }
-
-        /** error if any arg is not of type number */
-        private static void numbers(Object n1, Object n2, Object n3) {
-            number(n1);
-            number(n2);
-            number(n3);
         }
 
         private static void notANumber(Object n) {
             throw new LambdaJError(true, "not a number: %s", printSEx(n));
         }
-
 
 
         public String loc;
