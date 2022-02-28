@@ -54,7 +54,7 @@
          (iterations-per-second (/ count elapsed-seconds))
          (seconds-per-iteration (/ elapsed-seconds count)))
     (format t
-            #+murmel "%n%s: did %d iterations in %g seconds walltime, %g iterations/second, %g milliseconds/iteration%n"
-            #-murmel "~%~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, ~F milliseconds/iteration~%"
+            #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, %g milliseconds/iteration%n"
+            #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, ~F milliseconds/iteration~%"
             name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration))
     nil))
