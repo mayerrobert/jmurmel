@@ -2992,15 +2992,13 @@ public class LambdaJ {
         return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
     }
 
-    private static long sleep(ConsCell a) {
-        oneArg("sleep", a);
-        numberArgs("sleep", a);
+    private static Object sleep(ConsCell a) {
+        oneNumber("sleep", a);
         try {
             final long startNanos = System.nanoTime();
-            final long nanos = ((Number)car(a)).longValue();
-            final long millis = TimeUnit.NANOSECONDS.toMillis(nanos);
+            final long millis = (long)(((Number)car(a)).doubleValue() * 1e3D);
             Thread.sleep(millis);
-            return System.nanoTime() - startNanos;
+            return null;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new LambdaJError("sleep: got interrupted");

@@ -762,13 +762,12 @@ pi ; ==> 3.141592653589793
 
 (get-internal-cpu-time)
 
-; = (sleep desired-duration) -> actual-duration
+; = (sleep desired-duration) -> nil
 ;
-; Pause execution for x internal time units, returns actually slept
-; wall time in internal time units as an integer (java.lang.Long).
+; Pause execution for approx. x seconds.
 ; This example code will pause execution for approx. 1 second.
 
-(sleep (* 1 internal-time-units-per-second))
+(sleep 1)
 
 ; = (get-universal-time) -> seconds since 1.1.1900 00:00:00 UTC
 ;

@@ -1269,3 +1269,5 @@ floor, ffloor mit zweitem optionalen parameter? [f]ceiling, mod, rem, [f]truncat
 ggf. den langen switch für getsymbol nicht mehr dynamisch generieren sondern hardcodieren?
 
 for(...toCharArray) durch normales for ersetzen
+
+CL sleep uebernimmt sekunden, Murmel internal time units ?!?

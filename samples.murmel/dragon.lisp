@@ -24,7 +24,7 @@
 (defun dragon-curve-recursive (order length sign)
   (if (= 0 order)
         (progn (forward length)
-               (sleep (* length 0.005 internal-time-units-per-second))
+               (sleep (* length 0.005))
                (flush-frame))
     (progn
       (dragon-curve-recursive (- order 1) (* length root-half) 1)

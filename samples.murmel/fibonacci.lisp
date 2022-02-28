@@ -47,4 +47,3 @@
 (format t "%nFibonacci comparison recursive vs. pseudo iterative:%n%n")
 (timed (lambda () (format-locale t *locale* "recursive-fib %d: %g%n" *n* (recursive-fib *n*))))
 (timed (lambda () (format-locale t *locale* "iterative-fib %d: %g%n" *n* (iterative-fib *n*))))
-(format t "slept %d nanos%n" (sleep 1e8))

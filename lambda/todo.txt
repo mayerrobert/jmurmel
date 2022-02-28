@@ -1,7 +1,3 @@
-CL sleep uebernimmt sekunden, Murmel internal time units ?!?
-
-
-
 Multiple values: VALUES, MULTIPLE-VALUE-BIND und MULTIPLE-VALUE_CALL müsste reichen?
 VALUES hat als returnwert das erste argument, und verpackt ALLE (oder die restlichen?) argumente in ein Object[]
   und steckt dieses in eine gloable variable (member von LambdaJ bzw. von MurmelJavaProgram).
