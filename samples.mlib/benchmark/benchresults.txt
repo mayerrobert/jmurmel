@@ -1,0 +1,66 @@
+Benchmark results
+28.02.2022 
+SBCL 2.2.0
+Version 1.2-SNAPSHOT/Built from jmurmel-all-1.1-184-ga975cc3-dirty 2022-02-27T20:53:50+0100/Built by Robert 2022-02-27T21:53:52+0100
+ 
+*** sbcl: 00_tak_apo.lisp *** 
+takÂ´ result: 7
+
+takÂ´: did 6142 iterations in 5.000443 seconds walltime, 1228.2911 iterations/second, 0.8141392 milliseconds/iteration
+ 
+*** jmurmel: 00_tak_apo.lisp *** 
+tak´ result: 7
+warmup done.
+
+tak´: did 2998 iterations in 5,00358 seconds walltime, 599,171 iterations/second, 1,66897 milliseconds/iteration
+ 
+*** sbcl: 3.01_tak.lisp *** 
+tak result: 7
+
+tak: did 6140 iterations in 5.000241 seconds walltime, 1227.9408 iterations/second, 0.8143715 milliseconds/iteration
+ 
+*** jmurmel: 3.01_tak.lisp *** 
+tak result: 7
+warmup done.
+
+tak: did 3235 iterations in 5,00171 seconds walltime, 646,779 iterations/second, 1,54612 milliseconds/iteration
+ 
+*** sbcl: 3.08_destru.lisp *** 
+destru result: NIL
+
+destru: did 2804 iterations in 5.00114 seconds walltime, 560.6722 iterations/second, 1.7835735 milliseconds/iteration
+ 
+*** jmurmel: 3.08_destru.lisp *** 
+destru result: null
+warmup done.
+
+destru: did 320 iterations in 5,00921 seconds walltime, 63,8823 iterations/second, 15,6538 milliseconds/iteration
+ 
+*** sbcl: 3.10_deriv.lisp *** 
+deriv (5000x) result: NIL
+
+deriv (5000x): did 1132 iterations in 5.002617 seconds walltime, 226.28157 iterations/second, 4.419273 milliseconds/iteration
+ 
+*** jmurmel: 3.10_deriv.lisp *** 
+deriv (5000x) result: null
+warmup done.
+
+deriv (5000x): did 543 iterations in 5,00662 seconds walltime, 108,456 iterations/second, 9,22029 milliseconds/iteration
+ 
+*** sbcl: q.lisp *** 
+q result: 12
+
+q: did 2440 iterations in 5.000789 seconds walltime, 487.923 iterations/second, 2.0495038 milliseconds/iteration
+q2 result: 31
+
+q2: did 1623 iterations in 5.000402 seconds walltime, 324.5739 iterations/second, 3.0809624 milliseconds/iteration
+ 
+*** jmurmel: q.lisp *** 
+q result: 12.0
+warmup done.
+
+q: did 713 iterations in 5,00316 seconds walltime, 142,510 iterations/second, 7,01705 milliseconds/iteration
+q2 result: 31.0
+warmup done.
+
+q2: did 390 iterations in 5,00612 seconds walltime, 77,9046 iterations/second, 12,8362 milliseconds/iteration
