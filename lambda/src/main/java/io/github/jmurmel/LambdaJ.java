@@ -50,7 +50,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -1475,7 +1474,7 @@ public class LambdaJ {
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     // shortcut for (define symbol (lambda (params...) forms...))
                     if (operator == sDefun) {
-                        nArgs("defun", arguments, 2);
+                        varargsMin("defun", arguments, 2);
                         form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
                         continue tailcall;
                     }
@@ -1485,7 +1484,7 @@ public class LambdaJ {
 
                     /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                     if (operator == ocEval) {
-                        nArgs("eval", arguments, 1, 2);
+                        varargsMinMax("eval", arguments, 1, 2);
                         form = car(arguments);
                         if (cdr(arguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
                         else {
@@ -1498,7 +1497,7 @@ public class LambdaJ {
 
                     /// eval - (if condform form optionalform) -> object
                     if (operator == sIf) {
-                        nArgs("if", arguments, 2, 3);
+                        varargsMinMax("if", arguments, 2, 3);
                         if (eval(car(arguments), env, stack, level, traceLvl) != null) {
                             form = cadr(arguments); isTc = true; continue tailcall;
                         } else if (caddr(arguments) != null) {
@@ -1622,7 +1621,7 @@ public class LambdaJ {
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // ((params...) (forms...))
                             final ConsCell closure = ((ConsCell)func).closure();
-                            if (closure == null) nArgs("lambda application", lambda, 1); // if closure != null then it was created by the special form lambda, no need to check again
+                            if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
                             env = zip(closure != null ? closure : env, car(lambda), argList);
 
                             if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
@@ -1692,7 +1691,7 @@ public class LambdaJ {
     }
 
     private Object evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
-        nArgs("defmacro", arguments, 1);
+        varargs1("defmacro", arguments);
         final Object macroName = car(arguments);
         notReserved("defmacro", macroName);
         final int arglen = length(arguments);
@@ -1709,7 +1708,7 @@ public class LambdaJ {
     }
 
     private Object evalRequire(ConsCell arguments) {
-        nArgs("require", arguments, 1, 2);
+        varargsMinMax("require", arguments, 1, 2);
         if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
         final Object modName = car(arguments);
         if (!modules.contains(modName)) {
@@ -1745,7 +1744,7 @@ public class LambdaJ {
     }
 
     private ConsCell[] evalLabels(ConsCell arguments, ConsCell env) {
-        nArgs("labels", arguments, 1);
+        varargs1("labels", arguments);
         final ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
         // stick the functions into the env
         if (car(arguments) != null)
@@ -1833,7 +1832,7 @@ public class LambdaJ {
 
         final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
-        nArgs("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
+        varargsMin("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
         final ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
@@ -1978,12 +1977,12 @@ public class LambdaJ {
 
         if (car(paramsAndForms) == sDynamic) {
             final Object _paramsAndForms = cdr(paramsAndForms);
-            nArgs("lambda dynamic", _paramsAndForms, 1);
+            varargs1("lambda dynamic", _paramsAndForms);
             symbolArgs("lambda dynamic", car(_paramsAndForms));
             noDuplicates("lambda dynamic", car(_paramsAndForms));
             return cons(sLambda, _paramsAndForms);
         }
-        nArgs("lambda", paramsAndForms, 1);
+        varargs1("lambda", paramsAndForms);
         symbolArgs("lambda", car(paramsAndForms));
         noDuplicates("lambda", car(paramsAndForms));
 
@@ -2343,6 +2342,39 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
     }
 
+    private static void errorNotANumber(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
+    }
+
+    private static void errorNotANumber(Object n) {
+        throw new LambdaJError(true, "not a number: %s", printSEx(n));
+    }
+
+    private static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
+        final String argPhrase = expectedMin == expectedMax
+                ? expectedArgPhrase(expectedMin)
+                : (expectedMin + " to " + expectedMax + " arguments");
+
+        if (actual < expectedMin) {
+            throw new LambdaJError(true, "%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
+        }
+        if (actual > expectedMax) {
+            throw new LambdaJError(true, "%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
+        }
+    }
+
+    private static void errorVarargsCount(String func, int min, int actual) {
+        throw new LambdaJError(true, "%s: expected %s or more but got only %d", func, expectedArgPhrase(min), actualArgPhrase(actual));
+    }
+
+    private static String expectedArgPhrase(int expected) {
+        return (expected == 0) ? "no arguments" : ((expected == 1) ? "one argument" : (expected == 2) ? "two arguments" : (expected + " arguments"));
+    }
+
+    private static String actualArgPhrase(int actual) {
+        return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : ("got only " + actual);
+    }
+
     /** return a string with "line x:y..xx:yy: " */
     private static String lineInfo(Object form) {
         if (!(form instanceof SExpConsCell)) return "";
@@ -2366,7 +2398,7 @@ public class LambdaJ {
     }
 
     private Object listStar(ConsCell args) {
-        nArgs("list*", args, 1);
+        varargs1("list*", args);
         if (cdr(args) == null) return car(args);
         if (cddr(args) == null) return cons(car(args), cadr(args));
         final ListBuilder b = new ListBuilder();
@@ -2644,38 +2676,57 @@ public class LambdaJ {
 
 
     /// ##  Error checking functions, used by interpreter and primitives
+    /** a must be the empty list */
+    private static void noArgs(String func, ConsCell a) {
+        if (a != null) errorArgCount(func, 0, 0, 1, a);
+    }
+
     /** ecactly one argument */
     private static void oneArg(String func, Object a) {
-        if (a == null)      throw new LambdaJError(true, "%s: expected one argument but no argument was given", func);
-        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected one argument but got extra arg(s) %s", func, printSEx(cdr(a)));
+        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
+        oneArg(func, (ConsCell)a);
+    }
+    private static void oneArg(String func, ConsCell a) {
+        if (a == null)      errorArgCount(func, 1, 1, 0, null);
+        if (cdr(a) != null) errorArgCount(func, 1, 1, 2, a);
     }
 
     /** ecactly two arguments */
-    private static void twoArgs(String func, Object a) {
-        if (a == null)       throw new LambdaJError(true, "%s: expected two arguments but no argument was given", func);
-        a = cdr(a);
-        if (a == null)  throw new LambdaJError(true, "%s: expected two arguments but only one argument was given", func);
-        a = cdr(a);
-        if (a != null) throw new LambdaJError(true, "%s: expected two arguments but got extra arg(s) %s", func, printSEx(a));
+    private static void twoArgs(String func, ConsCell a) {
+        if (a == null) errorArgCount(func, 2, 2, 0, a);
+        Object _a = cdr(a);
+        if (_a == null) errorArgCount(func, 2, 2, 1, a);
+        _a = cdr(_a);
+        if (_a != null) errorArgCount(func, 2, 2, 3, a);
     }
 
-    /** at least {@code min} args */
-    private static void nArgs(String func, Object a, int min) {
-        final int actualLength = length(a);
-        if (actualLength < min) throw new LambdaJError(true, "%s: expected %d arguments or more but got only %d", func, min, actualLength);
+    /** varargs, at least one arg */
+    private static void varargs1(String func, Object a) {
+        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
+        varargs1(func, (ConsCell)a);
+    }
+    private static void varargs1(String func, ConsCell a) {
+        if (a == null) errorVarargsCount(func, 1, 0);
     }
 
-    /** between {@code min} and {@code max} args */
-    private static void nArgs(String func, Object a, int min, int max) {
+    /** varargs, at least {@code min} args */
+    private static void varargsMin(String func, Object a, int min) {
+        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
+        varargsMin(func, (ConsCell)a, min);
+    }
+    private static void varargsMin(String func, ConsCell a, int min) {
         final int actualLength = length(a);
-        if (actualLength < min) {
-            if (min == max) throw new LambdaJError(true, "%s: expected %d arguments but got only %d", func, min, actualLength);
-            throw new LambdaJError(true, "%s: expected %d to %d arguments but got only %d", func, min, max, actualLength);
-        }
-        if (actualLength > max) {
-            if (min == max) throw new LambdaJError(true, "%s: expected %d arguments but got extra arg(s) %s", func, min, printSEx(nthcdr(max, a)));
-            throw new LambdaJError(true, "%s: expected %d to %d arguments but got extra arg(s) %s", func, min, max, printSEx(nthcdr(max, a)));
-        }
+        if (actualLength < min) errorVarargsCount(func, min, actualLength);
+    }
+
+    /** varargs, between {@code min} and {@code max} args */
+    private static void varargsMinMax(String func, Object a, int min, int max) {
+        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
+        varargsMinMax(func, (ConsCell)a, min, max);
+    }
+    private static void varargsMinMax(String func, ConsCell a, int min, int max) {
+        final int actualLength = length(a);
+        if (actualLength < min || actualLength > max) errorArgCount(func, min, max, actualLength, a);
     }
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
@@ -2727,20 +2778,6 @@ public class LambdaJ {
 
     /// Additional error checking functions used by primitives only.
 
-    /** a must be the empty list */
-    private static void noArgs(String func, ConsCell a) {
-        if (a != null) throw new LambdaJError(true, "%s: expected no arguments but got %s", func, printSEx(a));
-    }
-
-    private static void oneArg(String func, ConsCell a) {
-        if (a == null) throw new LambdaJError(true, "%s: expected one argument but no argument was given", func);
-        if (cdr(a) != null) throw new LambdaJError(true, "%s: expected one argument but got %s", func, printSEx(a));
-    }
-
-    private static void oneOrMoreArgs(String func, ConsCell a) {
-        if (a == null) throw new LambdaJError(true, "%s: expected at least one argument but no argument was given", func);
-    }
-
     /** a must be a proper list of only numbers (empty list is fine, too) */
     private static void numberArgs(String func, ConsCell a) {
         if (a == null) return;
@@ -2753,7 +2790,7 @@ public class LambdaJ {
 
     /** between {@code min} and {@code max} number args */
     private static void numberArgs(String func, ConsCell a, int min, int max) {
-        nArgs(func, a, min, max);
+        varargsMinMax(func, a, min, max);
         numberArgs(func, a);
     }
 
@@ -2765,7 +2802,7 @@ public class LambdaJ {
 
     /** at least one number arg */
     private static void oneOrMoreNumbers(String func, ConsCell a) {
-        oneOrMoreArgs(func, a);
+        varargs1(func, a);
         numberArgs(func, a);
     }
 
@@ -2822,11 +2859,7 @@ public class LambdaJ {
     /** error if n is not of type number */
     private static void number(String func, Object n) {
         if (numberp(n)) return;
-        notANumber(func, n);
-    }
-
-    private static void notANumber(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
+        errorNotANumber(func, n);
     }
 
 
@@ -2891,14 +2924,14 @@ public class LambdaJ {
         return result;
     }
 
-    private static Object cl_rplaca(Object args) {
+    private static Object cl_rplaca(ConsCell args) {
         twoArgs("rplaca", args);
         final ConsCell l = asList("rplaca", car(args));
         l.rplaca(cadr(args));
         return l;
     }
 
-    private static Object cl_rplacd(Object args) {
+    private static Object cl_rplacd(ConsCell args) {
         twoArgs("rplacd", args);
         final ConsCell l = asList("rplacd", car(args));
         l.rplacd(cadr(args));
@@ -2955,7 +2988,7 @@ public class LambdaJ {
 
     private String format(boolean locale, ConsCell a) {
         final String func = locale ? "format-locale" : "format";
-        nArgs(func, a, locale ? 3 : 2);
+        varargsMin(func, a, locale ? 3 : 2);
         final boolean toString = car(a) == null;
         a = (ConsCell) cdr(a);
 
@@ -3119,9 +3152,9 @@ public class LambdaJ {
                 return lispReader.readObj();
             };
             env = addBuiltin("read",    freadobj,
-                  addBuiltin("write",   (Primitive) a -> { nArgs("write",   a, 1, 2);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  addBuiltin("writeln", (Primitive) a -> { nArgs("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  addBuiltin("lnwrite", (Primitive) a -> { nArgs("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  addBuiltin("write",   (Primitive) a -> { varargsMinMax("write",   a, 1, 2);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  addBuiltin("writeln", (Primitive) a -> { varargsMinMax("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  addBuiltin("lnwrite", (Primitive) a -> { varargsMinMax("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
                   env))));
             }
         
@@ -3135,45 +3168,45 @@ public class LambdaJ {
                 return ret;
             };
             env = addBuiltin("make-frame",    makeFrame,
-                  addBuiltin("open-frame",    (Primitive) a -> { nArgs("open-frame",    a, 0, 1); return asFrame("open-frame",    car(a)).open();    },
-                  addBuiltin("close-frame",   (Primitive) a -> { nArgs("close-frame",   a, 0, 1); return asFrame("close-frame",   car(a)).close();   },
-                  addBuiltin("reset-frame",   (Primitive) a -> { nArgs("reset-frame",   a, 0, 1); return asFrame("reset-frame",   car(a)).reset();   },
-                  addBuiltin("clear-frame",   (Primitive) a -> { nArgs("clear-frame",   a, 0, 1); return asFrame("clear-frame",   car(a)).clear();   },
-                  addBuiltin("repaint-frame", (Primitive) a -> { nArgs("repaint-frame", a, 0, 1); return asFrame("repaint-frame", car(a)).repaint(); },
-                  addBuiltin("flush-frame",   (Primitive) a -> { nArgs("flush-frame",   a, 0, 1); return asFrame("flush-frame",   car(a)).flush(); },
+                  addBuiltin("open-frame",    (Primitive) a -> { varargsMinMax("open-frame",    a, 0, 1); return asFrame("open-frame",    car(a)).open();    },
+                  addBuiltin("close-frame",   (Primitive) a -> { varargsMinMax("close-frame",   a, 0, 1); return asFrame("close-frame",   car(a)).close();   },
+                  addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return asFrame("reset-frame",   car(a)).reset();   },
+                  addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return asFrame("clear-frame",   car(a)).clear();   },
+                  addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return asFrame("repaint-frame", car(a)).repaint(); },
+                  addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return asFrame("flush-frame",   car(a)).flush(); },
 
                   // set new current frame, return previous frame
-                  addBuiltin("current-frame", (Primitive) a -> { nArgs("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = asFrame("current-frame", car(a)); return prev; },
+                  addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = asFrame("current-frame", car(a)); return prev; },
 
-                  addBuiltin("push-pos",      (Primitive) a -> { nArgs("push-pos",a, 0, 1); return asFrame("push-pos",car(a)).pushPos(); },
-                  addBuiltin("pop-pos",       (Primitive) a -> { nArgs("pop-pos", a, 0, 1); return asFrame("pop-pos", car(a)).popPos();  },
+                  addBuiltin("push-pos",      (Primitive) a -> { varargsMinMax("push-pos",a, 0, 1); return asFrame("push-pos",car(a)).pushPos(); },
+                  addBuiltin("pop-pos",       (Primitive) a -> { varargsMinMax("pop-pos", a, 0, 1); return asFrame("pop-pos", car(a)).popPos();  },
 
-                  addBuiltin("pen-up",        (Primitive) a -> { nArgs("pen-up",  a, 0, 1); return asFrame("pen-up",   car(a)).penUp();   },
-                  addBuiltin("pen-down",      (Primitive) a -> { nArgs("pen-down",a, 0, 1); return asFrame("pen-down", car(a)).penDown(); },
+                  addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return asFrame("pen-up",   car(a)).penUp();   },
+                  addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return asFrame("pen-down", car(a)).penDown(); },
 
-                  addBuiltin("color",         (Primitive) a -> { nArgs("color",   a, 0, 1); return asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); },
-                  addBuiltin("bgcolor",       (Primitive) a -> { nArgs("bgcolor", a, 0, 1); return asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
+                  addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 0, 1); return asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); },
+                  addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 0, 1); return asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
 
-                  addBuiltin("text",          (Primitive) a -> { nArgs("text",    a, 1, 2); return asFrame("text",    cadr(a)).text   (car(a).toString()); },
+                  addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return asFrame("text",    cadr(a)).text   (car(a).toString()); },
 
-                  addBuiltin("right",         (Primitive) a -> { nArgs("right",   a, 1, 2); return asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); },
-                  addBuiltin("left",          (Primitive) a -> { nArgs("left",    a, 1, 2); return asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); },
-                  addBuiltin("forward",       (Primitive) a -> { nArgs("forward", a, 1, 2); return asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); },
+                  addBuiltin("right",         (Primitive) a -> { varargsMinMax("right",   a, 1, 2); return asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); },
+                  addBuiltin("left",          (Primitive) a -> { varargsMinMax("left",    a, 1, 2); return asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); },
+                  addBuiltin("forward",       (Primitive) a -> { varargsMinMax("forward", a, 1, 2); return asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); },
                   env))))))))))))))))));
 
-            env = addBuiltin("move-to",       (Primitive) a -> { nArgs("move-to", a, 2, 3);  return asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
-                  addBuiltin("line-to",       (Primitive) a -> { nArgs("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
-                  addBuiltin("move-rel",      (Primitive) a -> { nArgs("move-rel", a, 2, 3); return asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
-                  addBuiltin("line-rel",      (Primitive) a -> { nArgs("line-rel", a, 2, 3); return asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
+            env = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
+                  addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
+                  addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
+                  addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
                   env))));
 
-            env = addBuiltin("make-bitmap",   (Primitive) a -> { nArgs("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
-                  addBuiltin("discard-bitmap",(Primitive) a -> { nArgs("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
-                  addBuiltin("set-pixel",     (Primitive) a -> { nArgs("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
-                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { nArgs("rgb-to-pixel",   a, 3, 3); return (asInt("rgb-to-pixel", car(a)) << 16)
+            env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
+                  addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
+                  addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
+                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3); return (asInt("rgb-to-pixel", car(a)) << 16)
                                                                                                         | (asInt("rgb-to-pixel", cadr(a)) << 8)
                                                                                                         | (asInt("rgb-to-pixel", caddr(a)));  },
-                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { nArgs("hsb-to-pixel",   a, 3, 3); return Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
+                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3); return Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
                                                                                                                          asFloat("hsb-to-pixel", cadr(a)),
                                                                                                                          asFloat("hsb-to-pixel", caddr(a)));  },
                   env)))));
@@ -3202,7 +3235,7 @@ public class LambdaJ {
             final LambdaJSymbol sEval = symtab.intern(new LambdaJSymbol("eval"));
             ocEval = new OpenCodedPrimitive(sEval) {
                 @Override public Object apply(ConsCell a) {
-                    nArgs("eval", a, 1, 2);
+                    varargsMinMax("eval", a, 1, 2);
                     return eval(car(a), cadr(a));
                 }
             };
@@ -4414,51 +4447,51 @@ public class LambdaJ {
         public ConsCell commandlineArgumentList;
 
         /// predefined primitives
-        public final Object   _car     (Object... args) { oneArg("car",        args.length); return car(args[0]); }
-        public static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
+        public final Object   _car     (Object... args) { oneArg("car",     args.length); return car(args[0]); }
+        protected static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
 
-        public final Object   _cdr     (Object... args) { oneArg("cdr",        args.length); return cdr(args[0]); }
-        public static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
+        public final Object   _cdr     (Object... args) { oneArg("cdr",     args.length); return cdr(args[0]); }
+        protected static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
 
-        public final ConsCell _cons    (Object... args) { twoArg("cons",       args.length); return cons(args[0], args[1]); }
-        public static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
+        public final ConsCell _cons    (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
+        protected static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
 
-        public final Object   _rplaca  (Object... args) { twoArg("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        public static Object rplaca(Object l, Object newCar) {
+        public final Object   _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
+        protected static Object rplaca(Object l, Object newCar) {
             final ConsCell list = asList("rplaca", l);
             list.rplaca(newCar);
             return list;
         }
 
-        public final Object   _rplacd  (Object... args) { twoArg("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        public static Object rplacd(Object l, Object newCdr) {
+        public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
+        protected static Object rplacd(Object l, Object newCdr) {
             final ConsCell list = asList("rplacd", l);
             list.rplacd(newCdr);
             return list;
         }
 
-        public final Object _eval      (Object... args) { onetwoArg("eval",    args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
-        public final Object _eq        (Object... args) { twoArg("eq",         args.length); return args[0] == args[1] ? _t : null; }
-        public final Object _eql       (Object... args) { twoArg("eql",        args.length); return cl_eql(args[0], args[1]) ? _t : null; }
-        public final Object eql       (Object o1, Object o2) { return cl_eql(o1, o2) ? _t : null; }
-        public final Object _null      (Object... args) { oneArg("null",       args.length); return args[0] == null ? _t : null; }
+        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
+        public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
+        public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return cl_eql(args[0], args[1]) ? _t : null; }
+        protected final Object eql     (Object o1, Object o2) { return cl_eql(o1, o2) ? _t : null; }
+        public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
-        public final Object _write     (Object... args) { onetwoArg("write",   args.length);  intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
-        public final Object _writeln   (Object... args) { nArg("writeln", args.length, 0, 2); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
-        public final Object _lnwrite   (Object... args) { nArg("lnwrite", args.length, 0, 2); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
+        public final Object _write     (Object... args) { varargs1_2("write",    args.length);  intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
+        public final Object _writeln   (Object... args) { varargs0_2("writeln", args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
+        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite", args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
 
-        public final Object _atom      (Object... args) { oneArg("atom",       args.length); return atom      (args[0]) ? _t : null; }
-        public final Object _consp     (Object... args) { oneArg("consp",      args.length); return consp     (args[0]) ? _t : null; }
-        public final Object _listp     (Object... args) { oneArg("listp",      args.length); return listp     (args[0]) ? _t : null; }
-        public final Object _symbolp   (Object... args) { oneArg("symbolp",    args.length); return symbolp   (args[0]) ? _t : null; }
-        public final Object _numberp   (Object... args) { oneArg("numberp",    args.length); return numberp   (args[0]) ? _t : null; }
-        public final Object _stringp   (Object... args) { oneArg("stringp",    args.length); return stringp   (args[0]) ? _t : null; }
-        public final Object _characterp(Object... args) { oneArg("characterp", args.length); return characterp(args[0]) ? _t : null; }
-        public final Object _integerp  (Object... args) { oneArg("integerp",   args.length); return integerp  (args[0]) ? _t : null; }
-        public final Object _floatp    (Object... args) { oneArg("floatp",     args.length); return floatp    (args[0]) ? _t : null; }
+        public final Object _atom      (Object... args) { oneArg("atom",         args.length); return atom      (args[0]) ? _t : null; }
+        public final Object _consp     (Object... args) { oneArg("consp",        args.length); return consp     (args[0]) ? _t : null; }
+        public final Object _listp     (Object... args) { oneArg("listp",        args.length); return listp     (args[0]) ? _t : null; }
+        public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length); return symbolp   (args[0]) ? _t : null; }
+        public final Object _numberp   (Object... args) { oneArg("numberp",      args.length); return numberp   (args[0]) ? _t : null; }
+        public final Object _stringp   (Object... args) { oneArg("stringp",      args.length); return stringp   (args[0]) ? _t : null; }
+        public final Object _characterp(Object... args) { oneArg("characterp",   args.length); return characterp(args[0]) ? _t : null; }
+        public final Object _integerp  (Object... args) { oneArg("integerp",     args.length); return integerp  (args[0]) ? _t : null; }
+        public final Object _floatp    (Object... args) { oneArg("floatp",       args.length); return floatp    (args[0]) ? _t : null; }
 
-        public final ConsCell _assoc   (Object... args) { twoArg("assoc",      args.length); return assoc(args[0], args[1]); }
-        public final ConsCell _assq    (Object... args) { twoArg("assq",       args.length); return assq(args[0], args[1]); }
+        public final ConsCell _assoc   (Object... args) { twoArgs("assoc",       args.length); return assoc(args[0], args[1]); }
+        public final ConsCell _assq    (Object... args) { twoArgs("assq",        args.length); return assq(args[0], args[1]); }
         public final ConsCell _list    (Object... args) {
             if (args == null || args.length == 0) return null;
             final ListBuilder ret = new ListBuilder();
@@ -4470,30 +4503,35 @@ public class LambdaJ {
         public final Object listStar   (Object... args) { return intp.listStar(arraySlice(args)); }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
-        public final double   _fround   (Object... args) { onetwoArg("fround",   args.length); return cl_round   (quot12(args)); }
-        public final double   _ffloor   (Object... args) { onetwoArg("ffloor",   args.length); return Math.floor (quot12(args)); }
-        public final double   _fceiling (Object... args) { onetwoArg("fceiling", args.length); return Math.ceil  (quot12(args)); }
-        public final double   _ftruncate(Object... args) { onetwoArg("ftruncate",args.length); return cl_truncate(quot12(args)); }
+        public final double   _fround   (Object... args) { varargs1_2("fround",   args.length); return cl_round   (quot12(args)); }
+        public final double   _ffloor   (Object... args) { varargs1_2("ffloor",   args.length); return Math.floor (quot12(args)); }
+        public final double   _fceiling (Object... args) { varargs1_2("fceiling", args.length); return Math.ceil  (quot12(args)); }
+        public final double   _ftruncate(Object... args) { varargs1_2("ftruncate",args.length); return cl_truncate(quot12(args)); }
 
-        public final long     _round   (Object... args) { onetwoArg("round",     args.length); return truncate(cl_round   (quot12(args))); }
-        public final long     _floor   (Object... args) { onetwoArg("floor",     args.length); return truncate(Math.floor (quot12(args))); }
-        public final long     _ceiling (Object... args) { onetwoArg("ceiling",   args.length); return truncate(Math.ceil  (quot12(args))); }
-        public final long     _truncate(Object... args) { onetwoArg("truncate",  args.length); return truncate(cl_truncate(quot12(args))); }
+        public final long     _round   (Object... args) { varargs1_2("round",     args.length); return truncate(cl_round   (quot12(args))); }
+        public final long     _floor   (Object... args) { varargs1_2("floor",     args.length); return truncate(Math.floor (quot12(args))); }
+        public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return truncate(Math.ceil  (quot12(args))); }
+        public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return truncate(cl_truncate(quot12(args))); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-code",  args.length); return (long)asChar("char-code", args[0]); }
-        public final Object   intChar  (Object... args) { oneArg("code-char",  args.length); return (char)asInt("code-char", args[0]); }
-        public final Object   stringeq (Object... args) { twoArg("string=",   args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
-        public final Object   stringToList (Object... args) { oneArg("string->list",   args.length); return LambdaJ.stringToList(arraySlice(args)); }
-        public final Object   listToString (Object... args) { oneArg("list->string",   args.length); return LambdaJ.listToString(arraySlice(args)); }
+        protected static double cl_round(double d) { return LambdaJ.cl_round(d); }
+        protected static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
+        protected static long truncate(double d) { return LambdaJ.truncate(d); }
+        private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
-        public final double   _sqrt    (Object... args) { oneArg("sqrt",       args.length); return Math.sqrt (dbl(args[0])); }
-        public final double   _log     (Object... args) { oneArg("log",        args.length); return Math.log  (dbl(args[0])); }
-        public final double   _log10   (Object... args) { oneArg("log10",      args.length); return Math.log10(dbl(args[0])); }
-        public final double   _exp     (Object... args) { oneArg("exp",        args.length); return Math.exp  (dbl(args[0])); }
-        public final Number   _signum  (Object... args) { oneArg("signum",     args.length); number(args[0]); return cl_signum((Number)args[0]); }
-        public final double   _expt    (Object... args) { twoArg("expt",       args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        public final double   _mod     (Object... args) { twoArg("mod",        args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
-        public final double   _rem     (Object... args) { twoArg("rem",        args.length); return cl_rem(dbl(args[0]), dbl(args[1])); }
+        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar("char-code", args[0]); }
+        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt("code-char", args[0]); }
+        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
+        public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return LambdaJ.stringToList(arraySlice(args)); }
+        public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(arraySlice(args)); }
+
+        public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (dbl(args[0])); }
+        public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (dbl(args[0])); }
+        public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(dbl(args[0])); }
+        public final double   _exp     (Object... args) { oneArg("exp",           args.length); return Math.exp  (dbl(args[0])); }
+        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); number(args[0]); return cl_signum((Number)args[0]); }
+        public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
+        public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
+        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return cl_rem(dbl(args[0]), dbl(args[1])); }
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
@@ -4505,10 +4543,10 @@ public class LambdaJ {
         public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
         public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
 
-        public final double sub     (Object... args) { onePlusArg("-", args.length);
+        public final double sub     (Object... args) { varargs1("-", args.length);
                                                        if (args.length == 1) return 0.0 - dbl(args[0]);
                                                        double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
-        public final double quot    (Object... args) { onePlusArg("/", args.length);
+        public final double quot    (Object... args) { varargs1("/", args.length);
                                                        if (args.length == 1) return 1.0 / dbl(args[0]);
                                                        double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
 
@@ -4518,6 +4556,17 @@ public class LambdaJ {
         public final Object ge      (Object... args) { return compare(">=", args, (d1, d2) -> d1 >= d2); }
         public final Object gt      (Object... args) { return compare(">",  args, (d1, d2) -> d1 >  d2); }
         public final Object ne      (Object... args) { return compare("/=", args, (d1, d2) -> d1 != d2); }
+        private Object compare(String op, Object[] args, DoubleBiPred pred) {
+            oneOrMoreNumbers(op, args);
+            Number prev = (Number)args[0];
+            final int length = args.length;
+            for (int i = 1; i < length; i++) {
+                final Number next = (Number)args[i];
+                if (!pred.test(prev.doubleValue(), next.doubleValue())) return null;
+                prev = next;
+            }
+            return _t;
+        }
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
@@ -4546,40 +4595,40 @@ public class LambdaJ {
             return ret;
         }
 
-        public final Object openFrame          (Object... args) { final ConsCell a = arraySlice(args); nArgs("open-frame",    a, 0, 1); return intp.asFrame("open-frame", car(a)).open(); }
-        public final Object closeFrame         (Object... args) { final ConsCell a = arraySlice(args); nArgs("close-frame",   a, 0, 1); return intp.asFrame("close-frame",   car(a)).close();   }
-        public final Object resetFrame         (Object... args) { final ConsCell a = arraySlice(args); nArgs("reset-frame",   a, 0, 1); return intp.asFrame("reset-frame",   car(a)).reset();   }
-        public final Object clearFrame         (Object... args) { final ConsCell a = arraySlice(args); nArgs("clear-frame",   a, 0, 1); return intp.asFrame("clear-frame",   car(a)).clear();   }
-        public final Object repaintFrame       (Object... args) { final ConsCell a = arraySlice(args); nArgs("repaint-frame", a, 0, 1); return intp.asFrame("repaint-frame", car(a)).repaint(); }
-        public final Object flushFrame         (Object... args) { final ConsCell a = arraySlice(args); nArgs("flush-frame",   a, 0, 1); return intp.asFrame("flush-frame",   car(a)).flush(); }
+        public final Object openFrame          (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("open-frame",    a, 0, 1); return intp.asFrame("open-frame", car(a)).open(); }
+        public final Object closeFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("close-frame",   a, 0, 1); return intp.asFrame("close-frame",   car(a)).close();   }
+        public final Object resetFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("reset-frame",   a, 0, 1); return intp.asFrame("reset-frame",   car(a)).reset();   }
+        public final Object clearFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("clear-frame",   a, 0, 1); return intp.asFrame("clear-frame",   car(a)).clear();   }
+        public final Object repaintFrame       (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("repaint-frame", a, 0, 1); return intp.asFrame("repaint-frame", car(a)).repaint(); }
+        public final Object flushFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("flush-frame",   a, 0, 1); return intp.asFrame("flush-frame",   car(a)).flush(); }
 
         // set new current frame, return previous frame
-        public final Object currentFrame       (Object... args) { final ConsCell a = arraySlice(args); nArgs("current-frame", a, 0, 1); final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.asFrame("current-frame", car(a)); return prev; }
+        public final Object currentFrame       (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("current-frame", a, 0, 1); final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.asFrame("current-frame", car(a)); return prev; }
 
-        public final Object pushPos            (Object... args) { final ConsCell a = arraySlice(args); nArgs("push-pos",a, 0, 1); return intp.asFrame("push-pos",car(a)).pushPos(); }
-        public final Object popPos             (Object... args) { final ConsCell a = arraySlice(args); nArgs("pop-pos", a, 0, 1); return intp.asFrame("pop-pos", car(a)).popPos();  }
+        public final Object pushPos            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("push-pos",a, 0, 1); return intp.asFrame("push-pos",car(a)).pushPos(); }
+        public final Object popPos             (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("pop-pos", a, 0, 1); return intp.asFrame("pop-pos", car(a)).popPos();  }
 
-        public final Object penUp              (Object... args) { final ConsCell a = arraySlice(args); nArgs("pen-up",  a, 0, 1); return intp.asFrame("pen-up",   car(a)).penUp();   }
-        public final Object penDown            (Object... args) { final ConsCell a = arraySlice(args); nArgs("pen-down",a, 0, 1); return intp.asFrame("pen-down", car(a)).penDown(); }
+        public final Object penUp              (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("pen-up",  a, 0, 1); return intp.asFrame("pen-up",   car(a)).penUp();   }
+        public final Object penDown            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("pen-down",a, 0, 1); return intp.asFrame("pen-down", car(a)).penDown(); }
 
-        public final Object color              (Object... args) { final ConsCell a = arraySlice(args); nArgs("color",   a, 0, 1); return intp.asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); }
-        public final Object bgColor            (Object... args) { final ConsCell a = arraySlice(args); nArgs("bgcolor", a, 0, 1); return intp.asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); }
+        public final Object color              (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("color",   a, 0, 1); return intp.asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); }
+        public final Object bgColor            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("bgcolor", a, 0, 1); return intp.asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); }
 
-        public final Object text               (Object... args) { final ConsCell a = arraySlice(args); nArgs("text",    a, 1, 2); return intp.asFrame("text",    cadr(a)).text   (car(a).toString()); }
+        public final Object text               (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("text",    a, 1, 2); return intp.asFrame("text",    cadr(a)).text   (car(a).toString()); }
 
-        public final Object right              (Object... args) { final ConsCell a = arraySlice(args); nArgs("right",   a, 1, 2); return intp.asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); }
-        public final Object left               (Object... args) { final ConsCell a = arraySlice(args); nArgs("left",    a, 1, 2); return intp.asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); }
-        public final Object forward            (Object... args) { final ConsCell a = arraySlice(args); nArgs("forward", a, 1, 2); return intp.asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); }
+        public final Object right              (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("right",   a, 1, 2); return intp.asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); }
+        public final Object left               (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("left",    a, 1, 2); return intp.asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); }
+        public final Object forward            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("forward", a, 1, 2); return intp.asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); }
 
-        public final Object moveTo             (Object... args) { final ConsCell a = arraySlice(args); nArgs("move-to", a, 2, 3);  return intp.asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  }
-        public final Object lineTo             (Object... args) { final ConsCell a = arraySlice(args); nArgs("line-to", a, 2, 3);  return intp.asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  }
-        public final Object moveRel            (Object... args) { final ConsCell a = arraySlice(args); nArgs("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); }
-        public final Object lineRel            (Object... args) { final ConsCell a = arraySlice(args); nArgs("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); }
+        public final Object moveTo             (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("move-to", a, 2, 3);  return intp.asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  }
+        public final Object lineTo             (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("line-to", a, 2, 3);  return intp.asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  }
+        public final Object moveRel            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); }
+        public final Object lineRel            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); }
 
-        public final Object makeBitmap         (Object... args) { final ConsCell a = arraySlice(args); nArgs("make-bitmap",     a, 2, 3); return intp.asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a)));  }
-        public final Object discardBitmap      (Object... args) { final ConsCell a = arraySlice(args); nArgs("discard-bitmap",  a, 0, 1); return intp.asFrame("discard-bitmap", car(a))  .discardBitmap();   }
+        public final Object makeBitmap         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("make-bitmap",     a, 2, 3); return intp.asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a)));  }
+        public final Object discardBitmap      (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("discard-bitmap",  a, 0, 1); return intp.asFrame("discard-bitmap", car(a))  .discardBitmap();   }
 
-        public final Object setPixel           (Object... args) { final ConsCell a = arraySlice(args); nArgs("set-pixel",       a, 3, 4); return intp.asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel",  car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  }
+        public final Object setPixel           (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("set-pixel",       a, 3, 4); return intp.asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel",  car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
                                                                   final int r = asInt("rgb-to-pixel", args[0]);
                                                                   final int g = asInt("rgb-to-pixel", args[1]);
@@ -4595,39 +4644,43 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public final LambdaJSymbol intern(String symName) {
-            return intp.symtab.intern(new LambdaJSymbol(symName));
+        protected final LambdaJSymbol intern(String symName) { return intp.symtab.intern(new LambdaJSymbol(symName)); }
+
+        protected static ConsCell arraySlice(Object[] o, int offset) { return offset >= o.length ? null : new ArraySlice(o, offset); }
+        protected static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
+
+        protected static Object[] toArray(Object o) {
+            if (o == null)
+                return new Object[0];
+            if (o instanceof Object[])
+                return (Object[])o;
+            return listToArray(o);
         }
 
-        public static ConsCell arraySlice(Object[] o, int offset) {
-            return offset >= o.length ? null : new ArraySlice(o, offset);
+        protected static ConsCell lst(Object lst) {
+            if (lst == null) return null;
+            if (!consp(lst)) throw new LambdaJError(true, "not a list: ", lst);
+            return (ConsCell)lst;
         }
 
-        public static ConsCell arraySlice(Object[] o) {
-            return arraySlice(o, 0);
-        }
+        protected static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
+
+        protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) argError(expr, paramCount, paramCount, argCount); }
+        protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) argError(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
 
 
         /** Primitives are in the environment as (CompilerPrimitive)... . Compiled code that calls primitives will
          *  actually call this overload and not funcall(Object, Object...) that contains the TCO thunking code. */
-        public static Object funcall(CompilerPrimitive fn, Object... args) {
-            return fn.applyPrimitive(args);
-        }
+        public static Object funcall(CompilerPrimitive fn, Object... args) { return fn.applyPrimitive(args); }
 
-        public static Object tailcall(CompilerPrimitive fn, Object... args) {
-            return funcall(fn, args);
-        }
+        public static Object tailcall(CompilerPrimitive fn, Object... args) { return funcall(fn, args); }
 
         /** used for (apply sym form) */
-        public static Object applyHelper(CompilerPrimitive fn, Object argList) {
-            return funcall(fn, toArray(argList));
-        }
+        public static Object applyHelper(CompilerPrimitive fn, Object argList) { return funcall(fn, toArray(argList)); }
 
         /** used for (apply sym form) */
-        public static Object applyTailcallHelper(CompilerPrimitive fn, Object argList) {
-            return funcall(fn, toArray(argList));
-        }
+        public static Object applyTailcallHelper(CompilerPrimitive fn, Object argList) { return funcall(fn, toArray(argList)); }
 
 
 
@@ -4663,110 +4716,27 @@ public class LambdaJ {
         }
 
         /** used for (apply sym form) */
-        public static Object applyHelper(Object fn, Object argList) {
-            return funcall(fn, toArray(argList));
-        }
+        public static Object applyHelper(Object fn, Object argList) { return funcall(fn, toArray(argList)); }
 
         /** used for (apply sym form) */
-        public Object applyTailcallHelper(Object fn, Object argList) {
-            return tailcall(fn, toArray(argList));
-        }
+        public Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
 
 
+        
+        private static void oneArg(String expr, int argCount)      { if (1 != argCount)               argError(expr, 1, 1, argCount); }
+        private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               argError(expr, 2, 2, argCount); }
+        private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               argError(expr, 3, 3, argCount); }
 
-        protected static Object[] toArray(Object o) {
-            if (o == null)
-                return new Object[0];
-            if (o instanceof Object[])
-                return (Object[])o;
-            return listToArray(o);
-        }
-
-
-
-        protected static ConsCell lst(Object lst) {
-            if (lst == null) return null;
-            if (!(lst instanceof ConsCell)) throw new LambdaJError(true, "not a list: ", lst);
-            return (ConsCell)lst;
-        }
-
-        protected static double dbl(Object n) {
-            number(n);
-            return ((Number)n).doubleValue();
-        }
-
-        protected static long truncate(double d) {
-            return LambdaJ.truncate(d);
-        }
-
-        protected static double cl_truncate(double d) {
-            return LambdaJ.cl_truncate(d);
-        }
-
-        protected static double cl_round(double d) {
-            return LambdaJ.cl_round(d);
-        }
-
-        private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
-
-        private Object compare(String op, Object[] args, DoubleBiPred pred) {
-            oneOrMoreNumbers(op, args);
-            Number prev = (Number)args[0];
-            final int length = args.length;
-            for (int i = 1; i < length; i++) {
-                final Number next = (Number)args[i];
-                if (!pred.test(prev.doubleValue(), next.doubleValue())) return null;
-                prev = next;
-            }
-            return _t;
-        }
-
-
-
-        /** zero or one argument */
-        private static void oneOptArg(String expr, int argCount) {
-            if (argCount > 1) throw new LambdaJError(true, "%s: too many arguments", expr);
-        }
-
+        /** 0..2 args */
+        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 argError(expr, 0, 2, argCount); }
+        /** 1..2 args */
+        private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) argError(expr, 1, 2, argCount); }
         /** one or more arguments */
-        private static void onePlusArg(String expr, int argCount) {
-            if (argCount < 1) throw new LambdaJError(true, "%s: not enough arguments", expr);
-        }
+        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                argError(expr, 1, 1, 0); }
 
-        /** exactly one argument */
-        private static void oneArg(String expr, int argCount) {
-            if (1 != argCount) argError(expr, 1, argCount);
-        }
-
-        private static void onetwoArg(String expr, int argCount) {
-            if (argCount < 1) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            if (argCount > 2) throw new LambdaJError(true, "%s: too many arguments", expr);
-        }
-
-        private static void nArg(String expr, int argCount, int min, int max) {
-            if (argCount < min) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            if (argCount > max) throw new LambdaJError(true, "%s: too many arguments", expr);
-        }
-
-        private static void twoArg(String expr, int argCount) {
-            if (2 != argCount) argError(expr, 2, argCount);
-        }
-
-        private static void threeArgs(String expr, int argCount) {
-            if (3 != argCount) argError(expr, 3, argCount);
-        }
-
-        public static void argCheck(String expr, int paramCount, int argCount) {
-            if (paramCount != argCount) argError(expr, paramCount, argCount);
-        }
-
-        public static void argCheckVarargs(String expr, int paramCount, int argCount) {
-            if (argCount < paramCount - 1) argError(expr, paramCount - 1, argCount);
-        }
-
-        private static void argError(String expr, int expected, int actual) {
-            if (expected > actual) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            if (expected < actual) throw new LambdaJError(true, "%s: too many arguments", expr);
+        private static void argError(String expr, int expectedMin, int expectedMax, int actual) {
+            if (actual < expectedMin) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            if (actual > expectedMax) throw new LambdaJError(true, "%s: too many arguments", expr);
         }
 
 
@@ -4774,7 +4744,7 @@ public class LambdaJ {
         /** error if any arg is not of type number */
         private static void oneOrMoreNumbers(String expr, Object[] args) {
             final int length = args.length;
-            if (length == 0) throw new LambdaJError(true, "%s: not enough arguments", expr);
+            if (length == 0) argError(expr, 1, 1, 0);
             for (int i = 0; i < length; i++) {
                 number(args[i]);
             }
@@ -4783,15 +4753,11 @@ public class LambdaJ {
         /** error if n is not of type number */
         private static void number(Object n) {
             if (numberp(n)) return;
-            notANumber(n);
-        }
-
-        private static void notANumber(Object n) {
-            throw new LambdaJError(true, "not a number: %s", printSEx(n));
+            errorNotANumber(n);
         }
 
 
-        public String loc;
+        protected String loc;
 
         /** main() will be called from compiled Murmel code */
         @SuppressWarnings("unused")
@@ -5192,7 +5158,7 @@ public class LambdaJ {
                 oneArg("load", cdr(form));
                 globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
             } else if (consp(form) && car(form) == interpreter().sRequire) {
-                nArgs("require", cdr(form), 1, 2);
+                varargsMinMax("require", cdr(form), 1, 2);
                 if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "require", printSEx(cdr(form)));
                 final Object modName = cadr(form);
                 if (!interpreter().modules.contains(modName)) {
@@ -5529,7 +5495,7 @@ public class LambdaJ {
                     }
 
                     if (interpreter().sLoad == op) {
-                        nArgs("load", args, 1);
+                        varargs1("load", args);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
                         loadFile(false, "load", sb, car(args), env, topEnv, rsfx-1, isLast, null, null);
                         return;
@@ -6080,7 +6046,7 @@ public class LambdaJ {
             }
 
             if (isSymbol(op, "list*")) {
-                nArgs("list*", args, 1);
+                varargs1("list*", args);
                 if (cdr(args) == null) { formToJava(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
                     sb.append("cons(");
@@ -6106,7 +6072,7 @@ public class LambdaJ {
          *  1 arg: apply "javaOp" to the number
          */
         private void divisionOp(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
-            nArgs(murmel, args, 1, 2);
+            varargsMinMax(murmel, args, 1, 2);
             if (asLong) sb.append("truncate(");
             sb.append(javaOp).append("(dbl(");
             if (cdr(args) == null) {
@@ -6147,7 +6113,7 @@ public class LambdaJ {
 
         /** generate double operator for one or more number args */
         private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            nArgs(op,  args, 1);
+            varargs1(op,  args);
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, topEnv, rsfx); }
             else {
@@ -6158,7 +6124,7 @@ public class LambdaJ {
         }
 
         private void funcallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (minArgs > 0) nArgs(murmel,  args, minArgs);
+            if (minArgs > 0) varargsMin(murmel,  args, minArgs);
             funcallHelper(sb, func, args, env, topEnv, rsfx);
         }
 
@@ -6197,8 +6163,7 @@ public class LambdaJ {
 
         /** eval form and change to double */
         private void asDouble(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (form == null) throw new LambdaJError("not a number: nil");
-            if (form instanceof Character || form instanceof String) throw new LambdaJError(true, "not a number: %s", printSEx(form));
+            if (form == null || form instanceof Character || form instanceof String) errorNotANumber(form);
             if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("dbl("); formToJava(sb, form, env, topEnv, rsfx, false); sb.append(')'); }

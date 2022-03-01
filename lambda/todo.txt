@@ -20,11 +20,7 @@ truncate umbenamsen weil das macht kein truncate, sondern double->long mit overf
 -> checkedD2L oder checkedDoubleToLong
 -> asList -> checkedToList
 
-im interpreter gibts x-mal "if (!(a instanceof Number)) throw new LambdaJError..." und in MurmelJavaProgram gibts number()
-
 generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredNN
-
-00_tak_apo: null waere opencoded, not nicht. compiliert ist null doppelt so schnell, interpretiert wirds 40% schneller
 
 gesondertes flag für setq, rplaca, rplacd? --no-mut
 gesondertes flag für defmacro?

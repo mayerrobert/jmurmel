@@ -1268,6 +1268,10 @@ floor, ffloor mit zweitem optionalen parameter? [f]ceiling, mod, rem, [f]truncat
 
 ggf. den langen switch für getsymbol nicht mehr dynamisch generieren sondern hardcodieren?
 
+00_tak_apo: null waere opencoded, not nicht. compiliert ist null doppelt so schnell, interpretiert wirds 40% schneller
+
 for(...toCharArray) durch normales for ersetzen
 
 CL sleep uebernimmt sekunden, Murmel internal time units ?!?
+
+im interpreter gibts x-mal "if (!(a instanceof Number)) throw new LambdaJError..." und in MurmelJavaProgram gibts number()
