@@ -1582,8 +1582,7 @@ public class LambdaJ {
                             final Object applyFunc = car(arguments);
                             func = eval(applyFunc, env, stack, level, traceLvl);
                             final Object maybeArgList = eval(cadr(arguments), env, stack, level, traceLvl);
-                            if (!listp(maybeArgList)) errorMalformed("apply", "an argument list", maybeArgList);
-                            argList = (ConsCell)maybeArgList;
+                            argList = listOrMalformed("apply", maybeArgList);
                             if (speed >= 1 && symbolp(applyFunc)) {
                                 // func = eval(... was performed unneccesarily
                                 result = evalOpencode(applyFunc, argList);
@@ -1667,6 +1666,11 @@ public class LambdaJ {
                 entry.rplacd(cdar(c));
             }
         }
+    }
+
+    private static ConsCell listOrMalformed(String op, Object args) {
+        if (!listp(args)) errorMalformed(op, "an argument list", args);
+        return (ConsCell)args;
     }
 
     private Object evalSetq(ConsCell arguments, ConsCell env, int stack, int level, int traceLvl) {
@@ -1832,7 +1836,6 @@ public class LambdaJ {
 
         final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
-        varargsMin("macro expansion", lambda, 2);          // todo sollte unnoetig sein, sollte von defmacro sichergestellt sein (werden?)
         final ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
@@ -2682,10 +2685,6 @@ public class LambdaJ {
     }
 
     /** ecactly one argument */
-    private static void oneArg(String func, Object a) {
-        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
-        oneArg(func, (ConsCell)a);
-    }
     private static void oneArg(String func, ConsCell a) {
         if (a == null)      errorArgCount(func, 1, 1, 0, null);
         if (cdr(a) != null) errorArgCount(func, 1, 1, 2, a);
@@ -2693,7 +2692,7 @@ public class LambdaJ {
 
     /** ecactly two arguments */
     private static void twoArgs(String func, ConsCell a) {
-        if (a == null) errorArgCount(func, 2, 2, 0, a);
+        if (a == null) errorArgCount(func, 2, 2, 0, null);
         Object _a = cdr(a);
         if (_a == null) errorArgCount(func, 2, 2, 1, a);
         _a = cdr(_a);
@@ -2710,20 +2709,12 @@ public class LambdaJ {
     }
 
     /** varargs, at least {@code min} args */
-    private static void varargsMin(String func, Object a, int min) {
-        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
-        varargsMin(func, (ConsCell)a, min);
-    }
     private static void varargsMin(String func, ConsCell a, int min) {
         final int actualLength = length(a);
         if (actualLength < min) errorVarargsCount(func, min, actualLength);
     }
 
     /** varargs, between {@code min} and {@code max} args */
-    private static void varargsMinMax(String func, Object a, int min, int max) {
-        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
-        varargsMinMax(func, (ConsCell)a, min, max);
-    }
     private static void varargsMinMax(String func, ConsCell a, int min, int max) {
         final int actualLength = length(a);
         if (actualLength < min || actualLength > max) errorArgCount(func, min, max, actualLength, a);
@@ -3039,7 +3030,6 @@ public class LambdaJ {
     private static Object sleep(ConsCell a) {
         oneNumber("sleep", a);
         try {
-            final long startNanos = System.nanoTime();
             final long millis = (long)(((Number)car(a)).doubleValue() * 1e3D);
             Thread.sleep(millis);
             return null;
@@ -5127,21 +5117,27 @@ public class LambdaJ {
 
         private ConsCell toplevelFormToJava(WrappingWriter ret, List<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
             if (consp(form)) {
-                final ConsCell formAsCons = (ConsCell)form;
-                final Object op = car(formAsCons);
+                final ConsCell ccForm = (ConsCell)form;
+                final Object op = car(ccForm);
+
                 if (op == interpreter().sDefine) {
-                    globalEnv = defineToJava(ret, formAsCons, globalEnv);
-                    interpreter().eval(formAsCons, null);
+                    globalEnv = defineToJava(ret, ccForm, globalEnv);
+                    interpreter().eval(ccForm, null);
+
                 } else if (op == interpreter().sDefun) {
-                    globalEnv = defunToJava(ret, formAsCons, globalEnv);
-                    interpreter().eval(formAsCons, null);
+                    globalEnv = defunToJava(ret, ccForm, globalEnv);
+                    interpreter().eval(ccForm, null);
+
                 } else if (op == interpreter().sDefmacro) {
-                    final Object sym = cadr(formAsCons);
+                    final Object sym = cadr(ccForm);
                     notReserved(sym);
-                    interpreter().eval(formAsCons, null);
+                    interpreter().eval(ccForm, null);
+                    bodyForms.add(form);
+                    return globalEnv;
+
                 } else if (op == interpreter().sProgn) {
-                    // oplevel progn will be replaced by the forms it contains
-                    final Object body = cdr(formAsCons);
+                    // toplevel progn will be replaced by the forms it contains
+                    final Object body = cdr(ccForm);
                     if (consp(body)) {
                         for (Object prognForm: (ConsCell)body) {
                             globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, prognForm);
@@ -5149,37 +5145,47 @@ public class LambdaJ {
                         return globalEnv;
                     }
                 }
-            }
+                
+                if (interpreter().macros.containsKey(op)) {
+                    final Object expansion = interpreter().evalMacro(op, (ConsCell)cdr(form), 0, 0, 0);
+                    globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
 
-            if (consp(form) && interpreter().macros.containsKey(car(form))) {
-                final Object expansion = interpreter().evalMacro(car(form), (ConsCell) cdr(form), 0, 0, 0);
-                globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
-            } else if (consp(form) && car(form) == interpreter().sLoad) {
-                oneArg("load", cdr(form));
-                globalEnv = loadFile(true, "load", ret, cadr(form), null, globalEnv, -1, false, bodyForms, globals);
-            } else if (consp(form) && car(form) == interpreter().sRequire) {
-                varargsMinMax("require", cdr(form), 1, 2);
-                if (!stringp(cadr(form))) throw new LambdaJError(true, "%s: expected a string argument but got %s", "require", printSEx(cdr(form)));
-                final Object modName = cadr(form);
-                if (!interpreter().modules.contains(modName)) {
-                    Object modFilePath = caddr(form);
-                    if (modFilePath == null) modFilePath = modName;
-                    globalEnv = loadFile(true,"require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
-                    if (!interpreter().modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
-                }
-            } else if (consp(form) && car(form) == interpreter().sProvide) {
-                oneArg("provide", cdr(form));
-                if (!stringp(cadr(form)))
-                    throw new LambdaJError(true, "%s: expected a string argument but got %s", "provide", printSEx(cdr(form)));
-                final Object modName = cadr(form);
-                interpreter().modules.add(modName);
-            } else if (consp(form) && car(form) == interpreter().sDeclaim) {
-                interpreter().evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
-                bodyForms.add(form);
+                } else if (op == interpreter().sLoad) {
+                    final ConsCell ccArgs = listOrMalformed("load", cdr(form));
+                    oneArg("load", ccArgs);
+                    globalEnv = loadFile(true, "load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
+
+                } else if (op == interpreter().sRequire) {
+                    final ConsCell ccArgs = listOrMalformed("require", cdr(form));
+                    varargsMinMax("require", ccArgs, 1, 2);
+                    if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
+                    final Object modName = car(ccArgs);
+                    if (!interpreter().modules.contains(modName)) {
+                        Object modFilePath = cadr(ccArgs);
+                        if (modFilePath == null) modFilePath = modName;
+                        globalEnv = loadFile(true, "require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
+                        if (!interpreter().modules.contains(modName))
+                            throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+                    }
+
+                } else if (op == interpreter().sProvide) {
+                    final ConsCell ccArgs = listOrMalformed("provide", cdr(form));
+                    oneArg("provide", ccArgs);
+                    if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
+                    final Object modName = car(ccArgs);
+                    interpreter().modules.add(modName);
+
+                } else if (op == interpreter().sDeclaim) {
+                    interpreter().evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
+                    bodyForms.add(form);
+
+                } else bodyForms.add(form);
+
+                if (op == interpreter().sDefine || op == interpreter().sDefun)
+                    globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
+
             } else bodyForms.add(form);
 
-            if (consp(form) && (car(form) == interpreter().sDefine || car(form) == interpreter().sDefun))
-                globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
             return globalEnv;
         }
 
@@ -5588,7 +5594,7 @@ public class LambdaJ {
             final int length = s.length();
             for (int i = 0; i < length; i++) {
                 if (maxlen > 0 && i == maxlen) { sb.append("..."); return; }
-                char c = s.charAt(i);
+                final char c = s.charAt(i);
                 switch (c) {
                 case '\"': sb.append("\\\""); break;
                 case '\\': sb.append("\\\\");   break;
@@ -6177,8 +6183,8 @@ public class LambdaJ {
             if (form == null || interpreter().sNil == form) { sb.append("_nil"); }
 
             else if (symbolp(form)) {
-                final String s = new StringBuilder().append("intern(\"").append(form.toString()).append("\")").toString();
-                int prev = quotedForms.indexOf(s);
+                final String s = "intern(\"" + form + "\")";
+                final int prev = quotedForms.indexOf(s);
                 if (prev == -1) {
                     sb.append("q").append(qCounter++);
                     quotedForms.add(s);
