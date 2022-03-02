@@ -109,10 +109,10 @@ import javax.tools.SimpleJavaFileObject;
  */
 public class LambdaJ {
 
-    /// ## Public interfaces and an exception class to use the interpreter from Java
+    /// ## Public Java constants, interfaces and an exception class to use the interpreter from Java
 
-    public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String LANGUAGE_VERSION = "1.2";
+    public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String ENGINE_VERSION;
     static {
         String versionInfo;
@@ -130,45 +130,12 @@ public class LambdaJ {
         ENGINE_VERSION = versionInfo;
     }
 
-    private static final Path murmelDir;
-    static {
-        Path path;
-        try {
-            final Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            if (Files.isDirectory(p)) {
-                path = p;
-            }
-            else {
-                path = p.getParent();
-                if (path == null) {
-                    System.out.println("cannot get Murmel dir: " + p + " is not a directory but does not have a parent to use");
-                }
-                else if (!Files.isDirectory(path)) {
-                    System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
-                }
-            }
-        }
-        catch (URISyntaxException e) {
-            System.out.println("cannot get Murmel dir: " + e.getMessage());
-            path = Paths.get(".");
-        }
-        murmelDir = path;
-    }
+    /** Max length of symbols*/
+    public static final int SYMBOL_MAX = 30;
 
-    private final Path libDir;
+    /** Max length of string literals */
+    public static final int TOKEN_MAX = 2000;
 
-    private static final String[] CTRL = {
-            "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
-            "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
-            "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
-            "Us"
-    };
-
-    private static final String[] FEATURES = {
-            "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
-    };
-
-    private int speed = 1;
     
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
@@ -193,7 +160,6 @@ public class LambdaJ {
     public interface CustomEnvironmentSupplier {
         ConsCell customEnvironment(SymbolTable symtab);
     }
-
 
 
     public static class LambdaJError extends RuntimeException {
@@ -333,6 +299,13 @@ public class LambdaJ {
         }
     }
 
+    /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
+    private static String lineInfo(Object form) {
+        if (!(form instanceof SExpConsCell)) return "";
+        final SExpConsCell f = (SExpConsCell)form;
+        return "line " + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
+    }
+
     private static final class ClosureConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
         private final ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
@@ -355,11 +328,47 @@ public class LambdaJ {
 
 
     /// ## Infrastructure
-    public static final int EOF = -1;
-    /** Max length of string literals */
-    public static final int TOKEN_MAX = 2000;
-    /** Max length of symbols*/
-    public static final int SYMBOL_MAX = 30;
+    private static final int EOF = -1;
+
+    private static final String[] FEATURES = {
+            "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
+    };
+
+    private static final String[] CTRL = {
+            "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
+            "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
+            "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
+            "Us"
+    };
+
+    /** installation directory */
+    private static final Path murmelDir;
+    static {
+        Path path;
+        try {
+            final Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            if (Files.isDirectory(p)) {
+                path = p;
+            }
+            else {
+                path = p.getParent();
+                if (path == null) {
+                    System.out.println("cannot get Murmel dir: " + p + " is not a directory but does not have a parent to use");
+                }
+                else if (!Files.isDirectory(path)) {
+                    System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
+                }
+            }
+        }
+        catch (URISyntaxException e) {
+            System.out.println("cannot get Murmel dir: " + e.getMessage());
+            path = Paths.get(".");
+        }
+        murmelDir = path;
+    }
+
+    /** additional directory for load and require, default is installation directory, see {@link #murmelDir} */
+    private final Path libDir;
 
     public enum TraceLevel {
         TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_ENV, TRC_FUNC, TRC_PARSE, TRC_TOK, TRC_LEX;
@@ -1236,7 +1245,7 @@ public class LambdaJ {
     /// Symboltable
     private SymbolTable symtab;
 
-    public static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
+    private static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
@@ -1376,6 +1385,7 @@ public class LambdaJ {
 
     private final Map<Object, ConsCell> macros = new HashMap<>();
     private final Set<Object> modules = new HashSet<>();
+    private int speed = 1; // changed by (declaim (optimize (speed...
 
     /// ###  eval - the heart of most if not all Lisp interpreters
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
@@ -2378,13 +2388,6 @@ public class LambdaJ {
         return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : ("got only " + actual);
     }
 
-    /** return a string with "line x:y..xx:yy: " */
-    private static String lineInfo(Object form) {
-        if (!(form instanceof SExpConsCell)) return "";
-        final SExpConsCell f = (SExpConsCell)form;
-        return "line " + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
-    }
-
     private static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
@@ -2910,6 +2913,94 @@ public class LambdaJ {
         return result;
     }
 
+    private static double quot12(ConsCell args) {
+        return cdr(args) == null ? ((Number)car(args)).doubleValue() : ((Number)car(args)).doubleValue() / ((Number)cadr(args)).doubleValue();
+    }
+
+    private static boolean cl_eql(Object o1, Object o2) {
+        if (o1 == o2) return true;
+        if (numberp(o1) && numberp(o2)
+                || characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
+        return false;
+    }
+
+    private static Number cl_signum(Number n) {
+        if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
+        return Math.signum(n.doubleValue());
+    }
+
+    /** produce a quotient that has been rounded to the nearest mathematical integer;
+     *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
+     *  then the quotient has been rounded to the even (divisible by two) integer. */
+    private static double cl_round(double n) {
+        return Math.rint(n);
+    }
+
+    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
+     *  of the same sign as the mathematical quotient,
+     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
+    private static double cl_truncate(double d) {
+        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
+    }
+
+    private static double cl_mod(Number n1, Number n2) {
+        final double x = n1.doubleValue();
+        final double y = n2.doubleValue();
+        return x - Math.floor(x / y) * y;
+    }
+
+    private static double cl_rem(Number n1, Number n2) {
+        return n1.doubleValue() % n2.doubleValue();
+    }
+
+    /** return the argument w/o decimal places as a long, exception if conversion is not possible */
+    private static long checkedToLong(double d) {
+        if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
+        if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
+        if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
+        if (d > Long.MAX_VALUE) throw new LambdaJError("overflow");
+        return (long)d;
+    }
+
+    private static Number inc(Number n) {
+        if (n instanceof Long) {
+            final long l;
+            if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
+            return l + 1;
+        }
+        return n.doubleValue() + 1;
+    }
+
+    private static Number dec(Number n) {
+        if (n instanceof Long) {
+            final long l;
+            if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
+            return l - 1;
+        }
+        return n.doubleValue() - 1;
+    }
+
+    private static Object listToString(ConsCell a) {
+        oneArg("list->string", a);
+        final ConsCell l = asList("list->string", car(a));
+        final StringBuilder ret = new StringBuilder();
+        for (Object c: l) {
+            ret.append(asChar("list->string", c));
+        }
+        return ret.toString();
+    }
+
+    private static Object stringToList(ConsCell a) {
+        oneArg("string->list", a);
+        final ListBuilder ret = new ListBuilder();
+        final String s = asString("string->list", car(a));
+        final int len = s.length();
+        for (int i = 0; i < len; i++) {
+            ret.append(s.charAt(i));
+        }
+        return ret.first();
+    }
+
     private static Object cl_rplaca(ConsCell args) {
         twoArgs("rplaca", args);
         final ConsCell l = asList("rplaca", car(args));
@@ -3022,6 +3113,15 @@ public class LambdaJ {
         return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
     }
 
+    private static ThreadMXBean getThreadBean(final String func) {
+        final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        if (threadBean == null)
+            throw new LambdaJError(true, "%s: ThreadMXBean not supported in this Java Runtime", func);
+        if (!threadBean.isCurrentThreadCpuTimeSupported())
+            throw new LambdaJError(true, "%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
+        return threadBean;
+    }
+
     private static Object sleep(ConsCell a) {
         oneNumber("sleep", a);
         try {
@@ -3050,15 +3150,6 @@ public class LambdaJ {
         return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
                cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
                cons(boolResult(daylightSavings), cons(offset, null)))))))));
-    }
-
-    private static ThreadMXBean getThreadBean(final String func) {
-        final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        if (threadBean == null)
-            throw new LambdaJError(true, "%s: ThreadMXBean not supported in this Java Runtime", func);
-        if (!threadBean.isCurrentThreadCpuTimeSupported())
-            throw new LambdaJError(true, "%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
-        return threadBean;
     }
 
 
@@ -3127,7 +3218,7 @@ public class LambdaJ {
         this.lispPrinter = lispStdout;
     }
 
-    /** build an environment by prepending the previous environment {@code pre} with the primitive functions,
+    /** build an environment by prepending the previous environment {@code env} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
     private ConsCell environment(ConsCell env) {
         if (haveIO()) {
@@ -3360,95 +3451,6 @@ public class LambdaJ {
 
     private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
         return cons(cons(sym, value), env);
-    }
-
-
-
-    private static double quot12(ConsCell args) {
-        return cdr(args) == null ? ((Number)car(args)).doubleValue() : ((Number)car(args)).doubleValue() / ((Number)cadr(args)).doubleValue();
-    }
-
-    private static boolean cl_eql(Object o1, Object o2) {
-        if (o1 == o2) return true;
-        if (numberp(o1) && numberp(o2)
-            || characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
-        return false;
-    }
-
-    private static Number cl_signum(Number n) {
-        if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
-        return Math.signum(n.doubleValue());
-    }
-
-    /** produce a quotient that has been rounded to the nearest mathematical integer;
-     *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
-     *  then the quotient has been rounded to the even (divisible by two) integer. */
-    private static double cl_round(double n) {
-        return Math.rint(n);
-    }
-
-    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
-     *  of the same sign as the mathematical quotient,
-     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
-    private static double cl_truncate(double d) {
-        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
-    }
-
-    private static double cl_mod(Number n1, Number n2) {
-        final double x = n1.doubleValue();
-        final double y = n2.doubleValue();
-        return x - Math.floor(x / y) * y;
-    }
-
-    private static double cl_rem(Number n1, Number n2) {
-        return n1.doubleValue() % n2.doubleValue();
-    }
-
-    /** return the argument w/o decimal places as a long, exception if conversion is not possible */
-    private static long checkedToLong(double d) {
-        if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
-        if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
-        if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
-        if (d > Long.MAX_VALUE) throw new LambdaJError("overflow");
-        return (long)d;
-    }
-    private static Number inc(Number n) {
-        if (n instanceof Long) {
-            final long l;
-            if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
-            return l + 1;
-        }
-        return n.doubleValue() + 1;
-    }
-
-    private static Number dec(Number n) {
-        if (n instanceof Long) {
-            final long l;
-            if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
-            return l - 1;
-        }
-        return n.doubleValue() - 1;
-    }
-
-    private static Object listToString(ConsCell a) {
-        oneArg("list->string", a);
-        final ConsCell l = asList("list->string", car(a));
-        final StringBuilder ret = new StringBuilder();
-        for (Object c: l) {
-            ret.append(asChar("list->string", c));
-        }
-        return ret.toString();
-    }
-
-    private static Object stringToList(ConsCell a) {
-        oneArg("string->list", a);
-        final ListBuilder ret = new ListBuilder();
-        final String s = asString("string->list", car(a));
-        final int len = s.length();
-        for (int i = 0; i < len; i++) {
-            ret.append(s.charAt(i));
-        }
-        return ret.first();
     }
 
 

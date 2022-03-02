@@ -1280,3 +1280,5 @@ generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredN
 
 truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
 -> checkedD2L oder checkedDoubleToLong
+
+members von LambdaJ umsortieren: am anfang solls public interfaces geben
