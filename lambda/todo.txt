@@ -1,6 +1,6 @@
 Multiple values: VALUES, MULTIPLE-VALUE-BIND und MULTIPLE-VALUE_CALL müsste reichen?
 VALUES hat als returnwert das erste argument, und verpackt ALLE (oder die restlichen?) argumente in ein Object[]
-  und steckt dieses in eine gloable variable (member von LambdaJ bzw. von MurmelJavaProgram).
+  und steckt dieses in eine globale variable (member von LambdaJ bzw. von MurmelJavaProgram).
 MULTIPLE-VALUE-BIND und MULTIPLE-VALUE-CALL lesen das array wieder aus.
 CLHS: VALUES -> funktion, MULTIPLE-VALUE-BIND -> special operator, MULTIPLE-VALUE-CALL -> special operator
 SBCL: VALUES -> funktion, MULTIPLE-VALUE-BIND -> macro, MULTIPLE-VALUE-CALL -> special operator
@@ -20,8 +20,6 @@ truncate umbenamsen weil das macht kein truncate, sondern double->long mit overf
 -> checkedD2L oder checkedDoubleToLong
 -> asList -> checkedToList
 
-generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredNN
-
 gesondertes flag für setq, rplaca, rplacd? --no-mut
 gesondertes flag für defmacro?
 backquotes, append, assoc, assq
@@ -29,7 +27,7 @@ backquotes, append, assoc, assq
 
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 
-einen unittest schreiben dass MurmelJavaProgram.getValue() alle globals enthaelt
+einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globals enthaelt
 
 
 der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
