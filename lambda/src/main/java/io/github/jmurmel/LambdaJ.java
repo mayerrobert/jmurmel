@@ -3307,10 +3307,10 @@ public class LambdaJ {
                   addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 2); return cl_truncate(quot12(args)); },
                   env))));
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return truncate(cl_round   (quot12(args))); },
-                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 2); return truncate(Math.floor (quot12(args))); },
-                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 2); return truncate(Math.ceil  (quot12(args))); },
-                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 2); return truncate(cl_truncate(quot12(args))); },
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return checkedToLong(cl_round   (quot12(args))); },
+                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12(args))); },
+                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12(args))); },
+                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12(args))); },
                   env))));
 
             env = addBuiltin("1+",      (Primitive) args -> { oneNumber("1+", args); return inc((Number)car(args)); },
@@ -3400,7 +3400,7 @@ public class LambdaJ {
     }
 
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
-    private static long truncate(double d) {
+    private static long checkedToLong(double d) {
         if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
         if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
         if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
@@ -4498,14 +4498,14 @@ public class LambdaJ {
         public final double   _fceiling (Object... args) { varargs1_2("fceiling", args.length); return Math.ceil  (quot12(args)); }
         public final double   _ftruncate(Object... args) { varargs1_2("ftruncate",args.length); return cl_truncate(quot12(args)); }
 
-        public final long     _round   (Object... args) { varargs1_2("round",     args.length); return truncate(cl_round   (quot12(args))); }
-        public final long     _floor   (Object... args) { varargs1_2("floor",     args.length); return truncate(Math.floor (quot12(args))); }
-        public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return truncate(Math.ceil  (quot12(args))); }
-        public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return truncate(cl_truncate(quot12(args))); }
+        public final long     _round   (Object... args) { varargs1_2("round",     args.length); return checkedToLong(cl_round   (quot12(args))); }
+        public final long     _floor   (Object... args) { varargs1_2("floor",     args.length); return checkedToLong(Math.floor (quot12(args))); }
+        public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return checkedToLong(Math.ceil  (quot12(args))); }
+        public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return checkedToLong(cl_truncate(quot12(args))); }
 
         protected static double cl_round(double d) { return LambdaJ.cl_round(d); }
         protected static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
-        protected static long truncate(double d) { return LambdaJ.truncate(d); }
+        protected static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
         private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar("char-code", args[0]); }
@@ -6085,7 +6085,7 @@ public class LambdaJ {
          */
         private void divisionOp(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargsMinMax(murmel, args, 1, 2);
-            if (asLong) sb.append("truncate(");
+            if (asLong) sb.append("checkedToLong(");
             sb.append(javaOp).append("(dbl(");
             if (cdr(args) == null) {
                 formToJava(sb, car(args), env, topEnv, rsfx, false);
