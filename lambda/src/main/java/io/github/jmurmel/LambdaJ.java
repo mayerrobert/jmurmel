@@ -734,7 +734,6 @@ public class LambdaJ {
             for (String feat: FEATURES) {
                 l = new ListConsCell(intern(new LambdaJSymbol(feat)), l);
             }
-            // todo os, javaversion, ... zur laufzeit hinzufuegen
             featureList = l;
         }
 
@@ -1330,8 +1329,8 @@ public class LambdaJ {
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
-        if (haveT()) return symtab.intern(new LambdaJSymbol("t")); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (haveQuote()) return cons(symtab.intern(new LambdaJSymbol("quote")), cons(symtab.intern(new LambdaJSymbol("t")), null));
+        if (haveT()) return intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+        else if (haveQuote()) return cons(intern("quote"), cons(intern("t"), null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
@@ -1340,7 +1339,7 @@ public class LambdaJ {
     }
 
     private LambdaJSymbol internReserved(String sym) {
-        final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym));
+        final LambdaJSymbol ret = intern(sym);
         reserve(ret);
         return ret;
     }
@@ -1815,7 +1814,7 @@ public class LambdaJ {
                     else newValues = cons(cons(newBinding, val), newValues);
                 }
                 else if (letRec) newBinding.rplacd(val);
-                else extenv = extendEnv(extenv, sym, val);
+                else extenv = cons(cons(sym, val), extenv);
             }
             if (newValues != null) for (Object o: newValues) {
                 final ConsCell c = (ConsCell)o;
@@ -1886,13 +1885,6 @@ public class LambdaJ {
         env.rplaca(symbolEntry);
         env.rplacd(cons(oldCar, oldCdr));
         return symbolEntry;
-    }
-
-    /** Extend env by attaching a new symbolentry at the front of env, env is unchanged.
-     *  Returns the extended list with newly created symbolentry (symbol . value) */
-    private ListConsCell extendEnv(ConsCell env, Object symbol, Object value) {
-        final ListConsCell symbolEntry = cons(symbol, value);
-        return cons(symbolEntry, env);
     }
 
     /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). Throw error if any symbol is a reserved word. */
@@ -1991,6 +1983,14 @@ public class LambdaJ {
 
         if (haveLexC()) return makeClosure(paramsAndForms, env);
         return form;
+    }
+
+    private static void noDuplicates(String func, Object symList) {
+        if (symList == null) return;
+        if (!consp(symList)) return;
+        final Set<Object> seen = new HashSet<>();
+        for (Object o: (ConsCell)symList)
+            if (!seen.add(o)) errorMalformed(func, "duplicate symbol " + o);
     }
 
     /** make a lexical closure (if enabled) or lambda */
@@ -2741,14 +2741,6 @@ public class LambdaJ {
         }
     }
 
-    private static void noDuplicates(String func, Object symList) {
-        if (symList == null) return;
-        if (!consp(symList)) return;
-        final Set<Object> seen = new HashSet<>();
-        for (Object o: (ConsCell)symList)
-            if (!seen.add(o)) errorMalformed(func, "duplicate symbol " + o);
-    }
-
     ///
     /// ## Summary
     /// That's (almost) all, folks.
@@ -2797,6 +2789,8 @@ public class LambdaJ {
         numberArgs(func, a);
     }
 
+    
+    
     /** the given arg must be a LambdaJString */
     private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
@@ -2828,6 +2822,7 @@ public class LambdaJ {
         if (ret == null) throw new LambdaJError(true, "%s: no frame argument and no current frame", func);
         return ret;
     }
+
 
     /** Return {@code a} as a float, error if {@code a} is not a number. */
     private static float asFloat(String func, Object a) {
@@ -3222,7 +3217,7 @@ public class LambdaJ {
         if (haveXtra()) {
             env = addBuiltin(sDynamic, sDynamic, env);
 
-            final LambdaJSymbol sEval = symtab.intern(new LambdaJSymbol("eval"));
+            final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval) {
                 @Override public Object apply(ConsCell a) {
                     varargsMinMax("eval", a, 1, 2);
@@ -3245,13 +3240,13 @@ public class LambdaJ {
         }
 
         if (haveT()) {
-            final LambdaJSymbol sT = symtab.intern(new LambdaJSymbol("t"));
+            final LambdaJSymbol sT = intern("t");
             env = addBuiltin(sT, sT, env);
             reserve(sT);
         }
 
         if (haveNil()) {
-            final LambdaJSymbol sNil = symtab.intern(new LambdaJSymbol("nil"));
+            final LambdaJSymbol sNil = intern("nil");
             env = addBuiltin(sNil, null, env);
             reserve(sNil);
         }
@@ -3359,6 +3354,16 @@ public class LambdaJ {
         return env;
     }
 
+    private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
+        return cons(cons(intern(sym), value), env);
+    }
+
+    private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
+        return cons(cons(sym, value), env);
+    }
+
+
+
     private static double quot12(ConsCell args) {
         return cdr(args) == null ? ((Number)car(args)).doubleValue() : ((Number)car(args)).doubleValue() / ((Number)cadr(args)).doubleValue();
     }
@@ -3407,7 +3412,6 @@ public class LambdaJ {
         if (d > Long.MAX_VALUE) throw new LambdaJError("overflow");
         return (long)d;
     }
-
     private static Number inc(Number n) {
         if (n instanceof Long) {
             final long l;
@@ -3447,14 +3451,6 @@ public class LambdaJ {
         return ret.first();
     }
 
-    private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
-        return cons(cons(symtab.intern(new LambdaJSymbol(sym)), value), env);
-    }
-
-    private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
-        return cons(cons(sym, value), env);
-    }
-
 
 
     ///
@@ -3469,7 +3465,7 @@ public class LambdaJ {
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
-        final ConsCell envEntry = assq(symtab.intern(new LambdaJSymbol(globalSymbol)), topEnv);
+        final ConsCell envEntry = assq(intern(globalSymbol), topEnv);
         if (envEntry != null) return cdr(envEntry);
         throw new LambdaJError(true, "%s: '%s' is not bound", "getValue", globalSymbol);
     }
@@ -4015,7 +4011,7 @@ public class LambdaJ {
     private static boolean compileToJava(Charset charset, SymbolTable symtab, Path libDir, List<Object> history, Object className, Object filename) {
         final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libDir, null);
         final String clsName = className == null ? "MurmelProgram" : className.toString();
-        //if (filename == interpreter.symtab.intern(new LambdaJSymbol("t"))) {
+        //if (filename == intp.symtab.intern(new LambdaJSymbol("t")) { // todo abchecken ob/warum das nicht geht
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
             c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
             return true;
@@ -4199,7 +4195,7 @@ public class LambdaJ {
             if ("--".equals(arg)) break;
         }
 
-        intp.insertFront(intp.topEnv, intp.symtab.intern(new LambdaJSymbol("*command-line-argument-list*")), new ArraySlice(args, n));
+        intp.insertFront(intp.topEnv, intp.intern("*command-line-argument-list*"), new ArraySlice(args, n));
     }
 
     private static void showVersion() {
@@ -4634,7 +4630,7 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        protected final LambdaJSymbol intern(String symName) { return intp.symtab.intern(new LambdaJSymbol(symName)); }
+        protected final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
 
         protected static ConsCell arraySlice(Object[] o, int offset) { return offset >= o.length ? null : new ArraySlice(o, offset); }
         protected static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
@@ -5354,7 +5350,7 @@ public class LambdaJ {
         }
 
         private boolean isSymbol(Object op, String s) {
-            return op == interpreter().intern(s);
+            return op == intern(s);
         }
         
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:

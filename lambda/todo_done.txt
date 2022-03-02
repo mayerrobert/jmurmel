@@ -1277,3 +1277,6 @@ CL sleep uebernimmt sekunden, Murmel internal time units ?!?
 im interpreter gibts x-mal "if (!(a instanceof Number)) throw new LambdaJError..." und in MurmelJavaProgram gibts number()
 
 generierte variable resultNN in formsToJava reinziehen, umbenamsen nach ignoredNN
+
+truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
+-> checkedD2L oder checkedDoubleToLong

@@ -16,10 +16,16 @@ GETTING STARTED löschen (auch aus jmurmel.github.io)?
 
 vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 die methoden im compiler, die code ausspucken umbenamsen: emit...
-truncate umbenamsen weil das macht kein truncate, sondern double->long mit overflowcheck
--> checkedD2L oder checkedDoubleToLong
--> asList -> checkedToList
 
+members von LambdaJ umsortieren: am anfang solls public interfaces geben
+
+
+
+teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur bei listen, wo anfang mit ende verknüpft ist,
+nicht aber bei einem loop mittendrin
+
+
+ 
 gesondertes flag für setq, rplaca, rplacd? --no-mut
 gesondertes flag für defmacro?
 backquotes, append, assoc, assq
