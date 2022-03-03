@@ -1282,3 +1282,6 @@ truncate umbenamsen weil das macht kein truncate, sondern double->long mit overf
 -> checkedD2L oder checkedDoubleToLong
 
 members von LambdaJ umsortieren: am anfang solls public interfaces geben
+
+mod und rem opencoden
+cl_round() inlinen, cl_rem() auch

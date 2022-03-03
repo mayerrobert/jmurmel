@@ -1300,6 +1300,8 @@ public class LambdaJ {
             sMul =     intern("*");
             sSub =     intern("-");
             sDiv =     intern("/");
+            sMod =     intern("mod");
+            sRem =     intern("rem");
             
             sCar =     intern("car");
             sCdr =     intern("cdr");
@@ -1336,7 +1338,7 @@ public class LambdaJ {
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for opencoded functions */
-    private LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sList, sListStar;
+    private LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sList, sListStar;
 
     private Supplier<Object> expTrue;
 
@@ -1864,6 +1866,9 @@ public class LambdaJ {
         if (op == sMul)  { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
         if (op == sSub)  { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
         if (op == sDiv)  { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
+        
+        if (op == sMod)  { twoArgs("mod", args); return cl_mod(asDouble("mod", car(args)), asDouble("mod", cadr(args))); }
+        if (op == sRem)  { twoArgs("rem", args); return asDouble("rem", car(args)) % asDouble("rem", cadr(args)); }
 
         if (op == sNeq)  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
         if (op == sNe)   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
@@ -2789,7 +2794,7 @@ public class LambdaJ {
         numberArgs(func, a);
     }
 
-    /** at least one number arg */
+    /** at least one arg, all args must be numbers */
     private static void oneOrMoreNumbers(String func, ConsCell a) {
         varargs1(func, a);
         numberArgs(func, a);
@@ -2797,7 +2802,7 @@ public class LambdaJ {
 
     
     
-    /** the given arg must be a LambdaJString */
+    /** at least one arg, the first arg must be a LambdaJString */
     private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
             throw new LambdaJError(true, "%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
@@ -2932,13 +2937,6 @@ public class LambdaJ {
         return Math.signum(n.doubleValue());
     }
 
-    /** produce a quotient that has been rounded to the nearest mathematical integer;
-     *  if the mathematical quotient is exactly halfway between two integers, (that is, it has the form integer+1/2),
-     *  then the quotient has been rounded to the even (divisible by two) integer. */
-    private static double cl_round(double n) {
-        return Math.rint(n);
-    }
-
     /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
      *  of the same sign as the mathematical quotient,
      *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
@@ -2946,14 +2944,8 @@ public class LambdaJ {
         return d < 0.0 ? Math.ceil(d) : Math.floor(d);
     }
 
-    private static double cl_mod(Number n1, Number n2) {
-        final double x = n1.doubleValue();
-        final double y = n2.doubleValue();
+    private static double cl_mod(double x, double y) {
         return x - Math.floor(x / y) * y;
-    }
-
-    private static double cl_rem(Number n1, Number n2) {
-        return n1.doubleValue() % n2.doubleValue();
     }
 
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
@@ -3393,13 +3385,13 @@ public class LambdaJ {
             env = addBuiltin("pi",      Math.PI,
                   env);
 
-            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 2); return cl_round   (quot12(args)); },
+            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 2); return Math.rint  (quot12(args)); },
                   addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 2); return Math.floor (quot12(args)); },
                   addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 2); return Math.ceil  (quot12(args)); },
                   addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 2); return cl_truncate(quot12(args)); },
                   env))));
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return checkedToLong(cl_round   (quot12(args))); },
+            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12(args))); },
                   addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12(args))); },
                   addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12(args))); },
                   addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12(args))); },
@@ -3415,8 +3407,8 @@ public class LambdaJ {
                   addBuiltin("exp",     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); },
                   addBuiltin("expt",    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); },
 
-                  addBuiltin("mod",     (Primitive) args -> { numberArgs("mod",     args, 2, 2); return cl_mod((Number)car(args), (Number)cadr(args)); },
-                  addBuiltin("rem",     (Primitive) args -> { numberArgs("rem",     args, 2, 2); return cl_rem((Number)car(args), (Number)cadr(args)); },
+                  addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(asDouble("mod", car(args)), asDouble("mod", cadr(args))); },
+                  addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); },
                           
                   addBuiltin("signum",  (Primitive) args -> { oneNumber("signum", args); return cl_signum((Number)car(args)); },
                   env))))))));
@@ -4507,7 +4499,7 @@ public class LambdaJ {
         public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return checkedToLong(Math.ceil  (quot12(args))); }
         public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return checkedToLong(cl_truncate(quot12(args))); }
 
-        protected static double cl_round(double d) { return LambdaJ.cl_round(d); }
+        protected static double cl_round(double d) { return Math.rint(d); }
         protected static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
         protected static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
         private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
@@ -4525,7 +4517,8 @@ public class LambdaJ {
         public final Number   _signum  (Object... args) { oneArg("signum",        args.length); number(args[0]); return cl_signum((Number)args[0]); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
-        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return cl_rem(dbl(args[0]), dbl(args[1])); }
+        protected final double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
+        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return dbl(args[0]) % dbl(args[1]); }
 
         /// predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
@@ -6010,6 +6003,16 @@ public class LambdaJ {
             if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
             if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
 
+            if (isSymbol(op, "mod")) { funcall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
+            if (isSymbol(op, "rem")) {
+                twoArgs("rem", args);
+                sb.append("(");
+                asDouble(sb, car(args), env, topEnv, rsfx);
+                sb.append(" % ");
+                asDouble(sb, cadr(args), env, topEnv, rsfx);
+                sb.append(")");
+                return true; }
+
             if (isSymbol(op, "round"))     { divisionOp(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
             if (isSymbol(op, "floor"))     { divisionOp(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
             if (isSymbol(op, "ceiling"))   { divisionOp(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
@@ -6136,26 +6139,35 @@ public class LambdaJ {
 
         private void funcallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (minArgs > 0) varargsMin(murmel,  args, minArgs);
-            funcallHelper(sb, func, args, env, topEnv, rsfx);
+            funcallHelper(sb, func, args, env, topEnv, rsfx, null);
         }
 
         private void funcall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             oneArg(murmel, args);
-            funcallHelper(sb, func, args, env, topEnv, rsfx);
-        }
-        
-        private void funcall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            twoArgs(murmel, args);
-            funcallHelper(sb, func, args, env, topEnv, rsfx);
+            funcallHelper(sb, func, args, env, topEnv, rsfx, null);
         }
 
-        private void funcallHelper(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void funcall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            twoArgs(murmel, args);
+            funcallHelper(sb, func, args, env, topEnv, rsfx, null);
+        }
+
+        private void funcall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            twoArgs(murmel, args);
+            funcallHelper(sb, func, args, env, topEnv, rsfx, "dbl");
+        }
+
+        private void funcallHelper(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String wrapper) {
             sb.append(func).append("(");
             if (args != null) {
+                if (wrapper != null) sb.append(wrapper).append('(');
                 formToJava(sb, car(args), env, topEnv, rsfx, false);
+                if (wrapper != null) sb.append(')');
                 if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
                     sb.append(", ");
+                    if (wrapper != null) sb.append(wrapper).append('(');
                     formToJava(sb, arg, env, topEnv, rsfx, false);
+                    if (wrapper != null) sb.append(')');
                 }
             }
             sb.append(')');

@@ -240,6 +240,12 @@
 (deftest test-add-minus-zero (+ -0.0 -0.0)  -0.0)
 
 
+;;; test mod, rem
+(deftest test-mod-rem
+  (list (mod -3.0 -2) (rem -3 -2.0) (mod 3.0 -2) (rem 3 -2.0))
+    '(-1.0 -1.0 -1.0 1.0))
+
+
 ;;; Murmel-only tests for various not-a-numbers.
 ;;; In Common division by zero is signalled as a condition.
 #+murmel
