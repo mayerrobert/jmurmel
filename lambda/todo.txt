@@ -10,6 +10,8 @@ Turtle funktionen in MurmelJavaProgram überarbeiten: erst wird ein ArraySlice g
 
 Compiler.libdir ist unused?!?
 
+müssen dir compiler rt funktionen public sein oder reicht protected? geht static?
+
 statt new LambdaJ.ListConsCell(car, cdr) -> ConsCell.cons(), oder ueberall new...
 
 

@@ -3258,8 +3258,8 @@ public class LambdaJ {
                   addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return asFrame("pen-up",   car(a)).penUp();   },
                   addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return asFrame("pen-down", car(a)).penDown(); },
 
-                  addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 0, 1); return asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); },
-                  addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 0, 1); return asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
+                  addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 1, 2); return asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); },
+                  addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 1, 2); return asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
 
                   addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return asFrame("text",    cadr(a)).text   (car(a).toString()); },
 
@@ -3277,12 +3277,14 @@ public class LambdaJ {
             env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
                   addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
                   addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
-                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3); return (asInt("rgb-to-pixel", car(a)) << 16)
-                                                                                                        | (asInt("rgb-to-pixel", cadr(a)) << 8)
-                                                                                                        | asInt("rgb-to-pixel", caddr(a));  },
-                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3); return Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
-                                                                                                                         asFloat("hsb-to-pixel", cadr(a)),
-                                                                                                                         asFloat("hsb-to-pixel", caddr(a)));  },
+                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
+                                                                 return (long)((asInt("rgb-to-pixel", car(a)) << 16)
+                                                                             | (asInt("rgb-to-pixel", cadr(a)) << 8)
+                                                                             | asInt("rgb-to-pixel", caddr(a)));  },
+                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
+                                                                 return (long)Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
+                                                                                             asFloat("hsb-to-pixel", cadr(a)),
+                                                                                             asFloat("hsb-to-pixel", caddr(a)));  },
                   env)))));
         }
 
@@ -4582,50 +4584,50 @@ public class LambdaJ {
             return ret;
         }
 
-        public final Object openFrame          (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("open-frame",    a, 0, 1); return intp.asFrame("open-frame", car(a)).open(); }
-        public final Object closeFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("close-frame",   a, 0, 1); return intp.asFrame("close-frame",   car(a)).close();   }
-        public final Object resetFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("reset-frame",   a, 0, 1); return intp.asFrame("reset-frame",   car(a)).reset();   }
-        public final Object clearFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("clear-frame",   a, 0, 1); return intp.asFrame("clear-frame",   car(a)).clear();   }
-        public final Object repaintFrame       (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("repaint-frame", a, 0, 1); return intp.asFrame("repaint-frame", car(a)).repaint(); }
-        public final Object flushFrame         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("flush-frame",   a, 0, 1); return intp.asFrame("flush-frame",   car(a)).flush(); }
+        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return intp.asFrame("open-frame",     args.length > 0 ? args[0] : null).open();    }
+        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return intp.asFrame("close-frame",    args.length > 0 ? args[0] : null).close();   }
+        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return intp.asFrame("reset-frame",    args.length > 0 ? args[0] : null).reset();   }
+        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return intp.asFrame("clear-frame",    args.length > 0 ? args[0] : null).clear();   }
+        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return intp.asFrame("repaint-frame",  args.length > 0 ? args[0] : null).repaint(); }
+        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return intp.asFrame("flush-frame",    args.length > 0 ? args[0] : null).flush();   }
 
         // set new current frame, return previous frame
-        public final Object currentFrame       (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("current-frame", a, 0, 1); final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.asFrame("current-frame", car(a)); return prev; }
+        public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = intp.asFrame("current-frame", args[0]); return prev; }
 
-        public final Object pushPos            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("push-pos",a, 0, 1); return intp.asFrame("push-pos",car(a)).pushPos(); }
-        public final Object popPos             (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("pop-pos", a, 0, 1); return intp.asFrame("pop-pos", car(a)).popPos();  }
+        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return intp.asFrame("push-pos",       args.length > 0 ? args[0] : null).pushPos(); }
+        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return intp.asFrame("pop-pos",        args.length > 0 ? args[0] : null).popPos();  }
 
-        public final Object penUp              (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("pen-up",  a, 0, 1); return intp.asFrame("pen-up",   car(a)).penUp();   }
-        public final Object penDown            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("pen-down",a, 0, 1); return intp.asFrame("pen-down", car(a)).penDown(); }
+        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return intp.asFrame("pen-up",         args.length > 0 ? args[0] : null).penUp();   }
+        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return intp.asFrame("pen-down",       args.length > 0 ? args[0] : null).penDown(); }
 
-        public final Object color              (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("color",   a, 0, 1); return intp.asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); }
-        public final Object bgColor            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("bgcolor", a, 0, 1); return intp.asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); }
+        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return intp.asFrame("color",          args.length > 1 ? args[1] : null).color  (asInt("color",   args.length > 0 ? args[0] : null)); }
+        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return intp.asFrame("bgcolor",        args.length > 1 ? args[1] : null).bgColor(asInt("bgcolor", args.length > 0 ? args[0] : null)); }
 
-        public final Object text               (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("text",    a, 1, 2); return intp.asFrame("text",    cadr(a)).text   (car(a).toString()); }
+        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return intp.asFrame("text",           args.length > 1 ? args[1] : null).text   (args[0].toString()); }
 
-        public final Object right              (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("right",   a, 1, 2); return intp.asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); }
-        public final Object left               (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("left",    a, 1, 2); return intp.asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); }
-        public final Object forward            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("forward", a, 1, 2); return intp.asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); }
+        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return intp.asFrame("right",          args.length > 1 ? args[1] : null).right  (asDouble("right",   args[0])); }
+        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return intp.asFrame("left",           args.length > 1 ? args[1] : null).left   (asDouble("left",    args[0])); }
+        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return intp.asFrame("forward",        args.length > 1 ? args[1] : null).forward(asDouble("forward", args[0])); }
 
-        public final Object moveTo             (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("move-to", a, 2, 3);  return intp.asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  }
-        public final Object lineTo             (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("line-to", a, 2, 3);  return intp.asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  }
-        public final Object moveRel            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("move-rel", a, 2, 3); return intp.asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); }
-        public final Object lineRel            (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("line-rel", a, 2, 3); return intp.asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); }
+        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return intp.asFrame("move-to",        args.length > 2 ? args[2] : null).moveTo(asDouble("move-to",  args[0]), asDouble("move-to", args[1]));  }
+        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return intp.asFrame("line-to",        args.length > 2 ? args[2] : null).lineTo(asDouble("line-to",  args[0]), asDouble("line-to", args[1]));  }
+        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return intp.asFrame("move-rel",       args.length > 2 ? args[2] : null).moveRel(asDouble("move-rel", args[0]), asDouble("move-rel", args[1])); }
+        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return intp.asFrame("line-rel",       args.length > 2 ? args[2] : null).lineRel(asDouble("line-rel", args[0]), asDouble("line-rel", args[1])); }
 
-        public final Object makeBitmap         (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("make-bitmap",     a, 2, 3); return intp.asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a)));  }
-        public final Object discardBitmap      (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("discard-bitmap",  a, 0, 1); return intp.asFrame("discard-bitmap", car(a))  .discardBitmap();   }
+        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return intp.asFrame("make-bitmap",    args.length > 2 ? args[2] : null).makeBitmap(asInt("make-bitmap",  args[0]), asInt("make-bitmap", args[1]));  }
+        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return intp.asFrame("discard-bitmap", args.length > 0 ? args[0] : null)  .discardBitmap();   }
 
-        public final Object setPixel           (Object... args) { final ConsCell a = arraySlice(args); varargsMinMax("set-pixel",       a, 3, 4); return intp.asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel",  car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  }
+        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return intp.asFrame("set-pixel",      args.length > 3 ? args[3] : null).setRGB(asInt("set-pixel",  args[0]), asInt("set-pixel", args[1]), asInt("set-pixel", args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
                                                                   final int r = asInt("rgb-to-pixel", args[0]);
                                                                   final int g = asInt("rgb-to-pixel", args[1]);
                                                                   final int b = asInt("rgb-to-pixel", args[2]);
-                                                                  return (r<<16) | (g<<8) | b; }
+                                                                  return (long)((r<<16) | (g<<8) | b); }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
                                                                   final float hue = asFloat("hsb-to-pixel", args[0]);
                                                                   final float sat = asFloat("hsb-to-pixel", args[1]);
                                                                   final float bri = asFloat("hsb-to-pixel", args[2]);
-                                                                  return Color.HSBtoRGB(hue, sat, bri); }
+                                                                  return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
 
@@ -4720,6 +4722,11 @@ public class LambdaJ {
         private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) argError(expr, 1, 2, argCount); }
         /** one or more arguments */
         private static void varargs1(String expr, int argCount)   { if (argCount == 0)                argError(expr, 1, 1, 0); }
+
+        private static void varargsMinMax(String expr, int argCount, int min, int max) {
+            if (argCount < min || argCount > max)
+                argError(expr, min, max, argCount);
+        }
 
         private static void argError(String expr, int expectedMin, int expectedMax, int actual) {
             if (actual < expectedMin) throw new LambdaJError(true, "%s: not enough arguments", expr);
