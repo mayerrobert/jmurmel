@@ -1783,7 +1783,7 @@ public class LambdaJ {
         final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
 
         final String op = letDynamic ? (operator + " dynamic") : (namedLet ? "named " : "") + operator;
-        final ConsCell bindingsAndBodyForms = (namedLet || letDynamic) ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
+        final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
         final Object _bindings = car(bindingsAndBodyForms);
         if (!listp(_bindings)) throw errorMalformed(op, "a list of bindings", _bindings);
@@ -2267,10 +2267,10 @@ public class LambdaJ {
             else { this.arry = null; offset = -1; }
         }
 
-        @Override public Object     car() { return (arry == null || arry.length <= offset) ? null : arry[offset]; }
+        @Override public Object     car() { return arry == null || arry.length <= offset ? null : arry[offset]; }
         @Override public Object rplaca(Object car) { arry[offset] = car; return this; }
 
-        @Override public ArraySlice cdr() { return (arry == null || arry.length <= offset+1) ? null : new ArraySlice(this); }
+        @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
 
         @Override public String toString() { return printSEx(true, false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
@@ -2299,9 +2299,9 @@ public class LambdaJ {
     private static Object   car(Object o)      { return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                 : o instanceof Object[] ? (((Object[])o).length == 0 ? null : ((Object[])o)[0])
-                                                 : o instanceof String ? (((String)o).isEmpty() ? null : ((String)o).charAt(0))
-                                                 : o instanceof LambdaJSymbol ? (((LambdaJSymbol)o).name.isEmpty() ? null : ((LambdaJSymbol)o).name.charAt(0))
+                                                 : o instanceof Object[] ? ((Object[])o).length == 0 ? null : ((Object[])o)[0]
+                                                 : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
+                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.isEmpty() ? null : ((LambdaJSymbol)o).name.charAt(0)
                                                  : carCdrError("car", o); }
 
     private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
@@ -2318,9 +2318,9 @@ public class LambdaJ {
     private static Object   cdr(Object o)      { return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
-                                                 : o instanceof Object[] ? (((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o))
-                                                 : o instanceof String ? (((String)o).length() <= 1 ? null : ((String)o).substring(1))
-                                                 : o instanceof LambdaJSymbol ? (((LambdaJSymbol)o).name.length() <= 1 ? null : ((LambdaJSymbol)o).name.substring(1))
+                                                 : o instanceof Object[] ? ((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o)
+                                                 : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
+                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.length() <= 1 ? null : ((LambdaJSymbol)o).name.substring(1)
                                                  : carCdrError("cdr", o); }
 
     private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
@@ -2384,7 +2384,7 @@ public class LambdaJ {
     }
 
     private static String expectedArgPhrase(int expected) {
-        return (expected == 0) ? "no arguments" : ((expected == 1) ? "one argument" : (expected == 2) ? "two arguments" : (expected + " arguments"));
+        return (expected == 0) ? "no arguments" : (expected == 1) ? "one argument" : (expected == 2) ? "two arguments" : (expected + " arguments");
     }
 
     private static String actualArgPhrase(int actual) {
@@ -3287,7 +3287,7 @@ public class LambdaJ {
                   addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3); return (asInt("rgb-to-pixel", car(a)) << 16)
                                                                                                         | (asInt("rgb-to-pixel", cadr(a)) << 8)
-                                                                                                        | (asInt("rgb-to-pixel", caddr(a)));  },
+                                                                                                        | asInt("rgb-to-pixel", caddr(a));  },
                   addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3); return Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
                                                                                                                          asFloat("hsb-to-pixel", cadr(a)),
                                                                                                                          asFloat("hsb-to-pixel", caddr(a)));  },
@@ -5077,22 +5077,19 @@ public class LambdaJ {
 
             intp.macros.clear(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
 
-            // generate getValue() for embed API
+            // emit getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n");
             if (globals.length() > 0) ret.append("        switch (symbol) {\n").append(globals).append("        }\n");
 
-            if (false) {
-                ret.append("        switch (symbol) {\n");
-                for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
-                for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
-                for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (CompilerPrimitive)rt()::_").append(prim).append(";\n");
-                for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (CompilerPrimitive)rt()::").append(alias[1]).append(";\n");
-                ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
-                         + "        }\n");
-            }
-            else {
-                ret.append("        return super.getValue(symbol);\n");
-            }
+            // ret.append("        switch (symbol) {\n");
+            // for (String   global: globalvars)        ret.append("        case \"").append(global)  .append("\": return _").append(global).append(";\n");
+            // for (String[] alias:  aliasedGlobals)    ret.append("        case \"").append(alias[0]).append("\": return ") .append(alias[1]).append(";\n");
+            // for (String   prim:   primitives)        ret.append("        case \"").append(prim)    .append("\": return (CompilerPrimitive)rt()::_").append(prim).append(";\n");
+            // for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (CompilerPrimitive)rt()::").append(alias[1]).append(";\n");
+            // ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
+            //          + "        }\n");
+            ret.append("        return super.getValue(symbol);\n");
+
             ret.append("    }\n\n"
                      + "    // toplevel forms\n"
                      + "    protected Object runbody() {\n");
@@ -6185,7 +6182,7 @@ public class LambdaJ {
 
 
         private int qCounter;
-        private final ArrayList<String> quotedForms = new ArrayList<>();
+        private final List<String> quotedForms = new ArrayList<>();
         
         private void quotedFormToJava(WrappingWriter sb, Object form) {
             if (form == null || intp.sNil == form) { sb.append("_nil"); }
