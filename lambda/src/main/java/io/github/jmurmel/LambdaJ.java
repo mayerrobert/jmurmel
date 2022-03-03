@@ -441,14 +441,17 @@ public class LambdaJ {
     private boolean haveQuote()   { return (features & Features.HAVE_QUOTE.bits())   != 0; }
     private boolean haveLexC()    { return (features & Features.HAVE_LEXC.bits())    != 0; }
 
+    /** constructor with all features, no tracing */
     public LambdaJ() {
         this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null);
     }
 
+    /** constructor */
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
         this(features, trace, tracer, null);
     }
 
+    /** constructor */
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, Path libDir) {
         this.features = features;
         this.trace = trace;
@@ -462,12 +465,12 @@ public class LambdaJ {
 
     /// ## Printer
 
-    /** return an ObjectWriter that transforms \n to the platform default line separator */
+    /** create an ObjectWriter that transforms \n to the platform default line separator */
     public static ObjectWriter makeWriter(WriteConsumer out) {
         return makeWriter(out, System.lineSeparator());
     }
 
-    /** return an ObjectWriter that transforms \n to the given {@code lineSeparator} */
+    /** create an ObjectWriter that transforms \n to the given {@code lineSeparator} */
     public static ObjectWriter makeWriter(WriteConsumer out, String lineSeparator) {
         if ("\r\n".equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r\n"));
         if ("\r"  .equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r"));
@@ -475,7 +478,7 @@ public class LambdaJ {
         return new SExpressionWriter(out);
     }
 
-    /** This class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
+    /** this class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
     public static class SExpressionWriter implements ObjectWriter {
         private final WriteConsumer out;
 
@@ -3210,9 +3213,12 @@ public class LambdaJ {
     private ObjectReader lispReader;
     private ObjectWriter lispPrinter;
 
+    /** return the current stdin */
     public ObjectReader getLispReader()  { return lispReader; }
+    /** return the current stdout */
     public ObjectWriter getLispPrinter() { return lispPrinter; }
 
+    /** set new stdin/stdout */
     public void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) {
         this.lispReader = lispStdin;
         this.lispPrinter = lispStdout;
