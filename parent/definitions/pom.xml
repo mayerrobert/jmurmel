@@ -29,31 +29,47 @@
 
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
+        <!-- dependency versions -->
+        <junit.version>4.13.2</junit.version>
+        <jmh.version>1.34</jmh.version>
+        
+        <!-- maven plugins -->
+        <maven-compiler-plugin.version>3.10.0</maven-compiler-plugin.version>
+        <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-release-plugin.version>3.0.0-M5</maven-release-plugin.version>
         <maven-enforcer-plugin.version>3.0.0</maven-enforcer-plugin.version>
-        <surefire.version>3.0.0-M5</surefire.version>
         <maven-javadoc-plugin.version>3.3.2</maven-javadoc-plugin.version>
-        <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
+        <maven-pmd-plugin.version>3.16.0</maven-pmd-plugin.version>
+        <maven-pmd-plugin.asm.version>9.2</maven-pmd-plugin.asm.version>
+        <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+        <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
+        <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
+        <maven-deploy-plugin.version>3.0.0-M2</maven-deploy-plugin.version>
+        <maven-install-plugin.version>3.0.0-M1</maven-install-plugin.version>
+        <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
+        <maven-resources-plugin.version>3.2.0</maven-resources-plugin.version>
         <maven-antrun-plugin.version>3.0.0</maven-antrun-plugin.version>
 
-        <maven-pmd-plugin.version>3.16.0</maven-pmd-plugin.version>
-        <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
-        <jmh.version>1.34</jmh.version>
+        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
+        <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
+        <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
 
-        <!-- report maven-plugins -->
+        <!-- report maven plugins -->
+        <maven-site-plugin.version>3.11.0</maven-site-plugin.version>
         <maven-reports-plugin.version>3.2.2</maven-reports-plugin.version>
         <maven-jxr-plugin.version>3.1.1</maven-jxr-plugin.version>
+        <maven-dependency-plugin.version>3.2.0</maven-dependency-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+
         <jdepend-plugin.version>2.0</jdepend-plugin.version>
         <versions-plugin.version>2.9.0</versions-plugin.version>
-        <maven-dependency-plugin.version>3.2.0</maven-dependency-plugin.version>
-        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -74,33 +90,33 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>${maven-assembly-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>${maven-clean-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>${maven-dependency-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.0.0-M2</version>
+                    <version>${maven-deploy-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>3.0.0-M1</version>
+                    <version>${maven-install-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.2.2</version>
+                    <version>${maven-jar-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.3.2</version>
+                    <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
                         <detectJavaApiLink>false</detectJavaApiLink>
                         <additionalparam>-Xdoclint:all -Xdoclint:-missing</additionalparam>
@@ -121,19 +137,19 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>${maven-resources-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.11.0</version>
+                    <version>${maven-site-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>${maven-source-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${surefire.version}</version>
+                    <version>${maven-surefire.version}</version>
                     <configuration>
                         <argLine>-Xms200m -Xmx500m -Xss2m</argLine>
                     </configuration>
@@ -141,7 +157,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.5</version>
+                    <version>${findbugs-maven-plugin.version}</version>
                     <configuration>
                         <failOnError>${maven.findbugs.failure.strict}</failOnError>
                         <effort>Max</effort>
@@ -161,7 +177,7 @@
                         <dependency>
                             <groupId>org.ow2.asm</groupId>
                             <artifactId>asm</artifactId>
-                            <version>9.2</version>
+                            <version>${maven-pmd-plugin.asm.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -172,7 +188,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.0</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <compilerVersion>${javac.target}</compilerVersion>
                     <source>${javac.target}</source>
