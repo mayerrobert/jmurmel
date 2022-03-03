@@ -1,3 +1,30 @@
+vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
+die methoden im compiler, die code ausspucken umbenamsen: emit...
+
+statt überall "throw new LambdaJError(..."
+-> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
+-> ggf. später statt exception optional einen handler aufrufen -> condition system
+  -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
+     wenn handler gerufen werden, schauts anders aus 
+
+argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
+
+letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
+
+
+
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+
+compiler: tests für verschachtelte let dynamic
+ggf. bei let dynamic als endcall zumindest warnen dass TCO nicht gemacht wird
+ggf. für let dynamic statt try/finally eine restore liste basteln, und die wird irgendwie von tailcall abgearbeitet
+
+teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur bei listen, wo anfang mit ende verknüpft ist,
+nicht aber bei einem loop mittendrin
+
+
+
 Multiple values: VALUES, MULTIPLE-VALUE-BIND und MULTIPLE-VALUE_CALL müsste reichen?
 VALUES hat als returnwert das erste argument, und verpackt ALLE (oder die restlichen?) argumente in ein Object[]
   und steckt dieses in eine globale variable (member von LambdaJ bzw. von MurmelJavaProgram).
@@ -7,20 +34,11 @@ SBCL: VALUES -> funktion, MULTIPLE-VALUE-BIND -> macro, MULTIPLE-VALUE-CALL -> s
 VALUES kann auch in setf verwendet werden: (setf (values a b) (floor 7 2)), das ist aber in CL erst rel. spät dazugekommen,
   brauchts also nicht im ersten wurf
 MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL übernimmt 0 oder mehrere
-
 LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
-
 
 
 GETTING STARTED löschen (auch aus jmurmel.github.io)?
 
-vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
-die methoden im compiler, die code ausspucken umbenamsen: emit...
-
-
-
-teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur bei listen, wo anfang mit ende verknüpft ist,
-nicht aber bei einem loop mittendrin
 
 
  
@@ -36,12 +54,6 @@ einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globa
 
 der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
 für opencoded functions argcount check 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen
-
-
-compiler: tests für verschachtelte let dynamic
-ggf. bei let dynamic als endcall zumindest warnen dass TCO nicht gemacht wird
-ggf. für let dynamic statt try/finally eine restore liste basteln, und die wird irgendwie von tailcall abgearbeitet
-
 
 
 
@@ -118,12 +130,6 @@ oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))"
 
 
 
-statt überall "throw new LambdaJError(..."
--> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
--> ggf. später statt exception optional einen handler aufrufen -> condition system
-  -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
-     wenn handler gerufen werden, schauts anders aus 
-
 mit optimize speed 0 und 1 testen
 
 
@@ -132,16 +138,9 @@ nil
 :r
 -> fehler
 
-read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
-
 
 
 der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
-
-argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
- 
-letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
-let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 
 mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
 -> ggf. eine funktion um einen frame in eine datei zu schreiben? und headlessp

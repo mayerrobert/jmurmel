@@ -2028,7 +2028,7 @@ public class LambdaJ {
         if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
         final String fileName = (String) argument;
         final SymbolTable prevSymtab = symtab;
-        final Path prevPath = ((SExpressionParser)symtab).filePath;
+        final Path prevPath = symtab instanceof SExpressionParser ? ((SExpressionParser)symtab).filePath : null;
         final Path p = findFile(prevPath, fileName);
         try (Reader r = Files.newBufferedReader(p)) {
             final SExpressionParser parser = new SExpressionParser(r::read) {
@@ -2052,7 +2052,7 @@ public class LambdaJ {
         }
         finally {
             symtab = prevSymtab;
-            ((SExpressionParser)symtab).filePath = prevPath;
+            if (symtab instanceof SExpressionParser) ((SExpressionParser)symtab).filePath = prevPath;
         }
     }
 
@@ -4886,7 +4886,7 @@ public class LambdaJ {
         private LambdaJ.SymbolTable st;
         private final Path libDir;
         private final JavaCompilerHelper javaCompiler;
-        private LambdaJ intp;
+        private final LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             this.st = st;
@@ -4895,24 +4895,19 @@ public class LambdaJ {
             for (String s: reservedWords) {
                 reservedSymbols.add(intern(s));
             }
-        }
 
-        private LambdaJ interpreter() {
-            if (intp == null) {
-                intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, libDir);
-                intp.init(() -> -1, System.out::print);
-                intp.setSymtab(st);
-                intp.topEnv = intp.environment(null);
-            }
-            return intp;
+            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, libDir);
+            intp.init(() -> -1, System.out::print);
+            intp.setSymtab(st);
+            intp.topEnv = intp.environment(null);
+            this.intp = intp;
         }
-
 
 
         private static final String[] reservedWords = {
                 "nil", "t",
-                "lambda", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec",
-                "apply", "progn",
+                "lambda", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec", "setq",
+                "apply", "progn", "load", "require", "provide", "declaim"
         };
 
         private final Collection<LambdaJSymbol> reservedSymbols = new ArrayList<>();
@@ -5052,7 +5047,7 @@ public class LambdaJ {
             final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
-            final int prevSpeed = interpreter().speed;
+            final int prevSpeed = intp.speed;
             passTwo = false;
             implicitDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
@@ -5074,7 +5069,7 @@ public class LambdaJ {
             }
             implicitDecl = null;
 
-            interpreter().macros.clear(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
+            intp.macros.clear(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
 
             // generate getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n");
@@ -5097,7 +5092,7 @@ public class LambdaJ {
                      + "    protected Object runbody() {\n");
 
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
-            interpreter().speed = prevSpeed;
+            intp.speed = prevSpeed;
             passTwo = true;
             formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
 
@@ -5114,26 +5109,27 @@ public class LambdaJ {
         }
 
         private ConsCell toplevelFormToJava(WrappingWriter ret, List<Object> bodyForms, StringBuilder globals, ConsCell globalEnv, Object form) {
+            final LambdaJ intp = this.intp;
             if (consp(form)) {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);
 
-                if (op == interpreter().sDefine) {
+                if (op == intp.sDefine) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
-                    interpreter().eval(ccForm, null);
+                    intp.eval(ccForm, null);
 
-                } else if (op == interpreter().sDefun) {
+                } else if (op == intp.sDefun) {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
-                    interpreter().eval(ccForm, null);
+                    intp.eval(ccForm, null);
 
-                } else if (op == interpreter().sDefmacro) {
+                } else if (op == intp.sDefmacro) {
                     final Object sym = cadr(ccForm);
                     notReserved(sym);
-                    interpreter().eval(ccForm, null);
+                    intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
 
-                } else if (op == interpreter().sProgn) {
+                } else if (op == intp.sProgn) {
                     // toplevel progn will be replaced by the forms it contains
                     final Object body = cdr(ccForm);
                     if (consp(body)) {
@@ -5143,43 +5139,43 @@ public class LambdaJ {
                         return globalEnv;
                     }
                 }
-                
-                if (interpreter().macros.containsKey(op)) {
-                    final Object expansion = interpreter().evalMacro(op, (ConsCell)cdr(form), 0, 0, 0);
+
+                if (intp.macros.containsKey(op)) {
+                    final Object expansion = intp.evalMacro(op, (ConsCell)cdr(form), 0, 0, 0);
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
 
-                } else if (op == interpreter().sLoad) {
+                } else if (op == intp.sLoad) {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(form));
                     oneArg("load", ccArgs);
                     globalEnv = loadFile(true, "load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
 
-                } else if (op == interpreter().sRequire) {
+                } else if (op == intp.sRequire) {
                     final ConsCell ccArgs = listOrMalformed("require", cdr(form));
                     varargsMinMax("require", ccArgs, 1, 2);
                     if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
-                    if (!interpreter().modules.contains(modName)) {
+                    if (!intp.modules.contains(modName)) {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
                         globalEnv = loadFile(true, "require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
-                        if (!interpreter().modules.contains(modName))
+                        if (!intp.modules.contains(modName))
                             throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
 
-                } else if (op == interpreter().sProvide) {
+                } else if (op == intp.sProvide) {
                     final ConsCell ccArgs = listOrMalformed("provide", cdr(form));
                     oneArg("provide", ccArgs);
                     if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
-                    interpreter().modules.add(modName);
+                    intp.modules.add(modName);
 
-                } else if (op == interpreter().sDeclaim) {
-                    interpreter().evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
+                } else if (op == intp.sDeclaim) {
+                    intp.evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
                     bodyForms.add(form);
 
                 } else bodyForms.add(form);
 
-                if (op == interpreter().sDefine || op == interpreter().sDefun)
+                if (op == intp.sDefine || op == intp.sDefun)
                     globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
 
             } else bodyForms.add(form);
@@ -5357,6 +5353,7 @@ public class LambdaJ {
         
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
         private void formToJava(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            final LambdaJ intp = this.intp;
             rsfx++;
             try {
 
@@ -5379,10 +5376,10 @@ public class LambdaJ {
                     /// * special forms:
 
                     ///     - quote
-                    if (interpreter().sQuote == op) { quotedFormToJava(sb, car(args)); return; }
+                    if (intp.sQuote == op) { quotedFormToJava(sb, car(args)); return; }
 
                     ///     - if
-                    if (interpreter().sIf == op) {
+                    if (intp.sIf == op) {
                         sb.append("((");
                         formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(") != null\n        ? ("); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
                         if (caddr(args) != null) { sb.append(")\n        : ("); formToJava(sb, caddr(args), env, topEnv, rsfx, isLast); sb.append("))"); }
@@ -5391,7 +5388,7 @@ public class LambdaJ {
                     }
 
                     ///     - cond
-                    if (interpreter().sCond == op) {
+                    if (intp.sCond == op) {
                         sb.append("false ? null");
                         for (Object cond: args) {
                             sb.append("\n        : (("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
@@ -5403,13 +5400,13 @@ public class LambdaJ {
                     }
 
                     ///     - lambda
-                    if (interpreter().sLambda == op) {
+                    if (intp.sLambda == op) {
                         lambdaToJava(sb, args, env, topEnv, rsfx, true);
                         return;
                     }
 
                     ///     - setq
-                    if (interpreter().sSetQ == op) {
+                    if (intp.sSetQ == op) {
                         if (args == null) sb.append("null");
                         else if (cddr(args) == null)
                             setqToJava(sb, env, topEnv, rsfx, args);
@@ -5425,7 +5422,7 @@ public class LambdaJ {
                         }
                         return;
                     }
-                    if (interpreter().sDefine == op) {
+                    if (intp.sDefine == op) {
                         if (rsfx != 1) throw new LambdaJError("define as non-toplevel form is not yet implemented");
                         final Object sym = car(args);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
@@ -5434,7 +5431,7 @@ public class LambdaJ {
                         sb.append("define_").append(javasym).append("()");
                         return;
                     }
-                    if (interpreter().sDefun == op) {
+                    if (intp.sDefun == op) {
                         if (rsfx != 1) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
                         final Object sym = car(args);
                         notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
@@ -5443,18 +5440,18 @@ public class LambdaJ {
                         sb.append("defun_").append(javasym).append("()");
                         return;
                     }
-                    if (interpreter().sDefmacro == op) {
+                    if (intp.sDefmacro == op) {
                         if (rsfx != 1) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
-                        final Object result = interpreter().eval(form, null);
+                        final Object result = intp.eval(form, null);
                         if (result != null) sb.append("intern(\"").append(sym).append("\")");
                         else sb.append("null");
                         return;
                     }
 
                     ///     - apply
-                    if (interpreter().sApply == op) {
-                        if (interpreter().speed >= 1 && symbolp(car(args))) {
+                    if (intp.sApply == op) {
+                        if (intp.speed >= 1 && symbolp(car(args))) {
                             if (opencodeApply(sb, car(args), (ConsCell)cdr(args), env, topEnv, rsfx)) return;
                         }
                         sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
@@ -5466,22 +5463,22 @@ public class LambdaJ {
                     }
 
                     ///     - progn
-                    if (interpreter().sProgn == op) {
+                    if (intp.sProgn == op) {
                         prognToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                    if (interpreter().sLabels == op) {
+                    if (intp.sLabels == op) {
                         labelsToJava(sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
-                    if (interpreter().sLet == op) {
-                        if (car(args) == interpreter().sDynamic)
+                    if (intp.sLet == op) {
+                        if (car(args) == intp.sDynamic)
                             letDynamicToJava(false, sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
                         else
                             letToJava(sb, args, env, topEnv, rsfx, isLast);
@@ -5490,8 +5487,8 @@ public class LambdaJ {
 
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                    if (interpreter().sLetStar == op) {
-                        if (car(args) == interpreter().sDynamic)
+                    if (intp.sLetStar == op) {
+                        if (car(args) == intp.sDynamic)
                             letDynamicToJava(true, sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
                         else
                             letrecToJava(false, sb, args, env, topEnv, rsfx, isLast);
@@ -5501,50 +5498,50 @@ public class LambdaJ {
 
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
-                    if (interpreter().sLetrec == op) {
+                    if (intp.sLetrec == op) {
                         letrecToJava(true, sb, args, env, topEnv, rsfx, isLast);
                         return;
                     }
 
-                    if (interpreter().sLoad == op) {
+                    if (intp.sLoad == op) {
                         varargs1("load", args);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
                         loadFile(false, "load", sb, car(args), env, topEnv, rsfx-1, isLast, null, null);
                         return;
                     }
 
-                    if (interpreter().sRequire == op) {
+                    if (intp.sRequire == op) {
                         // pass1 has replaced all toplevel (require)s with the file contents
                         throw new LambdaJError("require as non-toplevel form is not implemented");
                     }
 
-                    if (interpreter().sProvide == op) {
+                    if (intp.sProvide == op) {
                         // pass 2 shouldn't see this
                         throw new LambdaJError("provide as non-toplevel form is not implemented");
                     }
 
-                    if (interpreter().sDeclaim == op) {
-                        interpreter().evalDeclaim(rsfx, args);
+                    if (intp.sDeclaim == op) {
+                        intp.evalDeclaim(rsfx, args);
                         sb.append("null");
                         return;
                     }
 
                     /// * macro expansion
-                    if (intp != null && intp.macros.containsKey(op)) {
-                        final Object expansion = interpreter().evalMacro(op, args, 0, 0, 0);
+                    if (intp.macros.containsKey(op)) {
+                        final Object expansion = intp.evalMacro(op, args, 0, 0, 0);
                         formToJava(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (isSymbol(op, "macroexpand-1")) {
-                        if (interpreter().sQuote != caar(args)) throw new LambdaJError("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        if (intp.sQuote != caar(args)) throw new LambdaJError("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
                         quotedFormToJava(sb, intp.macroexpand1((ConsCell)cdar(args)));
                         return;
                     }
 
                     /// * some functions and operators are opencoded:
-                    if (interpreter().speed >= 1) {
+                    if (intp.speed >= 1) {
                         if (opencode(sb, op, args, env, topEnv, rsfx)) return;
                     }
 
@@ -5706,7 +5703,7 @@ public class LambdaJ {
             final ConsCell bindings;
             if (car(args) instanceof LambdaJSymbol) {
                 // named let
-                if (car(args) == interpreter().sDynamic) errorMalformed("let", "dynamic only allowed with let*");
+                if (car(args) == intp.sDynamic) errorMalformed("let", "dynamic only allowed with let*");
                 final ConsCell params = paramList("named let", cadr(args), false);
                 labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
                 bindings = (ConsCell)cadr(args);
@@ -5738,7 +5735,7 @@ public class LambdaJ {
 
             if (car(args) instanceof LambdaJSymbol) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
-                if (car(args) == interpreter().sDynamic) errorMalformed("letrec", "dynamic only allowed with let*");
+                if (car(args) == intp.sDynamic) errorMalformed("letrec", "dynamic only allowed with let*");
                 op = letrec ? "named letrec" : "named let*";
                 name = (LambdaJSymbol) car(args);
                 if (!listp(cdr(args))) errorMalformed(op, "a list of bindings", cdr(args));
@@ -5942,11 +5939,12 @@ public class LambdaJ {
         }
 
         private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
+            final LambdaJ intp = this.intp;
             if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
             final String fileName = (String) argument;
             final SymbolTable prevSymtab = st;
-            final Path prevPath = ((SExpressionParser)interpreter().symtab).filePath;
-            final Path p = interpreter().findFile(prevPath, fileName);
+            final Path prevPath = intp.symtab instanceof SExpressionParser ? ((SExpressionParser)intp.symtab).filePath : null;
+            final Path p = intp.findFile(prevPath, fileName);
             try (Reader r = Files.newBufferedReader(p)) {
                 final SExpressionParser parser = new SExpressionParser(r::read) {
                     @Override
@@ -5955,7 +5953,7 @@ public class LambdaJ {
                     }
                 };
                 st = parser;
-                interpreter().symtab = parser;
+                intp.symtab = parser;
                 for (;;) {
                     final Object form = parser.readObj(true);
                     if (form == null) break;
@@ -5969,8 +5967,8 @@ public class LambdaJ {
             }
             finally {
                 st = prevSymtab;
-                interpreter().symtab = prevSymtab;
-                ((SExpressionParser)interpreter().symtab).filePath = prevPath;
+                intp.symtab = prevSymtab;
+                if (intp.symtab instanceof SExpressionParser) ((SExpressionParser)intp.symtab).filePath = prevPath;
             }
         }
 
@@ -6184,7 +6182,7 @@ public class LambdaJ {
         private final ArrayList<String> quotedForms = new ArrayList<>();
         
         private void quotedFormToJava(WrappingWriter sb, Object form) {
-            if (form == null || interpreter().sNil == form) { sb.append("_nil"); }
+            if (form == null || intp.sNil == form) { sb.append("_nil"); }
 
             else if (symbolp(form)) {
                 final String s = "intern(\"" + form + "\")";
