@@ -4542,7 +4542,7 @@ public class LambdaJ {
         private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar("char-code", args[0]); }
-        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt("code-char", args[0]); }
+        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt(args[0]); }
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(arraySlice(args)); }
         public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(arraySlice(args)); }
@@ -4634,28 +4634,28 @@ public class LambdaJ {
         public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return intp.asFrame("pen-up",         nth(0, args)).penUp();   }
         public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return intp.asFrame("pen-down",       nth(0, args)).penDown(); }
 
-        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return intp.asFrame("color",          nth(1, args)).color  (asInt("color",   nth(0, args))); }
-        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return intp.asFrame("bgcolor",        nth(1, args)).bgColor(asInt("bgcolor", nth(0, args))); }
+        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return intp.asFrame("color",          nth(1, args)).color  (asInt(nth(0, args))); }
+        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return intp.asFrame("bgcolor",        nth(1, args)).bgColor(asInt(nth(0, args))); }
 
         public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return intp.asFrame("text",           nth(1, args)).text   (args[0].toString()); }
 
-        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return intp.asFrame("right",          nth(1, args)).right  (asDouble("right",   args[0])); }
-        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return intp.asFrame("left",           nth(1, args)).left   (asDouble("left",    args[0])); }
-        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return intp.asFrame("forward",        nth(1, args)).forward(asDouble("forward", args[0])); }
+        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return intp.asFrame("right",          nth(1, args)).right  (dbl(args[0])); }
+        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return intp.asFrame("left",           nth(1, args)).left   (dbl(args[0])); }
+        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return intp.asFrame("forward",        nth(1, args)).forward(dbl(args[0])); }
 
-        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return intp.asFrame("move-to",        nth(2, args)).moveTo(asDouble("move-to",  args[0]), asDouble("move-to", args[1]));  }
-        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return intp.asFrame("line-to",        nth(2, args)).lineTo(asDouble("line-to",  args[0]), asDouble("line-to", args[1]));  }
-        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return intp.asFrame("move-rel",       nth(2, args)).moveRel(asDouble("move-rel", args[0]), asDouble("move-rel", args[1])); }
-        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return intp.asFrame("line-rel",       nth(2, args)).lineRel(asDouble("line-rel", args[0]), asDouble("line-rel", args[1])); }
+        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return intp.asFrame("move-to",        nth(2, args)).moveTo(dbl(args[0]), dbl(args[1]));  }
+        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return intp.asFrame("line-to",        nth(2, args)).lineTo(dbl(args[0]), dbl(args[1]));  }
+        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return intp.asFrame("move-rel",       nth(2, args)).moveRel(dbl(args[0]), dbl(args[1])); }
+        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return intp.asFrame("line-rel",       nth(2, args)).lineRel(dbl(args[0]), dbl(args[1])); }
 
-        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return intp.asFrame("make-bitmap",    nth(2, args)).makeBitmap(asInt("make-bitmap",  args[0]), asInt("make-bitmap", args[1]));  }
-        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return intp.asFrame("discard-bitmap", nth(0, args))  .discardBitmap();   }
+        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return intp.asFrame("make-bitmap",    nth(2, args)).makeBitmap(asInt(args[0]), asInt(args[1]));  }
+        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return intp.asFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
 
-        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return intp.asFrame("set-pixel",      nth(3, args)).setRGB(asInt("set-pixel",  args[0]), asInt("set-pixel", args[1]), asInt("set-pixel", args[2]));  }
+        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return intp.asFrame("set-pixel",      nth(3, args)).setRGB(asInt(args[0]), asInt(args[1]), asInt(args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
-                                                                  final int r = asInt("rgb-to-pixel", args[0]);
-                                                                  final int g = asInt("rgb-to-pixel", args[1]);
-                                                                  final int b = asInt("rgb-to-pixel", args[2]);
+                                                                  final int r = asInt(args[0]);
+                                                                  final int g = asInt(args[1]);
+                                                                  final int b = asInt(args[2]);
                                                                   return (long)((r<<16) | (g<<8) | b); }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
                                                                   final float hue = asFloat("hsb-to-pixel", args[0]);
@@ -4663,7 +4663,6 @@ public class LambdaJ {
                                                                   final float bri = asFloat("hsb-to-pixel", args[2]);
                                                                   return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
-
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
@@ -4687,6 +4686,7 @@ public class LambdaJ {
         }
 
         protected static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
+        private static int asInt(Object n) { number(n);  return ((Number)n).intValue(); }
 
         protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) argError(expr, paramCount, paramCount, argCount); }
         protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) argError(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
