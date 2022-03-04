@@ -2383,6 +2383,14 @@ public class LambdaJ {
         throw new LambdaJError(true, "not a number: %s", printSEx(n));
     }
 
+    private static void errorNotAList(Object s) {
+        throw new LambdaJError(true, "not a cons/list: %s", printSEx(s));
+    }
+
+    private static void errorNotAString(Object s) {
+        throw new LambdaJError(true, "not a string: %s", printSEx(s));
+    }
+
     private static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
         final String argPhrase = expectedMin == expectedMax
                 ? expectedArgPhrase(expectedMin)
@@ -2865,6 +2873,12 @@ public class LambdaJ {
         return ((Number)a).intValue();
     }
 
+    private static Number asNumberOrNull(String func, Object a) {
+        if (a == null) return null;
+        number(func, a);
+        return (Number)a;
+    }
+
     /** error if n is not of type number */
     private static void number(String func, Object n) {
         if (numberp(n)) return;
@@ -2879,7 +2893,7 @@ public class LambdaJ {
     }
 
     /** Return {@code c} as a String, error if {@code c} is not a string, character or symbol. */
-    private static String asString(String func, Object c) {
+    private static String asStringOrNull(String func, Object c) {
         if (c == null) return null;
         if (!(c instanceof String) && !(c instanceof Character) && !(c instanceof LambdaJSymbol)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
         return c.toString();
@@ -3000,7 +3014,8 @@ public class LambdaJ {
     private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
         final CountingListBuilder ret = new CountingListBuilder();
-        final String s = asString("string->list", car(a));
+        final String s = asStringOrNull("string->list", car(a));
+        if (s == null) return null;
         final int len = s.length();
         for (int i = 0; i < len; i++) {
             ret.append(s.charAt(i));
@@ -3242,10 +3257,9 @@ public class LambdaJ {
         
         if (haveGui()) {
             final Primitive makeFrame = a -> {
-                stringArg("make-frame", "first arg", a);
-                final String title = car(a).toString();
-                numberArgs("make-frame", (ConsCell) cdr(a), 0, 3);
-                final TurtleFrame ret = new TurtleFrame(title, (Number)cadr(a), (Number)caddr(a), (Number)cadddr(a));
+                varargsMinMax("make-frame", a, 1, 4);
+                final String title = asStringOrNull("make-frame", car(a));
+                final TurtleFrame ret = new TurtleFrame(title, asNumberOrNull("make-frame", cadr(a)), asNumberOrNull("make-frame", caddr(a)), asNumberOrNull("make-frame", cadddr(a)));
                 current_frame = ret;
                 return ret;
             };
@@ -3255,7 +3269,7 @@ public class LambdaJ {
                   addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return asFrame("reset-frame",   car(a)).reset();   },
                   addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return asFrame("clear-frame",   car(a)).clear();   },
                   addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return asFrame("repaint-frame", car(a)).repaint(); },
-                  addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return asFrame("flush-frame",   car(a)).flush(); },
+                  addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return asFrame("flush-frame",   car(a)).flush();   },
 
                   // set new current frame, return previous frame
                   addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = asFrame("current-frame", car(a)); return prev; },
@@ -3301,7 +3315,7 @@ public class LambdaJ {
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
                   addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)asChar("char-code", car(a)); },
                   addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)asInt("code-char", car(a)); },
-                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
+                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asStringOrNull("string=", car(a)), asStringOrNull("string=", cadr(a)))); },
                   addBuiltin("string->list", (Primitive) this::stringToList,
                   addBuiltin("list->string", (Primitive) LambdaJ::listToString,
                   env)))))));
@@ -4543,7 +4557,7 @@ public class LambdaJ {
 
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar("char-code", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt(args[0]); }
-        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
+        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asStringOrNull(args[0]), asStringOrNull(args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(arraySlice(args)); }
         public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(arraySlice(args)); }
 
@@ -4557,7 +4571,7 @@ public class LambdaJ {
         protected final double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return dbl(args[0]) % dbl(args[1]); }
 
-        /// predefined aliased primitives
+        // predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
         public final Number   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
         public static Number  inc1     (Object arg)     {                                    number(arg);     return LambdaJ.inc((Number)arg); }
@@ -4581,12 +4595,12 @@ public class LambdaJ {
         public final Object gt      (Object... args) { return compare(">",  args, (d1, d2) -> d1 >  d2); }
         public final Object ne      (Object... args) { return compare("/=", args, (d1, d2) -> d1 != d2); }
         private Object compare(String op, Object[] args, DoubleBiPred pred) {
-            oneOrMoreNumbers(op, args);
-            Number prev = (Number)args[0];
             final int length = args.length;
+            varargs1(op, length);
+            double prev = dbl(args[0]);
             for (int i = 1; i < length; i++) {
-                final Number next = (Number)args[i];
-                if (!pred.test(prev.doubleValue(), next.doubleValue())) return null;
+                final double next = dbl(args[i]);
+                if (!pred.test(prev, next)) return null;
                 prev = next;
             }
             return _t;
@@ -4611,9 +4625,8 @@ public class LambdaJ {
 
         public final Object makeFrame          (Object... args) {
             varargsMinMax("make-frame", args.length, 1, 4);
-            if (!stringp(nth(0, args))) throw new LambdaJError(true, "%s: expected %s to be a string but got %s", "make-frame", "first arg", printSEx(nth(0, args)));
-            final String title = args[0].toString();
-            final TurtleFrame ret = new TurtleFrame(title, (Number)nth(1, args), (Number)nth(2, args), (Number)nth(3, args));
+            final String title = asStringOrNull(args[0]);
+            final TurtleFrame ret = new TurtleFrame(title, asNumberOrNull(nth(1, args)), asNumberOrNull(nth(2, args)), asNumberOrNull(nth(3, args)));
             intp.current_frame = ret;
             return ret;
         }
@@ -4681,12 +4694,25 @@ public class LambdaJ {
 
         protected static ConsCell lst(Object lst) {
             if (lst == null) return null;
-            if (!consp(lst)) throw new LambdaJError(true, "not a list: ", lst);
+            if (!consp(lst)) errorNotAList(lst);
             return (ConsCell)lst;
         }
 
         protected static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
+        
         private static int asInt(Object n) { number(n);  return ((Number)n).intValue(); }
+        
+        private static String asStringOrNull(Object o) {
+            if (o == null) return null;
+            if (!stringp(o)) errorNotAString(o);
+            return o.toString();
+        }
+
+        private static Number asNumberOrNull(Object o) {
+            if (o == null) return null;
+            number(o);
+            return (Number)o;
+        }
 
         protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) argError(expr, paramCount, paramCount, argCount); }
         protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) argError(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }

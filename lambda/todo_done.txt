@@ -1292,3 +1292,6 @@ Turtle funktionen in MurmelJavaProgram überarbeiten: erst wird ein ArraySlice g
 ListBuilder sollte ggf. doch (optional?) cons mitzählen? vielleicht CountingListBuilder extends ListBuilder und cons wird überschrieben?
 append ist fishy: koennte static sein, oder ConsCells sollten alle mitgezählt werden, auch die vom Listbuilder, s.o.
   beim aufruf von append als interpreter builtin wird als argument list->array gemacht - ineffizient
+
+MurmelJavaProgram verwendet bunt gemischt dbl(Object) und asDouble(String, Object) (und asInt(), asFrame(), ...),
+varargsX() aus MurmelJavaProgram vs. varargsMinMax() aus LambdaJ

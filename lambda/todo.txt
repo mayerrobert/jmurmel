@@ -1,8 +1,5 @@
 --jar findet load files nicht
 
-MurmelJavaProgram verwendet bunt gemischt dbl(Object) und asDouble(String, Object) (und asInt(), asFrame(), ...),
-varargsX() aus MurmelJavaProgram vs. varargsMinMax() aus LambdaJ
-
 Compiler.libdir ist unused?!?
 
 müssen die compiler rt funktionen public sein oder reicht protected? geht static?
