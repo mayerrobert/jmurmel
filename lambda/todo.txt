@@ -1,3 +1,5 @@
+rplaca, rplacd opencoden?
+
 ListBuilder sollte ggf. doch (optional?) cons mitzählen? vielleicht CountingListBuilder extends ListBuilder und cons wird überschrieben?
 append ist fishy: koennte static sein, oder ConsCells sollten alle mitgezählt werden, auch die vom Listbuilder, s.o.
   beim aufruf von append als interpreter builtin wird als argument list->array gemacht - ineffizient
@@ -5,12 +7,13 @@ append ist fishy: koennte static sein, oder ConsCells sollten alle mitgezählt w
 MurmelJavaProgram verwendet bunt gemischt dbl(Object) und asDouble(String, Object) (und asInt(), asFrame(), ...),
 varargsX() aus MurmelJavaProgram vs. varargsMinMax() aus LambdaJ
 
-Turtle funktionen in MurmelJavaProgram überarbeiten: erst wird ein ArraySlice gemacht, der wird nur für varargsMinMax und car() gebraucht
--> KEIN arrayslice, neues varargsMinMax, args[0] statt car(a)
-
 Compiler.libdir ist unused?!?
 
 müssen dir compiler rt funktionen public sein oder reicht protected? geht static?
+-> import io.github.jmurmel.LambdaJ;
+   in getValue(): case "sleep": return (CompilerPrimitive)this::sleep;
+                  -> case "sleep": return (CompilerPrimitive)MurmelJavaProgram::sleep;
+   in extenvprim(): rt() -> LambdaJ.MurmelJavaProgram
 
 statt new LambdaJ.ListConsCell(car, cdr) -> ConsCell.cons(), oder ueberall new...
 
@@ -28,7 +31,6 @@ argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
-in getValue(): sollte switch(symbol) irgendwie namemangling machen? interpreter UND compiler-runtime
 let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 
 

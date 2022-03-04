@@ -283,10 +283,10 @@ public class LambdaJ {
         @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
 
         @Override public Object car() { return car; }
-        @Override public Object rplaca(Object car) { final Object ret = this.car; this.car = car; return ret; }
+        @Override public Object rplaca(Object car) { this.car = car; return this; }
 
         @Override public Object cdr() { return cdr; }
-        @Override public Object rplacd(Object cdr) { final Object ret = this.cdr; this.cdr = cdr; return ret; }
+        @Override public Object rplacd(Object cdr) { this.cdr = cdr; return this; }
     }
 
     private static final class SExpConsCell extends ListConsCell {
@@ -2690,6 +2690,7 @@ public class LambdaJ {
 
 
     /// ##  Error checking functions, used by interpreter and primitives
+
     /** a must be the empty list */
     private static void noArgs(String func, ConsCell a) {
         if (a != null) errorArgCount(func, 0, 0, 1, a);
@@ -2998,16 +2999,12 @@ public class LambdaJ {
 
     private static Object cl_rplaca(ConsCell args) {
         twoArgs("rplaca", args);
-        final ConsCell l = asList("rplaca", car(args));
-        l.rplaca(cadr(args));
-        return l;
+        return asList("rplaca", car(args)).rplaca(cadr(args));
     }
 
     private static Object cl_rplacd(ConsCell args) {
         twoArgs("rplacd", args);
-        final ConsCell l = asList("rplacd", car(args));
-        l.rplacd(cadr(args));
-        return l;
+        return asList("rplacd", car(args)).rplacd(cadr(args));
     }
 
     private void write(final Object arg, boolean printEscape) {
@@ -4446,16 +4443,12 @@ public class LambdaJ {
 
         public final Object   _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
         protected static Object rplaca(Object l, Object newCar) {
-            final ConsCell list = asList("rplaca", l);
-            list.rplaca(newCar);
-            return list;
+            return asList("rplaca", l).rplaca(newCar);
         }
 
         public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
         protected static Object rplacd(Object l, Object newCdr) {
-            final ConsCell list = asList("rplacd", l);
-            list.rplacd(newCdr);
-            return list;
+            return asList("rplacd", l).rplacd(newCdr);
         }
 
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
@@ -4464,9 +4457,9 @@ public class LambdaJ {
         protected final Object eql     (Object o1, Object o2) { return cl_eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
-        public final Object _write     (Object... args) { varargs1_2("write",    args.length);  intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
-        public final Object _writeln   (Object... args) { varargs0_2("writeln", args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
-        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite", args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
+        public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
+        public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
+        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
 
         public final Object _atom      (Object... args) { oneArg("atom",         args.length); return atom      (args[0]) ? _t : null; }
         public final Object _consp     (Object... args) { oneArg("consp",        args.length); return consp     (args[0]) ? _t : null; }
@@ -4486,9 +4479,20 @@ public class LambdaJ {
             for (Object arg: args) {
                 ret.append(arg);
             }
-            return (ConsCell)ret.first(); // todo ist der cast safe?
+            return (ConsCell)ret.first();
         }
-        public final Object listStar   (Object... args) { return intp.listStar(arraySlice(args)); }
+        public final Object listStar   (Object... args) {
+            varargs1("list*", args.length);
+            if (args.length == 1) return args[0];
+            if (args.length == 2) return cons(args[0], args[1]);
+            final ListBuilder b = new ListBuilder();
+            int i = 0;
+            for (; i < args.length-1; i++) {
+                b.append(nth(i, args));
+            }
+            b.appendLast(nth(i, args));
+            return b.first();
+        }
         public final Object   _append  (Object... args) { return intp.append(args); }
 
         public final double   _fround   (Object... args) { varargs1_2("fround",   args.length); return cl_round   (quot12(args)); }
@@ -4575,49 +4579,48 @@ public class LambdaJ {
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
 
         public final Object makeFrame          (Object... args) {
-            final ConsCell a = arraySlice(args);
-            stringArg("make-frame", "first arg", a);
+            varargsMinMax("make-frame", args.length, 1, 4);
+            if (!stringp(nth(0, args))) throw new LambdaJError(true, "%s: expected %s to be a string but got %s", "make-frame", "first arg", printSEx(nth(0, args)));
             final String title = args[0].toString();
-            numberArgs("make-frame", (ConsCell) cdr(a), 0, 3);
-            final TurtleFrame ret = new TurtleFrame(title, (Number)cadr(a), (Number)caddr(a), (Number)cadddr(a));
+            final TurtleFrame ret = new TurtleFrame(title, (Number)nth(1, args), (Number)nth(2, args), (Number)nth(3, args));
             intp.current_frame = ret;
             return ret;
         }
 
-        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return intp.asFrame("open-frame",     args.length > 0 ? args[0] : null).open();    }
-        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return intp.asFrame("close-frame",    args.length > 0 ? args[0] : null).close();   }
-        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return intp.asFrame("reset-frame",    args.length > 0 ? args[0] : null).reset();   }
-        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return intp.asFrame("clear-frame",    args.length > 0 ? args[0] : null).clear();   }
-        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return intp.asFrame("repaint-frame",  args.length > 0 ? args[0] : null).repaint(); }
-        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return intp.asFrame("flush-frame",    args.length > 0 ? args[0] : null).flush();   }
+        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return intp.asFrame("open-frame",     nth(0, args)).open();    }
+        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return intp.asFrame("close-frame",    nth(0, args)).close();   }
+        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return intp.asFrame("reset-frame",    nth(0, args)).reset();   }
+        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return intp.asFrame("clear-frame",    nth(0, args)).clear();   }
+        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return intp.asFrame("repaint-frame",  nth(0, args)).repaint(); }
+        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return intp.asFrame("flush-frame",    nth(0, args)).flush();   }
 
         // set new current frame, return previous frame
         public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = intp.asFrame("current-frame", args[0]); return prev; }
 
-        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return intp.asFrame("push-pos",       args.length > 0 ? args[0] : null).pushPos(); }
-        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return intp.asFrame("pop-pos",        args.length > 0 ? args[0] : null).popPos();  }
+        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return intp.asFrame("push-pos",       nth(0, args)).pushPos(); }
+        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return intp.asFrame("pop-pos",        nth(0, args)).popPos();  }
 
-        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return intp.asFrame("pen-up",         args.length > 0 ? args[0] : null).penUp();   }
-        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return intp.asFrame("pen-down",       args.length > 0 ? args[0] : null).penDown(); }
+        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return intp.asFrame("pen-up",         nth(0, args)).penUp();   }
+        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return intp.asFrame("pen-down",       nth(0, args)).penDown(); }
 
-        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return intp.asFrame("color",          args.length > 1 ? args[1] : null).color  (asInt("color",   args.length > 0 ? args[0] : null)); }
-        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return intp.asFrame("bgcolor",        args.length > 1 ? args[1] : null).bgColor(asInt("bgcolor", args.length > 0 ? args[0] : null)); }
+        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return intp.asFrame("color",          nth(1, args)).color  (asInt("color",   nth(0, args))); }
+        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return intp.asFrame("bgcolor",        nth(1, args)).bgColor(asInt("bgcolor", nth(0, args))); }
 
-        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return intp.asFrame("text",           args.length > 1 ? args[1] : null).text   (args[0].toString()); }
+        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return intp.asFrame("text",           nth(1, args)).text   (args[0].toString()); }
 
-        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return intp.asFrame("right",          args.length > 1 ? args[1] : null).right  (asDouble("right",   args[0])); }
-        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return intp.asFrame("left",           args.length > 1 ? args[1] : null).left   (asDouble("left",    args[0])); }
-        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return intp.asFrame("forward",        args.length > 1 ? args[1] : null).forward(asDouble("forward", args[0])); }
+        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return intp.asFrame("right",          nth(1, args)).right  (asDouble("right",   args[0])); }
+        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return intp.asFrame("left",           nth(1, args)).left   (asDouble("left",    args[0])); }
+        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return intp.asFrame("forward",        nth(1, args)).forward(asDouble("forward", args[0])); }
 
-        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return intp.asFrame("move-to",        args.length > 2 ? args[2] : null).moveTo(asDouble("move-to",  args[0]), asDouble("move-to", args[1]));  }
-        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return intp.asFrame("line-to",        args.length > 2 ? args[2] : null).lineTo(asDouble("line-to",  args[0]), asDouble("line-to", args[1]));  }
-        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return intp.asFrame("move-rel",       args.length > 2 ? args[2] : null).moveRel(asDouble("move-rel", args[0]), asDouble("move-rel", args[1])); }
-        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return intp.asFrame("line-rel",       args.length > 2 ? args[2] : null).lineRel(asDouble("line-rel", args[0]), asDouble("line-rel", args[1])); }
+        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return intp.asFrame("move-to",        nth(2, args)).moveTo(asDouble("move-to",  args[0]), asDouble("move-to", args[1]));  }
+        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return intp.asFrame("line-to",        nth(2, args)).lineTo(asDouble("line-to",  args[0]), asDouble("line-to", args[1]));  }
+        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return intp.asFrame("move-rel",       nth(2, args)).moveRel(asDouble("move-rel", args[0]), asDouble("move-rel", args[1])); }
+        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return intp.asFrame("line-rel",       nth(2, args)).lineRel(asDouble("line-rel", args[0]), asDouble("line-rel", args[1])); }
 
-        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return intp.asFrame("make-bitmap",    args.length > 2 ? args[2] : null).makeBitmap(asInt("make-bitmap",  args[0]), asInt("make-bitmap", args[1]));  }
-        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return intp.asFrame("discard-bitmap", args.length > 0 ? args[0] : null)  .discardBitmap();   }
+        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return intp.asFrame("make-bitmap",    nth(2, args)).makeBitmap(asInt("make-bitmap",  args[0]), asInt("make-bitmap", args[1]));  }
+        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return intp.asFrame("discard-bitmap", nth(0, args))  .discardBitmap();   }
 
-        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return intp.asFrame("set-pixel",      args.length > 3 ? args[3] : null).setRGB(asInt("set-pixel",  args[0]), asInt("set-pixel", args[1]), asInt("set-pixel", args[2]));  }
+        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return intp.asFrame("set-pixel",      nth(3, args)).setRGB(asInt("set-pixel",  args[0]), asInt("set-pixel", args[1]), asInt("set-pixel", args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
                                                                   final int r = asInt("rgb-to-pixel", args[0]);
                                                                   final int g = asInt("rgb-to-pixel", args[1]);
@@ -4711,7 +4714,9 @@ public class LambdaJ {
         public Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
 
 
-        
+
+        private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
+
         private static void oneArg(String expr, int argCount)      { if (1 != argCount)               argError(expr, 1, 1, argCount); }
         private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               argError(expr, 2, 2, argCount); }
         private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               argError(expr, 3, 3, argCount); }

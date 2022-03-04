@@ -1,4 +1,4 @@
-; helper to turn off opencoding during
+; helper to turn off opencoding
 ; used during testing
 ; usage:
 ;   java -jar jmurmel.jar speed0.lisp murmel-test.lisp

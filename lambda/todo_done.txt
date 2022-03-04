@@ -1285,3 +1285,6 @@ members von LambdaJ umsortieren: am anfang solls public interfaces geben
 
 mod und rem opencoden
 cl_round() inlinen, cl_rem() auch
+
+Turtle funktionen in MurmelJavaProgram überarbeiten: erst wird ein ArraySlice gemacht, der wird nur für varargsMinMax und car() gebraucht
+-> KEIN arrayslice, neues varargsMinMax, args[0] statt car(a)
