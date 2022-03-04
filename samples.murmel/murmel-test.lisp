@@ -174,6 +174,15 @@
 ;;; Primitives
 ;;; todo remaining primitives
 
+;;; test append
+(deftest append.1 (append)                   nil)
+(deftest append.2 (append nil)               nil)
+(deftest append.3 (append nil '(1 2 3))      '(1 2 3))
+(deftest append.4 (append nil '(1 2 3) nil)  '(1 2 3))
+(deftest append.5 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
+(deftest append.6 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
+
+
 ;;; test eql
 (deftest eql.1 (eql 'a 'b)  nil)
 (deftest eql.2 (eql 'a 'a)  t)

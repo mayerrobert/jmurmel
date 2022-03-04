@@ -1288,3 +1288,7 @@ cl_round() inlinen, cl_rem() auch
 
 Turtle funktionen in MurmelJavaProgram überarbeiten: erst wird ein ArraySlice gemacht, der wird nur für varargsMinMax und car() gebraucht
 -> KEIN arrayslice, neues varargsMinMax, args[0] statt car(a)
+
+ListBuilder sollte ggf. doch (optional?) cons mitzählen? vielleicht CountingListBuilder extends ListBuilder und cons wird überschrieben?
+append ist fishy: koennte static sein, oder ConsCells sollten alle mitgezählt werden, auch die vom Listbuilder, s.o.
+  beim aufruf von append als interpreter builtin wird als argument list->array gemacht - ineffizient

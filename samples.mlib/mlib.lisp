@@ -1038,8 +1038,7 @@
 ;;;     (length sequence) -> length
 ;;;
 ;;; Same as `list-length`.
-(defun length (s)
-  (list-length s))
+(define length list-length)
 
 
 ; helper function for time

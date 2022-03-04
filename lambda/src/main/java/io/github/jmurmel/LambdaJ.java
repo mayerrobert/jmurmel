@@ -202,12 +202,12 @@ public class LambdaJ {
         ConsCell closure() { return null; }
     }
 
-    public static final class ListBuilder {
+    private abstract static class AbstractListBuilder<T extends AbstractListBuilder> {
         private Object first;
         private Object last;
 
-        public ListBuilder append(Object elem) {
-            final ConsCell newCell = ConsCell.cons(elem, null);
+        public T append(Object elem) {
+            final ConsCell newCell = cons(elem, null);
             if (first == null) {
                 last = first = newCell;
             }
@@ -216,10 +216,10 @@ public class LambdaJ {
                 last = newCell;
             }
             else throw new LambdaJ.LambdaJError("can't append list element to dotted list");
-            return this;
+            return (T)this;
         }
 
-        public ListBuilder appendLast(Object lastElem) {
+        public T appendLast(Object lastElem) {
             if (first == null) {
                 last = first = lastElem;
             }
@@ -228,15 +228,27 @@ public class LambdaJ {
                 last = lastElem;
             }
             else throw new LambdaJ.LambdaJError("can't append last list element to dotted list");
-            return this;
+            return (T)this;
         }
 
         public Object first() { return first; }
-        
+
+        abstract ConsCell cons(Object car, Object cdr);
+    }
+
+    public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
+        ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
+
+        // todo ist das eine gute idee? koennte ueberraschend sein dass ListBuilder.of(...).rplacd(...) eine exception gibt
+        // ggf. woanders hinschieben, anderer name
         public static Object of(Object... elems) {
             if (elems == null || elems.length == 0) return null;
             return new ArraySlice(elems, 0);
         }
+    }
+
+    private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
+        ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
     }
 
     private static class ListConsCell extends ConsCell {
@@ -2415,7 +2427,7 @@ public class LambdaJ {
         varargs1("list*", args);
         if (cdr(args) == null) return car(args);
         if (cddr(args) == null) return cons(car(args), cadr(args));
-        final ListBuilder b = new ListBuilder();
+        final CountingListBuilder b = new CountingListBuilder();
         for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
             b.append(car(args));
         }
@@ -2499,25 +2511,24 @@ public class LambdaJ {
 
     /** append args non destructively, all args except the last are shallow copied, all args except the last must be a list */
     // todo CL macht deep copy bei allen args ausser dem letzten, alle args ausser dem letzten muessen proper lists sein (murmel behandelt dotted und proper lists gleich)
-    private Object append(Object... args) {
-        final int nArgs;
-        if (args == null || (nArgs = args.length) == 0) return null;
-        if (nArgs == 1) return args[0];
-        if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
+    private Object append(ConsCell args) {
+        if (args == null) return null;
+        if (cdr(args) == null) return car(args);
+        if (!listp(car(args))) throw new LambdaJError(true, "append: first argument %s is not a list", car(args));
 
-        int first = 0;
-        while (first < nArgs-1 && args[first] == null) first++; // skip leading nil args if any
+        while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
 
-        ListBuilder lb = null;
-        for (int i = first; i < nArgs - 1; i++) {
-            final Object o = args[i];
+        ConsCell current = args;
+        CountingListBuilder lb = null;
+        for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
+            final Object o = car(current);
             if (o == null) continue;
-            if (!consp(o)) throw new LambdaJError(true, "append: argument %d is not a list: %s", i+1, printSEx(o));
-            if (lb == null) lb = new ListBuilder();
-            for (Object obj: (ConsCell)o) { nCells++; lb.append(obj); }
+            if (!consp(o)) throw new LambdaJError(true, "append: argument is not a list: %s", printSEx(o));
+            if (lb == null) lb = new CountingListBuilder();
+            for (Object obj: (ConsCell)o) lb.append(obj);
         }
-        if (lb == null) return args[first];
-        lb.appendLast(args[nArgs-1]);
+        if (lb == null) return car(args);
+        lb.appendLast(car(current));
         return lb.first();
     }
 
@@ -2986,9 +2997,9 @@ public class LambdaJ {
         return ret.toString();
     }
 
-    private static Object stringToList(ConsCell a) {
+    private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
-        final ListBuilder ret = new ListBuilder();
+        final CountingListBuilder ret = new CountingListBuilder();
         final String s = asString("string->list", car(a));
         final int len = s.length();
         for (int i = 0; i < len; i++) {
@@ -3291,7 +3302,7 @@ public class LambdaJ {
                   addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)asChar("char-code", car(a)); },
                   addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)asInt("code-char", car(a)); },
                   addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asString("string=", car(a)), asString("string=", cadr(a)))); },
-                  addBuiltin("string->list", (Primitive) LambdaJ::stringToList,
+                  addBuiltin("string->list", (Primitive) this::stringToList,
                   addBuiltin("list->string", (Primitive) LambdaJ::listToString,
                   env)))))));
 
@@ -3351,7 +3362,7 @@ public class LambdaJ {
                   addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(cl_eql(car(a), cadr(a))); },
                   env)))))))));
 
-            env = addBuiltin("append",  (Primitive) a -> append(listToArray(a)),
+            env = addBuiltin("append",  (Primitive) this::append,
                   env);
 
             env = addBuiltin("internal-time-units-per-second", 1e9,
@@ -4493,7 +4504,27 @@ public class LambdaJ {
             b.appendLast(nth(i, args));
             return b.first();
         }
-        public final Object   _append  (Object... args) { return intp.append(args); }
+        public final Object   _append  (Object... args) {
+            final int nArgs;
+            if (args == null || (nArgs = args.length) == 0) return null;
+            if (nArgs == 1) return args[0];
+            if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
+
+            int first = 0;
+            while (first < nArgs-1 && args[first] == null) first++; // skip leading nil args if any
+
+            ListBuilder lb = null;
+            for (int i = first; i < nArgs - 1; i++) {
+                final Object o = args[i];
+                if (o == null) continue;
+                if (!consp(o)) throw new LambdaJError(true, "append: argument %d is not a list: %s", i+1, printSEx(o));
+                if (lb == null) lb = new ListBuilder();
+                for (Object obj: (ConsCell)o) lb.append(obj);
+            }
+            if (lb == null) return args[first];
+            lb.appendLast(args[nArgs-1]);
+            return lb.first();
+        }
 
         public final double   _fround   (Object... args) { varargs1_2("fround",   args.length); return cl_round   (quot12(args)); }
         public final double   _ffloor   (Object... args) { varargs1_2("ffloor",   args.length); return Math.floor (quot12(args)); }
@@ -4513,7 +4544,7 @@ public class LambdaJ {
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar("char-code", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt("code-char", args[0]); }
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asString("string=", args[0]), asString("string=", args[1])) ? _t : null; }
-        public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return LambdaJ.stringToList(arraySlice(args)); }
+        public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(arraySlice(args)); }
         public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(arraySlice(args)); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (dbl(args[0])); }
