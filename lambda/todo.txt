@@ -1,3 +1,5 @@
+--jar findet load files nicht
+
 MurmelJavaProgram verwendet bunt gemischt dbl(Object) und asDouble(String, Object) (und asInt(), asFrame(), ...),
 varargsX() aus MurmelJavaProgram vs. varargsMinMax() aus LambdaJ
 
