@@ -2530,13 +2530,13 @@ public class LambdaJ {
     }
 
     private static Object[] listToArray(Object maybeList) {
-        if (maybeList == null) return null;
+        if (maybeList == null) return new Object[0];
         if (maybeList instanceof ArraySlice) {
             final ArraySlice slice = (ArraySlice)maybeList;
             if (slice.offset == 0) return slice.arry;
             return Arrays.copyOfRange(slice.arry, slice.offset, slice.arry.length);
         }
-        if (!listp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
+        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         //for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
@@ -4543,8 +4543,8 @@ public class LambdaJ {
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar(args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt(args[0]); }
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asStringOrNull(args[0]), asStringOrNull(args[1])) ? _t : null; }
-        public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(arraySlice(args)); }
-        public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(arraySlice(args)); }
+        public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(cons(args[0], null)); }
+        public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(cons(args[0], null)); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (dbl(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (dbl(args[0])); }

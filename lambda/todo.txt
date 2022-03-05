@@ -1,7 +1,5 @@
 checken ob sb.append(printSEx()) durch printSEx(sb) ersetzt werden kann
 
-stringToList, listToString in MurmelJavaProgram, oder cons(x, null) statt arrayslice
-
 package private machen:
 current_frame???
 init???
@@ -9,6 +7,7 @@ findJavaMethod???
 checkedToLong???
 printSEx???
 class ArraySlice???
+listToArray???
 
 der rest ist "CL runtime", ggf. auch umsortieren/ gruppieren:
 assoc
@@ -29,7 +28,7 @@ getXXXTime
 integerp
 intern
 listp
-listToArray, listToString, stringToList
+listToString, stringToList
 lnwrite, write, writeln
 numberp
 sleep
