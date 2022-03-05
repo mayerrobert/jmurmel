@@ -2379,18 +2379,6 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
     }
 
-    private static void errorNotANumber(Object n) {
-        throw new LambdaJError(true, "not a number: %s", printSEx(n));
-    }
-
-    private static void errorNotAList(Object s) {
-        throw new LambdaJError(true, "not a cons/list: %s", printSEx(s));
-    }
-
-    private static void errorNotAString(Object s) {
-        throw new LambdaJError(true, "not a string: %s", printSEx(s));
-    }
-
     private static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
         final String argPhrase = expectedMin == expectedMax
                 ? expectedArgPhrase(expectedMin)
@@ -4631,49 +4619,49 @@ public class LambdaJ {
             return ret;
         }
 
-        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return intp.asFrame("open-frame",     nth(0, args)).open();    }
-        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return intp.asFrame("close-frame",    nth(0, args)).close();   }
-        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return intp.asFrame("reset-frame",    nth(0, args)).reset();   }
-        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return intp.asFrame("clear-frame",    nth(0, args)).clear();   }
-        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return intp.asFrame("repaint-frame",  nth(0, args)).repaint(); }
-        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return intp.asFrame("flush-frame",    nth(0, args)).flush();   }
+        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return asFrame("open-frame",     nth(0, args)).open();    }
+        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return asFrame("close-frame",    nth(0, args)).close();   }
+        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return asFrame("reset-frame",    nth(0, args)).reset();   }
+        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return asFrame("clear-frame",    nth(0, args)).clear();   }
+        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return asFrame("repaint-frame",  nth(0, args)).repaint(); }
+        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return asFrame("flush-frame",    nth(0, args)).flush();   }
 
         // set new current frame, return previous frame
-        public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = intp.asFrame("current-frame", args[0]); return prev; }
+        public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = asFrame("current-frame", args[0]); return prev; }
 
-        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return intp.asFrame("push-pos",       nth(0, args)).pushPos(); }
-        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return intp.asFrame("pop-pos",        nth(0, args)).popPos();  }
+        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return asFrame("push-pos",       nth(0, args)).pushPos(); }
+        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return asFrame("pop-pos",        nth(0, args)).popPos();  }
 
-        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return intp.asFrame("pen-up",         nth(0, args)).penUp();   }
-        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return intp.asFrame("pen-down",       nth(0, args)).penDown(); }
+        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return asFrame("pen-up",         nth(0, args)).penUp();   }
+        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return asFrame("pen-down",       nth(0, args)).penDown(); }
 
-        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return intp.asFrame("color",          nth(1, args)).color  (asInt(nth(0, args))); }
-        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return intp.asFrame("bgcolor",        nth(1, args)).bgColor(asInt(nth(0, args))); }
+        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return asFrame("color",          nth(1, args)).color  (asInt(nth(0, args))); }
+        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return asFrame("bgcolor",        nth(1, args)).bgColor(asInt(nth(0, args))); }
 
-        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return intp.asFrame("text",           nth(1, args)).text   (args[0].toString()); }
+        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return asFrame("text",           nth(1, args)).text   (args[0].toString()); }
 
-        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return intp.asFrame("right",          nth(1, args)).right  (dbl(args[0])); }
-        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return intp.asFrame("left",           nth(1, args)).left   (dbl(args[0])); }
-        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return intp.asFrame("forward",        nth(1, args)).forward(dbl(args[0])); }
+        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return asFrame("right",          nth(1, args)).right  (dbl(args[0])); }
+        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return asFrame("left",           nth(1, args)).left   (dbl(args[0])); }
+        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return asFrame("forward",        nth(1, args)).forward(dbl(args[0])); }
 
-        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return intp.asFrame("move-to",        nth(2, args)).moveTo(dbl(args[0]), dbl(args[1]));  }
-        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return intp.asFrame("line-to",        nth(2, args)).lineTo(dbl(args[0]), dbl(args[1]));  }
-        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return intp.asFrame("move-rel",       nth(2, args)).moveRel(dbl(args[0]), dbl(args[1])); }
-        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return intp.asFrame("line-rel",       nth(2, args)).lineRel(dbl(args[0]), dbl(args[1])); }
+        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return asFrame("move-to",        nth(2, args)).moveTo(dbl(args[0]), dbl(args[1]));  }
+        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return asFrame("line-to",        nth(2, args)).lineTo(dbl(args[0]), dbl(args[1]));  }
+        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return asFrame("move-rel",       nth(2, args)).moveRel(dbl(args[0]), dbl(args[1])); }
+        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return asFrame("line-rel",       nth(2, args)).lineRel(dbl(args[0]), dbl(args[1])); }
 
-        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return intp.asFrame("make-bitmap",    nth(2, args)).makeBitmap(asInt(args[0]), asInt(args[1]));  }
-        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return intp.asFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
+        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return asFrame("make-bitmap",    nth(2, args)).makeBitmap(asInt(args[0]), asInt(args[1]));  }
+        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return asFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
 
-        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return intp.asFrame("set-pixel",      nth(3, args)).setRGB(asInt(args[0]), asInt(args[1]), asInt(args[2]));  }
+        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return asFrame("set-pixel",      nth(3, args)).setRGB(asInt(args[0]), asInt(args[1]), asInt(args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
                                                                   final int r = asInt(args[0]);
                                                                   final int g = asInt(args[1]);
                                                                   final int b = asInt(args[2]);
                                                                   return (long)((r<<16) | (g<<8) | b); }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
-                                                                  final float hue = asFloat("hsb-to-pixel", args[0]);
-                                                                  final float sat = asFloat("hsb-to-pixel", args[1]);
-                                                                  final float bri = asFloat("hsb-to-pixel", args[2]);
+                                                                  final float hue = asFloat(args[0]);
+                                                                  final float sat = asFloat(args[1]);
+                                                                  final float bri = asFloat(args[2]);
                                                                   return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
@@ -4701,7 +4689,9 @@ public class LambdaJ {
         protected static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
         
         private static int asInt(Object n) { number(n);  return ((Number)n).intValue(); }
-        
+
+        private static float asFloat(Object n) { number(n);  return ((Number)n).floatValue(); }
+
         private static String asStringOrNull(Object o) {
             if (o == null) return null;
             if (!stringp(o)) errorNotAString(o);
@@ -4714,8 +4704,20 @@ public class LambdaJ {
             return (Number)o;
         }
 
-        protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) argError(expr, paramCount, paramCount, argCount); }
-        protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) argError(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
+        private TurtleFrame asFrame(String s, Object o) {
+            final TurtleFrame ret;
+            if (o == null && (ret = intp.current_frame) != null) return ret;
+            if (o instanceof TurtleFrame) return (TurtleFrame)o;
+            throw errorNotAFrame(s, o);
+        }
+
+        private static RuntimeException errorNotAFrame(String s, Object o) {
+            if (o != null) throw new LambdaJError(true, "%s: not a frame: %s", s, printSEx(o));
+            throw new LambdaJError(true, "%s: no frame argument and no current frame", s);
+        }
+
+        protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
+        protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
 
 
@@ -4774,33 +4776,37 @@ public class LambdaJ {
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
 
-        private static void oneArg(String expr, int argCount)      { if (1 != argCount)               argError(expr, 1, 1, argCount); }
-        private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               argError(expr, 2, 2, argCount); }
-        private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               argError(expr, 3, 3, argCount); }
+        private static void oneArg(String expr, int argCount)      { if (1 != argCount)               errorArgCount(expr, 1, 1, argCount); }
+        private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
+        private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
 
         /** 0..2 args */
-        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 argError(expr, 0, 2, argCount); }
+        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
         /** 1..2 args */
-        private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) argError(expr, 1, 2, argCount); }
+        private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) errorArgCount(expr, 1, 2, argCount); }
         /** one or more arguments */
-        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                argError(expr, 1, 1, 0); }
+        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, 1, 0); }
 
         private static void varargsMinMax(String expr, int argCount, int min, int max) {
             if (argCount < min || argCount > max)
-                argError(expr, min, max, argCount);
+                errorArgCount(expr, min, max, argCount);
         }
 
-        private static void argError(String expr, int expectedMin, int expectedMax, int actual) {
+        private static void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
             if (actual < expectedMin) throw new LambdaJError(true, "%s: not enough arguments", expr);
             if (actual > expectedMax) throw new LambdaJError(true, "%s: too many arguments", expr);
         }
+
+        private static void errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
+        private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
+        private static void errorNotAString(Object s) { throw new LambdaJError(true, "not a string: %s", printSEx(s)); }
 
 
 
         /** error if any arg is not of type number */
         private static void oneOrMoreNumbers(String expr, Object[] args) {
             final int length = args.length;
-            if (length == 0) argError(expr, 1, 1, 0);
+            if (length == 0) errorArgCount(expr, 1, 1, 0);
             for (int i = 0; i < length; i++) {
                 number(args[i]);
             }
@@ -6076,9 +6082,9 @@ public class LambdaJ {
             if (isSymbol(op, "rem")) {
                 twoArgs("rem", args);
                 sb.append("(");
-                asDouble(sb, car(args), env, topEnv, rsfx);
+                asDouble(sb, "rem", car(args), env, topEnv, rsfx);
                 sb.append(" % ");
-                asDouble(sb, cadr(args), env, topEnv, rsfx);
+                asDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
                 sb.append(")");
                 return true; }
 
@@ -6188,7 +6194,7 @@ public class LambdaJ {
                 for (Object arg: args) {
                     if (first) first = false;
                     else sb.append(' ').append(op).append(' ');
-                    asDouble(sb, arg, env, topEnv, rsfx);
+                    asDouble(sb, op, arg, env, topEnv, rsfx);
                 }
             }
             sb.append(')');
@@ -6198,10 +6204,10 @@ public class LambdaJ {
         private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             varargs1(op,  args);
             sb.append('(');
-            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, car(args), env, topEnv, rsfx); }
+            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, op, car(args), env, topEnv, rsfx); }
             else {
-                asDouble(sb, car(args), env, topEnv, rsfx);
-                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, arg, env, topEnv, rsfx); }
+                asDouble(sb, op, car(args), env, topEnv, rsfx);
+                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, op, arg, env, topEnv, rsfx); }
             }
             sb.append(')');
         }
@@ -6246,16 +6252,16 @@ public class LambdaJ {
         private boolean binOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (cdr(args) == null || cddr(args) != null) return false;
             sb.append("(");
-            asDouble(sb, car(args), env, topEnv, rsfx);
+            asDouble(sb, func, car(args), env, topEnv, rsfx);
             sb.append(" ").append(func).append(" ");
-            asDouble(sb, cadr(args), env, topEnv, rsfx);
+            asDouble(sb, func, cadr(args), env, topEnv, rsfx);
             sb.append(" ? _t : null)");
             return true;
         }
 
         /** eval form and change to double */
-        private void asDouble(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (form == null || form instanceof Character || form instanceof String) errorNotANumber(form);
+        private void asDouble(WrappingWriter sb, String func, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (form == null || form instanceof Character || form instanceof String) errorNotANumber(func, form);
             if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("dbl("); formToJava(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
