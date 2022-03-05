@@ -354,7 +354,7 @@ public class LambdaJ {
     };
 
     /** installation directory */
-    private static final Path murmelDir;
+    static final Path murmelDir;
     static {
         Path path;
         try {
@@ -1360,7 +1360,7 @@ public class LambdaJ {
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
-    private LambdaJSymbol intern(String sym) {
+    final LambdaJSymbol intern(String sym) {
         return symtab.intern(new LambdaJSymbol(sym));
     }
 
@@ -2247,7 +2247,7 @@ public class LambdaJ {
 
 
     /// ###  (Mostly) Lisp-like functions used by interpreter program, a subset is used by interpreted programs as well
-    private ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
+    final   ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
     private ListConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
@@ -2316,8 +2316,8 @@ public class LambdaJ {
 
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
 
-    private static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
-    private static Object   car(Object o)      { return o == null ? null
+    static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
+    static Object   car(Object o)      { return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof Object[] ? ((Object[])o).length == 0 ? null : ((Object[])o)[0]
@@ -2325,18 +2325,18 @@ public class LambdaJ {
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.isEmpty() ? null : ((LambdaJSymbol)o).name.charAt(0)
                                                  : carCdrError("car", o); }
 
-    private static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
-    private static Object   caadr(ConsCell c)  { return c == null ? null : car(cadr(c)); }
-    private static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
-    private static Object   cadr(Object o)     { return o == null ? null : car(cdr(o)); }
-    private static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
-    private static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
-    private static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
-    private static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
-    private static Object   cadddr(Object o)   { return o == null ? null : car(cdddr(o)); }
+    static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
+    static Object   caadr(ConsCell c)  { return c == null ? null : car(cadr(c)); }
+    static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
+    static Object   cadr(Object o)     { return o == null ? null : car(cdr(o)); }
+    static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
+    static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
+    static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
+    static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
+    static Object   cadddr(Object o)   { return o == null ? null : car(cdddr(o)); }
 
-    private static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
-    private static Object   cdr(Object o)      { return o == null ? null
+    static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
+    static Object   cdr(Object o)      { return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof Object[] ? ((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o)
@@ -2344,19 +2344,12 @@ public class LambdaJ {
                                                  : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.length() <= 1 ? null : ((LambdaJSymbol)o).name.substring(1)
                                                  : carCdrError("cdr", o); }
 
-    private static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
-    private static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
-    private static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
-    private static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
-    private static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
-    private static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
-
-    private static boolean eql(Object o1, Object o2) {
-        if (o1 == o2) return true;
-        if (numberp(o1) && numberp(o2) || characterp(o1) && characterp(o2))
-            return Objects.equals(o1, o2);
-        return false;
-    }
+    static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
+    static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
+    static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
+    static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
+    static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
+    static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
     /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
      * (nthcdr 3 '(0 . 1)) -> Error: Attempted to take CDR of 1. */
@@ -2383,21 +2376,28 @@ public class LambdaJ {
         return (ConsCell) b.first();
     }
 
-    private static boolean  consp(Object o)    { return o instanceof ConsCell; }
-    private static boolean  atom(Object o)     { return !(o instanceof ConsCell); }                // ! consp(x)
-    private static boolean  symbolp(Object o)  { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
-    private static boolean  listp(Object o)    { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
-    private static boolean  primp(Object o)    { return o instanceof Primitive; }
-    private static boolean  numberp(Object o)  { return o instanceof Long || o instanceof Double; }
-    private static boolean  stringp(Object o)  { return o instanceof String; }
-    private static boolean  floatp(Object o)   { return o instanceof Double; }
-    private static boolean  integerp(Object o) { return o instanceof Long; }
-    private static boolean  characterp(Object o) { return o instanceof Character; }
+    static boolean eql(Object o1, Object o2) {
+        if (o1 == o2) return true;
+        if (numberp(o1) && numberp(o2) || characterp(o1) && characterp(o2))
+            return Objects.equals(o1, o2);
+        return false;
+    }
+
+    static boolean  consp(Object o)    { return o instanceof ConsCell; }
+    static boolean  atom(Object o)     { return !(o instanceof ConsCell); }                // ! consp(x)
+    static boolean  symbolp(Object o)  { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+    static boolean  listp(Object o)    { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+    static boolean  primp(Object o)    { return o instanceof Primitive; }
+    static boolean  numberp(Object o)  { return o instanceof Long || o instanceof Double; }
+    static boolean  stringp(Object o)  { return o instanceof String; }
+    static boolean  floatp(Object o)   { return o instanceof Double; }
+    static boolean  integerp(Object o) { return o instanceof Long; }
+    static boolean  characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
     // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
-    private static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
-    private static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
+    static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
+    static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
 
     // todo ArraySlice muesste auch gehen?
     private ConsCell list(Object... a) {
@@ -2416,19 +2416,7 @@ public class LambdaJ {
         return ret;
     }
 
-    private Object listStar(ConsCell args) {
-        varargs1("list*", args);
-        if (cdr(args) == null) return car(args);
-        if (cddr(args) == null) return cons(car(args), cadr(args));
-        final CountingListBuilder b = new CountingListBuilder();
-        for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
-            b.append(car(args));
-        }
-        b.appendLast(car(args));
-        return b.first();
-    }
-
-    private static int length(Object list) {
+    static int length(Object list) {
         if (list == null) return 0;
         int n = 0;
         for (Object ignored: (ConsCell)list) n++;
@@ -2445,7 +2433,7 @@ public class LambdaJ {
 
     /** return the cons whose car is eq to {@code atom}
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
-    private static ConsCell assq(Object atom, Object maybeList) {
+    static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assq", printSEx(maybeList));
         for (Object env: (ConsCell) maybeList) {
@@ -2457,7 +2445,7 @@ public class LambdaJ {
         return null;
     }
 
-    private static ConsCell assoc(Object atom, Object maybeList) {
+    static ConsCell assoc(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
         for (Object item: (ConsCell) maybeList) {
@@ -2512,7 +2500,7 @@ public class LambdaJ {
         return ret;
     }
 
-    private static Number cl_signum(Number n) {
+    static Number cl_signum(Number n) {
         if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
         return Math.signum(n.doubleValue());
     }
@@ -2520,16 +2508,16 @@ public class LambdaJ {
     /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
      *  of the same sign as the mathematical quotient,
      *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
-    private static double cl_truncate(double d) {
+    static double cl_truncate(double d) {
         return d < 0.0 ? Math.ceil(d) : Math.floor(d);
     }
 
     /** note that the Java modulo operator {@code %} works differently */
-    private static double cl_mod(double x, double y) {
+    static double cl_mod(double x, double y) {
         return x - Math.floor(x / y) * y;
     }
 
-    private static Number inc(Number n) {
+    static Number inc(Number n) {
         if (n instanceof Long) {
             final long l;
             if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
@@ -2538,7 +2526,7 @@ public class LambdaJ {
         return n.doubleValue() + 1;
     }
 
-    private static Number dec(Number n) {
+    static Number dec(Number n) {
         if (n instanceof Long) {
             final long l;
             if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
@@ -2547,12 +2535,16 @@ public class LambdaJ {
         return n.doubleValue() - 1;
     }
 
+    final Object eval(Object form, ConsCell env) {
+        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
+    }
+
 
 
     /// ###  Misc. helpers and printing of S-expressions
 
     /** convert a (possibly empty aka nil/ null) list to a (possibly empty) Object[] */
-    private static Object[] listToArray(Object maybeList) {
+    static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return new Object[0];
         if (maybeList instanceof ArraySlice) {
             final ArraySlice slice = (ArraySlice)maybeList;
@@ -2575,18 +2567,18 @@ public class LambdaJ {
     }
 
     /** transform {@code obj} into an S-expression, atoms are escaped */
-    private static String printSEx(Object obj) {
+    static String printSEx(Object obj) {
         return printSEx(obj, true);
     }
 
-    private static String printSEx(Object obj, boolean printEscape) {
+    static String printSEx(Object obj, boolean printEscape) {
         if (obj == null) return "nil";
         final StringBuilder sb = new StringBuilder(200);
         _printSEx(sb::append, obj, obj, true, printEscape);
         return sb.toString();
     }
 
-    private static void printSEx(WriteConsumer w, Object obj) {
+    static void printSEx(WriteConsumer w, Object obj) {
         _printSEx(w, obj, obj, true, true);
     }
 
@@ -2990,7 +2982,7 @@ public class LambdaJ {
     }
 
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
-    private static long checkedToLong(double d) {
+    static long checkedToLong(double d) {
         if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
         if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
         if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
@@ -2999,11 +2991,6 @@ public class LambdaJ {
     }
 
 
-
-    private Object eval(Object form, Object env) {
-        if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
-        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
-    }
 
     private static Object cl_rplaca(ConsCell args) {
         twoArgs("rplaca", args);
@@ -3037,15 +3024,27 @@ public class LambdaJ {
         return ret.first();
     }
 
+    private Object listStar(ConsCell args) {
+        varargs1("list*", args);
+        if (cdr(args) == null) return car(args);
+        if (cddr(args) == null) return cons(car(args), cadr(args));
+        final CountingListBuilder b = new CountingListBuilder();
+        for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
+            b.append(car(args));
+        }
+        b.appendLast(car(args));
+        return b.first();
+    }
 
 
-    private void write(final Object arg, boolean printEscape) {
+
+    final void write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
         if (printEscape) lispPrinter.printObj(arg);
         else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(arg, false)));
     }
 
-    private void writeln(final ConsCell arg, boolean printEscape) {
+    final void writeln(final ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
         if (arg != null) {
             if (printEscape) lispPrinter.printObj(car(arg));
@@ -3054,7 +3053,7 @@ public class LambdaJ {
         lispPrinter.printEol();
     }
 
-    private void lnwrite(final ConsCell arg, boolean printEscape) {
+    final void lnwrite(final ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
         lispPrinter.printEol();
         if (arg != null) {
@@ -3064,15 +3063,15 @@ public class LambdaJ {
         }
     }
 
-    private String format(ConsCell a) {
+    final String format(ConsCell a) {
         return format(false, a);
     }
 
-    private String formatLocale(ConsCell a) {
+    final String formatLocale(ConsCell a) {
         return format(true, a);
     }
 
-    private String format(boolean locale, ConsCell a) {
+    final String format(boolean locale, ConsCell a) {
         final String func = locale ? "format-locale" : "format";
         varargsMin(func, a, locale ? 3 : 2);
         final boolean toString = car(a) == null;
@@ -3112,15 +3111,15 @@ public class LambdaJ {
 
 
 
-    private static long getInternalRealTime() {
+    static long getInternalRealTime() {
         return System.nanoTime();
     }
 
-    private static long getInternalRunTime() {
+    static long getInternalRunTime() {
         return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
     }
 
-    private static long getInternalCpuTime() {
+    static long getInternalCpuTime() {
         return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
     }
 
@@ -3133,7 +3132,7 @@ public class LambdaJ {
         return threadBean;
     }
 
-    private static Object sleep(ConsCell a) {
+    static Object sleep(ConsCell a) {
         oneNumber("sleep", a);
         try {
             final long millis = (long)(((Number)car(a)).doubleValue() * 1e3D);
@@ -3145,13 +3144,13 @@ public class LambdaJ {
         }
     }
 
-    private static long getUniversalTime() {
+    static long getUniversalTime() {
         final ZoneId utc = ZoneId.of("UTC");
         final ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
         return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
     }
 
-    private Object getDecodedTime() {
+    final Object getDecodedTime() {
         final Instant now = Clock.systemDefaultZone().instant();
         final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
         final ZoneRules rules = n.getZone().getRules();
@@ -3164,7 +3163,7 @@ public class LambdaJ {
     }
 
     /** expand a single macro call */
-    private Object macroexpand1(ConsCell args) {
+    final Object macroexpand1(ConsCell args) {
         oneArg("macroexpand-1", args);
         if (!consp(car(args))) return car(args);
         final Object operator = caar(args);
@@ -3174,7 +3173,7 @@ public class LambdaJ {
     }
 
     private int gensymCounter;
-    private Object gensym(ConsCell args) {
+    final Object gensym(ConsCell args) {
         return new LambdaJSymbol("gensym" + ++gensymCounter);
     }
 
@@ -3210,7 +3209,7 @@ public class LambdaJ {
         }
     }
 
-    private static Primitive findJavaMethod(ConsCell x) {
+    static Primitive findJavaMethod(ConsCell x) {
         stringArgs(":: ", x);
         final String className = (String) car(x);
         final String methodName = (String) cadr(x);
@@ -3346,7 +3345,9 @@ public class LambdaJ {
             ocEval = new OpenCodedPrimitive(sEval) {
                 @Override public Object apply(ConsCell a) {
                     varargsMinMax("eval", a, 1, 2);
-                    return eval(car(a), cadr(a));
+                    final Object env = cadr(a);
+                    if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
+                    return eval(car(a), (ConsCell)env);
                 }
             };
             env = addBuiltin(sEval, ocEval, env);
@@ -4499,7 +4500,7 @@ public class LambdaJ {
         public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
         protected static Object rplacd(Object l, Object newCdr) { return lst(l).rplacd(newCdr); }
 
-        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
+        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? lst(args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
         protected final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
