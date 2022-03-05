@@ -4758,7 +4758,7 @@ public class LambdaJ {
 
         private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
         /** used for function calls */
-        public Object tailcall(Object fn, Object... args) {
+        public final Object tailcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    {
                 final MurmelFunctionCall tailcall = this.tailcall;
                 tailcall.next = (MurmelFunction)fn;
@@ -4774,7 +4774,7 @@ public class LambdaJ {
         public static Object applyHelper(Object fn, Object argList) { return funcall(fn, toArray(argList)); }
 
         /** used for (apply sym form) */
-        public Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
+        public final Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
 
 
 
