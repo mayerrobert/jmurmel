@@ -4447,6 +4447,21 @@ public class LambdaJ {
         public ConsCell commandlineArgumentList;
 
         /// predefined primitives
+        
+        // Predefined primitives sind vom typ CompilerPrimitive. Benutzt werden sie im generierten code so:
+        //
+        //     (CompilerPrimitive)rt()::add
+        //
+        // muessen public sein, weil sonst gibt z.B. "(let* () (format t "hallo"))" unter Java 8u262 einen Laufzeitfehler:
+        //
+        //     Exception in thread "main" java.lang.BootstrapMethodError: java.lang.IllegalAccessError:
+        //     tried to access method io.github.jmurmel.LambdaJ$MurmelJavaProgram.format([Ljava/lang/Object;)Ljava/lang/Object; from class MurmelProgram$1
+        //
+        // Unter Java 17 gibts den Laufzeitfehler nicht, koennte ein Java 8 bug sein. Oder Java 17 hat den Bug, weil der Zugriff nicht erlaubt sein sollte.
+        // Gilt nicht fuer methoden, die "normal" aufgerufen werden wie z.B. "cons(Object,Object)", die koennen protected sein.
+        //
+        // Wenn statt "(CompilerPrimitive)rt()::add" -> "(CompilerPrimitive)((MurmelJavaProgram)rt())::add" generiert wird,
+        // gibts unter Java 8, 17 und 19 einen Compilefehler.
         public final Object   _car     (Object... args) { oneArg("car",     args.length); return car(args[0]); }
         protected static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
 
