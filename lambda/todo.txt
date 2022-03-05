@@ -1,4 +1,3 @@
-checken ob sb.append(printSEx()) durch printSEx(sb) ersetzt werden kann
 
 package private machen:
 current_frame???

@@ -1295,3 +1295,5 @@ append ist fishy: koennte static sein, oder ConsCells sollten alle mitgezählt w
 
 MurmelJavaProgram verwendet bunt gemischt dbl(Object) und asDouble(String, Object) (und asInt(), asFrame(), ...),
 varargsX() aus MurmelJavaProgram vs. varargsMinMax() aus LambdaJ
+
+checken ob sb.append(printSEx()) durch printSEx(sb) ersetzt werden kann

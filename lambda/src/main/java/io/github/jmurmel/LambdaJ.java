@@ -2529,6 +2529,7 @@ public class LambdaJ {
         return lb.first();
     }
 
+    /** convert a (possibly empty aka nil/ null) list to a (possibly empty) Object[] */
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return new Object[0];
         if (maybeList instanceof ArraySlice) {
@@ -4669,6 +4670,7 @@ public class LambdaJ {
         protected static ConsCell arraySlice(Object[] o, int offset) { return offset >= o.length ? null : new ArraySlice(o, offset); }
         protected static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
 
+        /** convert null, an array or a list to a (possibly empty) Object[] */
         protected static Object[] toArray(Object o) {
             if (o == null)
                 return new Object[0];
@@ -5373,7 +5375,7 @@ public class LambdaJ {
             final String javasym = mangle(sym.toString(), 0);
             env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env);
 
-            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' ').append(printSEx(params)).append(" forms...)\n"
+            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                     + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
@@ -5661,7 +5663,7 @@ public class LambdaJ {
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }
-            else sb.append(printSEx(form));
+            else printSEx(sb::append, form);
         }
 
         private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
