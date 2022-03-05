@@ -2470,6 +2470,7 @@ public class LambdaJ {
         return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
+    // todo ArraySlice muesste auch gehen?
     private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
         ListConsCell ret = null, insertPos = null;
@@ -4452,17 +4453,13 @@ public class LambdaJ {
         protected static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
 
         public final ConsCell _cons    (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
-        protected static ConsCell cons(Object car, Object cdr)  { return new ListConsCell(car, cdr); } // also used by generated code
+        protected static ConsCell cons(Object car, Object cdr)  { return LambdaJ.ConsCell.cons(car, cdr); } // also used by generated code
 
         public final Object   _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        protected static Object rplaca(Object l, Object newCar) {
-            return asList("rplaca", l).rplaca(newCar);
-        }
+        protected static Object rplaca(Object l, Object newCar) { return lst(l).rplaca(newCar); }
 
         public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        protected static Object rplacd(Object l, Object newCdr) {
-            return asList("rplacd", l).rplacd(newCdr);
-        }
+        protected static Object rplacd(Object l, Object newCdr) { return lst(l).rplacd(newCdr); }
 
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
@@ -4543,7 +4540,7 @@ public class LambdaJ {
         protected static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
         private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar("char-code", args[0]); }
+        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar(args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt(args[0]); }
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asStringOrNull(args[0]), asStringOrNull(args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(arraySlice(args)); }
@@ -4687,7 +4684,12 @@ public class LambdaJ {
         }
 
         protected static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
-        
+
+        private static Character asChar(Object o) {
+            if (!characterp(o)) errorNotACharacter(o);
+            return (Character)o;
+        }
+
         private static int asInt(Object n) { number(n);  return ((Number)n).intValue(); }
 
         private static float asFloat(Object n) { number(n);  return ((Number)n).floatValue(); }
@@ -4799,6 +4801,7 @@ public class LambdaJ {
 
         private static void errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
         private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
+        private static void errorNotACharacter(Object s) { throw new LambdaJError(true, "not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new LambdaJError(true, "not a string: %s", printSEx(s)); }
 
 
@@ -6314,7 +6317,7 @@ public class LambdaJ {
 
 
         private static ConsCell cons(Object car, Object cdr) {
-            return new ListConsCell(car, cdr);
+            return LambdaJ.ConsCell.cons(car, cdr);
         }
     }
 }

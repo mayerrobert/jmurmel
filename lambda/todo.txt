@@ -1,3 +1,44 @@
+checken ob sb.append(printSEx()) durch printSEx(sb) ersetzt werden kann
+
+stringToList, listToString in MurmelJavaProgram, oder cons(x, null) statt arrayslice
+
+package private machen:
+current_frame???
+init???
+findJavaMethod???
+checkedToLong???
+printSEx???
+class ArraySlice???
+
+der rest ist "CL runtime", ggf. auch umsortieren/ gruppieren:
+assoc
+assq
+atom
+car, cdr
+characterp
+cl_eql
+cl_mod
+cl_signum
+cl_truncate
+consp
+dec, inc
+eval(Object,Object)
+format, formatLocale
+gensym
+getXXXTime
+integerp
+intern
+listp
+listToArray, listToString, stringToList
+lnwrite, write, writeln
+numberp
+sleep
+stringp
+symbolp
+trace, untrace
+
+
+
 --jar findet load files nicht
 
 Compiler.libdir ist unused?!?
