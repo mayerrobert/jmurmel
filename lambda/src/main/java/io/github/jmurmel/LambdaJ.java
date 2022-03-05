@@ -1404,6 +1404,7 @@ public class LambdaJ {
     private final Set<Object> modules = new HashSet<>();
     private int speed = 1; // changed by (declaim (optimize (speed...
 
+
     /// ###  eval - the heart of most if not all Lisp interpreters
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
         Object func = null;
@@ -1894,7 +1895,7 @@ public class LambdaJ {
         if (op == sCons) { twoArgs("cons", args);  return cons(car(args), cadr(args)); }
 
         if (op == sEq)   { twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
-        if (op == sEql)  { twoArgs("eql",  args);  return boolResult(cl_eql(car(args), cadr(args))); }
+        if (op == sEql)  { twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
         if (op == sNull) { oneArg ("null", args);  return boolResult(car(args) == null); }
 
         if (op == sInc)  { oneNumber("1+", args);  return inc((Number)car(args)); }
@@ -2245,7 +2246,7 @@ public class LambdaJ {
 
 
 
-    /// ###  Functions used by interpreter program, a subset is used by interpreted programs as well
+    /// ###  (Mostly) Lisp-like functions used by interpreter program, a subset is used by interpreted programs as well
     private ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
     private ListConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
@@ -2350,6 +2351,38 @@ public class LambdaJ {
     private static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
     private static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
+    private static boolean eql(Object o1, Object o2) {
+        if (o1 == o2) return true;
+        if (numberp(o1) && numberp(o2) || characterp(o1) && characterp(o2))
+            return Objects.equals(o1, o2);
+        return false;
+    }
+
+    /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
+     * (nthcdr 3 '(0 . 1)) -> Error: Attempted to take CDR of 1. */
+    private static Object   nthcdr(int n, Object list) {
+        if (list == null) return null;
+        for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
+        return list;
+    }
+
+    private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
+        final ListBuilder b = new ListBuilder();
+        Object o = l;
+        for (;;) {
+            if (o == null) break;
+            if (consp(o)) {
+                b.append(f.apply(car(o)));
+            }
+            else {
+                b.appendLast(f.apply(o));
+                break;
+            }
+            o = cdr(o);
+        }
+        return (ConsCell) b.first();
+    }
+
     private static boolean  consp(Object o)    { return o instanceof ConsCell; }
     private static boolean  atom(Object o)     { return !(o instanceof ConsCell); }                // ! consp(x)
     private static boolean  symbolp(Object o)  { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
@@ -2366,60 +2399,21 @@ public class LambdaJ {
     private static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
     private static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
 
-    private static RuntimeException errorReaderError(String msg) {
-        throw new LambdaJError(msg);
-    }
-
-    private static RuntimeException errorMalformed(String func, String msg) {
-        throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
-    }
-
-    private static RuntimeException errorMalformed(String func, String expected, Object actual) {
-        throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
-    }
-
-    private static void errorNotANumber(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
-    }
-
-    private static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
-        final String argPhrase = expectedMin == expectedMax
-                ? expectedArgPhrase(expectedMin)
-                : (expectedMin + " to " + expectedMax + " arguments");
-
-        if (actual < expectedMin) {
-            throw new LambdaJError(true, "%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
+    // todo ArraySlice muesste auch gehen?
+    private ConsCell list(Object... a) {
+        if (a == null || a.length == 0) return null;
+        ListConsCell ret = null, insertPos = null;
+        for (Object o: a) {
+            if (ret == null) {
+                ret = cons(o, null);
+                insertPos = ret;
+            }
+            else {
+                insertPos.rplacd(cons(o, null));
+                insertPos = (ListConsCell) insertPos.cdr();
+            }
         }
-        if (actual > expectedMax) {
-            throw new LambdaJError(true, "%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
-        }
-    }
-
-    private static void errorVarargsCount(String func, int min, int actual) {
-        throw new LambdaJError(true, "%s: expected %s or more but got only %d", func, expectedArgPhrase(min), actualArgPhrase(actual));
-    }
-
-    private static String expectedArgPhrase(int expected) {
-        return (expected == 0) ? "no arguments" : (expected == 1) ? "one argument" : (expected == 2) ? "two arguments" : (expected + " arguments");
-    }
-
-    private static String actualArgPhrase(int actual) {
-        return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : ("got only " + actual);
-    }
-
-    private static int length(Object list) {
-        if (list == null) return 0;
-        int n = 0;
-        for (Object ignored: (ConsCell)list) n++;
-        return n;
-    }
-
-    /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
-     * (nthcdr 3 '(0 . 1)) -> Error: Attempted to take CDR of 1. */
-    private static Object nthcdr(int n, Object list) {
-        if (list == null) return null;
-        for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
-        return list;
+        return ret;
     }
 
     private Object listStar(ConsCell args) {
@@ -2432,6 +2426,21 @@ public class LambdaJ {
         }
         b.appendLast(car(args));
         return b.first();
+    }
+
+    private static int length(Object list) {
+        if (list == null) return 0;
+        int n = 0;
+        for (Object ignored: (ConsCell)list) n++;
+        return n;
+    }
+
+    /** this method returns true while Lisp member returns the sublist starting at obj */
+    private static boolean member(Object obj, ConsCell list) {
+        if (obj == null) return false;
+        if (list == null) return false;
+        for (Object e: list) if (e == obj) return true;
+        return false;
     }
 
     /** return the cons whose car is eq to {@code atom}
@@ -2454,59 +2463,10 @@ public class LambdaJ {
         for (Object item: (ConsCell) maybeList) {
             if (item != null) { // ignore null items
                 final ConsCell itemAsCons = (ConsCell) item;
-                if (cl_eql(atom, car(itemAsCons))) return itemAsCons;
+                if (eql(atom, car(itemAsCons))) return itemAsCons;
             }
         }
         return null;
-    }
-
-    /** this method returns true while Lisp member returns the sublist starting at obj */
-    private static boolean member(Object obj, ConsCell list) {
-        if (obj == null) return false;
-        if (list == null) return false;
-        for (Object e: list) if (e == obj) return true;
-        return false;
-    }
-
-    private Object eval(Object form, Object env) {
-        if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
-        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
-    }
-
-    // todo ArraySlice muesste auch gehen?
-    private ConsCell list(Object... a) {
-        if (a == null || a.length == 0) return null;
-        ListConsCell ret = null, insertPos = null;
-        for (Object o: a) {
-            if (ret == null) {
-                ret = cons(o, null);
-                insertPos = ret;
-            }
-            else {
-                insertPos.rplacd(cons(o, null));
-                insertPos = (ListConsCell) insertPos.cdr();
-            }
-        }
-        return ret;
-    }
-
-    /** Create a new list by copying lhs and appending rhs. */
-    private Object append2(Object lhs, Object rhs) {
-        if (lhs == null) return rhs;
-        if (!consp(lhs)) throw new LambdaJError(true, "append2: first argument %s is not a list", lhs);
-        ListConsCell ret = null, insertPos = null;
-        for (Object o: (ConsCell)lhs) {
-            if (ret == null) {
-                ret = cons(o, null);
-                insertPos = ret;
-            }
-            else {
-                insertPos.rplacd(cons(o, null));
-                insertPos = (ListConsCell) insertPos.cdr();
-            }
-        }
-        insertPos.rplacd(rhs);
-        return ret;
     }
 
     /** append args non destructively, all args except the last are shallow copied, all args except the last must be a list */
@@ -2532,6 +2492,65 @@ public class LambdaJ {
         return lb.first();
     }
 
+    /** Create a new list by copying lhs and appending rhs. Faster (?) 2 argument version of {@link #append(ConsCell)} for internal use. */
+    private Object append2(Object lhs, Object rhs) {
+        if (lhs == null) return rhs;
+        if (!consp(lhs)) throw new LambdaJError(true, "append2: first argument %s is not a list", lhs);
+        if (rhs == null) return lhs;
+        ListConsCell ret = null, insertPos = null;
+        for (Object o: (ConsCell)lhs) {
+            if (ret == null) {
+                ret = cons(o, null);
+                insertPos = ret;
+            }
+            else {
+                insertPos.rplacd(cons(o, null));
+                insertPos = (ListConsCell) insertPos.cdr();
+            }
+        }
+        insertPos.rplacd(rhs);
+        return ret;
+    }
+
+    private static Number cl_signum(Number n) {
+        if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
+        return Math.signum(n.doubleValue());
+    }
+
+    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
+     *  of the same sign as the mathematical quotient,
+     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
+    private static double cl_truncate(double d) {
+        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
+    }
+
+    /** note that the Java modulo operator {@code %} works differently */
+    private static double cl_mod(double x, double y) {
+        return x - Math.floor(x / y) * y;
+    }
+
+    private static Number inc(Number n) {
+        if (n instanceof Long) {
+            final long l;
+            if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
+            return l + 1;
+        }
+        return n.doubleValue() + 1;
+    }
+
+    private static Number dec(Number n) {
+        if (n instanceof Long) {
+            final long l;
+            if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
+            return l - 1;
+        }
+        return n.doubleValue() - 1;
+    }
+
+
+
+    /// ###  Misc. helpers and printing of S-expressions
+
     /** convert a (possibly empty aka nil/ null) list to a (possibly empty) Object[] */
     private static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return new Object[0];
@@ -2545,23 +2564,6 @@ public class LambdaJ {
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         //for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
         return ret.toArray();
-    }
-
-    private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
-        final ListBuilder b = new ListBuilder();
-        Object o = l;
-        for (;;) {
-            if (o == null) break;
-            if (consp(o)) {
-                b.append(f.apply(car(o)));
-            }
-            else {
-                b.appendLast(f.apply(o));
-                break;
-            }
-            o = cdr(o);
-        }
-        return (ConsCell) b.first();
     }
 
     /** transform {@code ob} into an S-expression, atoms are not escaped */
@@ -2701,6 +2703,51 @@ public class LambdaJ {
 
 
 
+    /// ##  Error "handlers"
+
+    private static RuntimeException errorReaderError(String msg) {
+        throw new LambdaJError(msg);
+    }
+
+    private static RuntimeException errorMalformed(String func, String msg) {
+        throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
+    }
+
+    private static RuntimeException errorMalformed(String func, String expected, Object actual) {
+        throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
+    }
+
+    private static void errorNotANumber(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
+    }
+
+    private static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
+        final String argPhrase = expectedMin == expectedMax
+                ? expectedArgPhrase(expectedMin)
+                : (expectedMin + " to " + expectedMax + " arguments");
+
+        if (actual < expectedMin) {
+            throw new LambdaJError(true, "%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
+        }
+        if (actual > expectedMax) {
+            throw new LambdaJError(true, "%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
+        }
+    }
+
+    private static void errorVarargsCount(String func, int min, int actual) {
+        throw new LambdaJError(true, "%s: expected %s or more but got only %d", func, expectedArgPhrase(min), actualArgPhrase(actual));
+    }
+
+    private static String expectedArgPhrase(int expected) {
+        return (expected == 0) ? "no arguments" : (expected == 1) ? "one argument" : (expected == 2) ? "two arguments" : (expected + " arguments");
+    }
+
+    private static String actualArgPhrase(int actual) {
+        return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : ("got only " + actual);
+    }
+
+
+
     /// ##  Error checking functions, used by interpreter and primitives
 
     /** a must be the empty list */
@@ -2831,8 +2878,6 @@ public class LambdaJ {
         }
     }
 
-    private TurtleFrame current_frame;
-
     /** Return {@code a} as a TurtleFrame or current_frame if null, error if {@code a} is not of type frame. */
     private TurtleFrame asFrame(String func, Object a) {
         final TurtleFrame ret;
@@ -2944,29 +2989,6 @@ public class LambdaJ {
         return cdr(args) == null ? ((Number)car(args)).doubleValue() : ((Number)car(args)).doubleValue() / ((Number)cadr(args)).doubleValue();
     }
 
-    private static boolean cl_eql(Object o1, Object o2) {
-        if (o1 == o2) return true;
-        if (numberp(o1) && numberp(o2)
-                || characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
-        return false;
-    }
-
-    private static Number cl_signum(Number n) {
-        if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
-        return Math.signum(n.doubleValue());
-    }
-
-    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
-     *  of the same sign as the mathematical quotient,
-     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
-    private static double cl_truncate(double d) {
-        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
-    }
-
-    private static double cl_mod(double x, double y) {
-        return x - Math.floor(x / y) * y;
-    }
-
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
     private static long checkedToLong(double d) {
         if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
@@ -2976,22 +2998,21 @@ public class LambdaJ {
         return (long)d;
     }
 
-    private static Number inc(Number n) {
-        if (n instanceof Long) {
-            final long l;
-            if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
-            return l + 1;
-        }
-        return n.doubleValue() + 1;
+
+
+    private Object eval(Object form, Object env) {
+        if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
+        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
-    private static Number dec(Number n) {
-        if (n instanceof Long) {
-            final long l;
-            if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
-            return l - 1;
-        }
-        return n.doubleValue() - 1;
+    private static Object cl_rplaca(ConsCell args) {
+        twoArgs("rplaca", args);
+        return asList("rplaca", car(args)).rplaca(cadr(args));
+    }
+
+    private static Object cl_rplacd(ConsCell args) {
+        twoArgs("rplacd", args);
+        return asList("rplacd", car(args)).rplacd(cadr(args));
     }
 
     private static Object listToString(ConsCell a) {
@@ -3016,15 +3037,7 @@ public class LambdaJ {
         return ret.first();
     }
 
-    private static Object cl_rplaca(ConsCell args) {
-        twoArgs("rplaca", args);
-        return asList("rplaca", car(args)).rplaca(cadr(args));
-    }
 
-    private static Object cl_rplacd(ConsCell args) {
-        twoArgs("rplacd", args);
-        return asList("rplacd", car(args)).rplacd(cadr(args));
-    }
 
     private void write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
@@ -3049,21 +3062,6 @@ public class LambdaJ {
             else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), false)));
             lispPrinter.printString(" ");
         }
-    }
-
-    /** expand a single macro call */
-    private Object macroexpand1(ConsCell args) {
-        oneArg("macroexpand-1", args);
-        if (!consp(car(args))) return car(args);
-        final Object operator = caar(args);
-        if (!macros.containsKey(operator)) return car(args);
-        final ConsCell arguments = (ConsCell) cdar(args);
-        return evalMacro(operator, arguments, 0, 0, 0);
-    }
-
-    private int gensymCounter;
-    private Object gensym(ConsCell args) {
-        return new LambdaJSymbol("gensym" + ++gensymCounter);
     }
 
     private String format(ConsCell a) {
@@ -3111,6 +3109,8 @@ public class LambdaJ {
                     "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
         }
     }
+
+
 
     private static long getInternalRealTime() {
         return System.nanoTime();
@@ -3161,6 +3161,21 @@ public class LambdaJ {
         return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
                cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
                cons(boolResult(daylightSavings), cons(offset, null)))))))));
+    }
+
+    /** expand a single macro call */
+    private Object macroexpand1(ConsCell args) {
+        oneArg("macroexpand-1", args);
+        if (!consp(car(args))) return car(args);
+        final Object operator = caar(args);
+        if (!macros.containsKey(operator)) return car(args);
+        final ConsCell arguments = (ConsCell) cdar(args);
+        return evalMacro(operator, arguments, 0, 0, 0);
+    }
+
+    private int gensymCounter;
+    private Object gensym(ConsCell args) {
+        return new LambdaJSymbol("gensym" + ++gensymCounter);
     }
 
 
@@ -3218,11 +3233,14 @@ public class LambdaJ {
 
 
 
+    private TurtleFrame current_frame;
+
     private ObjectReader lispReader;
     private ObjectWriter lispPrinter;
 
     /** return the current stdin */
     public ObjectReader getLispReader()  { return lispReader; }
+
     /** return the current stdout */
     public ObjectWriter getLispPrinter() { return lispPrinter; }
 
@@ -3231,6 +3249,7 @@ public class LambdaJ {
         this.lispReader = lispStdin;
         this.lispPrinter = lispStdout;
     }
+
 
     /** build an environment by prepending the previous environment {@code env} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
@@ -3366,7 +3385,7 @@ public class LambdaJ {
                   addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",   a);  return assq(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
                   addBuiltin("list*",   (Primitive) a -> listStar(a), 
-                  addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(cl_eql(car(a), cadr(a))); },
+                  addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(eql(car(a), cadr(a))); },
                   env)))))))));
 
             env = addBuiltin("append",  (Primitive) this::append,
@@ -4482,8 +4501,8 @@ public class LambdaJ {
 
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? args[1] : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
-        public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return cl_eql(args[0], args[1]) ? _t : null; }
-        protected final Object eql     (Object o1, Object o2) { return cl_eql(o1, o2) ? _t : null; }
+        public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
+        protected final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
