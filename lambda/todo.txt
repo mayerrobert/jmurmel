@@ -1,4 +1,7 @@
-
+(setq format 1) erzeugt ungueltigen code, letXX dynamic wsl. auch
+-> eintrag i environment ansehen, wenn CompilerPrimitive drinsteht, einen hack aktivieren (und environment eintrag patchen ?!?)
+   das müsste auch der ansatz für re- define/defun sein
+ 
 package private machen:
 current_frame???
 init???
