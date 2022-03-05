@@ -1647,7 +1647,7 @@ public class LambdaJ {
                             final Object lambda = cdr(func);          // ((params...) (forms...))
                             final ConsCell closure = ((ConsCell)func).closure();
                             if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
-                            env = zip(closure != null ? closure : env, car(lambda), argList);
+                            env = zip(car(lambda), argList, closure != null ? closure : env);
 
                             if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
                             forms = (ConsCell) cdr(lambda);
@@ -1775,7 +1775,7 @@ public class LambdaJ {
 
     private ConsCell[] evalLabels(ConsCell arguments, ConsCell env) {
         varargs1("labels", arguments);
-        final ListConsCell extEnv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
+        final ListConsCell extEnv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
         // stick the functions into the env
         if (car(arguments) != null)
             for (Object binding: (ConsCell) car(arguments)) {
@@ -1807,7 +1807,7 @@ public class LambdaJ {
         if (bindings != null) {
             final Set<Object> seen = new HashSet<>();
             ConsCell newValues = null; // used for let dynamic
-            extenv = cons(cons(PSEUDO_SYMBOL, UNASSIGNED), env);
+            extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : bindings) {
                 final Object sym;
                 final Object bindingForm;
@@ -1836,12 +1836,12 @@ public class LambdaJ {
                 if (caddr(binding) != null) throw errorMalformed(op, "illegal variable specification " + printSEx(binding));
                 final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
-                    if (isNewSymbol) restore = cons(cons(newBinding, cdr(newBinding)), restore);
+                    if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
-                    else newValues = cons(cons(newBinding, val), newValues);
+                    else newValues = acons(newBinding, val, newValues);
                 }
                 else if (letRec) newBinding.rplacd(val);
-                else extenv = cons(cons(sym, val), extenv);
+                else extenv = acons(sym, val, extenv);
             }
             if (newValues != null) for (Object o: newValues) {
                 final ConsCell c = (ConsCell)o;
@@ -1862,7 +1862,7 @@ public class LambdaJ {
 
         final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
-        final ConsCell menv = zip(topEnv, car(lambda), arguments);    // todo predef env statt topenv?!?
+        final ConsCell menv = zip(car(lambda), arguments, topEnv);    // todo predef env statt topenv?!?
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, stack, level, traceLvl);
@@ -1937,23 +1937,25 @@ public class LambdaJ {
 
     /** build an extended environment for a function invocation:<pre>
      *  loop over params and args
-     *    construct a list (param arg)
+     *    construct a cons (param . arg)
      *    stick above list in front of the environment
-     *  return extended environment</pre> */
-    // todo vgl CL pairlis
-    private ConsCell zip(ConsCell env, Object paramList, ConsCell args) {
+     *  return extended environment</pre>
+     *  
+     *  Similar to CL pairlis, but {@link #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
+     *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
+    private ConsCell zip(Object paramList, ConsCell args, ConsCell env) {
         if (paramList == null && args == null) return env; // shortcut for no params/ no args
 
         for (Object params = paramList; params != null; ) {
             // regular param/arg: add to env
             if (consp(params)) {
                 if (args == null) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
-                env = cons(cons(car(params), car(args)), env);
+                env = acons(car(params), car(args), env);
             }
 
             // if paramList is a dotted list then the last param will be bound to the list of remaining args
             else {
-                env = cons(cons(params, args), env);
+                env = acons(params, args, env);
                 args = null; break;
             }
 
@@ -1965,7 +1967,7 @@ public class LambdaJ {
                 if (consp(params)) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
                 else if (params != null) {
                     // paramList is a dotted list, no argument for vararg parm: assign nil
-                    env = cons(cons(params, null), env);
+                    env = acons(params, null, env);
                     break;
                 }
             }
@@ -2246,6 +2248,7 @@ public class LambdaJ {
     /// ###  Functions used by interpreter program, a subset is used by interpreted programs as well
     private ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
     private ListConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
+    private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
     private static class ArraySlice extends ConsCell {
         private static class ArraySliceIterator implements Iterator<Object> {
@@ -3458,11 +3461,11 @@ public class LambdaJ {
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
-        return cons(cons(intern(sym), value), env);
+        return acons(intern(sym), value, env);
     }
 
     private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
-        return cons(cons(sym, value), env);
+        return acons(sym, value, env);
     }
 
 
