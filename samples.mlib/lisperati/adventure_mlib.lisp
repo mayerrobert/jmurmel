@@ -1,7 +1,16 @@
 ;;; http://www.lisperati.com/casting.html translated to murmel w/ mlib
-;;; see adventure_cl.lisp for the original Common Lisp
+;;; see ../../samples.murmel/lisperati/adventure_cl.lisp for the original Common Lisp
 ;;; see ../../samples.murmel/lisperati/adventure_murmel.lisp for a translation to murmel w/o mlib 
+;;;
+;;; run with:
+;;;     java -jar ..\..\lambda\target\jmurmel.jar --libdir .. adventure_mlib.lisp
+;;; or:
+;;;     sbcl --script adventure_mlib.lisp
+;;; or:
+;;;     abcl --batch --load adventure_mlib.lisp
 
+#+murmel
+(progn
 (require "mlib")
 
 (defmacro defparameter (sym val) `(define ,sym ,val))
@@ -12,7 +21,7 @@
 
 (defun remove-if-not (pred l)
   (remove-if (complement pred) l))
-
+)
 
 
 ; http://www.lisperati.com/data.html
@@ -82,7 +91,7 @@
 
 
 ; http://www.lisperati.com/spels.html
-(defmacro defspel rest `(defmacro ,@rest))
+(defmacro defspel #+murmel rest #-murmel (&rest rest) `(defmacro ,@rest))
 
 (defspel walk (direction)
   `(walk-direction ',direction))
@@ -112,7 +121,7 @@
 
 (defparameter *bucket-filled* nil)
 
-(defspel game-action (command subj obj place . rest)
+(defspel game-action (command subj obj place #+murmel . #-murmel &rest rest)
   `(defspel ,command (subject object)
      `(cond ((and (eq *location* ',',place)
                   (eq ',subject ',',subj)
@@ -147,4 +156,4 @@
 (walk west)
 (dunk bucket well)
 (walk east)
-(splash bucket wizard)
+(print (splash bucket wizard))

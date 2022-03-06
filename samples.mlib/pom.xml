@@ -140,7 +140,7 @@
                                 <argument>--verbose</argument>
                                 <argument>--libdir</argument>
                                 <argument>.</argument>
-                                <argument>./lisperati/adventure_murmel.lisp</argument>
+                                <argument>./lisperati/adventure_mlib.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -161,7 +161,7 @@
                                 <argument>--run</argument>
                                 <argument>--libdir</argument>
                                 <argument>.</argument>
-                                <argument>./lisperati/adventure_murmel.lisp</argument>
+                                <argument>./lisperati/adventure_mlib.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
