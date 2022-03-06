@@ -117,59 +117,6 @@
                         </configuration>
                     </execution>
 
-                    <!-- these take 10 seconds each
-                    <execution>
-                        <id>run-gabriel</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <workingDirectory>../samples.murmel/gabriel</workingDirectory>
-                            <arguments>
-                                <argument>-classpath</argument>
-                                <classpath/>
-                                <argument>io.github.jmurmel.LambdaJ</argument>
-                                <argument>- -verbose</argument>
-                                <argument>000_lib.lisp</argument>
-                                <argument>00_tak_apo.lisp</argument>
-                                <argument>3.01_tak.lisp</argument>
-                                <argument>3.01_takeuchi.lisp</argument>
-                                <argument>3.02_stak.lisp</argument>
-                                <argument>3.04_takl.lisp</argument>
-                                <argument>3.10_deriv.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>run-compiled-gabriel</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <workingDirectory>../samples.murmel/gabriel</workingDirectory>
-                            <arguments>
-                                <argument>-classpath</argument>
-                                <classpath/>
-                                <argument>io.github.jmurmel.LambdaJ</argument>
-                                <argument>- -verbose</argument>
-                                <argument>- -run</argument>
-                                <argument>000_lib.lisp</argument>
-                                <argument>00_tak_apo.lisp</argument>
-                                <argument>3.01_tak.lisp</argument>
-                                <argument>3.01_takeuchi.lisp</argument>
-                                todo <argument>3.02_stak.lisp</argument>
-                                <argument>3.04_takl.lisp</argument>
-                                <argument>3.10_deriv.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    -->
-
                     <execution>
                         <id>run-lisperati</id>
                         <phase>test</phase>
@@ -210,6 +157,49 @@
                             </arguments>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>run-expand-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>expand-test.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- doesn't work: compiler doesn't support full macroexpand-1 
+                    <execution>
+                        <id>run-compiled-expand-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>- -verbose</argument>
+                                <argument>- -run</argument>
+                                <argument>- -libdir</argument>
+                                <argument>.</argument>
+                                <argument>expand-test.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    -->
                 </executions>
             </plugin>
         </plugins>

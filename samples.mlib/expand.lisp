@@ -15,12 +15,6 @@
 (require "mlib")
 (provide "expand")
 
-(defun m%macroexpand-1 (ex)
-  (let ((expanded (macroexpand-1 ex)))
-    (if (eq ex expanded)
-          (list ex nil)
-      (list expanded t))))
-
 (defun expand (form)
   (cond ((atom form)
          form)
@@ -35,15 +29,10 @@
          `(lambda ,(cadr form)
                   ,@(mapcar expand (cddr form))))
 
-        ((eq 'defun (car form))
-         `(defun ,(cadr form)
+        ((member (car form) '(defun defmacro) eq)
+         `(,(car form) ,(cadr form)
                  ,(caddr form)
                  ,@(mapcar expand (cdddr form))))
-
-        ((eq 'defmacro (car form))
-         `(defmacro ,(cadr form)
-                    ,(caddr form)
-                    ,@(mapcar expand (cdddr form))))
 
         ((member (car form) '(let let* letrec) eq)
          (if (symbolp (cadr form))
@@ -54,8 +43,8 @@
          `(setq ,(cadr form) ,(expand (caddr form))))
 
         (t
-         (destructuring-bind (ex changed)
-           (m%macroexpand-1 form)
+         (let* ((ex (macroexpand-1 form))
+                (changed (null (eq ex form))))
            (if changed
                  (expand ex)
              (mapcar expand form))))))
