@@ -55,13 +55,13 @@ public class MurmelJavaCompilerTest {
     // murmel compiler should throw error "reserved word"
     @Test
     public void testDefineNil() throws Exception {
-        compileError("(define nil 42)", "compile: can't use reserved");
+        compileError("(define nil 42)", "define: malformed define: can't use reserved");
     }
 
     // murmel compiler should throw error "reserved word"
     @Test
     public void testDefineT() throws Exception {
-        compileError("(define t 42)", "compile: can't use reserved");
+        compileError("(define t 42)", "define: malformed define: can't use reserved");
     }
 
     @Test
@@ -92,7 +92,7 @@ public class MurmelJavaCompilerTest {
     // function uses a variable that is not defined
     @Test
     public void testUndefinedVariable() throws Exception {
-        compileError("(defun f () x) (f)", "undefined symbols: [x]");
+        compileError("(defun f () x) (f)", "compilation unit: malformed compilation unit: undefined symbols: [x]");
     }
 
     // function uses a function that is defined later
@@ -105,7 +105,7 @@ public class MurmelJavaCompilerTest {
     // function uses a function that is not defined
     @Test
     public void testUndefinedFunction() throws Exception {
-        compileError("(defun f () (x)) (f)", "undefined symbols: [x]");
+        compileError("(defun f () (x)) (f)", "compilation unit: malformed compilation unit: undefined symbols: [x]");
     }
 
 
@@ -404,7 +404,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testLetStarError() throws Exception {
-        compileError("(let* ((a b) (b 2)) a)", "undefined symbol");
+        compileError("(let* ((a b) (b 2)) a)", "compilation unit: malformed compilation unit: undefined symbol");
     }
 
     @Test

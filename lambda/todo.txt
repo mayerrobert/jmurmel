@@ -1,7 +1,6 @@
 (setq format 1) erzeugt ungueltigen code, letXX dynamic wsl. auch
 -> eintrag im environment ansehen, wenn CompilerPrimitive drinsteht, einen hack aktivieren (und environment eintrag patchen ?!?)
-   das müsste auch der ansatz für re- define/defun sein
-
+   -> oder "unsupported" melden
 
 
 --jar findet load files nicht
@@ -18,7 +17,6 @@ müssen die compiler rt funktionen public sein oder reicht protected? geht stati
 
 vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 die methoden im compiler, die code ausspucken umbenamsen: emit...
-class ArraySlice woanders hin schieben
 
 statt überall "throw new LambdaJError(..."
 -> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception

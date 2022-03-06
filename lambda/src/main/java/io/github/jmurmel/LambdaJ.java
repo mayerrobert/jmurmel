@@ -326,6 +326,69 @@ public class LambdaJ {
         @Override ConsCell closure() { return closure; }
     }
 
+    private static class ArraySlice extends ConsCell {
+        private static class ArraySliceIterator implements Iterator<Object> {
+            private final ArraySlice coll;
+            private int cursor;
+
+            private ArraySliceIterator(ArraySlice coll) { this.coll = coll; this.cursor = coll.offset; }
+            @Override public boolean hasNext() { return cursor != -1; }
+
+            @Override
+            public Object next() {
+                if (cursor == -1 || coll.arry == null) throw new NoSuchElementException();
+                final Object ret = coll.arry[cursor++];
+                if (cursor == coll.arry.length)  cursor = -1;
+                return ret;
+            }
+        }
+
+        private static final long serialVersionUID = 1L;
+
+        private final Object[] arry;
+        private final int offset;
+
+        private ArraySlice(Object[] arry) {
+            if (arry != null && arry.length > 1) { this.arry = arry; offset = 1; }
+            else { this.arry = null; offset = -1; }
+        }
+
+        private ArraySlice(Object[] arry, int offset) {
+            if (arry != null && arry.length > offset) { this.arry = arry; this.offset = offset; }
+            else { this.arry = null; this.offset = -1; }
+        }
+
+        private ArraySlice(ArraySlice slice) {
+            if (slice.arry != null && slice.arry.length > slice.offset) { this.arry = slice.arry; offset = slice.offset + 1; }
+            else { this.arry = null; offset = -1; }
+        }
+
+        @Override public Object     car() { return arry == null || arry.length <= offset ? null : arry[offset]; }
+        @Override public Object rplaca(Object car) { arry[offset] = car; return this; }
+
+        @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
+
+        @Override public String toString() { return printSEx(true, false); }
+        @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
+
+        private String printSEx(boolean headOfList, boolean escapeAtoms) {
+            if (arry == null || arry.length <= offset) return LambdaJ.printSEx(null);
+            else {
+                final StringBuilder ret = new StringBuilder();
+                if (headOfList) ret.append('(');
+                boolean first = true;
+                for (int i = offset; i < arry.length; i++) {
+                    final Object o = arry[i];
+                    if (first) first = false;
+                    else ret.append(' ');
+                    _printSEx(ret::append, arry, o, true, escapeAtoms);
+                }
+                ret.append(')');
+                return ret.toString();
+            }
+        }
+    }
+
     /** A murmel symbol name */
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
@@ -2251,69 +2314,6 @@ public class LambdaJ {
     private ListConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
-    private static class ArraySlice extends ConsCell {
-        private static class ArraySliceIterator implements Iterator<Object> {
-            private final ArraySlice coll;
-            private int cursor;
-
-            private ArraySliceIterator(ArraySlice coll) { this.coll = coll; this.cursor = coll.offset; }
-            @Override public boolean hasNext() { return cursor != -1; }
-
-            @Override
-            public Object next() {
-                if (cursor == -1 || coll.arry == null) throw new NoSuchElementException();
-                final Object ret = coll.arry[cursor++];
-                if (cursor == coll.arry.length)  cursor = -1;
-                return ret;
-            }
-        }
-
-        private static final long serialVersionUID = 1L;
-
-        private final Object[] arry;
-        private final int offset;
-
-        private ArraySlice(Object[] arry) {
-            if (arry != null && arry.length > 1) { this.arry = arry; offset = 1; }
-            else { this.arry = null; offset = -1; }
-        }
-
-        private ArraySlice(Object[] arry, int offset) {
-            if (arry != null && arry.length > offset) { this.arry = arry; this.offset = offset; }
-            else { this.arry = null; this.offset = -1; }
-        }
-
-        private ArraySlice(ArraySlice slice) {
-            if (slice.arry != null && slice.arry.length > slice.offset) { this.arry = slice.arry; offset = slice.offset + 1; }
-            else { this.arry = null; offset = -1; }
-        }
-
-        @Override public Object     car() { return arry == null || arry.length <= offset ? null : arry[offset]; }
-        @Override public Object rplaca(Object car) { arry[offset] = car; return this; }
-
-        @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
-
-        @Override public String toString() { return printSEx(true, false); }
-        @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
-
-        private String printSEx(boolean headOfList, boolean escapeAtoms) {
-            if (arry == null || arry.length <= offset) return LambdaJ.printSEx(null);
-            else {
-                final StringBuilder ret = new StringBuilder();
-                if (headOfList) ret.append('(');
-                boolean first = true;
-                for (int i = offset; i < arry.length; i++) {
-                    final Object o = arry[i];
-                    if (first) first = false;
-                    else ret.append(' ');
-                    _printSEx(ret::append, arry, o, true, escapeAtoms);
-                }
-                ret.append(')');
-                return ret.toString();
-            }
-        }
-    }
-
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
@@ -2697,23 +2697,23 @@ public class LambdaJ {
 
     /// ##  Error "handlers"
 
-    private static RuntimeException errorReaderError(String msg) {
+    static RuntimeException errorReaderError(String msg) {
         throw new LambdaJError(msg);
     }
 
-    private static RuntimeException errorMalformed(String func, String msg) {
+    static RuntimeException errorMalformed(String func, String msg) {
         throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
     }
 
-    private static RuntimeException errorMalformed(String func, String expected, Object actual) {
+    static RuntimeException errorMalformed(String func, String expected, Object actual) {
         throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
     }
 
-    private static void errorNotANumber(String func, Object n) {
+    static void errorNotANumber(String func, Object n) {
         throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
     }
 
-    private static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
+    static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
         final String argPhrase = expectedMin == expectedMax
                 ? expectedArgPhrase(expectedMin)
                 : (expectedMin + " to " + expectedMax + " arguments");
@@ -2726,7 +2726,7 @@ public class LambdaJ {
         }
     }
 
-    private static void errorVarargsCount(String func, int min, int actual) {
+    static void errorVarargsCount(String func, int min, int actual) {
         throw new LambdaJError(true, "%s: expected %s or more but got only %d", func, expectedArgPhrase(min), actualArgPhrase(actual));
     }
 
@@ -5029,19 +5029,20 @@ public class LambdaJ {
 
         private final Collection<LambdaJSymbol> reservedSymbols = new ArrayList<>();
 
-        private void notReserved(LambdaJSymbol sym) {
+        private void notReserved(String func, LambdaJSymbol sym) {
             if (sym == null)
-                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", "nil");
+                errorMalformed(func, "can't use reserved word nil as a symbol");
             if (reservedSymbols.contains(sym))
-                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", sym.toString());
+                errorMalformed(func, String.format("can't use reserved word %s as a symbol", sym.toString()));
         }
 
-        private void notReserved(Object sym) {
+        /** {@code sym} must be a symbol and it can't be a reserved word */
+        private void notReserved(String func, Object sym) {
             if (sym == null)
-                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", "nil");
-            requireSymbol(sym);
+                errorMalformed(func, "can't use reserved word nil as a symbol");
+            requireSymbol(func, sym);
             if (reservedSymbols.contains(sym))
-                throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", "compile", sym.toString());
+                errorMalformed(func, String.format("can't use reserved word %s as a symbol", sym.toString()));
         }
 
 
@@ -5182,7 +5183,7 @@ public class LambdaJ {
             }
 
             if (!implicitDecl.isEmpty()) {
-                throw new LambdaJError("undefined symbols: " + implicitDecl);
+                errorMalformed("compilation unit", "undefined symbols: " + implicitDecl);
             }
             implicitDecl = null;
 
@@ -5231,19 +5232,22 @@ public class LambdaJ {
                 if (op == intp.sDefine) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
+                }
 
-                } else if (op == intp.sDefun) {
+                else if (op == intp.sDefun) {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
+                }
 
-                } else if (op == intp.sDefmacro) {
+                else if (op == intp.sDefmacro) {
                     final Object sym = cadr(ccForm);
-                    notReserved(sym);
+                    notReserved(printSEx(op), sym);
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
+                }
 
-                } else if (op == intp.sProgn) {
+                else if (op == intp.sProgn) {
                     // toplevel progn will be replaced by the forms it contains
                     final Object body = cdr(ccForm);
                     if (consp(body)) {
@@ -5257,13 +5261,15 @@ public class LambdaJ {
                 if (intp.macros.containsKey(op)) {
                     final Object expansion = intp.evalMacro(op, (ConsCell)cdr(form), 0, 0, 0);
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
+                }
 
-                } else if (op == intp.sLoad) {
+                else if (op == intp.sLoad) {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(form));
                     oneArg("load", ccArgs);
                     globalEnv = loadFile(true, "load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
+                }
 
-                } else if (op == intp.sRequire) {
+                else if (op == intp.sRequire) {
                     final ConsCell ccArgs = listOrMalformed("require", cdr(form));
                     varargsMinMax("require", ccArgs, 1, 2);
                     if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
@@ -5273,21 +5279,24 @@ public class LambdaJ {
                         if (modFilePath == null) modFilePath = modName;
                         globalEnv = loadFile(true, "require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
                         if (!intp.modules.contains(modName))
-                            throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+                            errorMalformed("require", String.format("require'd file '%s' does not provide '%s'", modFilePath, modName));
                     }
+                }
 
-                } else if (op == intp.sProvide) {
+                else if (op == intp.sProvide) {
                     final ConsCell ccArgs = listOrMalformed("provide", cdr(form));
                     oneArg("provide", ccArgs);
                     if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     intp.modules.add(modName);
+                }
 
-                } else if (op == intp.sDeclaim) {
+                else if (op == intp.sDeclaim) {
                     intp.evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
                     bodyForms.add(form);
+                }
 
-                } else bodyForms.add(form);
+                else bodyForms.add(form);
 
                 if (op == intp.sDefine || op == intp.sDefun)
                     globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
@@ -5300,15 +5309,15 @@ public class LambdaJ {
 
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
          *  symbols that are reserved words throw an error. */
-        private ConsCell extenv(Object symbol, int sfx, ConsCell prev) {
-            requireSymbol(symbol);
+        private ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
+            requireSymbol(func, symbol);
             final LambdaJSymbol sym = (LambdaJSymbol)symbol;
-            notReserved(sym);
+            notReserved(func, sym);
             return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
         }
 
-        private static void requireSymbol(Object symbol) {
-            if (symbol != null && !(symbol instanceof LambdaJSymbol)) throw new LambdaJError(true, "not a symbol: %s", symbol);
+        private static void requireSymbol(String func, Object symbol) {
+            if (symbol != null && !(symbol instanceof LambdaJSymbol)) errorMalformed(func, "not a symbol: " + symbol);
         }
 
         /** extend environment w/o reserved word check */
@@ -5346,7 +5355,7 @@ public class LambdaJ {
             if (form == null) form = intern("nil");
             final ConsCell symentry = assq(form, env);
             if (symentry == null) {
-                if (passTwo) throw new LambdaJError(true, "undefined symbol %s", form.toString());
+                if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form.toString());
                 System.err.println("implicit declaration of " + form);
                 implicitDecl.add(form.toString());
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
@@ -5365,15 +5374,15 @@ public class LambdaJ {
         private void notDefined(String func, Object sym, ConsCell env) {
             final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
-                notReserved((LambdaJSymbol) car(prevEntry));
-                throw new LambdaJError(true, "%s: can't redefine symbol %s", func, sym);
+                notReserved(func, (LambdaJSymbol) car(prevEntry));
+                errorMalformed(func, String.format("can't redefine symbol %s", sym));
             }
         }
 
         private void defined(String func, Object sym, ConsCell env) {
             if (sym == null) sym = intern("nil");
             final ConsCell symentry = assq(sym, env);
-            if (symentry == null) throw new LambdaJError(true, "%s: undefined symbol %s", func, sym.toString());
+            if (symentry == null) errorMalformed(func, "undefined symbol " + sym.toString());
         }
 
 
@@ -5383,7 +5392,7 @@ public class LambdaJ {
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             final Object sym = cadr(form);
 
-            notReserved(sym);
+            notReserved("define", sym);
             notDefined("define", sym, env);
             final String javasym = mangle(sym.toString(), 0);
             env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
@@ -5408,7 +5417,7 @@ public class LambdaJ {
             final Object params = caddr(form);
             final Object body = cdddr(form);
 
-            notReserved(sym);
+            notReserved("defun", sym);
             notDefined("defun", sym, env);
             final String javasym = mangle(sym.toString(), 0);
             env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env);
@@ -5420,7 +5429,7 @@ public class LambdaJ {
                     + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
                     + "        final MurmelFunction func = (args0) -> {\n");
-            final ConsCell extenv = params(sb, params, env, 0, javasym, true);
+            final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             sb.append("        Object result0;\n");
             formsToJava(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
@@ -5483,7 +5492,7 @@ public class LambdaJ {
                 if (consp(form)) {
                     final ConsCell formCons = (ConsCell)form;
                     final Object op = car(formCons);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(formCons))) throw new LambdaJError(true, "%s: expected an operand list to follow operator but got %s", "eval", printSEx(form));
+                    if (!listp(cdr(formCons))) errorMalformed(printSEx(op), "an operand list to follow operator", printSEx(form));
                     final ConsCell args = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
 
 
@@ -5539,7 +5548,6 @@ public class LambdaJ {
                     if (intp.sDefine == op) {
                         if (rsfx != 1) throw new LambdaJError("define as non-toplevel form is not yet implemented");
                         final Object sym = car(args);
-                        notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
                         final String javasym = mangle(car(args).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
@@ -5548,7 +5556,6 @@ public class LambdaJ {
                     if (intp.sDefun == op) {
                         if (rsfx != 1) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
                         final Object sym = car(args);
-                        notReserved(sym); // todo notreserved und defined muesste eigentlich durch pass1 erledigt sein
                         defined("define", sym, env);
                         final String javasym = mangle(car(args).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
@@ -5729,7 +5736,7 @@ public class LambdaJ {
         private void lambdaToJava(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean argCheck) {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
             final String expr = "(lambda " + printSEx(car(args)) + ')';
-            env = params(sb, car(args), env, rsfx, expr, argCheck);
+            env = params("lambda", sb, car(args), env, rsfx, expr, argCheck);
             formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false);
             sb.append("        })");
         }
@@ -5749,11 +5756,10 @@ public class LambdaJ {
 
         private String setqToJava(WrappingWriter sb, ConsCell env, ConsCell topEnv, int rsfx, Object pairs) {
             final Object symbol = car(pairs);
-            requireSymbol(symbol);
-            notReserved(symbol);
+            notReserved("setq", symbol);
             final String javaName = javasym(symbol, env);
 
-            if (cdr(pairs) == null) throw new LambdaJError(true, "%s: odd number of arguments", "setq");
+            if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
             final Object valueForm = cadr(pairs);
 
             if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
@@ -5769,13 +5775,13 @@ public class LambdaJ {
         }
 
         /** args = (formsym (sym...) form...) */
-        private void labelToJava(WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void labelToJava(String func, WrappingWriter sb, final Object args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("new MurmelFunction() {\n");
             final Object symbol = car(args);
-            env = extenv(symbol, rsfx, env);
+            env = extenv(func, symbol, rsfx, env);
             sb.append("        private final Object ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n");
-            env = params(sb, cadr(args), env, rsfx, symbol.toString(), true);
+            env = params(func, sb, cadr(args), env, rsfx, symbol.toString(), true);
             formsToJava(sb, (ConsCell)cddr(args), env, topEnv, rsfx, false);
             sb.append("        } }");
         }
@@ -5796,12 +5802,12 @@ public class LambdaJ {
 
             final ConsCell params = paramList("labels", localFuncs, true);
             for (Object localFunc: params) {
-                env = extenv(localFunc, rsfx, env);
+                env = extenv("labels", localFunc, rsfx, env);
             }
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
                 sb.append("        private final Object ").append(javasym(car(symbolParamsAndBody), env)).append(" = ");
-                labelToJava(sb, symbolParamsAndBody, env, topEnv, rsfx+1);
+                labelToJava("labels", sb, symbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
             }
 
@@ -5819,7 +5825,7 @@ public class LambdaJ {
                 // named let
                 if (car(args) == intp.sDynamic) errorMalformed("let", "dynamic only allowed with let*");
                 final ConsCell params = paramList("named let", cadr(args), false);
-                labelToJava(sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
+                labelToJava("named let", sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
                 bindings = (ConsCell)cadr(args);
             }
             else {
@@ -5866,7 +5872,7 @@ public class LambdaJ {
                 final Set<Object> seen = new HashSet<>();
                 for (Object letVar : params) {
                     if (seen.add(letVar)) {
-                        final ConsCell _env = extenv(letVar, rsfx, env);
+                        final ConsCell _env = extenv(op, letVar, rsfx, env);
                         if (letrec) env = _env;
                         final String letVarName = javasym(letVar, _env);
                         sb.append("        private Object ").append(letVarName).append(";\n");
@@ -5890,12 +5896,12 @@ public class LambdaJ {
                     sb.append("        { ").append(symName).append(" = ");
                     if (caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
                     formToJava(sb, form, env, topEnv, rsfx, false);
-                    if (!letrec) env = extenv(sym, rsfx, env);
+                    if (!letrec) env = extenv(op, sym, rsfx, env);
                     sb.append("; }\n");
                 }
 
             if (name != null) {
-                env = extenv(name, rsfx, env);
+                env = extenv(op, name, rsfx, env);
                 sb.append("        private final Object ").append(javasym(name, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args) {\n");
@@ -5947,7 +5953,7 @@ public class LambdaJ {
                 }
                 else {
                     final String expr = "(let dynamic " + printSEx(params) + ')';
-                    _env = params(sb, params, env, rsfx + 1, expr, false);
+                    _env = params("let dynamic", sb, params, env, rsfx + 1, expr, false);
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
@@ -6011,7 +6017,7 @@ public class LambdaJ {
         }
 
         /** generate variables from arg array */
-        private ConsCell params(WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
+        private ConsCell params(String func, WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
             if (paramList == null) {
                 if (check) sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
                 return env;
@@ -6030,22 +6036,22 @@ public class LambdaJ {
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
                     final Object param = car(params);
-                    if (!seen.add(param)) throw new LambdaJError(true, "duplicate symbol %s", param);
+                    if (!seen.add(param)) errorMalformed(func, "duplicate symbol " +  param);
                     //env = extenv(param, rsfx, env);
                     //sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
-                    requireSymbol(param);
+                    requireSymbol(func, param);
                     env = extenvIntern((LambdaJSymbol)param, "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
-                    if (!seen.add(params)) throw new LambdaJError(true, "duplicate symbol %s", params);
-                    env = extenv(params, rsfx, env);
+                    if (!seen.add(params)) errorMalformed(func, "duplicate symbol " + params);
+                    env = extenv(func, params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");
                     else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
                     return env;
                 }
                 
-                else errorMalformed("parameter list", "a symbol or a list of symbols", params);
+                else errorMalformed(func, "a symbol or a list of symbols", params);
 
                 params = cdr(params);
             }
@@ -6054,7 +6060,7 @@ public class LambdaJ {
 
         private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
             final LambdaJ intp = this.intp;
-            if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
+            if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
             final String fileName = (String) argument;
             final SymbolTable prevSymtab = st;
             final Path prevPath = intp.symtab instanceof SExpressionParser ? ((SExpressionParser)intp.symtab).filePath : null;
