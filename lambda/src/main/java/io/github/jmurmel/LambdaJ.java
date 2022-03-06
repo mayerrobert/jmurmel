@@ -1313,11 +1313,11 @@ public class LambdaJ {
     private void reserve(Object word) { reservedWords = cons(word, reservedWords); }
 
     /** Throw error if sym is a reserved symbol */
-    private void notReserved(final String op, final Object sym) {
+    void notReserved(final String op, final Object sym) {
         if (sym == null)
-            throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", op, "nil");
+            errorMalformed(op, "can't use reserved word nil as a symbol");
         if (member(sym, reservedWords))
-            throw new LambdaJError(true, "%s: can't use reserved word %s as a symbol", op, sym.toString());
+            errorMalformed(op, String.format("can't use reserved word %s as a symbol", sym.toString()));
     }
 
     /// Symboltable
@@ -5018,35 +5018,8 @@ public class LambdaJ {
             this.intp = intp;
 
             this.javaCompiler = new JavaCompilerHelper(outPath);
-            for (String s: reservedWords) {
-                reservedSymbols.add(intern(s));
-            }
         }
 
-
-        private static final String[] reservedWords = {
-                "nil", "t",
-                "lambda", "quote", "cond", "labels", "if", "define", "defun", "let", "let*", "letrec", "setq",
-                "apply", "progn", "load", "require", "provide", "declaim"
-        };
-
-        private final Collection<LambdaJSymbol> reservedSymbols = new ArrayList<>();
-
-        private void notReserved(String func, LambdaJSymbol sym) {
-            if (sym == null)
-                errorMalformed(func, "can't use reserved word nil as a symbol");
-            if (reservedSymbols.contains(sym))
-                errorMalformed(func, String.format("can't use reserved word %s as a symbol", sym.toString()));
-        }
-
-        /** {@code sym} must be a symbol and it can't be a reserved word */
-        private void notReserved(String func, Object sym) {
-            if (sym == null)
-                errorMalformed(func, "can't use reserved word nil as a symbol");
-            requireSymbol(func, sym);
-            if (reservedSymbols.contains(sym))
-                errorMalformed(func, String.format("can't use reserved word %s as a symbol", sym.toString()));
-        }
 
         private void notAPrimitive(String func, Object symbol, String javaName) {
             if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("%s: assigning primitives is not implemented: %s", func, symbol.toString());
@@ -5248,7 +5221,8 @@ public class LambdaJ {
 
                 else if (op == intp.sDefmacro) {
                     final Object sym = cadr(ccForm);
-                    notReserved(printSEx(op), sym);
+                    requireSymbol("defmacro", sym);
+                    intp.notReserved("defmacro", sym);
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
@@ -5319,7 +5293,7 @@ public class LambdaJ {
         private ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
             requireSymbol(func, symbol);
             final LambdaJSymbol sym = (LambdaJSymbol)symbol;
-            notReserved(func, sym);
+            intp.notReserved(func, sym);
             return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
         }
 
@@ -5381,7 +5355,7 @@ public class LambdaJ {
         private void notDefined(String func, Object sym, ConsCell env) {
             final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
-                notReserved(func, (LambdaJSymbol) car(prevEntry));
+                intp.notReserved(func, (LambdaJSymbol) car(prevEntry));
                 errorMalformed(func, String.format("can't redefine symbol %s", sym));
             }
         }
@@ -5399,7 +5373,8 @@ public class LambdaJ {
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             final Object sym = cadr(form);
 
-            notReserved("define", sym);
+            requireSymbol("define", sym);
+            intp.notReserved("define", sym);
             notDefined("define", sym, env);
             final String javasym = mangle(sym.toString(), 0);
             env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
@@ -5424,7 +5399,8 @@ public class LambdaJ {
             final Object params = caddr(form);
             final Object body = cdddr(form);
 
-            notReserved("defun", sym);
+            requireSymbol("defun", sym);
+            intp.notReserved("defun", sym);
             notDefined("defun", sym, env);
             final String javasym = mangle(sym.toString(), 0);
             env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env);
@@ -5763,7 +5739,8 @@ public class LambdaJ {
 
         private String setqToJava(WrappingWriter sb, ConsCell env, ConsCell topEnv, int rsfx, Object pairs) {
             final Object symbol = car(pairs);
-            notReserved("setq", symbol);
+            requireSymbol("setq", symbol);
+            intp.notReserved("setq", symbol);
             final String javaName = javasym(symbol, env);
 
             if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");

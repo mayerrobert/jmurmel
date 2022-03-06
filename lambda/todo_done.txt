@@ -1341,3 +1341,5 @@ trace, untrace
    -> oder "unsupported" melden
 
 (let dynamic ((format... erzeugt ungültigen code
+
+notReserved & co müssen im compile nicht ein zweites mal umgesetzt werden
