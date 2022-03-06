@@ -1897,7 +1897,7 @@ public class LambdaJ {
                 if (letDynamic) newBinding = assq(sym, topEnv);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
-                if (caddr(binding) != null) throw errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                if (consp(binding) && caddr(binding) != null) throw errorMalformed(op, "illegal variable specification " + printSEx(binding));
                 final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
                     if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
@@ -1987,7 +1987,6 @@ public class LambdaJ {
         if (bindings != null)
             for (Object binding: bindings) {
                 final Object symbol = car(binding);
-                notReserved(op, symbol);
                 if (bodyParams == null) {
                     bodyParams = cons(symbol, null);
                     insertPos = bodyParams;
@@ -5026,17 +5025,19 @@ public class LambdaJ {
 
         /// Environment for compiled Murmel:
         /// * nil, t, pi
+        /// * *command-line-argument-list*, internal-time-units-per-second
         /// * car, cdr, cons, rplaca, rplacd
         /// * eval, eq, eql, null, intern, write, writeln, lnwrite
         /// * atom, consp, listp, symbolp, numberp, stringp, characterp, integerp, floatp
-        /// * assoc, list, append
+        /// * assoc, assq, list, list*, append
+        /// * +, *, -, /, =, <, <=, >=, >
         /// * round, floor, ceiling, truncate
         /// * fround, ffloor, fceiling, ftruncate
         /// * sqrt, log, log10, exp, expt, mod, rem, signum
-        /// * +, *, -, /, =, <, <=, >=, > are handled as special forms (inlined for performance) and are primitives as well (for apply)
-        /// * internal-time-units-per-second
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * format, format-locale, char-code, code-char, string=, string->list, list->string
+        /// * gensym, trace, untrace, (macroexpand-1), ::
+        /// * turtle-functions
         ///
         private static final String[] globalvars = { "nil", "t", "pi" };
         private static final String[][] aliasedGlobals = {
@@ -5819,7 +5820,7 @@ public class LambdaJ {
             if (bindings != null)
                 for (Object binding: bindings) {
                     sb.append("\n        , ");
-                    if (caddr(binding) != null) errorMalformed("let", "illegal variable specification " + printSEx(binding));
+                    if (consp(binding) && caddr(binding) != null) errorMalformed("let", "illegal variable specification " + printSEx(binding));
                     formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
             sb.append(')');
@@ -5876,7 +5877,7 @@ public class LambdaJ {
                     }
                     final String symName = mangle(sym.toString(), rsfx);
                     sb.append("        { ").append(symName).append(" = ");
-                    if (caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
                     formToJava(sb, form, env, topEnv, rsfx, false);
                     if (!letrec) env = extenv(op, sym, rsfx, env);
                     sb.append("; }\n");
@@ -5893,6 +5894,7 @@ public class LambdaJ {
 
         /** let dynamic and let* dynamic */
         private void letDynamicToJava(boolean letStar, WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            final String op = letStar ? "let* dynamic" : "let dynamic";
             sb.append(isLast ? "tailcall(" : "funcall(");
 
             sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n");
@@ -5900,7 +5902,7 @@ public class LambdaJ {
             boolean hasGlobal = false;
             
             final Object bindings = car(args);
-            final ConsCell params = paramList(letStar ? "let* dynamic" : "let dynamic", bindings, false);
+            final ConsCell params = paramList(op, bindings, false);
             ConsCell _env = env;
             if (params != null) {
                 if (letStar) {
@@ -5976,7 +5978,7 @@ public class LambdaJ {
             if (bindings != null)
                 for (Object binding: (ConsCell)bindings) {
                     sb.append("\n        , ");
-                    if (caddr(binding) != null) errorMalformed("let", "illegal variable specification " + printSEx(binding));
+                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
                     if (letStar) sb.append("(Object)null");
                     else formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
@@ -6020,6 +6022,7 @@ public class LambdaJ {
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
                     final Object param = car(params);
+                    intp.notReserved(func, param);
                     if (!seen.add(param)) errorMalformed(func, "duplicate symbol " +  param);
                     //env = extenv(param, rsfx, env);
                     //sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
@@ -6028,6 +6031,7 @@ public class LambdaJ {
                 }
 
                 else if (symbolp(params)) {
+                    intp.notReserved(func, params);
                     if (!seen.add(params)) errorMalformed(func, "duplicate symbol " + params);
                     env = extenv(func, params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");
