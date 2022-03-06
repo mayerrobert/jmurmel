@@ -1343,3 +1343,5 @@ trace, untrace
 (let dynamic ((format... erzeugt ungültigen code
 
 notReserved & co müssen im compile nicht ein zweites mal umgesetzt werden
+
+Compiler.libdir ist unused?!?

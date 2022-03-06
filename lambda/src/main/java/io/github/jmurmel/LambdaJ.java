@@ -5004,13 +5004,10 @@ public class LambdaJ {
     /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
-        private final Path libDir;
         private final JavaCompilerHelper javaCompiler;
         private final LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
-            this.libDir = libDir;
-
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, libDir);
             intp.init(() -> -1, System.out::print);
             intp.setSymtab(st);
