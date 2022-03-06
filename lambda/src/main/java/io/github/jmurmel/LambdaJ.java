@@ -1503,39 +1503,39 @@ public class LambdaJ {
 
                 /// eval - the form is enclosed in parentheses, either a special form or a function application
                 else if (consp(form)) {
-                    final ConsCell formCons = (ConsCell)form;
-                    operator = car(formCons);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(formCons))) errorMalformed("eval", "an operand list to follow operator " + operator, cdr(formCons));
-                    final ConsCell arguments = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
+                    final ConsCell ccForm = (ConsCell)form;
+                    operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                    if (!listp(cdr(ccForm))) errorMalformed("eval", "an operand list to follow operator " + operator, cdr(ccForm));
+                    final ConsCell ccArguments = (ConsCell) cdr(ccForm);   // list with remaining atoms/ expressions
 
 
                     /// eval - special forms
 
                     /// eval - (quote exp) -> exp
                     if (operator == sQuote) {
-                        oneArg("quote", arguments);
-                        result = car(arguments);
+                        oneArg("quote", ccArguments);
+                        result = car(ccArguments);
                         return result;
                     }
 
                     /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                     if (operator == sLambda) {
                         result = "#<lambda>";
-                        return makeClosureFromForm(formCons, env);
+                        return makeClosureFromForm(ccForm, env);
                     }
 
                     if (operator == sSetQ) {
-                        result = evalSetq(arguments, env, stack, level, traceLvl);
+                        result = evalSetq(ccArguments, env, stack, level, traceLvl);
                         return result;
                     }
 
                     if (operator == sDefmacro) {
-                        result = evalDefmacro(arguments, env, form);
+                        result = evalDefmacro(ccArguments, env, form);
                         return result;
                     }
 
                     if (operator == sDeclaim) {
-                        result = evalDeclaim(level, arguments);
+                        result = evalDeclaim(level, ccArguments);
                         return result;
                     }
 
@@ -1544,8 +1544,8 @@ public class LambdaJ {
 
                     /// eval - (define symbol exp) -> symbol with a side of global environment extension
                     if (operator == sDefine) {
-                        twoArgs("define", arguments);
-                        final Object symbol = car(arguments);
+                        twoArgs("define", ccArguments);
+                        final Object symbol = car(ccArguments);
                         if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
                         notReserved("define", symbol);
                         final ConsCell envEntry = assq(symbol, topEnv);
@@ -1553,7 +1553,7 @@ public class LambdaJ {
                         // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
                         //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
-                        final Object value = eval(cadr(arguments), env, stack, level, traceLvl);
+                        final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
                         if (envEntry == null) insertFront(topEnv, symbol, value);
                         else envEntry.rplacd(value);
 
@@ -1564,8 +1564,8 @@ public class LambdaJ {
                     /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                     // shortcut for (define symbol (lambda (params...) forms...))
                     if (operator == sDefun) {
-                        varargsMin("defun", arguments, 2);
-                        form = list(sDefine, car(arguments), cons(sLambda, cons(cadr(arguments), cddr(arguments))));
+                        varargsMin("defun", ccArguments, 2);
+                        form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
                         continue tailcall;
                     }
 
@@ -1574,11 +1574,11 @@ public class LambdaJ {
 
                     /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                     if (operator == ocEval) {
-                        varargsMinMax("eval", arguments, 1, 2);
-                        form = car(arguments);
-                        if (cdr(arguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
+                        varargsMinMax("eval", ccArguments, 1, 2);
+                        form = car(ccArguments);
+                        if (cdr(ccArguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
                         else {
-                            final Object additionalEnv = cadr(arguments);
+                            final Object additionalEnv = cadr(ccArguments);
                             if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
                             env = (ConsCell) append2(additionalEnv, topEnv);
                         }
@@ -1587,59 +1587,59 @@ public class LambdaJ {
 
                     /// eval - (if condform form optionalform) -> object
                     if (operator == sIf) {
-                        varargsMinMax("if", arguments, 2, 3);
-                        if (eval(car(arguments), env, stack, level, traceLvl) != null) {
-                            form = cadr(arguments); isTc = true; continue tailcall;
-                        } else if (caddr(arguments) != null) {
-                            form = caddr(arguments); isTc = true; continue tailcall;
+                        varargsMinMax("if", ccArguments, 2, 3);
+                        if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
+                            form = cadr(ccArguments); isTc = true; continue tailcall;
+                        } else if (caddr(ccArguments) != null) {
+                            form = caddr(ccArguments); isTc = true; continue tailcall;
                         } else { result = null; return null; } // condition eval'd to false, no else form
                     }
 
                     /// eval - (load filespec) -> object
                     if (operator == sLoad) {
-                        oneArg("load", arguments);
-                        result = loadFile("load", car(arguments));
+                        oneArg("load", ccArguments);
+                        result = loadFile("load", car(ccArguments));
                         return result;
                     }
 
                     /// eval - (require modulename optfilespec) -> object
                     if (operator == sRequire) {
-                        result = evalRequire(arguments);
+                        result = evalRequire(ccArguments);
                         return result;
                     }
 
                     /// eval - (provide modulename) -> nil
                     if (operator == sProvide) {
-                        result = evalProvide(arguments);
+                        result = evalProvide(ccArguments);
                         return result;
                     }
 
                     // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
-                    ConsCell forms = null;
+                    ConsCell ccForms = null;
 
                     /// eval - (progn forms...) -> object
                     if (operator == sProgn) {
-                        forms = arguments;
+                        ccForms = ccArguments;
                         // fall through to "eval a list of forms"
 
                     /// eval - (cond (condform forms...)... ) -> object
                     } else if (operator == sCond) {
-                        if (arguments != null)
-                            for (Object c: arguments) {
+                        if (ccArguments != null)
+                            for (Object c: ccArguments) {
                                 if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
                                 if (eval(car(c), env, stack, level, traceLvl) != null) {
-                                    forms = (ConsCell) cdr(c);
+                                    ccForms = (ConsCell) cdr(c);
                                     break;
                                 }
                             }
 
-                        if (forms == null) { result = null; return null; } // no condition was true
+                        if (ccForms == null) { result = null; return null; } // no condition was true
                         // fall through to "eval a list of forms"
 
                     /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                     } else if (operator == sLabels) {
-                        final ConsCell[] ret = evalLabels(arguments, env);
-                        forms = ret[0];
+                        final ConsCell[] ret = evalLabels(ccArguments, env);
+                        ccForms = ret[0];
                         env = ret[1];
                         // fall through to "eval a list of forms"
 
@@ -1648,14 +1648,14 @@ public class LambdaJ {
                     /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
                     /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                     } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
-                        final ConsCell[] formsAndEnv = evalLet(operator, arguments, env, restore, stack, level, traceLvl);
-                        forms = formsAndEnv[0];
+                        final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
+                        ccForms = formsAndEnv[0];
                         env = formsAndEnv[1];
                         restore = formsAndEnv[2];
                         // fall through to "eval a list of forms"
 
                     } else if (macros.containsKey(operator)) {
-                        form = evalMacro(operator, arguments, stack, level, traceLvl);
+                        form = evalMacro(operator, ccArguments, stack, level, traceLvl);
                         isTc = true; continue tailcall;
                     }
 
@@ -1668,10 +1668,10 @@ public class LambdaJ {
                         /// eval - apply function to list
                         /// eval - (apply form argform) -> object
                         if (operator == sApply) {
-                            twoArgs("apply", arguments);
-                            final Object applyFunc = car(arguments);
+                            twoArgs("apply", ccArguments);
+                            final Object applyFunc = car(ccArguments);
                             func = eval(applyFunc, env, stack, level, traceLvl);
-                            final Object maybeArgList = eval(cadr(arguments), env, stack, level, traceLvl);
+                            final Object maybeArgList = eval(cadr(ccArguments), env, stack, level, traceLvl);
                             argList = listOrMalformed("apply", maybeArgList);
                             if (speed >= 1 && symbolp(applyFunc)) {
                                 // func = eval(... was performed unneccesarily
@@ -1683,7 +1683,7 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            argList = evlis(arguments, env, stack, level, traceLvl);
+                            argList = evlis(ccArguments, env, stack, level, traceLvl);
                             if (speed >= 1) {
                                 result = evalOpencode(operator, argList);
                                 if (result != NOT_HANDLED) return result;
@@ -1714,7 +1714,7 @@ public class LambdaJ {
                             env = zip(car(lambda), argList, closure != null ? closure : env);
 
                             if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
-                            forms = (ConsCell) cdr(lambda);
+                            ccForms = (ConsCell) cdr(lambda);
                             // fall through to "eval a list of forms"
 
                         } else {
@@ -1724,11 +1724,11 @@ public class LambdaJ {
 
                     /// eval - eval a list of forms
                     // todo dotted list wird cce geben
-                    for (; forms != null && cdr(forms) != null; forms = (ConsCell) cdr(forms))
-                        eval(car(forms), env, stack, level, traceLvl);
-                    if (forms != null) {
+                    for (; ccForms != null && cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms))
+                        eval(car(ccForms), env, stack, level, traceLvl);
+                    if (ccForms != null) {
                         traceStack = push(operator, traceStack);
-                        form = car(forms); isTc = true; func = null; continue tailcall;
+                        form = car(ccForms); isTc = true; func = null; continue tailcall;
                     }
 
                     result = null; return null; // lambda/ progn/ labels/... w/o body
@@ -1863,16 +1863,16 @@ public class LambdaJ {
         final String op = letDynamic ? (operator + " dynamic") : (namedLet ? "named " : "") + operator;
         final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
-        final Object _bindings = car(bindingsAndBodyForms);
-        if (!listp(_bindings)) throw errorMalformed(op, "a list of bindings", _bindings);
-        final ConsCell bindings = (ConsCell)_bindings;
+        final Object bindings = car(bindingsAndBodyForms);
+        if (!listp(bindings)) throw errorMalformed(op, "a list of bindings", bindings);
+        final ConsCell ccBindings = (ConsCell)bindings;
 
         ConsCell extenv = env;
-        if (bindings != null) {
+        if (ccBindings != null) {
             final Set<Object> seen = new HashSet<>();
             ConsCell newValues = null; // used for let dynamic
             extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
-            for (Object binding : bindings) {
+            for (Object binding : ccBindings) {
                 final Object sym;
                 final Object bindingForm;
 
@@ -1912,13 +1912,13 @@ public class LambdaJ {
                 ((ConsCell)car(c)).rplacd(cdr(c));
             }
         }
-        final ConsCell _forms = (ConsCell)cdr(bindingsAndBodyForms);
+        final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
-            final ConsCell bodyParams = extractParamList(op, bindings);
-            final Object bodyForms = makeClosure(cons(bodyParams, _forms), extenv);   // (optsymbol . (lambda (params bodyforms)))
-            insertFront(extenv, car(arguments), bodyForms);
+            final ConsCell bodyParams = extractParamList(op, ccBindings);
+            final Object closure = makeClosure(cons(bodyParams, bodyForms), extenv);   // (optsymbol . (lambda (params bodyforms)))
+            insertFront(extenv, car(arguments), closure);
         }
-        return new ConsCell[] {_forms, extenv, restore};
+        return new ConsCell[] {bodyForms, extenv, restore};
     }
     
     private Object evalMacro(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
@@ -2435,10 +2435,10 @@ public class LambdaJ {
     static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assq", printSEx(maybeList));
-        for (Object env: (ConsCell) maybeList) {
-            if (env != null) {
-                final ConsCell _env = (ConsCell) env;
-                if (atom == car(_env)) return _env;
+        for (Object entry: (ConsCell) maybeList) {
+            if (entry != null) {
+                final ConsCell ccEntry = (ConsCell) entry;
+                if (atom == car(ccEntry)) return ccEntry;
             }
         }
         return null;
@@ -2447,10 +2447,10 @@ public class LambdaJ {
     static ConsCell assoc(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
-        for (Object item: (ConsCell) maybeList) {
-            if (item != null) { // ignore null items
-                final ConsCell itemAsCons = (ConsCell) item;
-                if (eql(atom, car(itemAsCons))) return itemAsCons;
+        for (Object entry: (ConsCell) maybeList) {
+            if (entry != null) { // ignore null items
+                final ConsCell ccEntry = (ConsCell) entry;
+                if (eql(atom, car(ccEntry))) return ccEntry;
             }
         }
         return null;
@@ -5472,30 +5472,30 @@ public class LambdaJ {
                 }
 
                 if (consp(form)) {
-                    final ConsCell formCons = (ConsCell)form;
-                    final Object op = car(formCons);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(formCons))) errorMalformed(printSEx(op), "an operand list to follow operator", printSEx(form));
-                    final ConsCell args = (ConsCell) cdr(formCons);   // list with remaining atoms/ expressions
+                    final ConsCell ccForm = (ConsCell)form;
+                    final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                    if (!listp(cdr(ccForm))) errorMalformed(printSEx(operator), "an operand list to follow operator", printSEx(form));
+                    final ConsCell ccArguments = (ConsCell) cdr(ccForm);   // list with remaining atoms/ expressions
 
 
                     /// * special forms:
 
                     ///     - quote
-                    if (intp.sQuote == op) { quotedFormToJava(sb, car(args)); return; }
+                    if (intp.sQuote == operator) { quotedFormToJava(sb, car(ccArguments)); return; }
 
                     ///     - if
-                    if (intp.sIf == op) {
+                    if (intp.sIf == operator) {
                         sb.append("((");
-                        formToJava(sb, car(args), env, topEnv, rsfx, false); sb.append(") != null\n        ? ("); formToJava(sb, cadr(args), env, topEnv, rsfx, isLast);
-                        if (caddr(args) != null) { sb.append(")\n        : ("); formToJava(sb, caddr(args), env, topEnv, rsfx, isLast); sb.append("))"); }
+                        formToJava(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(") != null\n        ? ("); formToJava(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
+                        if (caddr(ccArguments) != null) { sb.append(")\n        : ("); formToJava(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
                         else sb.append(")\n        : null)");
                         return;
                     }
 
                     ///     - cond
-                    if (intp.sCond == op) {
+                    if (intp.sCond == operator) {
                         sb.append("false ? null");
-                        for (Object cond: args) {
+                        for (Object cond: ccArguments) {
                             sb.append("\n        : (("); formToJava(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
                             prognToJava(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
@@ -5505,20 +5505,20 @@ public class LambdaJ {
                     }
 
                     ///     - lambda
-                    if (intp.sLambda == op) {
-                        lambdaToJava(sb, args, env, topEnv, rsfx, true);
+                    if (intp.sLambda == operator) {
+                        lambdaToJava(sb, ccArguments, env, topEnv, rsfx, true);
                         return;
                     }
 
                     ///     - setq
-                    if (intp.sSetQ == op) {
-                        if (args == null) sb.append("null");
-                        else if (cddr(args) == null)
-                            setqToJava(sb, env, topEnv, rsfx, args);
+                    if (intp.sSetQ == operator) {
+                        if (ccArguments == null) sb.append("null");
+                        else if (cddr(ccArguments) == null)
+                            setqToJava(sb, env, topEnv, rsfx, ccArguments);
                         else {
                             sb.append("((Supplier<Object>)(() -> {\n");
                             String javaName = null;
-                            for (Object pairs = args; pairs != null; pairs = cddr(pairs)) {
+                            for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
                                 sb.append("        ");
                                 javaName = setqToJava(sb, env, topEnv, rsfx-1, pairs);
                                 sb.append(";\n");
@@ -5527,24 +5527,24 @@ public class LambdaJ {
                         }
                         return;
                     }
-                    if (intp.sDefine == op) {
-                        if (rsfx != 1) throw new LambdaJError("define as non-toplevel form is not yet implemented");
-                        final Object sym = car(args);
+                    if (intp.sDefine == operator) {
+                        if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
+                        final Object sym = car(ccArguments);
                         defined("define", sym, env);
-                        final String javasym = mangle(car(args).toString(), 0);
+                        final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
                         return;
                     }
-                    if (intp.sDefun == op) {
-                        if (rsfx != 1) throw new LambdaJError("defun as non-toplevel form is not yet implemented");
-                        final Object sym = car(args);
+                    if (intp.sDefun == operator) {
+                        if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
+                        final Object sym = car(ccArguments);
                         defined("define", sym, env);
-                        final String javasym = mangle(car(args).toString(), 0);
+                        final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
                         return;
                     }
-                    if (intp.sDefmacro == op) {
-                        if (rsfx != 1) throw new LambdaJError("defmacro as non-toplevel form is not yet implemented");
+                    if (intp.sDefmacro == operator) {
+                        if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
                         final Object sym = cadr(form);
                         final Object result = intp.eval(form, null);
                         if (result != null) sb.append("intern(\"").append(sym).append("\")");
@@ -5553,106 +5553,102 @@ public class LambdaJ {
                     }
 
                     ///     - apply
-                    if (intp.sApply == op) {
-                        if (intp.speed >= 1 && symbolp(car(args))) {
-                            if (opencodeApply(sb, car(args), (ConsCell)cdr(args), env, topEnv, rsfx)) return;
-                        }
+                    if (intp.sApply == operator) {
+                        if (intp.speed >= 1 && symbolp(car(ccArguments)) && opencodeApply(sb, car(ccArguments), (ConsCell)cdr(ccArguments), env, topEnv, rsfx)) return;
                         sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
-                        formToJava(sb, car(args), env, topEnv, rsfx, false);
+                        formToJava(sb, car(ccArguments), env, topEnv, rsfx, false);
                         sb.append("\n        , ");
-                        formToJava(sb, cadr(args), env, topEnv, rsfx, false);
+                        formToJava(sb, cadr(ccArguments), env, topEnv, rsfx, false);
                         sb.append(')');
                         return;
                     }
 
                     ///     - progn
-                    if (intp.sProgn == op) {
-                        prognToJava(sb, args, env, topEnv, rsfx, isLast);
+                    if (intp.sProgn == operator) {
+                        prognToJava(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                    if (intp.sLabels == op) {
-                        labelsToJava(sb, args, env, topEnv, rsfx, isLast);
+                    if (intp.sLabels == operator) {
+                        labelsToJava(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
-                    if (intp.sLet == op) {
-                        if (car(args) == intp.sDynamic)
-                            letDynamicToJava(false, sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
+                    if (intp.sLet == operator) {
+                        if (car(ccArguments) == intp.sDynamic)
+                            letDynamicToJava(false, sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, isLast);
                         else
-                            letToJava(sb, args, env, topEnv, rsfx, isLast);
+                            letToJava(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                    if (intp.sLetStar == op) {
-                        if (car(args) == intp.sDynamic)
-                            letDynamicToJava(true, sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
+                    if (intp.sLetStar == operator) {
+                        if (car(ccArguments) == intp.sDynamic)
+                            letDynamicToJava(true, sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, isLast);
                         else
-                            letrecToJava(false, sb, args, env, topEnv, rsfx, isLast);
+                            letrecToJava(false, sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
 
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
-                    if (intp.sLetrec == op) {
-                        letrecToJava(true, sb, args, env, topEnv, rsfx, isLast);
+                    if (intp.sLetrec == operator) {
+                        letrecToJava(true, sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
-                    if (intp.sLoad == op) {
-                        varargs1("load", args);
+                    if (intp.sLoad == operator) {
+                        varargs1("load", ccArguments);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
-                        loadFile(false, "load", sb, car(args), env, topEnv, rsfx-1, isLast, null, null);
+                        loadFile(false, "load", sb, car(ccArguments), env, topEnv, rsfx-1, isLast, null, null);
                         return;
                     }
 
-                    if (intp.sRequire == op) {
+                    if (intp.sRequire == operator) {
                         // pass1 has replaced all toplevel (require)s with the file contents
                         errorNotImplemented("require as non-toplevel form is not implemented");
                     }
 
-                    if (intp.sProvide == op) {
+                    if (intp.sProvide == operator) {
                         // pass 2 shouldn't see this
                         errorNotImplemented("provide as non-toplevel form is not implemented");
                     }
 
-                    if (intp.sDeclaim == op) {
-                        intp.evalDeclaim(rsfx, args);
+                    if (intp.sDeclaim == operator) {
+                        intp.evalDeclaim(rsfx, ccArguments);
                         sb.append("null");
                         return;
                     }
 
                     /// * macro expansion
-                    if (intp.macros.containsKey(op)) {
-                        final Object expansion = intp.evalMacro(op, args, 0, 0, 0);
+                    if (intp.macros.containsKey(operator)) {
+                        final Object expansion = intp.evalMacro(operator, ccArguments, 0, 0, 0);
                         formToJava(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
-                    if (isSymbol(op, "macroexpand-1")) {
-                        if (intp.sQuote != caar(args)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
-                        quotedFormToJava(sb, intp.macroexpand1((ConsCell)cdar(args)));
+                    if (isSymbol(operator, "macroexpand-1")) {
+                        if (intp.sQuote != caar(ccArguments)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        quotedFormToJava(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)));
                         return;
                     }
 
                     /// * some functions and operators are opencoded:
-                    if (intp.speed >= 1) {
-                        if (opencode(sb, op, args, env, topEnv, rsfx)) return;
-                    }
+                    if (intp.speed >= 1 && opencode(sb, operator, ccArguments, env, topEnv, rsfx)) return;
 
                     /// * function call
                     sb.append(isLast ? "tailcall(" : "funcall(");
-                    formToJava(sb, op, env, topEnv, rsfx, false);
-                    if (args != null) {
-                        for (Object arg: args) {
+                    formToJava(sb, operator, env, topEnv, rsfx, false);
+                    if (ccArguments != null) {
+                        for (Object arg: ccArguments) {
                             sb.append("\n        , ");
                             formToJava(sb, arg, env, topEnv, rsfx, false);
                         }

@@ -10,7 +10,6 @@ müssen die compiler rt funktionen public sein oder reicht protected? geht stati
 
 
 
-vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 
 statt überall "throw new LambdaJError(..."

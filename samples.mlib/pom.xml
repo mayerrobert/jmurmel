@@ -52,6 +52,29 @@
                     </execution>
 
                     <execution>
+                        <id>run-mlib-test-speed0</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <!-- automatically creates the classpath using all project dependencies,
+                                     also adding the project build directory -->
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>../samples.murmel/speed0.lisp</argument>
+                                <argument>mlib-test.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>run-compiled-mlib-test</id>
                         <phase>test</phase>
                         <goals>
@@ -72,7 +95,29 @@
                         </configuration>
                     </execution>
 
-                    <!-- todo vielleicht gabriel samples auf mlib umbauen
+                    <execution>
+                        <id>run-compiled-mlib-test-speed0</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>../samples.murmel/speed0.lisp</argument>
+                                <argument>mlib-test.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- these take 10 seconds each
                     <execution>
                         <id>run-gabriel</id>
                         <phase>test</phase>
