@@ -5004,24 +5004,23 @@ public class LambdaJ {
     /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
-        private LambdaJ.SymbolTable st;
         private final Path libDir;
         private final JavaCompilerHelper javaCompiler;
         private final LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
-            this.st = st;
             this.libDir = libDir;
-            this.javaCompiler = new JavaCompilerHelper(outPath);
-            for (String s: reservedWords) {
-                reservedSymbols.add(intern(s));
-            }
 
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, libDir);
             intp.init(() -> -1, System.out::print);
             intp.setSymtab(st);
             intp.topEnv = intp.environment(null);
             this.intp = intp;
+
+            this.javaCompiler = new JavaCompilerHelper(outPath);
+            for (String s: reservedWords) {
+                reservedSymbols.add(intern(s));
+            }
         }
 
 
@@ -5047,6 +5046,10 @@ public class LambdaJ {
             requireSymbol(func, sym);
             if (reservedSymbols.contains(sym))
                 errorMalformed(func, String.format("can't use reserved word %s as a symbol", sym.toString()));
+        }
+
+        private void notAPrimitive(String func, Object symbol, String javaName) {
+            if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("%s: assigning primitives is not implemented: %s", func, symbol.toString());
         }
 
 
@@ -5338,7 +5341,7 @@ public class LambdaJ {
 
         private LambdaJSymbol intern(String symname) {
             if (symname == null) symname = "nil";
-            return st.intern(new LambdaJSymbol(symname));
+            return intp.intern(symname);
         }
 
         /** replace chars that are not letters */
@@ -5766,8 +5769,8 @@ public class LambdaJ {
             if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
             final Object valueForm = cadr(pairs);
 
-            if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("setq: assigning primitives is not implemented: %s", symbol.toString());
-            else if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
+            notAPrimitive("setq", symbol, javaName);
+            if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
                 final String symName = mangle(symbol.toString(), 0);
                 sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply(");
                 formToJava(sb, valueForm, env, topEnv, rsfx, false);
@@ -5939,6 +5942,7 @@ public class LambdaJ {
                         final String globalName;
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
+                            notAPrimitive("let* dynamic", sym, cdr(maybeGlobal).toString());
                             globalName = mangle(sym.toString(), 0);
                             if (!seen) {
                                 hasGlobal = true;
@@ -5946,7 +5950,7 @@ public class LambdaJ {
                             }
                         }
                         else globalName = null;
-                        
+
                         final Object binding = bi.next();
                         sb.append("        ").append(javaName).append(" = ");
                         formToJava(sb, cadr(binding), env, topEnv, rsfx, false);
@@ -5962,6 +5966,7 @@ public class LambdaJ {
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
+                            notAPrimitive("let dynamic", sym, cdr(maybeGlobal).toString());
                             hasGlobal = true;
                             final String globalName = mangle(sym.toString(), 0);
                             sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
@@ -6067,7 +6072,7 @@ public class LambdaJ {
             final LambdaJ intp = this.intp;
             if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
             final String fileName = (String) argument;
-            final SymbolTable prevSymtab = st;
+            final SymbolTable prevSymtab = intp.symtab;
             final Path prevPath = intp.symtab instanceof SExpressionParser ? ((SExpressionParser)intp.symtab).filePath : null;
             final Path p = intp.findFile(prevPath, fileName);
             try (Reader r = Files.newBufferedReader(p)) {
@@ -6077,7 +6082,6 @@ public class LambdaJ {
                         return prevSymtab.intern(sym);
                     }
                 };
-                st = parser;
                 intp.symtab = parser;
                 for (;;) {
                     final Object form = parser.readObj(true);
@@ -6091,7 +6095,6 @@ public class LambdaJ {
                 throw new LambdaJError(true, "load: error reading file '%s': ", e.getMessage());
             }
             finally {
-                st = prevSymtab;
                 intp.symtab = prevSymtab;
                 if (intp.symtab instanceof SExpressionParser) ((SExpressionParser)intp.symtab).filePath = prevPath;
             }

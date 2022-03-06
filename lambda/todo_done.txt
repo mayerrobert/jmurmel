@@ -1339,3 +1339,5 @@ trace, untrace
 (setq format 1) erzeugt ungueltigen code
 -> eintrag im environment ansehen, wenn CompilerPrimitive drinsteht, einen hack aktivieren (und environment eintrag patchen ?!?)
    -> oder "unsupported" melden
+
+(let dynamic ((format... erzeugt ungültigen code
