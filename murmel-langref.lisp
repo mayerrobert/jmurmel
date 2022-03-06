@@ -1041,6 +1041,7 @@ pi ; ==> 3.141592653589793
 ;   other use as non-toplevel form will throw a "not-yet-implemented" compiler error.
 ; - define-ing an already define-d symbol is not supported
 ; - macroexpand-1 is limited to quoted forms
+; - setq'ing predefined primitives is not supported
 
 
 ;;; == Copyright ======================

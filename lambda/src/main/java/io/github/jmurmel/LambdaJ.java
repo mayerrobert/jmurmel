@@ -2701,6 +2701,10 @@ public class LambdaJ {
         throw new LambdaJError(msg);
     }
 
+    static RuntimeException errorNotImplemented(String msg, Object... args) {
+        throw new LambdaJError(true, msg, args);
+    }
+
     static RuntimeException errorMalformed(String func, String msg) {
         throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
     }
@@ -5633,12 +5637,12 @@ public class LambdaJ {
 
                     if (intp.sRequire == op) {
                         // pass1 has replaced all toplevel (require)s with the file contents
-                        throw new LambdaJError("require as non-toplevel form is not implemented");
+                        errorNotImplemented("require as non-toplevel form is not implemented");
                     }
 
                     if (intp.sProvide == op) {
                         // pass 2 shouldn't see this
-                        throw new LambdaJError("provide as non-toplevel form is not implemented");
+                        errorNotImplemented("provide as non-toplevel form is not implemented");
                     }
 
                     if (intp.sDeclaim == op) {
@@ -5656,7 +5660,7 @@ public class LambdaJ {
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (isSymbol(op, "macroexpand-1")) {
-                        if (intp.sQuote != caar(args)) throw new LambdaJError("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        if (intp.sQuote != caar(args)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
                         quotedFormToJava(sb, intp.macroexpand1((ConsCell)cdar(args)));
                         return;
                     }
@@ -5762,7 +5766,8 @@ public class LambdaJ {
             if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
             final Object valueForm = cadr(pairs);
 
-            if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
+            if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("setq: assigning primitives is not implemented: %s", symbol.toString());
+            else if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
                 final String symName = mangle(symbol.toString(), 0);
                 sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply(");
                 formToJava(sb, valueForm, env, topEnv, rsfx, false);
