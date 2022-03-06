@@ -3743,9 +3743,9 @@ public class LambdaJ {
                     if (verbose) System.out.println("compiling " + fileName + "...");
                     final Path p = Paths.get(fileName);
                     try (Reader r = Files.newBufferedReader(p)) {
+                        parser.setInput(r::read);
+                        parser.filePath = p;
                         while (true) {
-                            parser.setInput(r::read);
-                            parser.filePath = p;
                             final Object sexp = parser.readObj(true);
                             if (sexp == null) break;
                             program.add(sexp);
@@ -4015,6 +4015,7 @@ public class LambdaJ {
             try (Reader reader = Files.newBufferedReader(p)) {
                 if (parser == null) parser = new SExpressionParser(reader::read);
                 else parser.setInput(reader::read);
+                parser.filePath = p;
                 while (true) {
                     final Object sexp = parser.readObj(true);
                     if (sexp == null) break;
