@@ -10,6 +10,8 @@ müssen die compiler rt funktionen public sein oder reicht protected? geht stati
 
 
 
+tests auf testng dataprovider umstellen
+
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 
 statt überall "throw new LambdaJError(..."

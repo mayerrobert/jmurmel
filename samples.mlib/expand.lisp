@@ -11,6 +11,9 @@
 ;;;
 ;;; Only macros already defined before the form will be expanded,
 ;;; new macros defined by defmacro calls within the form are not considered.
+;;;
+;;; `expand` currently only works with the interpreter (the compiler
+;;; doesn't fully support macroexpand-1). 
 
 (require "mlib")
 (provide "expand")

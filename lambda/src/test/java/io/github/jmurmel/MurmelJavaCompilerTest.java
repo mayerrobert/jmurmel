@@ -78,7 +78,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testTestFuncallError() throws Exception {
-        runtimeError("((lambda (a) a))", "(lambda (a)): not enough arguments");
+        runtimeError("((lambda (a) a))", "(lambda (a) ...): not enough arguments");
     }
 
 
@@ -320,7 +320,7 @@ public class MurmelJavaCompilerTest {
             fail("expected rt error");
         }
         catch (LambdaJError e) {
-            assertTrue(e.getMessage().startsWith("(lambda (a . b)): not enough arguments"));
+            assertTrue(e.getMessage().startsWith("(lambda (a . b) ...): not enough arguments"));
         }
     }
 
