@@ -4145,6 +4145,11 @@ public class LambdaJ {
         int features = Features.HAVE_ALL_LEXC.bits();
         if (hasFlag("--XX-dyn", args))      features =  Features.HAVE_ALL_DYN.bits();
 
+        if (hasFlag("--min+", args))        features =  Features.HAVE_MINPLUS.bits();
+        if (hasFlag("--min", args))         features =  Features.HAVE_MIN.bits();
+        if (hasFlag("--lambda+", args))     features =  Features.HAVE_LAMBDAPLUS.bits();
+        if (hasFlag("--lambda", args))      features =  Features.HAVE_LAMBDA.bits();
+
         if (hasFlag("--no-nil", args))      features &= ~Features.HAVE_NIL.bits();
         if (hasFlag("--no-t", args))        features &= ~Features.HAVE_T.bits();
         if (hasFlag("--no-extra", args))    features &= ~Features.HAVE_XTRA.bits();
@@ -4163,11 +4168,6 @@ public class LambdaJ {
         if (hasFlag("--no-atom", args))     features &= ~Features.HAVE_ATOM.bits();
         if (hasFlag("--no-eq", args))       features &= ~Features.HAVE_EQ.bits();
         if (hasFlag("--no-quote", args))    features &= ~Features.HAVE_QUOTE.bits();
-
-        if (hasFlag("--min+", args))        features =  Features.HAVE_MINPLUS.bits();
-        if (hasFlag("--min", args))         features =  Features.HAVE_MIN.bits();
-        if (hasFlag("--lambda+", args))     features =  Features.HAVE_LAMBDAPLUS.bits();
-        if (hasFlag("--lambda", args))      features =  Features.HAVE_LAMBDA.bits();
 
         return features;
     }
