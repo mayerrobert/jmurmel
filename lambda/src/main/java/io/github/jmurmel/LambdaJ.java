@@ -3113,15 +3113,18 @@ public class LambdaJ {
 
 
 
-    static long getInternalRealTime() {
+    static long getInternalRealTime(ConsCell a) {
+        noArgs("get-internal-real-time", a);
         return System.nanoTime();
     }
 
-    static long getInternalRunTime() {
+    static long getInternalRunTime(ConsCell a) {
+        noArgs("get-internal-run-time", a);
         return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
     }
 
-    static long getInternalCpuTime() {
+    static long getInternalCpuTime(ConsCell a) {
+        noArgs("get-internal-cpu-time", a);
         return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
     }
 
@@ -3146,13 +3149,15 @@ public class LambdaJ {
         }
     }
 
-    static long getUniversalTime() {
+    static long getUniversalTime(ConsCell a) {
+        noArgs("get-universal-time", a);
         final ZoneId utc = ZoneId.of("UTC");
         final ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
         return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
     }
 
-    final Object getDecodedTime() {
+    final Object getDecodedTime(ConsCell a) {
+        noArgs("get-decoded-time", a);
         final Instant now = Clock.systemDefaultZone().instant();
         final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
         final ZoneRules rules = n.getZone().getRules();
@@ -3176,6 +3181,7 @@ public class LambdaJ {
 
     private int gensymCounter;
     final Object gensym(ConsCell args) {
+        noArgs("gensym", args);
         return new LambdaJSymbol("gensym" + ++gensymCounter);
     }
 
@@ -3368,15 +3374,12 @@ public class LambdaJ {
         }
 
         if (haveT()) {
-            final LambdaJSymbol sT = intern("t");
+            final LambdaJSymbol sT = internReserved("t");
             env = addBuiltin(sT, sT, env);
-            reserve(sT);
         }
 
         if (haveNil()) {
-            final LambdaJSymbol sNil = intern("nil");
-            env = addBuiltin(sNil, null, env);
-            reserve(sNil);
+            env = addBuiltin(internReserved("nil"), null, env);
         }
 
         if (haveUtil()) {
@@ -3387,20 +3390,18 @@ public class LambdaJ {
                   addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
                   addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",   a);  return assq(car(a), cadr(a)); },
                   addBuiltin("list",    (Primitive) a -> a,
-                  addBuiltin("list*",   (Primitive) a -> listStar(a), 
+                  addBuiltin("list*",   (Primitive) this::listStar,
+                  addBuiltin("append",  (Primitive) this::append,
                   addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(eql(car(a), cadr(a))); },
-                  env)))))))));
-
-            env = addBuiltin("append",  (Primitive) this::append,
-                  env);
+                  env))))))))));
 
             env = addBuiltin("internal-time-units-per-second", 1e9,
-                  addBuiltin("get-internal-real-time", (Primitive) a -> getInternalRealTime(),
-                  addBuiltin("get-internal-run-time",  (Primitive) a -> getInternalRunTime(), // user
-                  addBuiltin("get-internal-cpu-time",  (Primitive) a -> getInternalCpuTime(), // user + system
-                  addBuiltin("sleep",                  (Primitive) a -> sleep(a),
-                  addBuiltin("get-universal-time",     (Primitive) a -> getUniversalTime(), // seconds since 1.1.1900
-                  addBuiltin("get-decoded-time",       (Primitive) a -> getDecodedTime(),
+                  addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
+                  addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
+                  addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
+                  addBuiltin("sleep",                  (Primitive) LambdaJ::sleep,
+                  addBuiltin("get-universal-time",     (Primitive) LambdaJ::getUniversalTime, // seconds since 1.1.1900
+                  addBuiltin("get-decoded-time",       (Primitive) this::getDecodedTime,
                   env)))))));
 
             env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
@@ -3416,8 +3417,8 @@ public class LambdaJ {
         }
 
         if (haveNumbers()) {
-            env = addBuiltin("numberp", (Primitive) args -> { oneArg("numberp", args); return boolResult(numberp(car(args))); },
-                  addBuiltin("floatp", (Primitive) args -> { oneArg("floatp", args); return boolResult(floatp(car(args))); },
+            env = addBuiltin("numberp",  (Primitive) args -> { oneArg("numberp", args);  return boolResult(numberp(car(args))); },
+                  addBuiltin("floatp",   (Primitive) args -> { oneArg("floatp", args);   return boolResult(floatp(car(args))); },
                   addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
                   env)));
 
@@ -3428,19 +3429,17 @@ public class LambdaJ {
                   addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 2); return Math.floor (quot12(args)); },
                   addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 2); return Math.ceil  (quot12(args)); },
                   addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 2); return cl_truncate(quot12(args)); },
-                  env))));
 
-            env = addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12(args))); },
+                  addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12(args))); },
                   addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12(args))); },
                   addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12(args))); },
                   addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12(args))); },
-                  env))));
+                  env))))))));
 
             env = addBuiltin("1+",      (Primitive) args -> { oneNumber("1+", args); return inc((Number)car(args)); },
                   addBuiltin("1-",      (Primitive) args -> { oneNumber("1-", args); return dec((Number)car(args)); },
-                  env));
 
-            env = addBuiltin("sqrt",    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); },
+                  addBuiltin("sqrt",    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); },
                   addBuiltin("log",     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); },
                   addBuiltin("log10",   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); },
                   addBuiltin("exp",     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); },
@@ -3450,7 +3449,7 @@ public class LambdaJ {
                   addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); },
                           
                   addBuiltin("signum",  (Primitive) args -> { oneNumber("signum", args); return cl_signum((Number)car(args)); },
-                  env))))))));
+                  env))))))))));
 
             env = addBuiltin("=",       (Primitive) args -> compare(args, "=",  (d1, d2) -> d1 == d2),
                   addBuiltin(">",       (Primitive) args -> compare(args, ">",  (d1, d2) -> d1 > d2),
@@ -3458,13 +3457,12 @@ public class LambdaJ {
                   addBuiltin("<",       (Primitive) args -> compare(args, "<",  (d1, d2) -> d1 < d2),
                   addBuiltin("<=",      (Primitive) args -> compare(args, "<=", (d1, d2) -> d1 <= d2),
                   addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
-                  env))))));
 
-            env = addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
+                  addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
                   addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
                   addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
                   addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
-                  env))));
+                  env))))))))));
         }
 
         if (haveEq()) {
@@ -4636,14 +4634,14 @@ public class LambdaJ {
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
         //public final Object macroexpand1       (Object... args) { return intp.macroexpand1(arraySlice(args)); }
-        public final Object _gensym (Object... args) { return intp.gensym(null); }
+        public final Object _gensym (Object... args) { return intp.gensym(arraySlice(args)); }
 
-        public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(); }
-        public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(); }
-        public final Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(); }
+        public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(arraySlice(args)); }
+        public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(arraySlice(args)); }
+        public final Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(arraySlice(args)); }
         public final Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args)); }
-        public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(); }
-        public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(); }
+        public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
+        public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
 
         public final Object jambda             (Object... args) { return findJavaMethod(arraySlice(args)); }
 

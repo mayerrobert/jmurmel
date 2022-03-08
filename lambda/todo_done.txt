@@ -1358,3 +1358,5 @@ vielleicht variablen von typ ConsCell mit präfix c oder cc benamsen
 
 --lambda+ bzw. --no-nil geht immer noch nicht weil der reader nil ausspuckt
 --min+ --no-t hat doch t im environment
+
+argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time

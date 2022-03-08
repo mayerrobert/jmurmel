@@ -3,20 +3,18 @@ apply ist eine special form die sich wie eine funktion verhält, sollte aber ein
 -> umbauen wie eval?!?
 ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
-
 ggf sollten nur t und nil reserved sein, der rest der bisherigen reserved words sollten nur bei zuweisung verweigert werden (setq, define, defun, letXX dynamic),
 -> lambdalist, letXX, labels könnte zulässig werden
 -> SBCL: (let ((t 1)) (write t)) gibt fehler, (let ((let 1)) (write let)) geht
 
-müssen die compiler rt funktionen public sein oder reicht protected? geht static?
--> import io.github.jmurmel.LambdaJ;
-   in getValue(): case "sleep": return (CompilerPrimitive)this::sleep;
-                  -> case "sleep": return (CompilerPrimitive)MurmelJavaProgram::sleep;
-   in extenvprim(): rt() -> LambdaJ.MurmelJavaProgram
 
+GETTING STARTED löschen (auch aus jmurmel.github.io)?
+samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
 
 tests auf testng dataprovider umstellen
+die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
+einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globals enthaelt
 
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 
@@ -26,15 +24,13 @@ statt überall "throw new LambdaJError(..."
   -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
      wenn handler gerufen werden, schauts anders aus 
 
-argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-time
-
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 
 
-
-read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 compiler: tests für verschachtelte let dynamic
 ggf. bei let dynamic als endcall zumindest warnen dass TCO nicht gemacht wird
@@ -57,8 +53,6 @@ MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL überni
 LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
 
 
-GETTING STARTED löschen (auch aus jmurmel.github.io)?
-
 
 
  
@@ -66,10 +60,6 @@ gesondertes flag für setq, rplaca, rplacd? --no-mut
 gesondertes flag für defmacro?
 backquotes, append, assoc, assq
 
-
-die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
-
-einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globals enthaelt
 
 
 der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
@@ -98,8 +88,13 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
    -> vielleicht doch besser desugar?
 -> aufpassen, dass nicht (f a b) 1x argumente evaluiert und (f a . b) 2x
 
-samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
+müssen die compiler rt funktionen public sein oder reicht protected? geht static?
+-> static würd gehen, protected nicht wg. Java compiler fehler
+-> import io.github.jmurmel.LambdaJ;
+   in getValue(): case "sleep": return (CompilerPrimitive)this::sleep;
+                  -> case "sleep": return (CompilerPrimitive)MurmelJavaProgram::sleep;
+   in extenvprim(): rt() -> LambdaJ.MurmelJavaProgram
 
 die wellknown symbols (special forms wie let & co, und opencoded functions)
 werden static final und in eine static final liste gesteckt,
