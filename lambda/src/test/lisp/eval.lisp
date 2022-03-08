@@ -12,29 +12,17 @@
 ; output: (empty)
 
 
-((lambda (caar cadr cadar caddr caddar append eval evcon evlis assoc pair)
+((lambda (caar cadr cadar caddr caddar cdar eval evcon evlis assoc pairlis)
 
     ;;; test eval: use the provided append to append two lists
     (eval (quote ((label append
-                       (lambda (a b)
-                         (cond ((eq () a) b)
-                               (t (cons (car a)
-                                        (append (cdr a) b))))))
+                    (lambda (a b)
+                      (cond ((eq () a) b)
+                            (t (cons (car a)
+                                     (append (cdr a) b))))))
                   (quote (AA BB CC))  
                   (quote (DD EE FF))))
           (quote ((t t)))))
-
-;    (eval (quote ((lambda (reverse)
-;                     (reverse (quote (1 2 3 4 5 6 7 8 9))))
-;                 
-;                  (lambda (lst)
-;                    ((lambda (rev)
-;                       (rev rev (quote ()) lst))
-;                     (lambda (rev^ a l)
-;                       (cond
-;                         ((eq () l) a)
-;                         (t (rev^ rev^ (cons (car l) a) (cdr l)))))))))
-;          (quote ((t t)))))
 
 
   ;;; caar..caddar
@@ -43,11 +31,7 @@
   (lambda (l) (car (cdr (car l))))       ; cadar
   (lambda (l) (car (cdr (cdr l))))       ; caddr
   (lambda (l) (car (cdr (cdr (car l))))) ; caddar
-
-  ;;; append
-  (quote (lambda (a b)
-           (cond ((eq () a) b)
-                  ((quote t) (cons (car a) (append (cdr a) b))))))
+  (lambda (l) (cdr (car l)))             ; cdar
 
   ;;; eval
   (quote (lambda (x e)
@@ -72,15 +56,16 @@
                      (evcon (cdr x) e))
                    ((quote t)                           ; function application
                      (eval (cons (eval (car x) e)
-                                 (cdr x)) e))))
+                                 (cdr x))
+                           e))))
            ((eq (caar x) (quote lambda))                ; lambda
              (eval (caddar x)
-                    (append (pair (cadar x)
-                                  (evlis (cdr x) e))
+                   (pairlis (cadar x)
+                            (evlis (cdr x) e)
                             e)))
            ((eq (caar x) (quote label))                 ; label
              (eval (cons (caddar x) (cdr x))  
-                   (cons (cons (cadar x) (cons (car x) ()))
+                   (cons (cons (cadar x) (car x))
                          e))))))
 
    ;;; evcon
@@ -98,12 +83,11 @@
    ;;; assoc
    (quote (lambda (x a)
      (cond ((eq () a) ())
-           ((eq x (caar a)) (cadar a))
+           ((eq x (caar a)) (cdar a))
            ((quote t) (assoc x (cdr a))))))
 
-   ;;; pair
-   (quote (lambda (a b)
-     (cond ((eq () a) ())
-           ((eq () b) ())
-           ((quote t) (cons (cons (car a) (cons (car b) ()))
-                            (pair (cdr a) (cdr b))))))))
+   ;;; pairlis
+   (quote (lambda (a b e)
+     (cond ((eq () a) e)
+           ((quote t) (cons (cons (car a) (car b))
+                            (pairlis (cdr a) (cdr b) e)))))))
