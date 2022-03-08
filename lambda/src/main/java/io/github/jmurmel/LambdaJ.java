@@ -5187,7 +5187,7 @@ public class LambdaJ {
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
             intp.speed = prevSpeed;
             passTwo = true;
-            formsToJava(ret, bodyForms, globalEnv, globalEnv, 0, true);
+            emitForms(ret, bodyForms, globalEnv, globalEnv, 0, true);
 
             ret.append("    }\n");
 
@@ -5312,6 +5312,10 @@ public class LambdaJ {
             return intp.intern(symname);
         }
 
+        private boolean isSymbol(Object op, String s) {
+            return op == intern(s);
+        }
+
         /** replace chars that are not letters */
         private static String mangle(String symname, int sfx) {
             final StringBuilder mangled = new StringBuilder();
@@ -5408,7 +5412,7 @@ public class LambdaJ {
                     + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             sb.append("        Object result0;\n");
-            formsToJava(sb, (ConsCell)body, extenv, env, 0, false);
+            emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
                     + "        ").append(javasym).append(" = () -> func;\n"
                     + "        return intern(\"").append(sym).append("\");\n"
@@ -5422,7 +5426,7 @@ public class LambdaJ {
         /// formsToJava - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms. Each form but the last will be emitted as an assignment
          *  to the local variable "ignoredN" because some forms are emitted as ?: expressions which is not a valid statement by itself. */
-        private void formsToJava(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
+        private void emitForms(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
             if (forms == null) {
                 // e.g. the body of an empty lambda or function
                 ret.append("        return null;\n");
@@ -5447,10 +5451,6 @@ public class LambdaJ {
             }
         }
 
-        private boolean isSymbol(Object op, String s) {
-            return op == intern(s);
-        }
-        
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
         private void emitForm(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final LambdaJ intp = this.intp;
@@ -5711,7 +5711,7 @@ public class LambdaJ {
             final Object params = car(paramsAndForms);
             final String expr = "(lambda " + printSEx(params) + " ...)";
             env = params("lambda", sb, params, env, rsfx, expr, argCheck);
-            formsToJava(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, false);
+            emitForms(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, false);
             sb.append("        })");
         }
 
@@ -5724,7 +5724,7 @@ public class LambdaJ {
             if (cdr(ccForms) == null) emitForm(sb, car(ccForms), env, topEnv, rsfx, isLast);
             else {
                 sb.append(isLast ? "tailcall(" : "funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
-                formsToJava(sb, ccForms, env, topEnv, rsfx, false);
+                emitForms(sb, ccForms, env, topEnv, rsfx, false);
                 sb.append("        }, (Object[])null)");
             }
         }
@@ -5759,7 +5759,7 @@ public class LambdaJ {
             sb.append("        private final Object ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
-            formsToJava(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
+            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
             sb.append("        } }");
         }
 
@@ -5789,7 +5789,7 @@ public class LambdaJ {
             }
 
             sb.append("        @Override public Object apply(Object... args) {\n");
-            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
+            emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
             sb.append("        } } )");
         }
 
@@ -5900,7 +5900,7 @@ public class LambdaJ {
                 sb.append("        private final Object ").append(javasym(name, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args) {\n");
-            formsToJava(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
+            emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
             sb.append("        } } )");
         }
 
@@ -5968,7 +5968,7 @@ public class LambdaJ {
             }
 
             // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-            formsToJava(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx+1, params != null);
+            emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx+1, params != null);
 
             if (hasGlobal) {
                 sb.append("        }\n");
@@ -6131,9 +6131,9 @@ public class LambdaJ {
             if (isSymbol(op, "rem")) {
                 twoArgs("rem", args);
                 sb.append("(");
-                asDouble(sb, "rem", car(args), env, topEnv, rsfx);
+                emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);
                 sb.append(" % ");
-                asDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
+                emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
                 sb.append(")");
                 return true; }
 
@@ -6243,7 +6243,7 @@ public class LambdaJ {
                 for (Object arg: args) {
                     if (first) first = false;
                     else sb.append(' ').append(op).append(' ');
-                    asDouble(sb, op, arg, env, topEnv, rsfx);
+                    emitFormAsDouble(sb, op, arg, env, topEnv, rsfx);
                 }
             }
             sb.append(')');
@@ -6253,10 +6253,10 @@ public class LambdaJ {
         private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             varargs1(op,  args);
             sb.append('(');
-            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); asDouble(sb, op, car(args), env, topEnv, rsfx); }
+            if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); emitFormAsDouble(sb, op, car(args), env, topEnv, rsfx); }
             else {
-                asDouble(sb, op, car(args), env, topEnv, rsfx);
-                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); asDouble(sb, op, arg, env, topEnv, rsfx); }
+                emitFormAsDouble(sb, op, car(args), env, topEnv, rsfx);
+                for (Object arg: (ConsCell)cdr(args)) { sb.append(' ').append(op).append(' '); emitFormAsDouble(sb, op, arg, env, topEnv, rsfx); }
             }
             sb.append(')');
         }
@@ -6301,15 +6301,15 @@ public class LambdaJ {
         private boolean binOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (cdr(args) == null || cddr(args) != null) return false;
             sb.append("(");
-            asDouble(sb, func, car(args), env, topEnv, rsfx);
+            emitFormAsDouble(sb, func, car(args), env, topEnv, rsfx);
             sb.append(" ").append(func).append(" ");
-            asDouble(sb, func, cadr(args), env, topEnv, rsfx);
+            emitFormAsDouble(sb, func, cadr(args), env, topEnv, rsfx);
             sb.append(" ? _t : null)");
             return true;
         }
 
         /** eval form and change to double */
-        private void asDouble(WrappingWriter sb, String func, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitFormAsDouble(WrappingWriter sb, String func, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form instanceof Character || form instanceof String) errorNotANumber(func, form);
             if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
             else if (form instanceof Double) sb.append(form.toString());
