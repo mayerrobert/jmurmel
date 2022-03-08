@@ -1982,19 +1982,19 @@ public class LambdaJ {
 
     /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). Throw error if any symbol is a reserved word. */
     private ConsCell extractParamList(String op, final ConsCell bindings) {
-        ListConsCell bodyParams = null, insertPos = null;
-        if (bindings != null)
-            for (Object binding: bindings) {
-                final Object symbol = car(binding);
-                if (bodyParams == null) {
-                    bodyParams = cons(symbol, null);
-                    insertPos = bodyParams;
-                } else {
-                    insertPos.rplacd(cons(symbol, null));
-                    insertPos = (ListConsCell) insertPos.cdr();
-                }
+        if (bindings == null) return null;
+        ConsCell params = null, insertPos = null;
+        for (Object binding: bindings) {
+            final Object symbol = car(binding);
+            if (params == null) {
+                params = cons(symbol, null);
+                insertPos = params;
+            } else {
+                insertPos.rplacd(cons(symbol, null));
+                insertPos = (ListConsCell) insertPos.cdr();
             }
-        return bodyParams;
+        }
+        return params;
     }
 
     /** build an extended environment for a function invocation:<pre>
@@ -5015,6 +5015,91 @@ public class LambdaJ {
         }
 
 
+        /// symbols and name mangling
+        private LambdaJSymbol intern(String symname) {
+            if (symname == null) symname = "nil";
+            return intp.intern(symname);
+        }
+
+        private boolean isSymbol(Object op, String s) {
+            return op == intern(s);
+        }
+
+        /** replace chars that are not letters */
+        private static String mangle(String symname, int sfx) {
+            final StringBuilder mangled = new StringBuilder();
+            final int len = symname.length();
+            for (int i = 0; i < len; i++) {
+                final char c = symname.charAt(i);
+                if (c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
+                else mangled.append('_').append((int)c).append('_');
+            }
+            return '_' + mangled.toString() + (sfx == 0 ? "" : sfx);
+        }
+
+
+
+        /// environment
+        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
+         *  symbols that are reserved words throw an error. */
+        private ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
+            final LambdaJSymbol sym = asSymbol(func, symbol);
+            intp.notReserved(func, sym);
+            return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
+        }
+
+        /** extend environment w/o reserved word check */
+        private static ConsCell extenvIntern(LambdaJSymbol sym, String javaName, ConsCell env) {
+            return cons(cons(sym, javaName), env);
+        }
+
+        private ConsCell extenvprim(String symname, String javaName, ConsCell env) {
+            final LambdaJSymbol sym = intern(symname);
+            return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
+        }
+
+
+
+        private boolean passTwo;
+        private Set<String> implicitDecl;
+        private String javasym(Object form, ConsCell env) {
+            if (form == null) form = intern("nil");
+            final ConsCell symentry = assq(form, env);
+            if (symentry == null) {
+                if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form.toString());
+                System.err.println("implicit declaration of " + form);
+                implicitDecl.add(form.toString());
+                return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
+            }
+            else if (!passTwo) implicitDecl.remove(form.toString());
+
+            final String javasym;
+            if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
+            else javasym = (String)cdr(symentry);
+            return javasym;
+        }
+
+        private void notDefined(String func, Object sym, ConsCell env) {
+            final ConsCell prevEntry = assq(sym, env);
+            if (prevEntry != null) {
+                intp.notReserved(func, (LambdaJSymbol) car(prevEntry));
+                errorMalformed(func, String.format("can't redefine symbol %s", sym));
+            }
+        }
+
+        private void defined(String func, Object sym, ConsCell env) {
+            if (sym == null) sym = intern("nil");
+            final ConsCell symentry = assq(sym, env);
+            if (symentry == null) errorMalformed(func, "undefined symbol " + sym.toString());
+        }
+
+
+
+        private static LambdaJSymbol asSymbol(String func, Object symbol) {
+            if (symbol != null && !(symbol instanceof LambdaJSymbol)) errorMalformed(func, "not a symbol: " + symbol);
+            return (LambdaJSymbol)symbol;
+        }
+
         private void notAPrimitive(String func, Object symbol, String javaName) {
             if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("%s: assigning primitives is not implemented: %s", func, symbol.toString());
         }
@@ -5091,7 +5176,6 @@ public class LambdaJ {
         public Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);
-            //System.err.print(w.toString());
             return javaCompiler.javaToClass(unitName, w.toString(), jarFileName);
         }
 
@@ -5213,7 +5297,7 @@ public class LambdaJ {
 
                 else if (op == intp.sDefmacro) {
                     final Object sym = cadr(ccForm);
-                    requireSymbol("defmacro", sym);
+                    asSymbol("defmacro", sym);
                     intp.notReserved("defmacro", sym);
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
@@ -5280,102 +5364,17 @@ public class LambdaJ {
         }
 
 
-        /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
-         *  symbols that are reserved words throw an error. */
-        private ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
-            requireSymbol(func, symbol);
-            final LambdaJSymbol sym = (LambdaJSymbol)symbol;
-            intp.notReserved(func, sym);
-            return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
-        }
-
-        private static void requireSymbol(String func, Object symbol) {
-            if (symbol != null && !(symbol instanceof LambdaJSymbol)) errorMalformed(func, "not a symbol: " + symbol);
-        }
-
-        /** extend environment w/o reserved word check */
-        private static ConsCell extenvIntern(LambdaJSymbol sym, String javaName, ConsCell env) {
-            return cons(cons(sym, javaName), env);
-        }
-
-        private ConsCell extenvprim(String symname, String javaName, ConsCell env) {
-            final LambdaJSymbol sym = intern(symname);
-            return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
-        }
-
-
-
-        private LambdaJSymbol intern(String symname) {
-            if (symname == null) symname = "nil";
-            return intp.intern(symname);
-        }
-
-        private boolean isSymbol(Object op, String s) {
-            return op == intern(s);
-        }
-
-        /** replace chars that are not letters */
-        private static String mangle(String symname, int sfx) {
-            final StringBuilder mangled = new StringBuilder();
-            final int len = symname.length();
-            for (int i = 0; i < len; i++) {
-                final char c = symname.charAt(i);
-                if (c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
-                else mangled.append('_').append((int)c).append('_');
-            }
-            return '_' + mangled.toString() + (sfx == 0 ? "" : sfx);
-        }
-
-        private boolean passTwo;
-        private Set<String> implicitDecl;
-        private String javasym(Object form, ConsCell env) {
-            if (form == null) form = intern("nil");
-            final ConsCell symentry = assq(form, env);
-            if (symentry == null) {
-                if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form.toString());
-                System.err.println("implicit declaration of " + form);
-                implicitDecl.add(form.toString());
-                return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
-            }
-            else if (!passTwo) implicitDecl.remove(form.toString());
-            return getJavasym(symentry);
-        }
-
-        private String getJavasym(ConsCell symentry) {
-            final String javasym;
-            if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
-            else javasym = (String)cdr(symentry);
-            return javasym;
-        }
-
-        private void notDefined(String func, Object sym, ConsCell env) {
-            final ConsCell prevEntry = assq(sym, env);
-            if (prevEntry != null) {
-                intp.notReserved(func, (LambdaJSymbol) car(prevEntry));
-                errorMalformed(func, String.format("can't redefine symbol %s", sym));
-            }
-        }
-
-        private void defined(String func, Object sym, ConsCell env) {
-            if (sym == null) sym = intern("nil");
-            final ConsCell symentry = assq(sym, env);
-            if (symentry == null) errorMalformed(func, "undefined symbol " + sym.toString());
-        }
-
-
-
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final Object sym = cadr(form);
+            final LambdaJSymbol symbol = asSymbol("define", cadr(form));
 
-            requireSymbol("define", sym);
-            intp.notReserved("define", sym);
-            notDefined("define", sym, env);
-            final String javasym = mangle(sym.toString(), 0);
-            env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
+            intp.notReserved("define", symbol);
+            notDefined("define", symbol, env);
+            final String javasym = mangle(symbol.toString(), 0);
+            env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
-            sb.append("    // ").append(lineInfo(form)).append("(define ").append(sym).append(" form)\n"
+            sb.append("    // ").append(lineInfo(form)).append("(define ").append(symbol).append(" form)\n"
                     + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
@@ -5384,24 +5383,23 @@ public class LambdaJ {
                     + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = () -> value; }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
-                    + "        return intern(\"").append(sym).append("\");\n"
+                    + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
             return env;
         }
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final Object sym = cadr(form);
+            final LambdaJSymbol symbol = asSymbol("defun", cadr(form));
             final Object params = caddr(form);
             final Object body = cdddr(form);
 
-            requireSymbol("defun", sym);
-            intp.notReserved("defun", sym);
-            notDefined("defun", sym, env);
-            final String javasym = mangle(sym.toString(), 0);
-            env = extenvIntern((LambdaJSymbol) sym, javasym + ".get()", env);
+            intp.notReserved("defun", symbol);
+            notDefined("defun", symbol, env);
+            final String javasym = mangle(symbol.toString(), 0);
+            env = extenvIntern(symbol, javasym + ".get()", env);
 
-            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(sym).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
+            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                     + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
@@ -5413,7 +5411,7 @@ public class LambdaJ {
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
                     + "        ").append(javasym).append(" = () -> func;\n"
-                    + "        return intern(\"").append(sym).append("\");\n"
+                    + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
 
             return env;
@@ -5728,8 +5726,7 @@ public class LambdaJ {
         }
 
         private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
-            final Object symbol = car(pairs);
-            requireSymbol("setq", symbol);
+            final LambdaJSymbol symbol = asSymbol("setq", car(pairs));
             intp.notReserved("setq", symbol);
             final String javaName = javasym(symbol, env);
 
@@ -6003,10 +6000,16 @@ public class LambdaJ {
         // todo vgl. LambdaJ.extractParamList()
         private static ConsCell paramList(String func, Object bindings, boolean lists) {
             if (bindings == null) return null;
-            ConsCell params = null; ConsCell insertPos = null;
+            ConsCell params = null, insertPos = null;
             for (Object binding: (ConsCell)bindings) {
-                if (params == null) { params = cons(null, null);          insertPos = params; }
-                else                { insertPos.rplacd(cons(null, null)); insertPos = (ConsCell) insertPos.cdr(); }
+                if (params == null) {
+                    params = cons(null, null);
+                    insertPos = params;
+                }
+                else {
+                    insertPos.rplacd(cons(null, null));
+                    insertPos = (ConsCell) insertPos.cdr();
+                }
                 if (!lists && symbolp(binding)) insertPos.rplaca(binding);
                 else if (consp(binding)) insertPos.rplaca(car(binding));
                 else errorMalformed(func, "a binding", binding);
@@ -6036,10 +6039,7 @@ public class LambdaJ {
                     final Object param = car(params);
                     intp.notReserved(func, param);
                     if (!seen.add(param)) errorMalformed(func, "duplicate symbol " +  param);
-                    //env = extenv(param, rsfx, env);
-                    //sb.append("        final Object ").append(javasym(param, env)).append(" = args").append(rsfx).append("[").append(n++).append("];\n");
-                    requireSymbol(func, param);
-                    env = extenvIntern((LambdaJSymbol)param, "args" + rsfx + "[" + n++ + "]", env);
+                    env = extenvIntern(asSymbol(func, param), "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
