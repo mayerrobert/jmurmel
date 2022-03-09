@@ -3007,22 +3007,19 @@ public class LambdaJ {
     private static Object listToString(ConsCell a) {
         oneArg("list->string", a);
         final ConsCell l = asList("list->string", car(a));
+        if (l == null) return null;
         final StringBuilder ret = new StringBuilder();
-        for (Object c: l) {
-            ret.append(asChar("list->string", c));
-        }
+        for (Object c: l) ret.append(asChar("list->string", c));
         return ret.toString();
     }
 
     private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
-        final CountingListBuilder ret = new CountingListBuilder();
         final String s = asStringOrNull("string->list", car(a));
         if (s == null) return null;
+        final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length();
-        for (int i = 0; i < len; i++) {
-            ret.append(s.charAt(i));
-        }
+        for (int i = 0; i < len; i++) ret.append(s.charAt(i));
         return ret.first();
     }
 
@@ -4583,8 +4580,23 @@ public class LambdaJ {
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar(args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt(args[0]); }
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asStringOrNull(args[0]), asStringOrNull(args[1])) ? _t : null; }
-        public final Object   stringToList (Object... args) { oneArg("string->list", args.length); return intp.stringToList(cons(args[0], null)); }
-        public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(cons(args[0], null)); }
+        public final Object   stringToList (Object... args) {
+            oneArg("string->list", args.length);
+            final String s = LambdaJ.asStringOrNull("string->list", args[0]);
+            if (s == null) return null;
+            final ListBuilder ret = new ListBuilder();
+            final int len = s.length();
+            for (int i = 0; i < len; i++) ret.append(s.charAt(i));
+            return ret.first();
+        }
+        public final Object   listToString (Object... args) {
+            oneArg("list->string", args.length);
+            final ConsCell l = asList("list->string", args[0]);
+            if (l == null) return null;
+            final StringBuilder ret = new StringBuilder();
+            for (Object c: l)  ret.append(asChar(c));
+            return ret.toString();
+        }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (dbl(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (dbl(args[0])); }
@@ -4593,7 +4605,7 @@ public class LambdaJ {
         public final Number   _signum  (Object... args) { oneArg("signum",        args.length); number(args[0]); return cl_signum((Number)args[0]); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
-        protected final double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
+        protected static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return dbl(args[0]) % dbl(args[1]); }
 
         // predefined aliased primitives
@@ -4882,7 +4894,7 @@ public class LambdaJ {
                 System.exit(1);
             }
         }
-        
+
         @Override public Object getValue(String symbol) {
             switch (symbol) {
             case "nil": return _nil;
