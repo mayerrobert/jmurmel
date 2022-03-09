@@ -143,7 +143,7 @@ public class LambdaJ {
     @FunctionalInterface public interface ObjectReader { Object readObj(); }
     public interface SymbolTable { LambdaJSymbol intern(LambdaJSymbol symbol); }
     public interface Parser extends ObjectReader, SymbolTable {
-        default void setInput(ReadSupplier input) {
+        default void setInput(ReadSupplier input, Path filePath) {
             throw new UnsupportedOperationException("this parser does not support changing input");
         }
     }
@@ -302,19 +302,20 @@ public class LambdaJ {
 
     private static final class SExpConsCell extends ListConsCell {
         private static final long serialVersionUID = 1L;
+        private final Path path;
         private final int startLineNo, startCharNo;
         private int lineNo, charNo;
-        private SExpConsCell(int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
+        private SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
             super(car, cdr);
-            this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
+            this.path = path; this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
         }
     }
 
     /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
-    private static String lineInfo(Object form) {
+    static String lineInfo(Object form) {
         if (!(form instanceof SExpConsCell)) return "";
         final SExpConsCell f = (SExpConsCell)form;
-        return "line " + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
+        return (f.path == null ? "line " : f.path.toString() + ':') + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
     }
 
     private static final class ClosureConsCell extends ListConsCell {
@@ -635,7 +636,7 @@ public class LambdaJ {
         private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
         private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
 
-        @Override public void setInput(ReadSupplier input) { in = input; init = false; }
+        @Override public void setInput(ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; init = false; }
 
         /// Scanner
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
@@ -769,8 +770,8 @@ public class LambdaJ {
             // #+... , #-... feature expressions
             case '+':
             case '-':
-                final boolean hasFeature = featurep(readObj(true));
-                final Object next = readObj(true);
+                final boolean hasFeature = featurep(readObj());
+                final Object next = readObj();
                 if (sub_char == '+') return hasFeature ? next : CONTINUE;
                 else return hasFeature ? CONTINUE : next;
 
@@ -1118,11 +1119,11 @@ public class LambdaJ {
 
 
         private ListConsCell cons(int startLine, int startChar, Object car, Object cdr) {
-            return pos ? new SExpConsCell(startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
+            return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
         }
 
         private ListConsCell cons(int startLine, int startChar) {
-            return pos ? new SExpConsCell(startLine, startChar, lineNo, charNo, null, null) : new ListConsCell(null, null);
+            return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, null, null) : new ListConsCell(null, null);
         }
 
         /** Append rest at the end of first. If first is a list it will be modified. */
@@ -2115,13 +2116,12 @@ public class LambdaJ {
         final Path prevPath = symtab instanceof SExpressionParser ? ((SExpressionParser)symtab).filePath : null;
         final Path p = findFile(prevPath, fileName);
         try (Reader r = Files.newBufferedReader(p)) {
-            final SExpressionParser parser = new SExpressionParser(r::read) {
+            final SExpressionParser parser = new SExpressionParser(r::read, p) {
                 @Override
                 public LambdaJSymbol intern(LambdaJSymbol sym) {
                     return prevSymtab.intern(sym);
                 }
             };
-            parser.filePath = p;
             symtab = parser;
             Object result = null;
             for (;;) {
@@ -2136,7 +2136,6 @@ public class LambdaJ {
         }
         finally {
             symtab = prevSymtab;
-            if (symtab instanceof SExpressionParser) ((SExpressionParser)symtab).filePath = prevPath;
         }
     }
 
@@ -3585,7 +3584,7 @@ public class LambdaJ {
             topEnv = environment(null);
         }
         final Parser scriptParser = (Parser)symtab;
-        scriptParser.setInput(program::read);
+        scriptParser.setInput(program::read, null);
         setReaderPrinter(new SExpressionParser(in::read), new SExpressionWriter(new WrappingWriter(out)::append));
         Object result = null;
         while (true) {
@@ -3737,8 +3736,7 @@ public class LambdaJ {
                     if (verbose) System.out.println("compiling " + fileName + "...");
                     final Path p = Paths.get(fileName);
                     try (Reader r = Files.newBufferedReader(p)) {
-                        parser.setInput(r::read);
-                        parser.filePath = p;
+                        parser.setInput(r::read, p);
                         while (true) {
                             final Object sexp = parser.readObj(true);
                             if (sexp == null) break;
@@ -3828,8 +3826,7 @@ public class LambdaJ {
     private static Object interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
         try {
             final SExpressionParser parser = (SExpressionParser)interpreter.symtab;
-            parser.setInput(prog);
-            parser.filePath = fileName;
+            parser.setInput(prog, fileName);
             final ObjectReader inReader = new SExpressionParser(interpreter.features, TraceLevel.TRC_NONE, null, System.in::read, null, true);
             final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
@@ -3879,7 +3876,7 @@ public class LambdaJ {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
             parser = (SExpressionParser)interpreter.symtab;
             final AnyToUnixEol read = new AnyToUnixEol();
-            parser.setInput(() -> read.read(echoHolder.value));
+            parser.setInput(() -> read.read(echoHolder.value), null);
             outWriter = interpreter.lispPrinter;
             env = interpreter.topEnv;
         }
@@ -4007,9 +4004,8 @@ public class LambdaJ {
             final Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
             try (Reader reader = Files.newBufferedReader(p)) {
-                if (parser == null) parser = new SExpressionParser(reader::read);
-                else parser.setInput(reader::read);
-                parser.filePath = p;
+                if (parser == null) parser = new SExpressionParser(reader::read, p);
+                else parser.setInput(reader::read, p);
                 while (true) {
                     final Object sexp = parser.readObj(true);
                     if (sexp == null) break;
@@ -5371,11 +5367,11 @@ public class LambdaJ {
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
-            sb.append("    // ").append(lineInfo(form)).append("(define ").append(symbol).append(" form)\n"
+            sb.append("    // ").append(lineInfo(form)).append("(define ").append(symbol).append(" ...)\n"
                     + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
-                    + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
+                    + "        loc = \"");  stringToJava(sb, lineInfo(form), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
                     + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = () -> value; }\n"
@@ -5400,7 +5396,7 @@ public class LambdaJ {
                     + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
-                    + "        loc = \"").append(lineInfo(form))/*.append(printSEx(cadr(form)))*/.append("\";\n"
+                    + "        loc = \"");  stringToJava(sb, lineInfo(form), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
                     + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
@@ -5430,7 +5426,7 @@ public class LambdaJ {
             final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 final Object form = it.next();
-                ret.append("        loc = \"").append(lineInfo(form)); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        ");
+                ret.append("        loc = \""); stringToJava(ret, lineInfo(form), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        ");
                 if (it.hasNext()) {
                     if (!ign) {
                         ret.append("Object ");
@@ -5679,7 +5675,7 @@ public class LambdaJ {
 
         private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
             if (s == null)   { sb.append("null"); return; }
-            if (s.isEmpty()) { sb.append("\"\""); return; }
+            if (s.isEmpty()) { sb.append(""); return; }
 
             final int length = s.length();
             for (int i = 0; i < length; i++) {
@@ -6063,7 +6059,7 @@ public class LambdaJ {
             final Path prevPath = intp.symtab instanceof SExpressionParser ? ((SExpressionParser)intp.symtab).filePath : null;
             final Path p = intp.findFile(prevPath, fileName);
             try (Reader r = Files.newBufferedReader(p)) {
-                final SExpressionParser parser = new SExpressionParser(r::read) {
+                final SExpressionParser parser = new SExpressionParser(r::read, p) {
                     @Override
                     public LambdaJSymbol intern(LambdaJSymbol sym) {
                         return prevSymtab.intern(sym);
@@ -6083,7 +6079,6 @@ public class LambdaJ {
             }
             finally {
                 intp.symtab = prevSymtab;
-                if (intp.symtab instanceof SExpressionParser) ((SExpressionParser)intp.symtab).filePath = prevPath;
             }
         }
 
