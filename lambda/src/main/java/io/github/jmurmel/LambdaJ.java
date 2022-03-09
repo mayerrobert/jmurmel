@@ -4401,9 +4401,7 @@ public class LambdaJ {
 
         public static final CompilerGlobal UNASSIGNED = () -> { throw new LambdaJError(false, "unassigned value"); };
 
-        public interface CompilerPrimitive {
-            Object applyPrimitive(Object... args);
-        }
+        public interface CompilerPrimitive { Object applyPrimitive(Object... args); }
 
         private static class MurmelFunctionCall {
             MurmelFunction next;
@@ -4759,16 +4757,14 @@ public class LambdaJ {
             return (Number)o;
         }
 
+        /** error if n is not of type number */
+        private static void number(Object n) { if (numberp(n)) return;  errorNotANumber(n); }
+
         private TurtleFrame asFrame(String s, Object o) {
             final TurtleFrame ret;
             if (o == null && (ret = intp.current_frame) != null) return ret;
             if (o instanceof TurtleFrame) return (TurtleFrame)o;
             throw errorNotAFrame(s, o);
-        }
-
-        private static RuntimeException errorNotAFrame(String s, Object o) {
-            if (o != null) throw new LambdaJError(true, "%s: not a frame: %s", s, printSEx(o));
-            throw new LambdaJError(true, "%s: no frame argument and no current frame", s);
         }
 
         protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
@@ -4804,7 +4800,7 @@ public class LambdaJ {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).apply(arraySlice(args));
-            throw new LambdaJError(true, "not a function: %s", fn);
+            throw errorNotAFunction(fn);
         }
 
         private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
@@ -4818,7 +4814,7 @@ public class LambdaJ {
             }
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return funcall(fn, args);
-            throw new LambdaJError(true, "not a function: %s", fn);
+            throw errorNotAFunction(fn);
         }
 
         /** used for (apply sym form) */
@@ -4856,23 +4852,12 @@ public class LambdaJ {
         private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new LambdaJError(true, "not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new LambdaJError(true, "not a string: %s", printSEx(s)); }
-
-
-
-        /** error if any arg is not of type number */
-        private static void oneOrMoreNumbers(String expr, Object[] args) {
-            final int length = args.length;
-            if (length == 0) errorArgCount(expr, 1, 1, 0);
-            for (int i = 0; i < length; i++) {
-                number(args[i]);
-            }
+        private static RuntimeException errorNotAFrame(String s, Object o) {
+            if (o != null) throw new LambdaJError(true, "%s: not a frame: %s", s, printSEx(o));
+            throw new LambdaJError(true, "%s: no frame argument and no current frame", s);
         }
+        private static RuntimeException errorNotAFunction(Object fn) { throw new LambdaJError(true, "not a function: %s", fn); }
 
-        /** error if n is not of type number */
-        private static void number(Object n) {
-            if (numberp(n)) return;
-            errorNotANumber(n);
-        }
 
 
         protected String loc;
