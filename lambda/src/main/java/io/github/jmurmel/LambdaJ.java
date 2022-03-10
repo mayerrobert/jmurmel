@@ -1408,12 +1408,12 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    private LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
+    LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
             sSetQ, sApply, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for opencoded functions */
-    private LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sList, sListStar;
+    LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sList, sListStar;
 
     private Supplier<Object> expTrue;
 
@@ -4516,6 +4516,7 @@ public class LambdaJ {
         public final ConsCell _assq    (Object... args) { twoArgs("assq",        args.length); return assq(args[0], args[1]); }
         public final ConsCell _list    (Object... args) {
             if (args == null || args.length == 0) return null;
+            if (args.length == 1) return cons(args[0], null);
             final ListBuilder ret = new ListBuilder();
             for (Object arg: args) {
                 ret.append(arg);
@@ -5008,14 +5009,16 @@ public class LambdaJ {
         }
 
 
+
         /// symbols and name mangling
         private LambdaJSymbol intern(String symname) {
-            if (symname == null) symname = "nil";
+            if (symname == null) return intp.sNil;
             return intp.intern(symname);
         }
 
-        private boolean isSymbol(Object op, String s) {
-            return op == intern(s);
+        /** return true if lhs is the same symbol as interned rhs */
+        private boolean symbolEq(Object lhs, String rhs) {
+            return lhs == intern(rhs);
         }
 
         /** replace chars that are not letters */
@@ -5165,7 +5168,7 @@ public class LambdaJ {
             return formsToJavaClass(unitName, r, jarFileName);
         }
 
-        /** Compile the Murmel compilation {@code forms} to a Java class for a standalone application with a "public static void main()" */
+        /** Compile the Murmel compilation unit {@code forms} to a Java class for a standalone application with a "public static void main()" */
         public Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);
@@ -5412,7 +5415,7 @@ public class LambdaJ {
 
 
 
-        /// formsToJava - compile a list of Murmel forms to Java source
+        /// emitForms - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms. Each form but the last will be emitted as an assignment
          *  to the local variable "ignoredN" because some forms are emitted as ?: expressions which is not a valid statement by itself. */
         private void emitForms(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
@@ -5538,7 +5541,7 @@ public class LambdaJ {
 
                     ///     - apply
                     if (intp.sApply == operator) {
-                        if (intp.speed >= 1 && symbolp(car(ccArguments)) && opencodeApply(sb, car(ccArguments), (ConsCell)cdr(ccArguments), env, topEnv, rsfx)) return;
+                        if (intp.speed >= 1 && symbolp(car(ccArguments)) && opencodeApply(sb, (LambdaJSymbol)car(ccArguments), (ConsCell)cdr(ccArguments), env, topEnv, rsfx)) return;
                         sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         sb.append("\n        , ");
@@ -5580,7 +5583,6 @@ public class LambdaJ {
                         return;
                     }
 
-
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
                     if (intp.sLetrec == operator) {
@@ -5619,14 +5621,14 @@ public class LambdaJ {
                     }
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
-                    if (isSymbol(operator, "macroexpand-1")) {
+                    if (symbolEq(operator, "macroexpand-1")) {
                         if (intp.sQuote != caar(ccArguments)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
                         emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)));
                         return;
                     }
 
                     /// * some functions and operators are opencoded:
-                    if (intp.speed >= 1 && opencode(sb, operator, ccArguments, env, topEnv, rsfx)) return;
+                    if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx)) return;
 
                     /// * function call
                     sb.append(isLast ? "tailcall(" : "funcall(");
@@ -6082,6 +6084,7 @@ public class LambdaJ {
             }
         }
 
+        // todo zirkulaere listen
         private static boolean properList(Object params) {
             if (params == null) return true;
             if (!listp(params)) return false;
@@ -6094,12 +6097,12 @@ public class LambdaJ {
         }
 
         /** opencode "list" and avoid trampoline for other primitives */
-        private boolean opencodeApply(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (isSymbol(op, "list")) { sb.append("lst("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return true; }
+        private boolean opencodeApply(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (op == intp.sList) { sb.append("lst("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return true; }
 
-            for (String prim: primitives)          if (isSymbol(op, prim))    { opencodeApplyHelper(sb, "_" + prim,  args, env, topEnv, rsfx);  return true; }
-            for (String[] prim: aliasedPrimitives) if (isSymbol(op, prim[0])) { opencodeApplyHelper(sb, prim[1],  args, env, topEnv, rsfx);  return true; }
-            
+            for (String prim: primitives)          if (symbolEq(op, prim))    { opencodeApplyHelper(sb, "_" + prim,  args, env, topEnv, rsfx);  return true; }
+            for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { opencodeApplyHelper(sb, prim[1],  args, env, topEnv, rsfx);  return true; }
+
             return false;
         }
 
@@ -6111,14 +6114,15 @@ public class LambdaJ {
 
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
         // todo if-kette durch schleife ersetzen vgl. opencodeApply, oder zumindest mit einer schleife normale calls ohne trampoline generieren
-        private boolean opencode(WrappingWriter sb, Object op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (isSymbol(op, "+")) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "*")) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "-")) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "/")) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+        private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            final LambdaJ intp = this.intp;
+            if (op == intp.sAdd) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sMul) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sSub) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sDiv) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "mod")) { funcall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "rem")) {
+            if (op == intp.sMod) { funcall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sRem) {
                 twoArgs("rem", args);
                 sb.append("(");
                 emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);
@@ -6127,53 +6131,59 @@ public class LambdaJ {
                 sb.append(")");
                 return true; }
 
-            if (isSymbol(op, "round"))     { divisionOp(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
-            if (isSymbol(op, "floor"))     { divisionOp(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
-            if (isSymbol(op, "ceiling"))   { divisionOp(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
-            if (isSymbol(op, "truncate"))  { divisionOp(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
+            if (symbolEq(op, "round"))     { divisionOp(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
+            if (symbolEq(op, "floor"))     { divisionOp(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
+            if (symbolEq(op, "ceiling"))   { divisionOp(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
+            if (symbolEq(op, "truncate"))  { divisionOp(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
 
-            if (isSymbol(op, "fround"))    { divisionOp(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
-            if (isSymbol(op, "ffloor"))    { divisionOp(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
-            if (isSymbol(op, "fceiling"))  { divisionOp(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
-            if (isSymbol(op, "ftruncate")) { divisionOp(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
+            if (symbolEq(op, "fround"))    { divisionOp(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
+            if (symbolEq(op, "ffloor"))    { divisionOp(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
+            if (symbolEq(op, "fceiling"))  { divisionOp(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
+            if (symbolEq(op, "ftruncate")) { divisionOp(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (isSymbol(op, "="))  { if (binOp(sb, "==", args, env, topEnv, rsfx)) return true;
-                                      funcallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "/=")) { if (binOp(sb, "!=", args, env, topEnv, rsfx)) return true;
-                                      funcallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<"))  { if (binOp(sb, "<", args, env, topEnv, rsfx)) return true;
-                                      funcallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "<=")) { if (binOp(sb, "<=", args, env, topEnv, rsfx)) return true;
-                                      funcallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">=")) { if (binOp(sb, ">=", args, env, topEnv, rsfx)) return true;
-                                      funcallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, ">"))  { if (binOp(sb, ">", args, env, topEnv, rsfx)) return true;
-                                      funcallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sNeq) { if (binOp(sb, "==", args, env, topEnv, rsfx)) return true;
+                                   funcallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sNe)  { if (binOp(sb, "!=", args, env, topEnv, rsfx)) return true;
+                                   funcallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sLt)  { if (binOp(sb, "<", args, env, topEnv, rsfx)) return true;
+                                   funcallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sLe)  { if (binOp(sb, "<=", args, env, topEnv, rsfx)) return true;
+                                   funcallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sGe)  { if (binOp(sb, ">=", args, env, topEnv, rsfx)) return true;
+                                   funcallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sGt)  { if (binOp(sb, ">", args, env, topEnv, rsfx)) return true;
+                                   funcallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "car"))    { funcall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "cdr"))    { funcall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "cons"))   { funcall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "rplaca")) { funcall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "rplacd")) { funcall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sCar)        { funcall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
+            if (op == intp.sCdr)        { funcall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
+            if (op == intp.sCons)       { funcall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
+            if (symbolEq(op, "rplaca")) { funcall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
+            if (symbolEq(op, "rplacd")) { funcall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "eq"))   { twoArgs("eq", args);  compareOp(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "eql"))  { funcall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "null")) { oneArg("null", args); compareOp(sb, car(args), null, env, topEnv, rsfx); return true; }
+            if (op == intp.sEq)   { twoArgs("eq", args);  compareOp(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (op == intp.sEql)  { funcall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sNull) { oneArg("null", args); compareOp(sb, car(args), null, env, topEnv, rsfx); return true; }
+            if (op == intp.sInc)  { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sDec)  { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
 
-            if (isSymbol(op, "1+"))   { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
-            if (isSymbol(op, "1-"))   { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
-
-            if (isSymbol(op, "list")) {
+            if (op == intp.sList) {
                 if (args == null) { // no args
                     sb.append("null");  return true;
                 }
                 if (cdr(args) == null) { // one arg
                     sb.append("cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
-                funcallVarargs(sb, "list", "_list", 0, args, env, topEnv, rsfx); return true;
+                sb.append("new ListBuilder()");
+                for (; args != null; args = (ConsCell)cdr(args)) {
+                    sb.append(".append(");
+                    emitForm(sb, car(args), env, topEnv, rsfx, false);
+                    sb.append(")\n        ");
+                }
+                sb.append(".first()");
+                return true;
             }
 
-            if (isSymbol(op, "list*")) {
+            if (op == intp.sListStar) {
                 varargs1("list*", args);
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
@@ -6314,7 +6324,7 @@ public class LambdaJ {
             if (form == null || intp.sNil == form) sb.append("_nil");
 
             else if (symbolp(form)) {
-                if (isSymbol(form, "t")) sb.append("_t");
+                if (symbolEq(form, "t")) sb.append("_t");
                 else {
                     final String s = "intern(\"" + form + "\")";
                     final int prev = quotedForms.indexOf(s);
