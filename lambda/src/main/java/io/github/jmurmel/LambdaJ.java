@@ -1388,6 +1388,7 @@ public class LambdaJ {
             sInc =     intern("1+");
             sDec =     intern("1-");
 
+            sAppend =  intern("append");
             sList =    intern("list");
             sListStar= intern("list*");
         }
@@ -1413,7 +1414,7 @@ public class LambdaJ {
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for opencoded functions */
-    LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sList, sListStar;
+    LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
 
     private Supplier<Object> expTrue;
 
@@ -1964,7 +1965,8 @@ public class LambdaJ {
         if (op == sInc)  { oneNumber("1+", args);  return inc((Number)car(args)); }
         if (op == sDec)  { oneNumber("1-", args);  return dec((Number)car(args)); }
 
-        if (op == sList) { return args; }
+        if (op == sAppend)   { return append(args); }
+        if (op == sList)     { return args; }
         if (op == sListStar) { return listStar(args); }
 
         return NOT_HANDLED;
@@ -6166,6 +6168,13 @@ public class LambdaJ {
             if (op == intp.sInc)  { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
             if (op == intp.sDec)  { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
 
+            if (op == intp.sAppend) {
+                if (args == null) { // no args
+                    sb.append("_nil");  return true;
+                }
+                if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
+                funcallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
+            }
             if (op == intp.sList) {
                 if (args == null) { // no args
                     sb.append("null");  return true;
