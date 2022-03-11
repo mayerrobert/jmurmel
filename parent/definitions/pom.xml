@@ -27,6 +27,7 @@
         <!-- default to Java 8, can be changed here or overriden by e.g. "mvn package -Djavac.target=15" -->
         <javac.target>1.8</javac.target>
 
+        <javadoc.skip>true</javadoc.skip>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
         <!-- dependency versions -->
@@ -38,7 +39,7 @@
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-release-plugin.version>3.0.0-M5</maven-release-plugin.version>
         <maven-enforcer-plugin.version>3.0.0</maven-enforcer-plugin.version>
-        <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version> <!-- 3.3.2 crashes -->
+        <maven-javadoc-plugin.version>3.3.2</maven-javadoc-plugin.version>
         <maven-pmd-plugin.version>3.16.0</maven-pmd-plugin.version>
         <maven-pmd-plugin.asm.version>9.2</maven-pmd-plugin.asm.version>
         <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
@@ -125,6 +126,8 @@
                             <additionalJOption>-Xdoclint:all</additionalJOption>
                             <additionalJOption>-Xdoclint:-missing</additionalJOption>
                         </additionalJOptions>
+                        <quiet>true</quiet>
+                        <sourcepath>${basedir}/src/main/java</sourcepath> <!-- workaround for https://issues.apache.org/jira/browse/MJAVADOC-700 -->
                     </configuration>
                 </plugin>
                 <plugin>

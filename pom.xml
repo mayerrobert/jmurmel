@@ -1,13 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.github.jmurmel.parent</groupId>
-        <artifactId>definitions</artifactId>
-        <relativePath>./parent/definitions/pom.xml</relativePath>
-        <version>1.2-SNAPSHOT</version>
-    </parent>
-
     <groupId>io.github.jmurmel</groupId>
     <artifactId>jmurmel-all</artifactId>
     <version>1.2-SNAPSHOT</version>
@@ -20,6 +13,10 @@
         <tag>HEAD</tag>
     </scm>
 
+    <properties>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+    </properties>
+
     <modules>
         <module>parent/definitions</module>
     
@@ -28,49 +25,7 @@
         
         <module>samples.murmel</module>
         <module>samples.mlib</module>
+
+        <module>doc</module> <!-- comment this out if you don't have sed -->
     </modules>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${exec-maven-plugin.version}</version>
-                <executions>
-                    <!-- generate murmel-langref.md from murmel-langref.lisp
-                         if "sed" is not available then this can be commented out -->
-                    <execution>
-                        <id>make-langref-md</id>
-                        <phase>install</phase> <!-- could also use phase "process-sources" -->
-                        <goals><goal>exec</goal></goals>
-                        <configuration>
-                            <executable>sed</executable>
-                            <outputFile>murmel-langref.md</outputFile>
-                            <arguments>
-                                <argument>-nf</argument>
-                                <argument>langref-to-md.sed</argument>
-                                <argument>murmel-langref.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>make-mlib-ref-md</id>
-                        <phase>install</phase> <!-- could also use phase "process-sources" -->
-                        <goals><goal>exec</goal></goals>
-                        <configuration>
-                            <executable>sed</executable>
-                            <outputFile>mlib.md</outputFile>
-                            <arguments>
-                                <argument>-nf</argument>
-                                <argument>mlib-to-md.sed</argument>
-                                <argument>samples.mlib/mlib.lisp</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <!-- end of section that needs sed -->
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

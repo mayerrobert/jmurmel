@@ -156,6 +156,7 @@
                         <additionalJOption>-Xdoclint:all</additionalJOption>
                         <additionalJOption>-Xdoclint:-missing</additionalJOption>
                     </additionalJOptions>
+                    <quiet>true</quiet>
                 </configuration>
                 <reportSets>
                     <reportSet>
