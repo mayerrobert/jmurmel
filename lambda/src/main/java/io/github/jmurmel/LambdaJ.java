@@ -5658,8 +5658,11 @@ public class LambdaJ {
 
         /** write atoms that are not symbols */
         private static void emitAtom(WrappingWriter sb, Object form) {
-            if (form instanceof Long) sb.append("Long.valueOf(").append(Long.toString((Long) form)).append(')');  // must use an object so that eql etc. will work
+            if (form instanceof Long) sb.append("Long.valueOf(").append(Long.toString((Long) form)).append(')');  // must use an object so that (if 1 'one) will work
+            //if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');  // must use an object so that (if 1 'one) will work
+            else if (form instanceof Double) sb.append("Double.valueOf(").append(Double.toString((Double) form)).append(')');
             else if (form instanceof Character) {
+                sb.append("Character.valueOf(");
                 final char c = (Character) form;
                 switch (c) {
                 case '\'': sb.append("'\\''"); break;
@@ -5671,6 +5674,7 @@ public class LambdaJ {
                     if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
                     else sb.append(String.format("'\\u%04X'", (int)c));
                 }
+                sb.append(')');
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }

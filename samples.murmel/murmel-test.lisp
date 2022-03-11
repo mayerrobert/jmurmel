@@ -162,6 +162,15 @@
             (list *a* *b* *c*))
     '(456 456 3 1 2 3))
 
+(deftest if-number.1
+  (if 1 'yes)  'yes)
+
+(deftest if-number.2
+  (if 1.0 'yes)  'yes)
+
+(deftest if-char.1
+  (if #\1 'yes)  'yes)
+
 
 ;;; let over lambda
 #+murmel
