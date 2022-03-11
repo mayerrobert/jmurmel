@@ -193,7 +193,7 @@
 ;(deftest eql.7 (eql #c(3 -4.0) #c(3 -4))  nil)
 (deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
 (deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
-(deftest eql.10 (eql '(a . b) '(a . b))  nil)
+(deftest eql.10 (eql '(a . b) '(a . b))  nil) ; SBCL: in the repl this is nil, when compiled this is t
 (define x nil)
 (deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
 (deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)

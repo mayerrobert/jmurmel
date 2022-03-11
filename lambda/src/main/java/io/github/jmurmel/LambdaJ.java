@@ -5470,7 +5470,7 @@ public class LambdaJ {
                     /// * special forms:
 
                     ///     - quote
-                    if (intp.sQuote == operator) { emitQuotedForm(sb, car(ccArguments)); return; }
+                    if (intp.sQuote == operator) { emitQuotedForm(sb, car(ccArguments), true); return; }
 
                     ///     - if
                     if (intp.sIf == operator) {
@@ -5625,7 +5625,7 @@ public class LambdaJ {
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (symbolEq(operator, "macroexpand-1")) {
                         if (intp.sQuote != caar(ccArguments)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
-                        emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)));
+                        emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)), true);
                         return;
                     }
 
@@ -5733,7 +5733,7 @@ public class LambdaJ {
             notAPrimitive("setq", symbol, javaName);
             if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
                 final String symName = mangle(symbol.toString(), 0);
-                sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply(");
+                sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply("); // todo geht das einfacher?
                 emitForm(sb, valueForm, env, topEnv, rsfx, false);
                 sb.append(")).get()");
             } else {
@@ -6326,50 +6326,49 @@ public class LambdaJ {
         }
 
 
-        private int qCounter;
-        private final List<String> quotedForms = new ArrayList<>();
-
-        private void emitQuotedForm(WrappingWriter sb, Object form) {
+        private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
             if (form == null || intp.sNil == form) sb.append("_nil");
 
             else if (symbolp(form)) {
                 if (symbolEq(form, "t")) sb.append("_t");
-                else {
-                    final String s = "intern(\"" + form + "\")";
-                    final int prev = quotedForms.indexOf(s);
-                    if (prev == -1) {
-                        sb.append("q").append(qCounter++);
-                        quotedForms.add(s);
-                    }
-                    else sb.append("q").append(prev);
-                }
+                else if (pool) emitReference(sb, "intern(\"" + form + "\")");
+                else sb.append("intern(\"" + form + "\")");
             }
             else if (atom(form))    { emitAtom(sb, form); }
 
             else if (consp(form)) {
                 final StringWriter b = new StringWriter();
                 final WrappingWriter qsb = new WrappingWriter(b);
-                // use a builder to avoid stackoverflow at runtime on long lists. nested lists still are recursive at compiletime as well as runtime, tough
                 qsb.append("new ListBuilder()");
                 for (Object o = form; ; o = cdr(o)) {
-                    if (cdr(o) != null) {
-                        qsb.append("\n        .append("); emitQuotedForm(qsb, car(o)); qsb.append(')');
-                        if (!consp(cdr(o))) {
-                            qsb.append("\n        .appendLast("); emitQuotedForm(qsb, cdr(o)); qsb.append(')');
-                            break;
-                        }
-                    }
-                    else {
-                        qsb.append("\n        .append("); emitQuotedForm(qsb, car(o)); qsb.append(')');
+                    qsb.append("\n        .append("); emitQuotedForm(qsb, car(o), false); qsb.append(')');
+                    if (cdr(o) == null) break;
+                    if (!consp(cdr(o))) {
+                        qsb.append("\n        .appendLast("); emitQuotedForm(qsb, cdr(o), false); qsb.append(')');
                         break;
                     }
                 }
                 qsb.append("\n        .first()");
-                sb.append("q").append(qCounter++);
-                quotedForms.add(b.toString());
+
+                /*if (pool) emitReference(sb, b.toString()); // todo pooling wieder aufdrehen, tests anpassen
+                else*/ sb.append(b.toString());
             }
 
             else throw new LambdaJError("quote: internal error");
+        }
+
+        private int qCounter;
+        private final List<String> quotedForms = new ArrayList<>();
+
+        /** emit a reference to an existing identical constant in the constant pool
+         *  or add a new one to the pool and emit a reference to that */
+        private void emitReference(WrappingWriter sb, String s) {
+            final int prev = quotedForms.indexOf(s);
+            if (prev == -1) {
+                sb.append("q").append(qCounter++);
+                quotedForms.add(s);
+            }
+            else sb.append("q").append(prev);
         }
 
         private void emitConstantPool(WrappingWriter ret) {
