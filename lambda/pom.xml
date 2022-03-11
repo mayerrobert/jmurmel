@@ -22,10 +22,21 @@
 
     <properties>
         <maven.build.timestamp.format>yyyyMMdd_HHmm</maven.build.timestamp.format>
-
         <maven.javadoc.skip>false</maven.javadoc.skip>
-        <maven.site.skip>false</maven.site.skip>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>up-to-17</id>
+            <activation>
+                <jdk>[1.8,18)</jdk>
+            </activation>
+            <properties>
+                <!-- maven-dependency-plugin doesn't support 19 yet, only enable "mvn site" up to 17 -->
+                <maven.site.skip>false</maven.site.skip>
+            </properties>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
@@ -179,6 +190,7 @@
             </plugin>
             -->
 
+           <!-- maven-dependency-plugin doesn't support 19 yet --> 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
