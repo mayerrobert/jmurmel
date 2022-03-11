@@ -28,6 +28,8 @@
         <javac.target>1.8</javac.target>
 
         <javadoc.skip>true</javadoc.skip>
+        <maven.site.skip>true</maven.site.skip>
+
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
         <!-- dependency versions -->
