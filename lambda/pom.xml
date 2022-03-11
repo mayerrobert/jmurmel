@@ -22,6 +22,9 @@
 
     <properties>
         <maven.build.timestamp.format>yyyyMMdd_HHmm</maven.build.timestamp.format>
+
+        <maven.javadoc.skip>false</maven.javadoc.skip>
+        <maven.site.skip>false</maven.site.skip>
     </properties>
 
     <build>

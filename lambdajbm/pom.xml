@@ -25,6 +25,9 @@
             Name of the benchmark Uber-JAR to generate.
           -->
         <uberjar.name>benchmarks</uberjar.name>
+
+        <maven.javadoc.skip>false</maven.javadoc.skip>
+        <maven.site.skip>false</maven.site.skip>
     </properties>
 
     <dependencies>
