@@ -38,12 +38,23 @@ let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 
 
 
+Platform matrix und publishing
+https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#Testing-against-different-platforms
+
+Dependency (security) checks mit maven:
+https://github.com/jeremylong/DependencyCheck#maven-plugin
+
+
+https://stackoverflow.com/questions/24487805/lambda-expression-vs-method-reference
+
 compiler: tests für verschachtelte let dynamic
 ggf. bei let dynamic als endcall zumindest warnen dass TCO nicht gemacht wird
 ggf. für let dynamic statt try/finally eine restore liste basteln, und die wird irgendwie von tailcall abgearbeitet
 
 teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur bei listen, wo anfang mit ende verknüpft ist,
 nicht aber bei einem loop mittendrin
+
+options --pool-all-quoted-symbols, --pool-quoted-lists, --pool-quoted-lists-in-lists
 
 
 
@@ -57,6 +68,17 @@ VALUES kann auch in setf verwendet werden: (setf (values a b) (floor 7 2)), das 
   brauchts also nicht im ersten wurf
 MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL übernimmt 0 oder mehrere
 LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
+
+vielleicht doch schon mal vector und svref implementieren? vector liefert eindimensionale arrays, 0-basiert, typ T. make-array könnte später kommen, das kann viel mehr
+svref ist auch ein setf accessor
+-> und char/ schar wären accessoren für strings...
+   -> char kamma machen, setf/ schar geht nicht weil strings sind immutable
+vielleicht auch list->svector und svector->list
+
+funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write arg nil) und dann (fatal)
+
+(declaim (inline... implementieren
+-> cdddr könnte inlined werden, dann würden die cdr aufrufe opencoded, und effektiv der ganze cdddr aufruf opencoded
 
 
 
@@ -94,6 +116,8 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
    -> vielleicht doch besser desugar?
 -> aufpassen, dass nicht (f a b) 1x argumente evaluiert und (f a . b) 2x
 
+vielleicht müsste es auch sein: (f a b . l) <=> (apply f (append (list a b) l)). oder einfacher: (apply f (list* a b l))
+
 
 müssen die compiler rt funktionen public sein oder reicht protected? geht static?
 -> static würd gehen, protected nicht wg. Java compiler fehler
@@ -112,9 +136,13 @@ weiterer vorteil: mehrere LambdaJ instanzen sharen die wellknown symbols
 feature headless und ggf gui
 -> nein, features sollten nicht erst zur laufzeit ermittelt werden?
    -> besser: funktion headlessp
+MAVEN_OPTS=-Djava.awt.headless=true und dann turtle-funktionen in murmel-langref wieder aufdrehen?
 
 Graalvm download: https://github.com/graalvm/graalvm-ce-builds/releases
 native executable bauen: https://github.com/clj-easy/graalvm-clojure/blob/master/doc/clojure-graalvm-native-binary.md
+
+Adopt OpenJDK 8u (alt): https://adoptopenjdk.net/upstream.html?variant=openjdk8&jvmVariant=hotspot
+Adoptium OpenJDK 8u (Nachfolger): https://adoptium.net/?variant=openjdk8&jvmVariant=hotspot
 
 SRFI 197 hat chain operator & Co, siehe https://srfi.schemers.org/srfi-197/srfi-197.html
 ähnlich wie ->
@@ -211,6 +239,15 @@ interlisp hat
 (DEFINEQ
   (DESTRUCTIVE
     (LAMBDA  (n  m)
+
+https://stackoverflow.com/questions/7872852/map-filter-foldr-in-drracket-scheme
+https://stackoverflow.com/questions/36960124/foldr-and-foldl-in-drracket
+https://srfi.schemers.org/srfi-1/srfi-1.html, https://srfi.schemers.org/srfi-1/srfi-1-reference.scm
+
+
+Scheme Benchmarks:
+https://ecraven.github.io/r7rs-benchmarks/
+
 
 communicating sequential processes (CSP) ist im prinzip die channels von go, siehe https://en.wikipedia.org/wiki/JCSP
 siehe auch https://github.com/hawkir/calispel

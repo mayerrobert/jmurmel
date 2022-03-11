@@ -5,6 +5,12 @@ die ganzen havXXX() in eval sollten unnoetig sein: wenn die special forms abgedr
 und dann trifft das ganze if(sXXX) nicht zu
 ausserdem kann dann die elseif kette auf switch umgestellt werden?
 
+eigentlich könnte man in einer funktion alle symbole auflösen (symbole entweder durch den wert oder den env entry ersetzen),
+entweder (compile f) ersetzt f im environment mit einer version die statt symbolen die environment einträge enthält,
+oder defun macht das gleich.
+-> late vs. early binding ?!?
+-> nur das erste listenemelent ersetzen (zweites element bei apply?) vs alle symbole inkl variablen
+
 assoc beschleunigung xter anlauf:
 -> ein closure koennte eine hashmap mit symbol -> (symbol . value) lookups haben. eval muesste einen optionalen parameter bekommen,
    wenn ein closure gestartet wird, wird die hashmap mitgegeben, sonst ists null. der symbol-lookup in eval muesste die map geeignet ausnuetzen wnn != null

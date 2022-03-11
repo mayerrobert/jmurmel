@@ -21,6 +21,10 @@ you can see where most of the allocation occurs, settings=profile will add a per
 
 
 
+https://github.com/jvm-profiling-tools/async-profiler
+
+
+
 Ideen:
 ======
 MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
