@@ -27,11 +27,17 @@ _$*
 core
 # CVS default ignores end
 /.idea/
-/parent/definitions/definitions.iml
 /jmurmel-all.iml
-/parent/definitions/target/
-/target/
+/doc/doc.iml
+/doc/target/
+/lambda/jmurmel.iml
+/lambda/target/
 /lambdajbm/jmurmelbm.iml
+/lambdajbm/target/
+/parent/definitions/definitions.iml
+/parent/definitions/target/
 /samples.mlib/samples.mlib.iml
+/samples.mlib/target/
 /samples.murmel/samples.murmel.iml
 /samples.murmel/target/
+/target/
