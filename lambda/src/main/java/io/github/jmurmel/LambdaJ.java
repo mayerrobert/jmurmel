@@ -4398,6 +4398,7 @@ public class LambdaJ {
         }
 
         public static final CompilerGlobal UNASSIGNED = () -> { throw new LambdaJError(false, "unassigned value"); };
+        public static final Object[] NOARGS = new Object[0];
 
         public interface CompilerPrimitive { Object applyPrimitive(Object... args); }
 
@@ -6134,7 +6135,6 @@ public class LambdaJ {
         }
 
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
-        // todo if-kette durch schleife ersetzen vgl. opencodeApply, oder zumindest mit einer schleife normale calls ohne trampoline generieren
         private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJ intp = this.intp;
             if (op == intp.sAdd) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
@@ -6231,6 +6231,10 @@ public class LambdaJ {
                 sb.append(".appendLast("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(").first()");
                 return true;
             }
+
+            for (String prim: primitives)          if (symbolEq(op, prim))    { funcallHelper(sb, "_" + prim,  args, env, topEnv, rsfx, null);  return true; }
+            for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { funcallHelper(sb, prim[1],     args, env, topEnv, rsfx, null);  return true; }
+
             return false;
         }
 
@@ -6322,6 +6326,7 @@ public class LambdaJ {
                     if (wrapper != null) sb.append(')');
                 }
             }
+            else sb.append("NOARGS");
             sb.append(')');
         }
 

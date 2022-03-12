@@ -1,4 +1,7 @@
-compiler: eine methode für argslists für functioncalls rausziehen, die schreibt ein einziges null argument als "(Object)null"
+compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
+-> geht nicht innerhalb ?:, weil das braucht eine expression
+
+compiler: eine methode für argslists für functioncalls rausziehen, die schreibt ein einziges null argument als "(Object)null" (und keine argumente als (Object[])null ?)
 -> dann kann an anderen stellen "null" statt "_nil" geschrieben werden -> schneller
 
 im reader gibts every und some
