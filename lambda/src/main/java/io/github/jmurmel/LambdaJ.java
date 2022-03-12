@@ -6366,8 +6366,11 @@ public class LambdaJ {
                 /*if (pool) emitReference(sb, b.toString()); // todo deduplizierung wieder aufdrehen, tests anpassen
                 else sb.append(b.toString());*/
 
-                sb.append("q").append(qCounter++);
-                quotedForms.add(b.toString());
+                if (pool) {
+                    sb.append("q").append(qCounter++);
+                    quotedForms.add(b.toString());
+                }
+                else sb.append(b.toString());
             }
 
             else throw new LambdaJError("quote: internal error");
