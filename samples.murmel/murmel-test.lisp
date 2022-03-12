@@ -211,6 +211,15 @@
 (deftest append.6 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
 
 
+;;; test eval
+; when running compiled murmel `eval` starts the embedded interpreter,
+; and e.g. `(eval '(lambda () ...` returns an interpreted closure.
+; So these tests additionally check if compiled code can run interpreted lambdas.
+(define x (eval '(lambda () '|hello from interpreter|)))
+(deftest eval.1 (#-murmel funcall x) '|hello from interpreter|)
+(deftest eval.2 (#-murmel funcall (eval '(lambda (x) (format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
+
+
 ;;; test eql
 (deftest eql.1 (eql 'a 'b)  nil)
 (deftest eql.2 (eql 'a 'a)  t)
@@ -222,7 +231,6 @@
 (deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
 (deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
 (deftest eql.10 (eql '(a . b) '(a . b))  nil) ; SBCL: in the repl this is nil, when compiled this is t
-(define x nil)
 (deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
 (deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
 (deftest eql.13 (eql #\A #\A)  t)

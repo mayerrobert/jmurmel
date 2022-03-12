@@ -4796,10 +4796,14 @@ public class LambdaJ {
             return r;
         }
 
-        public static Object funcall(Object fn, Object... args) {
+        public final Object funcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).apply(arraySlice(args));
+            if (fn instanceof ClosureConsCell)   return intp.eval(cons(intp.sApply,
+                                                                       cons(fn,
+                                                                            cons(cons(intp.intern("quote"), cons(arraySlice(args), null)), null))),
+                                                                  null);
             throw errorNotAFunction(fn);
         }
 
@@ -4818,7 +4822,7 @@ public class LambdaJ {
         }
 
         /** used for (apply sym form) */
-        public static Object applyHelper(Object fn, Object argList) { return funcall(fn, toArray(argList)); }
+        public final Object applyHelper(Object fn, Object argList) { return funcall(fn, toArray(argList)); }
 
         /** used for (apply sym form) */
         public final Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
@@ -5951,7 +5955,7 @@ public class LambdaJ {
                                 sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
                             }
                         }
-                        else globalName = null;
+                        else globalName = null; // todo ist das nicht ein fehler? undefined symbol?
 
                         final Object binding = bi.next();
                         sb.append("        ").append(javaName).append(" = ");

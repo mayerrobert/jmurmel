@@ -1,8 +1,39 @@
+(compile) könnte in etwa so gehen:
+
+kompilierter code muss lernen, freie variablen auch im environment des interpreters zu lesen und mit setq schreiben ((re-)define müsste so eigentlich auch gehen!),
+   und interpretierte funktionen aufrufen (diese interpretierten funktionen müssen aber das environment des kompilierten codes sehen, und die Murmel funktion eval
+   sollte ein gscheites environment mitbekommen, damit (eval '(lambda...)) aus dem compiler heraus funktionierende closures erstellen kann 
+statt toplevelFormToJava() gibts eine andere funktion, es wird nicht das bisherige MurmelProgram geschrieben,sondern anders:
+-> für jede freie variable gibts ein lambda, das sucht beim ersten zugriff mit assoc im environment des interpreters, und ersetzt sich selbst durch ein lambda,
+   das bei künftigen zugriffen den wert aus dem environment eintrag ausliest
+   -> zum zeitpunkt des ersten zugriffs können diese freien variablen existieren oder auch nicht (nur? globale variablen/ funktionen können später dazukommen)
+   -> ob diese lambdas in die generierte klasse als member emitted werden müssen oder obs anonyme lambdas sein können?
+      -> zum umpatchen brauchts einen namen. könnte aber statt lambda auch instanzen einer klasse sein, die hält das symbol und erst UNDEFINED und später den wert,
+         und macht assoc on demand
+-> diese klasse braucht also eine referenz auf das environment des interpreters zum zeitpunkt des aufrufes, und auch eine referenz auf den interpreter selbst
+-> diese klasse sollte wsl. von MurmelJavaRuntime erben, da muss man halt den interpreter reinpoken statt neu erzeugen
+
+freie variablen suchen/ schreiben und interpreter aufrufen wär bereits jetzt ohne (compile) nützlich, für eval.
+-> mit eval kann man das ganze auch testen: eval erzeugt ein interpretiertes lambda, das dann vom kompilierten code aus aufgerufen wird
+
+später könnte damit dann ein repl mit performance (durch compile) entstehen
+-> compile in kompiliertem code aufrufen scheint auch nicht schwer, damit könnte man dynamisch neue kompilierte funktionen erzeugen
+
+umsetzung: evtl wird aus MurmelJavaCompiler eine basisklasse, und abgeleitet MurmelJavaCompiler mit murmeltojavasource/class usw wie bisher, und abgeleitet
+compilecompiler mit compile(LambdaJ intp, symbol oder ConsCell code, ConsCell environment)
+
+
+
 compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
 -> geht nicht innerhalb ?:, weil das braucht eine expression
+-> emitForm müsste wohl einen parameter "expr" bekommen und geeignet durchreichen
+
 
 compiler: eine methode für argslists für functioncalls rausziehen, die schreibt ein einziges null argument als "(Object)null" (und keine argumente als (Object[])null ?)
 -> dann kann an anderen stellen "null" statt "_nil" geschrieben werden -> schneller
+-> oder einfach nie nil als "null" schreiben, sondern immer "(Object)null"?
+-> und eine leere argumentliste als NOARGS - fehlt wsl. bei functioncall in emitForm, vielleicht noch woanders
+
 
 im reader gibts every und some
 -> woanders hin schieben?
