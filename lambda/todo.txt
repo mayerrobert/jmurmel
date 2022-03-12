@@ -1,3 +1,7 @@
+im reader gibts every und some
+-> woanders hin schieben?
+-> every <-> and, some <-> or. kann man das woanders nutzen? in mlib?
+
 wenn fatal in compiliertem code aufgerufen wird, kommt am ende
   history NOT run as Java - error:
 die meldung ist falsch, weil gelaufen ists ja
