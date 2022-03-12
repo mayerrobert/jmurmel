@@ -1,5 +1,5 @@
 ;;; Performance and Evaluation of Lisp Systems, Richard P. Gabriel, 1985
-;;; p 82
+;;; p 84
 
 
 (defun takeuchi (x y z)

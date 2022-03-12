@@ -83,7 +83,7 @@ or `nil` for the empty list.
 
 `nconc` concatenates lists, each list but the last is modified.
 If no lists are supplied, `nconc` returns `nil`.
-Each argument but the last must be a proper list.
+Each argument but the last must be a proper or dotted list.
 
 ### Macro: destructuring-bind
     (destructuring-bind (vars*) (expressions*) forms*)
@@ -497,7 +497,7 @@ based on https://picolisp.com/wiki/?prettyPrint .
     (list-length list-or-string) -> length
 
 Returns the length of `list-or-string` if it is a string or proper list.
-Returns `nil` if `list.or-string` is a circular list.
+Returns `nil` if `list-or-string` is a circular list.
 
 See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
 
