@@ -5475,6 +5475,12 @@ public class LambdaJ {
                     ///     - if
                     if (intp.sIf == operator) {
                         varargsMinMax("if", ccArguments, 2, 3);
+                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.sNull) {
+                            // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
+                            final Object[] transformed = new Object[] { intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)}; 
+                            emitForm(sb, new ArraySlice(transformed, 0), env, topEnv, rsfx, isLast);
+                            return;
+                        }
                         sb.append("(");
                         emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
@@ -5661,9 +5667,9 @@ public class LambdaJ {
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == intp.sNil) sb.append("false");
             else if (symbolp(form) || consp(form)) {
-                sb.append('(');
-                emitForm(sb, form, env, topEnv, rsfx, false);
-                sb.append(") != null");
+                // optimize "(null ..."
+                if (car(form) == intp.sNull) { sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))"); }
+                else { sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(") != null"); }
             }
             else sb.append("true"); // must be an atom other than nil or a symbol -> true
         }

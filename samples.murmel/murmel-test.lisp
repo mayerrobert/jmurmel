@@ -91,7 +91,7 @@
 
 
 ;;; Additional special forms: define, defun, defmacro, setq, let, if, progn, cond, labels, apply, load, require, provide
-;;; todo cond, labels, apply, load, require, provide
+;;; todo labels, apply, load, require, provide
 
 ;;; test define
 (define *a* nil)
@@ -177,6 +177,18 @@
 ;;; test cond
 (deftest cond.1
   (cond) nil)
+
+(deftest cond.2
+  (cond ((null nil) 'yes)) 'yes)
+
+(deftest cond.2
+  (cond ((null (null nil)) 'yes)) nil)
+
+(deftest cond.2
+  (cond ((null 1) 'yes)) nil)
+
+(deftest cond.2
+  (cond ((null (null 1)) 'yes)) 'yes)
 
 
 ;;; let over lambda
