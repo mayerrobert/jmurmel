@@ -202,15 +202,6 @@
 ;;; Primitives
 ;;; todo remaining primitives
 
-;;; test append
-(deftest append.1 (append)                   nil)
-(deftest append.2 (append nil)               nil)
-(deftest append.3 (append nil '(1 2 3))      '(1 2 3))
-(deftest append.4 (append nil '(1 2 3) nil)  '(1 2 3))
-(deftest append.5 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
-(deftest append.6 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
-
-
 ;;; test eval
 ; when running compiled murmel `eval` starts the embedded interpreter,
 ; and e.g. `(eval '(lambda () ...` returns an interpreted closure.
@@ -218,6 +209,19 @@
 (define x (eval '(lambda () '|hello from interpreter|)))
 (deftest eval.1 (#-murmel funcall x) '|hello from interpreter|)
 (deftest eval.2 (#-murmel funcall (eval '(lambda (x) (format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
+
+
+;;; test null
+(deftest null.1 (null nil) t)
+(deftest null.2 (null 'a-symbol) nil)
+(deftest null.3 (null 3) nil)
+
+
+;;; test eq
+(deftest eq.1 (eq 'a 'a) t)
+(deftest eq.2 (eq nil nil) t)
+(deftest eq.3 (eq 'a 1) nil)
+(deftest eq.3 (eq 1 1.0) nil)
 
 
 ;;; test eql
@@ -244,6 +248,30 @@
 
 (deftest eql.17 (eql -0.0 -0.0) t)
 (deftest eql.18 (eql -0.0 0.0) nil)
+
+
+;;; test list
+(deftest list.1 (list) nil)
+(deftest list.2 (list (list))  '(nil))
+(deftest list.3 (write (list)) #+murmel t #-murmel nil)
+(deftest list.4 (list 1 2 3)   '(1 2 3))
+
+
+;;; test list*
+(deftest list*.1 (list* nil)        nil)
+(deftest list*.1 (list* 1)          1)
+(deftest list*.2 (list* (list))     nil)
+(deftest list*.3 (list* 1 2 )       '(1 . 2))
+(deftest list*.3 (list* 1 2 3 4 5)  '(1 2 3 4 . 5))
+
+
+;;; test append
+(deftest append.1 (append)                   nil)
+(deftest append.2 (append nil)               nil)
+(deftest append.3 (append nil '(1 2 3))      '(1 2 3))
+(deftest append.4 (append nil '(1 2 3) nil)  '(1 2 3))
+(deftest append.5 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
+(deftest append.6 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
 
 
 ;;; test assq
@@ -289,6 +317,11 @@
 (deftest test-mod-rem
   (list (mod -3.0 -2) (rem -3 -2.0) (mod 3.0 -2) (rem 3 -2.0))
     '(-1.0 -1.0 -1.0 1.0))
+
+
+;;; test floor
+(deftest floor.1 (floor 5.3) 5)
+(deftest floor.2 (floor 5.3 2) 2)
 
 
 ;;; Murmel-only tests for various not-a-numbers.

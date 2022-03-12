@@ -2730,7 +2730,7 @@ public class LambdaJ {
     }
 
     static void errorVarargsCount(String func, int min, int actual) {
-        throw new LambdaJError(true, "%s: expected %s or more but got only %d", func, expectedArgPhrase(min), actualArgPhrase(actual));
+        throw new LambdaJError(true, "%s: expected %s or more but %s", func, expectedArgPhrase(min), actualArgPhrase(actual));
     }
 
     private static String expectedArgPhrase(int expected) {
@@ -5514,7 +5514,7 @@ public class LambdaJ {
 
                     ///     - setq
                     if (intp.sSetQ == operator) {
-                        if (ccArguments == null) sb.append("null");
+                        if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
                         else if (cddr(ccArguments) == null)
                             emitSetq(sb, ccArguments, env, topEnv, rsfx);
                         else {
@@ -5550,7 +5550,7 @@ public class LambdaJ {
                         if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
                         final Object result = intp.eval(form, null);
                         if (result != null) sb.append("intern(\"").append(car(ccArguments)).append("\")");
-                        else sb.append("null");
+                        else sb.append("(Object)null");
                         return;
                     }
 
@@ -5624,7 +5624,7 @@ public class LambdaJ {
 
                     if (intp.sDeclaim == operator) {
                         intp.evalDeclaim(rsfx, ccArguments);
-                        sb.append("null");
+                        sb.append("(Object)null");
                         return;
                     }
 
@@ -6193,14 +6193,14 @@ public class LambdaJ {
 
             if (op == intp.sAppend) {
                 if (args == null) { // no args
-                    sb.append("_nil");  return true;
+                    sb.append("(Object)null");  return true;
                 }
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 funcallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
             }
             if (op == intp.sList) {
                 if (args == null) { // no args
-                    sb.append("null");  return true;
+                    sb.append("(Object)null");  return true;
                 }
                 if (cdr(args) == null) { // one arg
                     sb.append("cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
@@ -6263,9 +6263,9 @@ public class LambdaJ {
 
         /** generate boolean op for one or two args */
         private void compareOp(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append("((");
+            sb.append("(((Object)");
             emitForm(sb, lhs, env, topEnv, rsfx, false);
-            sb.append(" == ");
+            sb.append(" == (Object)");
             if (rhs == null) sb.append("null"); else emitForm(sb, rhs, env, topEnv, rsfx, false);
             sb.append(") ? _t : null)");
         }
