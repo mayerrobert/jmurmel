@@ -5474,8 +5474,9 @@ public class LambdaJ {
 
                     ///     - if
                     if (intp.sIf == operator) {
-                        sb.append("((");
-                        emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(") != null\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
+                        sb.append("(");
+                        emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
+                        sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
                         if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
                         else sb.append(")\n        : null)");
                         return;
@@ -5483,13 +5484,13 @@ public class LambdaJ {
 
                     ///     - cond
                     if (intp.sCond == operator) {
-                        sb.append("false ? null");
+                        sb.append("(false ? null");
                         for (Object cond: ccArguments) {
-                            sb.append("\n        : (("); emitForm(sb, car(cond), env, topEnv, rsfx, false); sb.append(") != null)\n        ? (");
+                            sb.append("\n        : "); emitTruthiness(sb, car(cond), env, topEnv, rsfx); sb.append("\n        ? (");
                             emitProgn(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
                         }
-                        sb.append("\n        : null");
+                        sb.append("\n        : null)");
                         return;
                     }
 
@@ -5654,6 +5655,16 @@ public class LambdaJ {
                 //e.printStackTrace();
                 throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
             }
+        }
+
+        private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (form == null || form == intp.sNil) sb.append("false");
+            else if (symbolp(form) || consp(form)) {
+                sb.append('(');
+                emitForm(sb, form, env, topEnv, rsfx, false);
+                sb.append(") != null");
+            }
+            else sb.append("true"); // must be an atom other than nil or a symbol -> true
         }
 
         /** write atoms that are not symbols */
@@ -6354,8 +6365,11 @@ public class LambdaJ {
                 }
                 qsb.append("\n        .first()");
 
-                /*if (pool) emitReference(sb, b.toString()); // todo pooling wieder aufdrehen, tests anpassen
-                else*/ sb.append(b.toString());
+                /*if (pool) emitReference(sb, b.toString()); // todo deduplizierung wieder aufdrehen, tests anpassen
+                else sb.append(b.toString());*/
+
+                sb.append("q").append(qCounter++);
+                quotedForms.add(b.toString());
             }
 
             else throw new LambdaJError("quote: internal error");
