@@ -162,6 +162,8 @@
             (list *a* *b* *c*))
     '(456 456 3 1 2 3))
 
+
+;;; test if
 (deftest if-number.1
   (if 1 'yes)  'yes)
 
@@ -170,6 +172,11 @@
 
 (deftest if-char.1
   (if #\1 'yes)  'yes)
+
+
+;;; test cond
+(deftest cond.1
+  (cond) nil)
 
 
 ;;; let over lambda

@@ -5474,23 +5474,24 @@ public class LambdaJ {
 
                     ///     - if
                     if (intp.sIf == operator) {
+                        varargsMinMax("if", ccArguments, 2, 3);
                         sb.append("(");
                         emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
                         if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
-                        else sb.append(")\n        : null)");
+                        else sb.append(")\n        : _nil)");
                         return;
                     }
 
                     ///     - cond
                     if (intp.sCond == operator) {
-                        sb.append("(false ? null");
-                        for (Object cond: ccArguments) {
+                        sb.append("(false ? _nil");
+                        if (ccArguments != null) for (Object cond: ccArguments) {
                             sb.append("\n        : "); emitTruthiness(sb, car(cond), env, topEnv, rsfx); sb.append("\n        ? (");
                             emitProgn(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
                         }
-                        sb.append("\n        : null)");
+                        sb.append("\n        : _nil)");
                         return;
                     }
 
@@ -5645,7 +5646,7 @@ public class LambdaJ {
                     sb.append(')');
                     return;
                 }
-                throw new LambdaJError("formToJava: form not implemented: " + printSEx(form));
+                throw new LambdaJError("emitForm: form not implemented: " + printSEx(form));
 
             }
             catch (LambdaJError e) {
@@ -5653,7 +5654,7 @@ public class LambdaJ {
             }
             catch (Exception e) {
                 //e.printStackTrace();
-                throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
+                throw new LambdaJError(e, "emitForm: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
             }
         }
 
