@@ -1,6 +1,7 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
+ * errormessages contain the filename and linenumber (was: only linenumber)
  * argument to sleep is "seconds" (was: internal-time-units-per-second),
    return value is nil (was: actually slept time in internal-time-units-per-second)
  * added more complete support for "let dynamic" and "let* dynamic"

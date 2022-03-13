@@ -1,5 +1,7 @@
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
+in readerfehlern fehlt der filename
+
 
 (compile) könnte in etwa so gehen:
 
@@ -32,10 +34,8 @@ compiler: (einige) forms die nicht in der tailposition sind (isLast == false) ka
 -> emitForm müsste wohl einen parameter "expr" bekommen und geeignet durchreichen
 
 
-compiler: eine methode für argslists für functioncalls rausziehen, die schreibt ein einziges null argument als "(Object)null" (und keine argumente als (Object[])null ?)
--> dann kann an anderen stellen "null" statt "_nil" geschrieben werden -> schneller
--> oder einfach nie nil als "null" schreiben, sondern immer "(Object)null"?
--> und eine leere argumentliste als NOARGS - fehlt wsl. bei functioncall in emitForm, vielleicht noch woanders
+errorMalformed könnte als ersten parameter ein enum Error übernehmen. das enum hat name und URL, es gibt enumwerte für alle special forms inkl "named let" usw. und "compilation unit".
+damit könnte errroMalformed zusatzinfo wie "see http://.../murmel-langref.md#let" ausgeben.
 
 
 im reader gibts every und some

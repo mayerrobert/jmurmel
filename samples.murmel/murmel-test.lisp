@@ -65,6 +65,12 @@
          (progn (inc-failed) (write ',name) (format t " tequal test failed") (writeln))))))
 
 
+; a varargs function that echoes all arguments as a list.
+; Useful to check for invalid Java code emission related to varargs.
+(defun echo #+murmel x
+            #-murmel (&rest x)
+  x)
+
 
 ;;; Test the test-framework
 
@@ -81,16 +87,21 @@
 (deftest tequal.9 '(a (b))  '(a (b)))
 (deftest tequal.10 (tequal '(a (b)) '(a (c)))  nil)
 
+(deftest test-echo.1 (echo) nil)
+(deftest test-echo.2 (echo nil) '(nil))
+(deftest test-echo.3 (echo 1 2 3) '(1 2 3))
+
 
 ;;; test reader
 (deftest reader.1 1 1)
 (deftest reader.2 '(1 . 2) '(1 . 2))
 (deftest reader.3 '(1 2 3 4 5) '(1 2 3 4 5))
 (deftest reader.4 '(1 2 3 4 . 5) '(1 2 3 4 . 5))
+(deftest reader.5 (echo '()) '(nil))
 
 (deftest readermacro.1 #\a #\a)
 (deftest readermacro.2 (char-code #\Nul) 0)
-(deftest readermacro.3 (char-code #\200) 200)
+#+murmel (deftest readermacro.3 (char-code #\200) 200)
 
 #+murmel
 (deftest feature.1 #+(and murmel jvm) 'murmel-jvm 'murmel-jvm)
@@ -99,6 +110,7 @@
 
 
 ;;; Tests for core Murmel w/o mlib
+
 
 ;;; basic special forms: quote, lambda
 
@@ -122,37 +134,62 @@
 (deftest setq.local    (let ((a 1)) (setq a 3)) 3)
 
 
-;;; test letXX
+;;; test let, let*, letrec
 ; no bindings
-(deftest let.1 (let () (1+ 1)) 2)
-(deftest let.2 (let* () (1+ 2)) 3)
-#+murmel (deftest let.3 (letrec () (1+ 3)) 4)
+#+murmel (deftest let.1 (echo (let)) '(nil))
+#+murmel (deftest let.2 (echo (let*)) '(nil))
+#+murmel (deftest let.3 (echo (letrec)) '(nil))
 
-(deftest let.4 (let (a) (list a)) '(nil))
-(deftest let.5 (let* (a) (list a)) '(nil))
-#+murmel (deftest let.6 (letrec (a) (list a)) '(nil))
+(deftest let.4 (echo (let nil)) '(nil))
+(deftest let.5 (echo (let* nil)) '(nil))
+#+murmel (deftest let.6 (echo (letrec nil)) '(nil))
 
-(deftest let.4 (let ((a 1) b) (list b a)) '(nil 1))
-(deftest let.5 (let* ((a 1) b) (list b a)) '(nil 1))
-#+murmel (deftest let.6 (letrec ((a 1) b) (list b a)) '(nil 1))
+(deftest let.7 (let () (1+ 1)) 2)
+(deftest let.8 (let* () (1+ 2)) 3)
+#+murmel (deftest let.9 (letrec () (1+ 3)) 4)
 
+(deftest let.10 (let (a) (list a)) '(nil))
+(deftest let.11 (let* (a) (list a)) '(nil))
+#+murmel (deftest let.12 (letrec (a) (list a)) '(nil))
 
-;;; test named letXX
-#+murmel (deftest namedlet.1 (let loop () (if nil (loop)) (1+ 1)) 2)
-#+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
-#+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
-#+murmel (deftest namedlet.4 (letrec loop ((aaa 3) bbb)
-                               (if (> aaa 1)
-                                     (loop (1- aaa) 1)
-                                 (+ aaa bbb)))
-                             2.0)
+(deftest let.13 (let ((a 1) b) (list b a)) '(nil 1))
+(deftest let.14 (let* ((a 1) b) (list b a)) '(nil 1))
+#+murmel (deftest let.15 (letrec ((a 1) b) (list b a)) '(nil 1))
 
 
+;;; test named let, let*, letrec
+#+murmel
+(progn
+(deftest namedlet.1 (let loop () (if nil (loop)) (1+ 1)) 2)
+(deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
+(deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
+(deftest namedlet.4 (letrec loop ((aaa 3) bbb)
+                      (if (> aaa 1)
+                            (loop (1- aaa) 1)
+                        (+ aaa bbb)))
+                    2.0)
+
+(deftest namedlet.5
+         (let loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
+         '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
+
+#| todo compiler emits erroneous code
+(deftest namedlet.6
+         (let* loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
+         '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
+
+(deftest namedlet.7
+         (letrec loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
+         '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
+|#
+)
+
+
+;;; test let dynamic
 (setq *a* 1 *b* 2 *c* 3)
 (defun globals-as-list ()
   (list *a* *b* *c*)) 
 
-;;; test let dynamic
 (deftest letdynamic.1
   (append (let #+murmel dynamic ((*a* 123) (*b* *a*) (*c* (1+ *c*))) (globals-as-list))
           (list *a* *b* *c*))
@@ -274,7 +311,7 @@
 ;;; test list
 (deftest list.1 (list) nil)
 (deftest list.2 (list (list))  '(nil))
-(deftest list.3 (write (list)) #+murmel t #-murmel nil)
+(deftest list.3 (echo (list))  '(nil))
 (deftest list.4 (list 1 2 3)   '(1 2 3))
 
 

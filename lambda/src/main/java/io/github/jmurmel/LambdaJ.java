@@ -5659,6 +5659,7 @@ public class LambdaJ {
                             emitForm(sb, arg, env, topEnv, rsfx, false);
                         }
                     }
+                    //else sb.append(", NOARGS"); // makes things considerably slower ?!?
                     sb.append(')');
                     return;
                 }
@@ -5821,7 +5822,7 @@ public class LambdaJ {
             if (named) { loopLabel = car(args); args = (ConsCell)cdr(args); }
             else       { loopLabel = null; }
             bindings = car(args);  body = cdr(args);
-            if (bindings == null && body == null) { sb.append("_nil"); return; }
+            if (bindings == null && body == null) { sb.append("(Object)null"); return; }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
 
@@ -5831,8 +5832,7 @@ public class LambdaJ {
             if (named) {
                 // named let
                 labelToJava(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
-            }
-            else {
+            } else {
                 // regular let
                 emitLambda(sb, cons(params, body), env, topEnv, rsfx+1, false);
             }
@@ -5851,33 +5851,26 @@ public class LambdaJ {
          * args = ([name] ((symbol form)...) forms...) */
         private void emitLetStarLetrec(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean letrec, boolean isLast) {
             final boolean named = car(args) instanceof LambdaJSymbol;
-            if (named) {
-                if (cadr(args) == null && cddr(args) == null) { sb.append("_nil"); return; }
-            }
-            else {
-                if (car(args) == null && cdr(args) == null) { sb.append("_nil"); return; }
-            }
-
-            final LambdaJSymbol name;
+            final Object loopLabel, bindings, body;
+            if (named) { loopLabel = car(args); args = (ConsCell)cdr(args); }
+            else       { loopLabel = null; }
+            bindings = car(args);  body = cdr(args);
+            if (bindings == null && body == null) { sb.append("(Object)null"); return; }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction () {\n");
 
             final String op;
-            if (car(args) instanceof LambdaJSymbol) {
+            if (named) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
-                if (car(args) == intp.sDynamic) errorMalformed("letrec", "dynamic only allowed with let*");
+                if (loopLabel == intp.sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
                 op = letrec ? "named letrec" : "named let*";
-                name = (LambdaJSymbol) car(args);
-                if (!listp(cdr(args))) errorMalformed(op, "a list of bindings", cdr(args));
-                args = (ConsCell)cdr(args);
+                if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
             }
             else {
-                name = null;
                 op = letrec ? "letrec" : "let*";
             }
 
-            final Object bindings = car(args);
             final ConsCell params = paramList(op, bindings, false);
             if (params != null) {
                 final Set<Object> seen = new HashSet<>();
@@ -5906,9 +5899,9 @@ public class LambdaJ {
                     sb.append("; }\n");
                 }
 
-            if (name != null) {
-                env = extenv(op, name, rsfx, env);
-                sb.append("        private final Object ").append(javasym(name, env)).append(" = this;\n");
+            if (loopLabel != null) {
+                env = extenv(op, loopLabel, rsfx, env);
+                sb.append("        private final Object ").append(javasym(loopLabel, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args) {\n");
             if (params != null) {
@@ -5922,13 +5915,13 @@ public class LambdaJ {
                 }
                 sb.append("        }\n");
             }
-            emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
+            emitForms(sb, (ConsCell)body, env, topEnv, rsfx, isLast);
             sb.append("        } }, (Object[])null)");
         }
 
         /** let dynamic and let* dynamic */
         private void emitLetLetStarDynamic(WrappingWriter sb, final ConsCell bindingsAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean letStar, boolean isLast) {
-            if (car(bindingsAndForms) == null && cdr(bindingsAndForms) == null) { sb.append("_nil"); return; }
+            if (car(bindingsAndForms) == null && cdr(bindingsAndForms) == null) { sb.append("(Object)null"); return; }
 
             final String op = letStar ? "let* dynamic" : "let dynamic";
             sb.append(isLast ? "tailcall(" : "funcall(");
@@ -6362,7 +6355,7 @@ public class LambdaJ {
 
 
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
-            if (form == null || intp.sNil == form) sb.append("_nil");
+            if (form == null || intp.sNil == form) sb.append("(Object)null");
 
             else if (symbolp(form)) {
                 if (symbolEq(form, "t")) sb.append("_t");
