@@ -5815,39 +5815,34 @@ public class LambdaJ {
         }
 
         /** let and named let */
-        private void emitLet(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void emitLet(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final boolean named = car(args) instanceof LambdaJSymbol;
-            if (named) {
-                if (cadr(args) == null && cddr(args) == null) { sb.append("_nil"); return; }
-            }
-            else {
-                if (car(args) == null && cdr(args) == null) { sb.append("_nil"); return; }
-            }
+            final Object loopLabel, bindings, body;
+            if (named) { loopLabel = car(args); args = (ConsCell)cdr(args); }
+            else       { loopLabel = null; }
+            bindings = car(args);  body = cdr(args);
+            if (bindings == null && body == null) { sb.append("_nil"); return; }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
 
-            final String op;
-            final ConsCell bindings;
+            final String op = named ? "named let" : "let";
+            final ConsCell ccBindings = (ConsCell)bindings;
+            final ConsCell params = paramList(op, ccBindings, false);
             if (named) {
                 // named let
-                op = "named let";
-                bindings = (ConsCell)cadr(args);
-                final ConsCell params = paramList(op, bindings, false);
-                labelToJava(op, sb, cons(car(args), cons(params, cddr(args))), env, topEnv, rsfx+1);
+                labelToJava(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
             }
             else {
                 // regular let
-                op = "let";
-                bindings = (ConsCell)car(args);
-                final ConsCell params = paramList(op, bindings, false);
-                emitLambda(sb, cons(params, cdr(args)), env, topEnv, rsfx+1, false);
+                emitLambda(sb, cons(params, body), env, topEnv, rsfx+1, false);
             }
-            if (bindings != null)
-                for (Object binding: bindings) {
-                    sb.append("\n        , ");
+            if (ccBindings != null) {
+                for (Object binding : ccBindings) {
                     if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                    sb.append("\n        , ");
                     emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
+            } else sb.append(", NOARGS");
             sb.append(')');
         }
 
