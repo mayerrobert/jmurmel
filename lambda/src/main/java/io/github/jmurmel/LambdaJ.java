@@ -1573,19 +1573,6 @@ public class LambdaJ {
 
                     /// eval - special forms that run expressions
 
-                    /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
-                    if (operator == ocEval) {
-                        varargsMinMax("eval", ccArguments, 1, 2);
-                        form = car(ccArguments);
-                        if (cdr(ccArguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
-                        else {
-                            final Object additionalEnv = cadr(ccArguments);
-                            if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
-                            env = (ConsCell) append2(additionalEnv, topEnv);
-                        }
-                        isTc = true; continue tailcall;
-                    }
-
                     /// eval - (if condform form optionalform) -> object
                     if (operator == sIf) {
                         varargsMinMax("if", ccArguments, 2, 3);
@@ -1664,6 +1651,19 @@ public class LambdaJ {
 
                     /// eval - function application
                     else {
+                        /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
+                        if (operator == ocEval) {
+                            varargsMinMax("eval", ccArguments, 1, 2);
+                            form = car(ccArguments);
+                            if (cdr(ccArguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
+                            else {
+                                final Object additionalEnv = cadr(ccArguments);
+                                if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
+                                env = (ConsCell) append2(additionalEnv, topEnv);
+                            }
+                            isTc = true; continue tailcall;
+                        }
+
                         final ConsCell argList;
 
                         /// eval - apply function to list
@@ -1777,7 +1777,7 @@ public class LambdaJ {
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
             if (envEntry == null)
                 //insertFront(env, symbol, value);
-                throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
+                throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol); // todo vielleicht im interpreter doch zulassen?
             else envEntry.rplacd(value);
             res = value;
             pairs = (ConsCell) cdr(pairs);
@@ -1794,12 +1794,12 @@ public class LambdaJ {
             return macros.remove(macroName) != null ? macroName : null;
         }
         else if (arglen == 3) {
-            final ConsCell closure = makeClosureFromForm(cons(sLambda, cons(cadr(arguments), cddr(arguments))), env);
+            final ListConsCell paramsAndBody = cons(cadr(arguments), cddr(arguments));
+            final ConsCell closure = makeClosureFromForm(cons(sLambda, paramsAndBody), env);
             macros.put(macroName, closure);
             return macroName;
         }
-        else errorMalformed("defmacro", printSEx(form));
-        return null; // notreached
+        else throw errorMalformed("defmacro", printSEx(form));
     }
 
     private Object evalRequire(ConsCell arguments) {
@@ -1983,12 +1983,14 @@ public class LambdaJ {
         return symbolEntry;
     }
 
-    /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). Throw error if any symbol is a reserved word. */
+    /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). */
     private ConsCell extractParamList(String op, final ConsCell bindings) {
         if (bindings == null) return null;
         ConsCell params = null, insertPos = null;
         for (Object binding: bindings) {
-            final Object symbol = car(binding);
+            final Object symbol;
+            if (consp(binding)) symbol = car(binding);
+            else symbol = binding;
             if (params == null) {
                 params = cons(symbol, null);
                 insertPos = params;
@@ -2444,6 +2446,7 @@ public class LambdaJ {
         return null;
     }
 
+    /** return the cons whose car is eql to {@code atom} */
     static ConsCell assoc(Object atom, Object maybeList) {
         if (maybeList == null) return null;
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
@@ -6365,6 +6368,7 @@ public class LambdaJ {
             else if (atom(form))    { emitAtom(sb, form); }
 
             else if (consp(form)) {
+                // todo fast path fuer 1 element listen (cdr(form) == null) -> cons(car(form), null)) 
                 final StringWriter b = new StringWriter();
                 final WrappingWriter qsb = new WrappingWriter(b);
                 qsb.append("new ListBuilder()");

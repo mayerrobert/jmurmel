@@ -82,6 +82,22 @@
 (deftest tequal.10 (tequal '(a (b)) '(a (c)))  nil)
 
 
+;;; test reader
+(deftest reader.1 1 1)
+(deftest reader.2 '(1 . 2) '(1 . 2))
+(deftest reader.3 '(1 2 3 4 5) '(1 2 3 4 5))
+(deftest reader.4 '(1 2 3 4 . 5) '(1 2 3 4 . 5))
+
+(deftest readermacro.1 #\a #\a)
+(deftest readermacro.2 (char-code #\Nul) 0)
+(deftest readermacro.3 (char-code #\200) 200)
+
+#+murmel
+(deftest feature.1 #+(and murmel jvm) 'murmel-jvm 'murmel-jvm)
+(deftest feature.2 #+(or sbcl (and murmel jvm)) 'sbcl-or-murmel-jvm 'sbcl-or-murmel-jvm)
+(deftest feature.3 #+(not (or abcl sbcl murmel (not murmel))) 'should-ignore 'abcl-sbcl-or-murmel-or-notmurmel 'abcl-sbcl-or-murmel-or-notmurmel)
+
+
 ;;; Tests for core Murmel w/o mlib
 
 ;;; basic special forms: quote, lambda
@@ -125,6 +141,13 @@
 #+murmel (deftest namedlet.1 (let loop () (if nil (loop)) (1+ 1)) 2)
 #+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
 #+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
+
+;;; todo this compiles to an endless loop
+;#+murmel (deftest namedlet.4 (letrec loop ((aaa 3) bbb)
+;                               (if (> aaa 1)
+;                                     (loop (1- aaa) 1)
+;                                 (+ aaa bbb)))
+;                             2.0)
 
 
 (setq *a* 1 *b* 2 *c* 3)

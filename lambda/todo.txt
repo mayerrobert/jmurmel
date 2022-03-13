@@ -1,3 +1,7 @@
+named let* und letrec kompilieren zu endlosschleifen
+letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+
+
 (compile) könnte in etwa so gehen:
 
 kompilierter code muss lernen, freie variablen auch im environment des interpreters zu lesen und mit setq schreiben ((re-)define müsste so eigentlich auch gehen!),
@@ -73,8 +77,6 @@ statt überall "throw new LambdaJError(..."
 -> ggf. später statt exception optional einen handler aufrufen -> condition system
   -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
      wenn handler gerufen werden, schauts anders aus 
-
-letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
