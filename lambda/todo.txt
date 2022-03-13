@@ -44,10 +44,13 @@ wenn fatal in compiliertem code aufgerufen wird, kommt am ende
 die meldung ist falsch, weil gelaufen ists ja
 
 (with-reader-printer (string string) forms...)
+-> LambdaJ.pushReaderPrinter(Object, Object)/ popReaderPrinter() umsetzen
+   String öffnet eine Datei, nil ändert nix, t setzt stdin/out
 
 warum ist apply ein reserved word? sollte eine funktion sein
 apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
 -> umbauen wie eval?!?
+-> eval auch umbauen, weil OpenCodedPrimitive ist unnötig, Object ocEval müsste reichen?!?
 ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 ggf sollten nur t und nil reserved sein, der rest der bisherigen reserved words sollten nur bei zuweisung verweigert werden (setq, define, defun, letXX dynamic),

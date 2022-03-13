@@ -10,9 +10,12 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * added special form "(declaim (optimize..."
  * added limited support for "macroexpand-1" in compiled code (quoted forms only)
  * [f]round, [f]floor, [f]ceiling and [f]truncate now support 1 or 2 arguments (was: 1)
+ * compiled code now can invoke interpreted closures
+ * added some benchmarks and found some speedups
 
- * mlib: added functions last, circular-list, compose, conjoin, disjoin,
-   map-into, curry, rcurry, nconc
+ * mlib: added functions last, map-into, nconc,
+   circular-list, compose, conjoin, disjoin, curry, rcurry,
+   unzip, unzip-tails
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
  * backquote expansion generates more efficient code
@@ -23,6 +26,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * fixed "append" for compiled code
  * fixed using rplaca on varargs list
  * fixed/ cleaned up feature-flags
+ * fixed search directory for load and require
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0
