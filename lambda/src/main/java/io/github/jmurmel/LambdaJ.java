@@ -6373,28 +6373,42 @@ public class LambdaJ {
             else if (atom(form))    { emitAtom(sb, form); }
 
             else if (consp(form)) {
-                // todo fast path fuer 1 element listen (cdr(form) == null) -> cons(car(form), null)) 
                 final StringWriter b = new StringWriter();
                 final WrappingWriter qsb = new WrappingWriter(b);
-                qsb.append("new ListBuilder()");
-                for (Object o = form; ; o = cdr(o)) {
-                    qsb.append("\n        .append("); emitQuotedForm(qsb, car(o), false); qsb.append(')');
-                    if (cdr(o) == null) break;
-                    if (!consp(cdr(o))) {
-                        qsb.append("\n        .appendLast("); emitQuotedForm(qsb, cdr(o), false); qsb.append(')');
-                        break;
-                    }
+                if (cdr(form) == null) {
+                    // fast path for 1 element lists
+                    qsb.append("cons("); emitQuotedForm(qsb, car(form), false); qsb.append(", null)");
                 }
-                qsb.append("\n        .first()");
+                else if (atom(cdr(form))) {
+                    // fast path for dotted pairs
+                    qsb.append("cons("); emitQuotedForm(qsb, car(form), false); qsb.append(", "); emitQuotedForm(qsb, cdr(form), false); qsb.append(")");
+                }
+                else {
+                    qsb.append("new ListBuilder()");
+                    for (Object o = form; ; o = cdr(o)) {
+                        qsb.append("\n        .append(");
+                        emitQuotedForm(qsb, car(o), false);
+                        qsb.append(')');
+                        if (cdr(o) == null) break;
+                        if (!consp(cdr(o))) {
+                            qsb.append("\n        .appendLast(");
+                            emitQuotedForm(qsb, cdr(o), false);
+                            qsb.append(')');
+                            break;
+                        }
+                    }
+                    qsb.append("\n        .first()");
+                }
+                final String init = b.toString();
 
-                /*if (pool) emitReference(sb, b.toString()); // todo deduplizierung wieder aufdrehen, tests anpassen
-                else sb.append(b.toString());*/
+                /*if (pool) emitReference(sb, init); // todo deduplizierung wieder aufdrehen, tests anpassen
+                else sb.append(init);*/
 
                 if (pool) {
                     sb.append("q").append(qCounter++);
-                    quotedForms.add(b.toString());
+                    quotedForms.add(init);
                 }
-                else sb.append(b.toString());
+                else sb.append(init);
             }
 
             else throw new LambdaJError("quote: internal error");
