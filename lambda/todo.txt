@@ -1,4 +1,3 @@
-named let* und letrec kompilieren zu endlosschleifen
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
 

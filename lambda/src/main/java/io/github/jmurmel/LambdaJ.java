@@ -5896,16 +5896,11 @@ public class LambdaJ {
             }
             
             if (bindings != null)
+                // initial assignments
                 for (Object binding: (ConsCell)bindings) {
-                    final Object sym;
-                    final Object form;
-                    if (symbolp(binding)) {
-                        sym = binding;
-                        form = null;
-                    } else {
-                        sym = car(binding);
-                        form = cadr(binding);
-                    }
+                    final Object sym, form;
+                    if (symbolp(binding)) { sym = binding; form = null; }
+                    else { sym = car(binding); form = cadr(binding); }
                     final String symName = mangle(sym.toString(), rsfx);
                     sb.append("        { ").append(symName).append(" = ");
                     if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
@@ -5919,8 +5914,18 @@ public class LambdaJ {
                 sb.append("        private final Object ").append(javasym(name, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args) {\n");
+            if (params != null) {
+                int n = 0;
+                sb.append("        if (args.length > 0) {\n");
+                // assignments for loop invocations
+                for (Object sym: params) {
+                    final String symName = mangle(sym.toString(), rsfx);
+                    sb.append("        ").append(symName).append(" = ").append("args[").append(n++).append("];\n");
+                }
+                sb.append("        }\n");
+            }
             emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
-            sb.append("        } } )");
+            sb.append("        } }, NOARGS)");
         }
 
         /** let dynamic and let* dynamic */

@@ -141,13 +141,11 @@
 #+murmel (deftest namedlet.1 (let loop () (if nil (loop)) (1+ 1)) 2)
 #+murmel (deftest namedlet.2 (let* loop () (if nil (loop)) (1+ 1)) 2)
 #+murmel (deftest namedlet.3 (letrec loop () (if nil (loop)) (1+ 1)) 2)
-
-;;; todo this compiles to an endless loop
-;#+murmel (deftest namedlet.4 (letrec loop ((aaa 3) bbb)
-;                               (if (> aaa 1)
-;                                     (loop (1- aaa) 1)
-;                                 (+ aaa bbb)))
-;                             2.0)
+#+murmel (deftest namedlet.4 (letrec loop ((aaa 3) bbb)
+                               (if (> aaa 1)
+                                     (loop (1- aaa) 1)
+                                 (+ aaa bbb)))
+                             2.0)
 
 
 (setq *a* 1 *b* 2 *c* 3)
