@@ -5918,7 +5918,8 @@ public class LambdaJ {
             sb.append("        @Override public Object apply(Object... args) {\n");
             if (params != null) {
                 int n = 0;
-                sb.append("        if (args.length > 0) {\n");
+                sb.append("        if (args != null) {\n");
+                sb.append("        argCheck(loc, ").append(length(params)).append(", args.length);\n");
                 // assignments for loop invocations
                 for (Object sym: params) {
                     final String symName = mangle(sym.toString(), rsfx);
@@ -5927,7 +5928,7 @@ public class LambdaJ {
                 sb.append("        }\n");
             }
             emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, isLast);
-            sb.append("        } }, NOARGS)");
+            sb.append("        } }, (Object[])null)");
         }
 
         /** let dynamic and let* dynamic */
@@ -6048,7 +6049,8 @@ public class LambdaJ {
             return params;
         }
 
-        /** generate variables from arg array */
+        /** optionally emit an arg count check, check that there are no duplicates
+         *  and return an environment extended by accesses to the arg array */
         private ConsCell params(String func, WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
             if (paramList == null) {
                 if (check) sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
