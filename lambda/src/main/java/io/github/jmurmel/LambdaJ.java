@@ -201,7 +201,7 @@ public class LambdaJ {
         ConsCell closure() { return null; }
     }
 
-    private abstract static class AbstractListBuilder<T extends AbstractListBuilder> {
+    private abstract static class AbstractListBuilder<T extends AbstractListBuilder<T>> {
         private Object first;
         private Object last;
 
@@ -680,18 +680,18 @@ public class LambdaJ {
             final int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
             if (c == '\r') {
-                prev = c;
+                prev = '\r';
                 savePrevPos();
                 lineNo++;
                 charNo = 0;
                 return '\n';
             }
             if (c == '\n' && prev == '\r') {
-                prev = c;
+                prev = '\n';
                 return readchar();
             }
             if (c == '\n') {
-                prev = c;
+                prev = '\n';
                 savePrevPos();
                 lineNo++;
                 charNo = 0;
@@ -1317,7 +1317,7 @@ public class LambdaJ {
         if (sym == null)
             errorMalformed(op, "can't use reserved word nil as a symbol");
         if (member(sym, reservedWords))
-            errorMalformed(op, String.format("can't use reserved word %s as a symbol", sym.toString()));
+            errorMalformed(op, String.format("can't use reserved word %s as a symbol", sym));
     }
 
     /// Symboltable
@@ -1861,7 +1861,7 @@ public class LambdaJ {
         if (letDynamic && letRec) throw errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
         final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
 
-        final String op = letDynamic ? (operator + " dynamic") : (namedLet ? "named " : "") + operator;
+        final String op = letDynamic ? operator + " dynamic" : (namedLet ? "named " : "") + operator;
         final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
         final Object bindings = car(bindingsAndBodyForms);
@@ -1915,7 +1915,7 @@ public class LambdaJ {
         }
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
-            final ConsCell bodyParams = extractParamList(op, ccBindings);
+            final ConsCell bodyParams = extractParamList(ccBindings);
             final Object closure = makeClosure(cons(bodyParams, bodyForms), extenv);   // (optsymbol . (lambda (params bodyforms)))
             insertFront(extenv, car(arguments), closure);
         }
@@ -1984,7 +1984,7 @@ public class LambdaJ {
     }
 
     /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). */
-    private ConsCell extractParamList(String op, final ConsCell bindings) {
+    private ConsCell extractParamList(final ConsCell bindings) {
         if (bindings == null) return null;
         ConsCell params = null, insertPos = null;
         for (Object binding: bindings) {
@@ -2008,7 +2008,7 @@ public class LambdaJ {
      *    stick above list in front of the environment
      *  return extended environment</pre>
      *  
-     *  Similar to CL pairlis, but {@link #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
+     *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
     private ConsCell zip(Object paramList, ConsCell args, ConsCell env) {
         if (paramList == null && args == null) return env; // shortcut for no params/ no args
@@ -2655,8 +2655,8 @@ public class LambdaJ {
 
     private static String printChar(int c) {
         return "#\\"
-         + ((c < CTRL.length) ? CTRL[c]
-        : (c < 127) ? String.valueOf((char)c)
+         + (c < CTRL.length ? CTRL[c]
+        : c < 127 ? String.valueOf((char)c)
         : String.valueOf(c));
     }
 
@@ -2722,7 +2722,7 @@ public class LambdaJ {
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
         final String argPhrase = expectedMin == expectedMax
                 ? expectedArgPhrase(expectedMin)
-                : (expectedMin + " to " + expectedMax + " arguments");
+                : expectedMin + " to " + expectedMax + " arguments";
 
         if (actual < expectedMin) {
             throw new LambdaJError(true, "%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
@@ -2737,11 +2737,11 @@ public class LambdaJ {
     }
 
     private static String expectedArgPhrase(int expected) {
-        return (expected == 0) ? "no arguments" : (expected == 1) ? "one argument" : (expected == 2) ? "two arguments" : (expected + " arguments");
+        return expected == 0 ? "no arguments" : expected == 1 ? "one argument" : expected == 2 ? "two arguments" : expected + " arguments";
     }
 
     private static String actualArgPhrase(int actual) {
-        return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : ("got only " + actual);
+        return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : "got only " + actual;
     }
 
 
@@ -2835,7 +2835,7 @@ public class LambdaJ {
         if (a == null) return;
         final ConsCell start = a;
         for (; a != null; a = (ConsCell) cdr(a)) {
-            if (!numberp(car(a)) || (cdr(a) != null && (cdr(a) == start || !consp(cdr(a)))))
+            if (!numberp(car(a)) || cdr(a) != null && (cdr(a) == start || !consp(cdr(a))))
                 throw new LambdaJError(true, "%s: expected a proper list of numbers but got %s", func, printSEx(a));
         }
     }
@@ -2871,7 +2871,7 @@ public class LambdaJ {
         if (a == null) return;
         final ConsCell start = a;
         for (; a != null; a = (ConsCell) cdr(a)) {
-            if (!stringp(car(a)) || (cdr(a) != null && (cdr(a) == start || !consp(cdr(a)))))
+            if (!stringp(car(a)) || cdr(a) != null && (cdr(a) == start || !consp(cdr(a))))
                 throw new LambdaJError(true, "%s: expected a proper list of strings but got %s", func, printSEx(a));
         }
     }
@@ -3320,9 +3320,10 @@ public class LambdaJ {
                   addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
                   addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
-                                                                 return (long)((asInt("rgb-to-pixel", car(a)) << 16)
-                                                                             | (asInt("rgb-to-pixel", cadr(a)) << 8)
-                                                                             | asInt("rgb-to-pixel", caddr(a)));  },
+                                                                 final int rgb = asInt("rgb-to-pixel", car(a)) << 16
+                                                                               | asInt("rgb-to-pixel", cadr(a)) << 8
+                                                                               | asInt("rgb-to-pixel", caddr(a));
+                                                                 return (long)rgb;  },
                   addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
                                                                  return (long)Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
                                                                                              asFloat("hsb-to-pixel", cadr(a)),
@@ -3593,7 +3594,7 @@ public class LambdaJ {
         setReaderPrinter(new SExpressionParser(in::read), new SExpressionWriter(new WrappingWriter(out)::append));
         Object result = null;
         while (true) {
-            final Object exp = (scriptParser instanceof SExpressionParser) ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
+            final Object exp = scriptParser instanceof SExpressionParser ? ((SExpressionParser)scriptParser).readObj(true) : scriptParser.readObj();
             if (exp != null) result = eval(exp, topEnv, 0, 0, 0);
             else return result;
         }
@@ -3637,12 +3638,12 @@ public class LambdaJ {
     public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser);
         init(parser, outWriter, customEnvironment);
-        Object exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
+        Object exp = parser instanceof SExpressionParser ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
         while (true) {
             final long tStart = System.nanoTime();
             final Object result = eval(exp, topEnv, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
-            exp = (parser instanceof SExpressionParser) ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
+            exp = parser instanceof SExpressionParser ? ((SExpressionParser)parser).readObj(true) : parser.readObj();
             if (exp == null) return result;
         }
     }
@@ -3781,7 +3782,7 @@ public class LambdaJ {
             }
         }
 
-        if (repl || (files.isEmpty() && istty)) repl(interpreter, !files.isEmpty(), istty, echo, history, args); // repl() doesn't return
+        if (repl || files.isEmpty() && istty) repl(interpreter, !files.isEmpty(), istty, echo, history, args); // repl() doesn't return
 
         if (files.isEmpty()) {
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
@@ -3799,7 +3800,7 @@ public class LambdaJ {
                 }
 
                 if (toJar) {
-                    final String outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
+                    final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
                     final boolean success = compileToJar(parser, libPath, program, clsName, outFile);
                     if (success) System.out.println("compiled stdin to " + outFile);
                 }
@@ -4025,7 +4026,7 @@ public class LambdaJ {
         final String outFile;
         final boolean success;
         if (toJar) {
-            outFile = outDir != null ? (outDir + "/a.jar") : "a.jar";
+            outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
             success = compileToJar(parser, libPath, program, clsName, outFile);
         }
         else {
@@ -4707,7 +4708,8 @@ public class LambdaJ {
                                                                   final int r = asInt(args[0]);
                                                                   final int g = asInt(args[1]);
                                                                   final int b = asInt(args[2]);
-                                                                  return (long)((r<<16) | (g<<8) | b); }
+                                                                  final int rgb = (r << 16) | (g << 8) | b;
+                                                                  return (long)rgb; }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
                                                                   final float hue = asFloat(args[0]);
                                                                   final float sat = asFloat(args[1]);
@@ -5088,7 +5090,7 @@ public class LambdaJ {
         private void notDefined(String func, Object sym, ConsCell env) {
             final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
-                intp.notReserved(func, (LambdaJSymbol) car(prevEntry));
+                intp.notReserved(func, car(prevEntry));
                 errorMalformed(func, String.format("can't redefine symbol %s", sym));
             }
         }
@@ -5228,7 +5230,7 @@ public class LambdaJ {
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
             final StringBuilder globals = new StringBuilder();
-            final ObjectReader _forms = (forms instanceof SExpressionParser) ? () -> ((SExpressionParser)forms).readObj(true) : forms;
+            final ObjectReader _forms = forms instanceof SExpressionParser ? () -> ((SExpressionParser)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
             final int prevSpeed = intp.speed;
@@ -5485,7 +5487,7 @@ public class LambdaJ {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.sNull) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final Object[] transformed = new Object[] { intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)}; 
+                            final Object[] transformed = { intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)}; 
                             emitForm(sb, new ArraySlice(transformed, 0), env, topEnv, rsfx, isLast);
                             return;
                         }
@@ -5787,7 +5789,7 @@ public class LambdaJ {
             if (args == null) errorMalformed("labels", "expected at least one argument");
 
             final Object localFuncs = car(args);
-            if (localFuncs == null || (cddr(args) == null && atom(cadr(args)))) {
+            if (localFuncs == null || cddr(args) == null && atom(cadr(args))) {
                 // no local functions or body is one single atom (the latter can't use the functions so skip them
                 emitProgn(sb, cdr(args), env, topEnv, rsfx, isLast);
                 return;
@@ -6368,7 +6370,7 @@ public class LambdaJ {
             else if (symbolp(form)) {
                 if (symbolEq(form, "t")) sb.append("_t");
                 else if (pool) emitReference(sb, "intern(\"" + form + "\")");
-                else sb.append("intern(\"" + form + "\")");
+                else sb.append("intern(\"").append(form).append("\")");
             }
             else if (atom(form))    { emitAtom(sb, form); }
 
@@ -6695,16 +6697,16 @@ class AnyToUnixEol implements LambdaJ.ReadSupplier {
     public int read(boolean echo) throws IOException {
         final int c = in.read();
         if (c == '\r') {
-            prev = c;
+            prev = '\r';
             if (echo) System.out.print(System.lineSeparator());
             return '\n';
         }
         if (c == '\n' && prev == '\r') {
-            prev = c;
+            prev = '\n';
             return read(echo);
         }
         if (c == '\n') {
-            prev = c;
+            prev = '\n';
             if (echo) System.out.print(System.lineSeparator());
             return '\n';
         }
@@ -6728,7 +6730,7 @@ class UnixToAnyEol implements LambdaJ.WriteConsumer {
     public void print(String s) {
         if (s == null
             || s.isEmpty()
-            || (s.charAt(0) != '\n' && s.charAt(s.length() - 1) != '\n' && s.indexOf('\n') == -1)) {
+            || s.charAt(0) != '\n' && s.charAt(s.length() - 1) != '\n' && s.indexOf('\n') == -1) {
             // fast path for null, empty string or strings w/o '\n'
             // the check for '\n' also has a fast path for strings beginning or ending with '\n'
             wrapped.print(s); return;
