@@ -1369,3 +1369,8 @@ compiler: eine methode für argslists für functioncalls rausziehen, die schreib
 -> dann kann an anderen stellen "null" statt "_nil" geschrieben werden -> schneller
 -> oder einfach nie nil als "null" schreiben, sondern immer "(Object)null"?
 -> und eine leere argumentliste als NOARGS - fehlt wsl. bei functioncall in emitForm, vielleicht noch woanders
+
+ein programm das nur nil enthält führt zu java compilerfehler
+nil
+:r
+-> fehler

@@ -1,3 +1,7 @@
+kompilierte programme: MurmelProgram.body() kann man nur 1x laufen lassen, ab dem zweiten aufruf kommt "duplicate define"
+-> alle globals am anfang von body() auf UNASSIGNED setzen
+-> in lambdajbm erstmal labels statt defun
+
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
 in readerfehlern fehlt der filename
@@ -225,12 +229,6 @@ oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))"
 
 
 mit optimize speed 0 und 1 testen
-
-
-ein programm das nur nil enthält führt zu java compilerfehler
-nil
-:r
--> fehler
 
 
 

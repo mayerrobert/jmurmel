@@ -5431,14 +5431,14 @@ public class LambdaJ {
         /** generate Java code for a list of forms. Each form but the last will be emitted as an assignment
          *  to the local variable "ignoredN" because some forms are emitted as ?: expressions which is not a valid statement by itself. */
         private void emitForms(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
-            if (forms == null) {
+            final Iterator<Object> it;
+            if (forms == null || !(it = forms.iterator()).hasNext()) {
                 // e.g. the body of an empty lambda or function
                 ret.append("        return null;\n");
                 return;
             }
 
             boolean ign = false;
-            final Iterator<Object> it = forms.iterator();
             while (it.hasNext()) {
                 final Object form = it.next();
                 ret.append("        loc = \""); stringToJava(ret, lineInfo(form), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        ");
