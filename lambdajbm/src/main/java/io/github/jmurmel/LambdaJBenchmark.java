@@ -1,6 +1,11 @@
 package io.github.jmurmel;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
@@ -29,7 +34,7 @@ import org.openjdk.jmh.infra.Blackhole;
  * java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar target\benchmarks.jar
  */
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = LambdaJBenchmark.WARMUP, time = 1)
 @Measurement(iterations = LambdaJBenchmark.ITERATIONS, time = 1)
 @Fork(LambdaJBenchmark.FORK)
@@ -54,13 +59,24 @@ public class LambdaJBenchmark {
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
             "        (format-locale nil \"en-US\" \"Factorial of 50 is %g\" (factTR 50. 1.)))";
 
+    public static final String TAK =
+            "(labels ((tak´ (x y z)\n"
+          + "           (cond ((null (< y x)) z)\n"
+          + "                  (t (tak´ (tak´ (1- x) y z)\n"
+          + "                           (tak´ (1- y) z x)\n"
+          + "                           (tak´ (1- z) x y))))))\n" 
+          + "  (tak´ 18 12 6))";
+
     public static final String[] PROGRAMS = {
             EMPTY_PROGRAM,
             SIMPLE_CONS,
             LAMBDA_AND_ADD_DOUBLE,
             TAILREC,
             FACT,
+            TAK,
     };
+
+    public static LambdaJ.MurmelProgram[] COMPILED_PROGRAMS;
 
     public static final String[] RESULTS = {
             "nil",
@@ -68,6 +84,7 @@ public class LambdaJBenchmark {
             "5.0",
             "9.0",
             "Factorial of 50 is 3.04141e+64",
+            "7",
     };
 
     @Param({
@@ -76,10 +93,23 @@ public class LambdaJBenchmark {
         "2", //LAMBDA_AND_ADD_DOUBLE,
         "3", //TAILREC,
         "4", //FACT
+        "5", //TAK
     })
     private int prog;
 
     private LambdaJ interpreter;
+
+    @Setup(Level.Trial)
+    public static void compileAll() throws Exception {
+        COMPILED_PROGRAMS = new LambdaJ.MurmelProgram[] {
+                compile(EMPTY_PROGRAM),
+                compile(SIMPLE_CONS),
+                compile(LAMBDA_AND_ADD_DOUBLE),
+                compile(TAILREC),
+                compile(FACT),
+                compile(TAK),
+        };
+    }
 
     @Setup(Level.Invocation)
     public void setup() {
@@ -98,5 +128,29 @@ public class LambdaJBenchmark {
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
+    }
+
+    @Benchmark
+    public void compiled(Blackhole bh) {
+        final LambdaJ.MurmelProgram murmelProgram = COMPILED_PROGRAMS[prog];
+        bh.consume(murmelProgram.body());
+        bh.consume(murmelProgram.body());
+        bh.consume(murmelProgram.body());
+    }
+
+    private static LambdaJ.MurmelProgram compile(String source) throws Exception {
+        final Reader reader = new StringReader(source);
+        final LambdaJ.SExpressionParser parser = new LambdaJ.SExpressionParser(reader::read);
+
+        LambdaJ.MurmelJavaCompiler c = new LambdaJ.MurmelJavaCompiler(parser, null, getTmpDir());
+        Class<LambdaJ.MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+
+        return murmelClass.getDeclaredConstructor().newInstance();
+    }
+
+    static Path getTmpDir() throws IOException {
+        Path tmpDir = Files.createTempDirectory("jmurmelbm");
+        tmpDir.toFile().deleteOnExit();
+        return tmpDir;
     }
 }

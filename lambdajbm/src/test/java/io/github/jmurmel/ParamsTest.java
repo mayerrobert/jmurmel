@@ -34,4 +34,13 @@ public class ParamsTest {
         if (result == null) result = "nil";
         assertEquals("prog " + prog, RESULTS[prog], result.toString());
     }
+
+    @Test
+    public void compileAndRunPrograms() throws Exception {
+        LambdaJBenchmark.compileAll();
+        for (int prog = 0; prog < COMPILED_PROGRAMS.length; prog++) {
+            for (int n = 0; n < 3; n++)
+                assertEquals("prog " + prog, RESULTS[prog], LambdaJ.printSEx(COMPILED_PROGRAMS[prog].body(), false));
+        }
+    }
 }
