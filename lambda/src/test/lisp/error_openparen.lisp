@@ -1,3 +1,3 @@
-; error: line 4:0: cannot read list. missing ')'
+; error: cannot read list. missing ')'?\nerror occurred in line 3:1..4:0
 
 (

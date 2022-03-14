@@ -1374,3 +1374,5 @@ ein programm das nur nil enthält führt zu java compilerfehler
 nil
 :r
 -> fehler
+
+in readerfehlern fehlt der filename

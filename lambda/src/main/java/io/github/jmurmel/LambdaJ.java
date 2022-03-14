@@ -177,8 +177,7 @@ public class LambdaJ {
 
         private static String errorExp(Object exp) {
             if (exp == null) return "";
-            final String l = lineInfo(exp);
-            return System.lineSeparator() + "error occurred in S-expression " + l + printSEx(exp);
+            return System.lineSeparator() + "error occurred in " + lineInfo(exp) + printSEx(exp);
         }
     }
 
@@ -721,9 +720,9 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                throw new ParseError("line %d:%d: characterset conversion error in SExpressionParser: %s", lineNo, charNo, e.toString());
+                throw new ParseError("characterset conversion error in SExpressionParser: %s", e.toString());
             } catch (Exception e) {
-                throw new ParseError("line %d:%d: I/O error in SExpressionParser: %s", lineNo, charNo, e.toString());
+                throw new ParseError("I/O error in SExpressionParser: %s", e.toString());
             }
         }
 
@@ -743,13 +742,13 @@ public class LambdaJ {
                         final int n = Integer.parseInt(charOrCharactername);
                         if (n > 126) return (char)n;
                     } catch (NumberFormatException e) {
-                        throw new ParseError("line %d:%d: '%s' following #\\ is not a valid number", lineNo, charNo, charOrCharactername);
+                        throw new ParseError("'%s' following #\\ is not a valid number", charOrCharactername);
                     }
                 }
                 for (int i = 0; i < CTRL.length; i++) {
                     if (CTRL[i].equals(charOrCharactername)) return (char)i;
                 }
-                throw new ParseError("line %d:%d: unrecognized character name %s", lineNo, charNo, charOrCharactername);
+                throw new ParseError("unrecognized character name %s", charOrCharactername);
 
             // #| ... multiline comment ending with |#
             case '|':
@@ -792,7 +791,7 @@ public class LambdaJ {
                 
             default:
                 look = getchar();
-                throw new ParseError("line %d:%d: no dispatch function defined for %s", lineNo, charNo, printChar(sub_char));
+                throw new ParseError("no dispatch function defined for %s", printChar(sub_char));
             }
         }
 
@@ -807,7 +806,7 @@ public class LambdaJ {
                 look = getchar(false);
             }
             final String ret = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
-            if (ret.isEmpty()) throw new ParseError("line %d:%d: EOF after #%c", lineNo, charNo, macroChar);
+            if (ret.isEmpty()) throw new ParseError("EOF after #%c", macroChar);
             return ret;
         }
 
@@ -874,7 +873,7 @@ public class LambdaJ {
                             look = getchar(false);
                         }
                         if (look == EOF)
-                            throw new ParseError("line %d:%d: |-quoted symbol is missing closing |", lineNo, charNo);
+                            throw new ParseError("|-quoted symbol is missing closing |");
                         look = getchar(); // consume trailing |
                         final String s = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
                         tok = new LambdaJSymbol(s);
@@ -885,7 +884,7 @@ public class LambdaJ {
                         case '\'': tok = SQ; break;
                         case '`': tok = BQ; break;
                         case ',': tok = COMMA; break;
-                        default: throw new ParseError("line %d:%d: internal error - unexpected syntax char %c", lineNo, charNo, (char)look);
+                        default: throw new ParseError("internal error - unexpected syntax char %c", (char)look);
                         }
                         look = getchar();
                     } else if (haveString() && isDQuote(look)) {
@@ -894,7 +893,7 @@ public class LambdaJ {
                             look = getchar(false);
                         } while (look != EOF && !isDQuote(look));
                         if (look == EOF)
-                            throw new ParseError("line %d:%d: string literal is missing closing \"", lineNo, charNo);
+                            throw new ParseError("string literal is missing closing \"");
                         look = getchar(); // consume trailing "
                         tok = tokenToString(token, 1, index).intern();
                     } else if (isHash(look)) {
@@ -935,7 +934,7 @@ public class LambdaJ {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
-                throw new ParseError("line %d:%d: '%s' is not a valid number", lineNo, charNo, s);
+                throw new ParseError("'%s' is not a valid number", s);
             }
         }
 
@@ -943,7 +942,7 @@ public class LambdaJ {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
-                throw new ParseError("line %d:%d: '%s' is not a valid number", lineNo, charNo, s);
+                throw new ParseError("'%s' is not a valid number", s);
             }
         }
 
@@ -990,9 +989,14 @@ public class LambdaJ {
             }
             skipWs();
             final int startLine = lineNo, startChar = charNo;
-            readToken();
-            //return expand_backquote(readObject(startLine, startChar));
-            return readObject(startLine, startChar);
+            try {
+                readToken();
+                //return expand_backquote(readObject(startLine, startChar));
+                return readObject(startLine, startChar);
+            }
+            catch (ParseError pe) {
+                throw errorReaderError(pe.getMessage() + posInfo());
+            }
         }
 
         private final Object sQuote          = intern(new LambdaJSymbol("quote"));
@@ -1019,25 +1023,23 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
                 return intern((LambdaJSymbol)tok);
             }
-            if (!tokEscape && tok == RP) {
-                throw new LambdaJError(true, "line %d:%d: unexpected ')'", lineNo, charNo);
-            }
+            if (!tokEscape && tok == RP)  throw new ParseError("unexpected ')'");
             if (!tokEscape && tok == LP) {
                 try {
-                    final Object list = readList(startLine, startChar);
-                    if (!tokEscape && tok == DOT) {
-                        skipWs();
-                        final Object cdr = readList(lineNo, charNo);
-                        if (cdr(cdr) != null) throw new ParseError("line %d:%d: illegal end of dotted list: %s", lineNo, charNo, printSEx(cdr));
-                        final Object cons = combine(startLine, startChar, list, car(cdr));
-                        if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
-                        return cons;
-                    }
-                    if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
-                    return list;
+                final Object list = readList(startLine, startChar);
+                if (!tokEscape && tok == DOT) {
+                    skipWs();
+                    final Object cdr = readList(lineNo, charNo);
+                    if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
+                    final Object cons = combine(startLine, startChar, list, car(cdr));
+                    if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
+                    return cons;
+                }
+                if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
+                return list;
                 }
                 catch (ParseError e) {
-                    errorReaderError(e.getMessage() + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                    errorReaderError(e.getMessage() + posInfo(startLine, startChar));
                 }
             }
             if (!tokEscape && tok == SQ) {
@@ -1066,8 +1068,7 @@ public class LambdaJ {
                 return o;
             }
             if (!tokEscape && tok == COMMA) {
-                if (backquote == 0)
-                    errorReaderError("comma is not inside a backquote" + System.lineSeparator() + "error occurred in S-expression line " + startLine + ':' + startChar + ".." + lineNo + ':' + charNo);
+                if (backquote == 0) errorReaderError("comma is not inside a backquote" + posInfo(startLine, startChar));
                 skipWs();
                 final boolean splice;
                 if (look == '@') { splice = true; look = getchar(); }
@@ -1086,13 +1087,21 @@ public class LambdaJ {
             return tok;
         }
 
+        private String posInfo(int startLine, int startChar) {
+            return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + startLine + ':' + startChar + ".." + lineNo + ':' + charNo;
+        }
+
+        private String posInfo() {
+            return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
+        }
+
         private Object readList(int listStartLine, int listStartChar) {
             ListConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();
                 final int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
-                if (tok == null) throw new ParseError("line %d:%d: cannot read list. missing ')'?", lineNo, charNo);
+                if (tok == null) throw new ParseError("cannot read list. missing ')'?");
                 if (!tokEscape && (tok == RP || tok == DOT)) {
                     adjustEnd(first);
                     return first;
@@ -1238,7 +1247,6 @@ public class LambdaJ {
         private Object qq_expand_list(Object x) {
             if (x == null) return list(sList, sNil);
             if (atom(x))
-                //return quote(list(x, null));
                 return list(sList, quote(x));
 
             final ConsCell xCons = (ConsCell)x;

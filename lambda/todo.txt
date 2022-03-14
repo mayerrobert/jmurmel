@@ -4,8 +4,6 @@ kompilierte programme: MurmelProgram.body() kann man nur 1x laufen lassen, ab de
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
 
-in readerfehlern fehlt der filename
-
 
 (compile) könnte in etwa so gehen:
 

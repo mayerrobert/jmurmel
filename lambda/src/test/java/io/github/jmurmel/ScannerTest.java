@@ -145,7 +145,7 @@ public class ScannerTest {
 
     @Test
     public void testExtraParens() {
-        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "line 3:4: unexpected ')'");
+        LambdaJTest.runErrorTest("openparen", "\n\n  )  \n\n", "unexpected ')'\nerror occurred in line 3:4");
     }
 
     @Test
@@ -155,13 +155,13 @@ public class ScannerTest {
                 + "\n"
                 + "(3\n"
                 + "\n"
-                + "  )", "line 6:3: cannot read list. missing ')'?\nerror occurred in S-expression line 2:1..6:3");
+                + "  )", "cannot read list. missing ')'?\nerror occurred in line 2:1..6:3");
     }
 
 
     @Test
     public void testListDotListShort2() {
-        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "line 1:12: illegal end of dotted list: (c d)");
+        LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "illegal end of dotted list: (c d)\nerror occurred in line 1:2..1:12");
     }
 
 
