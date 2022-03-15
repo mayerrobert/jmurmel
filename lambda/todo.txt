@@ -38,6 +38,7 @@ compilecompiler mit compile(LambdaJ intp, symbol oder ConsCell code, ConsCell en
 compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
 -> geht nicht innerhalb ?:, weil das braucht eine expression
 -> emitForm müsste wohl einen parameter "expr" bekommen und geeignet durchreichen
+   -> und bei expr == false müsste (if...) als Java if statt ?: emitted werden, und (cond...) als elsif kette statt ?: kette
 
 
 errorMalformed könnte als ersten parameter ein enum Error übernehmen. das enum hat name und URL, es gibt enumwerte für alle special forms inkl "named let" usw. und "compilation unit".

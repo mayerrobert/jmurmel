@@ -5507,19 +5507,19 @@ public class LambdaJ {
                         emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
                         if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
-                        else sb.append(")\n        : _nil)");
+                        else sb.append(")\n        : (Object)null)");
                         return;
                     }
 
                     ///     - cond
                     if (intp.sCond == operator) {
-                        sb.append("(false ? _nil");
+                        sb.append("(false ? (Object)null");
                         if (ccArguments != null) for (Object cond: ccArguments) {
                             sb.append("\n        : "); emitTruthiness(sb, car(cond), env, topEnv, rsfx); sb.append("\n        ? (");
                             emitProgn(sb, cdr(cond), env, topEnv, rsfx, isLast);
                             sb.append(')');
                         }
-                        sb.append("\n        : _nil)");
+                        sb.append("\n        : (Object)null)");
                         return;
                     }
 
@@ -5671,7 +5671,7 @@ public class LambdaJ {
                             emitForm(sb, arg, env, topEnv, rsfx, false);
                         }
                     }
-                    //else sb.append(", NOARGS"); // makes things considerably slower ?!?
+                    else sb.append(", NOARGS");
                     sb.append(')');
                     return;
                 }
@@ -5716,7 +5716,7 @@ public class LambdaJ {
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }
-            else printSEx(sb::append, form);
+            else printSEx(sb::append, form); // todo das kann eigentlich nie passieren (ausser es waere form == nil, und das passiert derzeit auch nie), und wenn doch wuerde ungueltiger code geschrieben?!?
         }
 
         private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
@@ -5787,10 +5787,11 @@ public class LambdaJ {
 
         /** args = (formsym (sym...) form...) */
         private void labelToJava(String func, WrappingWriter sb, final Object symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append("new MurmelFunction() {\n");
-            final Object symbol = car(symbolParamsAndForms);
+            final LambdaJSymbol symbol = asSymbol(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
-            sb.append("        private final Object ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"  
+
+            sb.append("new MurmelFunction() {\n");
+            sb.append("        private final MurmelFunction ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
             sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
             emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
@@ -5804,7 +5805,7 @@ public class LambdaJ {
             final Object localFuncs = car(args);
             if (localFuncs == null || cddr(args) == null && atom(cadr(args))) {
                 // no local functions or body is one single atom (the latter can't use the functions so skip them
-                emitProgn(sb, cdr(args), env, topEnv, rsfx, isLast);
+                emitProgn(sb, cdr(args), env, topEnv, rsfx, isLast); // todo warum nicht emitAtom?
                 return;
             }
 
@@ -5817,14 +5818,14 @@ public class LambdaJ {
             }
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
-                sb.append("        private final Object ").append(javasym(car(symbolParamsAndBody), env)).append(" = ");
+                sb.append("        private final MurmelFunction ").append(javasym(car(symbolParamsAndBody), env)).append(" = ");
                 labelToJava("labels", sb, symbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
             }
 
             sb.append("        @Override public Object apply(Object... ignored) {\n");
             emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
-            sb.append("        } } )");
+            sb.append("        } }, NOARGS)");
         }
 
         /** let and named let */
@@ -6017,6 +6018,7 @@ public class LambdaJ {
                     if (letStar) sb.append("(Object)null");
                     else emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
+            else sb.append(", NOARGS");
             sb.append(')');
         }
 
@@ -6242,14 +6244,15 @@ public class LambdaJ {
                 return true;
             }
 
-            for (String prim: primitives)          if (symbolEq(op, prim))    { funcallHelper(sb, "_" + prim,  args, env, topEnv, rsfx, null);  return true; }
-            for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { funcallHelper(sb, prim[1],     args, env, topEnv, rsfx, null);  return true; }
+            for (String prim: primitives)          if (symbolEq(op, prim))    { emitCallPrimitive(sb, "_" + prim, args, env, topEnv, rsfx, null);  return true; }
+            for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { emitCallPrimitive(sb, prim[1], args, env, topEnv, rsfx, null);  return true; }
 
             return false;
         }
 
-        /** 2 args: divide 2 numbers and apply "javaOp" to the result
-         *  1 arg: apply "javaOp" to the number
+        /** 2 args: divide 2 numbers and apply {@code javaOp} to the result,
+         *  1 arg: apply {@code javaOp} to the number,
+         *  in both cases if {@code asLong == true} then the result is converted to {@code long}
          */
         private void divisionOp(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargsMinMax(murmel, args, 1, 2);
@@ -6267,7 +6270,7 @@ public class LambdaJ {
             if (asLong) sb.append(')');
         }
 
-        /** generate boolean op for one or two args */
+        /** emit "=="  operator for one or two args (one arg is compared to null) */
         private void compareOp(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("(((Object)");
             emitForm(sb, lhs, env, topEnv, rsfx, false);
@@ -6276,7 +6279,7 @@ public class LambdaJ {
             sb.append(") ? _t : null)");
         }
 
-        /** generate double operator for zero or more number args */
+        /** emit double operator for zero or more number args */
         private void addDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append('(');
             if (args == null) sb.append(start);
@@ -6291,7 +6294,7 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        /** generate double operator for one or more number args */
+        /** emit double operator for one or more number args */
         private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             varargs1(op,  args);
             sb.append('(');
@@ -6305,25 +6308,27 @@ public class LambdaJ {
 
         private void funcallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (minArgs > 0) varargsMin(murmel,  args, minArgs);
-            funcallHelper(sb, func, args, env, topEnv, rsfx, null);
+            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
         private void funcall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             oneArg(murmel, args);
-            funcallHelper(sb, func, args, env, topEnv, rsfx, null);
+            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
         private void funcall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
-            funcallHelper(sb, func, args, env, topEnv, rsfx, null);
+            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
         private void funcall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
-            funcallHelper(sb, func, args, env, topEnv, rsfx, "dbl");
+            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "dbl");
         }
 
-        private void funcallHelper(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String wrapper) {
+        /** emit a call to the primitive {@code func} without going through the trampoline,
+         *  if {@code wrapper} is non-null then it will be applied to each function argument  */
+        private void emitCallPrimitive(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String wrapper) {
             sb.append(func).append("(");
             if (args != null) {
                 if (wrapper != null) sb.append(wrapper).append('(');
