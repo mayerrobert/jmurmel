@@ -1,5 +1,9 @@
+
+die ganzen protected methoden in MurmelJavaProgram erzwingen alle $access methoden
+-> auf public stellen
+
 kompilierte programme: MurmelProgram.body() kann man nur 1x laufen lassen, ab dem zweiten aufruf kommt "duplicate define"
--> alle globals am anfang von body() auf UNASSIGNED setzen
+-> alle globals am anfang von body() auf UNASSIGNED setzen, ggf. mittels generierter init-methode
 -> in lambdajbm erstmal labels statt defun
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
@@ -126,6 +130,19 @@ funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write 
 
 (declaim (inline... implementieren
 -> cdddr könnte inlined werden, dann würden die cdr aufrufe opencoded, und effektiv der ganze cdddr aufruf opencoded
+
+vielleicht tagbody/go/return from/return? könnte für schnellere loops verwendet werden:
+  new MurmelFunction(Object... args) {
+    label:
+    do {
+      try {
+        forms... // return-from auf gleicher ebene macht "ret=...; break label;", verschachteltes return-from macht "throw new ReturnException(...);"
+      }
+      catch (GoException e) { continue label; }
+      catch (ReturnException e) { ret = e.getRet(); break label; }
+    } while (false);
+  }.apply(NOARGS);
+-> problem wird wieder sein, wenn das go/ return-from eine expression sein muss, weils in einem if steht das als ?: geschrieben wird.
 
 
 

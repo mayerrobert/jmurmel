@@ -1682,7 +1682,7 @@ public class LambdaJ {
                             func = eval(applyFunc, env, stack, level, traceLvl);
                             final Object maybeArgList = eval(cadr(ccArguments), env, stack, level, traceLvl);
                             argList = listOrMalformed("apply", maybeArgList);
-                            if (speed >= 1 && symbolp(applyFunc)) {
+                            if (speed >= 1 && symbolp(applyFunc)) {  // todo ist symbolp(applyFunc) noetig oder verhindert das nur ggf. opencoding?
                                 // func = eval(... was performed unneccesarily
                                 result = evalOpencode(applyFunc, argList);
                                 if (result != NOT_HANDLED) return result;
@@ -1704,6 +1704,7 @@ public class LambdaJ {
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         traceLvl = traceEnter(func, argList, traceLvl);
                         if (func instanceof OpenCodedPrimitive) {
+                            // currently only "(apply eval ...)" leads here
                             form = cons(func, argList);
                             traceStack = push(func, traceStack);
                             func = null;
@@ -2592,6 +2593,7 @@ public class LambdaJ {
         _printSEx(w, obj, obj, true, true);
     }
 
+    // todo fehlt hier noch CompilerPrimitive, MurmelFunction, kompilierte sachen?
     private static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
         while (true) {
             if (obj == null) {
@@ -4780,6 +4782,8 @@ public class LambdaJ {
             throw errorNotAFrame(s, o);
         }
 
+        public static Object[] unassigned(int length) { Object[] ret = new Object[length]; if (length > 0) ret[0] = UNASSIGNED; return ret; }
+
         protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
         protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
@@ -5818,7 +5822,7 @@ public class LambdaJ {
                 sb.append(";\n");
             }
 
-            sb.append("        @Override public Object apply(Object... args) {\n");
+            sb.append("        @Override public Object apply(Object... ignored) {\n");
             emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
             sb.append("        } } )");
         }
@@ -5879,52 +5883,46 @@ public class LambdaJ {
                 op = letrec ? "letrec" : "let*";
             }
 
-            final ConsCell params = paramList(op, bindings, false);
-            if (params != null) {
-                final Set<Object> seen = new HashSet<>();
-                for (Object letVar : params) {
-                    if (seen.add(letVar)) {
-                        final ConsCell _env = extenv(op, letVar, rsfx, env);
-                        if (letrec) env = _env;
-                        final String letVarName = javasym(letVar, _env);
-                        sb.append("        private Object ").append(letVarName).append(";\n");
-                    }
-                    else if (letrec) errorMalformed(op, "duplicate symbol " + letVar);
-                }
-            }
-            
-            if (bindings != null)
-                // initial assignments
-                for (Object binding: (ConsCell)bindings) {
-                    final Object sym, form;
-                    if (symbolp(binding)) { sym = binding; form = null; }
-                    else { sym = car(binding); form = cadr(binding); }
-                    final String symName = mangle(sym.toString(), rsfx);
-                    sb.append("        { ").append(symName).append(" = ");
-                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
-                    emitForm(sb, form, env, topEnv, rsfx, false);
-                    if (!letrec) env = extenv(op, sym, rsfx, env);
-                    sb.append("; }\n");
-                }
-
             if (loopLabel != null) {
                 env = extenv(op, loopLabel, rsfx, env);
                 sb.append("        private final Object ").append(javasym(loopLabel, env)).append(" = this;\n");
             }
-            sb.append("        @Override public Object apply(Object... args) {\n");
-            if (params != null) {
+            sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
+            final int argCount = length(bindings);
+            if (argCount != 0) {
                 int n = 0;
-                sb.append("        if (args != null) {\n");
-                sb.append("        argCheck(loc, ").append(length(params)).append(", args.length);\n");
-                // assignments for loop invocations
-                for (Object sym: params) {
-                    final String symName = mangle(sym.toString(), rsfx);
-                    sb.append("        ").append(symName).append(" = ").append("args[").append(n++).append("];\n");
+                sb.append("        if (args").append(rsfx).append("[0] == UNASSIGNED) {\n");
+
+                // letrec: ALL let-bindings are in the environment during binding of the initial values todo value should be undefined
+                int current = 0;
+                if (letrec) for (Object binding: (ConsCell)bindings) {
+                    final LambdaJSymbol sym;
+                    if (symbolp(binding)) { sym = (LambdaJSymbol)binding; }
+                    else { sym = asSymbol(op, car(binding)); }
+                    final String symName = "args" + rsfx + '[' + current++ + ']';
+                    if (letrec) env = extenvIntern(sym, symName, env);
                 }
+
+                // initial assignments. let*: after the assignment add the let-symbol to the environment so that subsequent bindings will see it
+                current = 0;
+                for (Object binding: (ConsCell)bindings) {
+                    final LambdaJSymbol sym;
+                    final Object form;
+                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                    if (symbolp(binding)) { sym = (LambdaJSymbol)binding; form = null; }
+                    else { sym = asSymbol(op, car(binding)); form = cadr(binding); }
+                    final String symName = "args" + rsfx + '[' + current++ + ']';
+                    sb.append("        { ").append(symName).append(" = ");
+                    emitForm(sb, form, env, topEnv, rsfx, false);
+                    if (!letrec) env = extenvIntern(sym, symName, env);
+                    sb.append("; }\n");
+                }
+
                 sb.append("        }\n");
+                sb.append("        else argCheck(loc, ").append(argCount).append(", args").append(rsfx).append(".length);\n");
             }
             emitForms(sb, (ConsCell)body, env, topEnv, rsfx, isLast);
-            sb.append("        } }, (Object[])null)");
+            sb.append("        } }, unassigned(").append(argCount).append("))");
         }
 
         /** let dynamic and let* dynamic */

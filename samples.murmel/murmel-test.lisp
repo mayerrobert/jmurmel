@@ -173,7 +173,6 @@
          (let loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
          '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
 
-#| todo compiler emits erroneous code
 (deftest namedlet.6
          (let* loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
          '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
@@ -181,7 +180,6 @@
 (deftest namedlet.7
          (letrec loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
          '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
-|#
 )
 
 

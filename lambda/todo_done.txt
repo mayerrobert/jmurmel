@@ -1376,3 +1376,6 @@ nil
 -> fehler
 
 in readerfehlern fehlt der filename
+
+(Object... args) darf ggf. nicht generiert werden, immer args+rsfx, weil sonst referenzieren freie variablen ggf. den falschen nestinglevel
+-> reparieren bzw. durch (Object... ignored) ersetzen
