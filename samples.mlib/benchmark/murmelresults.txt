@@ -1,0 +1,6 @@
+Benchmark results
+16.03.2022 
+
+Version 1.2-SNAPSHOT/Built from jmurmel-all-1.1-278-ga6bdb0f-dirty 2022-03-16T18:47:31+0100/Built by Robert 2022-03-16T19:29:48+0100
+
+*** jmurmel (compiled): 00_tak_apo.lisp ***

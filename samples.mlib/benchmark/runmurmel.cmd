@@ -14,18 +14,12 @@ echo Benchmark results
 date /t
 echo.
 
-%SBCL% --version
 %JMURMEL% --version
-%ABCL% --eval "(progn (princ (lisp-implementation-type)) (princ #\ ) (princ (lisp-implementation-version)))"
 
 for %%i in (00*.lisp 3*.lisp q.lisp) do call :all %%i
 goto :EOF
 
 :all
-echo.
-echo *** sbcl: %1 ***
-%SBCL% --script %1
-
 echo.
 echo *** jmurmel (compiled): %1 ***
 %JMURMEL% --run %1
@@ -33,7 +27,3 @@ echo *** jmurmel (compiled): %1 ***
 echo.
 echo *** jmurmel (interpreted): %1 ***
 %JMURMEL% %1
-
-echo.
-echo *** abcl (interpreted): %1 ***
-%ABCL% --load %1
