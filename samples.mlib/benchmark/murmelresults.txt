@@ -1,6 +1,60 @@
 Benchmark results
 16.03.2022 
 
-Version 1.2-SNAPSHOT/Built from jmurmel-all-1.1-278-ga6bdb0f-dirty 2022-03-16T18:47:31+0100/Built by Robert 2022-03-16T19:29:48+0100
+Version 1.2-SNAPSHOT/Built from jmurmel-all-1.1-280-g782902b 2022-03-16T19:50:38+0100/Built by Robert 2022-03-16T19:51:37+0100
 
 *** jmurmel (compiled): 00_tak_apo.lisp ***
+tak´ result: 7
+warmup done.
+tak´: did 3235 iterations in 5,00030 seconds walltime, 646,961 iterations/second, 1,54569 milliseconds/iteration
+
+*** jmurmel (interpreted): 00_tak_apo.lisp ***
+tak´ result: 7
+warmup done.
+tak´: did 64 iterations in 5,01412 seconds walltime, 12,7640 iterations/second, 78,3456 milliseconds/iteration
+
+*** jmurmel (compiled): 3.01_tak.lisp ***
+tak result: 7
+warmup done.
+tak: did 3240 iterations in 5,00140 seconds walltime, 647,819 iterations/second, 1,54364 milliseconds/iteration
+
+*** jmurmel (interpreted): 3.01_tak.lisp ***
+tak result: 7
+warmup done.
+tak: did 75 iterations in 5,03908 seconds walltime, 14,8837 iterations/second, 67,1878 milliseconds/iteration
+
+*** jmurmel (compiled): 3.08_destru.lisp ***
+destru result: null
+warmup done.
+destru: did 333 iterations in 5,00255 seconds walltime, 66,5660 iterations/second, 15,0227 milliseconds/iteration
+
+*** jmurmel (interpreted): 3.08_destru.lisp ***
+destru result: null
+warmup done.
+destru: did 4 iterations in 5,07127 seconds walltime, 0,788758 iterations/second, 1267,82 milliseconds/iteration
+
+*** jmurmel (compiled): 3.10_deriv.lisp ***
+deriv (5000x) result: null
+warmup done.
+deriv (5000x): did 551 iterations in 5,00831 seconds walltime, 110,017 iterations/second, 9,08950 milliseconds/iteration
+
+*** jmurmel (interpreted): 3.10_deriv.lisp ***
+deriv (5000x) result: null
+warmup done.
+deriv (5000x): did 19 iterations in 5,15452 seconds walltime, 3,68609 iterations/second, 271,290 milliseconds/iteration
+
+*** jmurmel (compiled): q.lisp ***
+q result: 12.0
+warmup done.
+q: did 894 iterations in 5,00435 seconds walltime, 178,645 iterations/second, 5,59771 milliseconds/iteration
+q2 result: 31.0
+warmup done.
+q2: did 375 iterations in 5,00223 seconds walltime, 74,9665 iterations/second, 13,3393 milliseconds/iteration
+
+*** jmurmel (interpreted): q.lisp ***
+q result: 12.0
+warmup done.
+q: did 44 iterations in 5,05348 seconds walltime, 8,70687 iterations/second, 114,852 milliseconds/iteration
+q2 result: 31.0
+warmup done.
+q2: did 6 iterations in 5,55381 seconds walltime, 1,08034 iterations/second, 925,635 milliseconds/iteration
