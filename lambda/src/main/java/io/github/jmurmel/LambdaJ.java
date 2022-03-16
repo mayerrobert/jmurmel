@@ -249,13 +249,13 @@ public class LambdaJ {
         ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
     }
 
-    private static class ListConsCell extends ConsCell {
+    private static abstract class AbstractConsCell extends ConsCell {
         private static class ListConsCellIterator implements Iterator<Object> {
-            private final ListConsCell coll;
+            private final AbstractConsCell coll;
             private Iterator<Object> delegate;
             private Object cursor;
 
-            private ListConsCellIterator(ListConsCell coll) { this.coll = coll; cursor = coll; }
+            private ListConsCellIterator(AbstractConsCell coll) { this.coll = coll; cursor = coll; }
             @Override public boolean hasNext() {
                 if (delegate != null) return delegate.hasNext();
                 return cursor != null;
@@ -273,8 +273,8 @@ public class LambdaJ {
                     delegate = ((ArraySlice)_cursor).iterator();
                     return delegate.next();
                 }
-                if (_cursor instanceof ListConsCell) {
-                    final ListConsCell list = (ListConsCell)_cursor;
+                if (_cursor instanceof AbstractConsCell) {
+                    final AbstractConsCell list = (AbstractConsCell)_cursor;
                     if (list.cdr() == coll) cursor = null; // circle detected, stop here
                     else cursor = list.cdr();
                     return list.car();
@@ -288,7 +288,7 @@ public class LambdaJ {
 
         private Object car, cdr;
 
-        private ListConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+        private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
         @Override public String toString() { return printObj(this); }
         @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
 
@@ -299,7 +299,12 @@ public class LambdaJ {
         @Override public Object rplacd(Object cdr) { this.cdr = cdr; return this; }
     }
 
-    private static final class SExpConsCell extends ListConsCell {
+    private static final class ListConsCell extends AbstractConsCell {
+        private static final long serialVersionUID = 1L;
+        private ListConsCell(Object car, Object cdr) { super(car, cdr); }
+    }
+
+    private static final class SExpConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
         private final Path path;
         private final int startLineNo, startCharNo;
@@ -317,7 +322,7 @@ public class LambdaJ {
         return (f.path == null ? "line " : f.path.toString() + ':') + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
     }
 
-    private static final class ClosureConsCell extends ListConsCell {
+    private static final class ClosureConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
         private final ConsCell closure; // only used for Lambdas with lexical environments. doesn't waste space because Java object sizes are multiples of 8 and this uses an otherwise unused slot
         private ClosureConsCell(Object car, Object cdr, ConsCell closure)    { super(car, cdr); this.closure = closure; }
@@ -1096,7 +1101,7 @@ public class LambdaJ {
         }
 
         private Object readList(int listStartLine, int listStartChar) {
-            ListConsCell first = null, appendTo = null;
+            ConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();
                 final int carStartLine = lineNo, carStartChar = charNo;
@@ -1106,7 +1111,7 @@ public class LambdaJ {
                     adjustEnd(first);
                     return first;
                 }
-                final ListConsCell newCell = cons(listStartLine, listStartChar);
+                final ConsCell newCell = cons(listStartLine, listStartChar);
                 if (first == null) first = newCell;
                 if (appendTo != null) appendTo.rplacd(newCell);
                 appendTo = newCell;
@@ -1127,25 +1132,25 @@ public class LambdaJ {
 
 
 
-        private ListConsCell cons(int startLine, int startChar, Object car, Object cdr) {
+        private ConsCell cons(int startLine, int startChar, Object car, Object cdr) {
             return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
         }
 
-        private ListConsCell cons(int startLine, int startChar) {
+        private ConsCell cons(int startLine, int startChar) {
             return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, null, null) : new ListConsCell(null, null);
         }
 
         /** Append rest at the end of first. If first is a list it will be modified. */
-        private ListConsCell combine(int startLine, int startChar, Object first, Object rest) {
-            if (consp(first)) return appendToList(startLine, startChar, (ListConsCell)first, rest);
+        private ConsCell combine(int startLine, int startChar, Object first, Object rest) {
+            if (consp(first)) return appendToList(startLine, startChar, (ConsCell)first, rest);
             else return cons(startLine, startChar, first, rest);
         }
 
         /** Append rest at the end of first, modifying first in the process.
          *  Returns a dotted list unless rest is a proper list. */
         // ist das nconc (destructive concatenate) ?
-        private ListConsCell appendToList(int startLine, int startChar, ListConsCell first, Object rest) {
-            for (ListConsCell last = first; last != null; last = (ListConsCell) cdr(last)) {
+        private ConsCell appendToList(int startLine, int startChar, ConsCell first, Object rest) {
+            for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
                 if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.rplacd(rest);
@@ -2005,7 +2010,7 @@ public class LambdaJ {
                 insertPos = params;
             } else {
                 insertPos.rplacd(cons(symbol, null));
-                insertPos = (ListConsCell) insertPos.cdr();
+                insertPos = (ConsCell) insertPos.cdr();
             }
         }
         return params;
@@ -2321,7 +2326,7 @@ public class LambdaJ {
 
     /// ###  (Mostly) Lisp-like functions used by interpreter program, a subset is used by interpreted programs as well
     final   ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
-    private ListConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
+    private ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
@@ -2412,7 +2417,7 @@ public class LambdaJ {
     // todo ArraySlice muesste auch gehen?
     private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
-        ListConsCell ret = null, insertPos = null;
+        ConsCell ret = null, insertPos = null;
         for (Object o: a) {
             if (ret == null) {
                 ret = cons(o, null);
@@ -2420,7 +2425,7 @@ public class LambdaJ {
             }
             else {
                 insertPos.rplacd(cons(o, null));
-                insertPos = (ListConsCell) insertPos.cdr();
+                insertPos = (ConsCell) insertPos.cdr();
             }
         }
         return ret;
@@ -2496,7 +2501,7 @@ public class LambdaJ {
         if (lhs == null) return rhs;
         if (!consp(lhs)) throw new LambdaJError(true, "append2: first argument %s is not a list", lhs);
         if (rhs == null) return lhs;
-        ListConsCell ret = null, insertPos = null;
+        ConsCell ret = null, insertPos = null;
         for (Object o: (ConsCell)lhs) {
             if (ret == null) {
                 ret = cons(o, null);
@@ -2504,7 +2509,7 @@ public class LambdaJ {
             }
             else {
                 insertPos.rplacd(cons(o, null));
-                insertPos = (ListConsCell) insertPos.cdr();
+                insertPos = (ConsCell) insertPos.cdr();
             }
         }
         insertPos.rplacd(rhs);
@@ -4806,10 +4811,10 @@ public class LambdaJ {
         /** used for function calls, and also for let, labels, progn */
         public static Object funcall(MurmelFunction fn, Object... args) {
             Object r = fn.apply(args);
-            // !instanceof Double and !instanceof Long seem redundant but they are fast and will end the loop often
+            // !instanceof Double, !instanceof Long and !instanceof ListConsCell seem redundant but they are fast and will end the loop often
             // instanceof MurmelFunctionCall is slow because instanceof with interfaces is slow
             // the redundant checks will give a net speedup
-            while (!(r instanceof Double) && !(r instanceof Long)
+            while (!(r instanceof Double) && !(r instanceof Long) && !(r instanceof ListConsCell)
                     && r instanceof MurmelFunctionCall) {
                 final MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
                 r = functionCall.next.apply(functionCall.args);
