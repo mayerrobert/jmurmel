@@ -40,9 +40,9 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(LambdaJBenchmark.FORK)
 @State(value = Scope.Thread)
 public class LambdaJBenchmark {
-    public static final int FORK = 3;       // default: 3
-    public static final int WARMUP = 10;     // default: 5
-    public static final int ITERATIONS = 10; // default: 10
+    public static final int FORK = 5;       // default: 3
+    public static final int WARMUP = 20;     // default: 5
+    public static final int ITERATIONS = 5; // default: 10
 
     public static final String EMPTY_PROGRAM = "; empty program";
     public static final String SIMPLE_CONS = "(cons 'a 'b); simple cons";

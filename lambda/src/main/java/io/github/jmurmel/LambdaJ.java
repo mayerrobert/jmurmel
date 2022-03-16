@@ -4490,29 +4490,29 @@ public class LambdaJ {
         //     tried to access method io.github.jmurmel.LambdaJ$MurmelJavaProgram.format([Ljava/lang/Object;)Ljava/lang/Object; from class MurmelProgram$1
         //
         // Unter Java 17 gibts den Laufzeitfehler nicht, koennte ein Java 8 bug sein. Oder Java 17 hat den Bug, weil der Zugriff nicht erlaubt sein sollte.
-        // Gilt nicht fuer methoden, die "normal" aufgerufen werden wie z.B. "cons(Object,Object)", die koennen protected sein.
+        // Gilt nicht fuer methoden, die "normal" aufgerufen werden wie z.B. "cons(Object,Object)", die koennen protected sein (gibt dann halt unmengen synthetische $access$ methoden).
         //
         // Wenn statt "(CompilerPrimitive)rt()::add" -> "(CompilerPrimitive)((MurmelJavaProgram)rt())::add" generiert wird,
         // gibts unter Java 8, 17 und 19 einen Compilefehler.
         public final Object   _car     (Object... args) { oneArg("car",     args.length); return car(args[0]); }
-        protected static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
+        public static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
 
         public final Object   _cdr     (Object... args) { oneArg("cdr",     args.length); return cdr(args[0]); }
-        protected static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
+        public static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
 
         public final ConsCell _cons    (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
-        protected static ConsCell cons(Object car, Object cdr)  { return LambdaJ.ConsCell.cons(car, cdr); } // also used by generated code
+        public static ConsCell cons(Object car, Object cdr)  { return LambdaJ.ConsCell.cons(car, cdr); } // also used by generated code
 
         public final Object   _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        protected static Object rplaca(Object l, Object newCar) { return lst(l).rplaca(newCar); }
+        public static Object rplaca(Object l, Object newCar) { return lst(l).rplaca(newCar); }
 
         public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        protected static Object rplacd(Object l, Object newCdr) { return lst(l).rplacd(newCdr); }
+        public static Object rplacd(Object l, Object newCdr) { return lst(l).rplacd(newCdr); }
 
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? lst(args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
-        protected final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
+        public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
@@ -4584,9 +4584,9 @@ public class LambdaJ {
         public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return checkedToLong(Math.ceil  (quot12(args))); }
         public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return checkedToLong(cl_truncate(quot12(args))); }
 
-        protected static double cl_round(double d) { return Math.rint(d); }
-        protected static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
-        protected static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
+        public static double cl_round(double d) { return Math.rint(d); }
+        public static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
+        public static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
         private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
 
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar(args[0]); }
@@ -4617,7 +4617,7 @@ public class LambdaJ {
         public final Number   _signum  (Object... args) { oneArg("signum",        args.length); number(args[0]); return cl_signum((Number)args[0]); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
-        protected static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
+        public static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return dbl(args[0]) % dbl(args[1]); }
 
         // predefined aliased primitives
@@ -4729,13 +4729,13 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        protected final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
+        public final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
 
-        protected static ConsCell arraySlice(Object[] o, int offset) { return offset >= o.length ? null : new ArraySlice(o, offset); }
-        protected static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
+        public static ConsCell arraySlice(Object[] o, int offset) { return offset >= o.length ? null : new ArraySlice(o, offset); }
+        public static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
 
         /** convert null, an array or a list to a (possibly empty) Object[] */
-        protected static Object[] toArray(Object o) {
+        public static Object[] toArray(Object o) {
             if (o == null)
                 return new Object[0];
             if (o instanceof Object[])
@@ -4743,13 +4743,13 @@ public class LambdaJ {
             return listToArray(o);
         }
 
-        protected static ConsCell lst(Object lst) {
+        public static ConsCell lst(Object lst) {
             if (lst == null) return null;
             if (!consp(lst)) errorNotAList(lst);
             return (ConsCell)lst;
         }
 
-        protected static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
+        public static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
 
         private static Character asChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
@@ -4784,8 +4784,8 @@ public class LambdaJ {
 
         public static Object[] unassigned(int length) { Object[] ret = new Object[length]; if (length > 0) ret[0] = UNASSIGNED; return ret; }
 
-        protected static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
-        protected static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
+        public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
+        public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
 
 
@@ -4806,7 +4806,11 @@ public class LambdaJ {
         /** used for function calls, and also for let, labels, progn */
         public static Object funcall(MurmelFunction fn, Object... args) {
             Object r = fn.apply(args);
-            while (r instanceof MurmelFunctionCall) {
+            // !instanceof Double and !instanceof Long seem redundant but they are fast and will end the loop often
+            // instanceof MurmelFunctionCall is slow because instanceof with interfaces is slow
+            // the redundant checks will give a net speedup
+            while (!(r instanceof Double) && !(r instanceof Long)
+                    && r instanceof MurmelFunctionCall) {
                 final MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
                 r = functionCall.next.apply(functionCall.args);
             }
@@ -4881,7 +4885,7 @@ public class LambdaJ {
 
 
 
-        protected String loc;
+        public String loc;
 
         /** main() will be called from compiled Murmel code */
         @SuppressWarnings("unused")
