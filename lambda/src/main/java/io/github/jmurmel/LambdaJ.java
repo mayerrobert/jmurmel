@@ -5082,8 +5082,9 @@ public class LambdaJ {
 
         private boolean passTwo;
         private Set<String> implicitDecl;
+        /** return {@code form} as a Java expression */
         private String javasym(Object form, ConsCell env) {
-            if (form == null) form = intern("nil");
+            if (form == null || form == intp.sNil) return "(Object)null";
             final ConsCell symentry = assq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form.toString());
@@ -5697,9 +5698,10 @@ public class LambdaJ {
             else sb.append("true"); // must be an atom other than nil or a symbol -> true
         }
 
-        /** write atoms that are not symbols */
-        private static void emitAtom(WrappingWriter sb, Object form) {
-            if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
+        /** write atoms that are not symbols (and "nil" is acceptable, too) */
+        private void emitAtom(WrappingWriter sb, Object form) {
+            if (form == null || form == intp.sNil) sb.append("(Object)null");
+            else if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else if (form instanceof Double) sb.append(Double.toString((Double) form));
             else if (form instanceof Character) {
                 final char c = (Character) form;
@@ -5716,7 +5718,8 @@ public class LambdaJ {
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }
-            else printSEx(sb::append, form); // todo das kann eigentlich nie passieren (ausser es waere form == nil, und das passiert derzeit auch nie), und wenn doch wuerde ungueltiger code geschrieben?!?
+            else
+                throw new LambdaJError(true, "emitAtom - internal error: atom %s is not implemented", form.toString());
         }
 
         private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
