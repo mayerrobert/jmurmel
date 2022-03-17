@@ -277,7 +277,7 @@ pi ; ==> 3.141592653589793
 ;
 ;     nil, t,
 ;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
-;     setq, apply, progn, defmacro, declaim
+;     setq, progn, defmacro, declaim
 
 
 ;;; == Variables and Scope ============
@@ -448,13 +448,6 @@ pi ; ==> 3.141592653589793
 
 (letrec ((x 1) (y (+ x 1))) (write y))
 
-;;; = (apply form argform) -> object
-;
-; `form` must return a primitive or lambda.
-; `argform` must eval to a proper list. 
-
-(apply + '(1 2)) ; ==> 3.0
-
 ;;; = (load filespec) -> object
 ;
 ; Eval the contents of the given file, return value
@@ -543,6 +536,25 @@ pi ; ==> 3.141592653589793
 
 ;;; == Predefined Primitives ==========
 
+;;; = (apply form argform) -> object
+;
+; `form` must return a primitive or lambda.
+; `argform` must eval to a proper list. 
+
+(apply + '(1 2)) ; ==> 3.0
+
+;;; = (eval form) -> object<br/> (eval form env) -> object
+;
+; `form` will be eval'd, it must return a form.
+; The optional argument `env` will be eval'd, it must return a list of `(symbol . value)`.
+; If the optional argument `env` is omitted or `nil`
+; then the environment for the recursive eval is "all predefined global symbols"
+; else it is the concatenation of `env` and all predefined globals
+
+(eval '(+ 1 2)) ; ==> 3.0
+(eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
+(eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
+
 ; = (cons e1 e2) -> conscell
 
 (cons 'a 'b) ; ==> (a . b)
@@ -577,19 +589,6 @@ pi ; ==> 3.141592653589793
 ;(list*) ; ==> error
 (list* 1) ; ==> 1
 (list* 1 2 3) ; ==> (1 2 . 3)
-
-
-;;; = (eval form) -> object<br/> (eval form env) -> object
-;
-; `form` will be eval'd, it must return a form.
-; The optional argument `env` will be eval'd, it must return a list of `(symbol . value)`.
-; If the optional argument `env` is omitted or `nil`
-; then the environment for the recursive eval is "all predefined global symbols"
-; else it is the concatenation of `env` and all predefined globals
-
-(eval '(+ 1 2)) ; ==> 3.0
-(eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
-(eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
 
 ; = (eq x y) -> boolean
 ;

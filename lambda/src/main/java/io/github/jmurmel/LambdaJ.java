@@ -1352,7 +1352,7 @@ public class LambdaJ {
         if (haveQuote())  { sQuote   = internReserved("quote"); }
         if (haveCond())   { sCond    = internReserved("cond"); }
         if (haveLabels()) { sLabels  = internReserved("labels"); }
-        if (haveApply())  { sApply   = internReserved("apply"); }
+        if (haveApply())  { sApply   = intern("apply"); }
 
         if (haveXtra())   {
             sIf      = internReserved("if");
@@ -1410,8 +1410,9 @@ public class LambdaJ {
         // by another supplier that simply returns the cached value.
         expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
 
-        // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not refill these
+        // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not re-assign these
         ocEval = null;
+        ocApply = null;
 
         topEnv = null;
 
@@ -1454,7 +1455,7 @@ public class LambdaJ {
 
         @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
     }
-    private OpenCodedPrimitive ocEval;
+    private OpenCodedPrimitive ocEval, ocApply;
 
 
 
@@ -1519,8 +1520,7 @@ public class LambdaJ {
                 else if (consp(form)) {
                     final ConsCell ccForm = (ConsCell)form;
                     operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(ccForm))) errorMalformed("eval", "an operand list to follow operator " + operator, cdr(ccForm));
-                    final ConsCell ccArguments = (ConsCell) cdr(ccForm);   // list with remaining atoms/ expressions
+                    final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
 
 
                     /// eval - special forms
@@ -1615,7 +1615,7 @@ public class LambdaJ {
                         return result;
                     }
 
-                    // "forms" will be set up depending on the special form and then used in "eval a list of forms" below
+                    // "ccForms" will be set up depending on the special form and then used in "eval a list of forms" below
                     ConsCell ccForms = null;
 
                     /// eval - (progn forms...) -> object
@@ -1681,17 +1681,16 @@ public class LambdaJ {
 
                         /// eval - apply function to list
                         /// eval - (apply form argform) -> object
-                        if (operator == sApply) {
+                        if (operator == ocApply) {
                             twoArgs("apply", ccArguments);
-                            final Object applyFunc = car(ccArguments);
-                            func = eval(applyFunc, env, stack, level, traceLvl);
-                            final Object maybeArgList = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                            argList = listOrMalformed("apply", maybeArgList);
-                            if (speed >= 1 && symbolp(applyFunc)) {  // todo ist symbolp(applyFunc) noetig oder verhindert das nur ggf. opencoding?
+                            final Object funcOrSymbol = car(ccArguments);
+                            argList = listOrMalformed("apply", cadr(ccArguments));
+                            if (speed >= 1 && symbolp(funcOrSymbol)) {  // todo ist symbolp(applyFunc) noetig oder verhindert das nur ggf. opencoding?
                                 // func = eval(... was performed unneccesarily
-                                result = evalOpencode(applyFunc, argList);
+                                result = evalOpencode(funcOrSymbol, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
+                            func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol;
                             // fall through to "actually perform..."
 
                         /// eval - function call
@@ -1709,7 +1708,7 @@ public class LambdaJ {
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         traceLvl = traceEnter(func, argList, traceLvl);
                         if (func instanceof OpenCodedPrimitive) {
-                            // currently only "(apply eval ...)" leads here
+                            // currently only "(apply eval ...)" or "(apply apply..." lead here
                             form = cons(func, argList);
                             traceStack = push(func, traceStack);
                             func = null;
@@ -3377,6 +3376,14 @@ public class LambdaJ {
             };
             env = addBuiltin(sEval, ocEval, env);
 
+            final LambdaJSymbol sApply = intern("apply");
+            ocApply = new OpenCodedPrimitive(sApply) {
+                @Override public Object apply(ConsCell a) {
+                    throw errorNotImplemented("unexpected");
+                }
+            };
+            env = addBuiltin(sApply, ocApply, env);
+
             env = addBuiltin("trace", (Primitive) this::trace,
                   addBuiltin("untrace", (Primitive) this::untrace,
                   env));
@@ -3925,20 +3932,22 @@ public class LambdaJ {
                 if (istty) { parser.lineNo = parser.charNo == 0 ? 1 : 0;  parser.charNo = 0; } // if parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed
                 final Object exp = parser.readObj(true);
 
+                final String strExp = exp == null ? null : exp.toString();
                 if (exp == null && parser.look == EOF
-                    || exp != null && ":q"  .equalsIgnoreCase(exp.toString())) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                    || ":q"  .equalsIgnoreCase(strExp)) { System.out.println("bye."); System.out.println();  System.exit(0); }
                 if (exp != null) {
-                    if (":h"      .equalsIgnoreCase(exp.toString())) { showHelp();  continue; }
-                    if (":echo"   .equalsIgnoreCase(exp.toString())) { echoHolder.value = true; continue; }
-                    if (":noecho" .equalsIgnoreCase(exp.toString())) { echoHolder.value = false; continue; }
-                    if (":env"    .equalsIgnoreCase(exp.toString())) { System.out.println(env); System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                    if (":res"    .equalsIgnoreCase(exp.toString())) { isInit = false; history.clear();  continue; }
-                    if (":l"      .equalsIgnoreCase(exp.toString())) { listHistory(history); continue; }
-                    if (":w"      .equalsIgnoreCase(exp.toString())) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equalsIgnoreCase(exp.toString())) { compileToJava(consoleCharset, parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
-                    if (":r"      .equalsIgnoreCase(exp.toString())) { runForms(parser, history, interpreter, true); continue; }
-                    if (":jar"    .equalsIgnoreCase(exp.toString())) { compileToJar(parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
-                    //if (":peek"   .equals(exp.toString())) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
+                    if (":h"      .equalsIgnoreCase(strExp)) { showHelp();  continue; }
+                    if (":echo"   .equalsIgnoreCase(strExp)) { echoHolder.value = true; continue; }
+                    if (":noecho" .equalsIgnoreCase(strExp)) { echoHolder.value = false; continue; }
+                    if (":env"    .equalsIgnoreCase(strExp)) { if (env != null) for (Object entry: env) System.out.println(entry);
+                                                               System.out.println("env length: " + length(env));  System.out.println(); continue; }
+                    if (":res"    .equalsIgnoreCase(strExp)) { isInit = false; history.clear();  continue; }
+                    if (":l"      .equalsIgnoreCase(strExp)) { listHistory(history); continue; }
+                    if (":w"      .equalsIgnoreCase(strExp)) { writeHistory(history, parser.readObj(false)); continue; }
+                    if (":java"   .equalsIgnoreCase(strExp)) { compileToJava(consoleCharset, parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":r"      .equalsIgnoreCase(strExp)) { runForms(parser, history, interpreter, true); continue; }
+                    if (":jar"    .equalsIgnoreCase(strExp)) { compileToJar(parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    //if (":peek"   .equals(strExp)) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
                 }
 
@@ -5495,8 +5504,7 @@ public class LambdaJ {
                 if (consp(form)) {
                     final ConsCell ccForm = (ConsCell)form;
                     final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (!listp(cdr(ccForm))) errorMalformed(printSEx(operator), "an operand list to follow operator", printSEx(form));
-                    final ConsCell ccArguments = (ConsCell) cdr(ccForm);   // list with remaining atoms/ expressions
+                    final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ expressions
 
 
                     /// * special forms:

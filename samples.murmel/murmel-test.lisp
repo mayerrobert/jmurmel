@@ -118,8 +118,8 @@
 (deftest lambda.1 (#-murmel funcall (lambda nil)) nil)
 
 
-;;; Additional special forms: define, defun, defmacro, setq, let, if, progn, cond, labels, apply, load, require, provide
-;;; todo labels, apply, load, require, provide
+;;; Additional special forms: define, defun, defmacro, setq, let, if, progn, cond, labels, load, require, provide
+;;; todo labels, load, require, provide
 
 ;;; test define
 (define *a* nil)
@@ -263,8 +263,32 @@
 ; and e.g. `(eval '(lambda () ...` returns an interpreted closure.
 ; So these tests additionally check if compiled code can run interpreted lambdas.
 (define x (eval '(lambda () '|hello from interpreter|)))
+
+#+murmel
+(deftest eval.1 (x) '|hello from interpreter|)
 (deftest eval.1 (#-murmel funcall x) '|hello from interpreter|)
+
+#+murmel
+(deftest eval.2 ((eval '(lambda (x) (format nil "%s" x))) '|interpreted format|) "interpreted format")
 (deftest eval.2 (#-murmel funcall (eval '(lambda (x) (format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
+
+
+;;; test apply
+#| doesn't work yet with the compiler
+#+murmel
+(deftest apply.1 (apply + '(1.0 2.0))           3.0)
+(deftest apply.2 (apply #'+ '(1.0 2.0))         3.0)
+
+#+murmel
+(deftest apply.3 (apply apply '(+ (1.0 2.0)))   3.0)
+(deftest apply.4 (apply #'apply '(+ (1.0 2.0))) 3.0)
+
+#+murmel
+(deftest apply.5 (apply apply '(apply (+ (1.0 2.0))))   3.0)
+(deftest apply.6 (apply #'apply '(apply (+ (1.0 2.0)))) 3.0)
+
+(deftest apply.7 (apply ((lambda () '+)) '(1.0 2.0))    3.0)
+|#
 
 
 ;;; test null
