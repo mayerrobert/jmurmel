@@ -4548,9 +4548,10 @@ public class LambdaJ {
             if (symbolp(fn)) fn = getValue(fn.toString());
             return applyTailcallHelper(fn, args[1]);
         }
-        public final Object apply(Object fn, Object args) {
+        public final Object apply(Object... args) {
+            Object fn = args[0];
             if (symbolp(fn)) fn = getValue(fn.toString());
-            return applyTailcallHelper(fn, args);
+            return applyTailcallHelper(fn, args[1]);
         }
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? lst(args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
@@ -5700,12 +5701,7 @@ public class LambdaJ {
                     }
 
                     /// * some functions and operators are opencoded:
-                    // the function apply gets extra treatment
-                    if (intp.sApply == operator) {
-                        if (intp.speed >= 1 && symbolp(car(ccArguments)) && opencodeApply(sb, (LambdaJSymbol)car(ccArguments), (ConsCell)cdr(ccArguments), env, topEnv, rsfx)) return;
-                    }
-
-                    if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx)) return;
+                    if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx, isLast)) return;
 
                     /// * function call
                     sb.append(isLast ? "tailcall(" : "funcall(");
@@ -6177,25 +6173,35 @@ public class LambdaJ {
             }
         }
 
-        /** opencode "list" and avoid trampoline for other primitives */
-        private boolean opencodeApply(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (op == intp.sList) { sb.append("lst("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(")"); return true; }
-
-            for (String prim: primitives)          if (symbolEq(op, prim))    { opencodeApplyHelper(sb, "_" + prim,  args, env, topEnv, rsfx);  return true; }
-            for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { opencodeApplyHelper(sb, prim[1],  args, env, topEnv, rsfx);  return true; }
-
-            return false;
-        }
-
-        private void opencodeApplyHelper(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void opencodeApplyHelper(WrappingWriter sb, String func, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append(func).append("(toArray(");
-            emitForm(sb, car(args), env, topEnv, rsfx, false);
+            emitForm(sb, args, env, topEnv, rsfx, false);
             sb.append("))");
         }
 
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
-        private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final LambdaJ intp = this.intp;
+
+            if (op == intp.sApply) {
+                twoArgs("apply", args);
+                final Object applyOp = car(args);
+                final Object applyArg = cadr(args);
+
+                if (applyOp == intp.sList) { sb.append("lst("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
+
+                if (applyOp != intp.sApply) { // apply needs special treatment for TCO
+                    for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
+                    for (String[] prim: aliasedPrimitives) if (symbolEq(applyOp, prim[0])) { opencodeApplyHelper(sb, prim[1],  applyArg, env, topEnv, rsfx);  return true; }
+                }
+
+                sb.append((isLast ? "tailcall" : "funcall") + "((MurmelFunction)rt()::apply, ");
+                emitForm(sb, applyOp, env, topEnv, rsfx, false);  sb.append(", ");
+                emitForm(sb, applyArg, env, topEnv, rsfx, false);
+                sb.append(")");
+                return true;
+            }
+
             if (op == intp.sAdd) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
             if (op == intp.sMul) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
             if (op == intp.sSub) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }

@@ -289,8 +289,14 @@
 (deftest apply.8 (apply #'apply '(apply (+ (1.0 2.0)))) 3.0)
 (deftest apply.9 (apply 'apply '(apply (+ (1.0 2.0))))  3.0)
 
-(deftest apply.10 (apply ((lambda () '+)) '(1.0 2.0))   3.0)
-(deftest apply.10 (apply ((lambda () +)) '(1.0 2.0))   3.0)
+#+murmel
+(deftest apply.10 (apply ((lambda () +)) '(1.0 2.0))    3.0)
+(deftest apply.11 (apply ((lambda () '+)) '(1.0 2.0))   3.0)
+(deftest apply.12 (apply ((lambda () #'+)) '(1.0 2.0))    3.0)
+
+; the following not valid CL, doesn't work in Murmel either
+;(setq *a* 1.0 *b* 2.0 *c* '(*a* *b*))
+;(deftest apply.13 (apply '+ *c*)   3.0)
 
 
 ;;; test null

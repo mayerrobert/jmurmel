@@ -1,3 +1,5 @@
+emitQuotedForm könnte einen fastpath für 2-element listen haben: cons(lhs, cons(rhs, null))
+
 evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
 -> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
 compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung für apply sollte ggf. in opencode rein
