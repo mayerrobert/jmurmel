@@ -50,15 +50,16 @@ Feature flags:
 
 --no-ffi ......  no function '::'
 --no-gui ......  no turtle or bitmap graphics
---no-extra ....  no special forms eval, if, define, defun, defmacro,
-                 let, let*, letrec, progn, setq, rplaca, rplacd,
+--no-extra ....  no special forms if, define, defun, defmacro,
+                 let, let*, letrec, progn, setq,
                  load, require, provide, declaim
-                 no primitive functions trace, untrace, macroexpand-1
+                 no primitive functions eval, rplaca, rplacd, trace, untrace,
+                 macroexpand-1
 --no-number ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read, write, writeln, lnwrite,
 --no-util .....  no primitive functions consp, symbolp, listp, null,
-                 append, assoc, assq, format, format-locale
+                 append, assoc, assq, list, list*, format, format-locale,
                  no time related primitives
 
 --min+ ........  turn off all above features, leaving a Lisp

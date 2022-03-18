@@ -1,3 +1,7 @@
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+-> "jm murmel-langref.lisp" und "jm --run murmel-langref.lisp" enden beim ersten toplevel "nil"
+   "jm < murmel-langref.lisp" und "jm --run < murmel-langref.lisp" geht
+
 siehe zeile 5099: bei funktionen ist cddr(enventry) die liste von parametern, compiletime argcount check wär einfach
 runtime check brauchts wohl trotzdem für apply und higher order functions
 
@@ -87,8 +91,6 @@ statt überall "throw new LambdaJError(..."
 -> ggf. später statt exception optional einen handler aufrufen -> condition system
   -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
      wenn handler gerufen werden, schauts anders aus 
-
-read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 
 let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 

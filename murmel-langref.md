@@ -15,7 +15,7 @@ The file `murmel-langref.lisp` can be read as-is or run with:
 
 or transformed to Markdown:
 
-    $ sed -nf langref-to-md.sed murmel-langref.lisp > murmel-langref.md
+    $ sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 
 Murmel is WIP, please note the section
 [Known issues](#known-issues) at the end of this file.
@@ -538,7 +538,7 @@ except: comma-dot is not supported.
 
 ### (apply form argform) -> object
 
-`form` must return a primitive or lambda.
+`form` must eval to a symbol, primitive or lambda.
 `argform` must eval to a proper list. 
 
     (apply + '(1 2)) ; ==> 3.0

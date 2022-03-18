@@ -352,22 +352,25 @@ public class LambdaJ {
         private final Object[] arry;
         private final int offset;
 
+        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(Object[] arry) {
             if (arry != null && arry.length > 1) { this.arry = arry; offset = 1; }
             else { this.arry = null; offset = -1; }
         }
 
+        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(Object[] arry, int offset) {
             if (arry != null && arry.length > offset) { this.arry = arry; this.offset = offset; }
             else { this.arry = null; this.offset = -1; }
         }
 
+        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(ArraySlice slice) {
             if (slice.arry != null && slice.arry.length > slice.offset) { this.arry = slice.arry; offset = slice.offset + 1; }
             else { this.arry = null; offset = -1; }
         }
 
-        @Override public Object     car() { return arry == null || arry.length <= offset ? null : arry[offset]; }
+        @Override public Object     car() { return isNil() ? null : arry[offset]; }
         @Override public Object rplaca(Object car) { arry[offset] = car; return this; }
 
         @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
@@ -376,7 +379,7 @@ public class LambdaJ {
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
         private String printSEx(boolean headOfList, boolean escapeAtoms) {
-            if (arry == null || arry.length <= offset) return LambdaJ.printSEx(null);
+            if (isNil()) return LambdaJ.printSEx(null);
             else {
                 final StringBuilder ret = new StringBuilder();
                 if (headOfList) ret.append('(');
@@ -391,6 +394,8 @@ public class LambdaJ {
                 return ret.toString();
             }
         }
+        
+        public boolean isNil() { return arry == null || arry.length <= offset; }
     }
 
     /** A murmel symbol name */
@@ -1345,9 +1350,8 @@ public class LambdaJ {
         this.symtab = symtab;
 
         // (re-)read the new symtab
-        sNil =                         intern("nil");
+        sNil =                         intern("nil"); // warum ist das nicht reserved? es gibt sonderbehandlung in #notReserved
         sLambda =                      internReserved("lambda");
-        sDynamic =                     intern("dynamic");
 
         if (haveQuote())  { sQuote   = internReserved("quote"); }
         if (haveCond())   { sCond    = internReserved("cond"); }
@@ -1355,6 +1359,9 @@ public class LambdaJ {
         if (haveApply())  { sApply   = intern("apply"); }
 
         if (haveXtra())   {
+            sDynamic = intern("dynamic");
+            sEval =    intern("eval");
+
             sIf      = internReserved("if");
             sDefine  = internReserved("define");
             sDefun   = internReserved("defun");
@@ -1376,34 +1383,44 @@ public class LambdaJ {
             sDebug =    intern("debug");
             sSafety =   intern("safety");
             sSpace =    intern("space");
+        }
+
+        if (haveUtil()) {
+            sNull =    intern("null");
+            sList =    intern("list");
+            sListStar= intern("list*");
+            sAppend =  intern("append");
+            sEql =     intern("eql");
+        }
+        
+        if (haveNumbers()) {
+            sInc =     intern("1+");
+            sDec =     intern("1-");
+
+            sMod =     intern("mod");
+            sRem =     intern("rem");
 
             sNeq =     intern("=");
-            sNe  =     intern("/=");
             sLt  =     intern("<");
             sLe  =     intern("<=");
             sGe  =     intern(">=");
             sGt  =     intern(">");
-            
+            sNe  =     intern("/=");
+
+
             sAdd =     intern("+");
             sMul =     intern("*");
             sSub =     intern("-");
             sDiv =     intern("/");
-            sMod =     intern("mod");
-            sRem =     intern("rem");
-            
+        }
+
+        if (haveEq())
+            sEq =      intern("eq");
+
+        if (haveCons()) {
             sCar =     intern("car");
             sCdr =     intern("cdr");
             sCons =    intern("cons");
-            sEq =      intern("eq");
-            sEql =     intern("eql");
-            sNull =    intern("null");
-            
-            sInc =     intern("1+");
-            sDec =     intern("1-");
-
-            sAppend =  intern("append");
-            sList =    intern("list");
-            sListStar= intern("list*");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1424,11 +1441,11 @@ public class LambdaJ {
 
     /** well known symbols for special forms */
     LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
-            sSetQ, sApply, sProgn, sLoad, sRequire, sProvide,
+            sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
-    /** well known symbols for opencoded functions */
-    LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
+    /** well known symbols for some primitives */
+    LambdaJSymbol sApply, sEval, sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
 
     private Supplier<Object> expTrue;
 
@@ -2327,6 +2344,7 @@ public class LambdaJ {
     final   ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
     private ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
+    static ConsCell arraySlice(Object[] o, int offset) { return o == null || offset >= o.length ? null : new ArraySlice(o, offset); }
 
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
 
@@ -2613,7 +2631,7 @@ public class LambdaJ {
                     _printSEx(sb, first, first, true, escapeAtoms);
                 }
                 final Object rest = cdr(obj);
-                if (rest != null) {
+                if (rest != null) { // todo || ArraySlice#isNil
                     if (listp(rest)) {
                         sb.print(" ");
                         if (list == rest) {
@@ -3362,10 +3380,18 @@ public class LambdaJ {
             }
         }
 
+        if (haveApply()) {
+            ocApply = new OpenCodedPrimitive(sApply) {
+                @Override public Object apply(ConsCell a) {
+                    throw errorNotImplemented("unexpected");
+                }
+            };
+            env = addBuiltin(sApply, ocApply, env);
+        }
+
         if (haveXtra()) {
             env = addBuiltin(sDynamic, sDynamic, env);
 
-            final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval) {
                 @Override public Object apply(ConsCell a) {
                     varargsMinMax("eval", a, 1, 2);
@@ -3375,14 +3401,6 @@ public class LambdaJ {
                 }
             };
             env = addBuiltin(sEval, ocEval, env);
-
-            final LambdaJSymbol sApply = intern("apply");
-            ocApply = new OpenCodedPrimitive(sApply) {
-                @Override public Object apply(ConsCell a) {
-                    throw errorNotImplemented("unexpected");
-                }
-            };
-            env = addBuiltin(sApply, ocApply, env);
 
             env = addBuiltin("trace", (Primitive) this::trace,
                   addBuiltin("untrace", (Primitive) this::untrace,
@@ -3495,9 +3513,9 @@ public class LambdaJ {
         }
 
         if (haveCons()) {
-            env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    return caar(a); },
-                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
-                  addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
+            env = addBuiltin(sCar,     (Primitive) a -> { oneArg("car", a);    return caar(a); },
+                  addBuiltin(sCdr,     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
+                  addBuiltin(sCons,    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
                   env)));
         }
 
@@ -4256,7 +4274,7 @@ public class LambdaJ {
             if ("--".equals(arg)) break;
         }
 
-        intp.insertFront(intp.topEnv, intp.intern("*command-line-argument-list*"), new ArraySlice(args, n));
+        intp.insertFront(intp.topEnv, intp.intern("*command-line-argument-list*"), arraySlice(args, n));
     }
 
     private static void showVersion() {
@@ -4346,15 +4364,16 @@ public class LambdaJ {
                 + "\n"
                 + "--no-ffi ......  no function '::'\n" 
                 + "--no-gui ......  no turtle or bitmap graphics\n"
-                + "--no-extra ....  no special forms eval, if, define, defun, defmacro,\n"
-                + "                 let, let*, letrec, progn, setq, rplaca, rplacd,\n"
+                + "--no-extra ....  no special forms if, define, defun, defmacro,\n"
+                + "                 let, let*, letrec, progn, setq,\n"
                 + "                 load, require, provide, declaim\n"
-                + "                 no primitive functions trace, untrace, macroexpand-1\n"
+                + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n" 
+                + "                 macroexpand-1\n"
                 + "--no-number ...  no number support\n"
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
                 + "--no-util .....  no primitive functions consp, symbolp, listp, null,\n"
-                + "                 append, assoc, assq, format, format-locale\n"
+                + "                 append, assoc, assq, list, list*, format, format-locale\n"
                 + "                 no time related primitives\n"
                 + "\n"
                 + "--min+ ........  turn off all above features, leaving a Lisp\n"
@@ -4745,7 +4764,7 @@ public class LambdaJ {
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
         public final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
 
-        public static ConsCell arraySlice(Object[] o, int offset) { return offset >= o.length ? null : new ArraySlice(o, offset); }
+        public static ConsCell arraySlice(Object[] o, int offset) { return LambdaJ.arraySlice(o, offset); }
         public static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
 
         /** convert null, an array or a list to a (possibly empty) Object[] */

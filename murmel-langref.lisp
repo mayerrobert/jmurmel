@@ -15,7 +15,7 @@
 ;;;
 ;;; or transformed to Markdown:
 ;;;
-;;;     $ sed -nf langref-to-md.sed murmel-langref.lisp > murmel-langref.md
+;;;     $ sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 ;;;
 ;;; Murmel is WIP, please note the section
 ;;; [Known issues](#known-issues) at the end of this file.
@@ -538,9 +538,10 @@ pi ; ==> 3.141592653589793
 
 ;;; = (apply form argform) -> object
 ;
-; `form` must return a primitive or lambda.
+; `form` must eval to a symbol, primitive or lambda.
 ; `argform` must eval to a proper list. 
 
+;(apply '+ '(1 2)) ; ==> 3.0
 (apply + '(1 2)) ; ==> 3.0
 
 ;;; = (eval form) -> object<br/> (eval form env) -> object
