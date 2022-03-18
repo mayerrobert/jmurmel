@@ -6431,13 +6431,18 @@ public class LambdaJ {
             else if (consp(form)) {
                 final StringWriter b = new StringWriter();
                 final WrappingWriter qsb = new WrappingWriter(b);
-                if (cdr(form) == null) {
-                    // fast path for 1 element lists
-                    qsb.append("cons("); emitQuotedForm(qsb, car(form), false); qsb.append(", null)");
+                if (atom(cdr(form))) {
+                    // fast path for dotted pairs and 1 element lists
+                    qsb.append("cons("); emitQuotedForm(qsb, car(form), false);
+                    qsb.append(", ");    emitQuotedForm(qsb, cdr(form), false);
+                    qsb.append(")");
                 }
-                else if (atom(cdr(form))) {
-                    // fast path for dotted pairs
-                    qsb.append("cons("); emitQuotedForm(qsb, car(form), false); qsb.append(", "); emitQuotedForm(qsb, cdr(form), false); qsb.append(")");
+                else if (atom(cddr(form))) {
+                    // fast path for 2 element lists or dotted 3 element lists
+                    qsb.append("cons(");   emitQuotedForm(qsb, car(form),  false);
+                    qsb.append(", cons("); emitQuotedForm(qsb, cadr(form), false);
+                    qsb.append(", ");      emitQuotedForm(qsb, cddr(form), false);
+                    qsb.append("))");
                 }
                 else {
                     qsb.append("new ListBuilder()");

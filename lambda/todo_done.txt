@@ -1386,3 +1386,5 @@ die ganzen protected methoden in MurmelJavaProgram erzwingen alle $access method
 warum ist apply ein reserved word? sollte eine funktion sein
 apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
 -> umbauen wie eval?!?
+
+emitQuotedForm könnte einen fastpath für 2-element listen haben: cons(lhs, cons(rhs, null))
