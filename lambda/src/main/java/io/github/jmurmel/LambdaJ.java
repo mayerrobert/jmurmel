@@ -4542,6 +4542,16 @@ public class LambdaJ {
         public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
         public static Object rplacd(Object l, Object newCdr) { return lst(l).rplacd(newCdr); }
 
+        public final Object _apply (Object... args) {
+            twoArgs("apply", args.length);
+            Object fn = args[0];
+            if (symbolp(fn)) fn = getValue(fn.toString());
+            return applyTailcallHelper(fn, args[1]);
+        }
+        public final Object apply(Object fn, Object args) {
+            if (symbolp(fn)) fn = getValue(fn.toString());
+            return applyTailcallHelper(fn, args);
+        }
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? lst(args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
@@ -4950,6 +4960,7 @@ public class LambdaJ {
             case "cons": return (CompilerPrimitive)this::_cons;
             case "rplaca": return (CompilerPrimitive)this::_rplaca;
             case "rplacd": return (CompilerPrimitive)this::_rplacd;
+            case "apply": return (CompilerPrimitive)this::_apply;
             case "eval": return (CompilerPrimitive)this::_eval;
             case "eq": return (CompilerPrimitive)this::_eq;
             case "eql": return (CompilerPrimitive)this::_eql;
@@ -5168,7 +5179,7 @@ public class LambdaJ {
         /// * nil, t, pi
         /// * *command-line-argument-list*, internal-time-units-per-second
         /// * car, cdr, cons, rplaca, rplacd
-        /// * eval, eq, eql, null, intern, write, writeln, lnwrite
+        /// * apply, eval, eq, eql, null, intern, write, writeln, lnwrite
         /// * atom, consp, listp, symbolp, numberp, stringp, characterp, integerp, floatp
         /// * assoc, assq, list, list*, append
         /// * +, *, -, /, =, <, <=, >=, >
@@ -5187,7 +5198,7 @@ public class LambdaJ {
         };
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
-                "eval", "eq", "eql", "null", "write", "writeln", "lnwrite",
+                /*"apply",*/ "eval", "eq", "eql", "null", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
                 "assoc", "assq", "list", "append",
                 "round", "floor", "ceiling", "truncate",
@@ -5256,6 +5267,9 @@ public class LambdaJ {
             for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
             for (String   prim:   primitives)        predefinedEnv = extenvprim(prim, mangle(prim, 0), predefinedEnv);
             for (String[] alias:  aliasedPrimitives) predefinedEnv = extenvprim(alias[0], alias[1], predefinedEnv);
+
+            // _apply needs to be of type MurmelFunction so that it will be processed by the TCO trampoline
+            predefinedEnv = extenvIntern(intp.sApply, "((MurmelFunction)rt()::_apply)", predefinedEnv);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -5608,17 +5622,6 @@ public class LambdaJ {
                         return;
                     }
 
-                    ///     - apply
-                    if (intp.sApply == operator) {
-                        if (intp.speed >= 1 && symbolp(car(ccArguments)) && opencodeApply(sb, (LambdaJSymbol)car(ccArguments), (ConsCell)cdr(ccArguments), env, topEnv, rsfx)) return;
-                        sb.append(isLast ? "applyTailcallHelper(" : "applyHelper(");
-                        emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
-                        sb.append("\n        , ");
-                        emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
-                        sb.append(')');
-                        return;
-                    }
-
                     ///     - progn
                     if (intp.sProgn == operator) {
                         emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
@@ -5697,6 +5700,11 @@ public class LambdaJ {
                     }
 
                     /// * some functions and operators are opencoded:
+                    // the function apply gets extra treatment
+                    if (intp.sApply == operator) {
+                        if (intp.speed >= 1 && symbolp(car(ccArguments)) && opencodeApply(sb, (LambdaJSymbol)car(ccArguments), (ConsCell)cdr(ccArguments), env, topEnv, rsfx)) return;
+                    }
+
                     if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx)) return;
 
                     /// * function call

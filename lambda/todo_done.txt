@@ -1382,3 +1382,7 @@ in readerfehlern fehlt der filename
 
 die ganzen protected methoden in MurmelJavaProgram erzwingen alle $access methoden
 -> auf public stellen
+
+warum ist apply ein reserved word? sollte eine funktion sein
+apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
+-> umbauen wie eval?!?

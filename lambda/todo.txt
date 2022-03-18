@@ -1,3 +1,8 @@
+evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
+-> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
+compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung für apply sollte ggf. in opencode rein
+  + isLast durchreichen und auswerten?
+
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 -> "jm murmel-langref.lisp" und "jm --run murmel-langref.lisp" enden beim ersten toplevel "nil"
    "jm < murmel-langref.lisp" und "jm --run < murmel-langref.lisp" geht
@@ -64,12 +69,9 @@ die meldung ist falsch, weil gelaufen ists ja
 -> man sollte wohl angeben können, ob appended wird
    (with-reader-printer (string string) forms...) ; für rewrite (default)
    (with-reader-printer ((string t) (string nil)) forms...) ; optionaler parameter appendp: t ist append, nil (default) ist rewrite
+interpreted eval: OpenCodedPrimitive sollte keine implementierung der methode apply brauchen, vgl apply
 
-warum ist apply ein reserved word? sollte eine funktion sein
-apply ist eine special form die sich wie eine funktion verhält, sollte aber eine funktion sein
--> umbauen wie eval?!?
--> eval auch umbauen, weil OpenCodedPrimitive ist unnötig, Object ocEval müsste reichen?!?
-ausserdem: APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
+APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
 ggf sollten nur t und nil reserved sein, der rest der bisherigen reserved words sollten nur bei zuweisung verweigert werden (setq, define, defun, letXX dynamic),
 -> lambdalist, letXX, labels könnte zulässig werden

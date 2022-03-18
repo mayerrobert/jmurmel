@@ -277,7 +277,6 @@
 #+murmel
 (deftest apply.1 (apply + '(1.0 2.0))           3.0)
 (deftest apply.2 (apply #'+ '(1.0 2.0))         3.0)
-#| doesn't work yet with the compiler
 (deftest apply.3 (apply '+ '(1.0 2.0))          3.0)
 
 #+murmel
@@ -291,7 +290,6 @@
 (deftest apply.9 (apply 'apply '(apply (+ (1.0 2.0))))  3.0)
 
 (deftest apply.10 (apply ((lambda () '+)) '(1.0 2.0))   3.0)
-|#
 (deftest apply.10 (apply ((lambda () +)) '(1.0 2.0))   3.0)
 
 
