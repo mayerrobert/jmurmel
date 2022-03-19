@@ -4018,10 +4018,11 @@ public class LambdaJ {
     /** compile history to a class and run compiled class.
      *  if className is null "MurmelProgram" will be the class' name */
     private static boolean runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter, boolean repl) {
+        MurmelProgram prg = null;
         try {
             final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, interpreter.libDir, getTmpDir());
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
-            final MurmelProgram prg = murmelClass.getDeclaredConstructor().newInstance();
+            prg = murmelClass.getDeclaredConstructor().newInstance();
             final long tStart = System.nanoTime();
             final Object result = prg.body();
             final long tEnd = System.nanoTime();
@@ -4034,13 +4035,24 @@ public class LambdaJ {
             return true;
         }
         catch (LambdaJError e) {
-            System.out.println("history NOT run as Java - error: " + e.getMessage());
+            final String msg = (prg != null ? "runtime error" : "error") + errorLocation(prg) + ": " + e.getMessage();
+            if (repl) {
+                System.out.println("history NOT run as Java - " + msg);
+            } else System.err.println(msg);
         }
-        catch (Exception e) {
-            System.out.println("history NOT run as Java - error: ");
-            e.printStackTrace(System.out);
+        catch (Throwable t) {
+            final String loc = errorLocation(prg);
+            if (repl) {
+                System.out.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
+                t.printStackTrace(System.out);
+            }
+            else System.err.println("Caught Throwable" + loc + ": " + t.toString());
         }
         return false;
+    }
+
+    private static String errorLocation(MurmelProgram prg) {
+        return prg == null ? "" : " at " + ((MurmelJavaProgram)prg).loc;
     }
 
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
@@ -4944,7 +4956,10 @@ public class LambdaJ {
                     //System.exit(0); don't call exit this wouldn't wait for open frames
                 }
             } catch (LambdaJError e) {
-                System.err.println(e.getMessage());
+                System.err.println("Runtime error at " + program.loc + ": " + e.getMessage());
+                System.exit(1);
+            } catch (Throwable t) {
+                System.err.println("Caught Throwable at " + program.loc + ": " + t.toString());
                 System.exit(1);
             }
         }
@@ -5585,13 +5600,13 @@ public class LambdaJ {
                     if (intp.sSetQ == operator) {
                         if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
                         else if (cddr(ccArguments) == null)
-                            emitSetq(sb, ccArguments, env, topEnv, rsfx);
+                            emitSetq(sb, ccArguments, env, topEnv, rsfx, true);
                         else {
                             sb.append("((Supplier<Object>)(() -> {\n");
                             String javaName = null;
                             for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
                                 sb.append("        ");
-                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx-1);
+                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx-1, false);
                                 sb.append(";\n");
                             }
                             sb.append("        return ").append(javaName).append(";})).get()");
@@ -5807,7 +5822,7 @@ public class LambdaJ {
             }
         }
 
-        private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
+        private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx, boolean expr) {
             final LambdaJSymbol symbol = asSymbol("setq", car(pairs));
             intp.notReserved("setq", symbol);
             final String javaName = javasym(symbol, env);
@@ -5818,9 +5833,22 @@ public class LambdaJ {
             notAPrimitive("setq", symbol, javaName);
             if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
                 final String symName = mangle(symbol.toString(), 0);
-                sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply("); // todo geht das einfacher?
-                emitForm(sb, valueForm, env, topEnv, rsfx, false);
-                sb.append(")).get()");
+
+                if (expr) {
+                    // "(define g 1) (setq g (1+ g))" should not lead to a StackOverflowError
+
+                    //sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply("); // geht einfacher, s.u.
+                    //emitForm(sb, valueForm, env, topEnv, rsfx, false);
+                    //sb.append(")).get()");
+
+                    sb.append("((Supplier)() -> { final Object newVal = ");
+                    emitForm(sb, valueForm, env, topEnv, rsfx, false);
+                    sb.append("; " + symName + " = (CompilerGlobal)() -> newVal; return newVal; }).get()");
+                }
+                else {
+                    sb.append("{ final Object newVal = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);  sb.append(";  ");
+                    sb.append(symName).append(" = (CompilerGlobal)() -> newVal; }");
+                }
             } else {
                 sb.append(javaName).append(" = ");
                 emitForm(sb, valueForm, env, topEnv, rsfx, false);
@@ -6173,12 +6201,6 @@ public class LambdaJ {
             }
         }
 
-        private void opencodeApplyHelper(WrappingWriter sb, String func, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append(func).append("(toArray(");
-            emitForm(sb, args, env, topEnv, rsfx, false);
-            sb.append("))");
-        }
-
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
         private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final LambdaJ intp = this.intp;
@@ -6301,6 +6323,12 @@ public class LambdaJ {
             for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { emitCallPrimitive(sb, prim[1], args, env, topEnv, rsfx, null);  return true; }
 
             return false;
+        }
+
+        private void opencodeApplyHelper(WrappingWriter sb, String func, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
+            sb.append(func).append("(toArray(");
+            emitForm(sb, args, env, topEnv, rsfx, false);
+            sb.append("))");
         }
 
         /** 2 args: divide 2 numbers and apply {@code javaOp} to the result,

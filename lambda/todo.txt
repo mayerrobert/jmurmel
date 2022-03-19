@@ -1,7 +1,5 @@
 evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
 -> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
-compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung für apply sollte ggf. in opencode rein
-  + isLast durchreichen und auswerten?
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
 -> "jm murmel-langref.lisp" und "jm --run murmel-langref.lisp" enden beim ersten toplevel "nil"
@@ -15,6 +13,9 @@ kompilierte programme: MurmelProgram.body() kann man nur 1x laufen lassen, ab de
 -> in lambdajbm erstmal labels statt defun
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+
+funktion "describe" wär nicht so schwer
+
 
 
 (compile) könnte in etwa so gehen:
@@ -47,6 +48,8 @@ compiler: (einige) forms die nicht in der tailposition sind (isLast == false) ka
 -> geht nicht innerhalb ?:, weil das braucht eine expression
 -> emitForm müsste wohl einen parameter "expr" bekommen und geeignet durchreichen
    -> und bei expr == false müsste (if...) als Java if statt ?: emitted werden, und (cond...) als elsif kette statt ?: kette
+   -> eigentlich sollte isLast genügen: isLast == true -> expression ist erforderlich, isLast == false -> keine expression
+      -> braucht aber auch noch einen umbau von emitForms, weil das schreibt immer ignored = ...
 
 sollte (format) auf MessageFormat basieren? {1} statt %d usw. oder iwie als alternative?
 -> jedenfalls delegiert String.format eh nur zu Formatter, kamma auch gleich direkt verwenden

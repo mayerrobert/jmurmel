@@ -1389,4 +1389,7 @@ apply ist eine special form die sich wie eine funktion verhält, sollte aber ein
 
 emitQuotedForm könnte einen fastpath für 2-element listen haben: cons(lhs, cons(rhs, null))
 
+compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung für apply sollte ggf. in opencode rein
+  + isLast durchreichen und auswerten?
+
 quoted forms deduplizierung wieder aufdrehen, tests anpassen
