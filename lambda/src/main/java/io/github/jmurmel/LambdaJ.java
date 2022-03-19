@@ -5158,7 +5158,7 @@ public class LambdaJ {
             final ConsCell symentry = assq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form);
-                System.err.println("implicit declaration of " + form);
+                System.err.println("implicit declaration of " + form); // todo lineinfo of containing form
                 implicitDecl.add(form.toString());
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
@@ -5586,13 +5586,7 @@ public class LambdaJ {
 
                     ///     - cond
                     if (intp.sCond == operator) {
-                        sb.append("(false ? (Object)null");
-                        if (ccArguments != null) for (Object cond: ccArguments) {
-                            sb.append("\n        : "); emitTruthiness(sb, car(cond), env, topEnv, rsfx); sb.append("\n        ? (");
-                            emitProgn(sb, cdr(cond), env, topEnv, rsfx, isLast);
-                            sb.append(')');
-                        }
-                        sb.append("\n        : (Object)null)");
+                        emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
@@ -5751,6 +5745,7 @@ public class LambdaJ {
 
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == intp.sNil) sb.append("false");
+            else if (symbolEq(form, "t")) sb.append("true");
             else if (symbolp(form) || consp(form)) {
                 // optimize "(null ..."
                 if (car(form) == intp.sNull) { sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))"); }
@@ -5801,6 +5796,30 @@ public class LambdaJ {
                     if (c >= 32 && c < 127) sb.append(c);
                     else sb.append(String.format("\\u%04X", (int)c));
                 }
+            }
+        }
+
+        private void emitCond(WrappingWriter sb, ConsCell ccArguments, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (ccArguments == null) {
+                sb.append("(Object)null");
+            } else {
+                sb.append("(false ? (Object)null");
+                for (Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
+                    final Object clause = iterator.next();
+                    sb.append("\n        : ");
+                    final Object condExpr = car(clause), condForms = cdr(clause);
+                    if (symbolEq(condExpr, "t")) {
+                        emitProgn(sb, condForms, env, topEnv, rsfx, isLast);  sb.append(')');
+                        if (iterator.hasNext()) System.err.println(lineInfo(clause) + "forms following default 't' form will be ignored");
+                        return;
+                    } else {
+                        emitTruthiness(sb, condExpr, env, topEnv, rsfx);
+                        sb.append("\n        ? (");
+                        emitProgn(sb, condForms, env, topEnv, rsfx, isLast);
+                        sb.append(')');
+                    }
+                }
+                sb.append("\n        : (Object)null)");
             }
         }
 

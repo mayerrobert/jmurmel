@@ -1393,3 +1393,6 @@ compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung
   + isLast durchreichen und auswerten?
 
 quoted forms deduplizierung wieder aufdrehen, tests anpassen
+
+compiler: ggf. t als condition optimieren (nicht (_t) != null ausspucken sondern true),
+ ggf. den defaultfall in cond optimieren (aber nur wenns der letzte ist?!? wobei: alles was im cond nach t käme, wär eh dead code?!?)

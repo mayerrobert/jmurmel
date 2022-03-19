@@ -1,6 +1,3 @@
-compiler: ggf. t als condition optimieren (nicht (_t) != null ausspucken sondern true),
- ggf. den defaultfall in cond optimieren (aber nur wenns der letzte ist?!? wobei: alles was im cond nach t käme, wär eh dead code?!?)
-
 evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
 -> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
 
