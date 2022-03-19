@@ -113,6 +113,7 @@ public class LambdaJ {
     public static final String LANGUAGE_VERSION = "1.2";
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String ENGINE_VERSION;
+
     static {
         String versionInfo;
         final ClassLoader cl = LambdaJ.class.getClassLoader();
@@ -249,7 +250,7 @@ public class LambdaJ {
         ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
     }
 
-    private static abstract class AbstractConsCell extends ConsCell {
+    private abstract static class AbstractConsCell extends ConsCell {
         private static class ListConsCellIterator implements Iterator<Object> {
             private final AbstractConsCell coll;
             private Iterator<Object> delegate;
@@ -382,13 +383,14 @@ public class LambdaJ {
             if (isNil()) return LambdaJ.printSEx(null);
             else {
                 final StringBuilder ret = new StringBuilder();
+                final WriteConsumer append = ret::append;
                 if (headOfList) ret.append('(');
                 boolean first = true;
                 for (int i = offset; i < arry.length; i++) {
                     final Object o = arry[i];
                     if (first) first = false;
                     else ret.append(' ');
-                    _printSEx(ret::append, arry, o, true, escapeAtoms);
+                    _printSEx(append, arry, o, true, escapeAtoms);
                 }
                 ret.append(')');
                 return ret.toString();
@@ -413,6 +415,7 @@ public class LambdaJ {
 
     /// ## Infrastructure
     private static final int EOF = -1;
+    public static final Object[] EMPTY_ARRAY = new Object[0];
 
     private static final String[] FEATURES = {
             "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
@@ -940,7 +943,7 @@ public class LambdaJ {
             }
         }
 
-        private Number parseLong(String s, int radix) {
+        private static Number parseLong(String s, int radix) {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
@@ -948,7 +951,7 @@ public class LambdaJ {
             }
         }
 
-        private Number parseDouble(String s) {
+        private static Number parseDouble(String s) {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
@@ -2254,9 +2257,10 @@ public class LambdaJ {
         if (args == null) return "";
         final StringBuilder sb = new StringBuilder();
         sb.append(':');
+        final WriteConsumer append = sb::append;
         for (Object arg: args) {
             sb.append(' ');
-            printSEx(sb::append, arg);
+            printSEx(append, arg);
         }
         return sb.toString();
     }
@@ -2578,7 +2582,7 @@ public class LambdaJ {
 
     /** convert a (possibly empty aka nil/ null) list to a (possibly empty) Object[] */
     static Object[] listToArray(Object maybeList) {
-        if (maybeList == null) return new Object[0];
+        if (maybeList == null) return EMPTY_ARRAY;
         if (maybeList instanceof ArraySlice) {
             final ArraySlice slice = (ArraySlice)maybeList;
             if (slice.offset == 0) return slice.arry;
@@ -4046,7 +4050,7 @@ public class LambdaJ {
                 System.out.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
                 t.printStackTrace(System.out);
             }
-            else System.err.println("Caught Throwable" + loc + ": " + t.toString());
+            else System.err.println("Caught Throwable" + loc + ": " + t);
         }
         return false;
     }
@@ -4793,7 +4797,7 @@ public class LambdaJ {
         /** convert null, an array or a list to a (possibly empty) Object[] */
         public static Object[] toArray(Object o) {
             if (o == null)
-                return new Object[0];
+                return NOARGS;
             if (o instanceof Object[])
                 return (Object[])o;
             return listToArray(o);
@@ -4838,7 +4842,7 @@ public class LambdaJ {
             throw errorNotAFrame(s, o);
         }
 
-        public static Object[] unassigned(int length) { Object[] ret = new Object[length]; if (length > 0) ret[0] = UNASSIGNED; return ret; }
+        public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; if (length > 0) ret[0] = UNASSIGNED; return ret; }
 
         public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
         public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
@@ -4959,7 +4963,7 @@ public class LambdaJ {
                 System.err.println("Runtime error at " + program.loc + ": " + e.getMessage());
                 System.exit(1);
             } catch (Throwable t) {
-                System.err.println("Caught Throwable at " + program.loc + ": " + t.toString());
+                System.err.println("Caught Throwable at " + program.loc + ": " + t);
                 System.exit(1);
             }
         }
@@ -5111,14 +5115,16 @@ public class LambdaJ {
 
         /** replace chars that are not letters */
         private static String mangle(String symname, int sfx) {
-            final StringBuilder mangled = new StringBuilder();
             final int len = symname.length();
+            final StringBuilder mangled = new StringBuilder(Math.max(len+10, 16));
+            mangled.append('_');
             for (int i = 0; i < len; i++) {
                 final char c = symname.charAt(i);
                 if (c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
                 else mangled.append('_').append((int)c).append('_');
             }
-            return '_' + mangled.toString() + (sfx == 0 ? "" : sfx);
+            if (sfx != 0) mangled.append(sfx);
+            return mangled.toString();
         }
 
 
@@ -5151,7 +5157,7 @@ public class LambdaJ {
             if (form == null || form == intp.sNil) return "(Object)null";
             final ConsCell symentry = assq(form, env);
             if (symentry == null) {
-                if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form.toString());
+                if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form);
                 System.err.println("implicit declaration of " + form);
                 implicitDecl.add(form.toString());
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
@@ -5185,7 +5191,7 @@ public class LambdaJ {
             return (LambdaJSymbol)symbol;
         }
 
-        private void notAPrimitive(String func, Object symbol, String javaName) {
+        private static void notAPrimitive(String func, Object symbol, String javaName) {
             if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("%s: assigning primitives is not implemented: %s", func, symbol.toString());
         }
 
@@ -5962,7 +5968,6 @@ public class LambdaJ {
             sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
             final int argCount = length(bindings);
             if (argCount != 0) {
-                int n = 0;
                 sb.append("        if (args").append(rsfx).append("[0] == UNASSIGNED) {\n");
 
                 // letrec: ALL let-bindings are in the environment during binding of the initial values todo value should be undefined
@@ -5972,7 +5977,7 @@ public class LambdaJ {
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; }
                     else { sym = asSymbol(op, car(binding)); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
-                    if (letrec) env = extenvIntern(sym, symName, env);
+                    env = extenvIntern(sym, symName, env);
                 }
 
                 // initial assignments. let*: after the assignment add the let-symbol to the environment so that subsequent bindings will see it
@@ -6217,7 +6222,7 @@ public class LambdaJ {
                     for (String[] prim: aliasedPrimitives) if (symbolEq(applyOp, prim[0])) { opencodeApplyHelper(sb, prim[1],  applyArg, env, topEnv, rsfx);  return true; }
                 }
 
-                sb.append((isLast ? "tailcall" : "funcall") + "((MurmelFunction)rt()::apply, ");
+                sb.append(isLast ? "tailcall" : "funcall").append("((MurmelFunction)rt()::apply, ");
                 emitForm(sb, applyOp, env, topEnv, rsfx, false);  sb.append(", ");
                 emitForm(sb, applyArg, env, topEnv, rsfx, false);
                 sb.append(")");
