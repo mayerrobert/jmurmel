@@ -322,7 +322,13 @@
 ;(deftest eql.7 (eql #c(3 -4.0) #c(3 -4))  nil)
 (deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
 (deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
-(deftest eql.10 (eql '(a . b) '(a . b))  nil) ; SBCL: in the repl this is nil, when compiled this is t
+
+;;; Murmel: interpreted eql.10 is nil, compiled eql.10 is t because quoted cons cells are coalesced
+;;; SBCL: in the repl eql.10 is nil, when compiled eql.10 is t
+;;; See: "Issue QUOTE-SEMANTICS Writeup" http://www.lispworks.com/documentation/HyperSpec/Issues/iss282_w.htm
+#+(or)
+(deftest eql.10 (eql '(a . b) '(a . b))  nil)
+
 (deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
 (deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
 (deftest eql.13 (eql #\A #\A)  t)

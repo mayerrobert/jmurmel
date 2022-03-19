@@ -17,9 +17,11 @@
 ;;;
 ;;; Notes:
 ;;;
-;;; - Doesn't yet work with the compiler.
-;;; - Contains some occurrences of #'. These are needed
+;;; - contains some occurrences of #'. These are needed
 ;;;   for CL compatibility, #' is ignored by murmel.
+;;; - contains some mutation of quoted forms which will break some tests
+;;;   when compiling with SBCL (and mutating quoted forms i.e. constants
+;;;   is bad style...)
 
 #+murmel (require "mlib")
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
@@ -79,7 +81,7 @@
 (define baz nil)
 (tests nconc
   (nconc) =>  NIL
-  (setq x '(a b c)) =>  (A B C)
+  (setq x (list 'a 'b 'c)) =>  (A B C)
   (setq y '(d e f)) =>  (D E F)
   (nconc x y) =>  (A B C D E F)
   x =>  (A B C D E F)
@@ -124,7 +126,7 @@
   y =>  (1 X 3) 
   (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
 
-  (setq x '(1 2 3)) => (1 2 3)
+  (setq x (list 1 2 3)) => (1 2 3)
   (setf (car x) 11) => 11
 
   (setq x '(0 1 2 3)) => (0 1 2 3)
@@ -172,13 +174,13 @@
   (push 5 (cadr x)) =>  (5 B C)  
   x =>  (A (5 B C) D)
 
-  (setq llst '(1 2 3)) => (1 2 3)
+  (setq llst (list 1 2 3)) => (1 2 3)
   (setq ctr 0) => 0
   (push 11 (cdr (place llst))) => (11 2 3)
   llst => (1 11 2 3)
   ctr => 1
 
-  (setq llst '((1 11) 2 3)) => ((1 11) 2 3)
+  (setq llst (list '(1 11) 2 3)) => ((1 11) 2 3)
   (setq ctr 0) => 0
   (pop (car (place llst))) => 1
   llst => ((11) 2 3)
@@ -208,7 +210,7 @@
   (pop (caddr (place llst))) => 1
   llst => (-1 0 (11) 2 3)
 
-  (setq llst '(1 11 2 3)) => (1 11 2 3)
+  (setq llst (list 1 11 2 3)) => (1 11 2 3)
   (setq ctr 0) => 0
   (pop (cdr (place llst))) => 11
   llst => (1 2 3)

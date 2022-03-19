@@ -1388,3 +1388,5 @@ apply ist eine special form die sich wie eine funktion verhält, sollte aber ein
 -> umbauen wie eval?!?
 
 emitQuotedForm könnte einen fastpath für 2-element listen haben: cons(lhs, cons(rhs, null))
+
+quoted forms deduplizierung wieder aufdrehen, tests anpassen

@@ -1,5 +1,3 @@
-quoted forms deduplizierung wieder aufdrehen, tests anpassen
-
 evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
 -> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
 compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung für apply sollte ggf. in opencode rein
@@ -103,6 +101,9 @@ let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 Platform matrix und publishing
 https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#Testing-against-different-platforms
 
+oracle-actions/setup-java` GitHub action
+https://www.reddit.com/r/java/comments/tdy6lt/introducing_the_oracleactionssetupjava_github/
+
 Dependency (security) checks mit maven:
 https://github.com/jeremylong/DependencyCheck#maven-plugin
 
@@ -127,11 +128,16 @@ MULTIPLE-VALUE-BIND und MULTIPLE-VALUE-CALL lesen das array wieder aus.
 CLHS: VALUES -> funktion, MULTIPLE-VALUE-BIND -> special operator, MULTIPLE-VALUE-CALL -> special operator
 SBCL: VALUES -> funktion, MULTIPLE-VALUE-BIND -> macro, MULTIPLE-VALUE-CALL -> special operator
 VALUES kann auch in setf verwendet werden: (setf (values a b) (floor 7 2)), das ist aber in CL erst rel. spät dazugekommen,
-  brauchts also nicht im ersten wurf
+  brauchts also nicht im ersten wurf, scheint aber nicht schwer:
+    * (macroexpand-1 '(setf (values a b) (floor 5 2)))
+    (MULTIPLE-VALUE-BIND (#:NEW1 #:NEW1)
+        (FLOOR 5 2)
+      (VALUES (SETQ A #:NEW1) (SETQ B #:NEW1)))
 MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL übernimmt 0 oder mehrere
 LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
 
 vielleicht doch schon mal vector und svref implementieren? vector liefert eindimensionale arrays, 0-basiert, typ T. make-array könnte später kommen, das kann viel mehr
+SBCL> (atom #(1 2 3)) ; -> t
 svref ist auch ein setf accessor
 -> und char/ schar wären accessoren für strings...
    -> char kamma machen, setf/ schar geht nicht weil strings sind immutable
@@ -153,7 +159,7 @@ vielleicht tagbody/go/return from/return? könnte für schnellere loops verwende
       catch (ReturnException e) { ret = e.getRet(); break label; }
     } while (false);
   }.apply(NOARGS);
--> problem wird wieder sein, wenn das go/ return-from eine expression sein muss, weils in einem if steht das als ?: geschrieben wird.
+-> problem wird wieder sein, wenn das go/ return-from eine expression sein muss, wenns in einem if steht das als ?: geschrieben wird.
 
 
 

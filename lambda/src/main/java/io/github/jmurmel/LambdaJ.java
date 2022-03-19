@@ -6418,6 +6418,15 @@ public class LambdaJ {
         }
 
 
+        /** <p>emit a quoted form.
+         * 
+         *  <p>Nil, t and atoms that are not symbols are emitted as is.
+         *  
+         *  <p>For symbols or lists a Java expression is emitted that re-creates the
+         *  quoted form at runtime.
+         *  
+         *  <p>If pool is true then above Java expression is added as an entry to the constant pool
+         *  and a reference to the new or already existing identical constant pool entry is emitted. */
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
             if (form == null || intp.sNil == form) sb.append("(Object)null");
 
@@ -6462,14 +6471,18 @@ public class LambdaJ {
                 }
                 final String init = b.toString();
 
-                /*if (pool) emitReference(sb, init); // todo deduplizierung wieder aufdrehen, tests anpassen
-                else sb.append(init);*/
-
-                if (pool) {
-                    sb.append("q").append(qCounter++);
-                    quotedForms.add(init);
+                if (true) {
+                    // deduplicate quoted lists (list constants), modifying list constants will lead to unexpected behaviour
+                    if (pool) emitReference(sb, init);
+                    else sb.append(init);
                 }
-                else sb.append(init);
+                else {
+                    // don't deduplicate quoted lists
+                    if (pool) {
+                        sb.append("q").append(qCounter++);
+                        quotedForms.add(init);
+                    } else sb.append(init);
+                }
             }
 
             else throw new LambdaJError("quote: internal error");
