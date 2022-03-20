@@ -42,7 +42,7 @@ public class EmbeddedCustomEnvTest {
         // invoke the interpreter with
         // * an S-Expression parser that reads from the Stringreader "program"
         // * an "empty" ObjectReader that returns EOF
-        // * an ObjectWriter that writes to the StringBuffer "outBuffer"
+        // * an ObjectWriter that writes to the StringBuilder "outBuffer"
         // * a Java-lambda that creates our custom environment
         Object result = interpreter.interpretExpressions(parser, inReader, outWriter, s -> makeEnvironment(s, interpreter));
 

@@ -4870,7 +4870,7 @@ public class LambdaJ {
 
 
 
-        /** used for function calls, and also for let, labels, progn */
+        /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public static Object funcall(MurmelFunction fn, Object... args) {
             Object r = fn.apply(args);
             // !instanceof Double, !instanceof Long and !instanceof ListConsCell seem redundant but they are fast and will end the loop often
