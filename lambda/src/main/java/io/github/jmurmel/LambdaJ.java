@@ -1335,10 +1335,8 @@ public class LambdaJ {
 
     /** Throw error if sym is a reserved symbol */
     void notReserved(final String op, final Object sym) {
-        if (sym == null)
-            errorMalformed(op, "can't use reserved word nil as a symbol");
-        if (member(sym, reservedWords))
-            errorMalformed(op, String.format("can't use reserved word %s as a symbol", sym));
+        if (sym == null) errorMalformed(op, "can't use reserved word nil as a symbol");
+        if (member(sym, reservedWords)) errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym);
     }
 
     /// Symboltable
@@ -1903,7 +1901,7 @@ public class LambdaJ {
 
         ConsCell extenv = env;
         if (ccBindings != null) {
-            final Set<Object> seen = new HashSet<>();
+            final HashSet<Object> seen = new HashSet<>();
             ConsCell newValues = null; // used for let dynamic
             extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
@@ -1924,14 +1922,14 @@ public class LambdaJ {
 
                 final boolean isNewSymbol = seen.add(sym);
                 if (!letStar) { // let and letrec don't allow duplicate symbols
-                    if (!isNewSymbol) throw errorMalformed(op, "duplicate symbol " + sym);
+                    if (!isNewSymbol) throw errorMalformedFmt(op, "duplicate symbol %", sym);
                 }
 
                 ConsCell newBinding = null;
                 if (letDynamic) newBinding = assq(sym, topEnv);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
-                if (consp(binding) && caddr(binding) != null) throw errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                if (consp(binding) && caddr(binding) != null) throw errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                 final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
                     if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
@@ -2120,9 +2118,8 @@ public class LambdaJ {
     private static void noDuplicates(String func, Object symList) {
         if (symList == null) return;
         if (!consp(symList)) return;
-        final Set<Object> seen = new HashSet<>();
-        for (Object o: (ConsCell)symList)
-            if (!seen.add(o)) errorMalformed(func, "duplicate symbol " + o);
+        final HashSet<Object> seen = new HashSet<>();
+        for (Object o: (ConsCell)symList) if (!seen.add(o)) errorMalformedFmt(func, "duplicate symbol %s", o);
     }
 
     /** make a lexical closure (if enabled) or lambda */
@@ -2745,6 +2742,10 @@ public class LambdaJ {
 
     static RuntimeException errorMalformed(String func, String msg) {
         throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
+    }
+
+    static RuntimeException errorMalformedFmt(String func, String msg, Object... params) {
+        return errorMalformed(func, String.format(msg, params));
     }
 
     static RuntimeException errorMalformed(String func, String expected, Object actual) {
@@ -5157,7 +5158,7 @@ public class LambdaJ {
             if (form == null || form == intp.sNil) return "(Object)null";
             final ConsCell symentry = assq(form, env);
             if (symentry == null) {
-                if (passTwo) errorMalformed("compilation unit", "undefined symbol " + form);
+                if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
                 System.err.println("implicit declaration of " + form); // todo lineinfo of containing form
                 implicitDecl.add(form.toString());
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
@@ -5174,20 +5175,20 @@ public class LambdaJ {
             final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
                 intp.notReserved(func, car(prevEntry));
-                errorMalformed(func, String.format("can't redefine symbol %s", sym));
+                errorMalformedFmt(func, "can't redefine symbol %s", sym);
             }
         }
 
         private void defined(String func, Object sym, ConsCell env) {
             if (sym == null) sym = intern("nil");
             final ConsCell symentry = assq(sym, env);
-            if (symentry == null) errorMalformed(func, "undefined symbol " + sym.toString());
+            if (symentry == null) errorMalformedFmt(func, "undefined symbol %s", sym.toString());
         }
 
 
 
         private static LambdaJSymbol asSymbol(String func, Object symbol) {
-            if (symbol != null && !(symbol instanceof LambdaJSymbol)) errorMalformed(func, "not a symbol: " + symbol);
+            if (symbol != null && !(symbol instanceof LambdaJSymbol)) errorMalformedFmt(func, "not a symbol: %s", symbol);
             return (LambdaJSymbol)symbol;
         }
 
@@ -5337,7 +5338,7 @@ public class LambdaJ {
             }
 
             if (!implicitDecl.isEmpty()) {
-                errorMalformed("compilation unit", "undefined symbols: " + implicitDecl);
+                errorMalformedFmt("compilation unit", "undefined symbols: %s", implicitDecl);
             }
             implicitDecl = null;
 
@@ -5429,8 +5430,7 @@ public class LambdaJ {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
                         globalEnv = loadFile(true, "require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
-                        if (!intp.modules.contains(modName))
-                            errorMalformed("require", String.format("require'd file '%s' does not provide '%s'", modFilePath, modName));
+                        if (!intp.modules.contains(modName)) errorMalformedFmt("require", "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
                 }
 
@@ -5624,7 +5624,7 @@ public class LambdaJ {
 
                     if (intp.sDefun == operator) {
                         if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
-                        defined("define", car(ccArguments), env);
+                        defined("defun", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
                         return;
@@ -5804,7 +5804,7 @@ public class LambdaJ {
                 sb.append("(Object)null");
             } else {
                 sb.append("(false ? (Object)null");
-                for (Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
+                for (final Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
                     final Object clause = iterator.next();
                     sb.append("\n        : ");
                     final Object condExpr = car(clause), condForms = cdr(clause);
@@ -5947,7 +5947,8 @@ public class LambdaJ {
             }
             if (ccBindings != null) {
                 for (Object binding : ccBindings) {
-                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                    // todo consp(binding) ist eig unnoetig?!?
+                    if (consp(binding) && caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     sb.append("\n        , ");
                     emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
@@ -6004,7 +6005,7 @@ public class LambdaJ {
                 for (Object binding: (ConsCell)bindings) {
                     final LambdaJSymbol sym;
                     final Object form;
-                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                    if (consp(binding) && caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; form = null; }
                     else { sym = asSymbol(op, car(binding)); form = cadr(binding); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
@@ -6038,7 +6039,7 @@ public class LambdaJ {
             if (params != null) {
                 if (letStar) {
                     int n = 0;
-                    final Set<Object> seenSymbols = new HashSet<>();
+                    final HashSet<Object> seenSymbols = new HashSet<>();
                     final Iterator<Object> bi = ((ConsCell)bindings).iterator();
                     for (final Object sym: params) {
                         final boolean seen = !seenSymbols.add(sym);
@@ -6090,7 +6091,7 @@ public class LambdaJ {
             if (hasGlobal) {
                 sb.append("        }\n");
                 sb.append("        finally {\n");
-                final Set<Object> seenSymbols = new HashSet<>();
+                final HashSet<Object> seenSymbols = new HashSet<>();
                 for (Object sym : params) {
                     final boolean seen = !seenSymbols.add(sym);
                     if (!seen) {
@@ -6109,7 +6110,7 @@ public class LambdaJ {
             if (bindings != null)
                 for (Object binding: (ConsCell)bindings) {
                     sb.append("\n        , ");
-                    if (consp(binding) && caddr(binding) != null) errorMalformed(op, "illegal variable specification " + printSEx(binding));
+                    if (consp(binding) && caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (letStar) sb.append("(Object)null");
                     else emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
@@ -6156,19 +6157,19 @@ public class LambdaJ {
             }
             else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
 
-            final Set<Object> seen = new HashSet<>();
+            final HashSet<Object> seen = new HashSet<>();
             int n = 0;
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
                     final Object param = car(params);
                     intp.notReserved(func, param);
-                    if (!seen.add(param)) errorMalformed(func, "duplicate symbol " +  param);
+                    if (!seen.add(param)) errorMalformedFmt(func, "duplicate symbol %s", param);
                     env = extenvIntern(asSymbol(func, param), "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
                     intp.notReserved(func, params);
-                    if (!seen.add(params)) errorMalformed(func, "duplicate symbol " + params);
+                    if (!seen.add(params)) errorMalformedFmt(func, "duplicate symbol %s", params);
                     env = extenv(func, params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");
                     else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
