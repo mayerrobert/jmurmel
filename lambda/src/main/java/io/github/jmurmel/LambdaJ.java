@@ -1169,7 +1169,7 @@ public class LambdaJ {
                     return first;
                 }
             }
-            throw new LambdaJError(true, "%s: internal error, can't append %s and %s", "appendToList", printSEx(first), printSEx(rest));
+            throw errorInternal("appendToList: can't append %s and %s", printSEx(first), printSEx(rest));
         }
 
 
@@ -1768,14 +1768,14 @@ public class LambdaJ {
                 }
 
                 /// eval - Not a symbol/atom/cons - something is really wrong here. Let's sprinkle some crack on him and get out of here, Dave.
-                throw new LambdaJError("eval: cannot eval expression");
+                throw errorInternal("eval: cannot eval form", form);
             }
 
         } catch (LambdaJError e) {
             throw new LambdaJError(false, e.getMessage(), form);
         } catch (Exception e) {
             //e.printStackTrace();
-            throw new LambdaJError(e, "eval: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
+            throw errorInternal(e, "eval: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
             dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
             if (func != null) traceLvl = traceExit(func, result, traceLvl);
@@ -2429,8 +2429,8 @@ public class LambdaJ {
 
     // these *should* have no usages as these checks would be superfluous
     // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
-    static boolean  consp(ConsCell ignored)  { throw new LambdaJError("internal error: consp(ConsCell c) should NOT be called"); }
-    static boolean  listp(ConsCell ignored)  { throw new LambdaJError("internal error: listp(ConsCell c) should NOT be called"); }
+    static boolean  consp(ConsCell ignored)  { throw errorInternal("consp(ConsCell c) should NOT be called"); }
+    static boolean  listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
 
     // todo ArraySlice muesste auch gehen?
     private ConsCell list(Object... a) {
@@ -2738,6 +2738,14 @@ public class LambdaJ {
 
     static RuntimeException errorNotImplemented(String msg, Object... args) {
         throw new LambdaJError(true, msg, args);
+    }
+
+    static RuntimeException errorInternal(String msg, Object... args) {
+        throw new LambdaJError(true, "internal error - " + msg, args);
+    }
+
+    static RuntimeException errorInternal(Throwable t, String msg, Object... args) {
+        throw new LambdaJError(t, "internal error - " + msg, args);
     }
 
     static RuntimeException errorMalformed(String func, String msg) {
@@ -3387,9 +3395,7 @@ public class LambdaJ {
 
         if (haveApply()) {
             ocApply = new OpenCodedPrimitive(sApply) {
-                @Override public Object apply(ConsCell a) {
-                    throw errorNotImplemented("unexpected");
-                }
+                @Override public Object apply(ConsCell a) { throw errorInternal("unexpected"); }
             };
             env = addBuiltin(sApply, ocApply, env);
         }
@@ -4040,13 +4046,13 @@ public class LambdaJ {
             return true;
         }
         catch (LambdaJError e) {
-            final String msg = (prg != null ? "runtime error" : "error") + errorLocation(prg) + ": " + e.getMessage();
+            final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
             if (repl) {
                 System.out.println("history NOT run as Java - " + msg);
             } else System.err.println(msg);
         }
         catch (Throwable t) {
-            final String loc = errorLocation(prg);
+            final String loc = location(prg);
             if (repl) {
                 System.out.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
                 t.printStackTrace(System.out);
@@ -4056,8 +4062,8 @@ public class LambdaJ {
         return false;
     }
 
-    private static String errorLocation(MurmelProgram prg) {
-        return prg == null ? "" : " at " + ((MurmelJavaProgram)prg).loc;
+    private static String location(MurmelProgram prg) {
+        return prg instanceof MurmelJavaProgram ? " at " + ((MurmelJavaProgram) prg).loc : "";
     }
 
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
@@ -5333,7 +5339,7 @@ public class LambdaJ {
                     throw new LambdaJError(false, e.getMessage(), form);
                 }
                 catch (Exception e) {
-                    throw new LambdaJError(e, "formToJava: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
+                    throw errorInternal(e, "formToJava: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
                 }
             }
 
@@ -5739,7 +5745,7 @@ public class LambdaJ {
             }
             catch (Exception e) {
                 //e.printStackTrace();
-                throw new LambdaJError(e, "emitForm: internal error - caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
+                throw errorInternal(e, "emitForm: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
             }
         }
 
@@ -5774,8 +5780,7 @@ public class LambdaJ {
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }
-            else
-                throw new LambdaJError(true, "emitAtom - internal error: atom %s is not implemented", form.toString());
+            else errorInternal("emitAtom: atom %s is not implemented", form.toString());
         }
 
         private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
@@ -6537,7 +6542,7 @@ public class LambdaJ {
                 }
             }
 
-            else throw new LambdaJError("quote: internal error");
+            else throw errorInternal("quote: unexpected form", form);
         }
 
         private int qCounter;
