@@ -1400,3 +1400,5 @@ quoted forms deduplizierung wieder aufdrehen, tests anpassen
 
 compiler: ggf. t als condition optimieren (nicht (_t) != null ausspucken sondern true),
  ggf. den defaultfall in cond optimieren (aber nur wenns der letzte ist?!? wobei: alles was im cond nach t käme, wär eh dead code?!?)
+
+die methoden im compiler, die code ausspucken umbenamsen: emit...

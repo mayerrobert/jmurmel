@@ -5882,7 +5882,7 @@ public class LambdaJ {
         }
 
         /** args = (formsym (sym...) form...) */
-        private void labelToJava(String func, WrappingWriter sb, final Object symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitLabel(String func, WrappingWriter sb, final Object symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = asSymbol(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
@@ -5915,7 +5915,7 @@ public class LambdaJ {
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
                 sb.append("        private final MurmelFunction ").append(javasym(car(symbolParamsAndBody), env)).append(" = ");
-                labelToJava("labels", sb, symbolParamsAndBody, env, topEnv, rsfx+1);
+                emitLabel("labels", sb, symbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
             }
 
@@ -5940,7 +5940,7 @@ public class LambdaJ {
             final ConsCell params = paramList(op, ccBindings, false);
             if (named) {
                 // named let
-                labelToJava(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
+                emitLabel(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
             } else {
                 // regular let
                 emitLambda(sb, cons(params, body), env, topEnv, rsfx+1, false);
@@ -6249,62 +6249,61 @@ public class LambdaJ {
                 return true;
             }
 
-            if (op == intp.sAdd) { addDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sMul) { addDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sSub) { subDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sDiv) { subDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sAdd) { emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sMul) { emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sSub) { emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sDiv) { emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
 
-            if (op == intp.sMod) { funcall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sMod) { emitFuncall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
             if (op == intp.sRem) {
                 twoArgs("rem", args);
                 sb.append("(");
-                emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);
-                sb.append(" % ");
-                emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
+                emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);  sb.append(" % ");  emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
                 sb.append(")");
-                return true; }
+                return true;
+            }
 
-            if (symbolEq(op, "round"))     { divisionOp(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
-            if (symbolEq(op, "floor"))     { divisionOp(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
-            if (symbolEq(op, "ceiling"))   { divisionOp(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
-            if (symbolEq(op, "truncate"))  { divisionOp(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
+            if (symbolEq(op, "round"))     { emitDivision(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
+            if (symbolEq(op, "floor"))     { emitDivision(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
+            if (symbolEq(op, "ceiling"))   { emitDivision(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
+            if (symbolEq(op, "truncate"))  { emitDivision(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
 
-            if (symbolEq(op, "fround"))    { divisionOp(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
-            if (symbolEq(op, "ffloor"))    { divisionOp(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
-            if (symbolEq(op, "fceiling"))  { divisionOp(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
-            if (symbolEq(op, "ftruncate")) { divisionOp(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
+            if (symbolEq(op, "fround"))    { emitDivision(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
+            if (symbolEq(op, "ffloor"))    { emitDivision(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
+            if (symbolEq(op, "fceiling"))  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
+            if (symbolEq(op, "ftruncate")) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (op == intp.sNeq) { if (binOp(sb, "==", args, env, topEnv, rsfx)) return true;
-                                   funcallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sNe)  { if (binOp(sb, "!=", args, env, topEnv, rsfx)) return true;
-                                   funcallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sLt)  { if (binOp(sb, "<", args, env, topEnv, rsfx)) return true;
-                                   funcallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sLe)  { if (binOp(sb, "<=", args, env, topEnv, rsfx)) return true;
-                                   funcallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sGe)  { if (binOp(sb, ">=", args, env, topEnv, rsfx)) return true;
-                                   funcallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sGt)  { if (binOp(sb, ">", args, env, topEnv, rsfx)) return true;
-                                   funcallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
+                                   emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true;
+                                   emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true;
+                                   emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true;
+                                   emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true;
+                                   emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+            if (op == intp.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true;
+                                   emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
-            if (op == intp.sCar)        { funcall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
-            if (op == intp.sCdr)        { funcall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
-            if (op == intp.sCons)       { funcall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
-            if (symbolEq(op, "rplaca")) { funcall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
-            if (symbolEq(op, "rplacd")) { funcall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
+            if (op == intp.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
+            if (op == intp.sCons)       { emitFuncall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
+            if (symbolEq(op, "rplaca")) { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
+            if (symbolEq(op, "rplacd")) { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
 
-            if (op == intp.sEq)   { twoArgs("eq", args);  compareOp(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (op == intp.sEql)  { funcall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
-            if (op == intp.sNull) { oneArg("null", args); compareOp(sb, car(args), null, env, topEnv, rsfx); return true; }
-            if (op == intp.sInc)  { funcall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
-            if (op == intp.sDec)  { funcall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (op == intp.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
+            if (op == intp.sEql)  { emitFuncall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sInc)  { emitFuncall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
+            if (op == intp.sDec)  { emitFuncall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
 
             if (op == intp.sAppend) {
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
                 }
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
-                funcallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
+                emitFuncallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
             }
             if (op == intp.sList) {
                 if (args == null) { // no args
@@ -6360,7 +6359,7 @@ public class LambdaJ {
          *  1 arg: apply {@code javaOp} to the number,
          *  in both cases if {@code asLong == true} then the result is converted to {@code long}
          */
-        private void divisionOp(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
+        private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargsMinMax(murmel, args, 1, 2);
             if (asLong) sb.append("checkedToLong(");
             sb.append(javaOp).append("(dbl(");
@@ -6376,8 +6375,8 @@ public class LambdaJ {
             if (asLong) sb.append(')');
         }
 
-        /** emit "=="  operator for one or two args (one arg is compared to null) */
-        private void compareOp(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
+        /** emit "==" operator */
+        private void emitEq(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append("(((Object)");
             emitForm(sb, lhs, env, topEnv, rsfx, false);
             sb.append(" == (Object)");
@@ -6386,7 +6385,7 @@ public class LambdaJ {
         }
 
         /** emit double operator for zero or more number args */
-        private void addDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitAddDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append('(');
             if (args == null) sb.append(start);
             else {
@@ -6401,7 +6400,7 @@ public class LambdaJ {
         }
 
         /** emit double operator for one or more number args */
-        private void subDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitSubDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             varargs1(op,  args);
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); emitFormAsDouble(sb, op, car(args), env, topEnv, rsfx); }
@@ -6412,22 +6411,22 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        private void funcallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitFuncallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (minArgs > 0) varargsMin(murmel,  args, minArgs);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
-        private void funcall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitFuncall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             oneArg(murmel, args);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
-        private void funcall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitFuncall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
-        private void funcall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitFuncall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "dbl");
         }
@@ -6452,7 +6451,7 @@ public class LambdaJ {
         }
 
         /** if args has two arguments then emit a binary operator (double, double) -> boolean */
-        private boolean binOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private boolean emitBinOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (cdr(args) == null || cddr(args) != null) return false;
             sb.append("(");
             emitFormAsDouble(sb, func, car(args), env, topEnv, rsfx);

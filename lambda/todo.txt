@@ -95,8 +95,6 @@ die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globals enthaelt
 -> junit tests mit ...Test.java, testng mit Test... .java
 
-die methoden im compiler, die code ausspucken umbenamsen: emit...
-
 statt überall "throw new LambdaJError(..."
 -> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
 -> ggf. später statt exception optional einen handler aufrufen -> condition system
