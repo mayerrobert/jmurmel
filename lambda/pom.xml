@@ -74,53 +74,53 @@
             </plugin>
 
             <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
 
-            <configuration>
-                <excludes>
-                    <exclude>**/*ManualTest.java</exclude>
-                </excludes>
-            </configuration>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*ManualTest.java</exclude>
+                    </excludes>
+                </configuration>
 
-            <!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an junit tests.
-                 damit wird der junit runner aktiviert -->
-            <dependencies>
-              <dependency>
-                <groupId>org.apache.maven.surefire</groupId>
-                <artifactId>surefire-junit47</artifactId>
-                <version>${maven-surefire.version}</version>
-              </dependency>
-            </dependencies>
-          </plugin>
+                <!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an junit tests.
+                     damit wird der junit runner aktiviert -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>${maven-surefire.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
 
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <configuration>
-                <finalName>jmurmel</finalName>
-                <archive>
-                    <manifest>
-                        <!-- <addClasspath>true</addClasspath> -->
-                        <mainClass>io.github.jmurmel.LambdaJ</mainClass>
-                    </manifest>
-                    <manifestEntries>
-                        <Automatic-Module-Name>io.github.jmurmel</Automatic-Module-Name>
-                        <Implementation-Version>Version ${project.version}/Built from ${git.commit.id.describe} ${git.commit.time}/Built by ${user.name} ${git.build.time}</Implementation-Version>
-                    </manifestEntries>
-                </archive>
-            </configuration>
-          </plugin>
-            
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-pmd-plugin</artifactId>
-              <configuration>
-                  <rulesets>
-                      <ruleset>../parent/definitions/quickstart.xml</ruleset>
-                  </rulesets>
-              </configuration>
-          </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <finalName>jmurmel</finalName>
+                    <archive>
+                        <manifest>
+                            <!-- <addClasspath>true</addClasspath> -->
+                            <mainClass>io.github.jmurmel.LambdaJ</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Automatic-Module-Name>io.github.jmurmel</Automatic-Module-Name>
+                            <Implementation-Version>Version ${project.version}/Built from ${git.commit.id.describe} ${git.commit.time}/Built by ${user.name} ${git.build.time}</Implementation-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <rulesets>
+                        <ruleset>../parent/definitions/quickstart.xml</ruleset>
+                    </rulesets>
+                </configuration>
+            </plugin>
         </plugins>
 
     </build>

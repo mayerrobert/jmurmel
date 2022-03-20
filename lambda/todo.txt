@@ -1,3 +1,8 @@
+compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
+-> kein named letXX
+-> wäre für let over lambda, und let over lambda simuliert ein singleton, d.h. mehrere funktionen mit gemeinsamem state
+-> auch in toplevel "labels"?
+
 evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
 -> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
 
@@ -38,11 +43,15 @@ freie variablen suchen/ schreiben und interpreter aufrufen wär bereits jetzt oh
 
 später könnte damit dann ein repl mit performance (durch compile) entstehen
 -> compile in kompiliertem code aufrufen scheint auch nicht schwer, damit könnte man dynamisch neue kompilierte funktionen erzeugen
+   -> compile sollte wsl auch makros können?
 
 umsetzung: evtl wird aus MurmelJavaCompiler eine basisklasse, und abgeleitet MurmelJavaCompiler mit murmeltojavasource/class usw wie bisher, und abgeleitet
 compilecompiler mit compile(LambdaJ intp, symbol oder ConsCell code, ConsCell environment)
 
 
+
+ist (eval (quote form)) dasselbe wie (progn form) bzw. form?
+-> demit könnte der compiler ein eval wegoptimieren
 
 compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
 -> geht nicht innerhalb ?:, weil das braucht eine expression
@@ -61,10 +70,6 @@ damit könnte errroMalformed zusatzinfo wie "see http://.../murmel-langref.md#le
 im reader gibts every und some
 -> woanders hin schieben?
 -> every <-> and, some <-> or. kann man das woanders nutzen? in mlib?
-
-wenn fatal in compiliertem code aufgerufen wird, kommt am ende
-  history NOT run as Java - error:
-die meldung ist falsch, weil gelaufen ists ja
 
 (with-reader-printer (string string) forms...)
 -> LambdaJ.pushReaderPrinter(Object, Object)/ popReaderPrinter() umsetzen
@@ -88,6 +93,7 @@ samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel program
 tests auf testng dataprovider umstellen
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globals enthaelt
+-> junit tests mit ...Test.java, testng mit Test... .java
 
 die methoden im compiler, die code ausspucken umbenamsen: emit...
 

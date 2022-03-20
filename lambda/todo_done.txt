@@ -1389,6 +1389,10 @@ apply ist eine special form die sich wie eine funktion verhält, sollte aber ein
 
 emitQuotedForm könnte einen fastpath für 2-element listen haben: cons(lhs, cons(rhs, null))
 
+wenn fatal in compiliertem code aufgerufen wird, kommt am ende
+  history NOT run as Java - error:
+die meldung ist falsch, weil gelaufen ists ja
+
 compiler: applyOpencode ist vielleicht nicht mehr nötig, eine spezialbehandlung für apply sollte ggf. in opencode rein
   + isLast durchreichen und auswerten?
 
