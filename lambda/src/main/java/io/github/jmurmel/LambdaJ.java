@@ -819,7 +819,7 @@ public class LambdaJ {
                 if (index < TOKEN_MAX) token[index++] = (char)look;
                 look = getchar(false);
             }
-            final String ret = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+            final String ret = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
             if (ret.isEmpty()) throw new ParseError("EOF after #%c", macroChar);
             return ret;
         }
@@ -889,7 +889,7 @@ public class LambdaJ {
                         if (look == EOF)
                             throw new ParseError("|-quoted symbol is missing closing |");
                         look = getchar(); // consume trailing |
-                        final String s = tokenToString(token, 0, index > SYMBOL_MAX ? SYMBOL_MAX : index);
+                        final String s = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
                         tok = new LambdaJSymbol(s);
                     } else if (isSyntax(look)) {
                         switch (look) {
@@ -7189,13 +7189,6 @@ class TurtleFrame {
 
 
 
-    private double fact(final int w, final int h) {
-        final double xfac = (w-2*padding) / (xmax - xmin);
-        final double yfac = (h-2*padding) / (ymax - ymin);
-
-        return xfac < yfac ? xfac : yfac;
-    }
-
     private static int trX(double fac, double xoff, double x) {
         return (int)((x + xoff) * fac);
     }
@@ -7204,11 +7197,18 @@ class TurtleFrame {
         return (int)((y + yoff) * fac);
     }
 
+    private double fact(final int w, final int h) {
+        final double xfac = ((double)w-2*padding) / (xmax - xmin);
+        final double yfac = ((double)h-2*padding) / (ymax - ymin);
+
+        return Math.min(xfac, yfac);
+    }
+
     private double factBitmap(final int w, final int h) {
         final double xfac = ((double)w-2*padding) / bitmap.getWidth();
         final double yfac = ((double)h-2*padding) / bitmap.getHeight();
 
-        return xfac < yfac ? xfac : yfac;
+        return Math.min(xfac, yfac);
     }
 
 
