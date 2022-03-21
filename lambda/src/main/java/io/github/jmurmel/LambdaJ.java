@@ -13,6 +13,7 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -3243,23 +3244,45 @@ public class LambdaJ {
         public Object apply(ConsCell x) {
             final Object[] args = listToArray(x);
             try { return constructor.newInstance(args); }
-            catch (Exception e) { throw new LambdaJError(true, "new %s: %s: %s", constructor.getName(), e.getClass().getName(), e.getMessage()); }
+            catch (InvocationTargetException ite) { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), ite.getTargetException().toString()); }
+            catch (Exception e)                   { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), e.toString()); }
         }
     }
 
-    private static class JavaMethod implements Primitive {
+    private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         private final Method method;
 
         private JavaMethod(Method method) { this.method = method; }
 
         @Override
         public Object apply(ConsCell x) {
+            // todo argcount check
             final Object obj = car(x);
-            if (obj != null && !method.getDeclaringClass().isInstance(obj))
-                throw new LambdaJError(true, ":: : %s is not an instance of class %s", obj, method.getDeclaringClass().getName());
             final Object[] args = listToArray(cdr(x));
+            return apply(obj, args);
+        }
+
+        @Override
+        public Object applyPrimitive(Object... args) {
+            // todo argcount check
+            final Object obj;  final Object[] methodArgs;
+            if (args.length > 0) {
+                obj = args[0];
+                methodArgs = Arrays.copyOfRange(args, 1, args.length);
+            }
+            else {
+                obj = null;  methodArgs = EMPTY_ARRAY;
+            }
+            return apply(obj, methodArgs);
+        }
+
+        private Object apply(Object obj, Object[] args) {
+            final Class<?> declaringClass = method.getDeclaringClass();
+            if (obj != null && !declaringClass.isInstance(obj))
+                throw new LambdaJError(true, ":: : %s is not an instance of class %s", obj, declaringClass.getName());
             try { return method.invoke(obj, args); }
-            catch (Exception e) { throw new LambdaJError(true, "%s.%s: exception: %s", method.getClass(), method.getName(), e.getMessage()); }
+            catch (InvocationTargetException ite) { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), ite.getTargetException().toString()); }
+            catch (Exception e)                   { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), e.toString()); }
         }
     }
 
@@ -3271,19 +3294,31 @@ public class LambdaJ {
         if (cddr(x) != null)
         for (Object arg: (ConsCell)cddr(x)) {
             final String paramType = (String)arg;
-            try { paramTypes.add(Class.forName(paramType)); }
-            catch (ClassNotFoundException e) { throw new LambdaJError(true, ":: : exception finding parameter class %s: %s : %s", paramType, e.getClass().getName(), e.getMessage()); }
+            try { paramTypes.add(findParamClass(paramType)); }
+            catch (ClassNotFoundException e) { throw new LambdaJError(true, ":: : exception finding parameter class %s: %s", paramType, e.toString()); }
         }
         final Class<?>[] params = paramTypes.isEmpty() ? null : paramTypes.toArray(new Class[0]);
         try {
             final Class<?> clazz = Class.forName(className);
             return "new".equals(methodName)
                     ? new JavaConstructor(clazz.getDeclaredConstructor(params))
-                            : new JavaMethod(clazz.getMethod(methodName, params));
+                    : new JavaMethod(clazz.getMethod(methodName, params));
         }
-        catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s: %s", e.getClass().getName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
     }
 
+    private static Class<?> findParamClass(String paramType) throws ClassNotFoundException {
+        switch (paramType) {
+            case "int":    return int.class;
+            case "long":   return long.class;
+            case "float":  return float.class;
+            case "double": return double.class;
+            case "byte":   return byte.class;
+            case "short":  return short.class;
+            case "char":   return char.class;
+            default:       return Class.forName(paramType);
+        }
+    }
 
 
     private TurtleFrame current_frame;

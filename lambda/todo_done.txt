@@ -1363,6 +1363,8 @@ argcount check fehlt für einige interpreter primitives, z.b. get-internal-real-
 
 zeilennummern in fehlermeldungen bei require und load, und filenamen generell
 
+filenamen in fehlermeldungen
+
 named let* und letrec kompilieren zu endlosschleifen
 
 compiler: eine methode für argslists für functioncalls rausziehen, die schreibt ein einziges null argument als "(Object)null" (und keine argumente als (Object[])null ?)

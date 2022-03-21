@@ -1,7 +1,13 @@
+eval-when endlich einbauen
+
+:: opencoden?
+siehe auch LispWorks Java FFI http://www.lispworks.com/documentation/lw70/LW/html/lw-109.htm
+
 compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
 -> kein named letXX
 -> wäre für let over lambda, und let over lambda simuliert ein singleton, d.h. mehrere funktionen mit gemeinsamem state
 -> auch in toplevel "labels"?
+-> let over lambda wird wsl dann interessant, wenn man das mit makros generiert, sonst kann man auch globales define+defun machen
 
 evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
 -> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
@@ -411,8 +417,6 @@ ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, ob
 funktion error (und/ oder exit) wirft eine exception die am programmende den errorlevel bestimmt
          fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
 mlib-test vervollständigen
-
-filenamen in fehlermeldungen
 
 sollte mlib equal einen fallback nach Objects.equals() haben?
 
