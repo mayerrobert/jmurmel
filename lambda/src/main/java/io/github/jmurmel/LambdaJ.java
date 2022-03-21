@@ -156,7 +156,7 @@ public class LambdaJ {
         void printEol();
     }
 
-    @FunctionalInterface public interface Primitive { Object apply(ConsCell x); }
+    @FunctionalInterface public interface Primitive { Object applyPrimitive(ConsCell x); }
 
     public interface CustomEnvironmentSupplier {
         ConsCell customEnvironment(SymbolTable symtab);
@@ -2130,7 +2130,7 @@ public class LambdaJ {
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
         if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
-        try { return primfn.apply(args); }
+        try { return primfn.applyPrimitive(args); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
     }
@@ -2138,7 +2138,7 @@ public class LambdaJ {
     /** in case compiled code calls "(eval)" */
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
         if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
-        try { return primfn.applyPrimitive(listToArray(args)); }
+        try { return primfn.applyCompilerPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws exception: %s", e.getMessage()); }
     }
@@ -3241,7 +3241,7 @@ public class LambdaJ {
         private JavaConstructor(Constructor<?> constructor) { this.constructor = constructor; }
 
         @Override
-        public Object apply(ConsCell x) {
+        public Object applyPrimitive(ConsCell x) {
             final Object[] args = listToArray(x);
             try { return constructor.newInstance(args); }
             catch (InvocationTargetException ite) { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), ite.getTargetException().toString()); }
@@ -3255,7 +3255,7 @@ public class LambdaJ {
         private JavaMethod(Method method) { this.method = method; }
 
         @Override
-        public Object apply(ConsCell x) {
+        public Object applyPrimitive(ConsCell x) {
             // todo argcount check
             final Object obj = car(x);
             final Object[] args = listToArray(cdr(x));
@@ -3263,7 +3263,7 @@ public class LambdaJ {
         }
 
         @Override
-        public Object applyPrimitive(Object... args) {
+        public Object applyCompilerPrimitive(Object... args) {
             // todo argcount check
             final Object obj;  final Object[] methodArgs;
             if (args.length > 0) {
@@ -3430,7 +3430,7 @@ public class LambdaJ {
 
         if (haveApply()) {
             ocApply = new OpenCodedPrimitive(sApply) {
-                @Override public Object apply(ConsCell a) { throw errorInternal("unexpected"); }
+                @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
             };
             env = addBuiltin(sApply, ocApply, env);
         }
@@ -3439,7 +3439,7 @@ public class LambdaJ {
             env = addBuiltin(sDynamic, sDynamic, env);
 
             ocEval = new OpenCodedPrimitive(sEval) {
-                @Override public Object apply(ConsCell a) {
+                @Override public Object applyPrimitive(ConsCell a) {
                     varargsMinMax("eval", a, 1, 2);
                     final Object env = cadr(a);
                     if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
@@ -3595,12 +3595,6 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: '%s' is not bound", "getValue", globalSymbol);
     }
 
-    private class CallPrimitive implements MurmelFunction {
-        final Primitive p;
-        CallPrimitive(Primitive p) { this.p = p; }
-        @Override public Object apply(Object... args) { return p.apply(list(args)); }
-    }
-
     private class CallLambda implements MurmelFunction {
         final ConsCell lambda;
         final ConsCell env;
@@ -3623,13 +3617,11 @@ public class LambdaJ {
      */
     public MurmelFunction getFunction(String funcName) {
         final Object maybeFunction = getValue(funcName);
-        if (maybeFunction instanceof Primitive) {
-            return new CallPrimitive((Primitive)maybeFunction);
-        }
-        if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) {
-            return new CallLambda((ConsCell)maybeFunction);
-        }
-        // todo CompilerPrimitive
+
+        if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
+        if (maybeFunction instanceof Primitive)                                 { return args -> ((Primitive)maybeFunction).applyPrimitive(arraySlice(args, 0)); }
+        if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) { return new CallLambda((ConsCell)maybeFunction); }
+
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName);
     }
 
@@ -4505,7 +4497,7 @@ public class LambdaJ {
         public static final CompilerGlobal UNASSIGNED = () -> { throw new LambdaJError(false, "unassigned value"); };
         public static final Object[] NOARGS = new Object[0];
 
-        public interface CompilerPrimitive { Object applyPrimitive(Object... args); }
+        public interface CompilerPrimitive { Object applyCompilerPrimitive(Object... args); }
 
         private static class MurmelFunctionCall {
             MurmelFunction next;
@@ -4893,7 +4885,7 @@ public class LambdaJ {
 
         /** Primitives are in the environment as (CompilerPrimitive)... . Compiled code that calls primitives will
          *  actually call this overload and not funcall(Object, Object...) that contains the TCO thunking code. */
-        public static Object funcall(CompilerPrimitive fn, Object... args) { return fn.applyPrimitive(args); }
+        public static Object funcall(CompilerPrimitive fn, Object... args) { return fn.applyCompilerPrimitive(args); }
 
         public static Object tailcall(CompilerPrimitive fn, Object... args) { return funcall(fn, args); }
 
@@ -4922,7 +4914,7 @@ public class LambdaJ {
         public final Object funcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
-            if (fn instanceof Primitive)         return ((Primitive)fn).apply(arraySlice(args));
+            if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
             if (fn instanceof ClosureConsCell)   return intp.eval(cons(intp.sApply,
                                                                        cons(fn,
                                                                             cons(cons(intp.intern("quote"), cons(arraySlice(args), null)), null))),
