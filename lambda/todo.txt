@@ -1,3 +1,8 @@
+((lambda (exp) (apply exp "hallo")) write)
+-> parameter exp ist ein builtin. das geht im interpreter und bei speed=0 im compiler, geht nicht bei speed=1 im compiler,
+   weil exp wird opencoded und will 2 argumente
+-> ggf. warning oder error wenn builtins als parametername verwendet werden
+
 "(declaim (optimize (safety...": CompilerPrimitives könnten einen ersten parameter safety bekommen, der wird abgefüllt wenn die calls generiert werden
 Primitives könnten den aktuellen Wert auswerten
 -> achtung: safety=0 sollten nicht die checks während dem kompilieren abdrehen

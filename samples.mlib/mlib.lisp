@@ -1042,10 +1042,10 @@
 
 
 ; helper function for time
-(defun call-with-timing (exp . args)
+(defun call-with-timing (expr . args)
   (let* ((tstart-real (get-internal-real-time))
          (tstart-run  (get-internal-run-time))
-         (result (apply exp args))
+         (result (apply expr args))
          (secs-real (/ (- (get-internal-real-time) tstart-real) internal-time-units-per-second))
          (secs-run  (/ (- (get-internal-run-time)  tstart-run) internal-time-units-per-second)))
     (format t "Evaluation took:%n  %g seconds of real time%n  %g seconds of total run time%n" secs-real secs-run)
