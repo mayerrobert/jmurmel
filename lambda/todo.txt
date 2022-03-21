@@ -1,6 +1,10 @@
+"(declaim (optimize (safety...": CompilerPrimitives könnten einen ersten parameter safety bekommen, der wird abgefüllt wenn die calls generiert werden
+Primitives könnten den aktuellen Wert auswerten
+-> achtung: safety=0 sollten nicht die checks während dem kompilieren abdrehen
+
 eval-when endlich einbauen
 
-:: opencoden?
+:: opencoden? und/ oder auf MethodHandle umstellen?
 siehe auch LispWorks Java FFI http://www.lispworks.com/documentation/lw70/LW/html/lw-109.htm
 
 compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
