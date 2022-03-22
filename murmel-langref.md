@@ -1013,16 +1013,20 @@ Parameters to `::` must be strings.
     (:: "java.lang.System" "currentTimeMillis")
 
 When invoking primitives created by `::` the first argument must be
-a Java object of the primitive's method's class or `nil` for static methods:
-invoke static method:
+a Java object of the primitive's method's class. This is not the case
+for static methods.
+Invoke static method:
 
     (define ctm (:: "java.lang.System" "currentTimeMillis"))  
-    (ctm nil)
+    (ctm)
 
 invoke method on an object
 
-    (define my-hash ((:: "java.util.HashMap" "new")))  
-    (write ((:: "java.util.HashMap" "toString") my-hash))
+    (define make-hash (:: "java.util.HashMap" "new"))
+    (define put-hash (:: "java.util.Map" "put" "java.lang.Object" "java.lang.Object"))
+    (define my-hash (make-hash))
+    (put-hash my-hash "key-1" "value-1")
+    (write my-hash)
 
 
 ## Known issues 

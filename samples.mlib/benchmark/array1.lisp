@@ -9,8 +9,8 @@
 #+murmel (progn
 (require "mlib")
 
-(define m%long->int    (:: "java.lang.Number"  "intValue"))
-(define m%number->int  (:: "java.lang.Long"    "intValue"))
+(define m%long->int    (:: "java.lang.Long"   "intValue"))
+(define m%number->int  (:: "java.lang.Number" "intValue"))
 
 (define m%int->long    (:: "java.lang.Integer" "longValue"))
 (define m%number->long (:: "java.lang.Number"  "longValue"))
@@ -21,11 +21,12 @@
 (define m%svadd (:: "java.util.ArrayList" "add"    "java.lang.Object"))
 (define m%svrem (:: "java.util.ArrayList" "remove" "int"))
 (define m%svmak (:: "java.util.ArrayList" "new"))
+(define m%svmak-capacity (:: "java.util.ArrayList" "new" "int"))
 
 (defun make-vector (size)
-  (let ((v (m%svmak)))
+  (let ((v (m%svmak-capacity (m%long->int size))))
     (let loop ((n size))
-      (if (zerop n) v
+      (if (= 0 n) v
         (progn (m%svadd v nil)
                (loop (1- n)))))))
 
@@ -57,14 +58,14 @@
 
 (defun create-x (n)
   (let ((result (make-vector n)))
-    (do ((i 0 (+ i 1)))
+    (do ((i 0 (1+ i)))
         ((>= i n) result)
       (vector-set! result i i))))
 
 (defun create-y (x)
   (let* ((n (vector-length x))
          (result (make-vector n)))
-    (do ((i (- n 1) (- i 1)))
+    (do ((i (1- n) (1- i)))
         ((< i 0) result)
       (vector-set! result i (vector-ref x i)))))
 

@@ -1,11 +1,13 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
- * errormessages contain the filename and linenumber (was: only linenumber)
- * argument to sleep is "seconds" (was: internal-time-units-per-second),
+ * argument to sleep is now "seconds" (was: internal-time-units-per-second),
    return value is nil (was: actually slept time in internal-time-units-per-second)
  * changed "apply" from a special form to a function, "apply" no longer is a reserved word,
-   "apply" now accepts symbols as well
+   "apply" now accepts symbols as the first argument as well
+ * changed "::": static Java methods no longer want "nil" as a first (ignored) argument
+
+ * errormessages contain the filename and linenumber (was: only linenumber)
  * added more complete support for "let dynamic" and "let* dynamic"
    (before 1.2 only "let* dynamic" in interpreted code was supported)
  * added primitive functions assq, list*

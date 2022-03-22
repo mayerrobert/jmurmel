@@ -9,7 +9,7 @@ public class CallJavaTest {
         System.setProperty("testprop", "testvalue");
         LambdaJTest.runTest("staticmethod.lisp",
                 "(define get-property (:: \"java.lang.System\" \"getProperty\" \"java.lang.String\"))"
-                + "(get-property nil \"testprop\")", "\"testvalue\"", null);
+                + "(get-property \"testprop\")", "\"testvalue\"", null);
     }
 
     @Test

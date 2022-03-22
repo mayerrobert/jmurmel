@@ -10,11 +10,14 @@ import java.awt.event.*;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -3243,46 +3246,71 @@ public class LambdaJ {
         @Override
         public Object applyPrimitive(ConsCell x) {
             final Object[] args = listToArray(x);
+            // skip argcount check: on errors Constructor.newInstance() will throw e.g. "java.lang.IllegalArgumentException: wrong number of arguments"
             try { return constructor.newInstance(args); }
             catch (InvocationTargetException ite) { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), ite.getTargetException().toString()); }
             catch (Exception e)                   { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), e.toString()); }
         }
     }
 
+    private interface Invoker {
+        Object invoke(Object... args) throws Throwable;
+    }
+
     private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         private final Method method;
+        private final boolean isStatic;
+        private final int paramCount;
+        private final Invoker invoke;
 
-        private JavaMethod(Method method) { this.method = method; }
-
-        @Override
-        public Object applyPrimitive(ConsCell x) {
-            // todo argcount check
-            final Object obj = car(x);
-            final Object[] args = listToArray(cdr(x));
-            return apply(obj, args);
+        private JavaMethod(Method method) {
+            this.method = method;
+            int paramCount = method.getParameterCount(); // this + parameters
+            final boolean isStatic = Modifier.isStatic(method.getModifiers());
+            this.isStatic = isStatic;
+            if (!isStatic) paramCount++;
+            this.paramCount = paramCount;
+            try {
+                final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
+                switch (paramCount) {
+                    case 0:  invoke = args -> mh.invoke();  break;
+                    case 1:  invoke = args -> mh.invoke(args[0]);  break;
+                    case 2:  invoke = args -> mh.invoke(args[0], args[1]);  break;
+                    case 3:  invoke = args -> mh.invoke(args[0], args[1], args[2]);  break;
+                    case 4:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3]);  break;
+                    case 5:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4]);  break;
+                    case 6:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);  break;
+                    case 7:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);  break;
+                    default: invoke = mh::invokeWithArguments; // that's slow
+                }
+            }
+            catch (IllegalAccessException iae) {
+                throw new LambdaJError(iae, "can not access ", method.getDeclaringClass().getSimpleName(), method.getName());
+            }
         }
 
-        @Override
-        public Object applyCompilerPrimitive(Object... args) {
-            // todo argcount check
-            final Object obj;  final Object[] methodArgs;
-            if (args.length > 0) {
-                obj = args[0];
-                methodArgs = Arrays.copyOfRange(args, 1, args.length);
+        @Override public Object applyPrimitive(ConsCell x) { return apply(listToArray(x)); }
+
+        @Override public Object applyCompilerPrimitive(Object... args) { return apply(args);}
+
+        private Object apply(Object... args) {
+            argCountCheck(args);
+            final Class<?> declaringClass = method.getDeclaringClass();
+            if (!isStatic && args != null && args.length > 0 && args[0] != null && !declaringClass.isInstance(args[0]))
+                throw new LambdaJError(true, ":: : %s is not an instance of class %s", args[0], declaringClass.getName());
+
+            try { return invoke.invoke(args); }
+            catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), t.toString()); }
+        }
+
+        private void argCountCheck(Object[] args) {
+            final int paramCount = this.paramCount;
+            if (args == null || args.length == 0) {
+                if (paramCount != 0) errorArgCount(method.getName(), paramCount, paramCount, 0, null);
             }
             else {
-                obj = null;  methodArgs = EMPTY_ARRAY;
+                if (paramCount != args.length) errorArgCount(method.getName(), paramCount, paramCount, args.length, null);
             }
-            return apply(obj, methodArgs);
-        }
-
-        private Object apply(Object obj, Object[] args) {
-            final Class<?> declaringClass = method.getDeclaringClass();
-            if (obj != null && !declaringClass.isInstance(obj))
-                throw new LambdaJError(true, ":: : %s is not an instance of class %s", obj, declaringClass.getName());
-            try { return method.invoke(obj, args); }
-            catch (InvocationTargetException ite) { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), ite.getTargetException().toString()); }
-            catch (Exception e)                   { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), e.toString()); }
         }
     }
 
