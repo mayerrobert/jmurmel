@@ -5817,6 +5817,21 @@ public class LambdaJ {
                     /// * some functions and operators are opencoded:
                     if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx, isLast)) return;
 
+                    if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "::") && emitJambda(sb, asList("calling ::", cdr(operator)), length(ccArguments))) {
+                        sb.append(".apply(");
+                        boolean first = true;
+                        if (ccArguments != null) {
+                            for (Object arg: ccArguments) {
+                                if (first) first = false;
+                                else sb.append("\n        , ");
+                                emitForm(sb, arg, env, topEnv, rsfx, false);
+                            }
+                        }
+                        else sb.append("NOARGS");
+                        sb.append(')');
+                        return;
+                    }
+
                     /// * function call
                     sb.append(isLast ? "tailcall(" : "funcall(");
                     emitForm(sb, operator, env, topEnv, rsfx, false);
@@ -6403,6 +6418,7 @@ public class LambdaJ {
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 emitFuncallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
             }
+
             if (op == intp.sList) {
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
@@ -6442,7 +6458,7 @@ public class LambdaJ {
             }
 
             if (symbolEq(op, "::")) {
-                if (emitJambda(sb, args)) return true;
+                if (emitJambda(sb, args, -1)) return true;
             }
 
             for (String prim: primitives)          if (symbolEq(op, prim))    { emitCallPrimitive(sb, "_" + prim, args, env, topEnv, rsfx, null);  return true; }
@@ -6571,7 +6587,8 @@ public class LambdaJ {
             else { sb.append("dbl("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
         }
 
-        private static boolean emitJambda(WrappingWriter sb, ConsCell args) {
+        /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
+        private static boolean emitJambda(WrappingWriter sb, ConsCell args, int argCount) {
             varargsMin(":: ", args, 2);
             final Object strClazz = car(args), strMethod = cadr(args);
             // if class and method are stringliterals then we can do this at compiletime.
@@ -6612,8 +6629,13 @@ public class LambdaJ {
             }
             catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
 
-            sb.append("(MurmelFunction)(args -> { argCheck(loc, ").append(String.valueOf(paramTypes.size() + startArg)).append(", args.length);  return ");
-            //this is half the speed?!?: sb.append("(MurmelJavaProgram.CompilerPrimitive)(args -> { argCheck(loc, ").append(String.valueOf(paramTypes.size() + startArg)).append(", args.length);  return ");
+            final int paramCount = paramTypes.size() + startArg;
+            if (argCount != -1) {
+                if (argCount != paramCount) errorArgCount((String)strMethod, paramCount, paramCount, argCount, null);
+            }
+            sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
+            if (argCount == -1) sb.append("argCheck(loc, ").append(String.valueOf(paramCount)).append(", args.length);  ");
+            sb.append("return ");
 
             if ("new".equalsIgnoreCase((String)strMethod))  sb.append("new ").append(strClazz);
             else if (Modifier.isStatic(m.getModifiers()))   sb.append(strClazz).append('.').append(strMethod);
@@ -6628,7 +6650,7 @@ public class LambdaJ {
                 if (conv == null) sb.append("args[").append(i).append(']');
                 else              sb.append(conv).append("(args[").append(i).append("])");
             }
-            sb.append("); })");
+            sb.append("); }))");
 
             return true;
         }
