@@ -1,3 +1,12 @@
+vielleicht sollten CompilerPrimitive und MurmelFunction das gleiche basisinterface haben mit "int type()", CompilerPrimitive und MurmelFunction haben jeweils eine defaultimplementierung
+dann brauchts in funcall(Object) kein instanceof mehr?!?
+-> instanceof oder zumindest cast (inkl. checkcast) brauchts schon, weil es gibt noch Primitive und ConsCell
+-> müssten wohl alle 4 das gleiche basisinterface Funcallable haben, und in funcall(Object, Object...) gibts einen cast, der bei not-a-function fehlschlägt
+   -> blöd, das ist wieder ein cast. bleibt wohl nur, funcall zu vermeiden, s.u.
+
+in emitForm: bei function call könnt ma schaun *was* aufgerufen werden soll, und im falle von compiler primitives (und ggf. "(:: ..."))
+gleich den call ohne funcall() ausspucken. für :: brauchts größere umbauten, nicht mehr ""(MurmelFunction)args->..."
+
 ((lambda (exp) (apply exp "hallo")) write)
 -> parameter exp ist ein builtin. das geht im interpreter und bei speed=0 im compiler, geht nicht bei speed=1 im compiler,
    weil exp wird opencoded und will 2 argumente
@@ -163,6 +172,7 @@ SBCL> (atom #(1 2 3)) ; -> t
 svref ist auch ein setf accessor
 -> und char/ schar wären accessoren für strings...
    -> char kamma machen, setf/ schar geht nicht weil strings sind immutable
+      -> vielleicht von String auf StringBuilder umstellen?
 vielleicht auch list->svector und svector->list
 
 funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write arg nil) und dann (fatal)

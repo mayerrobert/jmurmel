@@ -3315,12 +3315,12 @@ public class LambdaJ {
     }
 
     static Primitive findJavaMethod(ConsCell x) {
+        varargsMin(":: ", x, 2);
         stringArgs(":: ", x);
         final String className = (String) car(x);
         final String methodName = (String) cadr(x);
         final ArrayList<Class<?>> paramTypes = new ArrayList<>();
-        if (cddr(x) != null)
-        for (Object arg: (ConsCell)cddr(x)) {
+        if (cddr(x) != null) for (Object arg: (ConsCell)cddr(x)) {
             final String paramType = (String)arg;
             try { paramTypes.add(findParamClass(paramType)); }
             catch (ClassNotFoundException e) { throw new LambdaJError(true, ":: : exception finding parameter class %s: %s", paramType, e.toString()); }
@@ -3335,17 +3335,40 @@ public class LambdaJ {
         catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
     }
 
+    static final Map<String, Object[]> paramClasses = new HashMap<>(64);
+    static {
+        paramClasses.put("byte",   new Object[] { byte.class,   "asByte" });
+        paramClasses.put("short",  new Object[] { short.class,  "asShort" });
+        paramClasses.put("int",    new Object[] { int.class,    "asInt" });
+        paramClasses.put("long",   new Object[] { long.class,   "asLong" });
+        paramClasses.put("float",  new Object[] { float.class,  "asFloat" });
+        paramClasses.put("double", new Object[] { double.class, "dbl", });
+
+        paramClasses.put("char",   new Object[] { char.class,   "asChar" });
+
+        paramClasses.put("Object",    new Object[] { Object.class,    null });             aliasJavaLang("Object");
+
+        // todo die boxed typen sollten null als null durchreichen
+        paramClasses.put("Number",    new Object[] { Number.class,    "asNumberOrNull" }); aliasJavaLang("Number");
+        paramClasses.put("Byte",      new Object[] { Byte.class,      "asByte" });         aliasJavaLang("Byte");
+        paramClasses.put("Short",     new Object[] { Short.class,     "asShort" });        aliasJavaLang("Short");
+        paramClasses.put("Integer",   new Object[] { Integer.class,   "asInt" });          aliasJavaLang("Integer");
+        paramClasses.put("Long",      new Object[] { Long.class,      "asLong" });         aliasJavaLang("Long");
+        paramClasses.put("Float",     new Object[] { Float.class,     "asFloat" });        aliasJavaLang("Float");
+        paramClasses.put("Double",    new Object[] { Double.class,    "dbl" });            aliasJavaLang("Double");
+
+        paramClasses.put("Character", new Object[] { Character.class, "asChar" });         aliasJavaLang("Character");
+        paramClasses.put("String",    new Object[] { String.class,    "asStringOrNull" }); aliasJavaLang("String");
+    }
+
+    private static void aliasJavaLang(String existing) {
+        paramClasses.put("java.lang." + existing, paramClasses.get(existing));
+    }
+
     private static Class<?> findParamClass(String paramType) throws ClassNotFoundException {
-        switch (paramType) {
-            case "int":    return int.class;
-            case "long":   return long.class;
-            case "float":  return float.class;
-            case "double": return double.class;
-            case "byte":   return byte.class;
-            case "short":  return short.class;
-            case "char":   return char.class;
-            default:       return Class.forName(paramType);
-        }
+        final Object[] entry = paramClasses.get(paramType);
+        if (entry != null) return (Class<?>)entry[0];
+        return Class.forName(paramType);
     }
 
 
@@ -4789,7 +4812,7 @@ public class LambdaJ {
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
 
-        public final Object jambda             (Object... args) { return findJavaMethod(arraySlice(args)); }
+        public final Object jambda             (Object... args) { return findJavaMethod(arraySlice(args)); } // todo vielleicht eine compilerversion von findJavaMethod, die ein Object[] uebernimmt
 
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
@@ -4871,31 +4894,46 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
-        public static double dbl(Object n) { number(n);  return ((Number)n).doubleValue(); }
+        public static double dbl(Object n) { anynumber(n);  return ((Number)n).doubleValue(); }
 
-        private static Character asChar(Object o) {
+        public static Character asChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
             return (Character)o;
         }
 
-        private static int asInt(Object n) { number(n);  return ((Number)n).intValue(); }
+        public static int   asInt(Object n)   { anynumber(n);  return ((Number)n).intValue(); }
+        public static long  asLong(Object n)  { anynumber(n);  return ((Number)n).longValue(); }
+        public static float asFloat(Object n) { anynumber(n);  return ((Number)n).floatValue(); }
+        public static float asByte(Object n)  { anynumber(n);  return ((Number)n).byteValue(); }
+        public static float asShort(Object n) { anynumber(n);  return ((Number)n).shortValue(); }
 
-        private static float asFloat(Object n) { number(n);  return ((Number)n).floatValue(); }
-
-        private static String asStringOrNull(Object o) {
+        public static String asStringOrNull(Object o) {
             if (o == null) return null;
             if (!stringp(o)) errorNotAString(o);
             return o.toString();
         }
 
-        private static Number asNumberOrNull(Object o) {
+        public static Number asNumberOrNull(Object o) {
             if (o == null) return null;
-            number(o);
+            anynumber(o);
             return (Number)o;
         }
 
-        /** error if n is not of type number */
+        /** error if n is not of type number, Murmel number types only */
         private static void number(Object n) { if (numberp(n)) return;  errorNotANumber(n); }
+
+        /** error if n is not of type number, all Java number types */
+        private static void anynumber(Object n) {
+            if (n instanceof Long
+                    || n instanceof Double
+                    || n instanceof Byte
+                    || n instanceof Short
+                    || n instanceof Integer
+                    || n instanceof Float
+                    || n instanceof Number)
+                return;
+            errorNotANumber(n);
+        }
 
         private TurtleFrame asFrame(String s, Object o) {
             final TurtleFrame ret;
@@ -6403,6 +6441,10 @@ public class LambdaJ {
                 return true;
             }
 
+            if (symbolEq(op, "::")) {
+                if (emitJambda(sb, args)) return true;
+            }
+
             for (String prim: primitives)          if (symbolEq(op, prim))    { emitCallPrimitive(sb, "_" + prim, args, env, topEnv, rsfx, null);  return true; }
             for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { emitCallPrimitive(sb, prim[1], args, env, topEnv, rsfx, null);  return true; }
 
@@ -6527,6 +6569,68 @@ public class LambdaJ {
             if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("dbl("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
+        }
+
+        private static boolean emitJambda(WrappingWriter sb, ConsCell args) {
+            varargsMin(":: ", args, 2);
+            final Object strClazz = car(args), strMethod = cadr(args);
+            // if class and method are stringliterals then we can do this at compiletime.
+            // else jambda() will check the runtime type at runtime
+            if (!stringp(strClazz) || !stringp(strMethod)) return false;
+
+            // check if the class exists in the current (the compiler's) VM. If it can't be loaded then don't opencode,
+            // let jambda handle things at runtime, the class may be available then.
+            final Class<?> clazz;
+            try {
+                clazz = Class.forName((String) strClazz);
+            }
+            catch (ClassNotFoundException e) {
+                // todo warn re: performance
+                return false;
+            }
+
+            // all parameter classes (if any) must be one of the classes that we know how to do Murmel->Java conversion else "return false"
+            final ArrayList<Class<?>> paramTypes = new ArrayList<>();
+            final ArrayList<String> paramTypeNames = new ArrayList<>();
+            if (cddr(args) != null) for (Object arg: (ConsCell)cddr(args)) {
+                final String paramType = (String)arg;
+                paramTypeNames.add(paramType);
+
+                final Object[] typeDesc = paramClasses.get(paramType);
+                if (typeDesc == null) return false; // todo warn re: performance
+                final Class<?> paramClass = (Class<?>) typeDesc[0];
+                paramTypes.add(paramClass);
+            }
+
+            // at last check if the method/ constructor with the specified parameter types/ classes exists
+            final Class<?>[] params = paramTypes.isEmpty() ? null : paramTypes.toArray(new Class[0]);
+            final Method m;
+            final int startArg;
+            try {
+                if ("new".equals(strMethod)) { m = null; clazz.getDeclaredConstructor(params);  startArg = 0; }
+                else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; }
+            }
+            catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
+
+            sb.append("(MurmelFunction)(args -> { argCheck(loc, ").append(String.valueOf(paramTypes.size() + startArg)).append(", args.length);  return ");
+            //this is half the speed?!?: sb.append("(MurmelJavaProgram.CompilerPrimitive)(args -> { argCheck(loc, ").append(String.valueOf(paramTypes.size() + startArg)).append(", args.length);  return ");
+
+            if ("new".equalsIgnoreCase((String)strMethod))  sb.append("new ").append(strClazz);
+            else if (Modifier.isStatic(m.getModifiers()))   sb.append(strClazz).append('.').append(strMethod);
+            else                                            sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
+
+            sb.append("(");
+            boolean first = true;
+            if (params != null) for (int i = startArg; i < params.length+startArg; i++) {
+                if (first) first = false;
+                else sb.append(", ");
+                final String conv = (String)paramClasses.get(paramTypeNames.get(i-startArg))[1];
+                if (conv == null) sb.append("args[").append(i).append(']');
+                else              sb.append(conv).append("(args[").append(i).append("])");
+            }
+            sb.append("); })");
+
+            return true;
         }
 
 
