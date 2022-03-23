@@ -5817,18 +5817,8 @@ public class LambdaJ {
                     /// * some functions and operators are opencoded:
                     if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx, isLast)) return;
 
-                    if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "::") && emitJambda(sb, asList("calling ::", cdr(operator)), length(ccArguments))) {
-                        sb.append(".apply(");
-                        boolean first = true;
-                        if (ccArguments != null) {
-                            for (Object arg: ccArguments) {
-                                if (first) first = false;
-                                else sb.append("\n        , ");
-                                emitForm(sb, arg, env, topEnv, rsfx, false);
-                            }
-                        }
-                        else sb.append("NOARGS");
-                        sb.append(')');
+                    if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "::")
+                        && emitJambda(sb, asList("calling ::", cdr(operator)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }
 
@@ -6458,7 +6448,7 @@ public class LambdaJ {
             }
 
             if (symbolEq(op, "::")) {
-                if (emitJambda(sb, args, -1)) return true;
+                if (emitJambda(sb, args, null, null, -1, false, null)) return true;
             }
 
             for (String prim: primitives)          if (symbolEq(op, prim))    { emitCallPrimitive(sb, "_" + prim, args, env, topEnv, rsfx, null);  return true; }
@@ -6588,7 +6578,7 @@ public class LambdaJ {
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
-        private static boolean emitJambda(WrappingWriter sb, ConsCell args, int argCount) {
+        private boolean emitJambda(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean emitCall, ConsCell ccArguments) {
             varargsMin(":: ", args, 2);
             final Object strClazz = car(args), strMethod = cadr(args);
             // if class and method are stringliterals then we can do this at compiletime.
@@ -6630,28 +6620,56 @@ public class LambdaJ {
             catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
 
             final int paramCount = paramTypes.size() + startArg;
-            if (argCount != -1) {
-                if (argCount != paramCount) errorArgCount((String)strMethod, paramCount, paramCount, argCount, null);
+            if (emitCall) {
+                // emit new clazz(args...)/ clazz.method(args...)/ firstarg.method(restargs...)
+                final int argCount = length(ccArguments);
+                if (argCount != paramCount) errorArgCount((String) strMethod, paramCount, paramCount, argCount, null);
+
+                if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
+                else if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
+                else {
+                    // instance method, first arg is the object
+                    sb.append("((").append(strClazz).append(')');
+                    emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
+                    sb.append(").").append(strMethod);
+                    ccArguments = cdr(ccArguments) == null ? null : asList((String)strMethod, cdr(ccArguments));
+                }
+
+                sb.append("(");
+                boolean first = true;
+                if (ccArguments != null) {
+                    int i = startArg;
+                    for (Object arg : ccArguments) {
+                        if (first) first = false;
+                        else sb.append("\n        , ");
+                        final String conv = (String) paramClasses.get(paramTypeNames.get(i-startArg))[1];
+                        if (conv == null) emitForm(sb, arg, env, topEnv, rsfx, false);
+                        else { sb.append(conv).append('(');  emitForm(sb, arg, env, topEnv, rsfx, false);  sb.append(')'); }
+                        i++;
+                    }
+                }
+                sb.append(')');
+            } else {
+                // emit a lambda that contains an argcount check
+                sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
+                sb.append("argCheck(loc, ").append(String.valueOf(paramCount)).append(", args.length);  ");
+                sb.append("return ");
+
+                if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
+                else if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
+                else sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
+
+                sb.append("(");
+                boolean first = true;
+                if (params != null) for (int i = startArg; i < params.length + startArg; i++) {
+                    if (first) first = false;
+                    else sb.append("\n        , ");
+                    final String conv = (String) paramClasses.get(paramTypeNames.get(i - startArg))[1];
+                    if (conv == null) sb.append("args[").append(i).append(']');
+                    else sb.append(conv).append("(args[").append(i).append("])");
+                }
+                sb.append("); }))");
             }
-            sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
-            if (argCount == -1) sb.append("argCheck(loc, ").append(String.valueOf(paramCount)).append(", args.length);  ");
-            sb.append("return ");
-
-            if ("new".equalsIgnoreCase((String)strMethod))  sb.append("new ").append(strClazz);
-            else if (Modifier.isStatic(m.getModifiers()))   sb.append(strClazz).append('.').append(strMethod);
-            else                                            sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
-
-            sb.append("(");
-            boolean first = true;
-            if (params != null) for (int i = startArg; i < params.length+startArg; i++) {
-                if (first) first = false;
-                else sb.append(", ");
-                final String conv = (String)paramClasses.get(paramTypeNames.get(i-startArg))[1];
-                if (conv == null) sb.append("args[").append(i).append(']');
-                else              sb.append(conv).append("(args[").append(i).append("])");
-            }
-            sb.append("); }))");
-
             return true;
         }
 

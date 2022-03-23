@@ -1404,3 +1404,7 @@ compiler: ggf. t als condition optimieren (nicht (_t) != null ausspucken sondern
  ggf. den defaultfall in cond optimieren (aber nur wenns der letzte ist?!? wobei: alles was im cond nach t käme, wär eh dead code?!?)
 
 die methoden im compiler, die code ausspucken umbenamsen: emit...
+
+in emitForm: bei function call könnt ma schaun *was* aufgerufen werden soll, und im falle von compiler primitives (und ggf. "(:: ..."))
+gleich den call ohne funcall() ausspucken. für :: brauchts größere umbauten, nicht mehr ""(MurmelFunction)args->..."
+-> geht nur/ macht nur sinn für ::

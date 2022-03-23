@@ -9,19 +9,25 @@
 #+murmel (progn
 (require "mlib")
 
-(define m%long->int    (:: "java.lang.Long"   "intValue"))
-(define m%number->int  (:: "java.lang.Number" "intValue"))
+(defmacro m%long->int (val)
+  `((:: "java.lang.Long" "intValue") ,val))
 
-(define m%int->long    (:: "java.lang.Integer" "longValue"))
-(define m%number->long (:: "java.lang.Number"  "longValue"))
+(defmacro m%int->long (val)
+  `((:: "java.lang.Integer" "longValue") ,val))
 
-(define m%svref (:: "java.util.ArrayList" "get"    "int"))
-(define m%svset (:: "java.util.ArrayList" "set"    "int" "java.lang.Object"))
+(defmacro m%svref (obj idx)
+  `((:: "java.util.ArrayList" "get"    "int") ,obj idx))
+
+(defmacro m%svset (obj idx val)
+  `((:: "java.util.ArrayList" "set" "int" "java.lang.Object") ,obj ,idx ,val))
+
 (define m%svlen (:: "java.util.ArrayList" "size"))
-(define m%svadd (:: "java.util.ArrayList" "add"    "java.lang.Object"))
-(define m%svrem (:: "java.util.ArrayList" "remove" "int"))
-(define m%svmak (:: "java.util.ArrayList" "new"))
-(define m%svmak-capacity (:: "java.util.ArrayList" "new" "int"))
+
+(defmacro m%svadd (obj val)
+  `((:: "java.util.ArrayList" "add"    "java.lang.Object") ,obj ,val))
+
+(defmacro m%svmak-capacity (capacity)
+  `((:: "java.util.ArrayList" "new" "int") ,capacity))
 
 (defun make-vector (size)
   (let ((v (m%svmak-capacity (m%long->int size))))
