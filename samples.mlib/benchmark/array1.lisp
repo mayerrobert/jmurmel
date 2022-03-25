@@ -16,18 +16,20 @@
   `((:: "java.lang.Integer" "longValue") ,val))
 
 (defmacro m%svref (obj idx)
-  `((:: "java.util.ArrayList" "get"    "int") ,obj idx))
+  `((:: "java.util.ArrayList" "get" "int") ,obj ,idx))
 
 (defmacro m%svset (obj idx val)
   `((:: "java.util.ArrayList" "set" "int" "java.lang.Object") ,obj ,idx ,val))
 
-(define m%svlen (:: "java.util.ArrayList" "size"))
+(defmacro m%svlen (obj)
+  `((:: "java.util.ArrayList" "size") ,obj))
 
 (defmacro m%svadd (obj val)
-  `((:: "java.util.ArrayList" "add"    "java.lang.Object") ,obj ,val))
+  `((:: "java.util.ArrayList" "add" "java.lang.Object") ,obj ,val))
 
 (defmacro m%svmak-capacity (capacity)
   `((:: "java.util.ArrayList" "new" "int") ,capacity))
+
 
 (defun make-vector (size)
   (let ((v (m%svmak-capacity (m%long->int size))))
@@ -36,14 +38,26 @@
         (progn (m%svadd v nil)
                (loop (1- n)))))))
 
+
 (defun vector-set! (v idx elem)
   (m%svset v (m%long->int idx) elem))
+
+(defmacro vector-set! (v idx elem)
+  `(m%svset ,v (m%long->int ,idx) ,elem))
+
 
 (defun vector-ref (v idx)
   (m%svref v (m%long->int idx)))
 
+(defmacro vector-ref (v idx)
+  `(m%svref ,v (m%long->int ,idx)))
+
+
 (defun vector-length (v)
   (m%int->long (m%svlen v)))
+
+;(defmacro vector-length (v)
+;  `(m%int->long (m%svlen ,v)))
 )
 
 #-murmel (progn
@@ -84,7 +98,5 @@
       ((= i m) result)))
 
 
-
-;(run 10 10000)
 
 (bench "array1 10 10000" (run 10 10000) *default-duration*) ; ==> 10000
