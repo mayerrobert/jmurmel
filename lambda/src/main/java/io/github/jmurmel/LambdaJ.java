@@ -2349,7 +2349,6 @@ public class LambdaJ {
     final   ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
     private ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
-    static ConsCell arraySlice(Object[] o, int offset) { return o == null || offset >= o.length ? null : new ArraySlice(o, offset); }
 
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
 
@@ -2420,15 +2419,15 @@ public class LambdaJ {
         return false;
     }
 
-    static boolean  consp(Object o)    { return o instanceof ConsCell; }
-    static boolean  atom(Object o)     { return !(o instanceof ConsCell); }                // ! consp(x)
-    static boolean  symbolp(Object o)  { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
-    static boolean  listp(Object o)    { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
-    static boolean  primp(Object o)    { return o instanceof Primitive; }
-    static boolean  numberp(Object o)  { return o instanceof Long || o instanceof Double; }
-    static boolean  stringp(Object o)  { return o instanceof String; }
-    static boolean  floatp(Object o)   { return o instanceof Double; }
-    static boolean  integerp(Object o) { return o instanceof Long; }
+    static boolean  consp(Object o)      { return o instanceof ConsCell; }
+    static boolean  atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
+    static boolean  symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+    static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+    static boolean  primp(Object o)      { return o instanceof Primitive; }
+    static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double; }
+    static boolean  stringp(Object o)    { return o instanceof String; }
+    static boolean  floatp(Object o)     { return o instanceof Double; }
+    static boolean  integerp(Object o)   { return o instanceof Long; }
     static boolean  characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
@@ -2436,7 +2435,8 @@ public class LambdaJ {
     static boolean  consp(ConsCell ignored)  { throw errorInternal("consp(ConsCell c) should NOT be called"); }
     static boolean  listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
 
-    // todo ArraySlice muesste auch gehen?
+    static ConsCell arraySlice(Object[] o, int offset) { return o == null || offset >= o.length ? null : new ArraySlice(o, offset); }
+
     private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
         ConsCell ret = null, insertPos = null;
@@ -2587,6 +2587,8 @@ public class LambdaJ {
         if (maybeList instanceof ArraySlice) {
             final ArraySlice slice = (ArraySlice)maybeList;
             if (slice.offset == 0) return slice.arry;
+            if (slice.offset >= slice.arry.length)
+                return EMPTY_ARRAY;
             return Arrays.copyOfRange(slice.arry, slice.offset, slice.arry.length);
         }
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
@@ -3653,7 +3655,7 @@ public class LambdaJ {
         @Override
         public Object apply(Object... args) {
             if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-            return eval(cons(lambda, list(args)), env, 0, 0, 0);
+            return eval(cons(lambda, arraySlice(args, 0)), env, 0, 0, 0);
         }
     }
 

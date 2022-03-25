@@ -1,5 +1,12 @@
-Ideen zur Beschleunigung des Interpreters, eigentlich gehts immer um das Vermeiden der linearen Suche in assoc beim aufloesen von Symbols
+Ideen zur Beschleunigung des Interpreters, eigentlich gehts immer um das Vermeiden der linearen Suche in assq beim aufloesen von Symbols
 =========================================
+
+der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
+-> oder macroexpand-phase vorgeschaltet
+für opencoded functions argcount check 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen
+
+evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
+-> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
 
 die ganzen havXXX() in eval sollten unnoetig sein: wenn die special forms abgedreht sind, sind die sXXX == null,
 und dann trifft das ganze if(sXXX) nicht zu
