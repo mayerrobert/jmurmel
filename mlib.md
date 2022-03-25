@@ -57,7 +57,7 @@ functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
 
 functions and macros inspired by [serapeum](https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md)
 
-- [with-accumulator](#macro-with-accumulator), [summing](#macro-with-accumulator), [collecting](#macro-with-accumulator), [reverse-collecting](#macro-with-accumulator)
+- [with-accumulator](#macro-with-accumulator), [summing](#macro-summing), [collecting](#macro-collecting), [reverse-collecting](#macro-reverse-collecting)
 - [plist-keys](#function-plist-keys), [plist-values](#function-plist-values)
 
 as well as the following additional functions and macros:
