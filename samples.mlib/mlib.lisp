@@ -66,6 +66,8 @@
 ;;; = Function: caar..cdddr
 ;;;     (c..r lst) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
 (defun  caar (l) (car (car l)))
 (defun  cadr (l) (car (cdr l)))
@@ -83,9 +85,27 @@
 (defun cdddr (l) (cdr (cddr l)))
 
 
+(defmacro caar (l)  `(car (car ,l)))
+(defmacro cadr (l)  `(car (cdr ,l)))
+(defmacro cdar (l)  `(cdr (car ,l)))
+(defmacro cddr (l)  `(cdr (cdr ,l)))
+
+(defmacro caaar (l) `(car (car (car ,l))))
+(defmacro caadr (l) `(car (car (cdr ,l))))
+(defmacro cadar (l) `(car (cdr (car ,l))))
+(defmacro caddr (l) `(car (cdr (cdr ,l))))
+
+(defmacro cdaar (l) `(cdr (car (car ,l))))
+(defmacro cdadr (l) `(cdr (car (cdr ,l))))
+(defmacro cddar (l) `(cdr (cdr (car ,l))))
+(defmacro cdddr (l) `(cdr (cdr (cdr ,l))))
+
+
 ;;; = Function: nthcdr, nth
 ;;;     (nthcdr n lst) -> nth-tail
 ;;;     (nth n lst) -> nth-element
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `nthcdr` applies `cdr` n times and returns the result.
 ;;; `nth` works as if `(car (nthcdr n lst))` was invoked.
@@ -96,10 +116,14 @@
 
 (defun nth (n l)
   (car (nthcdr n l)))
+(defmacro nth (n l)
+  `(car (nthcdr ,n ,l)))
 
 
 ;;; = Function: last
 ;;;     (last lst) -> last-cons-or-nil
+;;;
+;;; Since: 1.2
 ;;;
 ;;; `last` returns the last cons of a proper or dotted list
 ;;; or `nil` for the empty list.
@@ -110,6 +134,8 @@
 
 ;;; = Function: nconc
 ;;;     (nconc lists*) -> concatenated-list
+;;;
+;;; Since: 1.2
 ;;;
 ;;; `nconc` concatenates lists, each list but the last is modified.
 ;;; If no lists are supplied, `nconc` returns `nil`.
@@ -154,6 +180,8 @@
 ;;; = Macro: destructuring-bind
 ;;;     (destructuring-bind (vars*) (expressions*) forms*)
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Murmel's `destructuring-bind` is a subset of CL's `destructuring-bind`,
 ;;; trees are not supported, only lists are.
 ;;;
@@ -166,6 +194,8 @@
 
 ;;; = Function: get-setf-expansion
 ;;;     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
+;;;
+;;; Since: 1.1
 (defun get-setf-expansion (place)
   (let ((read-var (gensym)) (store-var (gensym)))
     (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
@@ -194,6 +224,8 @@
 
 ;;; = Macro: setf
 ;;;     (setf pair*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Takes pairs of arguments like `setq`. The first is a place and the second
 ;;; is the value that is supposed to go into that place. Returns the last
@@ -241,6 +273,8 @@
 ;;;     (incf place delta-form*) -> new-value
 ;;;     (decf place delta-form*) -> new-value
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `incf` and `decf` are used for incrementing and decrementing
 ;;; the value of `place`, respectively.
 ;;;
@@ -257,6 +291,8 @@
 ;;; = Macro: *f, /f
 ;;;     (*f place delta-form*) -> new-value
 ;;;     (/f place delta-form*) -> new-value
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `*f` and `/f` are used for multiplying and dividing
 ;;; the value of `place`, respectively.
@@ -277,6 +313,8 @@
 ;;; = Macro: +f, -f
 ;;;     (+f place delta-form*) -> new-value
 ;;;     (-f place delta-form*) -> new-value
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `+f` and `+f` are used for adding and subtracting
 ;;; to/ from the value of `place`, respectively.
@@ -300,6 +338,8 @@
 ;;; = Macro: push
 ;;;     (push item place) -> new-place-value
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `push` prepends `item` to the list that is stored in `place`,
 ;;; stores the resulting list in `place`, and returns the list.
 (defmacro push (item place)
@@ -313,6 +353,8 @@
 
 ;;; = Macro: pop
 ;;;     (pop place) -> element
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `pop` reads the value of `place`, remembers the car of the list which
 ;;; was retrieved, writes the cdr of the list back into the `place`,
@@ -334,6 +376,8 @@
 ;;; = Function: acons
 ;;;     (acons key datum alist) -> new-alist
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Prepends `alist` with a new `(key . datum)` tuple
 ;;; and returns the modified list.
 (defun acons (key datum alist)
@@ -343,12 +387,18 @@
 ;;; = Function: not
 ;;;     (not form) -> boolean
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Logical not.
 (define not null) ; this should be faster than (defun not (e) (null e))
+(defmacro not (form)
+  `(null ,form))
 
 
 ;;; = Macro: and
 ;;;     (and forms*) -> boolean
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Short-circuiting logical and.
 ;;; Return `t` unless any of the `forms` evaluate to `nil`,
@@ -364,6 +414,8 @@
 
 ;;; = Macro: or
 ;;;     (or forms*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Short-circuiting logical or.
 ;;; Return `nil` unless any of the `forms` evaluate to non-nil,
@@ -383,6 +435,8 @@
 ;;; = Function: abs
 ;;;     (abs n) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Return the absoute value of a number.
 (defun abs (n)
   (if (< n 0) (- n) (+ n)))
@@ -391,12 +445,16 @@
 ;;; = Function: zerop
 ;;;     (zerop number) -> boolean
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Is this number zero?
 (defun zerop (n) (= n 0))
 
 
 ;;; = Function: evenp
 ;;;     (evenp number) -> boolean
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Is this number even?
 (defun evenp (n) (= 0.0 (mod n 2)))
@@ -405,12 +463,16 @@
 ;;; = Function: oddp
 ;;;     (oddp number) -> boolean
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Is this number odd?
 (defun oddp (n) (= 1.0 (mod n 2)))
 
 
 ;;; = Function: char=
 ;;;     (char= characters+) -> boolean
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Return `t` if all of the arguments are the same character.
 (defun char= (c . more)
@@ -427,6 +489,8 @@
 ;;; = Function: char
 ;;;     (char string n) -> nth-character
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Return the n-th character of the string `string`, `n` is 0-based.
 (defun char (str n)
   (nth n str))
@@ -434,6 +498,8 @@
 
 ;;; = Function: equal
 ;;;     (equal a b) -> boolean
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Return `t` if any of the following is true:
 ;;;
@@ -449,6 +515,8 @@
 ;;; = Macro: prog1, prog2
 ;;;     (prog1 first-form forms*) -> result-1
 ;;;     (prog2 first-form second-form forms*) -> result-2
+;;;
+;;; Since: 1.1
 (defmacro prog1 (first-form . forms)
   (if forms
         (let ((result (gensym)))
@@ -471,6 +539,8 @@
 ;;; = Macro: when
 ;;;     (when condition forms*) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Execute `forms` if `condition` evaluates to true
 ;;; and return the result of the last form if any.
 ;;; Otherwise if `condition` evaluates to false,
@@ -486,6 +556,8 @@
 
 ;;; = Macro: unless
 ;;;     (unless condition forms*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Execute `forms` if `condition` evaluates to false
 ;;; and return the result of the last form if any.
@@ -503,6 +575,8 @@
 
 ;;; = Macro: case
 ;;;      (case keyform (keys forms*)* (t forms*)?) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `keys` can be a single key or a list of keys, keys will not be evaluated.
 ;;; `keyform` will be matched against `keys` using `eql`, the `forms` of the
@@ -533,6 +607,8 @@
 ;;; = Macro: do, do*
 ;;;     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
 ;;;     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
 (defmacro do (var-defs test-and-result . forms)
@@ -576,6 +652,8 @@
 ;;; = Macro: dotimes
 ;;;     (dotimes (var count-form [result-form]) statement*) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm
 (defmacro dotimes (exp . body)
   (let ((var (car exp))
@@ -595,6 +673,8 @@
 
 ;;; = Macro: dolist
 ;;;     (dolist (var list-form [result-form]) statement*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
 (defmacro dolist (exp . body)
@@ -622,12 +702,16 @@
 ;;; = Function: identity
 ;;;     (identity object) -> object
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `identity` returns its argument `object`.
 (defun identity (x) x)
 
 
 ;;; = Function: constantly
 ;;;     (constantly value) -> function
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `constantly` returns a function that accepts any number of arguments,
 ;;; that has no side-effects, and that always returns `value`.
@@ -637,6 +721,8 @@
 
 ;;; = Function: complement
 ;;;     (complement function) -> complement-function
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `complement` returns a function that takes the same arguments as `function`,
 ;;; and has the same side-effect behavior as `function`, but returns only
@@ -649,6 +735,8 @@
 
 ;;; = Function: member
 ;;;     (member item list [test]) -> tail
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `member` searches list for `item` or for a top-level element that
 ;;; satisfies the `test`.
@@ -681,6 +769,8 @@
 ;;; = Function: reverse
 ;;;     (reverse sequence) -> reversed-sequence
 ;;;
+;;; Since: 1.1
+;;;
 ;;; If `sequence` is a list then return a fresh list
 ;;; with elements in reversed order, if `sequence`
 ;;; is a string then return a fresh reversed string.
@@ -694,6 +784,8 @@
 
 ;;; = Function: unzip
 ;;;     (unzip lst) -> result-list
+;;;
+;;; Since: 1.2
 ;;;
 ;;; `unzip` takes a list of lists, and returns a list
 ;;; containing the initial element of each such list,
@@ -714,6 +806,8 @@
 ;;; = Function: unzip-tails
 ;;;     (unzip-tails lst) -> result-list
 ;;;
+;;; Since: 1.2
+;;;
 ;;; `unzip-tails` takes a list of lists, and returns a list
 ;;; containing the `cdr`s of each such list.
 ;;;
@@ -725,6 +819,8 @@
 
 ;;; = Function: map-into
 ;;;     (map-into result-list function list*) -> result-list
+;;;
+;;; Since: 1.2
 ;;;
 ;;; Destructively modifies `result-list` to contain the results
 ;;; of applying `function` to each element in the argument lists in turn.
@@ -783,6 +879,8 @@
 ;;; = Function: mapcar
 ;;;     (mapcar function sequence+) -> list
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent items of the given sequences.
 ;;; All `function` application results will be combined into a list
@@ -792,6 +890,8 @@
 
 ;;; = Function: maplist
 ;;;     (maplist function sequence+) -> list
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
@@ -804,6 +904,8 @@
 ;;; = Function: mapc
 ;;;     (mapc function sequence+) -> first-arg
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent cars items of the given sequences.
 (m%mapx mapc    progn   car unzip t nil)
@@ -812,6 +914,8 @@
 ;;; = Function: mapl
 ;;;     (mapl function sequence+) -> first-arg
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
 (m%mapx mapl    progn   nil nil t nil)
@@ -819,6 +923,8 @@
 
 ;;; = Function: mapcan
 ;;;     (mapcan function sequence+) -> concatenated-results
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent items of the given sequences.
@@ -831,6 +937,8 @@
 ;;; = Function: mapcon
 ;;;     (mapcon function sequence+) -> concatenated-results
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will applied to subsequent tails of the given sequences.
 ;;;
@@ -842,6 +950,8 @@
 ;;; = Function: every
 ;;;     (every function sequence+) -> boolean
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
 ;;;
@@ -852,6 +962,8 @@
 
 ;;; = Function: some
 ;;;     (some function sequence+) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
@@ -867,6 +979,8 @@
 ;;; = Function: notevery
 ;;;     (notevery function sequence+) -> boolean
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
 ;;;
@@ -878,6 +992,8 @@
 ;;; = Function: notany
 ;;;     (notany function sequence+) -> boolean
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `function` must accept as many arguments as sequences are given,
 ;;; and will be applied to subsequent items of the given sequences.
 ;;;
@@ -888,6 +1004,8 @@
 
 ;;; = Function: remove-if
 ;;;     (remove-if pred list) -> list
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Return a fresh list without the elements for which `pred`
 ;;; evaluates to non-nil.
@@ -903,6 +1021,8 @@
 ;;; = Function: remove
 ;;;     (remove elem list) -> list
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Return a fresh list without occurrences of `elem`.
 ;;; An occurrence is determined by `eql`.
 (defun remove (elem l)
@@ -916,6 +1036,8 @@
 
 ;;; = Function: reduce
 ;;;     (reduce func sequence [from-end-p]) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; If `sequence` is empty then `reduce` will return `(func)`.
 ;;;
@@ -951,6 +1073,8 @@
 ;;; = Function: write-char
 ;;;     (write-char c) -> c
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `write-char` outputs `c` to stdout.
 (defun write-char (c)
   (if (characterp c)
@@ -959,6 +1083,8 @@
 
 
 ;;; = Function: terpri, prin1, princ, print
+;;;
+;;; Since: 1.1
 (defun terpri () (writeln) nil)
 
 (defun prin1 (o) (write o) o)
@@ -970,6 +1096,8 @@
 
 ;;; = Function: pprint
 ;;;     (pprint object) -> t
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Simple pretty printer,
 ;;; based on https://picolisp.com/wiki/?prettyPrint .
@@ -1013,6 +1141,8 @@
 ;;; = Function: list-length
 ;;;     (list-length list-or-string) -> length
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Returns the length of `list-or-string` if it is a string or proper list.
 ;;; Returns `nil` if `list-or-string` is a circular list.
 ;;;
@@ -1037,6 +1167,8 @@
 ;;; = Function: length
 ;;;     (length sequence) -> length
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Same as `list-length`.
 (define length list-length)
 
@@ -1055,6 +1187,8 @@
 ;;; = Macro: time
 ;;;     (time form) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; `time` evaluates `form` and prints various timing data.
 (defmacro time (expr)
   `(call-with-timing (lambda () ,expr)))
@@ -1062,6 +1196,8 @@
 
 ;;; = Function: circular-list
 ;;;     (circular-list elems*) -> circular-list
+;;;
+;;; Since: 1.2
 ;;;
 ;;; Creates a circular list of elements.
 (defun circular-list elems
@@ -1076,6 +1212,8 @@
 
 ;;; = Function: compose
 ;;;     (compose func1 funcs*) -> function
+;;;
+;;; Since: 1.2
 ;;;
 ;;; Returns a function that composes the given functions, applying the last function first
 ;;; and the first function last. The compose function allows the last function to consume
@@ -1094,6 +1232,8 @@
 
 ;;; = Function: conjoin
 ;;;     (conjoin predicate more-predicates*) -> function
+;;;
+;;; Since: 1.2
 ;;;
 ;;; Returns a function that applies each of `predicate` and `more-predicates`
 ;;; functions in turn to its arguments, returning `nil` if any of the predicates
@@ -1118,6 +1258,8 @@
 ;;; = Function: disjoin
 ;;;     (disjoin predicate more-predicates*) -> function
 ;;;
+;;; Since: 1.2
+;;;
 ;;; Returns a function that applies each of `predicate` and `more-predicates`
 ;;; functions in turn to its arguments, returning the value of the first
 ;;; predicate that returns true, without calling the remaining predicates.
@@ -1133,6 +1275,8 @@
 ;;; = Function: curry
 ;;;     (curry func args*) -> function
 ;;;
+;;; Since: 1.2
+;;;
 ;;; Returns a function that applies `args` and the arguments it is called with to `func`.
 (defun curry (func . args)
   (lambda callargs (apply func (append args callargs))))
@@ -1141,6 +1285,8 @@
 ;;; = Function: rcurry
 ;;;     (rcurry func args*) -> function
 ;;;
+;;; Since: 1.2
+;;;
 ;;; Returns a function that applies the arguments it is called with and `args` to `func`.
 (defun rcurry (func . args)
   (lambda callargs (apply func (append callargs args))))
@@ -1148,6 +1294,8 @@
  
 ;;; = Macro: with-gensyms
 ;;;     (with-gensyms (names*) forms*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; `with-gensyms` is a macro commonly used by Common Lispers
 ;;; to help with avoiding name capture when writing macros.
@@ -1161,6 +1309,8 @@
 
 ;;; = Macro: ->
 ;;;     (-> forms*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; thread-first, inspired by https://github.com/amirgamil/lispy/blob/master/lib/library.lpy
 ;;;
@@ -1187,6 +1337,8 @@
 ;;; = Macro: ->>
 ;;;     (->> forms*) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; thread-last
 ;;;
 ;;; Same as `->` but inserts first form as last argument of the second form, and so forth.
@@ -1212,6 +1364,8 @@
 ;;; = Macro: and->
 ;;;     (and-> forms*) -> result
 ;;;
+;;; Since: 1.1
+;;;
 ;;; Short-circuiting thread-first
 ;;;
 ;;; Same as `->` but if one function returns `nil` then the remaining
@@ -1235,6 +1389,8 @@
 
 ;;; = Macro: and->>
 ;;;     (and->> forms*) -> result
+;;;
+;;; Since: 1.1
 ;;;
 ;;; Short circuiting thread-last
 ;;;

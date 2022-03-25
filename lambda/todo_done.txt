@@ -1410,3 +1410,8 @@ die methoden im compiler, die code ausspucken umbenamsen: emit...
 in emitForm: bei function call könnt ma schaun *was* aufgerufen werden soll, und im falle von compiler primitives (und ggf. "(:: ..."))
 gleich den call ohne funcall() ausspucken. für :: brauchts größere umbauten, nicht mehr ""(MurmelFunction)args->..."
 -> geht nur/ macht nur sinn für ::
+
+mlib checken, obs ggf. zu functions zusätzlich makros geben sollte
+-> z.B. (defmacro not..., ggf. alle "aliases"?
+
+jeweils "since" in mlib anführen

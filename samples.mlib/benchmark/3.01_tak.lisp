@@ -6,7 +6,7 @@
 
 
 (defun tak (x y z)
- (if (null (< y x)) ; original had "not", null is faster in jmurmel
+ (if (not (< y x))
        z
   (tak (tak (1- x) y z)
        (tak (1- y) z x)

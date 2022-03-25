@@ -28,10 +28,6 @@ passt wsl für vieles, nicht nur summieren. vielleicht ein metamakro, und den ak
 -> siehe auch serapeum with-collector und collecting
 
 
-mlib checken, obs ggf. zu functions zusätzlich makros geben sollte
--> z.B. (defmacro not..., ggf. alle "aliases"?
-jeweils "since" in mlib anführen
-
 :: könnte statt nur strings auch symbols schlucken:
 -> (:: java.lang.System currentTimeMillis)
    -> nein, geht so nicht weil :: ist keine special form, der versuch, die symbols aufzulösen gibt fehler
