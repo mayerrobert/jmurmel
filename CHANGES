@@ -19,7 +19,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * added some benchmarks and found some speedups
 
  * mlib: added functions last, map-into, nconc,
-   circular-list, compose, conjoin, disjoin, curry, rcurry,
+   circular-list, compose, conjoin, disjoin, curry, rcurry, doplist,
    unzip, unzip-tails
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 

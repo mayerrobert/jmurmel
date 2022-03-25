@@ -450,6 +450,15 @@
 )
 
 
+; test doplist
+#+murmel
+(tests doplist
+  (setq temp-two nil) => nil
+  (doplist (k v '(k1 1 k2 2 k3 3) temp-two) (push (cons k v) temp-two)) => ((k3 . 3) (k2 . 2) (k1 . 1))
+  temp-two => ((k3 . 3) (k2 . 2) (k1 . 1))
+)
+
+
 ; test identity
 (tests identity
   (identity 101) =>  101

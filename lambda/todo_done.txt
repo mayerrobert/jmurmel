@@ -1415,3 +1415,6 @@ mlib checken, obs ggf. zu functions zusätzlich makros geben sollte
 -> z.B. (defmacro not..., ggf. alle "aliases"?
 
 jeweils "since" in mlib anführen
+
+(doplist (k v plist)
+  forms...)

@@ -3,9 +3,6 @@ https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md#plist-keys-plist
 (serapeum:plist-keys '(:a 1 :b 2))
 ;; (:A :B)
 
-(doplist (k v plist)
-  forms...)
-
 (defun plist-keys (plist)
   "Return the keys of a plist."
   (collecting

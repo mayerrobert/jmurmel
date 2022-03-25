@@ -48,6 +48,7 @@ functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev
 - [compose](#function-compose)
 - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 - [curry](#function-curry), [rcurry](#function-rcurry)
+- [doplist](#macro-doplist)
 - [with-gensyms](#macro-with-gensyms)
 
 functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
@@ -343,6 +344,14 @@ Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm
 Since: 1.1
 
 Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+
+### Macro: doplist
+    (doplist (key-var value-var plist-form [result-form]) statement*) -> result
+
+Since: 1.2
+
+Iterates over key-value pairs of `plist-form`.
+Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
 
 ### Function: identity
     (identity object) -> object

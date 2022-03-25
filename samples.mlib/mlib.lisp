@@ -47,6 +47,7 @@
 ;;; - [compose](#function-compose)
 ;;; - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 ;;; - [curry](#function-curry), [rcurry](#function-rcurry)
+;;; - [doplist](#macro-doplist)
 ;;; - [with-gensyms](#macro-with-gensyms)
 ;;;
 ;;; functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
@@ -684,12 +685,36 @@
         (loop (gensym))
         (result (caddr exp)))
     `(let ,loop ((,lst ,listform))
-       (let ((,var (car ,lst)))
-         (if ,lst
-               (progn
-                 ,@body
-                 (,loop (cdr ,lst)))
-           ,result)))))
+       (if ,lst
+             (let ((,var (car ,lst)))
+               ,@body
+               (,loop (cdr ,lst)))
+           ,result))))
+
+
+;;; = Macro: doplist
+;;;     (doplist (key-var value-var plist-form [result-form]) statement*) -> result
+;;;
+;;; Since: 1.2
+;;;
+;;; Iterates over key-value pairs of `plist-form`.
+;;; Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
+(defmacro doplist (exp . body)
+  (let ((key-var (car exp))
+        (value-var (cadr exp))
+        (listform (caddr exp))
+        (lst (gensym))
+        (loop (gensym))
+        (result (car (cdddr exp))))
+    `(let ,loop ((,lst ,listform))
+       (if ,lst
+             (if (cdr ,lst)
+                   (let ((,key-var (car ,lst))
+                         (,value-var (cadr ,lst)))
+                     ,@body
+                     (,loop (cddr ,lst)))
+               (fatal "odd number of elements in plist"))
+         ,result))))
 
 
 ;(defmacro while (expr . body)
