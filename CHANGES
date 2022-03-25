@@ -20,7 +20,8 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
 
  * mlib: added functions last, map-into, nconc,
    circular-list, compose, conjoin, disjoin, curry, rcurry, doplist,
-   unzip, unzip-tails
+   unzip, unzip-tails,
+   with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
  * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
  * backquote expansion generates more efficient code

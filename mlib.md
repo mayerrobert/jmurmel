@@ -55,6 +55,11 @@ functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
 
 - [unzip](#function-unzip)
 
+functions and macros inspired by [serapeum](https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md)
+
+- [with-accumulator](#macro-with-accumulator), [summing](#macro-with-accumulator), [collecting](#macro-with-accumulator), [reverse-collecting](#macro-with-accumulator)
+- [plist-keys](#function-plist-keys), [plist-values](#function-plist-values)
+
 as well as the following additional functions and macros:
 
 - [unzip-tails](#function-unzip-tails)
@@ -750,3 +755,80 @@ Short circuiting thread-last
 
 Same as `->>` but if one function returns nil then the remaining
 functions are not called and the overall result is `nil`.
+
+### Macro: with-accumulator
+    (with-accumulator accumulator-name accumulator start-value-form forms*) -> result
+
+Since: 1.2
+
+Within `forms`, bind `accumulator-name` to a function of one argument that "accumulates" the arguments
+of all invocations. This accumulator-function will be constructed from the two-argument-function `accumulator`
+which will be invoked with two arguments: "accumulated-value so far" and "argument to `accumulator-name`".
+"accumulated-value so far" will be initialized from `start-value-form`.
+
+Sample usage:
+
+    (defun factorial (n)
+      (with-accumulator mult * 1 (dotimes (i 50) (mult (1+ i)))))
+
+    (factorial 50) ; ==> 3.0414093201713376E64
+
+### Macro: summing
+    (summing forms*) -> result-sum
+
+Since: 1.2
+
+Within `forms`, bind `sum` to a function of one argument that sums the arguments
+of all invocations.
+
+Sample usage:
+
+    (summing (dotimes (i 10) (sum i))) ; ==> 45.0
+
+### Macro: reverse-collecting
+    (reverse-collecting forms*) -> result-list
+
+Since: 1.2
+
+Within `forms`, bind `collect` to a function of one argument that accumulates
+all the arguments it has been called with in reverse order.
+
+Sample usage:
+
+    (reverse-collecting (dotimes (i 10) (collect i)))
+    ; ==> (9 8 7 6 5 4 3 2 1 0)
+
+### Macro: collecting
+    (collecting forms*) -> result-list
+
+Since: 1.2
+
+Within `forms`, bind `collect` to a function of one argument that accumulates
+all the arguments it has been called with in order.
+
+Sample usage:
+
+    (collecting (dotimes (i 10) (collect i)))
+    ; ==> (0 1 2 3 4 5 6 7 8 9)
+
+### Function: plist-keys
+    (plist-keys plist) -> result-list
+
+Since: 1.2
+
+Return the keys of a plist.
+
+Sample usage:
+
+    (plist-keys '(a 1 b 2 c 3)) ; ==> (a b c)
+
+### Function: plist-values
+    (plist-values plist) -> result-list
+
+Since: 1.2
+
+Return the values of a plist.
+
+Sample usage:
+
+    (plist-values '(a 1 b 2 c 3)) ; ==> (1 2 3)

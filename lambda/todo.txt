@@ -1,29 +1,4 @@
-https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md#plist-keys-plist
-
-(serapeum:plist-keys '(:a 1 :b 2))
-;; (:A :B)
-
-(defun plist-keys (plist)
-  "Return the keys of a plist."
-  (collecting
-    (doplist (k v plist)
-      (collect k))))
-
-auch: plist-values
-
-
-inspired by serapeum:
-(defmacro summing (startval . body)
-...
-
-expandiert irgendwie in eine labels-form (und eine let-form für accumulator, oder let* für beides), die hat sum als lokale funktion und sum summiert das argument auf
-im body kann man sum aufrufen
-nach body gibts "return summe"
-
-passt wsl für vieles, nicht nur summieren. vielleicht ein metamakro, und den akkumulator (ein closure) und akkumulatorname als makro-parameter?
--> kann man das primesieve damit abbilden?
--> siehe auch serapeum with-collector und collecting
-
+tests für with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
 
 :: könnte statt nur strings auch symbols schlucken:
 -> (:: java.lang.System currentTimeMillis)

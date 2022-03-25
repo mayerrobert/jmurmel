@@ -54,6 +54,11 @@
 ;;;
 ;;; - [unzip](#function-unzip)
 ;;;
+;;; functions and macros inspired by [serapeum](https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md)
+;;;
+;;; - [with-accumulator](#macro-with-accumulator), [summing](#macro-with-accumulator), [collecting](#macro-with-accumulator), [reverse-collecting](#macro-with-accumulator)
+;;; - [plist-keys](#function-plist-keys), [plist-values](#function-plist-values)
+;;;
 ;;; as well as the following additional functions and macros:
 ;;;
 ;;; - [unzip-tails](#function-unzip-tails)
@@ -713,7 +718,7 @@
                          (,value-var (cadr ,lst)))
                      ,@body
                      (,loop (cddr ,lst)))
-               (fatal "odd number of elements in plist"))
+               (fatal "doplist: odd number of elements in plist"))
          ,result))))
 
 
@@ -1437,3 +1442,115 @@
           `(let ((,temp ,init))
              (and ,@forms)))
     (car terms)))
+
+
+;;; = Macro: with-accumulator
+;;;     (with-accumulator accumulator-name accumulator start-value-form forms*) -> result
+;;;
+;;; Since: 1.2
+;;;
+;;; Within `forms`, bind `accumulator-name` to a function of one argument that "accumulates" the arguments
+;;; of all invocations. This accumulator-function will be constructed from the two-argument-function `accumulator`
+;;; which will be invoked with two arguments: "accumulated-value so far" and "argument to `accumulator-name`".
+;;; "accumulated-value so far" will be initialized from `start-value-form`.
+;;;
+;;; Sample usage:
+;;;
+;;;     (defun factorial (n)
+;;;       (with-accumulator mult * 1 (dotimes (i 50) (mult (1+ i)))))
+;;;
+;;;     (factorial 50) ; ==> 3.0414093201713376E64
+(defmacro with-accumulator (name accum start-value-form . body)
+  (let ((result (gensym))
+        (delta (gensym)))
+    `(let* ((,result ,start-value-form)
+            (,name (lambda (,delta) (setq ,result (,accum ,result ,delta)))))
+        ,@body
+        ,result)))
+
+
+;;; = Macro: summing
+;;;     (summing forms*) -> result-sum
+;;;
+;;; Since: 1.2
+;;;
+;;; Within `forms`, bind `sum` to a function of one argument that sums the arguments
+;;; of all invocations.
+;;;
+;;; Sample usage:
+;;;
+;;;     (summing (dotimes (i 10) (sum i))) ; ==> 45.0
+(defmacro summing body
+  `(with-accumulator sum + 0 ,@body))
+
+
+;;; = Macro: reverse-collecting
+;;;     (reverse-collecting forms*) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; Within `forms`, bind `collect` to a function of one argument that accumulates
+;;; all the arguments it has been called with in reverse order.
+;;;
+;;; Sample usage:
+;;;
+;;;     (reverse-collecting (dotimes (i 10) (collect i)))
+;;;     ; ==> (9 8 7 6 5 4 3 2 1 0)
+(defmacro reverse-collecting body
+  `(with-accumulator collect (lambda (l r) (cons r l)) nil ,@body))
+
+
+;;; = Macro: collecting
+;;;     (collecting forms*) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; Within `forms`, bind `collect` to a function of one argument that accumulates
+;;; all the arguments it has been called with in order.
+;;;
+;;; Sample usage:
+;;;
+;;;     (collecting (dotimes (i 10) (collect i)))
+;;;     ; ==> (0 1 2 3 4 5 6 7 8 9)
+(defmacro collecting body
+  (let ((result (gensym))
+        (append-to (gensym))
+        (delta (gensym)))
+    `(let* ((,result (cons nil nil))
+            (,append-to ,result)
+            (collect (lambda (,delta)
+                       (setq ,append-to (cdr (rplacd ,append-to (cons ,delta nil)))))))
+        ,@body
+        (cdr ,result))))
+
+
+;;; = Function: plist-keys
+;;;     (plist-keys plist) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; Return the keys of a plist.
+;;;
+;;; Sample usage:
+;;;
+;;;     (plist-keys '(a 1 b 2 c 3)) ; ==> (a b c)
+(defun plist-keys (plist)
+  (collecting
+    (doplist (k v plist)
+      (collect k))))
+
+
+;;; = Function: plist-values
+;;;     (plist-values plist) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; Return the values of a plist.
+;;;
+;;; Sample usage:
+;;;
+;;;     (plist-values '(a 1 b 2 c 3)) ; ==> (1 2 3)
+(defun plist-values (plist)
+  (collecting
+    (doplist (k v plist)
+      (collect v))))
