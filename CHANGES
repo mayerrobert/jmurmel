@@ -1,11 +1,16 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
- * argument to sleep is now "seconds" (was: internal-time-units-per-second),
-   return value is nil (was: actually slept time in internal-time-units-per-second)
+ * changed argument to sleep to "seconds" (was: internal-time-units-per-second),
+   changed return value to nil (was: actually slept time in internal-time-units-per-second)
  * changed "apply" from a special form to a function, "apply" no longer is a reserved word,
    "apply" now accepts symbols as the first argument as well
  * changed "::": static Java methods no longer want "nil" as a first (ignored) argument
+
+ * changed mlib: dotimes, dolist and doplist accept multiple result-forms (in an implicit progn)
+   (was: only the first one was eval'd, the rest were silently ignored)
+ * changed mlib: inplace modification macros (incf, decf...) now process 1 or more args
+   (was: 1 or 2 arguments, anything more was silently ignored)
 
  * errormessages contain the filename and linenumber (was: only linenumber)
  * added more complete support for "let dynamic" and "let* dynamic"
@@ -22,7 +27,6 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
    circular-list, compose, conjoin, disjoin, curry, rcurry, doplist,
    unzip, unzip-tails,
    with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
- * mlib: inplace modification macros (incf, decf...) now process 1 or more args (was: 1 or 2)
 
  * backquote expansion generates more efficient code
  * some functions are "opencoded" (i.e. trampolines and/ or argcount checks are omitted,
@@ -33,6 +37,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * fixed using rplaca on varargs list
  * fixed/ cleaned up feature-flags
  * fixed search directory for load and require
+ * fixed defmacro to support multiple body forms
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

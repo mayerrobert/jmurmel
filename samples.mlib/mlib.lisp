@@ -656,11 +656,13 @@
 
 
 ;;; = Macro: dotimes
-;;;     (dotimes (var count-form [result-form]) statement*) -> result
+;;;     (dotimes (var count-form result-form*) statement*) -> result
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm.
+;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
+;;; Murmel however supports multiple result-forms which will be eval'd in an
+;;; implicit `progn`, similar to `do` and `do*`;
 ;;;
 ;;; Sample usage:
 ;;;
@@ -672,40 +674,42 @@
         (countform (cadr exp))
         (count (gensym))
         (loop (gensym))
-        (resultform (caddr exp)))
+        (resultform (cddr exp)))
     `(let ((,var 0)
            (,count ,countform))
-       (if (<= ,count 0) ,resultform
-         (if (>= ,var ,count) ,resultform
+       (if (<= ,count 0) (progn ,@resultform)
+         (if (>= ,var ,count) (progn ,@resultform)
            (let ,loop ()
              ,@body
              (incf ,var)
-             (if (>= ,var ,count) ,resultform
+             (if (>= ,var ,count) (progn ,@resultform)
                (,loop))))))))
 
 
 ;;; = Macro: dolist
-;;;     (dolist (var list-form [result-form]) statement*) -> result
+;;;     (dolist (var list-form result-form*) statement*) -> result
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+;;; Murmel however supports multiple result-forms which will be eval'd in an
+;;; implicit `progn`, similar to `do` and `do*`;
 (defmacro dolist (exp . body)
   (let ((var (car exp))
         (listform (cadr exp))
         (lst (gensym))
         (loop (gensym))
-        (result (caddr exp)))
+        (result (cddr exp)))
     `(let ,loop ((,lst ,listform))
        (if ,lst
              (let ((,var (car ,lst)))
                ,@body
                (,loop (cdr ,lst)))
-           ,(if result `(let ((,var nil)) ,result) nil)))))
+           ,(if result `(let ((,var nil)) ,@result) nil)))))
 
 
 ;;; = Macro: doplist
-;;;     (doplist (key-var value-var plist-form [result-form]) statement*) -> result
+;;;     (doplist (key-var value-var plist-form result-form*) statement*) -> result
 ;;;
 ;;; Since: 1.2
 ;;;
@@ -717,7 +721,7 @@
         (listform (caddr exp))
         (lst (gensym))
         (loop (gensym))
-        (result (car (cdddr exp))))
+        (result (cdddr exp)))
     `(let ,loop ((,lst ,listform))
        (if ,lst
              (if (cdr ,lst)
@@ -726,7 +730,7 @@
                      ,@body
                      (,loop (cddr ,lst)))
                (fatal "doplist: odd number of elements in plist"))
-         ,result))))
+         (progn ,@result)))))
 
 
 ;(defmacro while (expr . body)

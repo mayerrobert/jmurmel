@@ -337,11 +337,13 @@ Since: 1.1
 `do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
 
 ### Macro: dotimes
-    (dotimes (var count-form [result-form]) statement*) -> result
+    (dotimes (var count-form result-form*) statement*) -> result
 
 Since: 1.1
 
-Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm.
+Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
+Murmel however supports multiple result-forms which will be eval'd in an
+implicit `progn`, similar to `do` and `do*`;
 
 Sample usage:
 
@@ -350,14 +352,16 @@ Sample usage:
         (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
 
 ### Macro: dolist
-    (dolist (var list-form [result-form]) statement*) -> result
+    (dolist (var list-form result-form*) statement*) -> result
 
 Since: 1.1
 
 Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+Murmel however supports multiple result-forms which will be eval'd in an
+implicit `progn`, similar to `do` and `do*`;
 
 ### Macro: doplist
-    (doplist (key-var value-var plist-form [result-form]) statement*) -> result
+    (doplist (key-var value-var plist-form result-form*) statement*) -> result
 
 Since: 1.2
 

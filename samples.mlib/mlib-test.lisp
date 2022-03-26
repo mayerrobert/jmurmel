@@ -434,6 +434,9 @@
   temp-two => 10
   (let ((loop "loop") (result nil)) (dotimes (i 3 result) (setq result (cons loop result))))
     => ("loop" "loop" "loop")
+  
+  #+murmel
+  (dotimes (i 10 (incf i) i) 1 2 3) => 11
 )
 
 
@@ -451,6 +454,11 @@
   (dolist (x '(1 2 3)) 'last-form)         => nil
   (dolist (x '(1 2 3) 'result) 'last-form) => result
   (dolist (x '(1 2 3) x) 'last-form)       => nil
+  
+  #+murmel
+  (let ((n 0))
+    (dolist (x '(1 2 3 4 5) (incf n) n)
+      (incf n))) => 6 
 )
 
 
@@ -458,8 +466,14 @@
 #+murmel
 (tests doplist
   (setq temp-two nil) => nil
-  (doplist (k v '(k1 1 k2 2 k3 3) temp-two) (push (cons k v) temp-two)) => ((k3 . 3) (k2 . 2) (k1 . 1))
+  (doplist (k v '(k1 1 k2 2 k3 3) temp-two)
+    (push (cons k v) temp-two)) => ((k3 . 3) (k2 . 2) (k1 . 1))
   temp-two => ((k3 . 3) (k2 . 2) (k1 . 1))
+
+  (setq temp-two nil) => nil
+  (doplist (k v '(k1 1 k2 2 k3 3) (pop temp-two) (incf (cdar temp-two)) temp-two)
+    (push (cons k v) temp-two)) => ((k2 . 3) (k1 . 1))
+  temp-two => ((k2 . 3) (k1 . 1))
 )
 
 

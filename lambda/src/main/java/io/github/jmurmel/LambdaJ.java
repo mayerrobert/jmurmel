@@ -1829,7 +1829,7 @@ public class LambdaJ {
         if (arglen == 1) {
             return macros.remove(macroName) != null ? macroName : null;
         }
-        else if (arglen == 3) {
+        else if (arglen >= 3) {
             final ListConsCell paramsAndBody = cons(cadr(arguments), cddr(arguments));
             final ConsCell closure = makeClosureFromForm(cons(sLambda, paramsAndBody), env);
             macros.put(macroName, closure);
