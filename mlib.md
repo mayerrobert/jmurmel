@@ -341,7 +341,13 @@ Since: 1.1
 
 Since: 1.1
 
-Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm
+Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm.
+
+Sample usage:
+
+    (let (l)
+      (dotimes (i 10 l)
+        (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
 
 ### Macro: dolist
     (dolist (var list-form [result-form]) statement*) -> result

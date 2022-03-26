@@ -660,21 +660,28 @@
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm
+;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm.
+;;;
+;;; Sample usage:
+;;;
+;;;     (let (l)
+;;;       (dotimes (i 10 l)
+;;;         (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
 (defmacro dotimes (exp . body)
   (let ((var (car exp))
         (countform (cadr exp))
         (count (gensym))
         (loop (gensym))
-        (result (caddr exp)))
-    `(let ((,count ,countform))
-       (if (<= ,count 0)
-             ,(if result `(let ((,var 0)) ,result) nil)
-         (let ,loop ((,var 0))
-           (if (>= ,var ,count) ,result
-             (progn
-               ,@body
-               (,loop (1+ ,var)))))))))
+        (resultform (caddr exp)))
+    `(let ((,var 0)
+           (,count ,countform))
+       (if (<= ,count 0) ,resultform
+         (if (>= ,var ,count) ,resultform
+           (let ,loop ()
+             ,@body
+             (incf ,var)
+             (if (>= ,var ,count) ,resultform
+               (,loop))))))))
 
 
 ;;; = Macro: dolist
