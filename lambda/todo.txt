@@ -30,8 +30,23 @@ compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
 -> let over lambda wird wsl dann interessant, wenn man das mit makros generiert, sonst kann man auch globales define+defun machen
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+   -> oder einfach ein neues symbol eof einführen (self-evaluating wie t)
 -> "jm murmel-langref.lisp" und "jm --run murmel-langref.lisp" enden beim ersten toplevel "nil"
    "jm < murmel-langref.lisp" und "jm --run < murmel-langref.lisp" geht
+-> der repl verschluckt auch nils:
+JMurmel> 'a
+
+==> a
+JMurmel> 'b
+
+==> b
+JMurmel> nil
+
+==> nil
+JMurmel> :l
+(quote a)
+(quote b)
+JMurmel>
 
 siehe zeile 5099: bei funktionen ist cddr(enventry) die liste von parametern, compiletime argcount check wär einfach
 runtime check brauchts wohl trotzdem für apply und higher order functions
@@ -89,6 +104,8 @@ freie variablen suchen/ schreiben und interpreter aufrufen wär bereits jetzt oh
 später könnte damit dann ein repl mit performance (durch compile) entstehen
 -> compile in kompiliertem code aufrufen scheint auch nicht schwer, damit könnte man dynamisch neue kompilierte funktionen erzeugen
    -> compile sollte wsl auch makros können?
+-> dann würde wsl. auch volles macroexpand-1 im compilierten code gehen oder machbar sein. interpreter müsste iwie das aktuelle environment des compilierten codes bekommen
+   -> brauchts dazu eine primitive "environment"? first-class environment wär eh nicht schlecht
 
 umsetzung: evtl wird aus MurmelJavaCompiler eine basisklasse, und abgeleitet MurmelJavaCompiler mit murmeltojavasource/class usw wie bisher, und abgeleitet
 compilecompiler mit compile(LambdaJ intp, symbol oder ConsCell code, ConsCell environment)

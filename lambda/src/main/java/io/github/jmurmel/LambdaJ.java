@@ -420,6 +420,7 @@ public class LambdaJ {
     /// ## Infrastructure
     private static final int EOF = -1;
     public static final Object[] EMPTY_ARRAY = new Object[0];
+    private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
 
     private static final String[] FEATURES = {
             "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
@@ -2986,10 +2987,16 @@ public class LambdaJ {
         return c.toString();
     }
 
-    /** Return {@code a} cast to a list, error if {@code a} is not a list or nil. */
+    /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     private static ConsCell asList(String func, Object a) {
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
+    }
+
+    /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
+    private static ConsCell asListOrNull(String func, Object a) {
+        if (a == null) return null;
+        return asList(func, a);
     }
 
 
@@ -3061,7 +3068,7 @@ public class LambdaJ {
 
     private static Object listToString(ConsCell a) {
         oneArg("list->string", a);
-        final ConsCell l = asList("list->string", car(a));
+        final ConsCell l = asListOrNull("list->string", car(a));
         if (l == null) return null;
         final StringBuilder ret = new StringBuilder();
         for (Object c: l) ret.append(asChar("list->string", c));
@@ -3316,20 +3323,23 @@ public class LambdaJ {
         }
     }
 
-    static Primitive findJavaMethod(ConsCell x) {
+    private static Primitive findJavaMethod(ConsCell x) {
         varargsMin(":: ", x, 2);
         stringArgs(":: ", x);
-        final String className = (String) car(x);
-        final String methodName = (String) cadr(x);
-        final ArrayList<Class<?>> paramTypes = new ArrayList<>();
-        if (cddr(x) != null) for (Object arg: (ConsCell)cddr(x)) {
-            final String paramType = (String)arg;
-            try { paramTypes.add(findParamClass(paramType)); }
-            catch (ClassNotFoundException e) { throw new LambdaJError(true, ":: : exception finding parameter class %s: %s", paramType, e.toString()); }
+        return findMethod((String) car(x), (String) cadr(x), asListOrNull("::", cddr(x)));
+    }
+
+    /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
+    static Primitive findMethod(String className, String methodName, Iterable<?> paramClassNames) {
+        final ArrayList<Class<?>> paramClasses = new ArrayList<>(10);
+        if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
+            final String strParamClassName = (String)paramClassName;
+            try { paramClasses.add(findClass(strParamClassName)); }
+            catch (ClassNotFoundException e) { throw new LambdaJError(true, ":: : exception finding parameter class %s: %s", strParamClassName, e.toString()); }
         }
-        final Class<?>[] params = paramTypes.isEmpty() ? null : paramTypes.toArray(new Class[0]);
+        final Class<?>[] params = paramClasses.isEmpty() ? null : paramClasses.toArray(EMPTY_CLASS_ARRAY);
         try {
-            final Class<?> clazz = Class.forName(className);
+            final Class<?> clazz = findClass(className);
             return "new".equals(methodName)
                     ? new JavaConstructor(clazz.getDeclaredConstructor(params))
                     : new JavaMethod(clazz.getMethod(methodName, params));
@@ -3337,40 +3347,41 @@ public class LambdaJ {
         catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
     }
 
-    static final Map<String, Object[]> paramClasses = new HashMap<>(64);
+    static final Map<String, Object[]> classByName = new HashMap<>(64);
     static {
-        paramClasses.put("byte",   new Object[] { byte.class,   "asByte" });
-        paramClasses.put("short",  new Object[] { short.class,  "asShort" });
-        paramClasses.put("int",    new Object[] { int.class,    "asInt" });
-        paramClasses.put("long",   new Object[] { long.class,   "asLong" });
-        paramClasses.put("float",  new Object[] { float.class,  "asFloat" });
-        paramClasses.put("double", new Object[] { double.class, "dbl", });
+        classByName.put("byte",   new Object[] { byte.class,   "asByte" });
+        classByName.put("short",  new Object[] { short.class,  "asShort" });
+        classByName.put("int",    new Object[] { int.class,    "asInt" });
+        classByName.put("long",   new Object[] { long.class,   "asLong" });
+        classByName.put("float",  new Object[] { float.class,  "asFloat" });
+        classByName.put("double", new Object[] { double.class, "dbl", });
 
-        paramClasses.put("char",   new Object[] { char.class,   "asChar" });
+        classByName.put("char",   new Object[] { char.class,   "asChar" });
 
-        paramClasses.put("Object",    new Object[] { Object.class,    null });             aliasJavaLang("Object");
+        classByName.put("Object",    new Object[] { Object.class,    null });             aliasJavaLang("Object");
 
         // todo die boxed typen sollten null als null durchreichen
-        paramClasses.put("Number",    new Object[] { Number.class,    "asNumberOrNull" }); aliasJavaLang("Number");
-        paramClasses.put("Byte",      new Object[] { Byte.class,      "asByte" });         aliasJavaLang("Byte");
-        paramClasses.put("Short",     new Object[] { Short.class,     "asShort" });        aliasJavaLang("Short");
-        paramClasses.put("Integer",   new Object[] { Integer.class,   "asInt" });          aliasJavaLang("Integer");
-        paramClasses.put("Long",      new Object[] { Long.class,      "asLong" });         aliasJavaLang("Long");
-        paramClasses.put("Float",     new Object[] { Float.class,     "asFloat" });        aliasJavaLang("Float");
-        paramClasses.put("Double",    new Object[] { Double.class,    "dbl" });            aliasJavaLang("Double");
+        classByName.put("Number",    new Object[] { Number.class,    "asNumberOrNull" }); aliasJavaLang("Number");
+        classByName.put("Byte",      new Object[] { Byte.class,      "asByte" });         aliasJavaLang("Byte");
+        classByName.put("Short",     new Object[] { Short.class,     "asShort" });        aliasJavaLang("Short");
+        classByName.put("Integer",   new Object[] { Integer.class,   "asInt" });          aliasJavaLang("Integer");
+        classByName.put("Long",      new Object[] { Long.class,      "asLong" });         aliasJavaLang("Long");
+        classByName.put("Float",     new Object[] { Float.class,     "asFloat" });        aliasJavaLang("Float");
+        classByName.put("Double",    new Object[] { Double.class,    "dbl" });            aliasJavaLang("Double");
 
-        paramClasses.put("Character", new Object[] { Character.class, "asChar" });         aliasJavaLang("Character");
-        paramClasses.put("String",    new Object[] { String.class,    "asStringOrNull" }); aliasJavaLang("String");
+        classByName.put("Character", new Object[] { Character.class, "asChar" });         aliasJavaLang("Character");
+        classByName.put("String",    new Object[] { String.class,    "asStringOrNull" }); aliasJavaLang("String");
     }
 
     private static void aliasJavaLang(String existing) {
-        paramClasses.put("java.lang." + existing, paramClasses.get(existing));
+        classByName.put("java.lang." + existing, classByName.get(existing));
     }
 
-    private static Class<?> findParamClass(String paramType) throws ClassNotFoundException {
-        final Object[] entry = paramClasses.get(paramType);
+    /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
+    private static Class<?> findClass(String clsName) throws ClassNotFoundException {
+        final Object[] entry = classByName.get(clsName);
         if (entry != null) return (Class<?>)entry[0];
-        return Class.forName(paramType);
+        return Class.forName(clsName);
     }
 
 
@@ -4750,7 +4761,7 @@ public class LambdaJ {
         }
         public final Object   listToString (Object... args) {
             oneArg("list->string", args.length);
-            final ConsCell l = asList("list->string", args[0]);
+            final ConsCell l = asListOrNull("list->string", args[0]);
             if (l == null) return null;
             final StringBuilder ret = new StringBuilder();
             for (Object c: l)  ret.append(asChar(c));
@@ -4814,7 +4825,13 @@ public class LambdaJ {
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
 
-        public final Object jambda             (Object... args) { return findJavaMethod(arraySlice(args)); } // todo vielleicht eine compilerversion von findJavaMethod, die ein Object[] uebernimmt
+        public final Object jambda             (Object... args) { twoArgs(":: ", args.length); return findMethod(args[0], args[0], asListOrNull("::", arraySlice(args, 2))); }
+        public static Primitive findMethod(Object className, Object methodName, ConsCell paramClasses) {
+            return LambdaJ.findMethod(asStringOrNull(className), asStringOrNull(methodName), paramClasses);
+        }
+        public static Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
+            return LambdaJ.findMethod(asStringOrNull(className), asStringOrNull(methodName), arraySlice(paramClasses));
+        }
 
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
@@ -6451,6 +6468,8 @@ public class LambdaJ {
 
             if (symbolEq(op, "::")) {
                 if (emitJambda(sb, args, null, null, -1, false, null)) return true;
+                emitFuncallVarargs(sb, ":: ", "findMethod", 2, args, env, topEnv, rsfx);
+                return true;
             }
 
             for (String prim: primitives)          if (symbolEq(op, prim))    { emitCallPrimitive(sb, "_" + prim, args, env, topEnv, rsfx, null);  return true; }
@@ -6605,7 +6624,7 @@ public class LambdaJ {
                 final String paramType = (String)arg;
                 paramTypeNames.add(paramType);
 
-                final Object[] typeDesc = paramClasses.get(paramType);
+                final Object[] typeDesc = classByName.get(paramType);
                 if (typeDesc == null) return false; // todo warn re: performance
                 final Class<?> paramClass = (Class<?>) typeDesc[0];
                 paramTypes.add(paramClass);
@@ -6634,7 +6653,7 @@ public class LambdaJ {
                     sb.append("((").append(strClazz).append(')');
                     emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                     sb.append(").").append(strMethod);
-                    ccArguments = cdr(ccArguments) == null ? null : asList((String)strMethod, cdr(ccArguments));
+                    ccArguments = asListOrNull((String)strMethod, cdr(ccArguments));
                 }
 
                 sb.append("(");
@@ -6644,7 +6663,7 @@ public class LambdaJ {
                     for (Object arg : ccArguments) {
                         if (first) first = false;
                         else sb.append("\n        , ");
-                        final String conv = (String) paramClasses.get(paramTypeNames.get(i-startArg))[1];
+                        final String conv = (String) classByName.get(paramTypeNames.get(i-startArg))[1];
                         if (conv == null) emitForm(sb, arg, env, topEnv, rsfx, false);
                         else { sb.append(conv).append('(');  emitForm(sb, arg, env, topEnv, rsfx, false);  sb.append(')'); }
                         i++;
@@ -6666,7 +6685,7 @@ public class LambdaJ {
                 if (params != null) for (int i = startArg; i < params.length + startArg; i++) {
                     if (first) first = false;
                     else sb.append("\n        , ");
-                    final String conv = (String) paramClasses.get(paramTypeNames.get(i - startArg))[1];
+                    final String conv = (String) classByName.get(paramTypeNames.get(i - startArg))[1];
                     if (conv == null) sb.append("args[").append(i).append(']');
                     else sb.append(conv).append("(args[").append(i).append("])");
                 }
