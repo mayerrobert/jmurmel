@@ -447,6 +447,10 @@
   temp-two => 4
 
   (dolist (x '(a b c d)) (write x) (format t " ")) => nil ; >>  A B C D , => NIL
+  
+  (dolist (x '(1 2 3)) 'last-form)         => nil
+  (dolist (x '(1 2 3) 'result) 'last-form) => result
+  (dolist (x '(1 2 3) x) 'last-form)       => nil
 )
 
 
