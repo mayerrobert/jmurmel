@@ -1,3 +1,5 @@
+funktion die den awt frame eines turtleframe liefert, für java interop
+
 tests für with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
 
 :: könnte statt nur strings auch symbols schlucken:

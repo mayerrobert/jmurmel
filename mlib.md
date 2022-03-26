@@ -761,15 +761,18 @@ functions are not called and the overall result is `nil`.
 
 Since: 1.2
 
-Within `forms`, bind `accumulator-name` to a function of one argument that "accumulates" the arguments
-of all invocations. This accumulator-function will be constructed from the two-argument-function `accumulator`
-which will be invoked with two arguments: "accumulated-value so far" and "argument to `accumulator-name`".
+Within `forms`, bind the symbol given by `accumulator-name` to an accumulator-function of one argument
+that "accumulates" the arguments of all invocations.
+This accumulator-function will be constructed from the two-argument-function `accumulator`
+which will be invoked with two arguments: "accumulated value so far" and "argument to `accumulator-name`".
 "accumulated-value so far" will be initialized from `start-value-form`.
 
 Sample usage:
 
     (defun factorial (n)
-      (with-accumulator mult * 1 (dotimes (i 50) (mult (1+ i)))))
+      (with-accumulator mult * 1
+        (dotimes (i n)
+          (mult (1+ i)))))
 
     (factorial 50) ; ==> 3.0414093201713376E64
 
