@@ -694,7 +694,7 @@
              (let ((,var (car ,lst)))
                ,@body
                (,loop (cdr ,lst)))
-           ,result))))
+           ,(if result `(let ((,var nil)) ,result) nil)))))
 
 
 ;;; = Macro: doplist

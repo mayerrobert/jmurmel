@@ -1,7 +1,5 @@
 funktion die den awt frame eines turtleframe liefert, für java interop
 
-tests für with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
-
 :: könnte statt nur strings auch symbols schlucken:
 -> (:: java.lang.System currentTimeMillis)
    -> nein, geht so nicht weil :: ist keine special form, der versuch, die symbols aufzulösen gibt fehler
