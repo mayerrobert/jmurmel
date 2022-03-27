@@ -1,3 +1,12 @@
+abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole ein zweites mal
+-> symbolerzeugen irgendwie rauslösen und im konstruktor nur aufrufen, wenns benötigt wird
+-> oder sollte nicht die klasse sondern das interface abgeleitet werden?
+   -> filepath und position soll aber nicht delegiert werden
+
+:: könnte class#method unterstützen
+
+nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice
+
 dpans3 steht für "Common Lisp ANSI draft 3", das war der Input für AnsiCL
 siehe https://www.reddit.com/r/lisp/comments/5xncjo/is_there_a_lispy_clhs_anywhere/ für eine diskussion re: Lizenz
 TeX Sources (frei) gibts:
@@ -37,8 +46,6 @@ samples aufräumen, ack_bm löschen
 eval-when endlich einbauen
 
 funktion die den awt frame eines turtleframe liefert, für java interop
-
-funktion profile mit JFR-events?
 
 :: könnte statt nur strings auch symbols schlucken:
 -> (:: java.lang.System currentTimeMillis)

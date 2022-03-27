@@ -1448,3 +1448,5 @@ passt wsl für vieles, nicht nur summieren. vielleicht ein metamakro, und den ak
 -> siehe auch serapeum with-collector und collecting
 
 tests für with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
+
+funktion profile mit JFR-events?

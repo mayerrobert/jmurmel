@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -3274,10 +3275,10 @@ public class LambdaJ {
 
         private JavaMethod(Method method) {
             this.method = method;
-            int paramCount = method.getParameterCount(); // this + parameters
+            int paramCount = method.getParameterCount();
             final boolean isStatic = Modifier.isStatic(method.getModifiers());
             this.isStatic = isStatic;
-            if (!isStatic) paramCount++;
+            if (!isStatic) paramCount++; // this + parameters
             this.paramCount = paramCount;
             try {
                 final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
@@ -6610,7 +6611,7 @@ public class LambdaJ {
             // let jambda handle things at runtime, the class may be available then.
             final Class<?> clazz;
             try {
-                clazz = Class.forName((String) strClazz);
+                clazz = Class.forName(((String) strClazz).replace('$', '.'));
             }
             catch (ClassNotFoundException e) {
                 // todo warn re: performance
@@ -6791,6 +6792,93 @@ public class LambdaJ {
 
         private static ConsCell cons(Object car, Object cdr) {
             return LambdaJ.ConsCell.cons(car, cdr);
+        }
+    }
+
+
+
+    private static final AtomicInteger counter = new AtomicInteger(0);
+
+    @SuppressWarnings("unused")
+    public static class JFRHelper {
+
+        @jdk.jfr.Category("JMurmel")
+        @jdk.jfr.StackTrace(false)
+        public abstract static class BaseEvent extends jdk.jfr.Event {
+
+            @jdk.jfr.Label("Parent") int parent = -1;
+            @jdk.jfr.Label("Id") int id;
+            @jdk.jfr.Label("Name") String name;
+            @jdk.jfr.Label("Info") String info;
+
+            BaseEvent() { id = counter.getAndIncrement(); }
+        }
+
+        @jdk.jfr.Label("Events")
+        @jdk.jfr.Name("io.github.jmurmel.MurmelEvent")
+        public static class JFREvent extends BaseEvent {  }
+
+        @jdk.jfr.Category("JMurmel")
+        @jdk.jfr.Label("Function calls")
+        @jdk.jfr.Name("io.github.jmurmel.MurmelFunctionCall")
+        @jdk.jfr.StackTrace(false)
+        public static class JFRFunctionCall extends BaseEvent {
+            Object args;
+
+            @jdk.jfr.Label("Arguments") String strArgs;
+            @jdk.jfr.Label("Return value") String ret;
+        }
+
+
+        public static JFREvent beginEvent(Object name) {
+            return beginEvent(null, name);
+        }
+
+        public static JFREvent beginEvent(BaseEvent parent, Object name) {
+            final JFREvent ret = new JFREvent();
+            if (!ret.isEnabled()) return ret;
+
+            if (parent != null) ret.parent = parent.id;
+            ret.name = name.toString();
+            ret.begin();
+            return ret;
+        }
+
+        public static void endEvent(JFREvent call, Object info) {
+            call.end();
+            if (!call.shouldCommit()) return;
+
+            call.info = info.toString();
+            call.commit();
+        }
+
+
+
+        public static JFRFunctionCall beginFunction(Object name, Object args) {
+            return beginFunction(null, name, args);
+        }
+
+        public static JFRFunctionCall beginFunction(BaseEvent parent, Object name, Object args) {
+            final JFRFunctionCall ret = new JFRFunctionCall();
+            if (!ret.isEnabled()) return ret;
+
+            if (parent != null) ret.parent = parent.id;
+            ret.name = name.toString();
+            ret.args = args;
+            ret.strArgs = LambdaJ.printSEx(args, false);
+            ret.begin();
+            return ret;
+        }
+
+        public static Object endFunction(JFRFunctionCall call, Object ret) {
+            call.end();
+            if (!call.shouldCommit()) return ret;
+
+            final String strRet = LambdaJ.printSEx(ret, false);
+            call.info = LambdaJ.printSEx(ConsCell.cons(call.name, call.args), false) + " -> " + strRet;
+            call.ret = strRet;
+            call.commit();
+            return ret;
         }
     }
 }
