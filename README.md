@@ -6,7 +6,7 @@
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~172kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
+Currently weighing in at ~175kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
@@ -25,6 +25,7 @@ lexical environments,
 a macro facility,
 backquote expansion including nested backquotes,
 JSR223 support,
+support for JFR (Java Flight Recorder)/ JMC (Java Mission Control),
 turtle- and bitmap graphics
 and garbage collection c/o JVM.
 
