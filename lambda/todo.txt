@@ -1,3 +1,5 @@
+soll JFR mittels "(declaim..." an/abgedreht werden können?
+
 abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole ein zweites mal
 -> symbolerzeugen irgendwie rauslösen und im konstruktor nur aufrufen, wenns benötigt wird
 -> oder sollte nicht die klasse sondern das interface abgeleitet werden?

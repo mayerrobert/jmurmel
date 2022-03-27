@@ -10,6 +10,10 @@ import java.awt.event.*;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -1641,6 +1645,7 @@ public class LambdaJ {
 
                     // "ccForms" will be set up depending on the special form and then used in "eval a list of forms" below
                     ConsCell ccForms = null;
+                    final ConsCell macroClosure;
 
                     /// eval - (progn forms...) -> object
                     if (operator == sProgn) {
@@ -1679,15 +1684,19 @@ public class LambdaJ {
                         restore = formsAndEnv[2];
                         // fall through to "eval a list of forms"
 
-                    } else if (macros.containsKey(operator)) {
-                        form = evalMacro(operator, ccArguments, stack, level, traceLvl);
-                        isTc = true; continue tailcall;
                     }
 
 
 
                     /// eval - function application
                     else {
+                        /// eval - macro application
+                        if (null != (macroClosure = macros.get(operator))) {
+                            form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
+                            isTc = true;
+                            continue tailcall;
+                        }
+
                         /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                         if (operator == ocEval) {
                             varargsMinMax("eval", ccArguments, 1, 2);
@@ -1761,10 +1770,10 @@ public class LambdaJ {
                     }
 
                     /// eval - eval a list of forms
-                    // todo dotted list wird cce geben
-                    for (; ccForms != null && cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms))
-                        eval(car(ccForms), env, stack, level, traceLvl);
                     if (ccForms != null) {
+                        // todo dotted list wird cce geben
+                        for (; cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms))
+                            eval(car(ccForms), env, stack, level, traceLvl);
                         traceStack = push(operator, traceStack);
                         form = car(ccForms); isTc = true; func = null; continue tailcall;
                     }
@@ -1959,10 +1968,9 @@ public class LambdaJ {
         return new ConsCell[] {bodyForms, extenv, restore};
     }
     
-    private Object evalMacro(Object operator, final ConsCell arguments, int stack, int level, int traceLvl) {
+    private Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
         if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
 
-        final ConsCell macroClosure = macros.get(operator);
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
         final ConsCell menv = zip(car(lambda), arguments, topEnv);    // todo predef env statt topenv?!?
         Object expansion = null;
@@ -2240,8 +2248,9 @@ public class LambdaJ {
     }
 
     private int traceEnter(Object op, ConsCell args, int level) {
-        if (traced == null || !traced.containsKey(op)) return level;
-        enter(traced.get(op), args, level);
+        final LambdaJSymbol sym;
+        if (traced == null || null == (sym = traced.get(op))) return level;
+        enter(sym, args, level);
         return level + 1;
     }
 
@@ -2269,9 +2278,10 @@ public class LambdaJ {
     }
 
     private int traceExit(Object op, Object result, int level) {
-        if (traced == null || !traced.containsKey(op)) return level;
+        final LambdaJSymbol sym;
+        if (traced == null || null == (sym = traced.get(op))) return level;
         level = level < 1 ? 0 : level-1; // clamp at zero in case a traceEnter() call was lost because of a preceeding exception
-        exit(traced.get(op), result, level);
+        exit(sym, result, level);
         return level;
     }
 
@@ -3234,9 +3244,10 @@ public class LambdaJ {
         oneArg("macroexpand-1", args);
         if (!consp(car(args))) return car(args);
         final Object operator = caar(args);
-        if (!macros.containsKey(operator)) return car(args);
+        final ConsCell macroClosure = macros.get(operator);
+        if (macroClosure == null) return car(args);
         final ConsCell arguments = (ConsCell) cdar(args);
-        return evalMacro(operator, arguments, 0, 0, 0);
+        return evalMacro(operator, macroClosure, arguments, 0, 0, 0);
     }
 
     private int gensymCounter;
@@ -5529,8 +5540,9 @@ public class LambdaJ {
                     }
                 }
 
-                if (intp.macros.containsKey(op)) {
-                    final Object expansion = intp.evalMacro(op, (ConsCell)cdr(form), 0, 0, 0);
+                final ConsCell macroClosure;
+                if (null != (macroClosure = intp.macros.get(op))) {
+                    final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(form), 0, 0, 0);
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
                 }
 
@@ -5821,8 +5833,9 @@ public class LambdaJ {
                     }
 
                     /// * macro expansion
-                    if (intp.macros.containsKey(operator)) {
-                        final Object expansion = intp.evalMacro(operator, ccArguments, 0, 0, 0);
+                    final ConsCell macroClosure;
+                    if (null != (macroClosure = intp.macros.get(operator))) {
+                        final Object expansion = intp.evalMacro(operator, macroClosure, ccArguments, 0, 0, 0);
                         emitForm(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
@@ -6802,14 +6815,27 @@ public class LambdaJ {
     @SuppressWarnings("unused")
     public static class JFRHelper {
 
-        @jdk.jfr.Category("JMurmel")
+        @jdk.jfr.Relational
+        @Target({ ElementType.FIELD })
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface ParentId {
+        }
+
+        @jdk.jfr.Category({"JMurmel", "User Events"})
         @jdk.jfr.StackTrace(false)
         public abstract static class BaseEvent extends jdk.jfr.Event {
 
-            @jdk.jfr.Label("Parent") final int parent;
+            @jdk.jfr.Description("Parent Event Id")
+            @jdk.jfr.Label("Parent") @ParentId final int parent;
+
+            @jdk.jfr.Description("Event Id")
             @jdk.jfr.Label("Id") final int id;
+
+            @jdk.jfr.Description("Event Name")
             @jdk.jfr.Label("Name") String name;
-            @jdk.jfr.Label("Info") String info;
+
+            @jdk.jfr.Description("Event Information")
+            @jdk.jfr.Label("Information") String info;
 
             BaseEvent(BaseEvent parent) {
                 id = counter.getAndIncrement();
@@ -6818,6 +6844,7 @@ public class LambdaJ {
             }
         }
 
+        @jdk.jfr.Description("Generic Events submitted by User Code")
         @jdk.jfr.Label("Events")
         @jdk.jfr.Name("io.github.jmurmel.MurmelEvent")
         public static class JFREvent extends BaseEvent {
@@ -6827,15 +6854,18 @@ public class LambdaJ {
             }
         }
 
-        @jdk.jfr.Category("JMurmel")
-        @jdk.jfr.Label("Function calls")
+        @jdk.jfr.Description("Murmel Function Calls")
+        @jdk.jfr.Label("Function Calls")
         @jdk.jfr.Name("io.github.jmurmel.MurmelFunctionCall")
         @jdk.jfr.StackTrace(false)
         public static class JFRFunctionCall extends BaseEvent {
             Object args;
 
+            @jdk.jfr.Description("Function Call Arguments")
             @jdk.jfr.Label("Arguments") String strArgs;
-            @jdk.jfr.Label("Return value") String ret;
+
+            @jdk.jfr.Description("Function Call Return Value")
+            @jdk.jfr.Label("Return Value") String ret;
 
             JFRFunctionCall(BaseEvent parent) {
                 super(parent);
