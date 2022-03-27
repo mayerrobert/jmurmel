@@ -1,3 +1,5 @@
+julia.lisp: unter Java17/18 ist das fenster größer als Java8 ?!?
+
 soll JFR mittels "(declaim..." an/abgedreht werden können?
 
 abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole ein zweites mal

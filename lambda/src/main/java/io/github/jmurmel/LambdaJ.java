@@ -22,6 +22,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -2431,7 +2433,7 @@ public class LambdaJ {
         return false;
     }
 
-    static boolean  consp(Object o)      { return o instanceof ConsCell; }
+    static boolean  consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
     static boolean  atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
     static boolean  symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
     static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
@@ -4925,7 +4927,32 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
-        public static double dbl(Object n) { anynumber(n);  return ((Number)n).doubleValue(); }
+        //public static double dbl(Object n) { anynumber(n);  return ((Number)n).doubleValue(); }
+        public static double dbl(Object n) {
+            // the redundant checks are faster than instanceof Number and will succeed most of the time
+            if (n instanceof Long)    return ((Long)n).doubleValue();
+            if (n instanceof Double)  return (Double) n;
+            if (n instanceof Byte)    return ((Byte)n).doubleValue();
+            if (n instanceof Short)   return ((Short)n).doubleValue();
+            if (n instanceof Integer) return ((Integer)n).doubleValue();
+            if (n instanceof Float)   return ((Float)n).doubleValue();
+            if (n instanceof Number)  return ((Number)n).doubleValue();
+            errorNotANumber(n);
+            return 0.0;
+        }
+
+        public static long  asLong(Object n)  {
+            // the redundant checks are faster than instanceof Number and will succeed most of the time
+            if (n instanceof Long)    return (Long) n;
+            if (n instanceof Double)  return ((Double)n).longValue();
+            if (n instanceof Byte)    return ((Byte)n).longValue();
+            if (n instanceof Short)   return ((Short)n).longValue();
+            if (n instanceof Integer) return ((Integer)n).longValue();
+            if (n instanceof Float)   return ((Float)n).longValue();
+            if (n instanceof Number)  return ((Number)n).longValue();
+            errorNotANumber(n);
+            return 0L;
+        }
 
         public static Character asChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
@@ -4933,7 +4960,7 @@ public class LambdaJ {
         }
 
         public static int   asInt(Object n)   { anynumber(n);  return ((Number)n).intValue(); }
-        public static long  asLong(Object n)  { anynumber(n);  return ((Number)n).longValue(); }
+        //public static long  asLong(Object n)  { anynumber(n);  return ((Number)n).longValue(); }
         public static float asFloat(Object n) { anynumber(n);  return ((Number)n).floatValue(); }
         public static float asByte(Object n)  { anynumber(n);  return ((Number)n).byteValue(); }
         public static float asShort(Object n) { anynumber(n);  return ((Number)n).shortValue(); }
@@ -5020,7 +5047,7 @@ public class LambdaJ {
         }
 
         private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
-        /** used for function calls */
+        /** used for function calls todo was passiert bei ClosureConsCell vgl funcall(Object, Object) */
         public final Object tailcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    {
                 final MurmelFunctionCall tailcall = this.tailcall;
