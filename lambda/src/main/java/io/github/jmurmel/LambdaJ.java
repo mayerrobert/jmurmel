@@ -6857,7 +6857,6 @@ public class LambdaJ {
         @jdk.jfr.Description("Murmel Function Calls")
         @jdk.jfr.Label("Function Calls")
         @jdk.jfr.Name("io.github.jmurmel.MurmelFunctionCall")
-        @jdk.jfr.StackTrace(false)
         public static class JFRFunctionCall extends BaseEvent {
             Object args;
 
@@ -6873,9 +6872,16 @@ public class LambdaJ {
         }
 
 
-        public static JFREvent beginEvent(Object name) {
-            return beginEvent(null, name);
+        public static void event(BaseEvent parent, Object name, Object info) {
+            final JFREvent event = new JFREvent(parent);
+            if (!event.shouldCommit()) return;
+
+            event.name = String.valueOf(name);
+            event.info = String.valueOf(info);
+            event.commit();
         }
+
+
 
         public static JFREvent beginEvent(BaseEvent parent, Object name) {
             final JFREvent ret = new JFREvent(parent);
@@ -6886,19 +6892,15 @@ public class LambdaJ {
             return ret;
         }
 
-        public static void endEvent(JFREvent call, Object info) {
-            call.end();
-            if (!call.shouldCommit()) return;
+        public static void endEvent(JFREvent event, Object info) {
+            event.end();
+            if (!event.shouldCommit()) return;
 
-            call.info = info.toString();
-            call.commit();
+            event.info = info.toString();
+            event.commit();
         }
 
 
-
-        public static JFRFunctionCall beginFunction(Object name, Object args) {
-            return beginFunction(null, name, args);
-        }
 
         public static JFRFunctionCall beginFunction(BaseEvent parent, Object name, Object args) {
             final JFRFunctionCall ret = new JFRFunctionCall(parent);
