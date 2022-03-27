@@ -1,33 +1,10 @@
-funktion die den awt frame eines turtleframe liefert, für java interop
+dpans3 steht für "Common Lisp ANSI draft 3", das war der Input für AnsiCL
+siehe https://www.reddit.com/r/lisp/comments/5xncjo/is_there_a_lispy_clhs_anywhere/ für eine diskussion re: Lizenz
+TeX Sources (frei) gibts:
+http://www.cs.cmu.edu/Groups//AI/lang/lisp/doc/standard/ansi/dpans/
+https://github.com/xach/dpans
+https://github.com/antoszka/dpANS3
 
-:: könnte statt nur strings auch symbols schlucken:
--> (:: java.lang.System currentTimeMillis)
-   -> nein, geht so nicht weil :: ist keine special form, der versuch, die symbols aufzulösen gibt fehler
-      -> symbols wären trotzdem sinnvoll, dann könnt man ein macro basteln das quoted, und/ oder ein macro, das aus klasse, methode und einer plist mit typ/wert
-         einen call bastelt (bei instanzmethoden müsste die plist wohl mit "this" <objekt> beginnen)
-         oder alist statt plist? -> egal, plist ist weniger tipparbeit
-
-
-Java interfaces für callbacks implementieren:
--> special form oder funktion? -> kann eig funktion sein
--> (javaproxy "java.awt.event.MouseListener" "mousePressed" lambda-or-symbol1 "mouseReleased" lambda-or-symbol...)
-
-((lambda (exp) (apply exp "hallo")) write)
--> parameter exp ist ein builtin. das geht im interpreter und bei speed=0 im compiler, geht nicht bei speed=1 im compiler,
-   weil exp wird opencoded und will 2 argumente
--> ggf. warning oder error wenn builtins als parametername verwendet werden
-aber:
-ggf sollten nur t und nil reserved sein, der rest der bisherigen reserved words sollten nur bei zuweisung verweigert werden (setq, define, defun, letXX dynamic),
--> lambdalist, letXX, labels könnte zulässig werden
--> SBCL: (let ((t 1)) (write t)) gibt fehler, (let ((let 1)) (write let)) geht
-
-eval-when endlich einbauen
-
-compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
--> kein named letXX
--> wäre für let over lambda, und let over lambda simuliert ein singleton, d.h. mehrere funktionen mit gemeinsamem state
--> auch in toplevel "labels"?
--> let over lambda wird wsl dann interessant, wenn man das mit makros generiert, sonst kann man auch globales define+defun machen
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
    -> oder einfach ein neues symbol eof einführen (self-evaluating wie t)
@@ -48,10 +25,52 @@ JMurmel> :l
 (quote b)
 JMurmel>
 
-siehe zeile 5099: bei funktionen ist cddr(enventry) die liste von parametern, compiletime argcount check wär einfach
-runtime check brauchts wohl trotzdem für apply und higher order functions
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+
+
+
+
+
+samples aufräumen, ack_bm löschen
+
+eval-when endlich einbauen
+
+funktion die den awt frame eines turtleframe liefert, für java interop
+
+funktion profile mit JFR-events?
+
+:: könnte statt nur strings auch symbols schlucken:
+-> (:: java.lang.System currentTimeMillis)
+   -> nein, geht so nicht weil :: ist keine special form, der versuch, die symbols aufzulösen gibt fehler
+      -> symbols wären trotzdem sinnvoll, dann könnt man ein macro basteln das quoted, und/ oder ein macro, das aus klasse, methode und einer plist mit typ/wert
+         einen call bastelt (bei instanzmethoden müsste die plist wohl mit "this" <objekt> beginnen)
+         oder alist statt plist? -> egal, plist ist weniger tipparbeit
+
+
+Java interfaces für callbacks implementieren:
+-> special form oder funktion? -> kann eig funktion sein
+-> (javaproxy "java.awt.event.MouseListener" "mousePressed" lambda-or-symbol1 "mouseReleased" lambda-or-symbol...)
+
+
+((lambda (exp) (apply exp "hallo")) write)
+-> parameter exp ist ein builtin. das geht im interpreter und bei speed=0 im compiler, geht nicht bei speed=1 im compiler,
+   weil exp wird opencoded und will 2 argumente
+-> ggf. warning oder error wenn builtins als parametername verwendet werden
+aber:
+ggf sollten nur t und nil reserved sein, der rest der bisherigen reserved words sollten nur bei zuweisung verweigert werden (setq, define, defun, letXX dynamic),
+-> lambdalist, letXX, labels könnte zulässig werden
+-> SBCL: (let ((t 1)) (write t)) gibt fehler, (let ((let 1)) (write let)) geht
+
+
+compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
+-> kein named letXX
+-> wäre für let over lambda, und let over lambda simuliert ein singleton, d.h. mehrere funktionen mit gemeinsamem state
+-> auch in toplevel "labels"?
+-> let over lambda wird wsl dann interessant, wenn man das mit makros generiert, sonst kann man auch globales define+defun machen
+
+siehe zeile 5099: bei funktionen ist cddr(enventry) die liste von parametern, compiletime argcount check wär einfach
+runtime check brauchts wohl trotzdem für apply und higher order functions
 
 teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur bei listen, wo anfang mit ende verknüpft ist,
 nicht aber bei einem loop mittendrin
@@ -149,10 +168,6 @@ im reader gibts every und some
 interpreted eval: OpenCodedPrimitive sollte keine implementierung der methode apply brauchen, vgl apply
 
 APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
-
-
-GETTING STARTED löschen (auch aus jmurmel.github.io)?
-samples aufräumen, ggf. gabriel nach samples.mlib, ggf. weitere gabriel programme dazu (mit plists?)
 
 
 "(declaim (optimize (safety...": CompilerPrimitives könnten einen ersten parameter safety bekommen, der wird abgefüllt wenn die calls generiert werden
@@ -324,6 +339,9 @@ mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
 
 trace sollte das symbol tracen. in der map steht aber die adresse der funktion, die ändert sich bei load oder re-defun,
 und es wird nicht mehr getraced
+-> umbauen dass nicht mehr eine hashmap verwendet wird, sondern der environmententry durch eine gewrappte version ersetzt wird?
+   -> das würd auch im compiler gehen
+   -> wär auch für profiling denkbar
 
 rplacd für ArraySlice ist problematisch: man könnte ins array an der richtigen stelle was anderes reinpatchen,
 aber wenns andere arrayslices mit demselben array gibt (mit anfang NACH der rplacd stelle), dann wirkt sich rplacd

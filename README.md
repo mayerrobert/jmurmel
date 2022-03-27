@@ -6,7 +6,7 @@
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~160kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
+Currently weighing in at ~172kB (size of compiled .jar file containing interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
@@ -33,15 +33,6 @@ and garbage collection c/o JVM.
 Murmel is inspired by Common Lisp, i.e. when in doubt try to do it the Common Lisp way.
 It should be relatively easy to port a program from Murmel to Common Lisp,
 and Murmel knowledge should transfer to Common Lisp.
-
-Murmel and JMurmel currently have the following priorities:
-
-* Small language, small implementation, "hackable"
-* Avoid unspecified or undefined behaviour, throw an error instead
-* Where Murmel differs from Common Lisp the differences should be made obvious,
-  i.e. a Common Lisp program should either work in JMurmel or throw an error
-* Compilation and execution speed at this time is somewhat low priority
-  compared to the previous items
 
 **Status**
 
@@ -85,8 +76,6 @@ Clone the repo and build using maven:
 The resulting jar will end up in `lambda\target\jmurmel.jar`
 
 **Quickstart using a precompiled version**
-
-*(This section replicates the contents of `GETTING STARTED.txt`.)*
 
 Make sure you have Java 8+ installed (Java 8 is minimum, Java 17 is preferred).
 
@@ -162,7 +151,7 @@ Command line parameters in standalone mode:
 
 **Installation**
 
-Currently there is no setup.exe or .msi or .rpm or .deb file. Just copy jmurmel-VERSION-XY.jar somewhere convenient,
+Currently there is no setup.exe or .msi or .rpm or .deb file. Just copy `jmurmel.jar` and (optional but recommended) `mlib.lisp` somewhere convenient,
 and maybe create a batchfile along these lines (Windows .cmd-style shown here):
 
     jm.cmd:
@@ -170,10 +159,16 @@ and maybe create a batchfile along these lines (Windows .cmd-style shown here):
     @echo off
     setlocal
     set JAVA_HOME=C:\Apps\Java\X64\jdk8u252-b09
-    set JMURMEL=D:\jmurmel\lambda\target\jmurmel.jar
+    set JMURMEL=C:\jmurmel\lambda\target\jmurmel.jar
     %JAVA_HOME%\bin\java -jar %JMURMEL% %*
     endlocal
     --- snip ---
+
+or setup an alias (again Windows style shown here):
+
+    set JAVA_HOME=c:\Program files\jdk-17.0.2
+    set JAVA_OPTS=-Xms200M -Xmx1G -Xss2m -XX:+UseZGC
+    doskey jm="%JAVA_HOME%\bin\java" %JAVA_OPTS% -jar C:\jmurmel\lambda\target\jmurmel.jar --libdir C:\jmurmel\samples.mlib $*
 
 That way to run e.g. the file `hanoi.lisp` you can use the following command:
 
@@ -191,7 +186,7 @@ and use `C-M-x` to eval Murmel S-expressions.
 
 JMurmel can also be used embedded in another Java program.
 JMurmel uses Java8 only, but should run on higher versions as well
-(Java 15 is lightly tested).
+(Java 17 is lightly tested, and Github CI builds and tests 8, 17, 18-ea and 19-ea).
 It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
@@ -272,30 +267,40 @@ for more Murmel example code
 including usage of Murmel's turtle graphics.
 
 ## JMurmel Features
-The environment contains the symbols `nil` and `t` and the functions
 
-* `quote, cons, car, cdr`
-* `cond, if`
-* `lambda` ... `lambda` creates a lexical closure
+JMurmel supports the special forms:
+
+* `quote, cond, if`
+* `lambda` ... create a lexical closure
 * `labels` ... define local functions
 
-* `apply` ... works more like Scheme and expects a single argument list, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
-
 * `define` ... inserts a (symbol value) pair into the top level environment, returns `value`.
-  No fancy features, just `(define <symbol> <form>)`, e.g.
+  E.g.
     - `(define *answer* 42)`
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `defun` ... `(<symbol> (<params>*) <bodyform>*)`, e.g. `(defun addone (n) (+ n 1))`
-* `let, let <symbol>, let*, letrec, progn`
-* `eq, atom, consp, listp, null, numberp, stringp, symbolp`
+* `let, let <symbol> ` (i.e. named let)`, let*, letrec, progn`
+* `defmacro`
 
-* `assoc`, `append`
-* `read`
-* `write, writeln` ... write expects one argument, writeln expects zero or one argument(s), both return `t`
+The environment contains the symbols `nil`, `t`, `pi`, `*command-line-argument-list*`
+and the special forms and functions
 
-* `=, <, <=, >, >=, /=, +, -, *, /, mod, round, ceiling, floor`
+* `cons, car, cdr, rplaca, rplacd`
+* `apply` ... works similar to Scheme, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
+* `eval, eq, eql, null, atom, consp, listp, floatp, integerp, numberp, characterp, stringp, symbolp`
 
-For more primitives (including graphics primitives and primitives to run Java code)
+* `assq, assoc, append, list, list*`
+* `read, write, writeln`
+
+* `=, <, <=, >, >=, /=, +, -, *, /, 1+, 1-`
+* `sqrt, log, log10, exp, expt, signum, mod, rem`
+* `ceiling, floor, round, truncate, fceiling, ffloor, fround, ftruncate`
+
+* `char-code, code-char, string=, string->list, list->string`
+
+* `gensym, macroexpand-1, trace, untrace`
+
+For more functions (including turtle graphics and functions to call Java)
 and more details on the language supported see [murmel-langref.md](murmel-langref.md).
 
 Tail calls including tail recursive calls are optimized.
@@ -311,18 +316,18 @@ E.g. the S-expression `(/ 1 -0)` is valid and will yield `-Infinity`.
 Math operators are implemented using Java operators for double. This is probably different to Common Lisp
 esp. around +/-NaN, +/-Infinity, division by zero and so on.
 
-The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double or Long)
-and strings. String literals are 2000 chars max length.
+The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double or Long),
+characters and strings. String literals are 2000 chars max length.
 
 Most of these features can be disabled using commandline arguments.
 You can disable pretty much everything except S-expressions, symbols, cons cells and lambda.
-If you want to experiment with a bare-bones-Lisp use `--help` for details.
+If you want to experiment with a bare-bones-Lisp use `--help-features` for details.
 
 ## Customization
 
 JMurmel comes with:
 
-* a parser that reads S-expressions composed of lists, symbols, Doubles, Longs and Strings.
+* a parser that reads S-expressions composed of lists, symbols, doubles, longs, characters and Strings.
 * Math support for Longs and Doubles
 * (Very) simple I/O
 * Some support for strings
