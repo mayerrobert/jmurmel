@@ -9,11 +9,11 @@
 ;;;; where submitted events should be found.
 ;;;; Events need to be started and ended. This will record start and end time and additional info.
 
-;;; (jfr-begin-function function-name argument-list) -> jfr-funcall-event
+;;; (jfr-begin-function parent function-name argument-list) -> jfr-funcall-event
 ;;;
 ;;; Create a funcall event and record starttime.
 (define jfr-begin-function
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "beginFunction" "Object" "Object"))
+        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "beginFunction" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object" "Object"))
 
 ;;; (jfr-end-function jfr-funcall-event return-value)
 ;;;
@@ -22,11 +22,11 @@
         (:: "io.github.jmurmel.LambdaJ$JFRHelper" "endFunction" "io.github.jmurmel.LambdaJ$JFRHelper$JFRFunctionCall" "Object"))
 
 
-;;; (jfr-begin-event name) -> jfr-event
+;;; (jfr-begin-event parent name) -> jfr-event
 ;;;
 ;;; Create a generic event and record starttime.
 (define jfr-begin-event
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "beginEvent" "Object"))
+        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "beginEvent" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object"))
 
 ;;; (jfr-end-event jfr-event info) -> nil
 ;;;
@@ -36,13 +36,28 @@
 
 
 
+(define *jfr-parent* nil)
+
+(defun jfr-pushparent (event)
+  (setq *jfr-parent* (cons event *jfr-parent*)))
+
+(defun jfr-popparent (event)
+  (if (eq event (car *jfr-parent*)) 
+        (setq *jfr-parent* (cdr *jfr-parent*))
+    (fatal "parents not properly nested")))
+
+
 ;;; (call-with-jfr function argument*)
 ;;;
 ;;; Perform one function call wrapped with JFR recording
 (defmacro call-with-jfr (fun . args)
   (let ((event (gensym)))
-    `(let ((,event (jfr-begin-function ',fun ',args)))
-       (jfr-end-function ,event (,fun ,@args)))))
+    `(let ((,event (jfr-begin-function (car *jfr-parent*) ',fun ',args)))
+       (jfr-pushparent ,event)
+       ((lambda (a b) a)
+          (jfr-end-function ,event (,fun ,@args))
+          (jfr-popparent ,event)))))
+
 
 ;;; (wrap-with-jfr symbol) -> old-function
 ;;;
@@ -59,9 +74,24 @@
     `(let ((,old ,fun))
        (setq ,fun
           (lambda ,args
-            (let ((,event (jfr-begin-function ',fun ,args)))
-              (jfr-end-function ,event (apply ,old ,args)))))
+            (let ((,event (jfr-begin-function (car *jfr-parent*) ',fun ,args)))
+              (jfr-pushparent ,event)
+              ((lambda (a b)
+                 a)
+                (jfr-end-function ,event (apply ,old ,args))
+                (jfr-popparent ,event)))))
        ,old)))
+
+
+;;; Create a generic event, record starttime and set the event as the current parent.
+(defun jfr-begin (name)
+  (car (setq *jfr-parent* (cons (jfr-begin-event nil name) *jfr-parent*))))
+
+
+;;; End and possibly commit a generic event. Restore previous parent.
+(defun jfr-end (event info)
+  (jfr-end-event event info)
+  (jfr-popparent event))
 
 
 
@@ -80,12 +110,12 @@
 (define old (wrap-with-jfr testfunc))
 
 ;;; invoke the wrapped function in a loop, the whole loop is wrapped in an event submission
-(let ((event (jfr-begin-event "test")))
-  (let loop ((i 0))
+(let ((event (jfr-begin "test")))
+  (let loop ((i 1))
     (testfunc i)
     (if (< i 10)
          (loop (1+ i))
-      (jfr-end-event event (format nil "The loop is done, %d iterations" i)))))
+      (jfr-end event (format nil "The loop is done, %d iterations" i)))))
 
 
 

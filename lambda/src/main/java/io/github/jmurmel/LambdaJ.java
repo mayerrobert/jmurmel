@@ -5989,13 +5989,13 @@ public class LambdaJ {
                     //emitForm(sb, valueForm, env, topEnv, rsfx, false);
                     //sb.append(")).get()");
 
-                    sb.append("((Supplier)() -> { final Object newVal = ");
+                    sb.append("((Supplier)() -> { final Object newVal").append(rsfx).append(" = ");
                     emitForm(sb, valueForm, env, topEnv, rsfx, false);
-                    sb.append("; " + symName + " = (CompilerGlobal)() -> newVal; return newVal; }).get()");
+                    sb.append("; ").append(symName).append(" = (CompilerGlobal)() -> newVal").append(rsfx).append("; return newVal").append(rsfx).append("; }).get()");
                 }
                 else {
-                    sb.append("{ final Object newVal = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);  sb.append(";  ");
-                    sb.append(symName).append(" = (CompilerGlobal)() -> newVal; }");
+                    sb.append("{ final Object newVal").append(rsfx).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);  sb.append(";  ");
+                    sb.append(symName).append(" = (CompilerGlobal)() -> newVal").append(rsfx).append("; }");
                 }
             } else {
                 sb.append(javaName).append(" = ");
@@ -6674,7 +6674,7 @@ public class LambdaJ {
             } else {
                 // emit a lambda that contains an argcount check
                 sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
-                sb.append("argCheck(loc, ").append(String.valueOf(paramCount)).append(", args.length);  ");
+                sb.append("argCheck(loc, ").append(paramCount).append(", args.length);  ");
                 sb.append("return ");
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
@@ -6806,17 +6806,26 @@ public class LambdaJ {
         @jdk.jfr.StackTrace(false)
         public abstract static class BaseEvent extends jdk.jfr.Event {
 
-            @jdk.jfr.Label("Parent") int parent = -1;
-            @jdk.jfr.Label("Id") int id;
+            @jdk.jfr.Label("Parent") final int parent;
+            @jdk.jfr.Label("Id") final int id;
             @jdk.jfr.Label("Name") String name;
             @jdk.jfr.Label("Info") String info;
 
-            BaseEvent() { id = counter.getAndIncrement(); }
+            BaseEvent(BaseEvent parent) {
+                id = counter.getAndIncrement();
+                if (parent != null) this.parent = parent.id;
+                else this.parent = -counter.getAndIncrement();
+            }
         }
 
         @jdk.jfr.Label("Events")
         @jdk.jfr.Name("io.github.jmurmel.MurmelEvent")
-        public static class JFREvent extends BaseEvent {  }
+        public static class JFREvent extends BaseEvent {
+
+            JFREvent(BaseEvent parent) {
+                super(parent);
+            }
+        }
 
         @jdk.jfr.Category("JMurmel")
         @jdk.jfr.Label("Function calls")
@@ -6827,6 +6836,10 @@ public class LambdaJ {
 
             @jdk.jfr.Label("Arguments") String strArgs;
             @jdk.jfr.Label("Return value") String ret;
+
+            JFRFunctionCall(BaseEvent parent) {
+                super(parent);
+            }
         }
 
 
@@ -6835,10 +6848,9 @@ public class LambdaJ {
         }
 
         public static JFREvent beginEvent(BaseEvent parent, Object name) {
-            final JFREvent ret = new JFREvent();
+            final JFREvent ret = new JFREvent(parent);
             if (!ret.isEnabled()) return ret;
 
-            if (parent != null) ret.parent = parent.id;
             ret.name = name.toString();
             ret.begin();
             return ret;
@@ -6859,10 +6871,9 @@ public class LambdaJ {
         }
 
         public static JFRFunctionCall beginFunction(BaseEvent parent, Object name, Object args) {
-            final JFRFunctionCall ret = new JFRFunctionCall();
+            final JFRFunctionCall ret = new JFRFunctionCall(parent);
             if (!ret.isEnabled()) return ret;
 
-            if (parent != null) ret.parent = parent.id;
             ret.name = name.toString();
             ret.args = args;
             ret.strArgs = LambdaJ.printSEx(args, false);
