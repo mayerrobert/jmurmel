@@ -22,8 +22,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -4786,7 +4784,7 @@ public class LambdaJ {
         public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (dbl(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(dbl(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",           args.length); return Math.exp  (dbl(args[0])); }
-        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); number(args[0]); return cl_signum((Number)args[0]); }
+        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (asNumber(args[0])); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
         public static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
@@ -4794,10 +4792,10 @@ public class LambdaJ {
 
         // predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
-        public final Number   inc      (Object... args) { oneArg("1+",         args.length); number(args[0]); return LambdaJ.inc((Number)args[0]); }
-        public static Number  inc1     (Object arg)     {                                    number(arg);     return LambdaJ.inc((Number)arg); }
-        public final Number   dec      (Object... args) { oneArg("1-",         args.length); number(args[0]); return LambdaJ.dec((Number)args[0]); }
-        public static Number  dec1     (Object arg)     {                                    number(arg);     return LambdaJ.dec((Number)arg); }
+        public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(asNumber(args[0])); }
+        public static Number  inc1     (Object arg)     { return LambdaJ.inc(asNumber(arg)); }
+        public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(asNumber(args[0])); }
+        public static Number  dec1     (Object arg)     { return LambdaJ.dec(asNumber(arg)); }
 
         public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
         public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
@@ -4936,10 +4934,16 @@ public class LambdaJ {
             if (n instanceof Short)   return ((Short)n).doubleValue();
             if (n instanceof Integer) return ((Integer)n).doubleValue();
             if (n instanceof Float)   return ((Float)n).doubleValue();
-            if (n instanceof Number)  return ((Number)n).doubleValue();
+            if (n instanceof Number)  return ((Number)n).doubleValue(); // todo verluste im fall von biginter, bigdecimal, ggf. NICHT wandeln sondern error
             errorNotANumber(n);
-            return 0.0;
+            return 0.0; // notreached
         }
+        public static double dbl(Double n) { if (n != null) return n;
+                                             errorNotANumber(null); return 0.0; /* notreached*/ }
+        public static double dbl(double n) { return n; }
+        public static double dbl(Long n)   { if (n != null) return n;
+                                             errorNotANumber(null); return 0.0; /* notreached*/ }
+        public static double dbl(long n)   { return n; }
 
         public static long  asLong(Object n)  {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
@@ -4949,10 +4953,13 @@ public class LambdaJ {
             if (n instanceof Short)   return ((Short)n).longValue();
             if (n instanceof Integer) return ((Integer)n).longValue();
             if (n instanceof Float)   return ((Float)n).longValue();
-            if (n instanceof Number)  return ((Number)n).longValue();
+            if (n instanceof Number)  return ((Number)n).longValue(); // todo verluste im fall von biginteger, bigdecimal, ggf. NICHT wandeln sondern error
             errorNotANumber(n);
             return 0L;
         }
+        public static long asLong(Long n) { if (n != null) return n;
+                                            errorNotANumber(null); return 0; /* notreached*/ }
+        public static long asLong(long n) { return n; }
 
         public static Character asChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
@@ -4977,8 +4984,10 @@ public class LambdaJ {
             return (Number)o;
         }
 
-        /** error if n is not of type number, Murmel number types only */
-        private static void number(Object n) { if (numberp(n)) return;  errorNotANumber(n); }
+        /** error if n is not of type number, Murmel number types only. Note: semantics should be the same as {@link LambdaJ#numberp(Object)}  */
+        private static Number asNumber(Object n) { if (n instanceof Double) return (Double)n;
+                                                   if (n instanceof Long) return (Long)n;
+                                                   errorNotANumber(n); return 0; /* notreached */}
 
         /** error if n is not of type number, all Java number types */
         private static void anynumber(Object n) {
@@ -5066,6 +5075,13 @@ public class LambdaJ {
             if (fn instanceof Primitive)         return funcall(fn, args);
             if (fn instanceof ClosureConsCell)   return interpret(fn, args);
             throw errorNotAFunction(fn);
+        }
+
+        public final Object tailcall(MurmelFunction fn, Object... args) {
+                final MurmelFunctionCall tailcall = this.tailcall;
+                tailcall.next = fn;
+                tailcall.args = args;
+                return tailcall;
         }
 
         /** used for (apply sym form) */

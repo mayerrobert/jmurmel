@@ -1,3 +1,16 @@
+in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel ist nicht ok
+-> checks einbauen
+-> mache number konvertierungen akzeptieren alle Java Number typen, andere und numberp nur Double und Long
+
+ggf. die konvertierungsmethoden die Object nehmen überladen, falls der Compiler den typ kennt
+
+instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
+
+instanceof in tailcall(Object... und funcall(Object... bremst
+-> CompilerGlobal könnte eine methode funcall bekommen, die wird emitted wenn das symbol in der car position einer form vorkommt
+   funcall würde das ergebnis von instanceof cachen und zum richtigen funcall dispatchen
+   -> und tailcall()
+
 julia.lisp: unter Java17/18 ist das fenster größer als Java8 ?!?
 
 soll JFR mittels "(declaim..." an/abgedreht werden können?

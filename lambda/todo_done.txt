@@ -1450,3 +1450,9 @@ passt wsl für vieles, nicht nur summieren. vielleicht ein metamakro, und den ak
 tests für with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
 
 funktion profile mit JFR-events?
+
+wär ein overload MurmelJavaProgram.tailcall(MurmelJavaProgram... nicht doch sinnvoll?
+-> z.b. für progn in der tailposition
+
+number() (schnell) ist meist gefolgt von cast auf Number (langsam)
+-> number soll gleich Number liefern
