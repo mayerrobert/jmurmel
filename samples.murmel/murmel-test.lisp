@@ -266,11 +266,15 @@
 
 #+murmel
 (deftest eval.1 (x) '|hello from interpreter|)
-(deftest eval.1 (#-murmel funcall x) '|hello from interpreter|)
+(deftest eval.2 (#-murmel funcall x) '|hello from interpreter|)
 
 #+murmel
-(deftest eval.2 ((eval '(lambda (x) (format nil "%s" x))) '|interpreted format|) "interpreted format")
-(deftest eval.2 (#-murmel funcall (eval '(lambda (x) (format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
+(deftest eval.3 ((eval '(lambda (x) (format nil "%s" x))) '|interpreted format|) "interpreted format")
+(deftest eval.4 (#-murmel funcall (eval '(lambda (x) (format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
+
+; invoke x in the tailposition. This used to break the compiler.
+(deftest eval.5
+  (let (a) (#-murmel funcall x)) '|hello from interpreter|)
 
 
 ;;; test apply

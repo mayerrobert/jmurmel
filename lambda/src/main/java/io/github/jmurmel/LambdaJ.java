@@ -1720,8 +1720,7 @@ public class LambdaJ {
                             twoArgs("apply", ccArguments);
                             final Object funcOrSymbol = car(ccArguments);
                             argList = listOrMalformed("apply", cadr(ccArguments));
-                            if (speed >= 1 && symbolp(funcOrSymbol)) {  // todo ist symbolp(applyFunc) noetig oder verhindert das nur ggf. opencoding?
-                                // func = eval(... was performed unneccesarily
+                            if (speed >= 1 && symbolp(funcOrSymbol)) {
                                 result = evalOpencode(funcOrSymbol, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
@@ -2403,6 +2402,7 @@ public class LambdaJ {
 
     /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
      * (nthcdr 3 '(0 . 1)) -> Error: Attempted to take CDR of 1. */
+    // todo ggf. spezialfall arrayslice behandeln
     private static Object   nthcdr(int n, Object list) {
         if (list == null) return null;
         for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
@@ -5039,15 +5039,22 @@ public class LambdaJ {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
-            if (fn instanceof ClosureConsCell)   return intp.eval(cons(intp.sApply,
-                                                                       cons(fn,
-                                                                            cons(cons(intp.intern("quote"), cons(arraySlice(args), null)), null))),
-                                                                  null);
+            if (fn instanceof ClosureConsCell)   return interpret(fn, args);
             throw errorNotAFunction(fn);
         }
 
+        private Object interpret(Object fn, Object[] args) {
+            return intp.eval(cons(intp.sApply,
+                                  cons(fn,
+                                       cons(cons(intp.intern("quote"),
+                                                 cons(arraySlice(args),
+                                                      null)),
+                                            null))),
+                             null);
+        }
+
         private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
-        /** used for function calls todo was passiert bei ClosureConsCell vgl funcall(Object, Object) */
+        /** used for function calls */
         public final Object tailcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    {
                 final MurmelFunctionCall tailcall = this.tailcall;
@@ -5057,6 +5064,7 @@ public class LambdaJ {
             }
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return funcall(fn, args);
+            if (fn instanceof ClosureConsCell)   return interpret(fn, args);
             throw errorNotAFunction(fn);
         }
 
