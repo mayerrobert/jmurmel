@@ -1,8 +1,13 @@
 in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel ist nicht ok
 -> checks einbauen
+-> dezimal->integer verbieten: statt uberall asNumber() -> bei integer requireInteger(), bei dbl & Co requireNumber()
+   -> as... konvertieren, require... checken nur den typ ohne konvertierung
+      oder vielleicht to... statt as...
 -> mache number konvertierungen akzeptieren alle Java Number typen, andere und numberp nur Double und Long
 
-ggf. die konvertierungsmethoden die Object nehmen überladen, falls der Compiler den typ kennt
+lst umbenamsen in requireList()
+
+ggf. die konvertierungsmethoden die Object nehmen überladen, falls der Compiler den typ kennt, zumindest overloads mit Long und Double (und ggf. long+double)?
 
 instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
 
@@ -10,8 +15,6 @@ instanceof in tailcall(Object... und funcall(Object... bremst
 -> CompilerGlobal könnte eine methode funcall bekommen, die wird emitted wenn das symbol in der car position einer form vorkommt
    funcall würde das ergebnis von instanceof cachen und zum richtigen funcall dispatchen
    -> und tailcall()
-
-julia.lisp: unter Java17/18 ist das fenster größer als Java8 ?!?
 
 soll JFR mittels "(declaim..." an/abgedreht werden können?
 
@@ -53,8 +56,16 @@ JMurmel>
 
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
+"if (args1[0] == UNASSIGNED) {...} else argCheck(loc, 3, args1.length);" & Co brauchts nur bei named letrec? den "..." teil brauchts ohne named immer, if clause brauchts nur bei named
 
-
+   JMurmel> (letrec ((a (lambda () b)) (c (a)) (b 2)) (write c))
+   
+   Error: eval: 'b' is not bound
+   error occurred in line 1:1..1:52: (letrec ((a (lambda nil b)) (c (a)) (b 2)) (write c))
+   
+   JMurmel> :r
+   io.github.jmurmel.LambdaJ$MurmelJavaProgram$$Lambda$111/209833425@544a2ea6
+   ==> t
 
 
 

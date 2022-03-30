@@ -4925,7 +4925,6 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
-        //public static double dbl(Object n) { anynumber(n);  return ((Number)n).doubleValue(); }
         public static double dbl(Object n) {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
             if (n instanceof Long)    return ((Long)n).doubleValue();
@@ -4957,20 +4956,19 @@ public class LambdaJ {
             errorNotANumber(n);
             return 0L;
         }
-        public static long asLong(Long n) { if (n != null) return n;
+        public static long  asLong(Long n) { if (n != null) return n;
                                             errorNotANumber(null); return 0; /* notreached*/ }
-        public static long asLong(long n) { return n; }
+        public static long  asLong(long n) { return n; }
+
+        public static int   asInt(Object n)   { anynumber(n);  return ((Number)n).intValue(); }
+        public static float asFloat(Object n) { anynumber(n);  return ((Number)n).floatValue(); }
+        public static float asByte(Object n)  { anynumber(n);  return ((Number)n).byteValue(); }
+        public static float asShort(Object n) { anynumber(n);  return ((Number)n).shortValue(); }
 
         public static Character asChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
             return (Character)o;
         }
-
-        public static int   asInt(Object n)   { anynumber(n);  return ((Number)n).intValue(); }
-        //public static long  asLong(Object n)  { anynumber(n);  return ((Number)n).longValue(); }
-        public static float asFloat(Object n) { anynumber(n);  return ((Number)n).floatValue(); }
-        public static float asByte(Object n)  { anynumber(n);  return ((Number)n).byteValue(); }
-        public static float asShort(Object n) { anynumber(n);  return ((Number)n).shortValue(); }
 
         public static String asStringOrNull(Object o) {
             if (o == null) return null;
@@ -5009,7 +5007,7 @@ public class LambdaJ {
             throw errorNotAFrame(s, o);
         }
 
-        public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; if (length > 0) ret[0] = UNASSIGNED; return ret; }
+        public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; Arrays.fill(ret, UNASSIGNED); return ret; }
 
         public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
         public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
@@ -5064,6 +5062,13 @@ public class LambdaJ {
 
         private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
         /** used for function calls */
+        public final Object tailcall(MurmelFunction fn, Object... args) {
+                final MurmelFunctionCall tailcall = this.tailcall;
+                tailcall.next = fn;
+                tailcall.args = args;
+                return tailcall;
+        }
+
         public final Object tailcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    {
                 final MurmelFunctionCall tailcall = this.tailcall;
@@ -5072,16 +5077,9 @@ public class LambdaJ {
                 return tailcall;
             }
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
-            if (fn instanceof Primitive)         return funcall(fn, args);
+            if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
             if (fn instanceof ClosureConsCell)   return interpret(fn, args);
             throw errorNotAFunction(fn);
-        }
-
-        public final Object tailcall(MurmelFunction fn, Object... args) {
-                final MurmelFunctionCall tailcall = this.tailcall;
-                tailcall.next = fn;
-                tailcall.args = args;
-                return tailcall;
         }
 
         /** used for (apply sym form) */

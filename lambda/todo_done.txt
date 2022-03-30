@@ -1456,3 +1456,5 @@ wär ein overload MurmelJavaProgram.tailcall(MurmelJavaProgram... nicht doch sin
 
 number() (schnell) ist meist gefolgt von cast auf Number (langsam)
 -> number soll gleich Number liefern
+
+julia.lisp: unter Java17/18 ist das fenster größer als Java8 ?!?
