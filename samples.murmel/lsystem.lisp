@@ -1,5 +1,8 @@
 ;;; See https://en.wikipedia.org/wiki/L-system
 
+(define rules nil)
+(define actions nil)
+
 (defun l-system (order size op)
   (if (= 0 order)
         (if (eq op 'X) nil
@@ -14,13 +17,13 @@
 
 (make-frame "Gosper Curve")
 
-(define rules '((A . (A - B - - B + A + + A A + B -))
-                (B . (+ A - B B - - B - A + + A + B))))
+(setq rules '((A . (A - B - - B + A + + A A + B -))
+              (B . (+ A - B B - - B - A + + A + B))))
 
-(define actions '((A . (lambda (o size) (l-system o size 'A)))
-                  (B . (lambda (o size) (l-system o size 'B)))
-                  (- . (lambda (o size) (right 60)))
-                  (+ . (lambda (o size) (left 60)))))
+(setq actions '((A . (lambda (o size) (l-system o size 'A)))
+                (B . (lambda (o size) (l-system o size 'B)))
+                (- . (lambda (o size) (right 60)))
+                (+ . (lambda (o size) (left 60)))))
 
 (left 90)
 (l-system 4 20 'A)
@@ -41,13 +44,12 @@
 
 (make-frame "Koch Curve")
 
-(define rules '((F . (F + F - F - F + F))))
+(setq rules '((F . (F + F - F - F + F))))
 
-(define actions '((F . (lambda (o size) (l-system o size 'F)))
-                  (+ . (lambda (o size) (left 90)))
-                  (- . (lambda (o size) (right 90)))))
+(setq actions '((F . (lambda (o size) (l-system o size 'F)))
+                (+ . (lambda (o size) (left 90)))
+                (- . (lambda (o size) (right 90)))))
 
-;(left 90)
 (l-system 3 20 'F)
 (open-frame)
 
@@ -66,13 +68,13 @@
 
 (make-frame "Sierpinsky")
 
-(define rules '((F . (F - G + F + G - F))
-                (G . (G G))))
+(setq rules '((F . (F - G + F + G - F))
+              (G . (G G))))
 
-(define actions '((F . (lambda (o size) (l-system o size 'F)))
-                  (G . (lambda (o size) (l-system o size 'G)))
-                  (+ . (lambda (o size) (left 120)))
-                  (- . (lambda (o size) (right 120)))))
+(setq actions '((F . (lambda (o size) (l-system o size 'F)))
+                (G . (lambda (o size) (l-system o size 'G)))
+                (+ . (lambda (o size) (left 120)))
+                (- . (lambda (o size) (right 120)))))
 
 (left 90)
 (l-system 4 20 'F)
@@ -96,13 +98,13 @@
 
 (make-frame "Sierpinsky triangle")
 
-(define rules '((A . (B - A - B))
-                (B . (A + B + A))))
+(setq rules '((A . (B - A - B))
+              (B . (A + B + A))))
 
-(define actions '((A . (lambda (o size) (l-system o size 'A)))
-                  (B . (lambda (o size) (l-system o size 'B)))
-                  (+ . (lambda (o size) (left 60)))
-                  (- . (lambda (o size) (right 60)))))
+(setq actions '((A . (lambda (o size) (l-system o size 'A)))
+                (B . (lambda (o size) (l-system o size 'B)))
+                (+ . (lambda (o size) (left 60)))
+                (- . (lambda (o size) (right 60)))))
 
 (l-system 6 20 'A)
 (open-frame)
@@ -122,13 +124,13 @@
 
 (make-frame "Dragon Curve")
 
-(define rules '((F . (F + G))
-                (G . (F - G))))
+(setq rules '((F . (F + G))
+              (G . (F - G))))
 
-(define actions '((F . (lambda (o size) (l-system o size 'F)))
-                  (G . (lambda (o size) (l-system o size 'G)))
-                  (+ . (lambda (o size) (right 90)))
-                  (- . (lambda (o size) (left 90)))))
+(setq actions '((F . (lambda (o size) (l-system o size 'F)))
+                (G . (lambda (o size) (l-system o size 'G)))
+                (+ . (lambda (o size) (right 90)))
+                (- . (lambda (o size) (left 90)))))
 
 (left 90)
 (l-system 10 20 'F)
@@ -152,15 +154,15 @@
 
 (make-frame "Fern")
 
-(define rules '((X . (F + [ [ X ] - X ] - F [ - F X ] + X))
-                (F . (F F))))
+(setq rules '((X . (F + [ [ X ] - X ] - F [ - F X ] + X))
+              (F . (F F))))
 
-(define actions '((F . (lambda (o size) (l-system o size 'F)))
-                  (X . (lambda (o size) (l-system o size 'X)))
-                  (+ . (lambda (o size) (left 25)))
-                  (- . (lambda (o size) (right 25)))
-                  ([ . (lambda (o size) (push-pos)))
-                  (] . (lambda (o size) (pop-pos)))))
+(setq actions '((F . (lambda (o size) (l-system o size 'F)))
+                (X . (lambda (o size) (l-system o size 'X)))
+                (+ . (lambda (o size) (left 25)))
+                (- . (lambda (o size) (right 25)))
+                ([ . (lambda (o size) (push-pos)))
+                (] . (lambda (o size) (pop-pos)))))
 
 (left 65)
 (l-system 6 20 'X)
@@ -180,20 +182,18 @@
 
 (make-frame "Heighway dragon")
 
-(define rules '((X . (X + Y F +))
-                (Y . (- F X - Y))))
+(setq rules '((X . (X + Y F +))
+              (Y . (- F X - Y))))
 
-(define actions '((F . (lambda (o size) (forward size)))
-                  (X . (lambda (o size) (l-system o size 'X)))
-                  (Y . (lambda (o size) (l-system o size 'Y)))
-                  (+ . (lambda (o size) (right 90)))
-                  (- . (lambda (o size) (left  90)))))
+(setq actions '((F . (lambda (o size) (forward size)))
+                (X . (lambda (o size) (l-system o size 'X)))
+                (Y . (lambda (o size) (l-system o size 'Y)))
+                (+ . (lambda (o size) (right 90)))
+                (- . (lambda (o size) (left  90)))))
 
 (left 90)
-;(trace 'assoc)
 (forward 20)
 (l-system 14 20 'X)
-;(untrace)
 (open-frame)
 
 
@@ -204,14 +204,13 @@
 
 (make-frame "Terdragon Curve")
 
-(define rules '((F . (F + F - F))))
+(setq rules '((F . (F + F - F))))
 
-(define actions '((F . (lambda (o size) (l-system o size 'F)))
-                  (+ . (lambda (o size) (right 120)))
-                  (- . (lambda (o size) (left 120)))))
+(setq actions '((F . (lambda (o size) (l-system o size 'F)))
+                (+ . (lambda (o size) (right 120)))
+                (- . (lambda (o size) (left 120)))))
 
 (left 90)
-;(l-system 10 20 'F)
 (l-system 9 20 'F)
 (open-frame)
 
@@ -227,12 +226,11 @@
 
 (make-frame "Levy C Curve")
 
-(define rules '((F . (+ F - - F +))))
+(setq rules '((F . (+ F - - F +))))
 
-(define actions '((F . (lambda (o size) (l-system o size 'F)))
-                  (+ . (lambda (o size) (right 45)))
-                  (- . (lambda (o size) (left 45)))))
+(setq actions '((F . (lambda (o size) (l-system o size 'F)))
+                (+ . (lambda (o size) (right 45)))
+                (- . (lambda (o size) (left 45)))))
 
-;(left 90)
 (l-system 12 20 'F)
 (open-frame)
