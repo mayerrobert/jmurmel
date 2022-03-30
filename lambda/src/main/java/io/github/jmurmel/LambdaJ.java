@@ -3390,7 +3390,7 @@ public class LambdaJ {
     }
 
     /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
-    private static Class<?> findClass(String clsName) throws ClassNotFoundException {
+    static Class<?> findClass(String clsName) throws ClassNotFoundException {
         final Object[] entry = classByName.get(clsName);
         if (entry != null) return (Class<?>)entry[0];
         return Class.forName(clsName);
@@ -6677,7 +6677,7 @@ public class LambdaJ {
             // let jambda handle things at runtime, the class may be available then.
             final Class<?> clazz;
             try {
-                clazz = Class.forName(((String) strClazz).replace('$', '.'));
+                clazz = findClass(((String) strClazz).replace('$', '.'));
             }
             catch (ClassNotFoundException e) {
                 // todo warn re: performance
