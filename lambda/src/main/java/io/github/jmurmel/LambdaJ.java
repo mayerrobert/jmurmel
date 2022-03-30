@@ -4685,6 +4685,8 @@ public class LambdaJ {
         public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
+        public final Object _read      (Object... args) { noArgs("read",         args.length); if (intp.lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
+                                                                                               return intp.lispReader.readObj(); }
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
@@ -5092,6 +5094,7 @@ public class LambdaJ {
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
 
+        private static void noArgs(String expr, int argCount)      { if (0 != argCount)               errorArgCount(expr, 0, 0, argCount); }
         private static void oneArg(String expr, int argCount)      { if (1 != argCount)               errorArgCount(expr, 1, 1, argCount); }
         private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
         private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
@@ -5165,6 +5168,7 @@ public class LambdaJ {
             case "eq": return (CompilerPrimitive)this::_eq;
             case "eql": return (CompilerPrimitive)this::_eql;
             case "null": return (CompilerPrimitive)this::_null;
+            case "read": return (CompilerPrimitive)this::_read;
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
@@ -5381,7 +5385,7 @@ public class LambdaJ {
         /// * nil, t, pi
         /// * *command-line-argument-list*, internal-time-units-per-second
         /// * car, cdr, cons, rplaca, rplacd
-        /// * apply, eval, eq, eql, null, intern, write, writeln, lnwrite
+        /// * apply, eval, eq, eql, null, read, write, writeln, lnwrite
         /// * atom, consp, listp, symbolp, numberp, stringp, characterp, integerp, floatp
         /// * assoc, assq, list, list*, append
         /// * +, *, -, /, =, <, <=, >=, >
@@ -5400,7 +5404,7 @@ public class LambdaJ {
         };
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
-                /*"apply",*/ "eval", "eq", "eql", "null", "write", "writeln", "lnwrite",
+                /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
                 "assoc", "assq", "list", "append",
                 "round", "floor", "ceiling", "truncate",
