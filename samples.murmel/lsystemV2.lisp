@@ -2,7 +2,7 @@
 ;;; and https://jsantell.com/l-systems/
 
 (define rules nil)
-(setq actions nil)
+(define actions nil)
 
 (defun l-system (order size op)
   (if (= 0 order)
