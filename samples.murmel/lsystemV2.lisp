@@ -1,6 +1,9 @@
 ;;; See https://en.wikipedia.org/wiki/L-system and https://de.wikipedia.org/wiki/Fraktal
 ;;; and https://jsantell.com/l-systems/
 
+(define rules nil)
+(setq actions nil)
+
 (defun l-system (order size op)
   (if (= 0 order)
 
@@ -15,7 +18,7 @@
              (action (cdr (assoc nextop actions))))
         (if action
               (action)
-          (l-system (- order 1) size nextop)))
+          (l-system (1- order) size nextop)))
       (if (cdr word)
         (loop (cdr word))))))
 
@@ -23,11 +26,11 @@
 
 (make-frame "Gosper Curve")
 
-(define rules '((A . (A - B - - B + A + + A A + B -))
-                (B . (+ A - B B - - B - A + + A + B))))
+(setq rules '((A . (A - B - - B + A + + A A + B -))
+              (B . (+ A - B B - - B - A + + A + B))))
 
-(define actions '((- . (lambda () (right 60)))
-                  (+ . (lambda () (left 60)))))
+(setq actions (list (cons '-  (lambda () (right 60)))
+                    (cons '+  (lambda () (left 60)))))
 
 (left 90)
 (l-system 4 20 'A)
@@ -48,10 +51,10 @@
 
 (make-frame "Koch Curve")
 
-(define rules '((F . (F + F - F - F + F))))
+(setq rules '((F . (F + F - F - F + F))))
 
-(define actions '((+ . (lambda () (left 90)))
-                  (- . (lambda () (right 90)))))
+(setq actions (list (cons '+  (lambda () (left 90)))
+                    (cons '-  (lambda () (right 90)))))
 
 ;(left 90)
 (l-system 3 20 'F)
@@ -72,11 +75,11 @@
 
 (make-frame "Sierpinsky triangle 4")
 
-(define rules '((F . (F - G + F + G - F))
-                (G . (G G))))
+(setq rules '((F . (F - G + F + G - F))
+              (G . (G G))))
 
-(define actions '((+ . (lambda () (left 120)))
-                  (- . (lambda () (right 120)))))
+(setq actions (list (cons '+  (lambda () (left 120)))
+                    (cons '-  (lambda () (right 120)))))
 
 (left 180)
 (l-system 4 20 'F)
@@ -100,11 +103,11 @@
 
 (make-frame "Sierpinsky arrowhead 6")
 
-(define rules '((A . (B - A - B))
-                (B . (A + B + A))))
+(setq rules '((A . (B - A - B))
+              (B . (A + B + A))))
 
-(define actions '((+ . (lambda () (left 60)))
-                  (- . (lambda () (right 60)))))
+(setq actions (list (cons '+  (lambda () (left 60)))
+                    (cons '-  (lambda () (right 60)))))
 
 (l-system 6 20 'A)
 (open-frame)
@@ -124,11 +127,11 @@
 
 (make-frame "Dragon Curve 14")
 
-(define rules '((F . (F + G))
-                (G . (F - G))))
+(setq rules '((F . (F + G))
+              (G . (F - G))))
 
-(define actions '((+ . (lambda () (right 90)))
-                  (- . (lambda () (left 90)))))
+(setq actions (list (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left 90)))))
 
 (left 90)
 ;(l-system 10 20 'F)
@@ -153,13 +156,13 @@
 
 (make-frame "Fern 6")
 
-(define rules '((X . (F + [ [ X ] - X ] - F [ - F X ] + X))
-                (F . (F F))))
+(setq rules '((X . (F + [ [ X ] - X ] - F [ - F X ] + X))
+              (F . (F F))))
 
-(define actions '((+ . (lambda () (left 25)))
-                  (- . (lambda () (right 25)))
-                  ([ . (lambda () (push-pos)))
-                  (] . (lambda () (pop-pos)))))
+(setq actions (list (cons '+  (lambda () (left 25)))
+                    (cons '-  (lambda () (right 25)))
+                    (cons '[  (lambda () (push-pos)))
+                    (cons ']  (lambda () (pop-pos)))))
 
 (left 65)
 (l-system 6 20 'X)
@@ -179,12 +182,12 @@
 
 (make-frame "Heighway dragon 14")
 
-(define rules '((X . (X + Y F +))
-                (Y . (- F X - Y))))
+(setq rules '((X . (X + Y F +))
+              (Y . (- F X - Y))))
 
-(define actions '((F . (lambda () (forward size)))
-                  (+ . (lambda () (right 90)))
-                  (- . (lambda () (left  90)))))
+(setq actions (list (cons 'F  (lambda () (forward 20)))
+                    (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left  90)))))
 
 (left 90)
 (forward 20)
@@ -204,12 +207,12 @@
 
 (make-frame "Twindragon 13")
 
-(define rules '((X . (X + Y F))
-                (Y . (F X - Y))))
+(setq rules '((X . (X + Y F))
+              (Y . (F X - Y))))
 
-(define actions '((F . (lambda () (forward size)))
-                  (+ . (lambda () (right 90)))
-                  (- . (lambda () (left  90)))))
+(setq actions (list (cons 'F  (lambda () (forward 20)))
+                    (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left  90)))))
 
 ;(left 90)
 (forward 20)
@@ -230,10 +233,10 @@
 
 (make-frame "Terdragon Curve 9")
 
-(define rules '((F . (F + F - F))))
+(setq rules '((F . (F + F - F))))
 
-(define actions '((+ . (lambda () (right 120)))
-                  (- . (lambda () (left 120)))))
+(setq actions (list (cons '+  (lambda () (right 120)))
+                    (cons '-  (lambda () (left 120)))))
 
 ;(left 90)
 ;(l-system 10 20 'F)
@@ -254,10 +257,10 @@
 
 (make-frame "Levy C Curve 12")
 
-(define rules '((F . (+ F - - F +))))
+(setq rules '((F . (+ F - - F +))))
 
-(define actions '((+ . (lambda () (right 45)))
-                  (- . (lambda () (left  45)))))
+(setq actions (list (cons '+  (lambda () (right 45)))
+                    (cons '-  (lambda () (left  45)))))
 
 (l-system 12 20 'F)
 (open-frame)
@@ -267,11 +270,11 @@
 ; Hilbert Kurve, 1 : 1/2
 (make-frame "Hilbert Curve 6")
 
-(define rules '((X . (- Y F + X F X + F Y -))
-                (Y . (+ X F - Y F Y - F X +))))
+(setq rules '((X . (- Y F + X F X + F Y -))
+              (Y . (+ X F - Y F Y - F X +))))
 
-(define actions '((+ . (lambda () (right 90)))
-                  (- . (lambda () (left  90)))))
+(setq actions (list (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left  90)))))
 
 (l-system 6 20 'X)
 (open-frame)
@@ -280,11 +283,11 @@
 ; Peano Kurve
 (make-frame "Peano Curve 4")
 
-(define rules '((X . (X F Y F X + F + Y F X F Y - F - X F Y F X))
-                (Y . (Y F X F Y - F - X F Y F X + F + Y F X F Y))))
+(setq rules '((X . (X F Y F X + F + Y F X F Y - F - X F Y F X))
+              (Y . (Y F X F Y - F - X F Y F X + F + Y F X F Y))))
 
-(define actions '((+ . (lambda () (right 90)))
-                  (- . (lambda () (left  90)))))
+(setq actions (list (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left  90)))))
 
 (l-system 4 20 'X)
 (open-frame)
@@ -293,10 +296,10 @@
 ; Peano Kurve, 1 : 1/3
 (make-frame "Peano Kurve 4")
 
-(define rules '((F . (F - F + F + F + F - F - F - F + F))))
+(setq rules '((F . (F - F + F + F + F - F - F - F + F))))
 
-(define actions '((+ . (lambda () (right 90)))
-                  (- . (lambda () (left  90)))))
+(setq actions (list (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left  90)))))
 
 (l-system 4 20 'F)
 (open-frame)
@@ -305,11 +308,11 @@
 ; Penta Plexity
 (make-frame "Penta Plexity 4")
 
-(define rules '((F . (F + + F + + F R F - F + + F))))
+(setq rules '((F . (F + + F + + F R F - F + + F))))
 
-(define actions '((+ . (lambda () (right 36)))
-                  (- . (lambda () (left  36)))
-                  (R . (lambda () (left 180)))))
+(setq actions (list (cons '+  (lambda () (right 36)))
+                    (cons '-  (lambda () (left  36)))
+                    (cons 'R  (lambda () (left 180)))))
 
 (l-system 4 20 'F)
 (right 72)
@@ -327,11 +330,11 @@
 ; Sierpinsky (Menger) Teppich
 (make-frame "Sierpinsky (Menger) Teppich")
 
-(define rules '((F . (F + F - F - F F - F - F - w F))
-                (w . (w w w))))
+(setq rules '((F . (F + F - F - F F - F - F - w F))
+              (w . (w w w))))
 
-(define actions '((+ . (lambda () (right 90)))
-                  (- . (lambda () (left  90)))))
+(setq actions (list (cons '+  (lambda () (right 90)))
+                    (cons '-  (lambda () (left  90)))))
 
 (l-system 4 20 'F)
 (open-frame)
