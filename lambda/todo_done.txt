@@ -1458,3 +1458,9 @@ number() (schnell) ist meist gefolgt von cast auf Number (langsam)
 -> number soll gleich Number liefern
 
 julia.lisp: unter Java17/18 ist das fenster größer als Java8 ?!?
+
+lst umbenamsen in requireList()
+
+1+, 1- sollten auch byte, short, int zu Long machen, und nicht zu double
+
+ggf. die konvertierungsmethoden die Object nehmen überladen, falls der Compiler den typ kennt, zumindest overloads mit Long und Double (und ggf. long+double)?

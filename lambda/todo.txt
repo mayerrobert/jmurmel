@@ -1,20 +1,25 @@
+
 in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel ist nicht ok
 -> checks einbauen
 -> dezimal->integer verbieten: statt uberall asNumber() -> bei integer requireInteger(), bei dbl & Co requireNumber()
    -> as... konvertieren, require... checken nur den typ ohne konvertierung
       oder vielleicht to... statt as...
--> mache number konvertierungen akzeptieren alle Java Number typen, andere und numberp nur Double und Long
+-> manche number konvertierungen akzeptieren alle Java Number typen, andere und numberp nur Double und Long
+   -> numberp umstellen dass alle Java Number true sind, anynumber&co weg
 
-lst umbenamsen in requireList()
+in der runtime kein .doubleValue() verwenden sondern toDouble(), interpreter und compiler
+-> casts auf Number sollte es auch fast keine mehr geben
+-> argchecks auch nicht/kaum
 
-ggf. die konvertierungsmethoden die Object nehmen überladen, falls der Compiler den typ kennt, zumindest overloads mit Long und Double (und ggf. long+double)?
-
-instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
+integerp umstellen dass auch BigInteger t ist
+-> kein longValue() mehr sondern toLong()
+-> auch signum umbauen dass BigInteger und BigDecimal geht
 
 instanceof in tailcall(Object... und funcall(Object... bremst
 -> CompilerGlobal könnte eine methode funcall bekommen, die wird emitted wenn das symbol in der car position einer form vorkommt
    funcall würde das ergebnis von instanceof cachen und zum richtigen funcall dispatchen
    -> und tailcall()
+oder instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
 
 soll JFR mittels "(declaim..." an/abgedreht werden können?
 

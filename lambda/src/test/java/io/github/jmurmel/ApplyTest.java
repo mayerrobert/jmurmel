@@ -56,7 +56,7 @@ public class ApplyTest {
     @Test
     public void primitiveThreeExpApplyError() {
         LambdaJTest.runErrorTest("primitiveThreeArgs", "(apply + '((+ 1 1) (+ 2 2) 3))",
-                                 "+: expected a proper list of numbers but got ((+ 1.0 1.0) (+ 2.0 2.0) 3.0)");
+                                 "+: expected a number argument but got (+ 1.0 1.0)");
     }
 
     @Test

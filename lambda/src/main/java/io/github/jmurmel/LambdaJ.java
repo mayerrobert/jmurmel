@@ -22,6 +22,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -1988,8 +1990,8 @@ public class LambdaJ {
         if (op == sSub)  { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
         if (op == sDiv)  { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
         
-        if (op == sMod)  { twoArgs("mod", args); return cl_mod(asDouble("mod", car(args)), asDouble("mod", cadr(args))); }
-        if (op == sRem)  { twoArgs("rem", args); return asDouble("rem", car(args)) % asDouble("rem", cadr(args)); }
+        if (op == sMod)  { twoArgs("mod", args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
+        if (op == sRem)  { twoArgs("rem", args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
 
         if (op == sNeq)  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
         if (op == sNe)   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
@@ -2006,8 +2008,8 @@ public class LambdaJ {
         if (op == sEql)  { twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
         if (op == sNull) { oneArg ("null", args);  return boolResult(car(args) == null); }
 
-        if (op == sInc)  { oneNumber("1+", args);  return inc((Number)car(args)); }
-        if (op == sDec)  { oneNumber("1-", args);  return dec((Number)car(args)); }
+        if (op == sInc)  { oneArg("1+", args);  return inc(requireNumber("1+", car(args))); }
+        if (op == sDec)  { oneArg("1-", args);  return dec(requireNumber("1-", car(args))); }
 
         if (op == sAppend)   { return append(args); }
         if (op == sList)     { return args; }
@@ -2436,10 +2438,13 @@ public class LambdaJ {
     static boolean  symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
     static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
     static boolean  primp(Object o)      { return o instanceof Primitive; }
-    static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double; }
+    static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double
+                                                  || o instanceof Byte || o instanceof Short || o instanceof Integer
+                                                  || o instanceof BigInteger || o instanceof BigDecimal
+                                                  || o instanceof Number; }
     static boolean  stringp(Object o)    { return o instanceof String; }
     static boolean  floatp(Object o)     { return o instanceof Double; }
-    static boolean  integerp(Object o)   { return o instanceof Long; }
+    static boolean  integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer
     static boolean  characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
@@ -2552,7 +2557,7 @@ public class LambdaJ {
 
     static Number cl_signum(Number n) {
         if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
-        return Math.signum(n.doubleValue());
+        return Math.signum(toDouble("signum", n));
     }
 
     /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
@@ -2568,21 +2573,27 @@ public class LambdaJ {
     }
 
     static Number inc(Number n) {
-        if (n instanceof Long) {
+        if (n instanceof Long
+            || n instanceof Byte
+            || n instanceof Short
+            || n instanceof Integer) {
             final long l;
             if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
             return l + 1;
         }
-        return n.doubleValue() + 1;
+        return toDouble("1+", n) + 1;
     }
 
     static Number dec(Number n) {
-        if (n instanceof Long) {
+        if (n instanceof Long
+            || n instanceof Byte
+            || n instanceof Short
+            || n instanceof Integer) {
             final long l;
             if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
             return l - 1;
         }
-        return n.doubleValue() - 1;
+        return toDouble("1-", n) - 1;
     }
 
     final Object eval(Object form, ConsCell env) {
@@ -2778,8 +2789,12 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
     }
 
-    static void errorNotANumber(String func, Object n) {
+    static RuntimeException errorNotANumber(String func, Object n) {
         throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
+    }
+
+    static void errorOverflow(String func, String targetType, Object n) {
+        throw new LambdaJError(true, "%s: value cannot be represented as a %s: %s", func, targetType, String.valueOf(n));
     }
 
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
@@ -2842,13 +2857,13 @@ public class LambdaJ {
 
     /** varargs, at least {@code min} args */
     private static void varargsMin(String func, ConsCell a, int min) {
-        final int actualLength = length(a);
+        final int actualLength = length(a); // todo alles zaehlen ist umsonst
         if (actualLength < min) errorVarargsCount(func, min, actualLength);
     }
 
     /** varargs, between {@code min} and {@code max} args */
     private static void varargsMinMax(String func, ConsCell a, int min, int max) {
-        final int actualLength = length(a);
+        final int actualLength = length(a); // todo alles zaehlen ist umsonst
         if (actualLength < min || actualLength > max) errorArgCount(func, min, max, actualLength, a);
     }
 
@@ -2893,54 +2908,15 @@ public class LambdaJ {
 
     /// Additional error checking functions used by primitives only.
 
-    /** a must be a proper list of only numbers (empty list is fine, too) */
-    private static void numberArgs(String func, ConsCell a) {
-        if (a == null) return;
-        final ConsCell start = a;
-        for (; a != null; a = (ConsCell) cdr(a)) {
-            if (!numberp(car(a)) || cdr(a) != null && (cdr(a) == start || !consp(cdr(a))))
-                throw new LambdaJError(true, "%s: expected a proper list of numbers but got %s", func, printSEx(a));
-        }
-    }
 
-    /** between {@code min} and {@code max} number args */
-    private static void numberArgs(String func, ConsCell a, int min, int max) {
-        varargsMinMax(func, a, min, max);
-        numberArgs(func, a);
-    }
-
-    /** one number arg */
-    private static void oneNumber(String func, ConsCell a) {
-        oneArg(func, a);
-        numberArgs(func, a);
-    }
-
-    /** at least one arg, all args must be numbers */
-    private static void oneOrMoreNumbers(String func, ConsCell a) {
-        varargs1(func, a);
-        numberArgs(func, a);
-    }
-
-    
-    
-    /** at least one arg, the first arg must be a LambdaJString */
+    /** at least one arg, the first arg must be a non-nil string */
     private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
             throw new LambdaJError(true, "%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
     }
 
-    /** a must be a proper list of only strings (empty list is fine, too) */
-    private static void stringArgs(String func, ConsCell a) {
-        if (a == null) return;
-        final ConsCell start = a;
-        for (; a != null; a = (ConsCell) cdr(a)) {
-            if (!stringp(car(a)) || cdr(a) != null && (cdr(a) == start || !consp(cdr(a))))
-                throw new LambdaJError(true, "%s: expected a proper list of strings but got %s", func, printSEx(a));
-        }
-    }
-
     /** Return {@code a} as a TurtleFrame or current_frame if null, error if {@code a} is not of type frame. */
-    private TurtleFrame asFrame(String func, Object a) {
+    private TurtleFrame requireFrame(String func, Object a) {
         final TurtleFrame ret;
         if (a == null) {
             ret = current_frame;
@@ -2954,60 +2930,84 @@ public class LambdaJ {
     }
 
 
-    /** Return {@code a} as a float, error if {@code a} is not a number. */
-    private static float asFloat(String func, Object a) {
-        number(func, a);
-        return ((Number)a).floatValue();
+    /** convert {@code a} to a float, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+    private static float toFloat(String func, Object a) {
+        final Number n = requireNumber(func, a);
+
+        final float ret = n.floatValue();
+        if (n instanceof BigInteger || n instanceof BigDecimal) {
+            if (Float.isNaN(ret)) errorOverflow(func, "float", a);
+            return ret;
+        }
+        final double dbl = n.doubleValue();
+        if (dbl > Float.MAX_VALUE || dbl < Float.MIN_VALUE) errorOverflow(func, "float", a);
+        return ret;
     }
 
-    /** Return {@code a} as a double, error if {@code a} is not a number. */
-    private static double asDouble(String func, Object a) {
-        number(func, a);
-        return ((Number)a).doubleValue();
+    /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+    private static double toDouble(String func, Object a) {
+        final Number n = requireNumber(func, a);
+
+        final double ret = n.doubleValue();
+        if (n instanceof BigInteger || n instanceof BigDecimal) {
+            if (Double.isNaN(ret)) errorOverflow(func, "double", a);
+            return ret;
+        }
+        return ret;
     }
 
-    /** Return {@code a} as an int, error if {@code a} is not a number. */
-    private static int asInt(String func, Object a) {
-        number(func, a);
-        return ((Number)a).intValue();
+    /** convert {@code a} to an int, error if {@code a} is not a number. */
+    private static int toInt(String func, Object a) {
+        final Number n = requireNumber(func, a);
+        return n.intValue(); // todo error "rounding required" when a is a double or float or BigDecimal, overflow checks
     }
 
-    private static Number asNumberOrNull(String func, Object a) {
+    private static Number requireNumberOrNull(String func, Object a) {
         if (a == null) return null;
-        number(func, a);
-        return (Number)a;
+        return requireNumber(func, a);
     }
 
     /** error if n is not of type number */
-    private static void number(String func, Object n) {
-        if (numberp(n)) return;
-        errorNotANumber(func, n);
+    static Number requireNumber(String func, Object n) {
+        if (n instanceof Long)    return (Long)n;
+        if (n instanceof Double)  return (Double) n;
+        if (n instanceof Byte)    return (Byte)n;
+        if (n instanceof Short)   return (Short)n;
+        if (n instanceof Integer) return (Integer)n;
+        if (n instanceof Float)   return (Float)n;
+        if (n instanceof Number)  return (Number)n;
+        throw errorNotANumber(func, n);
     }
 
 
     /** Return {@code c} as a Character, error if {@code c} is not a Character. */
-    private static Character asChar(String func, Object c) {
+    private static Character requireChar(String func, Object c) {
         if (!(c instanceof Character)) throw new LambdaJError(true, "%s: expected a character argument but got %s", func, printSEx(c));
         return (Character)c;
     }
 
     /** Return {@code c} as a String, error if {@code c} is not a string, character or symbol. */
-    private static String asStringOrNull(String func, Object c) {
+    private static String requireStringOrNull(String func, Object c) {
         if (c == null) return null;
+        return requireString(func, c);
+    }
+
+    // todo requireString steht im widerspruch zu stringp
+    private static String requireString(String func, Object c) {
         if (!(c instanceof String) && !(c instanceof Character) && !(c instanceof LambdaJSymbol)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
         return c.toString();
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
-    private static ConsCell asList(String func, Object a) {
+    private static ConsCell requireCons(String func, Object a) {
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
-    private static ConsCell asListOrNull(String func, Object a) {
+    private static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
-        return asList(func, a);
+        return requireCons(func, a);
     }
 
 
@@ -3022,38 +3022,55 @@ public class LambdaJ {
 
     /** compare subsequent pairs of the given list of numbers with the given predicate */
     private Object compare(ConsCell args, String opName, DoubleBiPred pred) {
-        oneOrMoreNumbers(opName, args);
-        Number prev = (Number)car(args);
+        varargs1(opName, args);
+        Object prev = car(args);
         for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
-            final Number next = (Number)car(rest);
-            if (!pred.test(prev.doubleValue(), next.doubleValue())) return null;
+            final Object next = car(rest);
+            if (!pred.test(toDouble(opName, prev), toDouble(opName, next))) return null;
             prev = next;
         }
         return expTrue.get();
     }
 
     /** operator for zero or more args */
-    private static Object addOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
-        numberArgs(opName, args);
-        if (car(args) == null) return startVal;
-        double result = ((Number)car(args)).doubleValue();
-        for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
-            result = op.applyAsDouble(result, ((Number)car(args)).doubleValue());
+    private static Object addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+        if (car(_args) == null) return startVal;
+        ConsCell args = _args;
+        double result = toDouble(opName, car(args));
+
+        for (;;) {
+            final Object next = cdr(args);
+            if (!listp(next) || next == _args) // todo nested loop check
+                throw new LambdaJError(true, "%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
+            args = (ConsCell) next;
+            if (args == null) break;
+            result = op.applyAsDouble(result, toDouble(opName, car(args)));
+        }
         return result;
     }
 
     /** operator for one or more args */
-    private static Object subOp(ConsCell args, String opName, double startVal, DoubleBinaryOperator op) {
-        oneOrMoreNumbers(opName, args);
-        double result = ((Number)car(args)).doubleValue();
+    private static Object subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+        varargs1(opName, _args);
+        ConsCell args = _args;
+        double result = toDouble(opName, car(args));
+
         if (cdr(args) == null) return op.applyAsDouble(startVal, result);
-        for (args = (ConsCell) cdr(args); args != null; args = (ConsCell) cdr(args))
-            result = op.applyAsDouble(result, ((Number)car(args)).doubleValue());
+
+        for (;;) {
+            final Object next = cdr(args);
+            if (!listp(next) || next == args) // todo nested loop check
+                throw new LambdaJError(true, "%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
+            args = (ConsCell) next;
+            if (args == null) break;
+            result = op.applyAsDouble(result, toDouble(opName, car(args)));
+        }
         return result;
     }
 
-    private static double quot12(ConsCell args) {
-        return cdr(args) == null ? ((Number)car(args)).doubleValue() : ((Number)car(args)).doubleValue() / ((Number)cadr(args)).doubleValue();
+    private static double quot12(String func, ConsCell args) {
+        final double lhs = toDouble(func, car(args));
+        return cdr(args) == null ? lhs : lhs / toDouble(func, cadr(args));
     }
 
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
@@ -3069,26 +3086,26 @@ public class LambdaJ {
 
     private static Object cl_rplaca(ConsCell args) {
         twoArgs("rplaca", args);
-        return asList("rplaca", car(args)).rplaca(cadr(args));
+        return requireCons("rplaca", car(args)).rplaca(cadr(args));
     }
 
     private static Object cl_rplacd(ConsCell args) {
         twoArgs("rplacd", args);
-        return asList("rplacd", car(args)).rplacd(cadr(args));
+        return requireCons("rplacd", car(args)).rplacd(cadr(args));
     }
 
     private static Object listToString(ConsCell a) {
         oneArg("list->string", a);
-        final ConsCell l = asListOrNull("list->string", car(a));
+        final ConsCell l = requireList("list->string", car(a));
         if (l == null) return null;
         final StringBuilder ret = new StringBuilder();
-        for (Object c: l) ret.append(asChar("list->string", c));
+        for (Object c: l) ret.append(requireChar("list->string", c));
         return ret.toString();
     }
 
     private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
-        final String s = asStringOrNull("string->list", car(a));
+        final String s = requireStringOrNull("string->list", car(a));
         if (s == null) return null;
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length();
@@ -3208,9 +3225,9 @@ public class LambdaJ {
     }
 
     static Object sleep(ConsCell a) {
-        oneNumber("sleep", a);
+        oneArg("sleep", a);
         try {
-            final long millis = (long)(((Number)car(a)).doubleValue() * 1e3D);
+            final long millis = (long)(toDouble("sleep", car(a)) * 1e3D);
             Thread.sleep(millis);
             return null;
         } catch (InterruptedException e) {
@@ -3337,8 +3354,7 @@ public class LambdaJ {
 
     private static Primitive findJavaMethod(ConsCell x) {
         varargsMin(":: ", x, 2);
-        stringArgs(":: ", x);
-        return findMethod((String) car(x), (String) cadr(x), asListOrNull("::", cddr(x)));
+        return findMethod(requireString("::", car(x)), requireString("::", cadr(x)), requireList("::", cddr(x)));
     }
 
     /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
@@ -3361,28 +3377,28 @@ public class LambdaJ {
 
     static final Map<String, Object[]> classByName = new HashMap<>(64);
     static {
-        classByName.put("byte",   new Object[] { byte.class,   "asByte" });
-        classByName.put("short",  new Object[] { short.class,  "asShort" });
-        classByName.put("int",    new Object[] { int.class,    "asInt" });
-        classByName.put("long",   new Object[] { long.class,   "asLong" });
-        classByName.put("float",  new Object[] { float.class,  "asFloat" });
-        classByName.put("double", new Object[] { double.class, "dbl", });
+        classByName.put("byte",   new Object[] { byte.class,   "toByte" });
+        classByName.put("short",  new Object[] { short.class,  "toShort" });
+        classByName.put("int",    new Object[] { int.class,    "toInt" });
+        classByName.put("long",   new Object[] { long.class,   "toLong" });
+        classByName.put("float",  new Object[] { float.class,  "toFloat" });
+        classByName.put("double", new Object[] { double.class, "toDouble", });
 
-        classByName.put("char",   new Object[] { char.class,   "asChar" });
+        classByName.put("char",   new Object[] { char.class,   "requireChar" });
 
         classByName.put("Object",    new Object[] { Object.class,    null });             aliasJavaLang("Object");
 
         // todo die boxed typen sollten null als null durchreichen
-        classByName.put("Number",    new Object[] { Number.class,    "asNumberOrNull" }); aliasJavaLang("Number");
-        classByName.put("Byte",      new Object[] { Byte.class,      "asByte" });         aliasJavaLang("Byte");
-        classByName.put("Short",     new Object[] { Short.class,     "asShort" });        aliasJavaLang("Short");
-        classByName.put("Integer",   new Object[] { Integer.class,   "asInt" });          aliasJavaLang("Integer");
-        classByName.put("Long",      new Object[] { Long.class,      "asLong" });         aliasJavaLang("Long");
-        classByName.put("Float",     new Object[] { Float.class,     "asFloat" });        aliasJavaLang("Float");
-        classByName.put("Double",    new Object[] { Double.class,    "dbl" });            aliasJavaLang("Double");
+        classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull" }); aliasJavaLang("Number");
+        classByName.put("Byte",      new Object[] { Byte.class,      "toByte" });         aliasJavaLang("Byte");
+        classByName.put("Short",     new Object[] { Short.class,     "toShort" });        aliasJavaLang("Short");
+        classByName.put("Integer",   new Object[] { Integer.class,   "toInt" });          aliasJavaLang("Integer");
+        classByName.put("Long",      new Object[] { Long.class,      "toLong" });         aliasJavaLang("Long");
+        classByName.put("Float",     new Object[] { Float.class,     "toFloat" });        aliasJavaLang("Float");
+        classByName.put("Double",    new Object[] { Double.class,    "toDouble" });       aliasJavaLang("Double");
 
-        classByName.put("Character", new Object[] { Character.class, "asChar" });         aliasJavaLang("Character");
-        classByName.put("String",    new Object[] { String.class,    "asStringOrNull" }); aliasJavaLang("String");
+        classByName.put("Character", new Object[] { Character.class, "requireChar" });         aliasJavaLang("Character");
+        classByName.put("String",    new Object[] { String.class,    "requireStringOrNull" }); aliasJavaLang("String");
     }
 
     private static void aliasJavaLang(String existing) {
@@ -3429,70 +3445,70 @@ public class LambdaJ {
                   addBuiltin("writeln", (Primitive) a -> { varargsMinMax("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
                   addBuiltin("lnwrite", (Primitive) a -> { varargsMinMax("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
                   env))));
-            }
-        
+        }
+
         if (haveGui()) {
             final Primitive makeFrame = a -> {
                 varargsMinMax("make-frame", a, 1, 4);
-                final String title = asStringOrNull("make-frame", car(a));
-                final TurtleFrame ret = new TurtleFrame(title, asNumberOrNull("make-frame", cadr(a)), asNumberOrNull("make-frame", caddr(a)), asNumberOrNull("make-frame", cadddr(a)));
+                final String title = requireStringOrNull("make-frame", car(a));
+                final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
                 current_frame = ret;
                 return ret;
             };
             env = addBuiltin("make-frame",    makeFrame,
-                  addBuiltin("open-frame",    (Primitive) a -> { varargsMinMax("open-frame",    a, 0, 1); return asFrame("open-frame",    car(a)).open();    },
-                  addBuiltin("close-frame",   (Primitive) a -> { varargsMinMax("close-frame",   a, 0, 1); return asFrame("close-frame",   car(a)).close();   },
-                  addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return asFrame("reset-frame",   car(a)).reset();   },
-                  addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return asFrame("clear-frame",   car(a)).clear();   },
-                  addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return asFrame("repaint-frame", car(a)).repaint(); },
-                  addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return asFrame("flush-frame",   car(a)).flush();   },
+                  addBuiltin("open-frame",    (Primitive) a -> { varargsMinMax("open-frame",    a, 0, 1); return requireFrame("open-frame",    car(a)).open();    },
+                  addBuiltin("close-frame",   (Primitive) a -> { varargsMinMax("close-frame",   a, 0, 1); return requireFrame("close-frame",   car(a)).close();   },
+                  addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return requireFrame("reset-frame",   car(a)).reset();   },
+                  addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return requireFrame("clear-frame",   car(a)).clear();   },
+                  addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return requireFrame("repaint-frame", car(a)).repaint(); },
+                  addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return requireFrame("flush-frame",   car(a)).flush();   },
 
                   // set new current frame, return previous frame
-                  addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = asFrame("current-frame", car(a)); return prev; },
+                  addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; },
 
-                  addBuiltin("push-pos",      (Primitive) a -> { varargsMinMax("push-pos",a, 0, 1); return asFrame("push-pos",car(a)).pushPos(); },
-                  addBuiltin("pop-pos",       (Primitive) a -> { varargsMinMax("pop-pos", a, 0, 1); return asFrame("pop-pos", car(a)).popPos();  },
+                  addBuiltin("push-pos",      (Primitive) a -> { varargsMinMax("push-pos",a, 0, 1); return requireFrame("push-pos",car(a)).pushPos(); },
+                  addBuiltin("pop-pos",       (Primitive) a -> { varargsMinMax("pop-pos", a, 0, 1); return requireFrame("pop-pos", car(a)).popPos();  },
 
-                  addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return asFrame("pen-up",   car(a)).penUp();   },
-                  addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return asFrame("pen-down", car(a)).penDown(); },
+                  addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return requireFrame("pen-up",   car(a)).penUp();   },
+                  addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return requireFrame("pen-down", car(a)).penDown(); },
 
-                  addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 1, 2); return asFrame("color",   cadr(a)).color  (asInt("color",   car(a))); },
-                  addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 1, 2); return asFrame("bgcolor", cadr(a)).bgColor(asInt("bgcolor", car(a))); },
+                  addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 1, 2); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); },
+                  addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 1, 2); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); },
 
-                  addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return asFrame("text",    cadr(a)).text   (car(a).toString()); },
+                  addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return requireFrame("text",    cadr(a)).text   (car(a).toString()); },
 
-                  addBuiltin("right",         (Primitive) a -> { varargsMinMax("right",   a, 1, 2); return asFrame("right",   cadr(a)).right  (asDouble("right",   car(a))); },
-                  addBuiltin("left",          (Primitive) a -> { varargsMinMax("left",    a, 1, 2); return asFrame("left",    cadr(a)).left   (asDouble("left",    car(a))); },
-                  addBuiltin("forward",       (Primitive) a -> { varargsMinMax("forward", a, 1, 2); return asFrame("forward", cadr(a)).forward(asDouble("forward", car(a))); },
+                  addBuiltin("right",         (Primitive) a -> { varargsMinMax("right",   a, 1, 2); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
+                  addBuiltin("left",          (Primitive) a -> { varargsMinMax("left",    a, 1, 2); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
+                  addBuiltin("forward",       (Primitive) a -> { varargsMinMax("forward", a, 1, 2); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
                   env))))))))))))))))));
 
-            env = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return asFrame("move-to",  caddr(a)).moveTo(asDouble("move-to",  car(a)), asDouble("move-to", cadr(a)));  },
-                  addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return asFrame("line-to",  caddr(a)).lineTo(asDouble("line-to",  car(a)), asDouble("line-to", cadr(a)));  },
-                  addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return asFrame("move-rel", caddr(a)).moveRel(asDouble("move-rel", car(a)), asDouble("move-rel", cadr(a))); },
-                  addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return asFrame("line-rel", caddr(a)).lineRel(asDouble("line-rel", car(a)), asDouble("line-rel", cadr(a))); },
+            env = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  },
+                  addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
+                  addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
+                  addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
                   env))));
 
-            env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return asFrame("make-bitmap",    caddr(a)).makeBitmap(asInt("make-bitmap",  car(a)), asInt("make-bitmap", cadr(a))); },
-                  addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return asFrame("discard-bitmap", car(a)).discardBitmap(); },
-                  addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return asFrame("set-pixel",      cadddr(a)).setRGB(asInt("set-pixel", car(a)), asInt("set-pixel", cadr(a)), asInt("set-pixel", caddr(a)));  },
+            env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); },
+                  addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
+                  addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
-                                                                 final int rgb = asInt("rgb-to-pixel", car(a)) << 16
-                                                                               | asInt("rgb-to-pixel", cadr(a)) << 8
-                                                                               | asInt("rgb-to-pixel", caddr(a));
+                                                                 final int rgb = toInt("rgb-to-pixel", car(a)) << 16
+                                                                               | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                               | toInt("rgb-to-pixel", caddr(a));
                                                                  return (long)rgb;  },
                   addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
-                                                                 return (long)Color.HSBtoRGB(asFloat("hsb-to-pixel", car(a)),
-                                                                                             asFloat("hsb-to-pixel", cadr(a)),
-                                                                                             asFloat("hsb-to-pixel", caddr(a)));  },
+                                                                 return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                             toFloat("hsb-to-pixel", cadr(a)),
+                                                                                             toFloat("hsb-to-pixel", caddr(a)));  },
                   env)))));
         }
 
         if (haveString()) {
             env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
                   addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
-                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long)asChar("char-code", car(a)); },
-                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char)asInt("code-char", car(a)); },
-                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(asStringOrNull("string=", car(a)), asStringOrNull("string=", cadr(a)))); },
+                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long) requireChar("char-code", car(a)); },
+                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char) toInt("code-char", car(a)); },
+                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
                   addBuiltin("string->list", (Primitive) this::stringToList,
                   addBuiltin("list->string", (Primitive) LambdaJ::listToString,
                   env)))))));
@@ -3589,30 +3605,30 @@ public class LambdaJ {
             env = addBuiltin("pi",      Math.PI,
                   env);
 
-            env = addBuiltin("fround",   (Primitive) args -> { numberArgs("fround",   args, 1, 2); return Math.rint  (quot12(args)); },
-                  addBuiltin("ffloor",   (Primitive) args -> { numberArgs("ffloor",   args, 1, 2); return Math.floor (quot12(args)); },
-                  addBuiltin("fceiling", (Primitive) args -> { numberArgs("fceiling", args, 1, 2); return Math.ceil  (quot12(args)); },
-                  addBuiltin("ftruncate",(Primitive) args -> { numberArgs("ftruncate",args, 1, 2); return cl_truncate(quot12(args)); },
+            env = addBuiltin("fround",   (Primitive) args -> { varargsMinMax("fround",   args, 1, 2); return Math.rint  (quot12("fround", args)); },
+                  addBuiltin("ffloor",   (Primitive) args -> { varargsMinMax("ffloor",   args, 1, 2); return Math.floor (quot12("ffloor", args)); },
+                  addBuiltin("fceiling", (Primitive) args -> { varargsMinMax("fceiling", args, 1, 2); return Math.ceil  (quot12("fceiling", args)); },
+                  addBuiltin("ftruncate",(Primitive) args -> { varargsMinMax("ftruncate",args, 1, 2); return cl_truncate(quot12("ftruncate", args)); },
 
-                  addBuiltin("round",   (Primitive) args -> { numberArgs("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12(args))); },
-                  addBuiltin("floor",   (Primitive) args -> { numberArgs("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12(args))); },
-                  addBuiltin("ceiling", (Primitive) args -> { numberArgs("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12(args))); },
-                  addBuiltin("truncate",(Primitive) args -> { numberArgs("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12(args))); },
+                  addBuiltin("round",   (Primitive) args -> { varargsMinMax("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12("round", args))); },
+                  addBuiltin("floor",   (Primitive) args -> { varargsMinMax("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12("floor", args))); },
+                  addBuiltin("ceiling", (Primitive) args -> { varargsMinMax("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12("ceiling", args))); },
+                  addBuiltin("truncate",(Primitive) args -> { varargsMinMax("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12("truncate", args))); },
                   env))))))));
 
-            env = addBuiltin("1+",      (Primitive) args -> { oneNumber("1+", args); return inc((Number)car(args)); },
-                  addBuiltin("1-",      (Primitive) args -> { oneNumber("1-", args); return dec((Number)car(args)); },
+            env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(requireNumber("1+", car(args))); },
+                  addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(requireNumber("1-", car(args))); },
 
-                  addBuiltin("sqrt",    (Primitive) args -> { numberArgs("sqrt",    args, 1, 1); return Math.sqrt (((Number)car(args)).doubleValue()); },
-                  addBuiltin("log",     (Primitive) args -> { numberArgs("log",     args, 1, 1); return Math.log  (((Number)car(args)).doubleValue()); },
-                  addBuiltin("log10",   (Primitive) args -> { numberArgs("log10",   args, 1, 1); return Math.log10(((Number)car(args)).doubleValue()); },
-                  addBuiltin("exp",     (Primitive) args -> { numberArgs("exp",     args, 1, 1); return Math.exp  (((Number)car(args)).doubleValue()); },
-                  addBuiltin("expt",    (Primitive) args -> { numberArgs("expt",    args, 2, 2); return Math.pow  (((Number)car(args)).doubleValue(), ((Number)cadr(args)).doubleValue()); },
+                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
+                  addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
+                  addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
+                  addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
+                  addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt", car(args)), toDouble("expt", cadr(args))); },
 
-                  addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(asDouble("mod", car(args)), asDouble("mod", cadr(args))); },
-                  addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return ((Number)car(args)).doubleValue() % ((Number)cadr(args)).doubleValue(); },
+                  addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
+                  addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
                           
-                  addBuiltin("signum",  (Primitive) args -> { oneNumber("signum", args); return cl_signum((Number)car(args)); },
+                  addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(requireNumber("signum", car(args))); },
                   env))))))))));
 
             env = addBuiltin("=",       (Primitive) args -> compare(args, "=",  (d1, d2) -> d1 == d2),
@@ -4663,10 +4679,10 @@ public class LambdaJ {
         public static ConsCell cons(Object car, Object cdr)  { return LambdaJ.ConsCell.cons(car, cdr); } // also used by generated code
 
         public final Object   _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        public static Object rplaca(Object l, Object newCar) { return lst(l).rplaca(newCar); }
+        public static Object rplaca(Object l, Object newCar) { return requireList(l).rplaca(newCar); }
 
         public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        public static Object rplacd(Object l, Object newCdr) { return lst(l).rplacd(newCdr); }
+        public static Object rplacd(Object l, Object newCdr) { return requireList(l).rplacd(newCdr); }
 
         public final Object _apply (Object... args) {
             twoArgs("apply", args.length);
@@ -4679,7 +4695,7 @@ public class LambdaJ {
             if (symbolp(fn)) fn = getValue(fn.toString());
             return applyTailcallHelper(fn, args[1]);
         }
-        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? lst(args[1]) : null); }
+        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? requireList(args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
         public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
@@ -4759,14 +4775,14 @@ public class LambdaJ {
         public static double cl_round(double d) { return Math.rint(d); }
         public static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
         public static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
-        private static double quot12(Object[] args) { return args.length == 2 ? dbl(args[0]) / dbl(args[1]) : dbl(args[0]); }
+        private static double quot12(Object[] args) { return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long)asChar(args[0]); }
-        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char)asInt(args[0]); }
-        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(asStringOrNull(args[0]), asStringOrNull(args[1])) ? _t : null; }
+        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) requireChar(args[0]); }
+        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
+        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(requireStringOrNull(args[0]), requireStringOrNull(args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
-            final String s = LambdaJ.asStringOrNull("string->list", args[0]);
+            final String s = LambdaJ.requireStringOrNull("string->list", args[0]);
             if (s == null) return null;
             final ListBuilder ret = new ListBuilder();
             final int len = s.length();
@@ -4775,39 +4791,39 @@ public class LambdaJ {
         }
         public final Object   listToString (Object... args) {
             oneArg("list->string", args.length);
-            final ConsCell l = asListOrNull("list->string", args[0]);
+            final ConsCell l = LambdaJ.requireList("list->string", args[0]);
             if (l == null) return null;
             final StringBuilder ret = new StringBuilder();
-            for (Object c: l)  ret.append(asChar(c));
+            for (Object c: l)  ret.append(requireChar(c));
             return ret.toString();
         }
 
-        public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (dbl(args[0])); }
-        public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (dbl(args[0])); }
-        public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(dbl(args[0])); }
-        public final double   _exp     (Object... args) { oneArg("exp",           args.length); return Math.exp  (dbl(args[0])); }
-        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (asNumber(args[0])); }
-        public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (dbl(args[0]), dbl(args[1])); }
-        public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(dbl(args[0]), dbl(args[1])); }
+        public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (toDouble(args[0])); }
+        public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (toDouble(args[0])); }
+        public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(toDouble(args[0])); }
+        public final double   _exp     (Object... args) { oneArg("exp",           args.length); return Math.exp  (toDouble(args[0])); }
+        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (requireNumber("signum", args[0])); }
+        public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
+        public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
         public static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
-        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return dbl(args[0]) % dbl(args[1]); }
+        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return toDouble(args[0]) % toDouble(args[1]); }
 
         // predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
-        public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(asNumber(args[0])); }
-        public static Number  inc1     (Object arg)     { return LambdaJ.inc(asNumber(arg)); }
-        public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(asNumber(args[0])); }
-        public static Number  dec1     (Object arg)     { return LambdaJ.dec(asNumber(arg)); }
+        public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(requireNumber("1+", args[0])); }
+        public static Number  inc1     (Object arg)     { return LambdaJ.inc(requireNumber("1+", arg)); }
+        public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(requireNumber("1-", args[0])); }
+        public static Number  dec1     (Object arg)     { return LambdaJ.dec(requireNumber("1-", arg)); }
 
-        public final double add     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret += dbl(args[i]); return ret; } return 0.0; }
-        public final double mul     (Object... args) { if (args.length > 0) { double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret *= dbl(args[i]); return ret; } return 1.0; }
+        public final double add     (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret += toDouble(args[i]); return ret; } return 0.0; }
+        public final double mul     (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret *= toDouble(args[i]); return ret; } return 1.0; }
 
         public final double sub     (Object... args) { varargs1("-", args.length);
-                                                       if (args.length == 1) return 0.0 - dbl(args[0]);
-                                                       double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret -= dbl(args[i]); return ret; }
+                                                       if (args.length == 1) return 0.0 - toDouble(args[0]);
+                                                       double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret -= toDouble(args[i]); return ret; }
         public final double quot    (Object... args) { varargs1("/", args.length);
-                                                       if (args.length == 1) return 1.0 / dbl(args[0]);
-                                                       double ret = dbl(args[0]); for (int i = 1; i < args.length; i++) ret /= dbl(args[i]); return ret; }
+                                                       if (args.length == 1) return 1.0 / toDouble(args[0]);
+                                                       double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
 
         public final Object numbereq(Object... args) { return compare("=",  args, (d1, d2) -> d1 == d2); }
         public final Object lt      (Object... args) { return compare("<",  args, (d1, d2) -> d1 <  d2); }
@@ -4818,9 +4834,9 @@ public class LambdaJ {
         private Object compare(String op, Object[] args, DoubleBiPred pred) {
             final int length = args.length;
             varargs1(op, length);
-            double prev = dbl(args[0]);
+            double prev = toDouble(args[0]);
             for (int i = 1; i < length; i++) {
-                final double next = dbl(args[i]);
+                final double next = toDouble(args[i]);
                 if (!pred.test(prev, next)) return null;
                 prev = next;
             }
@@ -4839,12 +4855,12 @@ public class LambdaJ {
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
 
-        public final Object jambda             (Object... args) { twoArgs(":: ", args.length); return findMethod(args[0], args[0], asListOrNull("::", arraySlice(args, 2))); }
+        public final Object jambda             (Object... args) { twoArgs(":: ", args.length); return findMethod(args[0], args[0], arraySlice(args, 2)); }
         public static Primitive findMethod(Object className, Object methodName, ConsCell paramClasses) {
-            return LambdaJ.findMethod(asStringOrNull(className), asStringOrNull(methodName), paramClasses);
+            return LambdaJ.findMethod(requireString(className), requireString(methodName), paramClasses);
         }
         public static Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
-            return LambdaJ.findMethod(asStringOrNull(className), asStringOrNull(methodName), arraySlice(paramClasses));
+            return LambdaJ.findMethod(requireString(className), requireString(methodName), arraySlice(paramClasses));
         }
 
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
@@ -4852,56 +4868,56 @@ public class LambdaJ {
 
         public final Object makeFrame          (Object... args) {
             varargsMinMax("make-frame", args.length, 1, 4);
-            final String title = asStringOrNull(args[0]);
-            final TurtleFrame ret = new TurtleFrame(title, asNumberOrNull(nth(1, args)), asNumberOrNull(nth(2, args)), asNumberOrNull(nth(3, args)));
+            final String title = requireStringOrNull(args[0]);
+            final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull(nth(1, args)), requireNumberOrNull(nth(2, args)), requireNumberOrNull(nth(3, args)));
             intp.current_frame = ret;
             return ret;
         }
 
-        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return asFrame("open-frame",     nth(0, args)).open();    }
-        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return asFrame("close-frame",    nth(0, args)).close();   }
-        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return asFrame("reset-frame",    nth(0, args)).reset();   }
-        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return asFrame("clear-frame",    nth(0, args)).clear();   }
-        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return asFrame("repaint-frame",  nth(0, args)).repaint(); }
-        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return asFrame("flush-frame",    nth(0, args)).flush();   }
+        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return requireFrame("open-frame",     nth(0, args)).open();    }
+        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return requireFrame("close-frame",    nth(0, args)).close();   }
+        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return requireFrame("reset-frame",    nth(0, args)).reset();   }
+        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return requireFrame("clear-frame",    nth(0, args)).clear();   }
+        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return requireFrame("repaint-frame",  nth(0, args)).repaint(); }
+        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return requireFrame("flush-frame",    nth(0, args)).flush();   }
 
         // set new current frame, return previous frame
-        public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = asFrame("current-frame", args[0]); return prev; }
+        public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = requireFrame("current-frame", args[0]); return prev; }
 
-        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return asFrame("push-pos",       nth(0, args)).pushPos(); }
-        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return asFrame("pop-pos",        nth(0, args)).popPos();  }
+        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return requireFrame("push-pos",       nth(0, args)).pushPos(); }
+        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return requireFrame("pop-pos",        nth(0, args)).popPos();  }
 
-        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return asFrame("pen-up",         nth(0, args)).penUp();   }
-        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return asFrame("pen-down",       nth(0, args)).penDown(); }
+        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return requireFrame("pen-up",         nth(0, args)).penUp();   }
+        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return requireFrame("pen-down",       nth(0, args)).penDown(); }
 
-        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return asFrame("color",          nth(1, args)).color  (asInt(nth(0, args))); }
-        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return asFrame("bgcolor",        nth(1, args)).bgColor(asInt(nth(0, args))); }
+        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return requireFrame("color",          nth(1, args)).color  (toInt(nth(0, args))); }
+        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return requireFrame("bgcolor",        nth(1, args)).bgColor(toInt(nth(0, args))); }
 
-        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return asFrame("text",           nth(1, args)).text   (args[0].toString()); }
+        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return requireFrame("text",           nth(1, args)).text   (args[0].toString()); }
 
-        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return asFrame("right",          nth(1, args)).right  (dbl(args[0])); }
-        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return asFrame("left",           nth(1, args)).left   (dbl(args[0])); }
-        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return asFrame("forward",        nth(1, args)).forward(dbl(args[0])); }
+        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return requireFrame("right",          nth(1, args)).right  (toDouble(args[0])); }
+        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return requireFrame("left",           nth(1, args)).left   (toDouble(args[0])); }
+        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return requireFrame("forward",        nth(1, args)).forward(toDouble(args[0])); }
 
-        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return asFrame("move-to",        nth(2, args)).moveTo(dbl(args[0]), dbl(args[1]));  }
-        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return asFrame("line-to",        nth(2, args)).lineTo(dbl(args[0]), dbl(args[1]));  }
-        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return asFrame("move-rel",       nth(2, args)).moveRel(dbl(args[0]), dbl(args[1])); }
-        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return asFrame("line-rel",       nth(2, args)).lineRel(dbl(args[0]), dbl(args[1])); }
+        public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return requireFrame("move-to",        nth(2, args)).moveTo(toDouble(args[0]), toDouble(args[1]));  }
+        public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return requireFrame("line-to",        nth(2, args)).lineTo(toDouble(args[0]), toDouble(args[1]));  }
+        public final Object moveRel            (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return requireFrame("move-rel",       nth(2, args)).moveRel(toDouble(args[0]), toDouble(args[1])); }
+        public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return requireFrame("line-rel",       nth(2, args)).lineRel(toDouble(args[0]), toDouble(args[1])); }
 
-        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return asFrame("make-bitmap",    nth(2, args)).makeBitmap(asInt(args[0]), asInt(args[1]));  }
-        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return asFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
+        public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return requireFrame("make-bitmap",    nth(2, args)).makeBitmap(toInt(args[0]), toInt(args[1]));  }
+        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return requireFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
 
-        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return asFrame("set-pixel",      nth(3, args)).setRGB(asInt(args[0]), asInt(args[1]), asInt(args[2]));  }
+        public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return requireFrame("set-pixel",      nth(3, args)).setRGB(toInt(args[0]), toInt(args[1]), toInt(args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
-                                                                  final int r = asInt(args[0]);
-                                                                  final int g = asInt(args[1]);
-                                                                  final int b = asInt(args[2]);
+                                                                  final int r = toInt(args[0]);
+                                                                  final int g = toInt(args[1]);
+                                                                  final int b = toInt(args[2]);
                                                                   final int rgb = (r << 16) | (g << 8) | b;
                                                                   return (long)rgb; }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
-                                                                  final float hue = asFloat(args[0]);
-                                                                  final float sat = asFloat(args[1]);
-                                                                  final float bri = asFloat(args[2]);
+                                                                  final float hue = toFloat(args[0]);
+                                                                  final float sat = toFloat(args[1]);
+                                                                  final float bri = toFloat(args[2]);
                                                                   return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
@@ -4921,88 +4937,63 @@ public class LambdaJ {
             return listToArray(o);
         }
 
-        public static ConsCell lst(Object lst) {
+        public static ConsCell requireList(Object lst) {
             if (lst == null) return null;
             if (!consp(lst)) errorNotAList(lst);
             return (ConsCell)lst;
         }
 
-        public static double dbl(Object n) {
-            // the redundant checks are faster than instanceof Number and will succeed most of the time
-            if (n instanceof Long)    return ((Long)n).doubleValue();
-            if (n instanceof Double)  return (Double) n;
-            if (n instanceof Byte)    return ((Byte)n).doubleValue();
-            if (n instanceof Short)   return ((Short)n).doubleValue();
-            if (n instanceof Integer) return ((Integer)n).doubleValue();
-            if (n instanceof Float)   return ((Float)n).doubleValue();
-            if (n instanceof Number)  return ((Number)n).doubleValue(); // todo verluste im fall von biginter, bigdecimal, ggf. NICHT wandeln sondern error
-            errorNotANumber(n);
-            return 0.0; // notreached
+        public static double toDouble(Object n) {
+            return LambdaJ.toDouble("?", n);
         }
-        public static double dbl(Double n) { if (n != null) return n;
-                                             errorNotANumber(null); return 0.0; /* notreached*/ }
-        public static double dbl(double n) { return n; }
-        public static double dbl(Long n)   { if (n != null) return n;
-                                             errorNotANumber(null); return 0.0; /* notreached*/ }
-        public static double dbl(long n)   { return n; }
+        public static double toDouble(Double n) { if (n != null) return n;
+                                             throw errorNotANumber(null); }
+        public static double toDouble(double n) { return n; }
+        public static double toDouble(Long n)   { if (n != null) return n;
+                                             throw errorNotANumber(null); }
+        public static double toDouble(long n)   { return n; }
 
-        public static long  asLong(Object n)  {
+        public static long  toLong(Object n)  {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
             if (n instanceof Long)    return (Long) n;
-            if (n instanceof Double)  return ((Double)n).longValue();
+            if (n instanceof Double)  return ((Double)n).longValue(); // todo check for lost precision
             if (n instanceof Byte)    return ((Byte)n).longValue();
             if (n instanceof Short)   return ((Short)n).longValue();
             if (n instanceof Integer) return ((Integer)n).longValue();
-            if (n instanceof Float)   return ((Float)n).longValue();
-            if (n instanceof Number)  return ((Number)n).longValue(); // todo verluste im fall von biginteger, bigdecimal, ggf. NICHT wandeln sondern error
-            errorNotANumber(n);
-            return 0L;
+            if (n instanceof Float)   return ((Float)n).longValue();  // todo check for lost precision
+            if (n instanceof Number)  return ((Number)n).longValue(); // todo verluste/ overflow im fall von biginteger, bigdecimal, ggf. NICHT wandeln sondern error
+            throw errorNotANumber(n);
         }
-        public static long  asLong(Long n) { if (n != null) return n;
-                                            errorNotANumber(null); return 0; /* notreached*/ }
-        public static long  asLong(long n) { return n; }
+        public static long  toLong(Long n) { if (n != null) return n;
+                                             throw errorNotANumber(null); }
+        public static long  toLong(long n) { return n; }
 
-        public static int   asInt(Object n)   { anynumber(n);  return ((Number)n).intValue(); }
-        public static float asFloat(Object n) { anynumber(n);  return ((Number)n).floatValue(); }
-        public static float asByte(Object n)  { anynumber(n);  return ((Number)n).byteValue(); }
-        public static float asShort(Object n) { anynumber(n);  return ((Number)n).shortValue(); }
+        public static int   toInt(Object n)   { return requireNumber("toInt", n).intValue(); }      // todo checks
+        public static float toFloat(Object n) { return requireNumber("toFloat", n).floatValue(); }  // todo checks
+        public static float toByte(Object n)  { return requireNumber("toByte", n).byteValue(); }    // todo checks
+        public static float toShort(Object n) { return requireNumber("toShort", n).shortValue(); }  // todo checks
 
-        public static Character asChar(Object o) {
+        public static Character requireChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
             return (Character)o;
         }
 
-        public static String asStringOrNull(Object o) {
+        public static String requireStringOrNull(Object o) {
             if (o == null) return null;
+            return requireString(o);
+        }
+
+        public static String requireString(Object o) {
             if (!stringp(o)) errorNotAString(o);
             return o.toString();
         }
 
-        public static Number asNumberOrNull(Object o) {
+        public static Number requireNumberOrNull(Object o) {
             if (o == null) return null;
-            anynumber(o);
-            return (Number)o;
+            return requireNumber("?", o);
         }
 
-        /** error if n is not of type number, Murmel number types only. Note: semantics should be the same as {@link LambdaJ#numberp(Object)}  */
-        private static Number asNumber(Object n) { if (n instanceof Double) return (Double)n;
-                                                   if (n instanceof Long) return (Long)n;
-                                                   errorNotANumber(n); return 0; /* notreached */}
-
-        /** error if n is not of type number, all Java number types */
-        private static void anynumber(Object n) {
-            if (n instanceof Long
-                    || n instanceof Double
-                    || n instanceof Byte
-                    || n instanceof Short
-                    || n instanceof Integer
-                    || n instanceof Float
-                    || n instanceof Number)
-                return;
-            errorNotANumber(n);
-        }
-
-        private TurtleFrame asFrame(String s, Object o) {
+        private TurtleFrame requireFrame(String s, Object o) {
             final TurtleFrame ret;
             if (o == null && (ret = intp.current_frame) != null) return ret;
             if (o instanceof TurtleFrame) return (TurtleFrame)o;
@@ -5116,7 +5107,7 @@ public class LambdaJ {
             if (actual > expectedMax) throw new LambdaJError(true, "%s: too many arguments", expr);
         }
 
-        private static void errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
+        private static RuntimeException errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
         private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new LambdaJError(true, "not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new LambdaJError(true, "not a string: %s", printSEx(s)); }
@@ -5904,7 +5895,7 @@ public class LambdaJ {
                     if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx, isLast)) return;
 
                     if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "::")
-                        && emitJambda(sb, asList("calling ::", cdr(operator)), env, topEnv, rsfx, true, ccArguments)) {
+                        && emitJambda(sb, requireCons("calling ::", cdr(operator)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }
 
@@ -6424,7 +6415,7 @@ public class LambdaJ {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
-                if (applyOp == intp.sList) { sb.append("lst("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
+                if (applyOp == intp.sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
 
                 if (applyOp != intp.sApply) { // apply needs special treatment for TCO
                     for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
@@ -6558,13 +6549,13 @@ public class LambdaJ {
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargsMinMax(murmel, args, 1, 2);
             if (asLong) sb.append("checkedToLong(");
-            sb.append(javaOp).append("(dbl(");
+            sb.append(javaOp).append("(toDouble(");
             if (cdr(args) == null) {
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
             }
             else {
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
-                sb.append(") / dbl(");
+                sb.append(") / toDouble(");
                 emitForm(sb, cadr(args), env, topEnv, rsfx, false);
             }
             sb.append("))");
@@ -6624,7 +6615,7 @@ public class LambdaJ {
 
         private void emitFuncall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
-            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "dbl");
+            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "toDouble");
         }
 
         /** emit a call to the primitive {@code func} without going through the trampoline,
@@ -6662,7 +6653,7 @@ public class LambdaJ {
             if (form == null || form instanceof Character || form instanceof String) errorNotANumber(func, form);
             if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
             else if (form instanceof Double) sb.append(form.toString());
-            else { sb.append("dbl("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
+            else { sb.append("toDouble("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
@@ -6720,7 +6711,7 @@ public class LambdaJ {
                     sb.append("((").append(strClazz).append(')');
                     emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                     sb.append(").").append(strMethod);
-                    ccArguments = asListOrNull((String)strMethod, cdr(ccArguments));
+                    ccArguments = requireList((String)strMethod, cdr(ccArguments));
                 }
 
                 sb.append("(");
