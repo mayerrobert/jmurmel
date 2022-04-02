@@ -2807,7 +2807,11 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
     }
 
-    static void errorOverflow(String func, String targetType, Object n) {
+    static RuntimeException errorNotAnIntegralNumber(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected an integral number argument but got %s", func, printSEx(n));
+    }
+
+    static RuntimeException errorOverflow(String func, String targetType, Object n) {
         throw new LambdaJError(true, "%s: value cannot be represented as a %s: %s", func, targetType, String.valueOf(n));
     }
 
@@ -2972,8 +2976,7 @@ public class LambdaJ {
 
     /** convert {@code a} to an int, error if {@code a} is not a number. */
     private static int toInt(String func, Object a) {
-        final Number n = requireNumber(func, a);
-        return n.intValue(); // todo error "rounding required" when a is a double or float or BigDecimal, overflow checks
+        return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
     }
 
     private static Number requireNumberOrNull(String func, Object a) {
@@ -2991,6 +2994,24 @@ public class LambdaJ {
         if (n instanceof Float)   return (Float)n;
         if (n instanceof Number)  return (Number)n;
         throw errorNotANumber(func, n);
+    }
+
+    static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
+        if (n == null) errorNotANumber(func, null);
+        if (n instanceof Long)    return (Long)n;
+        if (n instanceof Double)  { return requireIntegralNumber(func, (Double) n, n, minIncl, maxIncl); }
+        if (n instanceof Byte)    return (Byte)n;
+        if (n instanceof Short)   return (Short)n;
+        if (n instanceof Integer) return (Integer)n;
+        if (n instanceof Float)   { return requireIntegralNumber(func, (double) (Float) n, n, minIncl, maxIncl); }
+        if (n instanceof Number)  { return requireIntegralNumber(func, toDouble(func, n), n, minIncl, maxIncl); }
+        throw errorNotANumber(func, n);
+    }
+
+    private static Number requireIntegralNumber(String func, double d, Object originalValue, long minIncl, long maxIncl) {
+        // see https://stackoverflow.com/questions/9898512/how-to-test-if-a-double-is-an-integer
+        if (Math.rint(d) == d && !Double.isInfinite(d) && d >= minIncl && d <= maxIncl) return d;
+        throw errorNotAnIntegralNumber(func, originalValue);
     }
 
 
@@ -4970,22 +4991,27 @@ public class LambdaJ {
         public static long  toLong(Object n)  {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
             if (n instanceof Long)    return (Long) n;
-            if (n instanceof Double)  return ((Double)n).longValue(); // todo check for lost precision
+            if (n instanceof Double)  return requireIntegralNumber("toLong", n, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
             if (n instanceof Byte)    return ((Byte)n).longValue();
             if (n instanceof Short)   return ((Short)n).longValue();
             if (n instanceof Integer) return ((Integer)n).longValue();
-            if (n instanceof Float)   return ((Float)n).longValue();  // todo check for lost precision
-            if (n instanceof Number)  return ((Number)n).longValue(); // todo verluste/ overflow im fall von biginteger, bigdecimal, ggf. NICHT wandeln sondern error
+            if (n instanceof Float)   return requireIntegralNumber("toLong", n, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
+            if (n instanceof Number)  return requireIntegralNumber("toLong", n, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
             throw errorNotANumber(n);
         }
         public static long  toLong(Long n) { if (n != null) return n;
                                              throw errorNotANumber(null); }
         public static long  toLong(long n) { return n; }
 
-        public static int   toInt(Object n)   { return requireNumber("toInt", n).intValue(); }      // todo checks
-        public static float toFloat(Object n) { return requireNumber("toFloat", n).floatValue(); }  // todo checks
-        public static float toByte(Object n)  { return requireNumber("toByte", n).byteValue(); }    // todo checks
-        public static float toShort(Object n) { return requireNumber("toShort", n).shortValue(); }  // todo checks
+        public static int   toInt(Object n)   { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }
+        public static float toFloat(Object o) {
+            final Number n = requireNumber("toFloat", o);
+            final double d = n.doubleValue();
+            if (d >= Float.MIN_VALUE && d <= Float.MAX_VALUE) return n.floatValue();
+            throw errorOverflow("toFloat", "java.lang.Float", o);
+        }
+        public static float toByte(Object n)  { return requireIntegralNumber("toByte", n, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue(); }
+        public static float toShort(Object n) { return requireIntegralNumber("toShort", n, Short.MIN_VALUE, Short.MAX_VALUE).shortValue(); }
 
         public static Character requireChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);

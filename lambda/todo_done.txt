@@ -1476,3 +1476,7 @@ in der runtime kein .doubleValue() verwenden sondern toDouble(), interpreter und
    oder vielleicht to... statt as...
 
 signum umbauen dass BigInteger und BigDecimal geht, kein longValue()
+
+in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel (integer wraparound) ist nicht ok
+-> dezimal->integer verbieten: in toInt, toShort, ...: nicht requireNumber sondern requireIntegralNumber, die gibt einen fehler wenn dezimalstellen != 0 sind
+-> bounds checks einbauen nicht nur byteValue(), intValue(), ... longValue()

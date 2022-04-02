@@ -1,8 +1,10 @@
-(integerp 1.): SBCL gibt t, Murmel gibt nil
+safety könnte werden:
+3 wie bisher alles checken
+2 es kann CLassCastExceptions geben statt error
+1 es kann saturating overflow geben
+0 es kann wraparound overflow geben
 
-in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel (integer wraparound) ist nicht ok
--> dezimal->integer verbieten: in toInt, toShort, ...: nicht requireNumber sondern requireIntegralNumber, die gibt einen fehler wenn dezimalstellen != 0 sind
--> bounds checks einbauen nicht nur byteValue(), intValue(), ... longValue()
+(integerp 1.): SBCL gibt t, Murmel gibt nil
 
 integerp umstellen dass auch BigInteger t ist?
 -> floatp auch umstellen?
@@ -11,6 +13,7 @@ integerp umstellen dass auch BigInteger t ist?
    -> dokumentieren: numberp ist t für alle Java nummer typen, integerp ist t für Murmel integral typ, floatp ist t für Murmel Dezimal typ
 Java overflow: bei long usw. gibts wraparound, bei double gehts nach +-Infinity (sobald man soviel dazu addiert/subtrahiert/multipliziert dass es trotz begrenzter auflösung darstellbar ist)
 -> Murmel übernimmt Java wraparound, ausser: 1+, 1- wenn das argument byte/short/int/long ist - dann gibts fehler bei under/overflow
+-> wraparound spielt eigentlich nur bei to... eine rolle und da gibts checks, gerechnet wird in double
 -> vielleicht teilweise so lassen und dokumentieren?
    -> * bei allen Operationen werden die Argumente (alle Java Number Typen sind erlaubt) nach Double konvertiert, Fehler falls Argumente nicht in ein Double reinpassen.
         Ergebnis ist immer double, Over/ underflow geht gegen +-Infinity.
