@@ -2008,8 +2008,8 @@ public class LambdaJ {
         if (op == sEql)  { twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
         if (op == sNull) { oneArg ("null", args);  return boolResult(car(args) == null); }
 
-        if (op == sInc)  { oneArg("1+", args);  return inc(requireNumber("1+", car(args))); }
-        if (op == sDec)  { oneArg("1-", args);  return dec(requireNumber("1-", car(args))); }
+        if (op == sInc)  { oneArg("1+", args);  return inc(car(args)); }
+        if (op == sDec)  { oneArg("1-", args);  return dec(car(args)); }
 
         if (op == sAppend)   { return append(args); }
         if (op == sList)     { return args; }
@@ -2572,28 +2572,30 @@ public class LambdaJ {
         return x - Math.floor(x / y) * y;
     }
 
-    static Number inc(Number n) {
+    static Number inc(Object n) {
+        if (n instanceof Double) return ((Double)n) + 1; // todo overflow check?
         if (n instanceof Long
             || n instanceof Byte
             || n instanceof Short
             || n instanceof Integer) {
             final long l;
-            if ((l = n.longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
+            if ((l = ((Number)n).longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
             return l + 1;
         }
-        return toDouble("1+", n) + 1;
+        return toDouble("1+", n) + 1; // todo overflow check?
     }
 
-    static Number dec(Number n) {
+    static Number dec(Object n) {
+        if (n instanceof Double) return ((Double)n) - 1; // todo underflow check?
         if (n instanceof Long
             || n instanceof Byte
             || n instanceof Short
             || n instanceof Integer) {
             final long l;
-            if ((l = n.longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
+            if ((l = ((Number)n).longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
             return l - 1;
         }
-        return toDouble("1-", n) - 1;
+        return toDouble("1-", n) - 1; // todo underflow check?
     }
 
     final Object eval(Object form, ConsCell env) {
@@ -2945,7 +2947,7 @@ public class LambdaJ {
     }
 
     /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
-    private static double toDouble(String func, Object a) {
+    static double toDouble(String func, Object a) {
         final Number n = requireNumber(func, a);
 
         final double ret = n.doubleValue();
@@ -3616,8 +3618,8 @@ public class LambdaJ {
                   addBuiltin("truncate",(Primitive) args -> { varargsMinMax("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12("truncate", args))); },
                   env))))))));
 
-            env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(requireNumber("1+", car(args))); },
-                  addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(requireNumber("1-", car(args))); },
+            env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(car(args)); },
+                  addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
 
                   addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
                   addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
@@ -4810,10 +4812,10 @@ public class LambdaJ {
 
         // predefined aliased primitives
         // the following don't have a leading _ because they are avaliable (in the environment) under alias names
-        public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(requireNumber("1+", args[0])); }
-        public static Number  inc1     (Object arg)     { return LambdaJ.inc(requireNumber("1+", arg)); }
-        public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(requireNumber("1-", args[0])); }
-        public static Number  dec1     (Object arg)     { return LambdaJ.dec(requireNumber("1-", arg)); }
+        public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(args[0]); }
+        public static Number  inc1     (Object arg)     { return LambdaJ.inc(arg); }
+        public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(args[0]); }
+        public static Number  dec1     (Object arg)     { return LambdaJ.dec(arg); }
 
         public final double add     (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret += toDouble(args[i]); return ret; } return 0.0; }
         public final double mul     (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret *= toDouble(args[i]); return ret; } return 1.0; }
