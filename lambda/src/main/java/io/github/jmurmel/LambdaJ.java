@@ -2647,7 +2647,6 @@ public class LambdaJ {
         _printSEx(w, obj, obj, true, true);
     }
 
-    // todo fehlt hier noch CompilerPrimitive, MurmelFunction, kompilierte sachen?
     private static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
         while (true) {
             if (obj == null) {
@@ -2702,6 +2701,12 @@ public class LambdaJ {
                 sb.print(escapeSymbol((LambdaJSymbol) obj)); return;
             } else if (obj instanceof OpenCodedPrimitive) {
                 sb.print(obj.toString()); return;
+            } else if (obj instanceof JavaConstructor) {
+                sb.print("#<Java constructor>"); return;
+            } else if (obj instanceof JavaMethod) {
+                sb.print("#<Java method>"); return;
+            } else if (obj instanceof MurmelJavaProgram.CompilerPrimitive) {
+                sb.print("#<compiler primitive>"); return;
             } else if (primp(obj)) {
                 sb.print("#<primitive>"); return;
             } else if (escapeAtoms && stringp(obj)) {
