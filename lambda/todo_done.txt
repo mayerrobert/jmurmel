@@ -1474,3 +1474,5 @@ in der runtime kein .doubleValue() verwenden sondern toDouble(), interpreter und
 
 -> as... konvertieren, require... checken nur den typ ohne konvertierung
    oder vielleicht to... statt as...
+
+signum umbauen dass BigInteger und BigDecimal geht, kein longValue()

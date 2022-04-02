@@ -1,14 +1,25 @@
+(integerp 1.): SBCL gibt t, Murmel gibt nil
+
+in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel (integer wraparound) ist nicht ok
+-> dezimal->integer verbieten: in toInt, toShort, ...: nicht requireNumber sondern requireIntegralNumber, die gibt einen fehler wenn dezimalstellen != 0 sind
+-> bounds checks einbauen nicht nur byteValue(), intValue(), ... longValue()
+
+integerp umstellen dass auch BigInteger t ist?
+-> floatp auch umstellen?
+-> oder beide bekommen einen optionalen parameter "java-too-p" ?
+-> wie soll das zusammenspiel mit numberp sein? derzeit kann numberp t liefern, und integerp und floatp liefern beide nil
+   -> dokumentieren: numberp ist t für alle Java nummer typen, integerp ist t für Murmel integral typ, floatp ist t für Murmel Dezimal typ
 Java overflow: bei long usw. gibts wraparound, bei double gehts nach +-Infinity (sobald man soviel dazu addiert/subtrahiert/multipliziert dass es trotz begrenzter auflösung darstellbar ist)
 -> Murmel übernimmt Java wraparound, ausser: 1+, 1- wenn das argument byte/short/int/long ist - dann gibts fehler bei under/overflow
 -> vielleicht teilweise so lassen und dokumentieren?
-
-in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel (integer wraparound) ist nicht ok
--> checks einbauen
--> dezimal->integer verbieten: statt uberall asNumber() -> bei integer requireInteger(), bei dbl & Co requireNumber()
-
-integerp umstellen dass auch BigInteger t ist
--> kein longValue() mehr sondern toLong()
--> auch signum umbauen dass BigInteger und BigDecimal geht
+   -> * bei allen Operationen werden die Argumente (alle Java Number Typen sind erlaubt) nach Double konvertiert, Fehler falls Argumente nicht in ein Double reinpassen.
+        Ergebnis ist immer double, Over/ underflow geht gegen +-Infinity.
+        Z.B.: Double.MAX_VALUE + 1 == Double.MAX_VALUE weil +1 aufgrund der Auflösung keinen Unterschied macht.
+              Double.MAX_VALUE * 2 == +Infinity
+      * ausser: 1+, 1-: Byte, Short, Integer und Long Argumente werden nach Long konvertiert. Ergebnis ist Long, Over/ underflow ist Fehler
+                        restliche Argumenttypen wie oben
+      * ausser: ceiling, floor, round, truncate: Ergebnis ist Long, Over/ underflow ist Fehler
+      * ausser: signum: Ergebnis ist "signed prototype" entweder Long -1/0/1 oder Double -1.0/-0.0/0.0/1.0
 
 instanceof in tailcall(Object... und funcall(Object... bremst
 -> CompilerGlobal könnte eine methode funcall bekommen, die wird emitted wenn das symbol in der car position einer form vorkommt
@@ -96,6 +107,13 @@ aber:
 ggf sollten nur t und nil reserved sein, der rest der bisherigen reserved words sollten nur bei zuweisung verweigert werden (setq, define, defun, letXX dynamic),
 -> lambdalist, letXX, labels könnte zulässig werden
 -> SBCL: (let ((t 1)) (write t)) gibt fehler, (let ((let 1)) (write let)) geht
+
+
+
+Common Lisp Interface Manager
+CLIM II Specification
+siehe http://bauhh.dyndns.org:8000/clim-spec/index.html und https://github.com/McCLIM/McCLIM
+
 
 
 compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?

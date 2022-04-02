@@ -2443,8 +2443,8 @@ public class LambdaJ {
                                                   || o instanceof BigInteger || o instanceof BigDecimal
                                                   || o instanceof Number; }
     static boolean  stringp(Object o)    { return o instanceof String; }
-    static boolean  floatp(Object o)     { return o instanceof Double; }
-    static boolean  integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer
+    static boolean  floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
+    static boolean  integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer, BigInteger?
     static boolean  characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
@@ -2555,8 +2555,15 @@ public class LambdaJ {
         return ret;
     }
 
-    static Number cl_signum(Number n) {
-        if (integerp(n)) return n.longValue() == 0 ? 0 : n.longValue() < 0 ? -1 : 1;
+    static Number cl_signum(Object n) {
+        if (n instanceof Double) return Math.signum((Double)n);
+        if (n instanceof Long)       { return (long)Long.signum((Long)n); } 
+        if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
+        if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
+        if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
+        //if (n instanceof BigInteger) { return ((BigInteger)n).signum(); }
+        //if (n instanceof BigDecimal) { return ((BigDecimal)n).signum(); }
+
         return Math.signum(toDouble("signum", n));
     }
 
@@ -2573,29 +2580,29 @@ public class LambdaJ {
     }
 
     static Number inc(Object n) {
-        if (n instanceof Double) return ((Double)n) + 1; // todo overflow check?
+        if (n instanceof Double) return ((Double)n) + 1;
         if (n instanceof Long
             || n instanceof Byte
             || n instanceof Short
             || n instanceof Integer) {
             final long l;
-            if ((l = ((Number)n).longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
+            if ((l = ((Number)n).longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow"); // todo Number cast vermeiden
             return l + 1;
         }
-        return toDouble("1+", n) + 1; // todo overflow check?
+        return toDouble("1+", n) + 1;
     }
 
     static Number dec(Object n) {
-        if (n instanceof Double) return ((Double)n) - 1; // todo underflow check?
+        if (n instanceof Double) return ((Double)n) - 1;
         if (n instanceof Long
             || n instanceof Byte
             || n instanceof Short
             || n instanceof Integer) {
             final long l;
-            if ((l = ((Number)n).longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
+            if ((l = ((Number)n).longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow"); // todo Number cast vermeiden
             return l - 1;
         }
-        return toDouble("1-", n) - 1; // todo underflow check?
+        return toDouble("1-", n) - 1;
     }
 
     final Object eval(Object form, ConsCell env) {
@@ -3635,7 +3642,7 @@ public class LambdaJ {
                   addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
                   addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
                           
-                  addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(requireNumber("signum", car(args))); },
+                  addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
                   env))))))))));
 
             env = addBuiltin("=",       (Primitive) args -> compare(args, "=",  (d1, d2) -> d1 == d2),
@@ -4809,7 +4816,7 @@ public class LambdaJ {
         public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (toDouble(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(toDouble(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",           args.length); return Math.exp  (toDouble(args[0])); }
-        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (requireNumber("signum", args[0])); }
+        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (args[0]); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
         public static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
