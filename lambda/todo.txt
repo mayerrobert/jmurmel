@@ -1,15 +1,10 @@
+Java overflow: bei long usw. gibts wraparound, bei double gehts nach +-Infinity (sobald man soviel dazu addiert/subtrahiert/multipliziert dass es trotz begrenzter auflösung darstellbar ist)
+-> Murmel übernimmt Java wraparound, ausser: 1+, 1- wenn das argument byte/short/int/long ist - dann gibts fehler bei under/overflow
+-> vielleicht teilweise so lassen und dokumentieren?
 
-in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel ist nicht ok
+in den as... methoden ohne check abschneiden, genauigkeitsverlust oder überhaupt vorzeichenwechsel (integer wraparound) ist nicht ok
 -> checks einbauen
 -> dezimal->integer verbieten: statt uberall asNumber() -> bei integer requireInteger(), bei dbl & Co requireNumber()
-   -> as... konvertieren, require... checken nur den typ ohne konvertierung
-      oder vielleicht to... statt as...
--> manche number konvertierungen akzeptieren alle Java Number typen, andere und numberp nur Double und Long
-   -> numberp umstellen dass alle Java Number true sind, anynumber&co weg
-
-in der runtime kein .doubleValue() verwenden sondern toDouble(), interpreter und compiler
--> casts auf Number sollte es auch fast keine mehr geben
--> argchecks auch nicht/kaum
 
 integerp umstellen dass auch BigInteger t ist
 -> kein longValue() mehr sondern toLong()

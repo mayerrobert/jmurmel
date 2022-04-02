@@ -1,6 +1,7 @@
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
+ * changed behaviour around large numbers
  * changed argument to sleep to "seconds" (was: internal-time-units-per-second),
    changed return value to nil (was: actually slept time in internal-time-units-per-second)
  * changed "apply" from a special form to a function, "apply" no longer is a reserved word,

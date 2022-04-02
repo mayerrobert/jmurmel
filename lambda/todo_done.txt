@@ -1464,3 +1464,13 @@ lst umbenamsen in requireList()
 1+, 1- sollten auch byte, short, int zu Long machen, und nicht zu double
 
 ggf. die konvertierungsmethoden die Object nehmen überladen, falls der Compiler den typ kennt, zumindest overloads mit Long und Double (und ggf. long+double)?
+
+in der runtime kein .doubleValue() verwenden sondern toDouble(), interpreter und compiler
+-> casts auf Number sollte es auch fast keine mehr geben
+-> argchecks auch nicht/kaum
+
+-> manche number konvertierungen akzeptieren alle Java Number typen, andere und numberp nur Double und Long
+   -> numberp umstellen dass alle Java Number true sind, anynumber&co weg
+
+-> as... konvertieren, require... checken nur den typ ohne konvertierung
+   oder vielleicht to... statt as...
