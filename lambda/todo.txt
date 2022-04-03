@@ -24,20 +24,10 @@ Java overflow: bei long usw. gibts wraparound, bei double gehts nach +-Infinity 
       * ausser: ceiling, floor, round, truncate: Ergebnis ist Long, Over/ underflow ist Fehler
       * ausser: signum: Ergebnis ist "signed prototype" entweder Long -1/0/1 oder Double -1.0/-0.0/0.0/1.0
 
-instanceof in tailcall(Object... und funcall(Object... bremst
--> CompilerGlobal könnte eine methode funcall bekommen, die wird emitted wenn das symbol in der car position einer form vorkommt
-   funcall würde das ergebnis von instanceof cachen und zum richtigen funcall dispatchen
-   -> und tailcall()
-oder instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
-
-soll JFR mittels "(declaim..." an/abgedreht werden können?
-
 abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole ein zweites mal
 -> symbolerzeugen irgendwie rauslösen und im konstruktor nur aufrufen, wenns benötigt wird
 -> oder sollte nicht die klasse sondern das interface abgeleitet werden?
    -> filepath und position soll aber nicht delegiert werden
-
-:: könnte class#method unterstützen
 
 nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice
 
@@ -190,10 +180,6 @@ compilecompiler mit compile(LambdaJ intp, symbol oder ConsCell code, ConsCell en
 kompilierte programme: MurmelProgram.body() kann man nur 1x laufen lassen, ab dem zweiten aufruf kommt "duplicate define"
 -> alle globals am anfang von body() auf UNASSIGNED setzen, ggf. mittels generierter init-methode
 -> in lambdajbm erstmal labels statt defun
-
-ist (eval (quote form)) dasselbe wie (progn form) bzw. form?
--> damit könnte der compiler ein eval wegoptimieren
--> SBCL machts anscheinend nicht
 
 compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
 -> geht nicht innerhalb ?:, weil das braucht eine expression

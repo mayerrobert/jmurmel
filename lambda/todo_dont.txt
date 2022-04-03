@@ -68,3 +68,14 @@ oder endlich filevariables, die wuerden auch ins kompilierte programm reingepatc
 in qq_expand_list statt 1-element listen cons(x, null)
 optimize dahingehend erweitern (oder ändern?), dass nicht nur list sondern auch cons erkannt wird
 -> ggf. können die patterns (list lhsX) nicht mehr auftreten, nur mehr (cons lhsX nil)
+
+instanceof in tailcall(Object... und funcall(Object... bremst
+-> CompilerGlobal könnte eine methode funcall bekommen, die wird emitted wenn das symbol in der car position einer form vorkommt
+   funcall würde das ergebnis von instanceof cachen und zum richtigen funcall dispatchen
+   -> und tailcall()
+oder instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
+-> caching war langsamer
+
+ist (eval (quote form)) dasselbe wie (progn form) bzw. form?
+-> damit könnte der compiler ein eval wegoptimieren
+-> SBCL machts anscheinend nicht

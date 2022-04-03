@@ -4201,6 +4201,7 @@ public class LambdaJ {
                 System.out.print("==> ");  interpreter.lispPrinter.printObj(result);
                 System.out.println();
             }
+
             return true;
         }
         catch (LambdaJError e) {
@@ -4630,7 +4631,7 @@ public class LambdaJ {
 
         public interface CompilerPrimitive { Object applyCompilerPrimitive(Object... args); }
 
-        private static class MurmelFunctionCall {
+        private static final class MurmelFunctionCall {
             MurmelFunction next;
             Object[] args;
         }
@@ -5068,11 +5069,7 @@ public class LambdaJ {
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public static Object funcall(MurmelFunction fn, Object... args) {
             Object r = fn.apply(args);
-            // !instanceof Double, !instanceof Long and !instanceof ListConsCell seem redundant but they are fast and will end the loop often
-            // instanceof MurmelFunctionCall is slow because instanceof with interfaces is slow
-            // the redundant checks will give a net speedup
-            while (!(r instanceof Double) && !(r instanceof Long) && !(r instanceof ListConsCell)
-                    && r instanceof MurmelFunctionCall) {
+            while (r instanceof MurmelFunctionCall) {
                 final MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
                 r = functionCall.next.apply(functionCall.args);
             }
@@ -5084,6 +5081,7 @@ public class LambdaJ {
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
             if (fn instanceof ClosureConsCell)   return interpret(fn, args);
+            
             throw errorNotAFunction(fn);
         }
 
