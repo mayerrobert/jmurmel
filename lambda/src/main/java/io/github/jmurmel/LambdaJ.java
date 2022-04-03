@@ -1746,7 +1746,7 @@ public class LambdaJ {
                             if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
                                 values = null;
                                 final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                                final ConsCell newValues = values == null ? cons(prim, null) : (ConsCell)values;
+                                final ConsCell newValues = values == null ? cons(prim, null) : values;
                                 allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
                             }
                             argList = allArgs;
@@ -1999,7 +1999,7 @@ public class LambdaJ {
         varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
         values = null;
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
-        final ConsCell newValues = values == null ? cons(prim, null) : (ConsCell)values;
+        final ConsCell newValues = values == null ? cons(prim, null) : values;
         final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
         return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
@@ -3490,7 +3490,7 @@ public class LambdaJ {
     }
 
 
-    Object values;
+    ConsCell values;
 
     private TurtleFrame current_frame;
 
@@ -4180,12 +4180,18 @@ public class LambdaJ {
                     history.add(exp);
                 }
 
+                interpreter.values = null;
                 final long tStart = System.nanoTime();
                 final Object result = interpreter.eval(exp, env, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();
                 System.out.print("==> "); outWriter.printObj(result); System.out.println();
+                if (cdr(interpreter.values) != null) {
+                    for (Object value: (ConsCell)cdr(interpreter.values)) {
+                        System.out.print(" -> "); outWriter.printObj(value); System.out.println();
+                    }
+                }
             } catch (LambdaJError e) {
                 if (istty) {
                     System.out.println();

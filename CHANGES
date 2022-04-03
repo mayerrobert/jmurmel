@@ -17,6 +17,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * errormessages contain the filename and linenumber (was: only linenumber)
  * added more complete support for "let dynamic" and "let* dynamic"
    (before 1.2 only "let* dynamic" in interpreted code was supported)
+ * interpreter only: added values, multiple-value-call and multiple-value-bind
  * added primitive functions assq, list*
  * added an optional parameter print-escape-p for primitive functions write, writeln, lnwrite
  * added special form "(declaim (optimize..."

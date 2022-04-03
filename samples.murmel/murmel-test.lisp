@@ -275,6 +275,7 @@
 #+(or)
 (progn ; compiler is not done yet
 ;;; multiple-value-call
+  (deftest mvc.0 (multiple-value-call #'+) #+murmel 0.0 #-murmel 0)
   (deftest mvc.1 (multiple-value-call #'+ 1.0 2.0 3.0) 6.0)
   (deftest mvc.2 (multiple-value-call #'+ (values 1.0 2.0 3.0)) 6.0)
   (deftest mvc.3 (multiple-value-call #'+ (values 1 2) 3.0 (values 4 5)) 15.0)
