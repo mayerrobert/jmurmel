@@ -118,7 +118,7 @@
 (deftest lambda.1 (#-murmel funcall (lambda nil)) nil)
 
 
-;;; Additional special forms: define, defun, defmacro, setq, let, multiple-value-bind, if, progn, cond, labels, load, require, provide
+;;; Additional special forms: define, defun, defmacro, setq, let, multiple-value-bind, multiple-value-call, if, progn, cond, labels, load, require, provide
 ;;; todo labels, load, require, provide
 
 ;;; test define
@@ -255,7 +255,8 @@
 )
 
 
-#+(or) (progn ; compiler is not done yet
+#+(or)
+(progn ; compiler is not done yet
 ;;; multiple-value-bind
 (deftest mvb.1  (multiple-value-bind nil nil) nil)
 (deftest mvb.2  (multiple-value-bind (a b) (values 1 2) (echo a b)) '(1 2))
@@ -268,6 +269,17 @@
   (deftest mvb.6  (multiple-value-bind (a b . c) (values 1 2 3 4 5) (echo a b c)) '(1 2 (3 4 5)))
   (deftest mvb.7  (multiple-value-bind (a b . c) (values 1) (echo a b c)) '(1 nil nil))
 )
+)
+
+
+#+(or)
+(progn ; compiler is not done yet
+;;; multiple-value-call
+  (deftest mvc.1 (multiple-value-call #'+ 1.0 2.0 3.0) 6.0)
+  (deftest mvc.2 (multiple-value-call #'+ (values 1.0 2.0 3.0)) 6.0)
+  (deftest mvc.3 (multiple-value-call #'+ (values 1 2) 3.0 (values 4 5)) 15.0)
+  
+  (deftest mvc.4 (multiple-value-call (lambda (a b #+murmel . #-murmel &rest c) (list* a b c)) 1 (values 2 3 4 5)) '(1 2 3 4 5)) 
 )
 
 

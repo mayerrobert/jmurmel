@@ -1737,6 +1737,22 @@ public class LambdaJ {
                             func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol;
                             // fall through to "actually perform..."
 
+                        /// eval - multiple-value-call
+                        /// eval - (multiple-value-call function-form value-form*) -> object
+                        } else if (operator == sMultipleValueCall) {
+                            varargs1("multiple-value-call", ccArguments);
+                            ConsCell allArgs = null;
+                            final Object valueForms = cdr(ccArguments);
+                            if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
+                                values = null;
+                                final Object prim = eval(valueForm, env, stack, level, traceLvl);
+                                final ConsCell newValues = values == null ? cons(prim, null) : (ConsCell)values;
+                                allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
+                            }
+                            argList = allArgs;
+                            func = eval(car(ccArguments), env, stack, level, traceLvl);
+                            // fall through to "actually perform..."
+
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
@@ -1985,7 +2001,7 @@ public class LambdaJ {
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
         final ConsCell newValues = values == null ? cons(prim, null) : (ConsCell)values;
         final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
-        return new ConsCell[] { requireList("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
+        return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
 
     private Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
