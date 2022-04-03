@@ -83,8 +83,6 @@ letrec im compiler ist fishy, laut langref sollten folgende variablen undefined 
 
 
 
-samples aufräumen, ack_bm löschen
-
 eval-when endlich einbauen
 
 funktion die den awt frame eines turtleframe liefert, für java interop
@@ -383,8 +381,6 @@ oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))"
 
 
 
-mit optimize speed 0 und 1 testen
-
 
 
 der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
@@ -398,10 +394,6 @@ und es wird nicht mehr getraced
 -> umbauen dass nicht mehr eine hashmap verwendet wird, sondern der environmententry durch eine gewrappte version ersetzt wird?
    -> das würd auch im compiler gehen
    -> wär auch für profiling denkbar
-
-rplacd für ArraySlice ist problematisch: man könnte ins array an der richtigen stelle was anderes reinpatchen,
-aber wenns andere arrayslices mit demselben array gibt (mit anfang NACH der rplacd stelle), dann wirkt sich rplacd
-auf die anderen ArraySlices ggf. nicht richtig aus
 
 compiler: alle defuns/ defines, nicht nur toplevel
 -> zähler mitlaufen lassen

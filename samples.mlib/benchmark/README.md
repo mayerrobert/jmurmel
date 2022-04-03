@@ -1,7 +1,12 @@
-=== Benchmarks
+# Benchmarks
 
 This directory contains a few benchmarks and a simple [benchmark facility](bench.lisp).
 The files will run the code under test for a given number of seconds and then print timing results.
+
+**Note:** In their current form these benchmarks
+won't give meaningful performance comparisons across the Lisp-implementations under test,
+so take the numbers with a grain of salt.
+The purpose of the programs in this directory is to find performance issues in JMurmel.
 
 To run as interpreted Murmel use e.g.:
 
@@ -23,6 +28,6 @@ To run all benchmarks with SBCL, JMurmel (compiled and interpreted) and with ABC
 
     C:...\benchmark> runall.cmd | tee benchresults.txt
 
-== References
+## References
 
 "Performance and Evaluation of Lisp Systems, Richard P. Gabriel, 1985".
