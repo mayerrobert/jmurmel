@@ -1767,6 +1767,7 @@ public class LambdaJ {
 
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         traceLvl = traceEnter(func, argList, traceLvl);
+                        values = null;
                         if (func instanceof OpenCodedPrimitive) {
                             // currently only "(apply eval ...)" or "(apply apply..." lead here
                             form = cons(func, argList);
@@ -1802,7 +1803,7 @@ public class LambdaJ {
                         for (; cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms))
                             eval(car(ccForms), env, stack, level, traceLvl);
                         traceStack = push(operator, traceStack);
-                        form = car(ccForms); isTc = true; func = null; continue tailcall;
+                        form = car(ccForms); isTc = true; func = null; values = null; continue tailcall;
                     }
 
                     result = null; return null; // lambda/ progn/ labels/... w/o body
