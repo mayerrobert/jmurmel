@@ -1,5 +1,5 @@
 ;;; http://www.lisperati.com/casting.html translated to murmel
-;;; see adventure_cl.lisp for the original Common Lisp
+;;; see adventure_CL.lisp for the original Common Lisp
 ;;; see ../../samples.murmel/lisperati/adventure_murmel.lisp for a translation to murmel w/ mlib 
 
 (defmacro defparameter (sym val) `(define ,sym ,val))
@@ -12,7 +12,7 @@
        `(if ,(car args)
          (and ,@(cdr args))))))
 
-(defun not (x) (null x))
+(define not null)
 
 (defun cadr (l) (car (cdr l)))
 (defun cddr (l) (cdr (cdr l)))
