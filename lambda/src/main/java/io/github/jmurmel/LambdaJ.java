@@ -1382,6 +1382,9 @@ public class LambdaJ {
             sLet     = internReserved("let");
             sLetStar = internReserved("let*");
             sLetrec  = internReserved("letrec");
+
+            sMultipleValueBind = internReserved("multiple-value-bind");
+            sMultipleValueCall = internReserved("multiple-value-call");
             sSetQ    = internReserved("setq");
 
             sProgn   = internReserved("progn");
@@ -1453,7 +1456,7 @@ public class LambdaJ {
     }
 
     /** well known symbols for special forms */
-    LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec,
+    LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
@@ -1686,6 +1689,13 @@ public class LambdaJ {
                         restore = formsAndEnv[2];
                         // fall through to "eval a list of forms"
 
+                    /// eval - (multiple-value-bind (symbols...) value-form bodyforms...) -> object
+                    } else if (operator == sMultipleValueBind) {
+                        final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
+                        ccForms = formsAndEnv[0];
+                        env = formsAndEnv[1];
+                        // fall through to "eval a list of forms"
+                        
                     }
 
 
@@ -1759,7 +1769,7 @@ public class LambdaJ {
                             final Object lambda = cdr(func);          // ((params...) (forms...))
                             final ConsCell closure = ((ConsCell)func).closure();
                             if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
-                            env = zip(car(lambda), argList, closure != null ? closure : env);
+                            env = zip(car(lambda), argList, closure != null ? closure : env, true);
 
                             if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
                             ccForms = (ConsCell) cdr(lambda);
@@ -1968,12 +1978,21 @@ public class LambdaJ {
         }
         return new ConsCell[] {bodyForms, extenv, restore};
     }
-    
+
+    private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
+        varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
+        values = null;
+        final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
+        final ConsCell newValues = values == null ? cons(prim, null) : (ConsCell)values;
+        final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
+        return new ConsCell[] { requireList("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
+    }
+
     private Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
         if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
 
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
-        final ConsCell menv = zip(car(lambda), arguments, topEnv);    // todo predef env statt topenv?!?
+        final ConsCell menv = zip(car(lambda), arguments, topEnv, true);    // todo predef env statt topenv?!?
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, stack, level, traceLvl);
@@ -2056,20 +2075,20 @@ public class LambdaJ {
      *  
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
-    private ConsCell zip(Object paramList, ConsCell args, ConsCell env) {
+    private ConsCell zip(Object paramList, ConsCell args, ConsCell env, boolean match) {
         if (paramList == null && args == null) return env; // shortcut for no params/ no args
 
         for (Object params = paramList; params != null; ) {
             // regular param/arg: add to env
             if (consp(params)) {
-                if (args == null) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
+                if (match && args == null) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
                 env = acons(car(params), car(args), env);
             }
 
             // if paramList is a dotted list then the last param will be bound to the list of remaining args
             else {
                 env = acons(params, args, env);
-                args = null; break;
+                if (match) { args = null; break; }
             }
 
             params = cdr(params);
@@ -2077,7 +2096,10 @@ public class LambdaJ {
 
             args = (ConsCell) cdr(args);
             if (args == null) {
-                if (consp(params)) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
+                if (consp(params)) {
+                    if (match) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
+                    else env = acons(params, null, env);
+                }
                 else if (params != null) {
                     // paramList is a dotted list, no argument for vararg parm: assign nil
                     env = acons(params, null, env);
@@ -2085,7 +2107,7 @@ public class LambdaJ {
                 }
             }
         }
-        if (args != null) throw new LambdaJError(true, "%s: too many arguments. remaining arguments: %s", "function application", printSEx(args));
+        if (match && args != null) throw new LambdaJError(true, "%s: too many arguments. remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 
@@ -3452,6 +3474,8 @@ public class LambdaJ {
     }
 
 
+    Object values;
+
     private TurtleFrame current_frame;
 
     private ObjectReader lispReader;
@@ -3590,6 +3614,8 @@ public class LambdaJ {
             env = addBuiltin("rplaca", (Primitive) LambdaJ::cl_rplaca,
                   addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
                   env));
+
+            env = addBuiltin("values", (Primitive) args -> { values = args; return car(values); }, env);
         }
 
         if (haveT()) {

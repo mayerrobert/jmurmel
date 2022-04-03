@@ -135,6 +135,8 @@ VALUES kann auch in setf verwendet werden: (setf (values a b) (floor 7 2)), das 
       (VALUES (SETQ A #:NEW1) (SETQ B #:NEW1)))
 MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL übernimmt 0 oder mehrere
 LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
+-> im REPL muss auch magic eingebaut werden, damit allfällige sekundäre results ausgegeben werden
+-> multiple-value-bind könnte ein macro sein, das nach multiple-value-call + lambda expandiert
 
 vielleicht doch schon mal vector und svref implementieren? vector liefert eindimensionale arrays, 0-basiert, typ T. make-array könnte später kommen, das kann viel mehr
 SBCL> (atom #(1 2 3)) ; -> t
