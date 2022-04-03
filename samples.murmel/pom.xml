@@ -265,6 +265,7 @@
                                 <argument>fibonacci.lisp</argument>
                                 <argument>fibonacci_simple.lisp</argument>
                                 <argument>hanoi.lisp</argument>
+                                <argument>factorize.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -286,6 +287,7 @@
                                 <argument>fibonacci.lisp</argument>
                                 <argument>fibonacci_simple.lisp</argument>
                                 <argument>hanoi.lisp</argument>
+                                <argument>factorize.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
