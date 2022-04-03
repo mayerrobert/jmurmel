@@ -2,12 +2,10 @@
 ;;; Use like this:
 ;;; jm 000_lib.lisp 3.01_tak.lisp
 
-(defun not (e)
-  (null e))
+(define not null)
 
 (defun zerop (n)
   (= n 0))
-
 
 (defun mapcar (f l)
   (if l (cons (f (car l)) (mapcar f (cdr l)))

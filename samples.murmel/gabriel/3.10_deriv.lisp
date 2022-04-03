@@ -37,7 +37,7 @@
 (defun run ()
 
 
-  (let loop ((i 0))
+  (let loop ((i 0))     ;runs it 5000 times
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))

@@ -1588,7 +1588,7 @@ public class LambdaJ {
 
                     /// eval - (define symbol exp) -> symbol with a side of global environment extension
                     if (operator == sDefine) {
-                        twoArgs("define", ccArguments);
+                        varargs1_2("define", ccArguments);
                         final Object symbol = car(ccArguments);
                         if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
                         notReserved("define", symbol);
@@ -2871,6 +2871,10 @@ public class LambdaJ {
     }
     private static void varargs1(String func, ConsCell a) {
         if (a == null) errorVarargsCount(func, 1, 0);
+    }
+
+    private static void varargs1_2(String func, ConsCell a) {
+        if (a == null || cddr(a) != null) errorArgCount(func, 1, 2, length(a), a);
     }
 
     /** varargs, at least {@code min} args */
@@ -5676,6 +5680,7 @@ public class LambdaJ {
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+            varargs1_2("toplevel define", requireList("toplevel define", cdr(form)));
             final LambdaJSymbol symbol = asSymbol("define", cadr(form));
 
             intp.notReserved("define", symbol);

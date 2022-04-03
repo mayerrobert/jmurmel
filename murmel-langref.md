@@ -304,7 +304,7 @@ Except: `let* dynamic` will treat global symbols as "special", see below.
 
 ## Additional Special Forms 
 
-### (define symbol object) -> symbol
+### (define symbol optional-object?) -> symbol
 
 `define` binds symbols in the global environment with
 memory locations that hold values.
@@ -315,7 +315,8 @@ CL's `defparameter` creates special global variables while
 Murmel's `define` creates global variables that can be
 lexically hidden by e.g. a let-binding.
 
-The first argument is not evaluated, the second one is.
+The first argument is not evaluated, the second one - if given - is.
+The second argument to `define` is optional and defaults to `nil`.
 
     (define *global-var* 42)               ; ==> *gloval-var*
     (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1

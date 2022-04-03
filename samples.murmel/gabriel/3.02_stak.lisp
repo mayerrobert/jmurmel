@@ -2,9 +2,9 @@
 ;;; p 93
 
 
-(define x nil)
-(define y nil)
-(define z nil)
+(define x)
+(define y)
+(define z)
 
 (defun stak (x y z)
   (let* dynamic ((x x) (y y) (z z))
