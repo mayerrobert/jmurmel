@@ -1,3 +1,7 @@
+values&co dokumentieren, mlib: LIST-VALUES, VALUES-LIST, zusammenspiel compiler/interpreter
+
+macht ein macro with-iterator sinn (für Java iterator)?, siehe auch http://clhs.lisp.se/Body/m_w_hash.htm
+
 safety könnte werden:
 3 wie bisher alles checken
 2 es kann CLassCastExceptions geben statt error
@@ -102,23 +106,6 @@ teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur
 nicht aber bei einem loop mittendrin
 
 
-
-Multiple values: VALUES, MULTIPLE-VALUE-BIND und MULTIPLE-VALUE_CALL müsste reichen?
-VALUES hat als returnwert das erste argument, und verpackt ALLE (oder die restlichen?) argumente in ein Object[]
-  und steckt dieses in eine globale variable (member von LambdaJ bzw. von MurmelJavaProgram).
-MULTIPLE-VALUE-BIND und MULTIPLE-VALUE-CALL lesen das array wieder aus.
-CLHS: VALUES -> funktion, MULTIPLE-VALUE-BIND -> special operator, MULTIPLE-VALUE-CALL -> special operator
-SBCL: VALUES -> funktion, MULTIPLE-VALUE-BIND -> macro, MULTIPLE-VALUE-CALL -> special operator
-VALUES kann auch in setf verwendet werden: (setf (values a b) (floor 7 2)), das ist aber in CL erst rel. spät dazugekommen,
-  brauchts also nicht im ersten wurf, scheint aber nicht schwer:
-    * (macroexpand-1 '(setf (values a b) (floor 5 2)))
-    (MULTIPLE-VALUE-BIND (#:NEW1 #:NEW1)
-        (FLOOR 5 2)
-      (VALUES (SETQ A #:NEW1) (SETQ B #:NEW1)))
-MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL übernimmt 0 oder mehrere
-LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
--> im REPL muss auch magic eingebaut werden, damit allfällige sekundäre results ausgegeben werden
--> multiple-value-bind könnte ein macro sein, das nach multiple-value-call + lambda expandiert
 
 vielleicht doch schon mal vector und svref implementieren? vector liefert eindimensionale arrays, 0-basiert, typ T. make-array könnte später kommen, das kann viel mehr
 SBCL> (atom #(1 2 3)) ; -> t

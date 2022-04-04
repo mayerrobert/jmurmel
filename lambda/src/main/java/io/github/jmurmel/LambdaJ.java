@@ -1355,6 +1355,7 @@ public class LambdaJ {
     private SymbolTable symtab;
 
     private static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
+    private static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
@@ -1744,10 +1745,10 @@ public class LambdaJ {
                             ConsCell allArgs = null;
                             final Object valueForms = cdr(ccArguments);
                             if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
-                                values = null;
+                                values = NO_VALUES;
                                 final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                                final ConsCell newValues = values == null ? cons(prim, null) : values;
-                                allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
+                                final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
+                                if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
                             }
                             argList = allArgs;
                             func = eval(car(ccArguments), env, stack, level, traceLvl);
@@ -1767,7 +1768,7 @@ public class LambdaJ {
 
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
                         traceLvl = traceEnter(func, argList, traceLvl);
-                        values = null;
+                        values = NO_VALUES;
                         if (func instanceof OpenCodedPrimitive) {
                             // currently only "(apply eval ...)" or "(apply apply..." lead here
                             form = cons(func, argList);
@@ -1803,7 +1804,7 @@ public class LambdaJ {
                         for (; cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms))
                             eval(car(ccForms), env, stack, level, traceLvl);
                         traceStack = push(operator, traceStack);
-                        form = car(ccForms); isTc = true; func = null; values = null; continue tailcall;
+                        form = car(ccForms); isTc = true; func = null; values = NO_VALUES; continue tailcall;
                     }
 
                     result = null; return null; // lambda/ progn/ labels/... w/o body
@@ -1998,9 +1999,9 @@ public class LambdaJ {
 
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
         varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
-        values = null;
+        values = NO_VALUES;
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
-        final ConsCell newValues = values == null ? cons(prim, null) : values;
+        final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
         final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
         return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
@@ -4181,15 +4182,16 @@ public class LambdaJ {
                     history.add(exp);
                 }
 
-                interpreter.values = null;
+                interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
                 final Object result = interpreter.eval(exp, env, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();
-                System.out.print("==> "); outWriter.printObj(result); System.out.println();
-                if (cdr(interpreter.values) != null) {
-                    for (Object value: (ConsCell)cdr(interpreter.values)) {
+                if (interpreter.values == NO_VALUES) {
+                    System.out.print("==> "); outWriter.printObj(result); System.out.println();
+                } else {
+                    if (interpreter.values != null) for (Object value: interpreter.values) {
                         System.out.print(" -> "); outWriter.printObj(value); System.out.println();
                     }
                 }
@@ -4247,8 +4249,14 @@ public class LambdaJ {
             interpreter.traceJavaStats(tEnd - tStart);
             if (repl || result != null) {
                 System.out.println();
-                System.out.print("==> ");  interpreter.lispPrinter.printObj(result);
-                System.out.println();
+                final Object[] multipleValues = ((MurmelJavaProgram)prg).values;
+                if (multipleValues == null) {
+                    System.out.print("==> ");  interpreter.lispPrinter.printObj(result);  System.out.println();
+                } else {
+                    for (Object v: multipleValues) {
+                        System.out.print(" -> "); interpreter.lispPrinter.printObj(v); System.out.println();
+                    }
+                }
             }
 
             return true;
@@ -5010,6 +5018,8 @@ public class LambdaJ {
                                                                   return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
+        private Object[] values;
+        public final Object _values            (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
         public final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
@@ -5207,6 +5217,34 @@ public class LambdaJ {
             throw new LambdaJError(true, "%s: no frame argument and no current frame", s);
         }
         private static RuntimeException errorNotAFunction(Object fn) { throw new LambdaJError(true, "not a function: %s", fn); }
+
+
+
+        @SuppressWarnings("unused") // used by multiple-value-call
+        public class ValuesBuilder {
+            private final ArrayList<Object> allValues = new ArrayList<>();
+            
+            public ValuesBuilder() { values = null; }
+
+            public ValuesBuilder add(Object primary) {
+                if (values == null) {
+                    allValues.add(primary);
+                } else if (values.length > 0) {
+                    allValues.addAll(Arrays.asList(values));
+                }
+                values = null;
+                return this;
+            }
+
+            public Object[] build() { return allValues.toArray(); }
+
+            // return an array of length n, filling with nil or truncating as needed
+            public Object[] build(int n, boolean truncate) {
+                for (int i = allValues.size(); i < n; i++) allValues.add(null);
+                if (truncate) return allValues.subList(0, n).toArray();
+                else return allValues.toArray();
+            }
+        }
 
 
 
@@ -5488,7 +5526,7 @@ public class LambdaJ {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
-                "assoc", "assq", "list", "append",
+                "assoc", "assq", "list", "append", "values",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
@@ -5942,6 +5980,42 @@ public class LambdaJ {
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
                     if (intp.sLetrec == operator) {
                         emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
+                        return;
+                    }
+
+                    if (intp.sMultipleValueCall == operator) {
+                        sb.append(isLast ? "tailcall(" : "funcall(");
+                        emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
+                        if (cdr(ccArguments) != null) {
+                            sb.append(", rt().new ValuesBuilder()");
+                            for (Object arg: listOrMalformed("multiple-value-call", cdr(ccArguments))) {
+                                sb.append("\n        .add(");
+                                emitForm(sb, arg, env, topEnv, rsfx, false);
+                                sb.append(')');
+                            }
+                            sb.append("\n        .build()");
+                        }
+                        else sb.append(", NOARGS");
+                        sb.append(')');
+                        return;
+                    }
+
+                    ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
+                    if (intp.sMultipleValueBind == operator) {
+                        varargsMin("multiple-value-bind", ccArguments, 2);
+                        final ConsCell vars = listOrMalformed("multiple-value-bind", car(ccArguments));
+                        final boolean varargs = !properList(vars); // todo should use dottedList() and barf on circular lists
+                        int length = length(vars);
+                        if (varargs) length--;
+                        sb.append(isLast ? "tailcall(" : "funcall(");
+                        emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
+                        if (cadr(ccArguments) != null) {
+                            sb.append(", rt().new ValuesBuilder()\n        .add(");
+                            emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
+                            sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(")");
+                        }
+                        else sb.append(", NOARGS");
+                        sb.append(')');
                         return;
                     }
 
