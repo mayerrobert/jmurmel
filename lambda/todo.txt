@@ -6,24 +6,6 @@ safety könnte werden:
 
 (integerp 1.): SBCL gibt t, Murmel gibt nil
 
-integerp umstellen dass auch BigInteger t ist?
--> floatp auch umstellen?
--> oder beide bekommen einen optionalen parameter "java-too-p" ?
--> wie soll das zusammenspiel mit numberp sein? derzeit kann numberp t liefern, und integerp und floatp liefern beide nil
-   -> dokumentieren: numberp ist t für alle Java nummer typen, integerp ist t für Murmel integral typ, floatp ist t für Murmel Dezimal typ
-Java overflow: bei long usw. gibts wraparound, bei double gehts nach +-Infinity (sobald man soviel dazu addiert/subtrahiert/multipliziert dass es trotz begrenzter auflösung darstellbar ist)
--> Murmel übernimmt Java wraparound, ausser: 1+, 1- wenn das argument byte/short/int/long ist - dann gibts fehler bei under/overflow
--> wraparound spielt eigentlich nur bei to... eine rolle und da gibts checks, gerechnet wird in double
--> vielleicht teilweise so lassen und dokumentieren?
-   -> * bei allen Operationen werden die Argumente (alle Java Number Typen sind erlaubt) nach Double konvertiert, Fehler falls Argumente nicht in ein Double reinpassen.
-        Ergebnis ist immer double, Over/ underflow geht gegen +-Infinity.
-        Z.B.: Double.MAX_VALUE + 1 == Double.MAX_VALUE weil +1 aufgrund der Auflösung keinen Unterschied macht.
-              Double.MAX_VALUE * 2 == +Infinity
-      * ausser: 1+, 1-: Byte, Short, Integer und Long Argumente werden nach Long konvertiert. Ergebnis ist Long, Over/ underflow ist Fehler
-                        restliche Argumenttypen wie oben
-      * ausser: ceiling, floor, round, truncate: Ergebnis ist Long, Over/ underflow ist Fehler
-      * ausser: signum: Ergebnis ist "signed prototype" entweder Long -1/0/1 oder Double -1.0/-0.0/0.0/1.0
-
 abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole ein zweites mal
 -> symbolerzeugen irgendwie rauslösen und im konstruktor nur aufrufen, wenns benötigt wird
 -> oder sollte nicht die klasse sondern das interface abgeleitet werden?

@@ -27,6 +27,7 @@
 ;;; - [Additional Special Forms](#additional-special-forms)
 ;;; - [Backquote - fill-in templates](#backquote)
 ;;; - [Predefined Primitives](#predefined-primitives)
+;;; - [Predefined Numeric Primitives](#predefined-numeric-primitives)
 ;;; - [Predefined Graphics Primitives](#predefined-graphics-primitives)
 ;;;
 ;;; Additional functions that can be loaded with `(require "mlib")`
@@ -610,7 +611,13 @@ pi ; ==> 3.141592653589793
 (eql #\a (car "aaa")) ; ==> t
 (eql -0.0 0.0) ; ==> nil
 
-; = null, atom, consp, listp, symbolp, numberp, integerp, floatp, stringp, characterp
+; = null, atom, consp, listp, symbolp, stringp, characterp
+
+; = numberp, integerp, floatp
+;
+; - `numberp` returns `t` for all Java Number types.
+; - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
+; - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
 ; = (assoc key alist) -> cons or nil
 ;
@@ -645,61 +652,6 @@ pi ; ==> 3.141592653589793
 (append '(a b) '(c d))      ; ==> (a b c d)
 (append '(a . b) '(c d))    ; ==> (a b c d)
 (append '(a . b) '(c . d))  ; ==> (a b c . d)
-
-; = +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
-;
-; The math operators accept numbers only, `log` only takes 1 argument,
-; but otherwise should work similar to CL.
-; All numeric operators return a double.
-; eg. `(+ number number) -> double`.
-
-(+ 1 1) ; ==> 2.0
-
-; = 1+, 1-
-;
-; Increment and decrement return the same type as the argument.
-
-(1+ 1)   ; ==> 2
-(1+ 1.0) ; ==> 2.0
-
-; = round, truncate, floor, ceiling
-;
-; These functions take one or two arguments and return an integer value or an exception
-; if the value cannot be represented by a long
-; (NaN, Infinite, integer overflow or underflow),
-; eg. `(floor number) -> long`
-
-(floor 1.1) ; ==> 1
-
-; = fround, ftruncate, ffloor, fceiling
-;
-; These functions take one or two arguments and return an integer value as a double,
-; eg. `(ffloor number) -> double`
-
-(ffloor 1.1) ; ==> 1.0
-
-; = (signum number) -> signed-prototype
-;
-; `signum` determines a numerical value that indicates whether
-; number is negative, zero, or positive. 
-
-(signum 0)    ; => 0
-(signum -0)   ; => 0
-(signum 3)    ; => 1
-(signum -3)   ; => -1
-
-(signum 0.0)  ; => 0.0
-(signum -0.0) ; => -0.0
-(signum 3.0)  ; => 1.0
-(signum -3.0) ; => -1.0
-
-; = = < > <= >= /=
-;
-; The numeric comparison operators take one or more number arguments.
-
-(= 1 1.0)         ; ==> t
-(< 1 2 3.0 4 5.0) ; ==> t
-(< 1 2 3 3 4 5)   ; ==> nil
 
 ; = (macroexpand-1 quoted-form) -> expanded form
 ;
@@ -816,6 +768,83 @@ pi ; ==> 3.141592653589793
 ; = (string->list str) -> list-of-characters
 
 ; = (list->string list-of-characters) -> string
+
+
+;;; == Predefined Numeric Primitives ==
+
+;;; Murmel's two numeric datatypes are implemented as `long` (64 bit signed integer)
+;;; and `double` (64 bit floating point).
+;;; Other Java datatypes (which may occur when using Java FFI) will be automatically converted
+;;; (with null-, lost-precision- and over/underflow checks) as appropriate.
+;;;
+;;; Murmel does most maths in double precision:
+;;;
+;;; - Except with `1+, 1-, ceiling, floor, round, truncate and signum`,
+;;;   arguments to numeric functions will be converted to `double`,
+;;;   and the result will be `double`.  
+;;;   Over/underflow during argument conversion will be signalled as an error.
+;;;   Results for large numbers (i.e. over/ underflow) will go towards +/- Infinity.
+;;; - `1+, 1-`: Byte, Short, Integer and Long arguments will be converted to long,
+;;;   in that case the result type is long. Over/ underflow of the result will be signalled as an error.
+;;;   Other argument types will be handled as above.
+;;; - `ceiling, floor, round, truncate`: result type is long, over/ underflow will be signalled as an error.
+;;; - `signum`: result is a "signed prototype" - either `long -1/0/1` or `double -1.0/-0.0/0.0/1.0`.
+
+; = +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
+;
+; The math operators accept numbers only.
+; `log` only takes 1 argument,
+; but otherwise should work similar to CL.
+; All numeric operators return a double.
+; eg. `(+ number number) -> double`.
+
+(+ 1 1) ; ==> 2.0
+
+; = 1+, 1-
+;
+; Increment and decrement return the same type as the argument.
+
+(1+ 1)   ; ==> 2
+(1+ 1.0) ; ==> 2.0
+
+; = round, truncate, floor, ceiling
+;
+; These functions take one or two arguments and return an integer value or an exception
+; if the value cannot be represented by a long
+; (NaN, Infinite, integer overflow or underflow),
+; eg. `(floor number) -> long`
+
+(floor 1.1) ; ==> 1
+
+; = fround, ftruncate, ffloor, fceiling
+;
+; These functions take one or two arguments and return an integer value as a double,
+; eg. `(ffloor number) -> double`
+
+(ffloor 1.1) ; ==> 1.0
+
+; = (signum number) -> signed-prototype
+;
+; `signum` determines a numerical value that indicates whether
+; number is negative, zero, or positive. 
+
+(signum 0)    ; => 0
+(signum -0)   ; => 0
+(signum 3)    ; => 1
+(signum -3)   ; => -1
+
+(signum 0.0)  ; => 0.0
+(signum -0.0) ; => -0.0
+(signum 3.0)  ; => 1.0
+(signum -3.0) ; => -1.0
+
+; = = < > <= >= /=
+;
+; The numeric comparison operators take one or more number arguments.
+
+(= 1 1.0)         ; ==> t
+(< 1 2 3.0 4 5.0) ; ==> t
+(< 1 2 3 3 4 5)   ; ==> nil
 
 
 ;;; == Predefined Graphics Primitives =
