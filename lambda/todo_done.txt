@@ -1526,3 +1526,5 @@ MULTIPLE-VALUE-BIND übernimmt nur eine VALUES form, MULTIPLE-VALUE-CALL überni
 LIST-VALUES, VALUES-LIST, usw. sollten nur macros sein, die nur nice to have sind
 -> im REPL muss auch magic eingebaut werden, damit allfällige sekundäre results ausgegeben werden
 -> multiple-value-bind könnte ein macro sein, das nach multiple-value-call + lambda expandiert
+
+mlib: multi-value-compose

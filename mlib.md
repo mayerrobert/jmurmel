@@ -45,7 +45,7 @@ mlib provides the following Common Lisp-like functions and macros:
 functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 
 - [circular-list](#function-circular-list)
-- [compose](#function-compose)
+- [compose](#function-compose), [multiple-value-compose](#function-multiple-value-compose)
 - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 - [curry](#function-curry), [rcurry](#function-rcurry)
 - [doplist](#macro-doplist)
@@ -664,6 +664,20 @@ Since: 1.2
 Returns a function that composes the given functions, applying the last function first
 and the first function last. The compose function allows the last function to consume
 any number of values, internal value passing is a single value.
+
+The input arity of the last function is unrestricted, and it becomes the corresponding arity
+of the resulting composition.
+
+When exactly one function is given, it is returned.
+
+### Function: multiple-value-compose
+    (multiple-value-compose func1 funcs*) -> function
+
+Since: 1.2
+
+Returns a function that composes the given functions, applying the last function first
+and the first function last. The compose function allows the last function to consume
+any number of values, internal value passing is all return values of the previous function.
 
 The input arity of the last function is unrestricted, and it becomes the corresponding arity
 of the resulting composition.

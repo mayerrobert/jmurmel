@@ -28,7 +28,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * added some JFR integration
 
  * mlib: added functions last, map-into, nconc,
-   circular-list, compose, conjoin, disjoin, curry, rcurry, doplist,
+   circular-list, compose, multiple-value-compose, conjoin, disjoin, curry, rcurry, doplist,
    unzip, unzip-tails,
    with-accumulator, summing, collecting, reverse-collecting, plist-keys, plist-values
 

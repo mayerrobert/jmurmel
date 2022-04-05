@@ -660,6 +660,14 @@
 )
 
 
+; test multiple-value-compose
+#+murmel
+(tests multiple-value-compose
+  (let ((comp (multiple-value-compose truncate (lambda (a b) (values b a)))))
+    (comp 4 5))  => 1
+)
+
+
 ; test conjoin
 #+murmel
 (tests conjoin
