@@ -2440,8 +2440,6 @@ public class LambdaJ {
     static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
     static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
-    /** todo this should handle circular and dotted lists but doesn't, todo avoid cce on dotted lists, throw error instead:
-     * (nthcdr 3 '(0 . 1)) -> Error: Attempted to take CDR of 1. */
     // todo ggf. spezialfall arrayslice behandeln
     private static Object   nthcdr(int n, Object list) {
         if (list == null) return null;
@@ -6004,7 +6002,7 @@ public class LambdaJ {
                     if (intp.sMultipleValueBind == operator) {
                         varargsMin("multiple-value-bind", ccArguments, 2);
                         final ConsCell vars = listOrMalformed("multiple-value-bind", car(ccArguments));
-                        final boolean varargs = !properList(vars); // todo should use dottedList() and barf on circular lists
+                        final boolean varargs = dottedList(vars);
                         int length = length(vars);
                         if (varargs) length--;
                         sb.append(isLast ? "tailcall(" : "funcall(");
@@ -6498,7 +6496,7 @@ public class LambdaJ {
             if (symbolp(paramList)) {
                 // (lambda a forms...) - style varargs
             }
-            else if (!properList(paramList)) {
+            else if (dottedList(paramList)) {
                 if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
             }
             else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
@@ -6560,15 +6558,12 @@ public class LambdaJ {
             }
         }
 
-        // todo zirkulaere listen
-        private static boolean properList(Object params) {
-            if (params == null) return true;
-            if (!listp(params)) return false;
+        // todo throw error on circular list
+        private static boolean dottedList(Object l) {
             for (;;) {
-                if (params == null) return true;
-                final Object rest = cdr(params);
-                if (!listp(cdr(params))) return false;
-                params = rest;
+                if (l == null) return false;
+                if (!consp(l)) return true;
+                l = cdr(l);
             }
         }
 
