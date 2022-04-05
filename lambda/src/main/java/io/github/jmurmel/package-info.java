@@ -50,13 +50,13 @@ The translation from "external" to "internal" is somewhat messy and involved.
 
 <p>"External" can be ...tbd
 
-<p>The default Lisp reader {@link LambdaJ.SExpressionParser} reads bytes from input,
+<p>The default Lisp reader {@link LambdaJ.SExpressionReader} reads bytes from input,
 interprets these bytes according to the UTF-8 characterset
 and subsequently transforms bytes to Unicode strings.
 
 <p>EXCEPT: the Repl interprets input according to the characterset specified by the Java system property 'sun.stdout.encoding').
 
-<p>The default Lisp writer {@link LambdaJ.SExpressionWriter} sends Unicode strings to Java's System.out
+<p>The default Lisp writer {@link LambdaJ.SExpressionReader} sends Unicode strings to Java's System.out
 which in turn writes bytes to the console or a redirected file.
 Java's System.out does this translation according to Java's system default characterset (which can be configured by the Java system property 'sun.stdout.encoding').
 
