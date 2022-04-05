@@ -67,25 +67,25 @@ public class ConsTest {
 
     @Test
     public void testAppendConsSlice() {
-        final Object l = listBuilder().append(1).append(2).appendLast(LambdaJ.ListBuilder.of(3, 4, 5)).first();
+        final Object l = listBuilder().append(1).append(2).appendLast(LambdaJ.arraySlice(3, 4, 5)).first();
         assertEquals("(1 2 3 4 5)", TestUtils.sexp(l));
     }
 
     @Test
     public void testConsSlice() {
-        final Object l = listBuilder().append(1).append(2).append(LambdaJ.ListBuilder.of(3, 4, 5)).first();
+        final Object l = listBuilder().append(1).append(2).append(LambdaJ.arraySlice(3, 4, 5)).first();
         assertEquals("(1 2 (3 4 5))", TestUtils.sexp(l));
     }
 
     @Test
     public void testSliceCons() {
-        final Object l = LambdaJ.ListBuilder.of(1, 2, 3, listBuilder().append(4).append(5).first());
+        final Object l = LambdaJ.arraySlice(1, 2, 3, listBuilder().append(4).append(5).first());
         assertEquals("(1 2 3 (4 5))", TestUtils.sexp(l));
     }
 
     @Test
     public void testAppendConsSliceIterator() {
-        final LambdaJ.ConsCell l = (LambdaJ.ConsCell)listBuilder().append(1).append(2).appendLast(LambdaJ.ListBuilder.of(3, 4, 5)).first();
+        final LambdaJ.ConsCell l = (LambdaJ.ConsCell)listBuilder().append(1).append(2).appendLast(LambdaJ.arraySlice(3, 4, 5)).first();
         final StringBuilder sb = new StringBuilder();
         l.forEach(sb::append);
         assertEquals("12345", sb.toString());

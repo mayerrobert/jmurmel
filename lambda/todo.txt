@@ -5,7 +5,7 @@ tailcallSibling2(Object fn, Object[] oldargs, Object arg1, Object arg2)
 -> ähnlicher trick wäre im interpreter denkbar, derzeit wächst environment bei tailcalls
 
 values&co dokumentieren, in usage aufnehmen
-mlib: LIST-VALUES, VALUES-LIST, zusammenspiel compiler/interpreter
+zusammenspiel compiler/interpreter bzgl. values reparieren
 
 macht ein macro with-iterator sinn (für Java iterator)?, siehe auch http://clhs.lisp.se/Body/m_w_hash.htm
 
@@ -17,10 +17,25 @@ safety könnte werden:
 
 (integerp 1.): SBCL gibt t, Murmel gibt nil
 
+
 abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole ein zweites mal
 -> symbolerzeugen irgendwie rauslösen und im konstruktor nur aufrufen, wenns benötigt wird
 -> oder sollte nicht die klasse sondern das interface abgeleitet werden?
    -> filepath und position soll aber nicht delegiert werden
+
+-> die liste mit den intern-den symbolen sollte nicht im parser stecken sondern im interpreter, momentan funktionieren die delegierenden parser nur durch zufall:
+   funktionieren tuts, weil der delegierende parser eh wieder zur ersten und einzigen liste mit intern-den greift. dann kann die liste auch gleich im interpreter stecken,
+   alle parser nutzen die gleiche liste des interpreters, und die liste (und alle wellknown symbols) wird im konstruktor des interpreters erzeugt
+   -> wenn alle wellknown symbols vom interpreter konstruktor erzeugt werden, können sie auch final sein, und in eval gibts switch
+      symbols wie backquote usw. die nur der parser braucht, sollten wsl auch zum interpreter
+-> delegierende parser werden auch ggf. mit den falschen features erzeugt (nämlich mit allen), d.h. in load files ist alles erlaubt
+-> featurelist kann wsl auch zum interpreter
+-> wenn alles entwirrt ist, hat der parser nur mehr so wenig state, dass obiges problem mit doppelt erzeugen eig nicht mehr existiert
+-> in setSymtab() wird auch noch einiges resetted. das passt wenn setsymtab() im zuge der (re-)initialisierung gerufen wird, aber nicht bei load oder require
+
+dass Parser die beiden interfaces SymbolTable und ObjectReader erweitert, macht auch nicht viel Sinn.
+-> wsl. sollte es ein symboltable klasse geben die macht nur intern, und interpreter und reader nutzen beide das gleiche objekt.
+
 
 nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice
 
@@ -31,6 +46,8 @@ http://www.cs.cmu.edu/Groups//AI/lang/lisp/doc/standard/ansi/dpans/
 https://github.com/xach/dpans
 https://github.com/antoszka/dpANS3
 
+Is there a straightforward lisp equivalent of Python's generators?
+-> https://stackoverflow.com/questions/32956033/is-there-a-straightforward-lisp-equivalent-of-pythons-generators
 
 read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
    -> oder einfach ein neues symbol eof einführen (self-evaluating wie t)

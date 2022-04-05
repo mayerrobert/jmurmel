@@ -22,7 +22,7 @@ public class MurmelJavaCompilerTest {
     @Test
     public void testForm() throws Exception {
         final Reader reader = new StringReader("(define a 2)");
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final Parser parser = LambdaJ.makeReader(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         StringWriter w = new StringWriter();
@@ -37,7 +37,7 @@ public class MurmelJavaCompilerTest {
                       + "(f \"Hello, \" \"World!\")";
 
         final Reader reader = new StringReader(source);
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final Parser parser = LambdaJ.makeReader(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
@@ -643,7 +643,7 @@ public class MurmelJavaCompilerTest {
 
     private static MurmelProgram compile(String source) throws Exception {
         final Reader reader = new StringReader(source);
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final Parser parser = LambdaJ.makeReader(reader::read);
 
         MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
@@ -657,7 +657,7 @@ public class MurmelJavaCompilerTest {
 
     private static void compileError(String source, String expected) throws Exception {
         final Reader reader = new StringReader(source);
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final Parser parser = LambdaJ.makeReader(reader::read);
 
         final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         try {
@@ -673,7 +673,7 @@ public class MurmelJavaCompilerTest {
 
     private static void runtimeError(String source, String expected) throws Exception {
         final Reader reader = new StringReader(source);
-        final SExpressionParser parser = new SExpressionParser(reader::read);
+        final Parser parser = LambdaJ.makeReader(reader::read);
 
         final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         try {

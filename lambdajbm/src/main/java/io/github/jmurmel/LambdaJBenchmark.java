@@ -3,7 +3,6 @@ package io.github.jmurmel;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -140,7 +139,7 @@ public class LambdaJBenchmark {
 
     private static LambdaJ.MurmelProgram compile(String source) throws Exception {
         final Reader reader = new StringReader(source);
-        final LambdaJ.SExpressionParser parser = new LambdaJ.SExpressionParser(reader::read);
+        final LambdaJ.Parser parser = LambdaJ.makeReader(reader::read);
 
         LambdaJ.MurmelJavaCompiler c = new LambdaJ.MurmelJavaCompiler(parser, null, getTmpDir());
         Class<LambdaJ.MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);

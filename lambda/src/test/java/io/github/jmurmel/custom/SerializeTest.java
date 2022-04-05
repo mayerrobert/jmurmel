@@ -71,7 +71,7 @@ public class SerializeTest {
     }
 
     private static byte[] sExpToByteArray(String sExp) throws IOException {
-        LambdaJ.ObjectReader parser = new LambdaJ.SExpressionParser(new StringReader(sExp)::read);
+        LambdaJ.ObjectReader parser = LambdaJ.makeReader(new StringReader(sExp)::read);
         ByteArrayOutputStream s = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(s);
         os.writeObject(parser.readObj());
