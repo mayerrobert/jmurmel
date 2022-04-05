@@ -5,8 +5,8 @@ For a copy, see https://opensource.org/licenses/MIT. */
 
 /**
 
-<p>This package contains the implementation of JMurmel, an interpreter/ compiler for the Lisp-dialect Murmel,
-these API-docs are for using JMurmel as an embedded interpreter and/ or compiler (as-is or customized),
+<p>This package contains the implementation of JMurmel, an interpreter/ compiler for the Lisp-dialect Murmel.
+These API-docs are for using JMurmel as an embedded interpreter and/ or compiler (as-is or customized),
 and for compiling and using interpreted or compiled Murmel programs from within another Java application.
 
 <p>{@link LambdaJ} is the main class for
@@ -50,9 +50,8 @@ The translation from "external" to "internal" is somewhat messy and involved.
 
 <p>"External" can be ...tbd
 
-<p>The default Lisp reader {@link LambdaJ.SExpressionReader} reads bytes from input,
-interprets these bytes according to the UTF-8 characterset
-and subsequently transforms bytes to Unicode strings.
+<p>The default Lisp reader {@link LambdaJ.SExpressionReader} reads {@code Characters} from input,
+which were translated to UTF-8 by the Java Runtime.
 
 <p>EXCEPT: the Repl interprets input according to the characterset specified by the Java system property 'sun.stdout.encoding').
 
@@ -69,7 +68,7 @@ Note that e.g. on Windows the default value of file.encoding is 'Cp1252' but inp
 <p><b>Line separators</b></p>
 
 <p>The internal representation of line separators is Unix-style, i.e. a character with the value 10.
-The external representation of line line separators is platform dependent,
+The external representation of line separators is platform dependent,
 i.e. Java's System.lineSeparator will be used.
 (Except: generated Java source, see below.)
 

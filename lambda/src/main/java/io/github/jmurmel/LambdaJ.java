@@ -229,6 +229,7 @@ public class LambdaJ {
         private Object first;
         private Object last;
 
+        /** add an item at the end of the list */
         public T append(Object elem) {
             final ConsCell newCell = cons(elem, null);
             if (first == null) {
@@ -242,6 +243,9 @@ public class LambdaJ {
             return (T)this;
         }
 
+        /** add an item at the end of the list to create a dotted list.
+         *  Once {@link #appendLast(Object)} has been invoked subsequent invocations
+         *  of {@link #appendLast(Object)} and/ or {@link #append(Object)} will result in an error as dotted lists can't be appended to. */
         public T appendLast(Object lastElem) {
             if (first == null) {
                 last = first = lastElem;
@@ -254,11 +258,13 @@ public class LambdaJ {
             return (T)this;
         }
 
+        /** return the constructed list so far */
         public Object first() { return first; }
 
         abstract ConsCell cons(Object car, Object cdr);
     }
 
+    /** Builder class for constructing lists, also used by compiled Murmel */
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
         ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
     }
