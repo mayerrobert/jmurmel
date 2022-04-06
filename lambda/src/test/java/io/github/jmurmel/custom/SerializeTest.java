@@ -31,10 +31,10 @@ public class SerializeTest {
         }
 
         @Override
-        public Object readObj() {
+        public Object readObj(Object eof) {
             Object ret = obj;
             obj = null; // only return it once or interpreter will execute the same program forever
-            return ret;
+            return ret == null ? eof : ret;
         }
 
         @Override
@@ -75,7 +75,7 @@ public class SerializeTest {
         LambdaJ.ObjectReader parser = LambdaJ.makeReader(new StringReader(sExp)::read);
         ByteArrayOutputStream s = new ByteArrayOutputStream();
         ObjectOutputStream os = new ObjectOutputStream(s);
-        os.writeObject(parser.readObj());
+        os.writeObject(parser.readObj(null));
         return s.toByteArray();
     }
 }

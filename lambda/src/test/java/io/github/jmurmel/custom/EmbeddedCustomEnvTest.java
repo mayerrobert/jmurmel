@@ -26,7 +26,7 @@ public class EmbeddedCustomEnvTest {
         final ObjectReader parser = LambdaJ.makeReader(program::read, interpreter.getSymbolTable());
 
         // empty "file" for stdin, simply return EOF
-        final ObjectReader inReader = () -> -1;
+        final ObjectReader inReader = eof -> eof;
 
         // collect stdout of the Lisp program in a StringBuilder
         final StringBuilder outBuffer = new StringBuilder();

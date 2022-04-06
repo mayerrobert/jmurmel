@@ -1547,3 +1547,24 @@ abgeleitete wrapping symboltables erzeugen unnötigerweise die wellknown symbole
 
 dass Parser die beiden interfaces SymbolTable und ObjectReader erweitert, macht auch nicht viel Sinn.
 -> wsl. sollte es ein symboltable klasse geben die macht nur intern, und interpreter und reader nutzen beide das gleiche objekt.
+
+
+read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
+   -> oder einfach ein neues symbol eof einführen (self-evaluating wie t)
+-> "jm murmel-langref.lisp" und "jm --run murmel-langref.lisp" enden beim ersten toplevel "nil"
+   "jm < murmel-langref.lisp" und "jm --run < murmel-langref.lisp" geht
+
+-> der repl verschluckt auch nils:
+JMurmel> 'a
+
+==> a
+JMurmel> 'b
+
+==> b
+JMurmel> nil
+
+==> nil
+JMurmel> :l
+(quote a)
+(quote b)
+JMurmel>

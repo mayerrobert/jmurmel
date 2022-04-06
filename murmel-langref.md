@@ -154,7 +154,7 @@ of Lisp pp 62"):
 
 ### dynamic
 `dynamic` is a pre-defined self-evaluating symbol that may be used
-in the `(lambda dynamic...` and `(let* dynamic...` forms, see below.
+in the `(lambda dynamic...` (interpreter only) and `(let* dynamic...` forms, see below.
 
     dynamic ; ==> dynamic
 
@@ -403,7 +403,7 @@ bound to the given value, and the previous value is restored when
 leaving the scope of the `let` form.
 I.e. `let dynamic` treats globals as "special".
 
-    (define a 1)
+    (setq a 1)
     (define b 2)
     (defun f () (write (cons a b)))
 
@@ -436,8 +436,8 @@ leaving the scope of the `let*` form.
 I.e. `let* dynamic` treats globals as "special".
 
     (define *g* 'global)
-    (defun f () (write *g*))
-    (let* dynamic ((*g* 'temp)) (f)) ; f will write temp
+    (defun fun () (write *g*))
+    (let* dynamic ((*g* 'temp)) (fun)) ; fun will write temp
     *g* ; ==> 'global
 
 ### (letrec optsybol? ((symbol bindingform)...) bodyforms...) -> object
@@ -523,12 +523,12 @@ Backquote "\`" starts "fill-in templates":
 backquote, comma and comma-at work similar to CL,
 except: comma-dot is not supported.
 
-    (define a 'a-val) (define b 'b-val) (define c 'c-val)
+    (setq a 'a-val) (setq b 'b-val) (define c 'c-val)
     (define d '(d-val1 d-val2))
     `((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
 
     (define y 'b) (define l '(a b))
-    (eval ``(,a ,,@l ,,y)) ; ==> (a-val a-val b-val b-val)
+    (eval ``(,a ,,@l ,,y) '((a . a) (b . b) (y . y))) ; ==> (a-val a-val b-val b-val)
 
     (define x '(1 2 3))
     `(normal= ,x splicing= ,@x see?) ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
@@ -575,7 +575,7 @@ else it is the concatenation of `env` and all predefined globals
 
 Replace the value of the CAR or CDR slot of a cons cell.
 
-    (define l '(1 2))
+    (setq l '(1 2))
     (rplaca l 11) ; ==> (11 2)
     (rplacd l 22) ; ==> (11 . 22)
 
@@ -672,12 +672,6 @@ Return a new unique symbol.
     (write   obj  print-escape-p?) -> t
     (writeln obj? print-escape-p?) -> t
     (lnwrite obj? print-escape-p?) -> t
-
-Both expressions as well as data are read from stdin.
-The following expression reads the expression immediately following it
-(in this case the expression to be read is the string "Hello!").
-
-    (write (read)) "Hello!"
 
 `write` accepts an optional boolean argument `print-escape-p`.
 `writeln` and `lnwrite` accept an optional argument `obj`

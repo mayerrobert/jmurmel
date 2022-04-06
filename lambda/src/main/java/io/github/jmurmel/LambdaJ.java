@@ -186,10 +186,10 @@ public class LambdaJ {
     @FunctionalInterface public interface TraceConsumer { void println(String msg); }
 
     @FunctionalInterface public interface ObjectReader {
-        Object readObj();
+        Object readObj(Object eof);
         
         /** if {@code recordPos == true} then it would be desirable to reconrd file/line positions inside the objects */
-        default Object readObj(boolean recordPos) { return readObj(); }
+        default Object readObj(boolean recordPos, Object eof) { return readObj(eof); }
         default void setInput(ReadSupplier input, Path filePath) { throw new UnsupportedOperationException("this ObjectReader does not support changing input"); }
         default Path getFilePath() { return null; }
     }
@@ -948,8 +948,8 @@ public class LambdaJ {
             // #+... , #-... feature expressions
             case '+':
             case '-':
-                final boolean hasFeature = featurep(readObj());
-                final Object next = readObj();
+                final boolean hasFeature = featurep(readObj(null));
+                final Object next = readObj(null);
                 if (sub_char == '+') return hasFeature ? next : CONTINUE;
                 else return hasFeature ? CONTINUE : next;
 
@@ -1130,15 +1130,16 @@ public class LambdaJ {
 
         /// S-expression parser
         /** Record line and char numbers in the conses */
-        public Object readObj(boolean recordPos) {
+        @Override
+        public Object readObj(boolean recordPos, Object eof) {
             this.pos = recordPos;
-            final Object ret = readObj();
+            final Object ret = readObj(eof);
             this.pos = false;
             return ret;
         }
 
         @Override
-        public Object readObj() {
+        public Object readObj(Object eof) {
             if (!init) {
                 prev = -1;
                 lineNo = 1; charNo = 0;
@@ -1150,7 +1151,7 @@ public class LambdaJ {
             try {
                 readToken();
                 //return expand_backquote(readObject(startLine, startChar));
-                return readObject(startLine, startChar);
+                return readObject(startLine, startChar, eof);
             }
             catch (ParseError pe) {
                 throw errorReaderError(pe.getMessage() + posInfo());
@@ -1167,10 +1168,10 @@ public class LambdaJ {
         private final Object sCons;
         private final Object sNil;
 
-        private Object readObject(int startLine, int startChar) {
+        private Object readObject(int startLine, int startChar, Object eof) {
             if (tok == null) {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
-                return null;
+                return eof;
             }
             if (!tokEscape && tok instanceof LambdaJSymbol && "nil".equalsIgnoreCase(tok.toString())) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
@@ -1184,10 +1185,10 @@ public class LambdaJ {
             if (!tokEscape && tok == RP)  throw new ParseError("unexpected ')'");
             if (!tokEscape && tok == LP) {
                 try {
-                final Object list = readList(startLine, startChar);
+                final Object list = readList(startLine, startChar, eof);
                 if (!tokEscape && tok == DOT) {
                     skipWs();
-                    final Object cdr = readList(lineNo, charNo);
+                    final Object cdr = readList(lineNo, charNo, eof);
                     if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
                     final Object cons = combine(startLine, startChar, list, car(cdr));
                     if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
@@ -1204,7 +1205,7 @@ public class LambdaJ {
                 skipWs();
                 final int _startLine = lineNo, _startChar = charNo;
                 readToken();
-                return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
             }
             if (!tokEscape && tok == BQ) {
                 skipWs();
@@ -1213,7 +1214,7 @@ public class LambdaJ {
                 final Object o;
                 try {
                     backquote++;
-                    final Object exp = readObject(_startLine, _startChar);
+                    final Object exp = readObject(_startLine, _startChar, eof);
                     if (backquote == 1) {
                         o = qq_expand(exp);
                         //System.out.println("bq expansion in:  (backquote " + printSEx(exp) + ')');
@@ -1236,7 +1237,7 @@ public class LambdaJ {
                 final Object o;
                 try {
                     backquote--;
-                    o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar), null));
+                    o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
                 }
                 finally { backquote++; }
                 return o;
@@ -1253,7 +1254,7 @@ public class LambdaJ {
             return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
         }
 
-        private Object readList(int listStartLine, int listStartChar) {
+        private Object readList(int listStartLine, int listStartChar, Object eof) {
             ConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();
@@ -1269,7 +1270,7 @@ public class LambdaJ {
                 if (appendTo != null) appendTo.rplacd(newCell);
                 appendTo = newCell;
 
-                newCell.rplaca(readObject(carStartLine, carStartChar));
+                newCell.rplaca(readObject(carStartLine, carStartChar, eof));
                 skipWs();
                 listStartLine = lineNo; listStartChar = charNo;
             }
@@ -2283,10 +2284,11 @@ public class LambdaJ {
         final Path p = findFile(prevPath, fileName);
         try (Reader r = Files.newBufferedReader(p)) {
             final SExpressionReader parser = new SExpressionReader(r::read, symtab, p);
+            final Object eof = "EOF";
             Object result = null;
             for (;;) {
-                final Object form = parser.readObj(true);
-                if (form == null) break;
+                final Object form = parser.readObj(true, eof);
+                if (form == eof) break;
 
                 result = eval(form, topEnv, 0, 0, 0);
             }
@@ -3589,7 +3591,7 @@ public class LambdaJ {
             final Primitive freadobj =  a -> {
                 noArgs("read", a);
                 if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-                return lispReader.readObj();
+                return lispReader.readObj(null); // todo eof als parameter
             };
             env = addBuiltin("read",    freadobj,
                   addBuiltin("write",   (Primitive) a -> { varargsMinMax("write",   a, 1, 2);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
@@ -3915,10 +3917,11 @@ public class LambdaJ {
         final ObjectReader scriptParser = lispReader;
         scriptParser.setInput(program::read, null);
         setReaderPrinter(new SExpressionReader(in::read, symtab), new SExpressionWriter(new WrappingWriter(out)::append));
+        final Object eof = "EOF";
         Object result = null;
         while (true) {
-            final Object exp = scriptParser.readObj(true);
-            if (exp != null) result = eval(exp, topEnv, 0, 0, 0);
+            final Object exp = scriptParser.readObj(true, eof);
+            if (exp != eof) result = eval(exp, topEnv, 0, 0, 0);
             else return result;
         }
     }
@@ -3934,7 +3937,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         final ObjectReader parser = init(in, out);
-        final Object exp = parser.readObj();
+        final Object exp = parser.readObj(null);
         final long tStart = System.nanoTime();
         final Object result = eval(exp, topEnv, 0, 0, 0);
         traceStats(System.nanoTime() - tStart);
@@ -3961,14 +3964,16 @@ public class LambdaJ {
     public Object interpretExpressions(ObjectReader program, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(symtab);
         init(inReader, outWriter, customEnvironment);
-        Object exp = program.readObj(true);
-        while (true) {
+        final Object eof = "EOF";
+        Object exp = program.readObj(true, eof);
+        Object result = null;
+        while (exp != eof) {
             final long tStart = System.nanoTime();
-            final Object result = eval(exp, topEnv, 0, 0, 0);
+            result = eval(exp, topEnv, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
-            exp = program.readObj(true);
-            if (exp == null) return result;
+            exp = program.readObj(true, eof);
         }
+        return result;
     }
 
     /** print and reset interpreter stats and wall time. preceeded and followed by a newline. */
@@ -4059,6 +4064,7 @@ public class LambdaJ {
                 final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
                         () -> -1, null, true);
 
+                final Object eof = "EOF";
                 final List<Object> program = new ArrayList<>();
                 for (String fileName: files) {
                     if ("--".equals(fileName)) continue;
@@ -4067,8 +4073,8 @@ public class LambdaJ {
                     try (Reader r = Files.newBufferedReader(p)) {
                         parser.setInput(r::read, p);
                         while (true) {
-                            final Object sexp = parser.readObj(true);
-                            if (sexp == null) break;
+                            final Object sexp = parser.readObj(true, eof);
+                            if (sexp == eof) break;
                             program.add(sexp);
                         }
                     } catch (IOException e) {
@@ -4115,10 +4121,11 @@ public class LambdaJ {
                 final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
                                                                        new InputStreamReader(System.in, consoleCharset)::read, null, true);
 
+                final Object eof = "EOF";
                 final List<Object> program = new ArrayList<>();
                 while (true) {
-                    final Object sexp = parser.readObj(true);
-                    if (sexp == null) break;
+                    final Object sexp = parser.readObj(true, eof);
+                    if (sexp == eof) break;
                     program.add(sexp);
                 }
 
@@ -4158,10 +4165,11 @@ public class LambdaJ {
             final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.symtab, System.in::read, null, true);
             final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
+            final Object eof = "EOF";
             Object result = null;
             for (;;) {
-                final Object form = reader.readObj(true);
-                if (form == null) break;
+                final Object form = reader.readObj(true, eof);
+                if (form == eof) break;
                 if (history != null) history.add(form);
 
                 final long tStart = System.nanoTime();
@@ -4196,6 +4204,7 @@ public class LambdaJ {
         final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
         final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
+        final Object eof = "EOF";
         final List<Object> history = prevHistory == null ? new ArrayList<>() : prevHistory;
         SExpressionReader parser = null;
         ObjectWriter outWriter = null;
@@ -4229,10 +4238,10 @@ public class LambdaJ {
 
             try {
                 if (istty) { parser.lineNo = parser.charNo == 0 ? 1 : 0;  parser.charNo = 0; } // if parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed
-                final Object exp = parser.readObj(true);
+                final Object exp = parser.readObj(true, eof);
 
                 final String strExp = exp == null ? null : exp.toString();
-                if (exp == null && parser.look == EOF
+                if (exp == eof && parser.look == EOF
                     || ":q"  .equalsIgnoreCase(strExp)) { System.out.println("bye."); System.out.println();  System.exit(0); }
                 if (exp != null) {
                     if (":h"      .equalsIgnoreCase(strExp)) { showHelp();  continue; }
@@ -4247,8 +4256,8 @@ public class LambdaJ {
                     if (":r"      .equalsIgnoreCase(strExp)) { runForms(history, interpreter, true); continue; }
                     if (":jar"    .equalsIgnoreCase(strExp)) { compileToJar(interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(strExp)) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
-                    history.add(exp);
                 }
+                history.add(exp);
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
@@ -4354,6 +4363,7 @@ public class LambdaJ {
     private static void compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) {
         final SymbolTable symtab = new ListSymbolTable();
         SExpressionReader objectReader = null;
+        final Object eof = "EOF";
         final List<Object> program = new ArrayList<>();
         for (String fileName: files) {
             if ("--".equals(fileName)) continue;
@@ -4363,8 +4373,8 @@ public class LambdaJ {
                 if (objectReader == null) objectReader = new SExpressionReader(reader::read, symtab, p);
                 else objectReader.setInput(reader::read, p);
                 while (true) {
-                    final Object sexp = objectReader.readObj(true);
-                    if (sexp == null) break;
+                    final Object sexp = objectReader.readObj(true, eof);
+                    if (sexp == eof) break;
                     program.add(sexp);
                 }
             } catch (IOException e) {
@@ -4768,6 +4778,7 @@ public class LambdaJ {
             intp.init(() -> -1, System.out::print);
             intp.setReaderPrinter(new SExpressionReader(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, intp.symtab, System.in::read, null, true), intp.getLispPrinter());
             _t = intern("t");
+            _dynamic = intern("dynamic");
         }
 
 
@@ -4811,11 +4822,12 @@ public class LambdaJ {
         /// predefined global variables
         public static final Object _nil = null;
         public final Object _t;
-        public static final Object _pi = Math.PI;
+        public final Object _pi = Math.PI;
+        public final Object _dynamic; 
 
         /// predefined aliased global variables
         // internal-time-units-per-second: itups doesn't have a leading _ because it is avaliable under an alias name
-        public static final Object itups = 1e9;
+        public final Object itups = 1e9;
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
 
@@ -4868,7 +4880,7 @@ public class LambdaJ {
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
         public final Object _read      (Object... args) { noArgs("read",         args.length); if (intp.lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-                                                                                               return intp.lispReader.readObj(); }
+                                                                                               return intp.lispReader.readObj(null); } // todo eof parameter
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
@@ -5586,7 +5598,7 @@ public class LambdaJ {
         /// * gensym, trace, untrace, (macroexpand-1), ::
         /// * turtle-functions
         ///
-        private static final String[] globalvars = { "nil", "t", "pi" };
+        private static final String[] globalvars = { "nil", "t", "pi", "dynamic" };
         private static final String[][] aliasedGlobals = {
             { "internal-time-units-per-second", "itups" },
             { "*command-line-argument-list*", "commandlineArgumentList" },
@@ -5632,7 +5644,7 @@ public class LambdaJ {
 
         public Class <MurmelProgram> formsToJavaClass(String unitName, Iterable<Object> forms, String jarFileName) throws Exception {
             final Iterator<Object> i = forms.iterator();
-            final ObjectReader r = () -> i.hasNext() ? i.next() : null;
+            final ObjectReader r = (eof) -> i.hasNext() ? i.next() : eof;
             return formsToJavaClass(unitName, r, jarFileName);
         }
 
@@ -5649,7 +5661,7 @@ public class LambdaJ {
 
         public void formsToJavaSource(Writer ret, String unitName, Iterable<Object> forms) {
             final Iterator<Object> i = forms.iterator();
-            final ObjectReader r = () -> i.hasNext() ? i.next() : null;
+            final ObjectReader r = (eof) -> i.hasNext() ? i.next() : eof;
             formsToJavaSource(ret, unitName, r);
         }
 
@@ -5695,8 +5707,9 @@ public class LambdaJ {
             passTwo = false;
             implicitDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
+            final Object eof = "EOF";
             Object form;
-            while (null != (form = forms.readObj(true))) {
+            while (eof != (form = forms.readObj(true, eof))) {
                 try {
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, form);
                 }
@@ -6603,11 +6616,12 @@ public class LambdaJ {
             final String fileName = (String) argument;
             final Path prevPath = intp.lispReader.getFilePath();
             final Path p = intp.findFile(prevPath, fileName);
+            final Object eof = "EOF";
             try (Reader r = Files.newBufferedReader(p)) {
                 final SExpressionReader parser = new SExpressionReader(r::read, intp.symtab, p);
                 for (;;) {
-                    final Object form = parser.readObj(true);
-                    if (form == null) break;
+                    final Object form = parser.readObj(true, eof);
+                    if (form == eof) break;
 
                     if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, form);
                     else emitForm(sb, form, _env, topEnv, rsfx, isLast);

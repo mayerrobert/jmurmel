@@ -33,24 +33,8 @@ https://github.com/antoszka/dpANS3
 Is there a straightforward lisp equivalent of Python's generators?
 -> https://stackoverflow.com/questions/32956033/is-there-a-straightforward-lisp-equivalent-of-pythons-generators
 
-read sollte am ende nicht nil liefern, sondern fehler oder übergebenes symbol
-   -> oder einfach ein neues symbol eof einführen (self-evaluating wie t)
--> "jm murmel-langref.lisp" und "jm --run murmel-langref.lisp" enden beim ersten toplevel "nil"
-   "jm < murmel-langref.lisp" und "jm --run < murmel-langref.lisp" geht
--> der repl verschluckt auch nils:
-JMurmel> 'a
 
-==> a
-JMurmel> 'b
-
-==> b
-JMurmel> nil
-
-==> nil
-JMurmel> :l
-(quote a)
-(quote b)
-JMurmel>
+(read) sollte einen parameter eof bekommen
 
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null

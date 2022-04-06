@@ -442,7 +442,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile let dynamic to class", program);
 
         StringBuilder out = new StringBuilder();
-        program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
+        program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
         assertEquals("let dynamic produced wrong output", "(1 . 2)(11 . 1)(1 . 2)", out.toString());
     }
@@ -453,7 +453,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile let* dynamic to class", program);
         
         StringBuilder out = new StringBuilder();
-        program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
+        program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
         assertEquals("let* dynamic produced wrong output", "333312", out.toString());
     }
@@ -465,7 +465,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile let* dynamic to class", program);
 
         StringBuilder out = new StringBuilder();
-        program.setReaderPrinter(() -> null, LambdaJ.makeWriter(out::append));
+        program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
         assertEquals("let* dynamic produced wrong output", "33.0", out.toString());
     }
