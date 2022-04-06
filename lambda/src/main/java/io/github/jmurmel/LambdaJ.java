@@ -1614,34 +1614,38 @@ public class LambdaJ {
                     operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
 
+                    boolean funcall = true;
+                    ConsCell ccForms = null;
+                    final ConsCell macroClosure;
+
 
                     if (operator != null && symbolp(operator) && ((LambdaJSymbol)operator).wellknownSymbol != null) switch (((LambdaJSymbol)operator).wellknownSymbol) {
                         /// eval - special forms
 
                         /// eval - (quote exp) -> exp
-                        case sQuote: { if (sQuote == null) break; 
+                        case sQuote: { if (sQuote == null) break;
                             oneArg("quote", ccArguments);
                             result = car(ccArguments);
                             return result;
                         }
 
                         /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
-                        case sLambda: { if (sLambda == null) break; 
+                        case sLambda: { if (sLambda == null) break;
                             result = "#<lambda>";
                             return makeClosureFromForm(ccForm, env);
                         }
 
-                        case sSetQ: { if (sSetQ == null) break; 
+                        case sSetQ: { if (sSetQ == null) break;
                             result = evalSetq(ccArguments, env, stack, level, traceLvl);
                             return result;
                         }
 
-                        case sDefmacro: { if (sDefmacro == null) break; 
+                        case sDefmacro: { if (sDefmacro == null) break;
                             result = evalDefmacro(ccArguments, env, form);
                             return result;
                         }
 
-                        case sDeclaim: { if (sDeclaim == null) break; 
+                        case sDeclaim: { if (sDeclaim == null) break;
                             result = evalDeclaim(level, ccArguments);
                             return result;
                         }
@@ -1650,7 +1654,7 @@ public class LambdaJ {
                         /// eval - special forms that change the global environment
 
                         /// eval - (define symbol exp) -> symbol with a side of global environment extension
-                        case sDefine: { if (sDefine == null) break; 
+                        case sDefine: { if (sDefine == null) break;
                             varargs1_2("define", ccArguments);
                             final Object symbol = car(ccArguments);
                             if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
@@ -1670,7 +1674,7 @@ public class LambdaJ {
 
                         /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                         // shortcut for (define symbol (lambda (params...) forms...))
-                        case sDefun: { if (sDefun == null) break; 
+                        case sDefun: { if (sDefun == null) break;
                             varargsMin("defun", ccArguments, 2);
                             form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
                             continue tailcall;
@@ -1680,7 +1684,7 @@ public class LambdaJ {
                         /// eval - special forms that run expressions
 
                         /// eval - (if condform form optionalform) -> object
-                        case sIf: { if (sIf == null) break; 
+                        case sIf: { if (sIf == null) break;
                             varargsMinMax("if", ccArguments, 2, 3);
                             if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
                                 form = cadr(ccArguments); isTc = true; continue tailcall;
@@ -1690,79 +1694,90 @@ public class LambdaJ {
                         }
 
                         /// eval - (load filespec) -> object
-                        case sLoad: { if (sLoad == null) break; 
+                        case sLoad: { if (sLoad == null) break;
                             oneArg("load", ccArguments);
                             result = loadFile("load", car(ccArguments));
                             return result;
                         }
 
                         /// eval - (require modulename optfilespec) -> object
-                        case sRequire: { if (sRequire == null) break; 
+                        case sRequire: { if (sRequire == null) break;
                             result = evalRequire(ccArguments);
                             return result;
                         }
 
                         /// eval - (provide modulename) -> nil
-                        case sProvide: { if (sProvide == null) break; 
+                        case sProvide: { if (sProvide == null) break;
                             result = evalProvide(ccArguments);
                             return result;
                         }
-                    }
 
-                    // "ccForms" will be set up depending on the special form and then used in "eval a list of forms" below
-                    ConsCell ccForms = null;
-                    final ConsCell macroClosure;
 
-                    /// eval - (progn forms...) -> object
-                    if (operator == sProgn) {
-                        ccForms = ccArguments;
-                        // fall through to "eval a list of forms"
 
-                    /// eval - (cond (condform forms...)... ) -> object
-                    } else if (operator == sCond) {
-                        if (ccArguments != null)
-                            for (Object c: ccArguments) {
-                                if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
-                                if (eval(car(c), env, stack, level, traceLvl) != null) {
-                                    ccForms = (ConsCell) cdr(c);
-                                    break;
+                        // the case clauses below will set "funcall" to false and set up "ccForms" depending on the special form.
+                        // "ccForms" will then be used in "eval a list of forms" below
+
+                        /// eval - (progn forms...) -> object
+                        case sProgn: {
+                            if (sProgn == null) break;
+                            ccForms = ccArguments;
+                            funcall = false;
+                            break; // fall through to "eval a list of forms"
+                        }
+
+                        /// eval - (cond (condform forms...)... ) -> object
+                        case sCond: { if (sCond == null) break;
+                            if (ccArguments != null)
+                                for (Object c: ccArguments) {
+                                    if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
+                                    if (eval(car(c), env, stack, level, traceLvl) != null) {
+                                        ccForms = (ConsCell) cdr(c);
+                                        break;
+                                    }
                                 }
-                            }
 
-                        if (ccForms == null) { result = null; return null; } // no condition was true
-                        // fall through to "eval a list of forms"
+                            if (ccForms == null) { result = null; return null; } // no condition was true
+                            funcall = false;
+                            break; // fall through to "eval a list of forms"
+                        }
 
-                    /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
-                    } else if (operator == sLabels) {
-                        final ConsCell[] ret = evalLabels(ccArguments, env);
-                        ccForms = ret[0];
-                        env = ret[1];
-                        // fall through to "eval a list of forms"
+                        /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
+                        case sLabels: { if (sLabels == null) break;
+                            final ConsCell[] ret = evalLabels(ccArguments, env);
+                            ccForms = ret[0];
+                            env = ret[1];
+                            funcall = false;
+                            break; // fall through to "eval a list of forms"
+                        }
 
+                        /// eval - (let {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
+                        /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
+                        /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
+                        case sLet:
+                        case sLetStar:
+                        case sLetrec: { if (operator != sLet && operator != sLetStar && operator != sLetrec) break;
+                            final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
+                            ccForms = formsAndEnv[0];
+                            env = formsAndEnv[1];
+                            restore = formsAndEnv[2];
+                            funcall = false;
+                            break; // fall through to "eval a list of forms"
+                        }
 
-                    /// eval - (let {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
-                    /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
-                    /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
-                    } else if (operator == sLet || operator == sLetStar || operator == sLetrec) {
-                        final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
-                        ccForms = formsAndEnv[0];
-                        env = formsAndEnv[1];
-                        restore = formsAndEnv[2];
-                        // fall through to "eval a list of forms"
-
-                    /// eval - (multiple-value-bind (symbols...) value-form bodyforms...) -> object
-                    } else if (operator == sMultipleValueBind) {
-                        final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
-                        ccForms = formsAndEnv[0];
-                        env = formsAndEnv[1];
-                        // fall through to "eval a list of forms"
-                        
+                        /// eval - (multiple-value-bind (symbols...) value-form bodyforms...) -> object
+                        case sMultipleValueBind: { if (sMultipleValueBind == null) break;
+                            final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
+                            ccForms = formsAndEnv[0];
+                            env = formsAndEnv[1];
+                            funcall = false;
+                            break; // fall through to "eval a list of forms"
+                        }
                     }
 
 
 
                     /// eval - function application
-                    else {
+                    if (funcall) {
                         /// eval - macro application
                         if (null != (macroClosure = macros.get(operator))) {
                             form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
