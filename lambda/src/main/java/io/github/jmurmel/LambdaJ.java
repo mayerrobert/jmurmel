@@ -187,13 +187,12 @@ public class LambdaJ {
 
     @FunctionalInterface public interface ObjectReader {
         Object readObj();
-        default void setInput(ReadSupplier input, Path filePath) {
-            throw new UnsupportedOperationException("this ObjectReader does not support changing input");
-        }
+        
+        /** if {@code recordPos == true} then it would be desirable to reconrd file/line positions inside the objects */
+        default Object readObj(boolean recordPos) { return readObj(); }
+        default void setInput(ReadSupplier input, Path filePath) { throw new UnsupportedOperationException("this ObjectReader does not support changing input"); }
         default Path getFilePath() { return null; }
     }
-
-    public interface Parser extends ObjectReader, SymbolTable { } // todo delete this interface
 
     public interface ObjectWriter {
         void printObj(Object o);
@@ -720,9 +719,8 @@ public class LambdaJ {
         }
     }
 
-
-    // todo should have a symboltable as additional parameter, return ObjectReader, and Parser should be deleted
-    public static Parser makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable()); }
+    public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable()); }
+    public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab) { return new SExpressionReader(in, symtab); }
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     private static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
@@ -738,7 +736,7 @@ public class LambdaJ {
 
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
-    static class SExpressionReader implements Parser {
+    static class SExpressionReader implements ObjectReader {
         private static class ParseError extends LambdaJError {
             private static final long serialVersionUID = 1L;
             private ParseError(String msg, Object... args) { super(true, msg, args); }
@@ -1125,16 +1123,15 @@ public class LambdaJ {
         }
 
 
-        @Override
-        public LambdaJSymbol intern(LambdaJSymbol sym) {
+        private LambdaJSymbol intern(LambdaJSymbol sym) {
             return st.intern(sym);
         }
 
 
         /// S-expression parser
         /** Record line and char numbers in the conses */
-        public Object readObj(boolean ignored) {
-            this.pos = true;
+        public Object readObj(boolean recordPos) {
+            this.pos = recordPos;
             final Object ret = readObj();
             this.pos = false;
             return ret;
@@ -1489,6 +1486,7 @@ public class LambdaJ {
 
     /// Symboltable
     private final SymbolTable symtab;
+    public SymbolTable getSymbolTable() { return symtab; }
 
     private static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
     private static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
@@ -1563,11 +1561,11 @@ public class LambdaJ {
         return init(parser, outWriter, null);
     }
 
-    private ObjectReader init(ObjectReader parser, ObjectWriter outWriter, ConsCell customEnv) {
-        setReaderPrinter(parser, outWriter);
+    private ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
+        setReaderPrinter(inReader, outWriter);
         topEnv = environment(customEnv);
         nCells = 0; maxEnvLen = 0;
-        return parser;
+        return inReader;
     }
 
     private final Map<Object, ConsCell> macros = new HashMap<>();
@@ -3448,9 +3446,9 @@ public class LambdaJ {
 
     private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         private final Method method;
-        private final boolean isStatic;
-        private final int paramCount;
         private final Invoker invoke;
+        private final int paramCount;
+        private final boolean isStatic;
 
         private JavaMethod(Method method) {
             this.method = method;
@@ -3919,7 +3917,7 @@ public class LambdaJ {
         setReaderPrinter(new SExpressionReader(in::read, symtab), new SExpressionWriter(new WrappingWriter(out)::append));
         Object result = null;
         while (true) {
-            final Object exp = scriptParser instanceof SExpressionReader ? ((SExpressionReader)scriptParser).readObj(true) : scriptParser.readObj();
+            final Object exp = scriptParser.readObj(true);
             if (exp != null) result = eval(exp, topEnv, 0, 0, 0);
             else return result;
         }
@@ -3943,32 +3941,32 @@ public class LambdaJ {
         return result;
     }
 
-    /** <p>Build environment, repeatedly read an S-expression from {@code program} and invoke {@code eval()} until EOF,
+    /** <p>Build environment, repeatedly read an S-expression from {@code programSupplier} and invoke {@code eval()} until EOF,
      *  return result of last expression.
      *
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
-    public Object interpretExpressions(ReadSupplier program, ReadSupplier in, WriteConsumer out) {
-        final Parser parser = new SExpressionReader(features, trace, tracer, symtab, program, null, true);
+    public Object interpretExpressions(ReadSupplier programSupplier, ReadSupplier in, WriteConsumer out) {
+        final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, programSupplier, null, true);
         final ObjectReader inReader = new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
-        return interpretExpressions(parser, inReader, outWriter, null);
+        return interpretExpressions(program, inReader, outWriter, null);
     }
 
-    /** <p>Build environment, repeatedly read an expression from {@code parser} and invoke {@code eval()} until EOF,
+    /** <p>Build environment, repeatedly read an expression from {@code program} and invoke {@code eval()} until EOF,
      *  return result of last expression.
      *
      *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
      *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
-    public Object interpretExpressions(Parser parser, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
-        final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(parser);
-        init(parser, outWriter, customEnvironment);
-        Object exp = parser instanceof SExpressionReader ? ((SExpressionReader)parser).readObj(true) : parser.readObj();
+    public Object interpretExpressions(ObjectReader program, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
+        final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(symtab);
+        init(inReader, outWriter, customEnvironment);
+        Object exp = program.readObj(true);
         while (true) {
             final long tStart = System.nanoTime();
             final Object result = eval(exp, topEnv, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
-            exp = parser instanceof SExpressionReader ? ((SExpressionReader)parser).readObj(true) : parser.readObj();
+            exp = program.readObj(true);
             if (exp == null) return result;
         }
     }
@@ -4081,7 +4079,7 @@ public class LambdaJ {
                 }
                 interpreter.init(System.in::read, System.out::print);
                 injectCommandlineArgs(interpreter, args);
-                final boolean success = runForms(parser, program, interpreter, false);
+                final boolean success = runForms(program, interpreter, false);
                 if (!success) System.exit(1);
             }
             else {
@@ -4126,7 +4124,7 @@ public class LambdaJ {
 
                 if (toJar) {
                     final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
-                    final boolean success = compileToJar(parser, libPath, program, clsName, outFile);
+                    final boolean success = compileToJar(interpreter.symtab, libPath, program, clsName, outFile);
                     if (success) System.out.println("compiled stdin to " + outFile);
                 }
                 else if (run) {
@@ -4134,10 +4132,10 @@ public class LambdaJ {
                     interpreter.setReaderPrinter(parser, outWriter);
                     interpreter.topEnv = interpreter.environment(null);
                     injectCommandlineArgs(interpreter, args);
-                    runForms(parser, program, interpreter, false);
+                    runForms(program, interpreter, false);
                 }
                 else {
-                    final boolean success = compileToJava(StandardCharsets.UTF_8, parser, libPath, program, clsName, outDir);
+                    final boolean success = compileToJava(StandardCharsets.UTF_8, interpreter.symtab, libPath, program, clsName, outDir);
                     if (success) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
                 }
             }
@@ -4245,9 +4243,9 @@ public class LambdaJ {
                     if (":res"    .equalsIgnoreCase(strExp)) { isInit = false; history.clear();  continue; }
                     if (":l"      .equalsIgnoreCase(strExp)) { listHistory(history); continue; }
                     if (":w"      .equalsIgnoreCase(strExp)) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equalsIgnoreCase(strExp)) { compileToJava(consoleCharset, parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
-                    if (":r"      .equalsIgnoreCase(strExp)) { runForms(parser, history, interpreter, true); continue; }
-                    if (":jar"    .equalsIgnoreCase(strExp)) { compileToJar(parser, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":java"   .equalsIgnoreCase(strExp)) { compileToJava(consoleCharset, interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (":r"      .equalsIgnoreCase(strExp)) { runForms(history, interpreter, true); continue; }
+                    if (":jar"    .equalsIgnoreCase(strExp)) { compileToJar(interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(strExp)) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                     history.add(exp);
                 }
@@ -4307,10 +4305,10 @@ public class LambdaJ {
 
     /** compile history to a class and run compiled class.
      *  if className is null "MurmelProgram" will be the class' name */
-    private static boolean runForms(SymbolTable symtab, List<Object> history, LambdaJ interpreter, boolean repl) {
+    private static boolean runForms(List<Object> history, LambdaJ interpreter, boolean repl) {
         MurmelProgram prg = null;
         try {
-            final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, interpreter.libDir, getTmpDir());
+            final MurmelJavaCompiler c = new MurmelJavaCompiler(interpreter.symtab, interpreter.libDir, getTmpDir());
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
             prg = murmelClass.getDeclaredConstructor().newInstance();
             final long tStart = System.nanoTime();
@@ -5474,6 +5472,7 @@ public class LambdaJ {
             this.javaCompiler = new JavaCompilerHelper(outPath);
         }
 
+        public SymbolTable getSymbolTable() { return intp.symtab; }
 
 
         /// symbols and name mangling
@@ -5690,7 +5689,6 @@ public class LambdaJ {
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
             final StringBuilder globals = new StringBuilder();
-            final ObjectReader _forms = forms instanceof SExpressionReader ? () -> ((SExpressionReader)forms).readObj(true) : forms;
 
             /// first pass: emit toplevel define/ defun forms
             final int prevSpeed = intp.speed;
@@ -5698,7 +5696,7 @@ public class LambdaJ {
             implicitDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
             Object form;
-            while (null != (form = _forms.readObj())) {
+            while (null != (form = forms.readObj(true))) {
                 try {
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, form);
                 }

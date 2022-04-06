@@ -138,10 +138,10 @@ public class LambdaJBenchmark {
     }
 
     private static LambdaJ.MurmelProgram compile(String source) throws Exception {
+        final LambdaJ.MurmelJavaCompiler c = new LambdaJ.MurmelJavaCompiler(null, null, getTmpDir());
         final Reader reader = new StringReader(source);
-        final LambdaJ.Parser parser = LambdaJ.makeReader(reader::read);
+        final LambdaJ.ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable());
 
-        LambdaJ.MurmelJavaCompiler c = new LambdaJ.MurmelJavaCompiler(parser, null, getTmpDir());
         Class<LambdaJ.MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
 
         return murmelClass.getDeclaredConstructor().newInstance();

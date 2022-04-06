@@ -12,19 +12,18 @@ import io.github.jmurmel.LambdaJ;
 import io.github.jmurmel.LambdaJ.ConsCell;
 import io.github.jmurmel.LambdaJ.ObjectReader;
 import io.github.jmurmel.LambdaJ.ObjectWriter;
-import io.github.jmurmel.LambdaJ.Parser;
 import io.github.jmurmel.LambdaJ.Primitive;
 
 public class EmbeddedCustomEnvTest {
 
     @Test
     public void testCustomEnv() {
+        // "create a Lisp"
+        final LambdaJ interpreter = new LambdaJ(LambdaJ.Features.HAVE_ALL_LEXC.bits(), LambdaJ.TraceLevel.TRC_FUNC, null, null, null); // turn on logging of eval and function invocations
+
         // our Lisp "program"
         final Reader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
-        final Parser parser = LambdaJ.makeReader(program::read);
-
-        // "create a Lisp"
-        final LambdaJ interpreter = new LambdaJ(LambdaJ.Features.HAVE_ALL_LEXC.bits(), LambdaJ.TraceLevel.TRC_FUNC, null, parser, null); // turn on logging of eval and function invocations
+        final ObjectReader parser = LambdaJ.makeReader(program::read, interpreter.getSymbolTable());
 
         // empty "file" for stdin, simply return EOF
         final ObjectReader inReader = () -> -1;

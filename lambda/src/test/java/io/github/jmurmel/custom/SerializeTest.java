@@ -10,7 +10,7 @@ import org.junit.Test;
 
 public class SerializeTest {
 
-    public static class SerializationParser implements LambdaJ.Parser {
+    public static class SerializationParser implements LambdaJ.ObjectReader, LambdaJ.SymbolTable {
         private Object obj;
         private HashMap<LambdaJ.LambdaJSymbol, LambdaJ.LambdaJSymbol> symbols = new HashMap<>();
 

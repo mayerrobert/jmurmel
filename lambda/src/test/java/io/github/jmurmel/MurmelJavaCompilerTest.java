@@ -21,10 +21,10 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testForm() throws Exception {
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
         final Reader reader = new StringReader("(define a 2)");
-        final Parser parser = LambdaJ.makeReader(reader::read);
+        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable());
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
         String java = w.toString();
@@ -33,13 +33,14 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testNativeHelloWorld() throws Exception {
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
+
         String source = "(define f (lambda (a b) (write a) (write b)))"
                       + "(f \"Hello, \" \"World!\")";
 
         final Reader reader = new StringReader(source);
-        final Parser parser = LambdaJ.makeReader(reader::read);
+        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable());
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
@@ -642,10 +643,11 @@ public class MurmelJavaCompilerTest {
 
 
     private static MurmelProgram compile(String source) throws Exception {
-        final Reader reader = new StringReader(source);
-        final Parser parser = LambdaJ.makeReader(reader::read);
+        MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
 
-        MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
+        final Reader reader = new StringReader(source);
+        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable());
+
         Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
         StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
@@ -656,10 +658,10 @@ public class MurmelJavaCompilerTest {
     }
 
     private static void compileError(String source, String expected) throws Exception {
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
         final Reader reader = new StringReader(source);
-        final Parser parser = LambdaJ.makeReader(reader::read);
+        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable());
 
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         try {
             c.formsToJavaClass("Test", parser, null);
             fail("expected error " + expected + " but got no error");
@@ -672,10 +674,10 @@ public class MurmelJavaCompilerTest {
     }
 
     private static void runtimeError(String source, String expected) throws Exception {
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
         final Reader reader = new StringReader(source);
-        final Parser parser = LambdaJ.makeReader(reader::read);
+        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable());
 
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(parser, null, TestUtils.getTmpDir());
         try {
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
             murmelClass.getDeclaredConstructor().newInstance().body();
