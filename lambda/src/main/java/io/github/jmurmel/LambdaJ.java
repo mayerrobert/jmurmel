@@ -1804,18 +1804,19 @@ public class LambdaJ {
                         if (operator == ocApply) {
                             twoArgs("apply", ccArguments);
                             final Object funcOrSymbol = car(ccArguments);
+                            func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol;
                             argList = listOrMalformed("apply", cadr(ccArguments));
                             if (speed >= 1 && symbolp(funcOrSymbol)) {
                                 result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
-                            func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol;
                             // fall through to "actually perform..."
 
                         /// eval - multiple-value-call
                         /// eval - (multiple-value-call function-form value-form*) -> object
                         } else if (operator == sMultipleValueCall) {
                             varargs1("multiple-value-call", ccArguments);
+                            func = eval(car(ccArguments), env, stack, level, traceLvl);
                             ConsCell allArgs = null;
                             final Object valueForms = cdr(ccArguments);
                             if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
@@ -1825,18 +1826,20 @@ public class LambdaJ {
                                 if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
                             }
                             argList = allArgs;
-                            func = eval(car(ccArguments), env, stack, level, traceLvl);
                             // fall through to "actually perform..."
 
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
+                            // respect evaluation order: operator must be eval'd before arguments.
+                            // The operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
+                            // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
+                            func = eval(operator, env, stack, level, traceLvl);
                             argList = evlis(ccArguments, env, stack, level, traceLvl);
                             if (speed >= 1 && symbolp(operator)) {
                                 result = evalOpencode((LambdaJSymbol) operator, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
-                            func = eval(operator, env, stack, level, traceLvl);
                             // fall through to "actually perform..."
                         }
 
