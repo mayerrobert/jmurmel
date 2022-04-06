@@ -167,7 +167,12 @@ public class LambdaJ {
     public static class LambdaJSymbol implements Serializable {
         private static final long serialVersionUID = 1L;
         private final String name;
-        public LambdaJSymbol(String symbolName) { name = Objects.requireNonNull(symbolName, "can't use null symbolname"); }
+        private final WellknownSymbol wellknownSymbol;
+        public LambdaJSymbol(String symbolName) {
+            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
+            wellknownSymbol = WellknownSymbol.of(symbolName);
+        }
+
         @Override public String toString() { return name; }
 
         @Override public int hashCode() { return name.hashCode(); }
@@ -1494,9 +1499,29 @@ public class LambdaJ {
     final LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
-    
+
     /** well known symbols for some primitives */
     final LambdaJSymbol sApply, sEval, sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
+
+    enum WellknownSymbol {
+        sNil("nil"), sLambda("lambda"), sDynamic("dynamic"), sQuote("quote"), sCond("cond"), sLabels("labels"), sIf("if"), sDefine("define"), sDefun("defun"), sDefmacro("defmacro"),
+        sLet("let"), sLetStar("let*"), sLetrec("letrec"), sMultipleValueBind("multiple-value-bind"), sMultipleValueCall("multiple-value-call"),
+        sSetQ("setq"), sProgn("progn"), sLoad("load"), sRequire("require"), sProvide("provide"),
+        sDeclaim("declaim"), sOptimize("optimize"), sSpeed("speed"), sDebug("debug"), sSafety("safety"), sSpace("space"),
+
+        sApply("apply"), sEval("eval"), sNeq("="), sNe("/="), sLt("<"), sLe("<="), sGe(">="), sGt(">"), sAdd("+"), sMul("*"), sSub("-"), sDiv("/"), sMod("mod"), sRem("rem"),
+        sCar("car"), sCdr("cdr"), sCons("cons"), sEq("eq"), sEql("eql"), sNull("null"), sInc("1+"), sDec("1-"), sAppend("append"), sList("list"), sListStar("list*");
+    
+        private final String sym;
+        WellknownSymbol(String sym) { this.sym = sym; }
+
+        static WellknownSymbol of(String name) {
+            for (WellknownSymbol s: values()) {
+                if (s.sym.equalsIgnoreCase(name)) return s;
+            }
+            return null;
+        }
+    }
 
     private Supplier<Object> expTrue;
 
@@ -1590,96 +1615,98 @@ public class LambdaJ {
                     final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
 
 
-                    /// eval - special forms
+                    if (operator != null && symbolp(operator) && ((LambdaJSymbol)operator).wellknownSymbol != null) switch (((LambdaJSymbol)operator).wellknownSymbol) {
+                        /// eval - special forms
 
-                    /// eval - (quote exp) -> exp
-                    if (operator == sQuote) {
-                        oneArg("quote", ccArguments);
-                        result = car(ccArguments);
-                        return result;
-                    }
+                        /// eval - (quote exp) -> exp
+                        case sQuote: { if (sQuote == null) break; 
+                            oneArg("quote", ccArguments);
+                            result = car(ccArguments);
+                            return result;
+                        }
 
-                    /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
-                    if (operator == sLambda) {
-                        result = "#<lambda>";
-                        return makeClosureFromForm(ccForm, env);
-                    }
+                        /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
+                        case sLambda: { if (sLambda == null) break; 
+                            result = "#<lambda>";
+                            return makeClosureFromForm(ccForm, env);
+                        }
 
-                    if (operator == sSetQ) {
-                        result = evalSetq(ccArguments, env, stack, level, traceLvl);
-                        return result;
-                    }
+                        case sSetQ: { if (sSetQ == null) break; 
+                            result = evalSetq(ccArguments, env, stack, level, traceLvl);
+                            return result;
+                        }
 
-                    if (operator == sDefmacro) {
-                        result = evalDefmacro(ccArguments, env, form);
-                        return result;
-                    }
+                        case sDefmacro: { if (sDefmacro == null) break; 
+                            result = evalDefmacro(ccArguments, env, form);
+                            return result;
+                        }
 
-                    if (operator == sDeclaim) {
-                        result = evalDeclaim(level, ccArguments);
-                        return result;
-                    }
-
-
-                    /// eval - special forms that change the global environment
-
-                    /// eval - (define symbol exp) -> symbol with a side of global environment extension
-                    if (operator == sDefine) {
-                        varargs1_2("define", ccArguments);
-                        final Object symbol = car(ccArguments);
-                        if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
-                        notReserved("define", symbol);
-                        final ConsCell envEntry = assq(symbol, topEnv);
-
-                        // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
-                        //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
-
-                        final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                        if (envEntry == null) insertFront(topEnv, symbol, value);
-                        else envEntry.rplacd(value);
-
-                        result = symbol;
-                        return result;
-                    }
-
-                    /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
-                    // shortcut for (define symbol (lambda (params...) forms...))
-                    if (operator == sDefun) {
-                        varargsMin("defun", ccArguments, 2);
-                        form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
-                        continue tailcall;
-                    }
+                        case sDeclaim: { if (sDeclaim == null) break; 
+                            result = evalDeclaim(level, ccArguments);
+                            return result;
+                        }
 
 
-                    /// eval - special forms that run expressions
+                        /// eval - special forms that change the global environment
 
-                    /// eval - (if condform form optionalform) -> object
-                    if (operator == sIf) {
-                        varargsMinMax("if", ccArguments, 2, 3);
-                        if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
-                            form = cadr(ccArguments); isTc = true; continue tailcall;
-                        } else if (caddr(ccArguments) != null) {
-                            form = caddr(ccArguments); isTc = true; continue tailcall;
-                        } else { result = null; return null; } // condition eval'd to false, no else form
-                    }
+                        /// eval - (define symbol exp) -> symbol with a side of global environment extension
+                        case sDefine: { if (sDefine == null) break; 
+                            varargs1_2("define", ccArguments);
+                            final Object symbol = car(ccArguments);
+                            if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
+                            notReserved("define", symbol);
+                            final ConsCell envEntry = assq(symbol, topEnv);
 
-                    /// eval - (load filespec) -> object
-                    if (operator == sLoad) {
-                        oneArg("load", ccArguments);
-                        result = loadFile("load", car(ccArguments));
-                        return result;
-                    }
+                            // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
+                            //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
-                    /// eval - (require modulename optfilespec) -> object
-                    if (operator == sRequire) {
-                        result = evalRequire(ccArguments);
-                        return result;
-                    }
+                            final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                            if (envEntry == null) insertFront(topEnv, symbol, value);
+                            else envEntry.rplacd(value);
 
-                    /// eval - (provide modulename) -> nil
-                    if (operator == sProvide) {
-                        result = evalProvide(ccArguments);
-                        return result;
+                            result = symbol;
+                            return result;
+                        }
+
+                        /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
+                        // shortcut for (define symbol (lambda (params...) forms...))
+                        case sDefun: { if (sDefun == null) break; 
+                            varargsMin("defun", ccArguments, 2);
+                            form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
+                            continue tailcall;
+                        }
+
+
+                        /// eval - special forms that run expressions
+
+                        /// eval - (if condform form optionalform) -> object
+                        case sIf: { if (sIf == null) break; 
+                            varargsMinMax("if", ccArguments, 2, 3);
+                            if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
+                                form = cadr(ccArguments); isTc = true; continue tailcall;
+                            } else if (caddr(ccArguments) != null) {
+                                form = caddr(ccArguments); isTc = true; continue tailcall;
+                            } else { result = null; return null; } // condition eval'd to false, no else form
+                        }
+
+                        /// eval - (load filespec) -> object
+                        case sLoad: { if (sLoad == null) break; 
+                            oneArg("load", ccArguments);
+                            result = loadFile("load", car(ccArguments));
+                            return result;
+                        }
+
+                        /// eval - (require modulename optfilespec) -> object
+                        case sRequire: { if (sRequire == null) break; 
+                            result = evalRequire(ccArguments);
+                            return result;
+                        }
+
+                        /// eval - (provide modulename) -> nil
+                        case sProvide: { if (sProvide == null) break; 
+                            result = evalProvide(ccArguments);
+                            return result;
+                        }
                     }
 
                     // "ccForms" will be set up depending on the special form and then used in "eval a list of forms" below
@@ -1765,7 +1792,7 @@ public class LambdaJ {
                             final Object funcOrSymbol = car(ccArguments);
                             argList = listOrMalformed("apply", cadr(ccArguments));
                             if (speed >= 1 && symbolp(funcOrSymbol)) {
-                                result = evalOpencode(funcOrSymbol, argList);
+                                result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
                             func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol;
@@ -1791,8 +1818,8 @@ public class LambdaJ {
                         /// eval - (operatorform argforms...) -> object
                         } else {
                             argList = evlis(ccArguments, env, stack, level, traceLvl);
-                            if (speed >= 1) {
-                                result = evalOpencode(operator, argList);
+                            if (speed >= 1 && symbolp(operator)) {
+                                result = evalOpencode((LambdaJSymbol) operator, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
                             func = eval(operator, env, stack, level, traceLvl);
@@ -2050,40 +2077,45 @@ public class LambdaJ {
         return expansion;
     }
 
-    private Object evalOpencode(Object op, ConsCell args) {
+    private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
         // bringt ein bisserl performance (1x weniger eval und environment lookup).
         // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
         // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
 
-        if (op == sAdd)  { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
-        if (op == sMul)  { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
-        if (op == sSub)  { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
-        if (op == sDiv)  { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
+        if (op.wellknownSymbol == null) return NOT_HANDLED;
+
+        // "if (s... == null) break;" checks if the function is available with the current features
+        switch (op.wellknownSymbol) {
+        case sAdd:  { if (sAdd == null) break; return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
+        case sMul:  { if (sMul == null) break; return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
+        case sSub:  { if (sSub == null) break; return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
+        case sDiv:  { if (sDiv == null) break; return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
         
-        if (op == sMod)  { twoArgs("mod", args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
-        if (op == sRem)  { twoArgs("rem", args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
+        case sMod:  { if (sMod == null) break; twoArgs("mod", args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
+        case sRem:  { if (sRem == null) break; twoArgs("rem", args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
 
-        if (op == sNeq)  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
-        if (op == sNe)   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
-        if (op == sLt)   { return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
-        if (op == sLe)   { return compare(args, "<=", (d1, d2) -> d1 <= d2); }
-        if (op == sGe)   { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
-        if (op == sGt)   { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
+        case sNeq:  { if (sNeq == null) break; return compare(args, "=",  (d1, d2) -> d1 == d2); }
+        case sNe:   { if (sNe == null) break; return compare(args, "/=", (d1, d2) -> d1 != d2); }
+        case sLt:   { if (sLt == null) break; return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
+        case sLe:   { if (sLe == null) break; return compare(args, "<=", (d1, d2) -> d1 <= d2); }
+        case sGe:   { if (sGe == null) break; return compare(args, ">=", (d1, d2) -> d1 >= d2); }
+        case sGt:   { if (sGt == null) break; return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
 
-        if (op == sCar)  { oneArg ("car",  args);  return caar(args); }
-        if (op == sCdr)  { oneArg ("cdr",  args);  return cdar(args); }
-        if (op == sCons) { twoArgs("cons", args);  return cons(car(args), cadr(args)); }
+        case sCar:  { if (sCar == null) break; oneArg ("car",  args);  return caar(args); }
+        case sCdr:  { if (sCdr == null) break; oneArg ("cdr",  args);  return cdar(args); }
+        case sCons: { if (sCons == null) break; twoArgs("cons", args);  return cons(car(args), cadr(args)); }
 
-        if (op == sEq)   { twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
-        if (op == sEql)  { twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
-        if (op == sNull) { oneArg ("null", args);  return boolResult(car(args) == null); }
+        case sEq:   { if (sEq == null) break; twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
+        case sEql:  { if (sEql == null) break; twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
+        case sNull: { if (sNull == null) break; oneArg ("null", args);  return boolResult(car(args) == null); }
 
-        if (op == sInc)  { oneArg("1+", args);  return inc(car(args)); }
-        if (op == sDec)  { oneArg("1-", args);  return dec(car(args)); }
+        case sInc:  { if (sInc == null) break; oneArg("1+", args);  return inc(car(args)); }
+        case sDec:  { if (sDec == null) break; oneArg("1-", args);  return dec(car(args)); }
 
-        if (op == sAppend)   { return append(args); }
-        if (op == sList)     { return args; }
-        if (op == sListStar) { return listStar(args); }
+        case sAppend:   { if (sAppend == null) break; return append(args); }
+        case sList:     { if (sList == null) break; return args; }
+        case sListStar: { if (sListStar == null) break; return listStar(args); }
+        }
 
         return NOT_HANDLED;
     }
