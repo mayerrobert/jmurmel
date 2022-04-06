@@ -62,10 +62,11 @@ public class SerializeTest {
 
     @Test
     public void testSerializationParser() throws Exception {
-        LambdaJ interp = new LambdaJ();
         byte[] program = sExpToByteArray("(+ 1 2)");
-
         SerializationParser myParser = new SerializationParser(program);
+
+        LambdaJ interp = new LambdaJ(myParser);
+
         Object result = interp.interpretExpressions(myParser, null, null, null);
         assertEquals(3.0,  result);
     }

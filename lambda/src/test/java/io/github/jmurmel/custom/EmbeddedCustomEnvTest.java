@@ -19,19 +19,19 @@ public class EmbeddedCustomEnvTest {
 
     @Test
     public void testCustomEnv() {
-        // "create a Lisp"
-        final LambdaJ interpreter = new LambdaJ(LambdaJ.Features.HAVE_ALL_LEXC.bits(), LambdaJ.TraceLevel.TRC_FUNC, null); // turn on logging of eval and function invocations
-
         // our Lisp "program"
-        Reader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
-        Parser parser = LambdaJ.makeReader(program::read);
+        final Reader program = new StringReader("(writeln *answer*)(greet \"Robert\")");
+        final Parser parser = LambdaJ.makeReader(program::read);
+
+        // "create a Lisp"
+        final LambdaJ interpreter = new LambdaJ(LambdaJ.Features.HAVE_ALL_LEXC.bits(), LambdaJ.TraceLevel.TRC_FUNC, null, parser, null); // turn on logging of eval and function invocations
 
         // empty "file" for stdin, simply return EOF
-        ObjectReader inReader = () -> -1;
+        final ObjectReader inReader = () -> -1;
 
         // collect stdout of the Lisp program in a StringBuilder
-        StringBuilder outBuffer = new StringBuilder();
-        ObjectWriter outWriter = new ObjectWriter() {
+        final StringBuilder outBuffer = new StringBuilder();
+        final ObjectWriter outWriter = new ObjectWriter() {
             @Override public void printObj(Object o) {
                 outBuffer.append(o); // if a cons cell was to be printed this will invoke it's toString() method
                                      // which will print it's contents as an S-expression
@@ -44,7 +44,7 @@ public class EmbeddedCustomEnvTest {
         // * an "empty" ObjectReader that returns EOF
         // * an ObjectWriter that writes to the StringBuilder "outBuffer"
         // * a Java-lambda that creates our custom environment
-        Object result = interpreter.interpretExpressions(parser, inReader, outWriter, s -> makeEnvironment(s, interpreter));
+        final Object result = interpreter.interpretExpressions(parser, inReader, outWriter, s -> makeEnvironment(s, interpreter));
 
         // check results
         assertNull(result);
