@@ -568,7 +568,101 @@ public class LambdaJ {
         else this.libDir = murmelDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
         
-        setSymtab(null);
+        /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
+        // (re-)read the new symtab
+        sNil =                         intern("nil"); // warum ist das nicht reserved? es gibt sonderbehandlung in #notReserved
+        sLambda =                      internReserved("lambda");
+
+        if (haveQuote())  { sQuote   = internReserved("quote"); }   else sQuote = null;
+        if (haveCond())   { sCond    = internReserved("cond"); }    else sCond = null;
+        if (haveLabels()) { sLabels  = internReserved("labels"); }  else sLabels = null;
+        if (haveApply())  { sApply   = intern("apply"); }           else sApply = null;
+
+        if (haveXtra())   {
+            sDynamic = intern("dynamic");
+            sEval =    intern("eval");
+
+            sIf      = internReserved("if");
+            sDefine  = internReserved("define");
+            sDefun   = internReserved("defun");
+            sDefmacro= internReserved("defmacro");
+            sLet     = internReserved("let");
+            sLetStar = internReserved("let*");
+            sLetrec  = internReserved("letrec");
+
+            sMultipleValueBind = internReserved("multiple-value-bind");
+            sMultipleValueCall = internReserved("multiple-value-call");
+            sSetQ    = internReserved("setq");
+
+            sProgn   = internReserved("progn");
+
+            sLoad    = internReserved("load");
+            sRequire = internReserved("require");
+            sProvide = internReserved("provide");
+
+            sDeclaim =  internReserved("declaim");
+            sOptimize = intern("optimize");
+            sSpeed =    intern("speed");
+            sDebug =    intern("debug");
+            sSafety =   intern("safety");
+            sSpace =    intern("space");
+        }
+        else sDynamic = sEval = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall = sSetQ = sProgn = sLoad = sRequire = sProvide
+             = sDeclaim = sOptimize = sSpeed = sDebug = sSafety = sSpace = null;
+
+        if (haveUtil()) {
+            sNull =    intern("null");
+            sList =    intern("list");
+            sListStar= intern("list*");
+            sAppend =  intern("append");
+            sEql =     intern("eql");
+        }
+        else sNull = sList = sListStar = sAppend = sEql = null;
+
+        if (haveNumbers()) {
+            sInc =     intern("1+");
+            sDec =     intern("1-");
+
+            sMod =     intern("mod");
+            sRem =     intern("rem");
+
+            sNeq =     intern("=");
+            sLt  =     intern("<");
+            sLe  =     intern("<=");
+            sGe  =     intern(">=");
+            sGt  =     intern(">");
+            sNe  =     intern("/=");
+
+            sAdd =     intern("+");
+            sMul =     intern("*");
+            sSub =     intern("-");
+            sDiv =     intern("/");
+        }
+        else sInc = sDec = sMod = sRem = sNeq = sLt = sLe = sGe = sGt = sNe = sAdd = sMul = sSub = sDiv = null;
+
+        if (haveEq()) sEq = intern("eq"); else sEq = null;
+
+        if (haveCons()) {
+            sCar =     intern("car");
+            sCdr =     intern("cdr");
+            sCons =    intern("cons");
+        }
+        else sCar = sCdr = sCons = null;
+
+        // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
+        // by another supplier that simply returns the cached value.
+        expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
+
+        // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not re-assign these
+        ocEval = null;
+        ocApply = null;
+
+        topEnv = null;
+
+        traced = null;
+
+        macros.clear();
+        modules.clear();
     }
 
 
@@ -1396,110 +1490,13 @@ public class LambdaJ {
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
-    /** Look up the symbols for special forms only once. Also start to build the table of reserved words. */
-    // todo nur im konstruktor aufrufen
-    private void setSymtab(SymbolTable symtab) {
-
-        // (re-)read the new symtab
-        sNil =                         intern("nil"); // warum ist das nicht reserved? es gibt sonderbehandlung in #notReserved
-        sLambda =                      internReserved("lambda");
-
-        if (haveQuote())  { sQuote   = internReserved("quote"); }
-        if (haveCond())   { sCond    = internReserved("cond"); }
-        if (haveLabels()) { sLabels  = internReserved("labels"); }
-        if (haveApply())  { sApply   = intern("apply"); }
-
-        if (haveXtra())   {
-            sDynamic = intern("dynamic");
-            sEval =    intern("eval");
-
-            sIf      = internReserved("if");
-            sDefine  = internReserved("define");
-            sDefun   = internReserved("defun");
-            sDefmacro= internReserved("defmacro");
-            sLet     = internReserved("let");
-            sLetStar = internReserved("let*");
-            sLetrec  = internReserved("letrec");
-
-            sMultipleValueBind = internReserved("multiple-value-bind");
-            sMultipleValueCall = internReserved("multiple-value-call");
-            sSetQ    = internReserved("setq");
-
-            sProgn   = internReserved("progn");
-
-            sLoad    = internReserved("load");
-            sRequire = internReserved("require");
-            sProvide = internReserved("provide");
-
-            sDeclaim =  internReserved("declaim");
-            sOptimize = intern("optimize");
-            sSpeed =    intern("speed");
-            sDebug =    intern("debug");
-            sSafety =   intern("safety");
-            sSpace =    intern("space");
-        }
-
-        if (haveUtil()) {
-            sNull =    intern("null");
-            sList =    intern("list");
-            sListStar= intern("list*");
-            sAppend =  intern("append");
-            sEql =     intern("eql");
-        }
-        
-        if (haveNumbers()) {
-            sInc =     intern("1+");
-            sDec =     intern("1-");
-
-            sMod =     intern("mod");
-            sRem =     intern("rem");
-
-            sNeq =     intern("=");
-            sLt  =     intern("<");
-            sLe  =     intern("<=");
-            sGe  =     intern(">=");
-            sGt  =     intern(">");
-            sNe  =     intern("/=");
-
-
-            sAdd =     intern("+");
-            sMul =     intern("*");
-            sSub =     intern("-");
-            sDiv =     intern("/");
-        }
-
-        if (haveEq())
-            sEq =      intern("eq");
-
-        if (haveCons()) {
-            sCar =     intern("car");
-            sCdr =     intern("cdr");
-            sCons =    intern("cons");
-        }
-
-        // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
-        // by another supplier that simply returns the cached value.
-        expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
-
-        // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not re-assign these
-        ocEval = null;
-        ocApply = null;
-
-        topEnv = null;
-
-        traced = null;
-
-        macros.clear();
-        modules.clear();
-    }
-
     /** well known symbols for special forms */
-    LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
+    final LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
     
     /** well known symbols for some primitives */
-    LambdaJSymbol sApply, sEval, sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
+    final LambdaJSymbol sApply, sEval, sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
 
     private Supplier<Object> expTrue;
 
@@ -1541,8 +1538,7 @@ public class LambdaJ {
         return init(parser, outWriter, null);
     }
 
-    private ObjectReader init(Parser parser, ObjectWriter outWriter, ConsCell customEnv) {
-        setSymtab(parser);
+    private ObjectReader init(ObjectReader parser, ObjectWriter outWriter, ConsCell customEnv) {
         setReaderPrinter(parser, outWriter);
         topEnv = environment(customEnv);
         nCells = 0; maxEnvLen = 0;
@@ -4087,7 +4083,6 @@ public class LambdaJ {
                     if (success) System.out.println("compiled stdin to " + outFile);
                 }
                 else if (run) {
-                    interpreter.setSymtab(parser);
                     final ObjectWriter outWriter = makeWriter(System.out::print);
                     interpreter.setReaderPrinter(parser, outWriter);
                     interpreter.topEnv = interpreter.environment(null);
@@ -4174,7 +4169,6 @@ public class LambdaJ {
                 final AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
                                                () -> read.read(echoHolder.value), null, false);
-                interpreter.setSymtab(parser);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 env = interpreter.environment(null);
@@ -5427,7 +5421,6 @@ public class LambdaJ {
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, libDir);
             intp.init(() -> -1, System.out::print);
-            intp.setSymtab(st);
             intp.topEnv = intp.environment(null);
             this.intp = intp;
 
