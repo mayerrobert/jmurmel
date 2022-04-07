@@ -6,7 +6,6 @@ tailcallSibling2(Object fn, Object[] oldargs, Object arg1, Object arg2)
 -> arg array könnte wiederverwendet werden, würde insb. bei let loop viele allokationen einsparen
 -> ähnlicher trick wäre im interpreter denkbar, derzeit wächst environment bei tailcalls
 
-values&co dokumentieren, in usage aufnehmen
 zusammenspiel compiler/interpreter bzgl. values reparieren
 
 macht ein macro with-iterator sinn (für Java iterator)?, siehe auch http://clhs.lisp.se/Body/m_w_hash.htm

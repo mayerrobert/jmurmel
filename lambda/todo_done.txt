@@ -1568,3 +1568,6 @@ JMurmel> :l
 (quote a)
 (quote b)
 JMurmel>
+
+
+values&co dokumentieren, in usage aufnehmen

@@ -14,7 +14,7 @@ interpreter/ compiler written in Java8 that can be used standalone as well as em
     ==> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
     JMurmel>
 
-Currently weighing in at ~178kB (size of the compiled jmurmel.jar file
+Currently weighing in at ~185kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
 or one single Java source file.
 

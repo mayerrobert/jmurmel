@@ -52,9 +52,10 @@ Feature flags:
 --no-gui ......  no turtle or bitmap graphics
 --no-extra ....  no special forms if, define, defun, defmacro,
                  let, let*, letrec, progn, setq,
+                 multiple-value-call, multiple-value-bind,
                  load, require, provide, declaim
                  no primitive functions eval, rplaca, rplacd, trace, untrace,
-                 macroexpand-1
+                 values, macroexpand-1
 --no-number ...  no number support
 --no-string ...  no string support
 --no-io .......  no primitive functions read, write, writeln, lnwrite,

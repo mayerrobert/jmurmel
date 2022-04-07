@@ -1763,7 +1763,7 @@ public class LambdaJ {
                             break; // fall through to "eval a list of forms"
                         }
 
-                        /// eval - (multiple-value-bind (symbols...) value-form bodyforms...) -> object
+                        /// eval - (multiple-value-bind (symbols...) values-form bodyforms...) -> object
                         case sMultipleValueBind: { if (sMultipleValueBind == null) break;
                             final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
                             ccForms = formsAndEnv[0];
@@ -1813,10 +1813,11 @@ public class LambdaJ {
                             // fall through to "actually perform..."
 
                         /// eval - multiple-value-call
-                        /// eval - (multiple-value-call function-form value-form*) -> object
+                        /// eval - (multiple-value-call function-form values-form*) -> object
                         } else if (operator == sMultipleValueCall) {
                             varargs1("multiple-value-call", ccArguments);
-                            func = eval(car(ccArguments), env, stack, level, traceLvl);
+                            final Object funcOrSymbol = car(ccArguments);
+                            func = eval(funcOrSymbol, env, stack, level, traceLvl);
                             ConsCell allArgs = null;
                             final Object valueForms = cdr(ccArguments);
                             if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
@@ -1826,6 +1827,10 @@ public class LambdaJ {
                                 if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
                             }
                             argList = allArgs;
+                            if (speed >= 1 && symbolp(funcOrSymbol)) {
+                                result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
+                                if (result != NOT_HANDLED) return result;
+                            }
                             // fall through to "actually perform..."
 
                         /// eval - function call
@@ -4687,9 +4692,10 @@ public class LambdaJ {
                 + "--no-gui ......  no turtle or bitmap graphics\n"
                 + "--no-extra ....  no special forms if, define, defun, defmacro,\n"
                 + "                 let, let*, letrec, progn, setq,\n"
+                + "                 multiple-value-call, multiple-value-bind,\n"
                 + "                 load, require, provide, declaim\n"
-                + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n" 
-                + "                 macroexpand-1\n"
+                + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n"
+                + "                 values, macroexpand-1\n"
                 + "--no-number ...  no number support\n"
                 + "--no-string ...  no string support\n"
                 + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"

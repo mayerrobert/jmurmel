@@ -450,6 +450,30 @@ That way a let-bound variable could be a recursive lambda.
 
     (letrec ((x 1) (y (+ x 1))) (write y))
 
+
+### (multiple-value-call function-form values-form*) -> object
+
+`multiple-value-call` first evaluates the `function-form` to obtain function,
+and then evaluates each `values-form`. All the values of each form
+are gathered together (not just one value from each) and given as arguments
+to the function.
+
+    (multiple-value-call + 0.0 (values 1 2) 3) ; ==> 6.0
+
+### (multiple-value-bind (symbols...) values-form bodyforms...) -> object
+
+`values-form` is evaluated, and each of the `symbols` is bound
+to the respective value returned by that form.
+If there are more `symbols` than values returned,
+`nil` is assigned to the remaining vars.
+If there are more values than symbols, the excess values are discarded.
+The symbols are bound to the values over the execution of the `bodyforms`,
+which make up an implicit progn.
+
+    (multiple-value-bind (a b) (values 'Hello\, '\ World!) (format nil "%s%s" a b))
+     ; ==> "Hello, World!"
+
+
 ### (load filespec) -> object
 
 Eval the contents of the given file, return value
@@ -474,7 +498,6 @@ in the directory that contains jmurmel.jar.
     (load "nul") ; ==> nil, NUL is Windows specific
     (load "lib") ; will search for lib.lisp
 
-
 ### (require module-name optional-file-path)
 
 Load the given file once. Murmel maintains an internal
@@ -493,7 +516,6 @@ and must be strings.
 
     (require "mlib") ; will search for the file mlib.lisp
                      ; unless the module "mlib" was already loaded
-
 
 ### (provide module-name)
 
@@ -578,6 +600,11 @@ Replace the value of the CAR or CDR slot of a cons cell.
     (setq l '(1 2))
     (rplaca l 11) ; ==> (11 2)
     (rplacd l 22) ; ==> (11 . 22)
+
+### (values object*) -> mutliple-values
+
+`values` returns the objects as multiple values.
+
 
 ### (list elems*) -> list<br/>(list* elems+) -> atom-or-dotted-list
 
