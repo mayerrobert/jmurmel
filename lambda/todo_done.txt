@@ -1571,3 +1571,5 @@ JMurmel>
 
 
 values&co dokumentieren, in usage aufnehmen
+
+eval sollte ggf. von zeit zu zeit das interrupted flag checken?!? MurmelJavaProgram auch?

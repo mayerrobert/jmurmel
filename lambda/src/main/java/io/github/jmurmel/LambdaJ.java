@@ -168,6 +168,7 @@ public class LambdaJ {
         private static final long serialVersionUID = 1L;
         private final String name;
         private final WellknownSymbol wellknownSymbol;
+
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
             wellknownSymbol = WellknownSymbol.of(symbolName);
@@ -179,7 +180,10 @@ public class LambdaJ {
         @Override public boolean equals(Object o) { return o == this || o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
     }
 
-    @FunctionalInterface public interface SymbolTable { LambdaJSymbol intern(LambdaJSymbol symbol); }
+    public interface SymbolTable {
+        LambdaJSymbol intern(LambdaJSymbol symbol);
+        default LambdaJSymbol intern(String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
+    }
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
     @FunctionalInterface public interface WriteConsumer { void print(String s); }
@@ -708,14 +712,27 @@ public class LambdaJ {
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
         public LambdaJSymbol intern(LambdaJSymbol sym) {
+            final String symName = sym.name;
             for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
                 final LambdaJSymbol _s = (LambdaJSymbol) car(s);
-                if (_s.name.equalsIgnoreCase(sym.name))
+                if (_s.name.equalsIgnoreCase(symName))
                     return _s;
             }
 
             symbols = ConsCell.cons(sym, symbols);
             return sym;
+        }
+
+        public LambdaJSymbol intern(String symName) {
+            for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
+                final LambdaJSymbol _s = (LambdaJSymbol) car(s);
+                if (_s.name.equalsIgnoreCase(symName))
+                    return _s;
+            }
+
+            final LambdaJSymbol ret = new LambdaJSymbol(symName);
+            symbols = ConsCell.cons(ret, symbols);
+            return ret;
         }
     }
 
@@ -787,23 +804,23 @@ public class LambdaJ {
             this.in = eolConversion ? new AnyToUnixEol(in) : in;
             this.filePath = filePath;
 
-            sNot          = intern(new LambdaJSymbol("not"));
-            sAnd          = intern(new LambdaJSymbol("and"));
-            sOr           = intern(new LambdaJSymbol("or"));
+            sNot          = intern("not");
+            sAnd          = intern("and");
+            sOr           = intern("or");
 
-            sQuote          = intern(new LambdaJSymbol("quote"));
-            sQuasiquote     = intern(new LambdaJSymbol("quasiquote"));
-            sUnquote        = intern(new LambdaJSymbol("unquote"));
-            sUnquote_splice = intern(new LambdaJSymbol("unquote-splice"));
-            sAppend         = intern(new LambdaJSymbol("append"));
-            sList           = intern(new LambdaJSymbol("list"));
-            sListStar       = intern(new LambdaJSymbol("list*"));
-            sCons           = intern(new LambdaJSymbol("cons"));
-            sNil            = intern(new LambdaJSymbol("nil"));
+            sQuote          = intern("quote");
+            sQuasiquote     = intern("quasiquote");
+            sUnquote        = intern("unquote");
+            sUnquote_splice = intern("unquote-splice");
+            sAppend         = intern("append");
+            sList           = intern("list");
+            sListStar       = intern("list*");
+            sCons           = intern("cons");
+            sNil            = intern("nil");
 
             ConsCell l = null;
             for (String feat: FEATURES) {
-                l = new ListConsCell(intern(new LambdaJSymbol(feat)), l);
+                l = new ListConsCell(intern(feat), l);
             }
             featureList = l;
         }
@@ -1124,6 +1141,10 @@ public class LambdaJ {
 
 
         private LambdaJSymbol intern(LambdaJSymbol sym) {
+            return st.intern(sym);
+        }
+
+        private LambdaJSymbol intern(String sym) {
             return st.intern(sym);
         }
 
@@ -1512,10 +1533,11 @@ public class LambdaJ {
         sCar("car"), sCdr("cdr"), sCons("cons"), sEq("eq"), sEql("eql"), sNull("null"), sInc("1+"), sDec("1-"), sAppend("append"), sList("list"), sListStar("list*");
     
         private final String sym;
+        private static final WellknownSymbol[] values = values();
         WellknownSymbol(String sym) { this.sym = sym; }
 
         static WellknownSymbol of(String name) {
-            for (WellknownSymbol s: values()) {
+            for (WellknownSymbol s: values) {
                 if (s.sym.equalsIgnoreCase(name)) return s;
             }
             return null;
@@ -1531,7 +1553,7 @@ public class LambdaJ {
     }
 
     final LambdaJSymbol intern(String sym) {
-        return symtab.intern(new LambdaJSymbol(sym));
+        return symtab.intern(sym);
     }
 
     private LambdaJSymbol internReserved(String sym) {
@@ -1586,6 +1608,8 @@ public class LambdaJ {
 
             tailcall:
             while (true) {
+                if (Thread.interrupted()) throw new InterruptedException("got interrupted");
+
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
                 final Object operator;
@@ -1897,7 +1921,7 @@ public class LambdaJ {
                 throw errorInternal("eval: cannot eval form", form);
             }
 
-        } catch (LambdaJError e) {
+        } catch (LambdaJError | InterruptedException e) {
             throw new LambdaJError(false, e.getMessage(), form);
         } catch (Exception e) {
             //e.printStackTrace();
@@ -5217,12 +5241,18 @@ public class LambdaJ {
 
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public static Object funcall(MurmelFunction fn, Object... args) {
-            Object r = fn.apply(args);
-            while (r instanceof MurmelFunctionCall) {
-                final MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
-                r = functionCall.next.apply(functionCall.args);
+            try {
+                Object r = fn.apply(args);
+                while (r instanceof MurmelFunctionCall) {
+                    final MurmelFunctionCall functionCall = (MurmelFunctionCall) r;
+                    r = functionCall.next.apply(functionCall.args);
+                    if (Thread.interrupted()) throw new InterruptedException("got interrupted");
+                }
+                return r;
             }
-            return r;
+            catch (InterruptedException e) {
+                throw new LambdaJError(e.getMessage());
+            }
         }
 
         public final Object funcall(Object fn, Object... args) {
