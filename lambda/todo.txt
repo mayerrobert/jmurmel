@@ -1,3 +1,9 @@
+:: issues
+der interpreter sollte argumenttypen umwandeln
+methoden die checked exceptions werfen geben im compiler ungültigen Java code
+((:: "java.util.concurrent.Callable" "call") (proxy "java.util.concurrent.Callable" "call" (lambda () "hello")))
+-> /MurmelProgram.java:25: error: unreported exception Exception; must be caught or declared to be thrown
+           }))).call();
 
 zusammenspiel compiler/interpreter bzgl. values reparieren
 

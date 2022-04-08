@@ -18,10 +18,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -577,7 +574,7 @@ public class LambdaJ {
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
         
         /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
-        // (re-)read the new symtab
+        sT =                           intern("t");
         sNil =                         intern("nil"); // warum ist das nicht reserved? es gibt sonderbehandlung in #notReserved
         sLambda =                      internReserved("lambda");
 
@@ -1516,7 +1513,7 @@ public class LambdaJ {
     private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for special forms */
-    final LambdaJSymbol sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
+    final LambdaJSymbol sT, sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
 
@@ -1547,8 +1544,8 @@ public class LambdaJ {
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
-        if (haveT()) return intern("t"); // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (haveQuote()) return cons(intern("quote"), cons(intern("t"), null));
+        if (haveT()) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+        else if (haveQuote()) return cons(intern("quote"), cons(sT, null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
@@ -2124,11 +2121,11 @@ public class LambdaJ {
     }
 
     private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
-        // bringt ein bisserl performance (1x weniger eval und environment lookup).
+        // bringt ein bisserl performance (1x weniger eval und environment lookup, und die argumente muessen nicht in eine neue alist gezippt werden).
         // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
         // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
 
-        if (op.wellknownSymbol == null) return NOT_HANDLED;
+        if (op == null || op.wellknownSymbol == null) return NOT_HANDLED;
 
         // "if (s... == null) break;" checks if the function is available with the current features
         switch (op.wellknownSymbol) {
@@ -3560,6 +3557,7 @@ public class LambdaJ {
 
     static final Map<String, Object[]> classByName = new HashMap<>(64);
     static {
+        classByName.put("boolean",new Object[] { boolean.class,"toBoolean" });
         classByName.put("byte",   new Object[] { byte.class,   "toByte" });
         classByName.put("short",  new Object[] { short.class,  "toShort" });
         classByName.put("int",    new Object[] { int.class,    "toInt" });
@@ -3573,6 +3571,7 @@ public class LambdaJ {
 
         // todo die boxed typen sollten null als null durchreichen
         classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull" }); aliasJavaLang("Number");
+        classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean" });      aliasJavaLang("Boolean");
         classByName.put("Byte",      new Object[] { Byte.class,      "toByte" });         aliasJavaLang("Byte");
         classByName.put("Short",     new Object[] { Short.class,     "toShort" });        aliasJavaLang("Short");
         classByName.put("Integer",   new Object[] { Integer.class,   "toInt" });          aliasJavaLang("Integer");
@@ -3595,6 +3594,58 @@ public class LambdaJ {
         return Class.forName(clsName);
     }
 
+    private static class DynamicProxy implements InvocationHandler {
+        private final Map<Method, MurmelFunction> methods;
+
+        public DynamicProxy(Map<Method, MurmelFunction> methods) {
+            this.methods = methods;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            final MurmelFunction func = methods.get(method);
+            if (func == null) throw new LambdaJError(true, "no function for method %s", method.getName());
+            if (args == null) return func.apply(new Object[0]);
+            else return func.apply(args);
+        }
+    }
+
+    Object makeProxy(ConsCell args) {
+        varargsMin("proxy", args, 1);
+        final String intf = requireString("proxy", car(args));
+        try {
+            final Class<?> clazz = findClass(intf);
+            final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
+            final Map<String, Method> nameToMethod = new HashMap<>();
+
+            for (Method m: Object.class.getMethods()) {
+                methodToMurmelFunction.put(m, a -> { throw new LambdaJError(false, "method is not implemented"); });
+                nameToMethod.put(m.getName(), m);
+            }
+            for (Method m: clazz.getMethods()) {
+                methodToMurmelFunction.put(m, a -> { throw new LambdaJError(false, "method is not implemented"); });
+                nameToMethod.put(m.getName(), m);
+            }
+            methodToMurmelFunction.put(nameToMethod.get("toString"), a -> "#<proxy>");
+
+            for (ConsCell lst = requireList("proxy", cdr(args)); lst != null; ) {
+                if (cdr(lst) == null) throw new LambdaJError(false, "proxy: odd number of method/functions");
+                final String name = requireString("proxy", car(lst));
+
+                final Object form = cadr(lst);
+                if (form == null) throw new LambdaJError(true, "proxy: not a function: nil");
+                final Method method = nameToMethod.get(name);
+                if (method == null) throw new LambdaJError(true, "proxy: method %s does not exist in interface %s or is not accessible", name, intf);
+                methodToMurmelFunction.put(method, getFunction(null, form));
+
+                lst = (ConsCell)cddr(lst);
+            }
+            return Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[] { clazz }, new DynamicProxy(methodToMurmelFunction));
+        }
+        catch (ClassNotFoundException e) {
+            throw new LambdaJError(true, "exception loading class %s", intf);
+        }
+    }
 
     ConsCell values;
 
@@ -3775,7 +3826,8 @@ public class LambdaJ {
         }
         
         if (haveFFI()) {
-            env = addBuiltin("::", (Primitive) LambdaJ::findJavaMethod, env);
+            env = addBuiltin("::", (Primitive) LambdaJ::findJavaMethod,
+                  addBuiltin("proxy", (Primitive)this::makeProxy, env));
         }
 
         if (haveAtom()) {
@@ -3896,12 +3948,17 @@ public class LambdaJ {
      */
     public MurmelFunction getFunction(String funcName) {
         final Object maybeFunction = getValue(funcName);
+        return getFunction(funcName, maybeFunction);
+    }
+
+    private MurmelFunction getFunction(String funcName, Object maybeFunction) {
 
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
         if (maybeFunction instanceof Primitive)                                 { return args -> ((Primitive)maybeFunction).applyPrimitive(arraySlice(args, 0)); }
         if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) { return new CallLambda((ConsCell)maybeFunction); }
+        if (maybeFunction instanceof MurmelFunction)                             { return ((MurmelFunction)maybeFunction); }
 
-        throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName);
+        throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
     }
 
     public interface MurmelProgram {
@@ -4856,7 +4913,7 @@ public class LambdaJ {
         public static final Object _nil = null;
         public final Object _t;
         public final Object _pi = Math.PI;
-        public final Object _dynamic; 
+        public final Object _dynamic;
 
         /// predefined aliased global variables
         // internal-time-units-per-second: itups doesn't have a leading _ because it is avaliable under an alias name
@@ -5074,6 +5131,8 @@ public class LambdaJ {
             return LambdaJ.findMethod(requireString(className), requireString(methodName), arraySlice(paramClasses));
         }
 
+        public final Object _proxy            (Object... args) { return intp.makeProxy(arraySlice(args)); }
+
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
 
@@ -5188,8 +5247,9 @@ public class LambdaJ {
             if (d >= Float.MIN_VALUE && d <= Float.MAX_VALUE) return n.floatValue();
             throw errorOverflow("toFloat", "java.lang.Float", o);
         }
-        public static float toByte(Object n)  { return requireIntegralNumber("toByte", n, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue(); }
-        public static float toShort(Object n) { return requireIntegralNumber("toShort", n, Short.MIN_VALUE, Short.MAX_VALUE).shortValue(); }
+        public static boolean toBoolean(Object n)  { return n != null; }
+        public static byte toByte(Object n)  { return requireIntegralNumber("toByte", n, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue(); }
+        public static short toShort(Object n) { return requireIntegralNumber("toShort", n, Short.MIN_VALUE, Short.MAX_VALUE).shortValue(); }
 
         public static Character requireChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
@@ -5472,6 +5532,7 @@ public class LambdaJ {
             case "get-universal-time": return (CompilerPrimitive)this::getUniversalTime;
             case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
             case "::": return (CompilerPrimitive)this::jambda;
+            case "proxy": return (CompilerPrimitive)this::_proxy;
             case "make-frame": return (CompilerPrimitive)this::makeFrame;
             case "open-frame": return (CompilerPrimitive)this::openFrame;
             case "close-frame": return (CompilerPrimitive)this::closeFrame;
@@ -5499,6 +5560,7 @@ public class LambdaJ {
             case "set-pixel": return (CompilerPrimitive)this::setPixel;
             case "rgb-to-pixel": return (CompilerPrimitive)this::rgbToPixel;
             case "hsb-to-pixel": return (CompilerPrimitive)this::hsbToPixel;
+            case "values": return (CompilerPrimitive)this::_values;
             default: throw new LambdaJError(true, "%s: '%s' is undefined", "getValue", symbol);
             }
         }
@@ -5651,7 +5713,7 @@ public class LambdaJ {
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
                 "gensym", "trace", "untrace",
-                "fatal",
+                "fatal", "proxy",
         };
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
@@ -6966,9 +7028,10 @@ public class LambdaJ {
             final Class<?>[] params = paramTypes.isEmpty() ? null : paramTypes.toArray(new Class[0]);
             final Method m;
             final int startArg;
+            final boolean voidMethod;
             try {
-                if ("new".equals(strMethod)) { m = null; clazz.getDeclaredConstructor(params);  startArg = 0; }
-                else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; }
+                if ("new".equals(strMethod)) { m = null; clazz.getDeclaredConstructor(params);  startArg = 0; voidMethod = false; }
+                else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; voidMethod = m.getReturnType() == void.class; }
             }
             catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
 
@@ -6979,13 +7042,16 @@ public class LambdaJ {
                 if (argCount != paramCount) errorArgCount((String) strMethod, paramCount, paramCount, argCount, null);
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
-                else if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                 else {
-                    // instance method, first arg is the object
-                    sb.append("((").append(strClazz).append(')');
-                    emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
-                    sb.append(").").append(strMethod);
-                    ccArguments = requireList((String)strMethod, cdr(ccArguments));
+                    if (voidMethod) sb.append("((Supplier<Object>)(() -> { ");
+                    if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
+                    else {
+                        // instance method, first arg is the object
+                        sb.append("((").append(strClazz).append(')');
+                        emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
+                        sb.append(").").append(strMethod);
+                        ccArguments = requireList((String)strMethod, cdr(ccArguments));
+                    }
                 }
 
                 sb.append("(");
@@ -7002,11 +7068,12 @@ public class LambdaJ {
                     }
                 }
                 sb.append(')');
+                if (voidMethod) sb.append("; return null; })).get()");
             } else {
                 // emit a lambda that contains an argcount check
                 sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
                 sb.append("argCheck(loc, ").append(paramCount).append(", args.length);  ");
-                sb.append("return ");
+                if (!voidMethod) sb.append("return ");
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
                 else if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
@@ -7021,7 +7088,9 @@ public class LambdaJ {
                     if (conv == null) sb.append("args[").append(i).append(']');
                     else sb.append(conv).append("(args[").append(i).append("])");
                 }
-                sb.append("); }))");
+                sb.append("); ");
+                if (voidMethod) sb.append("return null; ");
+                sb.append("}))");
             }
             return true;
         }
