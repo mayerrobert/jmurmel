@@ -1573,3 +1573,8 @@ JMurmel>
 values&co dokumentieren, in usage aufnehmen
 
 eval sollte ggf. von zeit zu zeit das interrupted flag checken?!? MurmelJavaProgram auch?
+
+
+Java interfaces für callbacks implementieren:
+-> special form oder funktion? -> kann eig funktion sein
+-> (javaproxy "java.awt.event.MouseListener" "mousePressed" lambda-or-symbol1 "mouseReleased" lambda-or-symbol...)

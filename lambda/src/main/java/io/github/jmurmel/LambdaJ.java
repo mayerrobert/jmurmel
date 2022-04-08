@@ -3956,7 +3956,7 @@ public class LambdaJ {
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
         if (maybeFunction instanceof Primitive)                                 { return args -> ((Primitive)maybeFunction).applyPrimitive(arraySlice(args, 0)); }
         if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) { return new CallLambda((ConsCell)maybeFunction); }
-        if (maybeFunction instanceof MurmelFunction)                             { return ((MurmelFunction)maybeFunction); }
+        if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
     }

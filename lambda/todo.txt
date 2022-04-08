@@ -1,5 +1,5 @@
 :: issues
-der interpreter sollte argumenttypen umwandeln
+der interpreter sollte argumenttypen umwandeln, gleich wie der compiler
 methoden die checked exceptions werfen geben im compiler ungültigen Java code
 ((:: "java.util.concurrent.Callable" "call") (proxy "java.util.concurrent.Callable" "call" (lambda () "hello")))
 -> /MurmelProgram.java:25: error: unreported exception Exception; must be caught or declared to be thrown
@@ -59,11 +59,6 @@ funktion die den awt frame eines turtleframe liefert, für java interop
       -> symbols wären trotzdem sinnvoll, dann könnt man ein macro basteln das quoted, und/ oder ein macro, das aus klasse, methode und einer plist mit typ/wert
          einen call bastelt (bei instanzmethoden müsste die plist wohl mit "this" <objekt> beginnen)
          oder alist statt plist? -> egal, plist ist weniger tipparbeit
-
-
-Java interfaces für callbacks implementieren:
--> special form oder funktion? -> kann eig funktion sein
--> (javaproxy "java.awt.event.MouseListener" "mousePressed" lambda-or-symbol1 "mouseReleased" lambda-or-symbol...)
 
 
 ((lambda (exp) (apply exp "hallo")) write)
@@ -149,12 +144,17 @@ tailcallSibling2(Object fn, Object[] oldargs, Object arg1, Object arg2)
 -> arg array könnte wiederverwendet werden, würde insb. bei let loop viele allokationen einsparen
 -> ähnlicher trick wäre im interpreter denkbar, derzeit wächst environment bei tailcalls
 
+
 compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
 -> geht nicht innerhalb ?:, weil das braucht eine expression
 -> emitForm müsste wohl einen parameter "expr" bekommen und geeignet durchreichen
    -> und bei expr == false müsste (if...) als Java if statt ?: emitted werden, und (cond...) als elsif kette statt ?: kette
    -> eigentlich sollte isLast genügen: isLast == true -> expression ist erforderlich, isLast == false -> keine expression
       -> braucht aber auch noch einen umbau von emitForms, weil das schreibt immer ignored = ...
+
+compiler: wenn rsfx==0 ist, ist die form toplevel oder toplevel in einem defun, und die form wird in "ignoredN = <form>;" reingeschrieben
+-> if, let&Co könnten da anders, einfacher rausgeschrieben werden
+
 
 sollte (format) auf MessageFormat basieren? {1} statt %d usw. oder iwie als alternative?
 -> jedenfalls delegiert String.format eh nur zu Formatter, kamma auch gleich direkt verwenden

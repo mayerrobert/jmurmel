@@ -54,7 +54,6 @@
          (label (make-jlabel "Hello, World!"))
          (content-pane (get-content-pane frame)))
 
-    (writeln "casg")
     ((:: "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
     (add-component content-pane label) 
     (pack-frame frame)

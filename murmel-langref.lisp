@@ -1056,6 +1056,7 @@ pi ; ==> 3.141592653589793
 (write (+ 1 2))  
 (untrace)
 
+
 ; = (:: classname methodname paramclass...) -> primitive
 ;
 ; The primitive `::` will return a newly created primitive
@@ -1080,6 +1081,13 @@ pi ; ==> 3.141592653589793
 (define my-hash (make-hash))
 (put-hash my-hash "key-1" "value-1")
 (write my-hash)
+
+
+; = (proxy interfacename javamethodname symbol-or-lambda...) -> Java-object
+;
+; The primitive `proxy` takes a Java interface name and zero or more
+; methodname/ murmelcode tupels, and returns a Java object that implements
+; `interfacename`.
 
 
 ;;; == Known issues ===================
