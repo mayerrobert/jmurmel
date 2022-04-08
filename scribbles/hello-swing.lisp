@@ -12,6 +12,21 @@
 (define +false+ (string->boolean "false"))
 
 
+(require "mlib")
+
+;;; AWT stuff
+
+; (add-component container component-to-add) -> component-to-add
+(define add-component
+  (:: "java.awt.Container" "add" "java.awt.Component"))
+
+; (set-component-visible frame) -> void
+(define set-component-visible
+  (:: "java.awt.Component" "setVisible" "boolean"))
+
+
+
+;;; Swing stuff
 
 ; dispose the window when clicking X. If all windows are disposed the JVM may end.
 (define +dispose-on-close+ (number->int 2))
@@ -19,28 +34,33 @@
 ; call exit(0) when clicking X
 (define +exit-on-close+ (number->int 3))
 
-; (add-component container component-to-add) -> component-to-add
-(define add-component (:: "java.awt.Container" "add" "java.awt.Component"))
 
-; (make-jframe title) -> javax.swing.JFrame
-(define make-jframe (:: "javax.swing.JFrame" "new" "String"))
+; helper macro to emit constructor-functions for Swing components.
+; Each constructor-function will take one string argument.
+; (Why copy&paste one line when you can create a macro that does the same :-)
+(defmacro widgets al
+  `(progn ,@(let ((result nil))
+              (doplist (name class al)
+                (push `(define ,name (:: ,(format nil "javax.swing.%s" class) "new" "String")) result))
+              result)))
+
+; this will create functions that will each make instances of Swing classes
+(widgets make-jframe "JFrame"
+         make-jlabel "JLabel")
+
 
 ; (get-content-pane frame) -> content-pane-component
-(define get-content-pane (:: "javax.swing.JFrame" "getContentPane"))
+(define get-content-pane
+  (:: "javax.swing.JFrame" "getContentPane"))
 
 ; (pack-frame frame) -> void
-(define pack-frame (:: "javax.swing.JFrame" "pack"))
-
-; (show-frame frame) -> void
-(define show-frame (:: "javax.swing.JFrame" "setVisible" "boolean"))
-
-
-; (make-label labeltext) -> javax.swing.JLabel
-(define make-jlabel (:: "javax.swing.JLabel" "new" "String"))
+(define pack-frame
+  (:: "javax.swing.JFrame" "pack"))
 
 
 ; (invoke-later runnable) -> void
-(define invoke-later (:: "javax.swing.SwingUtilities" "invokeLater" "java.lang.Runnable"))
+(define invoke-later
+  (:: "javax.swing.SwingUtilities" "invokeLater" "java.lang.Runnable"))
 
 
 
@@ -55,9 +75,9 @@
          (content-pane (get-content-pane frame)))
 
     ((:: "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
-    (add-component content-pane label) 
+    (add-component content-pane label)
     (pack-frame frame)
-    (show-frame frame +true+)))
+    (set-component-visible frame +true+)))
 
 ;;; static void main(String[] args)
 (invoke-later (proxy "java.lang.Runnable" "run" create-and-show-gui))
