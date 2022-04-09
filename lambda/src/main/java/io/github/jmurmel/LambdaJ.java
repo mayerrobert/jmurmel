@@ -5997,7 +5997,6 @@ public class LambdaJ {
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
                     + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
-            sb.append("        Object result0;\n");
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
                     + "        ").append(javasym).append(" = () -> func;\n"
