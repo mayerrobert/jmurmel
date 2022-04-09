@@ -2032,6 +2032,7 @@ public class LambdaJ {
         return new ConsCell[]{ (ConsCell) cdr(arguments), extEnv};
     }
 
+
     private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final boolean letStar  = operator == sLetStar;
         final boolean letRec   = operator == sLetrec;
@@ -2722,27 +2723,27 @@ public class LambdaJ {
 
     static Number inc(Object n) {
         if (n instanceof Double) return ((Double)n) + 1;
-        if (n instanceof Long
-            || n instanceof Byte
-            || n instanceof Short
-            || n instanceof Integer) {
+        if (n instanceof Long) {
             final long l;
-            if ((l = ((Number)n).longValue()) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow"); // todo Number cast vermeiden
+            if ((l = (Long) n) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
             return l + 1;
         }
+        if (n instanceof Byte) return ((Byte)n).longValue() + 1;
+        if (n instanceof Short) return ((Short)n).longValue() + 1;
+        if (n instanceof Integer) return ((Integer)n).longValue() + 1;
         return toDouble("1+", n) + 1;
     }
 
     static Number dec(Object n) {
         if (n instanceof Double) return ((Double)n) - 1;
-        if (n instanceof Long
-            || n instanceof Byte
-            || n instanceof Short
-            || n instanceof Integer) {
+        if (n instanceof Long) {
             final long l;
-            if ((l = ((Number)n).longValue()) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow"); // todo Number cast vermeiden
+            if ((l = (Long) n) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
             return l - 1;
         }
+        if (n instanceof Byte) return ((Byte)n).longValue() - 1;
+        if (n instanceof Short) return ((Short)n).longValue() - 1;
+        if (n instanceof Integer) return ((Integer)n).longValue() - 1;
         return toDouble("1-", n) - 1;
     }
 
