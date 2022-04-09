@@ -12,6 +12,8 @@
 ;;; Only macros already defined before the form will be expanded,
 ;;; new macros defined by defmacro calls within the form are not considered.
 ;;;
+;;; NOTE: I'm pretty sure that this is incomplete and probably buggy.
+;;;
 ;;; `expand` currently only works with the interpreter (the compiler
 ;;; doesn't fully support macroexpand-1). 
 
@@ -46,8 +48,7 @@
          `(setq ,(cadr form) ,(expand (caddr form))))
 
         (t
-         (let* ((ex (macroexpand-1 form))
-                (changed (null (eq ex form))))
+         (multiple-value-bind (ex changed) (macroexpand-1 form)
            (if changed
                  (expand ex)
              (mapcar expand form))))))

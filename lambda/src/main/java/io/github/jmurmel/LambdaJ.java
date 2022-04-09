@@ -3454,9 +3454,15 @@ public class LambdaJ {
         if (!consp(car(args))) return car(args);
         final Object operator = caar(args);
         final ConsCell macroClosure = macros.get(operator);
-        if (macroClosure == null) return car(args);
+        if (macroClosure == null) {
+            final Object expansion = car(args);
+            values = cons(expansion, (cons(null, null)));
+            return expansion;
+        }
         final ConsCell arguments = (ConsCell) cdar(args);
-        return evalMacro(operator, macroClosure, arguments, 0, 0, 0);
+        final Object expansion = evalMacro(operator, macroClosure, arguments, 0, 0, 0);
+        values = cons(expansion, (cons(sT, null)));
+        return expansion;
     }
 
     private int gensymCounter;
@@ -3631,7 +3637,7 @@ public class LambdaJ {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             final MurmelFunction func = methods.get(method);
             if (func == null) throw new LambdaJError(true, "no function for method %s", method.getName());
-            if (args == null) return func.apply(new Object[0]);
+            if (args == null) return func.apply();
             else return func.apply(args);
         }
     }
@@ -4036,8 +4042,8 @@ public class LambdaJ {
         Object result = null;
         while (true) {
             final Object exp = scriptParser.readObj(true, eof);
-            if (exp != eof) result = eval(exp, topEnv, 0, 0, 0);
-            else return result;
+            if (exp == eof) return result;
+            else result = eval(exp, topEnv, 0, 0, 0);
         }
     }
 
@@ -6255,7 +6261,11 @@ public class LambdaJ {
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (symbolEq(operator, "macroexpand-1")) {
                         if (intp.sQuote != caar(ccArguments)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        sb.append("((Supplier<Object>)(() -> {\n"
+                                  + "        final Object expansion").append(rsfx).append(" = ");
                         emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)), true);
+                        final String expanded = cadr(intp.values) == intp.sT ? "rt()._t" : "null";
+                        sb.append("; return rt()._values(expansion").append(rsfx).append(", ").append(expanded).append(");\n        })).get()");
                         return;
                     }
 

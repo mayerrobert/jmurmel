@@ -678,15 +678,18 @@ are shallow copied, all arguments except the last must be lists.
     (append '(a . b) '(c d))    ; ==> (a b c d)
     (append '(a . b) '(c . d))  ; ==> (a b c . d)
 
-### (macroexpand-1 quoted-form) -> expanded form
+### (macroexpand-1 quoted-form) -> expanded-form, boolean
 
 `macroexpand-1` is a simplified version of CL's `macroexpand-1`.
-It is only supported in interpreted code.
+It is only fully supported in interpreted code,
+in compiled code `macroexpand-1` does quoted forms only.
 If the operator of the list `quoted-form` is a macroname then
-the macrocall will be expanded, e.g.:
+the macrocall will be expanded, and the secondary return value
+will be `t`, e.g.:
 
     (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
-    (macroexpand-1 '(add2 3))      ; ==> (+ 3 2)
+    (macroexpand-1 '(add2 3))      ; --> (+ 3 2)
+                                   ; --> t
 
 ### (gensym) -> uninterned symbol
 

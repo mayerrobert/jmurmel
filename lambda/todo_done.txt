@@ -1580,3 +1580,5 @@ Java interfaces für callbacks implementieren:
 -> (javaproxy "java.awt.event.MouseListener" "mousePressed" lambda-or-symbol1 "mouseReleased" lambda-or-symbol...)
 
 der interpreter sollte argumenttypen umwandeln, gleich wie der compiler
+
+macroexpand-1 könnte/sollte jetzt values liefern
