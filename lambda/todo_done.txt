@@ -1578,3 +1578,5 @@ eval sollte ggf. von zeit zu zeit das interrupted flag checken?!? MurmelJavaProg
 Java interfaces für callbacks implementieren:
 -> special form oder funktion? -> kann eig funktion sein
 -> (javaproxy "java.awt.event.MouseListener" "mousePressed" lambda-or-symbol1 "mouseReleased" lambda-or-symbol...)
+
+der interpreter sollte argumenttypen umwandeln, gleich wie der compiler

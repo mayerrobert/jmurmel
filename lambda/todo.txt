@@ -1,11 +1,14 @@
+zusammenspiel compiler/interpreter bzgl. values reparieren
+
 :: issues
-der interpreter sollte argumenttypen umwandeln, gleich wie der compiler
 methoden die checked exceptions werfen geben im compiler ungültigen Java code
 ((:: "java.util.concurrent.Callable" "call") (proxy "java.util.concurrent.Callable" "call" (lambda () "hello")))
 -> /MurmelProgram.java:25: error: unreported exception Exception; must be caught or declared to be thrown
            }))).call();
 
-zusammenspiel compiler/interpreter bzgl. values reparieren
+
+
+
 
 macht ein macro with-iterator sinn (für Java iterator)?, siehe auch http://clhs.lisp.se/Body/m_w_hash.htm
 

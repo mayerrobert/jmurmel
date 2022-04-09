@@ -3480,14 +3480,24 @@ public class LambdaJ {
         private final Invoker invoke;
         private final int paramCount;
         private final boolean isStatic;
+        private final UnaryOperator<Object>[] argConv;
 
-        private JavaMethod(Method method) {
+        private JavaMethod(Method method, Class<?>[] params) {
             this.method = method;
             int paramCount = method.getParameterCount();
             final boolean isStatic = Modifier.isStatic(method.getModifiers());
             this.isStatic = isStatic;
             if (!isStatic) paramCount++; // this + parameters
             this.paramCount = paramCount;
+
+            final int skipThis = isStatic ? 0 : 1;
+            argConv = new UnaryOperator[paramCount + skipThis];
+            if (params != null) for (int i = 0; i < paramCount-skipThis; i++) {
+                final String paramClassName = params[i].getName();
+                final Object[] entry = classByName.get(paramClassName);
+                if (entry != null) argConv[i+skipThis] = (UnaryOperator<Object>) entry[2];
+            }
+
             try {
                 final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
                 switch (paramCount) {
@@ -3513,6 +3523,10 @@ public class LambdaJ {
 
         private Object apply(Object... args) {
             argCountCheck(args);
+            if (args != null) for (int i = 0; i < args.length; i++) {
+                final UnaryOperator<Object> conv = argConv[i];
+                if (conv != null) args[i] = conv.apply(args[i]);
+            }
             final Class<?> declaringClass = method.getDeclaringClass();
             if (!isStatic && args != null && args.length > 0 && args[0] != null && !declaringClass.isInstance(args[0]))
                 throw new LambdaJError(true, ":: : %s is not an instance of class %s", args[0], declaringClass.getName());
@@ -3550,37 +3564,37 @@ public class LambdaJ {
             final Class<?> clazz = findClass(className);
             return "new".equals(methodName)
                     ? new JavaConstructor(clazz.getDeclaredConstructor(params))
-                    : new JavaMethod(clazz.getMethod(methodName, params));
+                    : new JavaMethod(clazz.getMethod(methodName, params), params);
         }
         catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
     }
 
     static final Map<String, Object[]> classByName = new HashMap<>(64);
     static {
-        classByName.put("boolean",new Object[] { boolean.class,"toBoolean" });
-        classByName.put("byte",   new Object[] { byte.class,   "toByte" });
-        classByName.put("short",  new Object[] { short.class,  "toShort" });
-        classByName.put("int",    new Object[] { int.class,    "toInt" });
-        classByName.put("long",   new Object[] { long.class,   "toLong" });
-        classByName.put("float",  new Object[] { float.class,  "toFloat" });
-        classByName.put("double", new Object[] { double.class, "toDouble", });
+        classByName.put("boolean",   new Object[] { boolean.class,   "toBoolean",   (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+        classByName.put("byte",      new Object[] { byte.class,      "toByte",      (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
+        classByName.put("short",     new Object[] { short.class,     "toShort",     (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+        classByName.put("int",       new Object[] { int.class,       "toInt",       (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+        classByName.put("long",      new Object[] { long.class,      "toLong",      (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+        classByName.put("float",     new Object[] { float.class,     "toFloat",     (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+        classByName.put("double",    new Object[] { double.class,    "toDouble",    (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
 
-        classByName.put("char",   new Object[] { char.class,   "requireChar" });
+        classByName.put("char",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
 
-        classByName.put("Object",    new Object[] { Object.class,    null });             aliasJavaLang("Object");
+        classByName.put("Object",    new Object[] { Object.class,    null, null });                  aliasJavaLang("Object");
 
         // todo die boxed typen sollten null als null durchreichen
-        classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull" }); aliasJavaLang("Number");
-        classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean" });      aliasJavaLang("Boolean");
-        classByName.put("Byte",      new Object[] { Byte.class,      "toByte" });         aliasJavaLang("Byte");
-        classByName.put("Short",     new Object[] { Short.class,     "toShort" });        aliasJavaLang("Short");
-        classByName.put("Integer",   new Object[] { Integer.class,   "toInt" });          aliasJavaLang("Integer");
-        classByName.put("Long",      new Object[] { Long.class,      "toLong" });         aliasJavaLang("Long");
-        classByName.put("Float",     new Object[] { Float.class,     "toFloat" });        aliasJavaLang("Float");
-        classByName.put("Double",    new Object[] { Double.class,    "toDouble" });       aliasJavaLang("Double");
+        classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliasJavaLang("Number");
+        classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliasJavaLang("Boolean");
+        classByName.put("Byte",      new Object[] { Byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliasJavaLang("Byte");
+        classByName.put("Short",     new Object[] { Short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });             aliasJavaLang("Short");
+        classByName.put("Integer",   new Object[] { Integer.class,   "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });               aliasJavaLang("Integer");
+        classByName.put("Long",      new Object[] { Long.class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });              aliasJavaLang("Long");
+        classByName.put("Float",     new Object[] { Float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliasJavaLang("Float");
+        classByName.put("Double",    new Object[] { Double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliasJavaLang("Double");
 
-        classByName.put("Character", new Object[] { Character.class, "requireChar" });         aliasJavaLang("Character");
-        classByName.put("String",    new Object[] { String.class,    "requireStringOrNull" }); aliasJavaLang("String");
+        classByName.put("Character", new Object[] { Character.class, "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliasJavaLang("Character");
+        classByName.put("String",    new Object[] { String.class,    "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliasJavaLang("String");
     }
 
     private static void aliasJavaLang(String existing) {
@@ -5215,14 +5229,10 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
-        public static double toDouble(Object n) {
-            return LambdaJ.toDouble("?", n);
-        }
-        public static double toDouble(Double n) { if (n != null) return n;
-                                             throw errorNotANumber(null); }
+        public static double toDouble(Object n) { return LambdaJ.toDouble("?", n); }
+        public static double toDouble(Double n) { if (n != null) return n;  throw errorNotANumber(null); }
         public static double toDouble(double n) { return n; }
-        public static double toDouble(Long n)   { if (n != null) return n;
-                                             throw errorNotANumber(null); }
+        public static double toDouble(Long n)   { if (n != null) return n;  throw errorNotANumber(null); }
         public static double toDouble(long n)   { return n; }
 
         public static long  toLong(Object n)  {
@@ -5236,8 +5246,7 @@ public class LambdaJ {
             if (n instanceof Number)  return requireIntegralNumber("toLong", n, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
             throw errorNotANumber(n);
         }
-        public static long  toLong(Long n) { if (n != null) return n;
-                                             throw errorNotANumber(null); }
+        public static long  toLong(Long n) { if (n != null) return n;  throw errorNotANumber(null); }
         public static long  toLong(long n) { return n; }
 
         public static int   toInt(Object n)   { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }

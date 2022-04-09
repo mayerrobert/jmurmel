@@ -4,15 +4,6 @@
 ;;; Currently only works in the interpreter due to issues with compiling Java FFI,
 ;;; e.g. calls to Java void functions are not handled correctly by the Murmel compiler.
 
-; the next 4 should not be needed, Murmel should convert argument types automatically
-(define number->int (:: "Number" "intValue"))
-(define string->boolean (:: "Boolean" "valueOf" "String"))
-
-(define +true+ (string->boolean "true"))
-(define +false+ (string->boolean "false"))
-
-
-(require "mlib")
 
 ;;; AWT stuff
 
@@ -29,24 +20,20 @@
 ;;; Swing stuff
 
 ; dispose the window when clicking X. If all windows are disposed the JVM may end.
-(define +dispose-on-close+ (number->int 2))
+(define +dispose-on-close+ 2)
 
 ; call exit(0) when clicking X
-(define +exit-on-close+ (number->int 3))
+(define +exit-on-close+ 3)
 
 
 ; helper macro to emit constructor-functions for Swing components.
 ; Each constructor-function will take one string argument.
 ; (Why copy&paste one line when you can create a macro that does the same :-)
-(defmacro widgets al
-  `(progn ,@(let ((result nil))
-              (doplist (name class al)
-                (push `(define ,name (:: ,(format nil "javax.swing.%s" class) "new" "String")) result))
-              result)))
+(defmacro stringarg-constructor (name class)
+  `(define ,name (:: ,(format nil "javax.swing.%s" class) "new" "String")))
 
-; this will create functions that will each make instances of Swing classes
-(widgets make-jframe "JFrame"
-         make-jlabel "JLabel")
+(stringarg-constructor make-jframe "JFrame")
+(stringarg-constructor make-jlabel "JLabel")
 
 
 ; (get-content-pane frame) -> content-pane-component
@@ -77,7 +64,7 @@
     ((:: "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
     (add-component content-pane label)
     (pack-frame frame)
-    (set-component-visible frame +true+)))
+    (set-component-visible frame t)))
 
 ;;; static void main(String[] args)
 (invoke-later (proxy "java.lang.Runnable" "run" create-and-show-gui))
