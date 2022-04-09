@@ -575,7 +575,7 @@ public class LambdaJ {
         
         /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
         sT =                           intern("t");
-        sNil =                         intern("nil"); // warum ist das nicht reserved? es gibt sonderbehandlung in #notReserved
+        sNil =                         intern("nil"); // Q: warum ist das nicht reserved? A: wird ggf. in environment() reserved
         sLambda =                      internReserved("lambda");
 
         if (haveQuote())  { sQuote   = internReserved("quote"); }   else sQuote = null;
@@ -1499,8 +1499,11 @@ public class LambdaJ {
 
     /** Throw error if sym is a reserved symbol */
     void notReserved(final String op, final Object sym) {
-        if (sym == null) errorMalformed(op, "can't use reserved word nil as a symbol");
-        if (member(sym, reservedWords)) errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym);
+        if (reserved(sym)) errorReserved(op, sym);
+    }
+
+    boolean reserved(Object sym) {
+        return sym == null || member(sym, reservedWords);
     }
 
     /// Symboltable
@@ -1763,9 +1766,9 @@ public class LambdaJ {
 
                         /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                         case sLabels: { if (sLabels == null) break;
-                            final ConsCell[] ret = evalLabels(ccArguments, env);
-                            ccForms = ret[0];
-                            env = ret[1];
+                            final ConsCell[] formsAndEnv = evalLabels(ccArguments, env);
+                            ccForms = formsAndEnv[0];
+                            env = formsAndEnv[1];
                             funcall = false;
                             break; // fall through to "eval a list of forms"
                         }
@@ -2040,11 +2043,10 @@ public class LambdaJ {
         if (letDynamic && letRec) throw errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
         final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
 
-        final String op = letDynamic ? operator + " dynamic" : (namedLet ? "named " : "") + operator;
         final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
         final Object bindings = car(bindingsAndBodyForms);
-        if (!listp(bindings)) throw errorMalformed(op, "a list of bindings", bindings);
+        if (!listp(bindings)) throw errorMalformed(getOp(operator, letDynamic, namedLet), "a list of bindings", bindings);
         final ConsCell ccBindings = (ConsCell)bindings;
 
         ConsCell extenv = env;
@@ -2063,21 +2065,21 @@ public class LambdaJ {
                     sym = car(binding);
                     bindingForm = cadr(binding);
                 } else {
-                    throw errorMalformed(op, "bindings to contain lists and/or symbols", binding);
+                    throw errorMalformed(getOp(operator, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
                 }
 
-                notReserved(op, sym);
+                if (reserved(sym)) errorReserved(getOp(operator, letDynamic, namedLet), sym);
 
                 final boolean isNewSymbol = seen.add(sym);
                 if (!letStar) { // let and letrec don't allow duplicate symbols
-                    if (!isNewSymbol) throw errorMalformedFmt(op, "duplicate symbol %", sym);
+                    if (!isNewSymbol) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "duplicate symbol %", sym);
                 }
 
                 ConsCell newBinding = null;
                 if (letDynamic) newBinding = assq(sym, topEnv);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
-                if (consp(binding) && caddr(binding) != null) throw errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
+                if (consp(binding) && caddr(binding) != null) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
                 final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
                     if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
@@ -2099,6 +2101,10 @@ public class LambdaJ {
             insertFront(extenv, car(arguments), closure);
         }
         return new ConsCell[] {bodyForms, extenv, restore};
+    }
+
+    private static String getOp(Object operator, boolean letDynamic, boolean namedLet) {
+        return letDynamic ? operator + " dynamic" : (namedLet ? "named " : "") + operator;
     }
 
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
@@ -2943,6 +2949,11 @@ public class LambdaJ {
 
     static RuntimeException errorMalformed(String func, String expected, Object actual) {
         throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
+    }
+
+    static void errorReserved(final String op, final Object sym) {
+        if (sym == null) errorMalformed(op, "can't use reserved word nil as a symbol");
+        errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym);
     }
 
     static RuntimeException errorNotANumber(String func, Object n) {
