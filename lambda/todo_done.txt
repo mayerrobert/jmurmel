@@ -1582,3 +1582,6 @@ Java interfaces für callbacks implementieren:
 der interpreter sollte argumenttypen umwandeln, gleich wie der compiler
 
 macroexpand-1 könnte/sollte jetzt values liefern
+
+LambdaJSymbol.wellknownSymbol sollte ggf nur dann != null sein, wenn das symbol mittels features auch wellknown ist
+-> dann brauchts die ganzen != null checks nach dem case: nicht mehr (eval und evalOpencode)

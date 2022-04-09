@@ -11,12 +11,11 @@ import org.junit.Test;
 public class SerializeTest {
 
     public static class SerializationParser implements LambdaJ.ObjectReader, LambdaJ.SymbolTable {
-        private Object obj;
-        private HashMap<LambdaJ.LambdaJSymbol, LambdaJ.LambdaJSymbol> symbols = new HashMap<>();
+        private byte[] serialized;
+        private final HashMap<LambdaJ.LambdaJSymbol, LambdaJ.LambdaJSymbol> symbols = new HashMap<>();
 
-        public SerializationParser(byte[] serialized) throws IOException, ClassNotFoundException {
-            obj = new ObjectInputStream(new ByteArrayInputStream(serialized)).readObject();
-            internSymbols(obj);
+        public SerializationParser(byte[] serialized) {
+            this.serialized = serialized;
         }
 
         private void internSymbols(Object o) {
@@ -32,9 +31,17 @@ public class SerializeTest {
 
         @Override
         public Object readObj(Object eof) {
-            Object ret = obj;
-            obj = null; // only return it once or interpreter will execute the same program forever
-            return ret == null ? eof : ret;
+            if (serialized == null) return eof;
+            try {
+                final Object obj;
+                obj = new ObjectInputStream(new ByteArrayInputStream(serialized)).readObject();
+                internSymbols(obj);
+                serialized = null; // only return it once or interpreter will execute the same program forever
+                return obj;
+            }
+            catch (IOException | ClassNotFoundException e) {
+                throw new LambdaJ.LambdaJError(true, "caught exception %s", e.getMessage(), e);
+            }
         }
 
         @Override

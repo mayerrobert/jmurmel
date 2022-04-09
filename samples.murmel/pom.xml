@@ -45,6 +45,7 @@
                         <configuration>
                             <target name="run">
                                 <exec dir="${project.build.directory}" executable="java" input="../murmel-langref.lisp" failonerror="true">
+                                    <arg value="-ea" />
                                     <arg value="-Djava.awt.headless=true" />
                                     <arg value="-jar" />
                                     <arg file="../lambda/target/jmurmel.jar" />
@@ -72,6 +73,7 @@
                             <executable>java</executable>
                             <workingDirectory>..</workingDirectory>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-Djava.awt.headless=true</argument>
                                 <argument>-classpath</argument>
                                 <!-- automatically creates the classpath using all project dependencies,
@@ -94,6 +96,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -112,6 +115,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -131,6 +135,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -150,6 +155,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -171,6 +177,7 @@
                             <executable>java</executable>
                             <workingDirectory>gabriel</workingDirectory>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -196,6 +203,7 @@
                             <executable>java</executable>
                             <workingDirectory>gabriel</workingDirectory>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -221,6 +229,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -239,6 +248,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -258,6 +268,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>
@@ -279,6 +290,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-ea</argument>
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.github.jmurmel.LambdaJ</argument>

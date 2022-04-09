@@ -168,7 +168,13 @@ public class LambdaJ {
 
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = WellknownSymbol.of(symbolName);
+            wellknownSymbol = null;
+        }
+
+        public LambdaJSymbol(String symbolName, boolean wellknown) {
+            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
+            wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : null;
+            assert !wellknown || wellknownSymbol != null;
         }
 
         @Override public String toString() { return name; }
@@ -574,18 +580,16 @@ public class LambdaJ {
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
         
         /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
-        sT =                           intern("t");
-        sNil =                         intern("nil"); // Q: warum ist das nicht reserved? A: wird ggf. in environment() reserved
+        sT =                           haveT() ? internReserved("t") : intern("t");
+        sNil =                         haveNil() ? internReserved("nil") : intern("nil");
         sLambda =                      internReserved("lambda");
 
         if (haveQuote())  { sQuote   = internReserved("quote"); }   else sQuote = null;
         if (haveCond())   { sCond    = internReserved("cond"); }    else sCond = null;
         if (haveLabels()) { sLabels  = internReserved("labels"); }  else sLabels = null;
-        if (haveApply())  { sApply   = intern("apply"); }           else sApply = null;
 
         if (haveXtra())   {
-            sDynamic = intern("dynamic");
-            sEval =    intern("eval");
+            sDynamic = internReserved("dynamic");
 
             sIf      = internReserved("if");
             sDefine  = internReserved("define");
@@ -612,45 +616,45 @@ public class LambdaJ {
             sSafety =   intern("safety");
             sSpace =    intern("space");
         }
-        else sDynamic = sEval = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall = sSetQ = sProgn = sLoad = sRequire = sProvide
+        else sDynamic = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall = sSetQ = sProgn = sLoad = sRequire = sProvide
              = sDeclaim = sOptimize = sSpeed = sDebug = sSafety = sSpace = null;
 
         if (haveUtil()) {
-            sNull =    intern("null");
-            sList =    intern("list");
-            sListStar= intern("list*");
-            sAppend =  intern("append");
-            sEql =     intern("eql");
+            sNull =    internWellknown("null");
+            sList =    internWellknown("list");
+            sListStar= internWellknown("list*");
+            sAppend =  internWellknown("append");
+            sEql =     internWellknown("eql");
         }
         else sNull = sList = sListStar = sAppend = sEql = null;
 
         if (haveNumbers()) {
-            sInc =     intern("1+");
-            sDec =     intern("1-");
+            sInc =     internWellknown("1+");
+            sDec =     internWellknown("1-");
 
-            sMod =     intern("mod");
-            sRem =     intern("rem");
+            sMod =     internWellknown("mod");
+            sRem =     internWellknown("rem");
 
-            sNeq =     intern("=");
-            sLt  =     intern("<");
-            sLe  =     intern("<=");
-            sGe  =     intern(">=");
-            sGt  =     intern(">");
-            sNe  =     intern("/=");
+            sNeq =     internWellknown("=");
+            sLt  =     internWellknown("<");
+            sLe  =     internWellknown("<=");
+            sGe  =     internWellknown(">=");
+            sGt  =     internWellknown(">");
+            sNe  =     internWellknown("/=");
 
-            sAdd =     intern("+");
-            sMul =     intern("*");
-            sSub =     intern("-");
-            sDiv =     intern("/");
+            sAdd =     internWellknown("+");
+            sMul =     internWellknown("*");
+            sSub =     internWellknown("-");
+            sDiv =     internWellknown("/");
         }
         else sInc = sDec = sMod = sRem = sNeq = sLt = sLe = sGe = sGt = sNe = sAdd = sMul = sSub = sDiv = null;
 
-        if (haveEq()) sEq = intern("eq"); else sEq = null;
+        if (haveEq()) sEq = internWellknown("eq"); else sEq = null;
 
         if (haveCons()) {
-            sCar =     intern("car");
-            sCdr =     intern("cdr");
-            sCons =    intern("cons");
+            sCar =     internWellknown("car");
+            sCdr =     internWellknown("cdr");
+            sCons =    internWellknown("cons");
         }
         else sCar = sCdr = sCons = null;
 
@@ -1516,20 +1520,22 @@ public class LambdaJ {
     private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for special forms */
-    final LambdaJSymbol sT, sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro, sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
+    final LambdaJSymbol sT, sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro,
+            sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
 
     /** well known symbols for some primitives */
-    final LambdaJSymbol sApply, sEval, sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem, sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
+    final LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem,
+            sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
 
     enum WellknownSymbol {
-        sNil("nil"), sLambda("lambda"), sDynamic("dynamic"), sQuote("quote"), sCond("cond"), sLabels("labels"), sIf("if"), sDefine("define"), sDefun("defun"), sDefmacro("defmacro"),
+        sT("t"), sNil("nil"), sLambda("lambda"), sDynamic("dynamic"), sQuote("quote"), sCond("cond"), sLabels("labels"), sIf("if"), sDefine("define"), sDefun("defun"), sDefmacro("defmacro"),
         sLet("let"), sLetStar("let*"), sLetrec("letrec"), sMultipleValueBind("multiple-value-bind"), sMultipleValueCall("multiple-value-call"),
         sSetQ("setq"), sProgn("progn"), sLoad("load"), sRequire("require"), sProvide("provide"),
         sDeclaim("declaim"), sOptimize("optimize"), sSpeed("speed"), sDebug("debug"), sSafety("safety"), sSpace("space"),
 
-        sApply("apply"), sEval("eval"), sNeq("="), sNe("/="), sLt("<"), sLe("<="), sGe(">="), sGt(">"), sAdd("+"), sMul("*"), sSub("-"), sDiv("/"), sMod("mod"), sRem("rem"),
+        sNeq("="), sNe("/="), sLt("<"), sLe("<="), sGe(">="), sGt(">"), sAdd("+"), sMul("*"), sSub("-"), sDiv("/"), sMod("mod"), sRem("rem"),
         sCar("car"), sCdr("cdr"), sCons("cons"), sEq("eq"), sEql("eql"), sNull("null"), sInc("1+"), sDec("1-"), sAppend("append"), sList("list"), sListStar("list*");
     
         private final String sym;
@@ -1548,7 +1554,7 @@ public class LambdaJ {
 
     private Object makeExpTrue() {
         if (haveT()) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (haveQuote()) return cons(intern("quote"), cons(sT, null));
+        else if (haveQuote()) return cons(sQuote, cons(sT, null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
@@ -1556,8 +1562,14 @@ public class LambdaJ {
         return symtab.intern(sym);
     }
 
+    final LambdaJSymbol internWellknown(String sym) {
+        final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
+        assert ret.wellknownSymbol != null;
+        return ret;
+    }
+
     private LambdaJSymbol internReserved(String sym) {
-        final LambdaJSymbol ret = intern(sym);
+        final LambdaJSymbol ret = internWellknown(sym);
         reserve(ret);
         return ret;
     }
@@ -1646,29 +1658,29 @@ public class LambdaJ {
                         /// eval - special forms
 
                         /// eval - (quote exp) -> exp
-                        case sQuote: { if (sQuote == null) break;
+                        case sQuote: {
                             oneArg("quote", ccArguments);
                             result = car(ccArguments);
                             return result;
                         }
 
                         /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
-                        case sLambda: { if (sLambda == null) break;
+                        case sLambda: {
                             result = "#<lambda>";
                             return makeClosureFromForm(ccForm, env);
                         }
 
-                        case sSetQ: { if (sSetQ == null) break;
+                        case sSetQ: {
                             result = evalSetq(ccArguments, env, stack, level, traceLvl);
                             return result;
                         }
 
-                        case sDefmacro: { if (sDefmacro == null) break;
+                        case sDefmacro: {
                             result = evalDefmacro(ccArguments, env, form);
                             return result;
                         }
 
-                        case sDeclaim: { if (sDeclaim == null) break;
+                        case sDeclaim: {
                             result = evalDeclaim(level, ccArguments);
                             return result;
                         }
@@ -1677,7 +1689,7 @@ public class LambdaJ {
                         /// eval - special forms that change the global environment
 
                         /// eval - (define symbol exp) -> symbol with a side of global environment extension
-                        case sDefine: { if (sDefine == null) break;
+                        case sDefine: {
                             varargs1_2("define", ccArguments);
                             final Object symbol = car(ccArguments);
                             if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
@@ -1697,7 +1709,7 @@ public class LambdaJ {
 
                         /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                         // shortcut for (define symbol (lambda (params...) forms...))
-                        case sDefun: { if (sDefun == null) break;
+                        case sDefun: {
                             varargsMin("defun", ccArguments, 2);
                             form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
                             continue tailcall;
@@ -1707,7 +1719,7 @@ public class LambdaJ {
                         /// eval - special forms that run expressions
 
                         /// eval - (if condform form optionalform) -> object
-                        case sIf: { if (sIf == null) break;
+                        case sIf: {
                             varargsMinMax("if", ccArguments, 2, 3);
                             if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
                                 form = cadr(ccArguments); isTc = true; continue tailcall;
@@ -1717,20 +1729,20 @@ public class LambdaJ {
                         }
 
                         /// eval - (load filespec) -> object
-                        case sLoad: { if (sLoad == null) break;
+                        case sLoad: {
                             oneArg("load", ccArguments);
                             result = loadFile("load", car(ccArguments));
                             return result;
                         }
 
                         /// eval - (require modulename optfilespec) -> object
-                        case sRequire: { if (sRequire == null) break;
+                        case sRequire: {
                             result = evalRequire(ccArguments);
                             return result;
                         }
 
                         /// eval - (provide modulename) -> nil
-                        case sProvide: { if (sProvide == null) break;
+                        case sProvide: {
                             result = evalProvide(ccArguments);
                             return result;
                         }
@@ -1742,14 +1754,14 @@ public class LambdaJ {
 
                         /// eval - (progn forms...) -> object
                         case sProgn: {
-                            if (sProgn == null) break;
+                           
                             ccForms = ccArguments;
                             funcall = false;
                             break; // fall through to "eval a list of forms"
                         }
 
                         /// eval - (cond (condform forms...)... ) -> object
-                        case sCond: { if (sCond == null) break;
+                        case sCond: {
                             if (ccArguments != null)
                                 for (Object c: ccArguments) {
                                     if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
@@ -1765,7 +1777,7 @@ public class LambdaJ {
                         }
 
                         /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
-                        case sLabels: { if (sLabels == null) break;
+                        case sLabels: {
                             final ConsCell[] formsAndEnv = evalLabels(ccArguments, env);
                             ccForms = formsAndEnv[0];
                             env = formsAndEnv[1];
@@ -1788,7 +1800,7 @@ public class LambdaJ {
                         }
 
                         /// eval - (multiple-value-bind (symbols...) values-form bodyforms...) -> object
-                        case sMultipleValueBind: { if (sMultipleValueBind == null) break;
+                        case sMultipleValueBind: {
                             final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
                             ccForms = formsAndEnv[0];
                             env = formsAndEnv[1];
@@ -1885,10 +1897,6 @@ public class LambdaJ {
                         } else if (primp(func)) {
                             result = applyPrimitive((Primitive) func, argList, stack, level); return result;
 
-                        } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
-                            // compiled function or compiler runtime func
-                            result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level); return result;
-
                         } else if (consp(func) && car(func) == sLambda) {
                             final Object lambda = cdr(func);          // ((params...) (forms...))
                             final ConsCell closure = ((ConsCell)func).closure();
@@ -1898,6 +1906,10 @@ public class LambdaJ {
                             if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
                             ccForms = (ConsCell) cdr(lambda);
                             // fall through to "eval a list of forms"
+
+                        } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
+                            // compiled function or compiler runtime func
+                            result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level); return result;
 
                         } else {
                             throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
@@ -2134,37 +2146,36 @@ public class LambdaJ {
 
         if (op == null || op.wellknownSymbol == null) return NOT_HANDLED;
 
-        // "if (s... == null) break;" checks if the function is available with the current features
         switch (op.wellknownSymbol) {
-        case sAdd:  { if (sAdd == null) break; return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
-        case sMul:  { if (sMul == null) break; return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
-        case sSub:  { if (sSub == null) break; return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
-        case sDiv:  { if (sDiv == null) break; return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
-        
-        case sMod:  { if (sMod == null) break; twoArgs("mod", args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
-        case sRem:  { if (sRem == null) break; twoArgs("rem", args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
+        case sAdd:  { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
+        case sMul:  { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
+        case sSub:  { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
+        case sDiv:  { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
 
-        case sNeq:  { if (sNeq == null) break; return compare(args, "=",  (d1, d2) -> d1 == d2); }
-        case sNe:   { if (sNe == null) break; return compare(args, "/=", (d1, d2) -> d1 != d2); }
-        case sLt:   { if (sLt == null) break; return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
-        case sLe:   { if (sLe == null) break; return compare(args, "<=", (d1, d2) -> d1 <= d2); }
-        case sGe:   { if (sGe == null) break; return compare(args, ">=", (d1, d2) -> d1 >= d2); }
-        case sGt:   { if (sGt == null) break; return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
+        case sMod:  { twoArgs("mod", args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
+        case sRem:  { twoArgs("rem", args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
 
-        case sCar:  { if (sCar == null) break; oneArg ("car",  args);  return caar(args); }
-        case sCdr:  { if (sCdr == null) break; oneArg ("cdr",  args);  return cdar(args); }
-        case sCons: { if (sCons == null) break; twoArgs("cons", args);  return cons(car(args), cadr(args)); }
+        case sNeq:  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
+        case sNe:   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
+        case sLt:   { return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
+        case sLe:   { return compare(args, "<=", (d1, d2) -> d1 <= d2); }
+        case sGe:   { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
+        case sGt:   { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
 
-        case sEq:   { if (sEq == null) break; twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
-        case sEql:  { if (sEql == null) break; twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
-        case sNull: { if (sNull == null) break; oneArg ("null", args);  return boolResult(car(args) == null); }
+        case sCar:  { oneArg ("car",  args);  return caar(args); }
+        case sCdr:  { oneArg ("cdr",  args);  return cdar(args); }
+        case sCons: { twoArgs("cons", args);  return cons(car(args), cadr(args)); }
 
-        case sInc:  { if (sInc == null) break; oneArg("1+", args);  return inc(car(args)); }
-        case sDec:  { if (sDec == null) break; oneArg("1-", args);  return dec(car(args)); }
+        case sEq:   { twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
+        case sEql:  { twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
+        case sNull: { oneArg ("null", args);  return boolResult(car(args) == null); }
 
-        case sAppend:   { if (sAppend == null) break; return append(args); }
-        case sList:     { if (sList == null) break; return args; }
-        case sListStar: { if (sListStar == null) break; return listStar(args); }
+        case sInc:  { oneArg("1+", args);  return inc(car(args)); }
+        case sDec:  { oneArg("1-", args);  return dec(car(args)); }
+
+        case sAppend:   { return append(args); }
+        case sList:     { return args; }
+        case sListStar: { return listStar(args); }
         }
 
         return NOT_HANDLED;
@@ -2513,7 +2524,6 @@ public class LambdaJ {
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
-                                                 : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof Object[] ? ((Object[])o).length == 0 ? null : ((Object[])o)[0]
                                                  : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
@@ -2532,7 +2542,6 @@ public class LambdaJ {
 
     static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     static Object   cdr(Object o)      { return o == null ? null
-                                                 : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof Object[] ? ((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o)
                                                  : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
@@ -2583,8 +2592,6 @@ public class LambdaJ {
     static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
     static boolean  primp(Object o)      { return o instanceof Primitive; }
     static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double
-                                                  || o instanceof Byte || o instanceof Short || o instanceof Integer
-                                                  || o instanceof BigInteger || o instanceof BigDecimal
                                                   || o instanceof Number; }
     static boolean  stringp(Object o)    { return o instanceof String; }
     static boolean  floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
@@ -3789,6 +3796,7 @@ public class LambdaJ {
         }
 
         if (haveApply()) {
+            final LambdaJSymbol sApply = intern("apply");
             ocApply = new OpenCodedPrimitive(sApply) {
                 @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
             };
@@ -3798,6 +3806,7 @@ public class LambdaJ {
         if (haveXtra()) {
             env = addBuiltin(sDynamic, sDynamic, env);
 
+            final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval) {
                 @Override public Object applyPrimitive(ConsCell a) {
                     varargsMinMax("eval", a, 1, 2);
@@ -5352,9 +5361,9 @@ public class LambdaJ {
         }
 
         private Object interpret(Object fn, Object[] args) {
-            return intp.eval(cons(intp.sApply,
+            return intp.eval(cons(intp.intern("apply"),
                                   cons(fn,
-                                       cons(cons(intp.intern("quote"),
+                                       cons(cons(intp.sQuote,
                                                  cons(arraySlice(args),
                                                       null)),
                                             null))),
@@ -5804,7 +5813,7 @@ public class LambdaJ {
             for (String[] alias:  aliasedPrimitives) predefinedEnv = extenvprim(alias[0], alias[1], predefinedEnv);
 
             // _apply needs to be of type MurmelFunction so that it will be processed by the TCO trampoline
-            predefinedEnv = extenvIntern(intp.sApply, "((MurmelFunction)rt()::_apply)", predefinedEnv);
+            predefinedEnv = extenvIntern(intp.intern("apply"), "((MurmelFunction)rt()::_apply)", predefinedEnv);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -6775,15 +6784,16 @@ public class LambdaJ {
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
         private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final LambdaJ intp = this.intp;
+            final LambdaJSymbol sApply = intp.intern("apply");
 
-            if (op == intp.sApply) {
+            if (op == sApply) {
                 twoArgs("apply", args);
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
                 if (applyOp == intp.sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
 
-                if (applyOp != intp.sApply) { // apply needs special treatment for TCO
+                if (applyOp != sApply) { // apply needs special treatment for TCO
                     for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
                     for (String[] prim: aliasedPrimitives) if (symbolEq(applyOp, prim[0])) { opencodeApplyHelper(sb, prim[1],  applyArg, env, topEnv, rsfx);  return true; }
                 }
