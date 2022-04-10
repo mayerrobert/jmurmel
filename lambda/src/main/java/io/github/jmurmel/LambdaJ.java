@@ -174,7 +174,7 @@ public class LambdaJ {
         public LambdaJSymbol(String symbolName, boolean wellknown) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
             wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : null;
-            assert !wellknown || wellknownSymbol != null;
+            assert !wellknown || wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
         }
 
         @Override public String toString() { return name; }
@@ -610,14 +610,9 @@ public class LambdaJ {
             sProvide = internReserved("provide");
 
             sDeclaim =  internReserved("declaim");
-            sOptimize = intern("optimize");
-            sSpeed =    intern("speed");
-            sDebug =    intern("debug");
-            sSafety =   intern("safety");
-            sSpace =    intern("space");
         }
         else sDynamic = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall = sSetQ = sProgn = sLoad = sRequire = sProvide
-             = sDeclaim = sOptimize = sSpeed = sDebug = sSafety = sSpace = null;
+             = sDeclaim = null;
 
         if (haveUtil()) {
             sNull =    internWellknown("null");
@@ -1519,11 +1514,11 @@ public class LambdaJ {
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
-    /** well known symbols for special forms */
+    /** well known symbols for the reserved symbols t and nil, and for the special forms */
     final LambdaJSymbol sT, sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro,
             sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
-            sDeclaim, sOptimize, sSpeed, sDebug, sSafety, sSpace;
+            sDeclaim;
 
     /** well known symbols for some primitives */
     final LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem,
@@ -1533,7 +1528,7 @@ public class LambdaJ {
         sT("t"), sNil("nil"), sLambda("lambda"), sDynamic("dynamic"), sQuote("quote"), sCond("cond"), sLabels("labels"), sIf("if"), sDefine("define"), sDefun("defun"), sDefmacro("defmacro"),
         sLet("let"), sLetStar("let*"), sLetrec("letrec"), sMultipleValueBind("multiple-value-bind"), sMultipleValueCall("multiple-value-call"),
         sSetQ("setq"), sProgn("progn"), sLoad("load"), sRequire("require"), sProvide("provide"),
-        sDeclaim("declaim"), sOptimize("optimize"), sSpeed("speed"), sDebug("debug"), sSafety("safety"), sSpace("space"),
+        sDeclaim("declaim"),
 
         sNeq("="), sNe("/="), sLt("<"), sLe("<="), sGe(">="), sGt(">"), sAdd("+"), sMul("*"), sSub("-"), sDiv("/"), sMod("mod"), sRem("rem"),
         sCar("car"), sCdr("cdr"), sCons("cons"), sEq("eq"), sEql("eql"), sNull("null"), sInc("1+"), sDec("1-"), sAppend("append"), sList("list"), sListStar("list*");
@@ -1564,7 +1559,7 @@ public class LambdaJ {
 
     final LambdaJSymbol internWellknown(String sym) {
         final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
-        assert ret.wellknownSymbol != null;
+        assert ret.wellknownSymbol != null : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
         return ret;
     }
 
@@ -2019,9 +2014,9 @@ public class LambdaJ {
 
     private Object evalDeclaim(int level, ConsCell arguments) {
         if (level != 1) errorMalformed("declaim", "must be a toplevel form");
-        if (caar(arguments) == sOptimize) {
+        if (caar(arguments) == intern("optimize")) {
             final Object rest = cdar(arguments);
-            final ConsCell speedCons = assq(sSpeed, rest);
+            final ConsCell speedCons = assq(intern("speed"), rest);
             if (speedCons != null) {
                 final Object speed = cadr(speedCons);
                 if (!numberp(speed)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speed);

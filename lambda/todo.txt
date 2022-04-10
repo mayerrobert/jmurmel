@@ -1,5 +1,3 @@
-sT und sNil braucht eigentlich nur der compiler
-
 zusammenspiel compiler/interpreter bzgl. values reparieren
 
 :: issues
