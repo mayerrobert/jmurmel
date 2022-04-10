@@ -281,6 +281,21 @@
 (deftest mvc.6 (multiple-value-call #'+ 1.0 2 3 (values) 4) 10.0)
 
 
+;;; test higher order functions
+; from https://norvig.com/lispy2.html
+(defun combine (f)
+  (lambda (x y)
+    (if (null x) nil
+      (#-murmel funcall f (list (car x) (car y))
+         (#-murmel funcall (combine f) (cdr x) (cdr y))))))
+
+#+murmel (define zip (combine cons))
+#-murmel (setf (symbol-function 'zip) (combine #'cons))
+
+(deftest higher-order.1
+  (zip (list 1 2 3 4) (list 5 6 7 8))   '((1 5) (2 6) (3 7) (4 8)))
+
+
 ;;; Primitives
 ;;; todo remaining primitives
 
