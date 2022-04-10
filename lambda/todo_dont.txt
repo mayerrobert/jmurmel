@@ -79,3 +79,27 @@ oder instanceof von MurmelFunction und CompilerPrimitive fuzzy cachen?
 ist (eval (quote form)) dasselbe wie (progn form) bzw. form?
 -> damit könnte der compiler ein eval wegoptimieren
 -> SBCL machts anscheinend nicht
+
+
+
+LambdaJString.value von String auf char[] umstellen?
+-> wuerde ggf. builtins rund um java.lang.Character erleichtern
+-> char ist 16 bit
+-> Java11 speichert String.value nicht als char[] sondern byte[], diese Speicherersparnis waer dann verloren
+
+-> LambdaJString gibts nicht mehr
+
+
+In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
+-> Beispiel machen
+LambdaJ> (write (read)) "Hello, World!"
+"Hello, World!"
+==> t
+
+-> geht halt in der Form nur im interpreter
+
+
+
+define sollte das aktuelle environment erweitern, nicht das globale
+zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange keine re-definition und kein set -> ja)
+-> oder auch nicht: Scheme define != Old Lisp define

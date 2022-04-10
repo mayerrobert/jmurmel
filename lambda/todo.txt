@@ -87,6 +87,15 @@ compiler: define/defun in toplevel let/let*/letrec inkl. dynamic zulassen?
 -> auch in toplevel "labels"?
 -> let over lambda wird wsl dann interessant, wenn man das mit makros generiert, sonst kann man auch globales define+defun machen
 
+geht aber auch so:
+JMurmel> (progn (define init) (define inc) (define dec) (let (n) (setq init (lambda (init) (setq n init)) inc (lambda () (setq n (1+ n))) dec (lambda () (setq n (1- n))))))
+
+==> (lambda nil (setq n (1- n)))
+JMurmel> (init 5) (writeln (inc)) (writeln (inc)) (writeln (dec))
+
+
+
+
 siehe zeile 5099: bei funktionen ist cddr(enventry) die liste von parametern, compiletime argcount check wär einfach
 runtime check brauchts wohl trotzdem für apply und higher order functions
 
@@ -757,14 +766,6 @@ ein neues primitive basteln?
 
 
 
-define sollte das aktuelle environment erweitern, nicht das globale
-zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange keine re-definition und kein set -> ja)
--> oder auch nicht: Scheme define != Old Lisp define
-
-
-
-
-
 neuen parser: (evtl while, for (list) umsetzen?)
 program ::= stmt*
 
@@ -808,13 +809,6 @@ add(1, 2)
 
 ConsCell methoden double carAsDouble(), long carAsLong() einfuehren
 -> und DoubleConsCell, LongConsCell, das hat zusaetzlich Java primitive datentypen als car und ueberlaedt die methoden
-
-multivalue let: wenn funktionen mehrere werte zurueckgeben, koennte ein erweitertes letXXX zuweisen:
-(let ((r1 r2 (multivaluefunction)))
-   (print r1)
-   (print r2))
--> gibts schon in scheme
-
 
 
 
@@ -939,23 +933,6 @@ am besten setf weglassen, weil das macht serious magic
 -> rplaca, rplacd http://clhs.lisp.se/Body/f_rplaca.htm
    rplaca cons object => cons
    rplacd cons object => cons
-
-
-
-
-
-LambdaJString.value von String auf char[] umstellen?
--> wuerde ggf. builtins rund um java.lang.Character erleichtern
--> char ist 16 bit
--> Java11 speichert String.value nicht als char[] sondern byte[], diese Speicherersparnis waer dann verloren
-
-
-
-In einer LISP Datei nach dem Ende einer Toplevel form koennten Daten stehen, die wuerden von read gelesen
--> Beispiel machen
-LambdaJ> (write (read)) "Hello, World!"
-"Hello, World!"
-==> t
 
 
 
@@ -1097,7 +1074,7 @@ Clisp:
 Multithreading waer eigentlich nicht so schwer: solange nix geschrieben werden kann, braucht eigentlich nur die
 Symboltable synchronized sein ?!?
 -> und das environment?
- 
+
 Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() flatMap()
 -> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
 -> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom

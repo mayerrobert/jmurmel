@@ -3598,9 +3598,8 @@ public class LambdaJ {
 
         classByName.put("char",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
 
-        classByName.put("Object",    new Object[] { Object.class,    null, null });                  aliasJavaLang("Object");
-
-        // todo die boxed typen sollten null als null durchreichen
+        // todo die boxed typen sollten nil/null als null durchreichen, Object/Number/String reichen null bereits durch, Boolean passt wsl auch
+        classByName.put("Object",    new Object[] { Object.class,    null,                   null });                                                           aliasJavaLang("Object");
         classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliasJavaLang("Number");
         classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliasJavaLang("Boolean");
         classByName.put("Byte",      new Object[] { Byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliasJavaLang("Byte");

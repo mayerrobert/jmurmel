@@ -6,15 +6,7 @@
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-    C:\>jm
-    Enter a Murmel form or :command (or enter :h for command help or :q to exit):
-    
-    JMurmel> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
-    
-    ==> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
-    JMurmel>
-
-Currently weighing in at ~185kB (size of the compiled jmurmel.jar file
+Currently weighing in at ~188kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
@@ -124,14 +116,14 @@ Or run `java -jar jmurmel.jar --help`.
 
     $ java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
-    LambdaJ>
+    JMurmel>
 
 The command above will wait for you to enter an S-expression, interpret it and print it's result.
 Try e.g.
 
     $ java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
-    LambdaJ> (+ 1 2)
+    JMurmel> (+ 1 2)
 
     ==> 3.0
     JMurmel>
@@ -255,16 +247,23 @@ Or see `JSR223Test.java` for an example on how to use JMurmel through the
 (setting/ accessing Java objects via JSR223 from Murmel code is not supported yet.)
 
 ## Examples
+A [Quine](http://rosettacode.org/wiki/Quine#Lisp)
+
+    JMurmel> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
+    
+    ==> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
+    JMurmel>
+
 write, format
 
-    LambdaJ> (write (format nil "%s, World!%n" "Hello"))
+    JMurmel> (write (format nil "%s, World!%n" "Hello"))
     "Hello, World!
     "
     ==> t
 
 Tail recursion, locale dependent number formatting
 
-    LambdaJ> (labels ((factTR (n a)
+    JMurmel> (labels ((factTR (n a)
                               (if (= n 0)
                                   a
                                   (factTR (- n 1) (* n a)))))
