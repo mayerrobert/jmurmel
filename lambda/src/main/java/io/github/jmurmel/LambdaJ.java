@@ -2644,8 +2644,8 @@ public class LambdaJ {
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
-        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assq", printSEx(maybeList));
-        for (Object entry: (ConsCell) maybeList) {
+        final ConsCell ccList = requireCons("assq", maybeList);
+        for (Object entry: ccList) {
             if (entry != null) {
                 final ConsCell ccEntry = (ConsCell) entry;
                 if (atom == car(ccEntry)) return ccEntry;
@@ -2657,8 +2657,8 @@ public class LambdaJ {
     /** return the cons whose car is eql to {@code atom} */
     static ConsCell assoc(Object atom, Object maybeList) {
         if (maybeList == null) return null;
-        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected second argument to be a list but got %s", "assoc", printSEx(maybeList));
-        for (Object entry: (ConsCell) maybeList) {
+        final ConsCell ccList = requireCons("assoc", maybeList);
+        for (Object entry: ccList) {
             if (entry != null) { // ignore null items
                 final ConsCell ccEntry = (ConsCell) entry;
                 if (eql(atom, car(ccEntry))) return ccEntry;
@@ -3152,10 +3152,6 @@ public class LambdaJ {
     static Number requireNumber(String func, Object n) {
         if (n instanceof Long)    return (Long)n;
         if (n instanceof Double)  return (Double) n;
-        if (n instanceof Byte)    return (Byte)n;
-        if (n instanceof Short)   return (Short)n;
-        if (n instanceof Integer) return (Integer)n;
-        if (n instanceof Float)   return (Float)n;
         if (n instanceof Number)  return (Number)n;
         throw errorNotANumber(func, n);
     }
@@ -3199,14 +3195,15 @@ public class LambdaJ {
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     private static ConsCell requireCons(String func, Object a) {
-        if (!consp(a)) throw new LambdaJError(true, "%s: expected a non-nil list argument but got %s", func, printSEx(a));
+        if (!consp(a)) throw new LambdaJError(true, "%s: expected a cons argument but got %s", func, printSEx(a));
         return (ConsCell)a;
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     private static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
-        return requireCons(func, a);
+        if (!consp(a)) throw new LambdaJError(true, "%s: expected a list argument but got %s", func, printSEx(a));
+        return (ConsCell)a;
     }
 
 
@@ -5256,7 +5253,12 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
-        public static double toDouble(Object n) { return LambdaJ.toDouble("?", n); }
+        public static double toDouble(Object n) {
+            // the redundant checks are faster than instanceof Number and will succeed most of the time
+            if (n instanceof Long)    return ((Long)n).doubleValue();
+            if (n instanceof Double)  return (Double) n;
+            return LambdaJ.toDouble("?", n);
+        }
         public static double toDouble(Double n) { if (n != null) return n;  throw errorNotANumber(null); }
         public static double toDouble(double n) { return n; }
         public static double toDouble(Long n)   { if (n != null) return n;  throw errorNotANumber(null); }
@@ -5983,7 +5985,7 @@ public class LambdaJ {
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            varargs1_2("toplevel define", requireList("toplevel define", cdr(form)));
+            varargs1_2("toplevel define", listOrMalformed("toplevel define", cdr(form)));
             final LambdaJSymbol symbol = asSymbol("define", cadr(form));
 
             intp.notReserved("define", symbol);
@@ -7090,7 +7092,7 @@ public class LambdaJ {
                         sb.append("((").append(strClazz).append(')');
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         sb.append(").").append(strMethod);
-                        ccArguments = requireList((String)strMethod, cdr(ccArguments));
+                        ccArguments = listOrMalformed((String)strMethod, cdr(ccArguments));
                     }
                 }
 
