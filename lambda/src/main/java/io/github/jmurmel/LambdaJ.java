@@ -280,11 +280,11 @@ public class LambdaJ {
 
     /** Builder class for constructing lists, also used by compiled Murmel */
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
-        ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
+        @Override ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
     }
 
     private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
-        ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
+        @Override ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
     }
 
     private abstract static class AbstractConsCell extends ConsCell {
@@ -719,6 +719,7 @@ public class LambdaJ {
             return sym;
         }
 
+        @Override
         public LambdaJSymbol intern(String symName) {
             for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
                 final LambdaJSymbol _s = (LambdaJSymbol) car(s);
@@ -1802,6 +1803,8 @@ public class LambdaJ {
                             funcall = false;
                             break; // fall through to "eval a list of forms"
                         }
+
+                        default: break;
                     }
 
 
@@ -2171,6 +2174,8 @@ public class LambdaJ {
         case sAppend:   { return append(args); }
         case sList:     { return args; }
         case sListStar: { return listStar(args); }
+
+        default: break;
         }
 
         return NOT_HANDLED;
@@ -3758,10 +3763,9 @@ public class LambdaJ {
                   addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
                   addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
-                                                                 final int rgb = toInt("rgb-to-pixel", car(a)) << 16
-                                                                               | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                               | toInt("rgb-to-pixel", caddr(a));
-                                                                 return (long)rgb;  },
+                                                                 return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                                  | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                                  | toInt("rgb-to-pixel", caddr(a))); },
                   addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
                                                                  return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
                                                                                              toFloat("hsb-to-pixel", cadr(a)),
@@ -4942,7 +4946,6 @@ public class LambdaJ {
 
 
         /// predefined global variables
-        public static final Object _nil = null;
         public final Object _t;
         public final Object _pi = Math.PI;
         public final Object _dynamic;
@@ -5214,8 +5217,7 @@ public class LambdaJ {
                                                                   final int r = toInt(args[0]);
                                                                   final int g = toInt(args[1]);
                                                                   final int b = toInt(args[2]);
-                                                                  final int rgb = (r << 16) | (g << 8) | b;
-                                                                  return (long)rgb; }
+                                                                  return (long)(int)((r << 16) | (g << 8) | b); }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
                                                                   final float hue = toFloat(args[0]);
                                                                   final float sat = toFloat(args[1]);
@@ -5485,7 +5487,7 @@ public class LambdaJ {
 
         @Override public Object getValue(String symbol) {
             switch (symbol) {
-            case "nil": return _nil;
+            case "nil": return null;
             case "t": return _t;
             case "pi": return _pi;
             case "internal-time-units-per-second": return itups;
@@ -7237,6 +7239,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unused")
     public static class JFRHelper {
+        private JFRHelper() {}
 
         @jdk.jfr.Relational
         @Target({ ElementType.FIELD })
