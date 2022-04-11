@@ -344,7 +344,7 @@ public class LambdaJ {
 
     private static final class SExpConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
-        private final Path path;
+        private final transient Path path;
         private final int startLineNo, startCharNo;
         private int lineNo, charNo;
         private SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
@@ -4332,9 +4332,9 @@ public class LambdaJ {
         ConsCell env = null;
         if (isInit) {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-            parser = (SExpressionReader)interpreter.symtab;
             final AnyToUnixEol read = new AnyToUnixEol();
-            parser.setInput(() -> read.read(echoHolder.value), null);
+            parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
+                                           () -> read.read(echoHolder.value), null, false);
             outWriter = interpreter.lispPrinter;
             env = interpreter.topEnv;
         }
