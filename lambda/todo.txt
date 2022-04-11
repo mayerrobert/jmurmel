@@ -104,6 +104,11 @@ nicht aber bei einem loop mittendrin
 
 
 
+vielleicht beginnen mit #() und #H() lesen und schreiben, plus svref und gethash?
+-> emitQuoted sollte das auch als konstanten rausschreiben (ggf. endlich alle konstanten immutable machen? und keinen listbuilder sondern ein arrayslice?)
+-> und dann schrittweise den rest dazu
+
+
 vielleicht doch schon mal vector und svref implementieren? vector liefert eindimensionale arrays, 0-basiert, typ T. make-array könnte später kommen, das kann viel mehr
 SBCL> (atom #(1 2 3)) ; -> t
 svref ist auch ein setf accessor
@@ -111,7 +116,86 @@ svref ist auch ein setf accessor
    -> char kamma machen, setf/ schar geht nicht weil strings sind immutable
       -> vielleicht von String auf StringBuilder umstellen?
 vielleicht auch list->svector und svector->list
--> und make-hash-table, get-hash, #H(...)
+
+svref, (aref), arrayp, vectorp, simple-vector-p
+
+strings sind ein array, vector, aber kein simple-vector
+-> wenns nur svref gibt aber kein aref, gibts kein "(setf (aref" problem mit strings. char kamma machen, in murmel macht nth aber dasselbe, schreiben würde laufzeitfehler geben, weil strings sind immutable
+-> wsl kann man ewig bei svref bleiben, dann hat murmel nur simple vector == eindimensionale arrays mit anfang=0, so wie Java
+-> intern sollte es wsl arrays und arraylist geben, adjustable wär also sinnvoll, element-type irgendwann auch
+
+
+-> und make-hash-table, hash-table-p, hash-table-count, clrhash, gethash, remhash, maphash, (puthash, , #H(...)), mlib: (setf (gethash...
+   erweiterungen nach alexandria: (hash-table-plist hash) -> plist, (plist-hash-table plist) -> hash
+http://clhs.lisp.se/Body/f_mk_has.htm
+    make-hash-table &key test size rehash-size rehash-threshold => hash-table
+Creates and returns a new hash table.
+sbcl hat u.a. ein zusätzliches keyword arg :weakness, damit kann man weakhashmaps erzeugen
+
+http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_hash-table-p.html
+    hash-table-p object => generalized-boolean
+Returns true if object is of type hash-table; otherwise, returns false.
+
+http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_hash-table-count.html
+    hash-table-count hash-table => count
+Returns the number of entries in the hash-table. If hash-table has just been created or newly cleared (see clrhash) the entry count is 0.
+
+http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_clrhash.html
+    clrhash hash-table => hash-table
+Removes all entries from hash-table, and then returns that empty hash table.
+
+http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/acc_gethash.html
+    gethash key hash-table &optional default => value, present-p
+Value is the object in hash-table whose key is the same as key under the hash-table's equivalence test. If there is no such entry, value is the default.
+Present-p is true if an entry is found; otherwise, it is false.
+setf may be used with gethash to modify the value associated with a given key, or to add a new entry.
+When a gethash form is used as a setf place, any default which is supplied is evaluated according to normal left-to-right evaluation rules, but its value is ignored.
+
+http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_remhash.html
+    remhash key hash-table => generalized-boolean
+Removes the entry for key in hash-table, if any. Returns true if there was such an entry, or false otherwise.
+
+http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_maphash.html
+    maphash function hash-table => nil
+Iterates over all entries in the hash-table. For each entry, the function is called with two arguments--the key and the value of that entry.
+The consequences are unspecified if any attempt is made to add or remove an entry from the hash-table while a maphash is in progress,
+with two exceptions: the function can use can use setf of gethash to change the value part of the entry currently being processed, or it can use remhash to remove that entry.
+
+mögliche erweiterungen
+puthash gibts nicht offiziell, wird man aber wohl für (setf (gethash... brauchen.
+SBCL:
+* (macroexpand-1 '(setf (gethash 'key h) 'value))
+(LET* ((#:HASHTABLE H) (#:NEW1 'VALUE))
+  (SB-KERNEL:%PUTHASH 'KEY #:HASHTABLE #:NEW1))
+
+eine funktion, die hashtables aus werten erzeugt, so wie list lists erzeugt, oder vector, gibts offiziell nicht. denkbar wäre
+    (hash-table key1 value1 key2 value2...) => hash-hable
+und/ oder
+    (hash-table plist)
+und/ oder
+    (hash-table alist)
+alexandria https://alexandria.common-lisp.dev/draft/alexandria.html#Hash-Tables hat einige zusätze für hashtables, u.a.
+  Function: hash-table-plist table
+    Returns a property list containing the keys and values of hash table table.
+  Function: plist-hash-table plist &rest hash-table-initargs
+    Returns a hash table containing the keys and values of the property list plist. Hash table is initialized using the hash-table-initargs.
+
+
+spezielle read/write funktionalität scheint in CL nicht vorgesehen, in allen beispielen steht z.B.
+    (setq table (make-hash-table)) =>  #<HASH-TABLE EQL 0/120 32304110>
+    in CL würde man ggf. readtime evaluation verwenden, siehe https://stackoverflow.com/questions/10706024/common-lisp-shorthand-to-initialize-a-hash-table-with-many-entries
+denkbar wäre #H(key1 value1 key2 value2...), könnte der murmel reader mittels plist-hash-table umsetzen, und der printer mittels alexandria:hash-table-plist
+Serapeum hat dict und erweitert den printer:
+    CL-USER> (toggle-pretty-print-hash-table)
+    T
+    CL-USER> (dict :a 1 :b 2 :c 3)
+    (dict
+      :A 1
+      :B 2
+      :C 3
+     )
+    which is a representation that can be read back in.
+Das wiedereinlesen ist aber wsl. nicht dasselbe wie ein readermacro, der reader list halt einen aufruf von dict, der dann irgendwann wirklich passiert
 
 
 (compile) könnte in etwa so gehen:
