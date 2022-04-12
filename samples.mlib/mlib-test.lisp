@@ -19,13 +19,13 @@
 ;;;
 ;;; - contains some occurrences of #'. These are needed
 ;;;   for CL compatibility, #' is ignored by murmel.
-;;; - contains some mutation of quoted forms which will break some tests
+;;; - may contain some mutation of quoted forms which will break some tests
 ;;;   when compiling with SBCL (and mutating quoted forms i.e. constants
-;;;   is bad style...)
+;;;   is bad style...), I think I fixed all, though
 
 #+murmel (require "mlib")
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
-#-murmel (defun writeln (&optional (o nil)) (when o (princ o)) (terpri))
+#-murmel (defun writeln (&optional (o nil) (escape t)) (when o (princ o)) (terpri))
 
 (define *success-count* 0)
 (define *error-count* 0)
@@ -37,19 +37,18 @@
   `(do-assert-equal
      ,expected
      ,form
-     ',(if (car msg)
+     ,(if (car msg)
              (car msg)
          (append (list 'equal) (list expected) (list form)))))
 
 ; helper function for assert-equal macro
 (defun do-assert-equal (expected actual msg)
-  ;(format t "test %s: " msg) (writeln actual)
   (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
     (writeln)
     (format t "assert-equal failed: ") (writeln msg)
-    (format t "expected: ") (writeln expected)
-    (format t "actual:   ") (writeln actual)
+    (format t "expected: ") (writeln expected t)
+    (format t "actual:   ") (writeln actual t)
     (setq *error-count* (1+ *error-count*))
     nil))
 
@@ -61,7 +60,7 @@
 ;;;        ...)
 (defmacro tests (name . l)
   (if l
-    `(append (assert-equal ',(caddr l) ,(car l) ,name)
+    `(append (assert-equal ',(caddr l) ,(car l) ',name)
              (tests ,name ,@(cdddr l)))))
 
 

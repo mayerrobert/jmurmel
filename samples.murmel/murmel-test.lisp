@@ -54,15 +54,26 @@
         nil))))
 
 
+(defun assert-equal (expected-result result msg)
+  (inc-count)
+  #-murmel
+  (if (equal result expected-result) nil
+    (progn
+      (write msg)
+      (format t " equal test failed, expected '~A', got unexpected result '~A'~%" expected-result result)))
+
+  (if (tequal result expected-result) nil
+    (progn
+      (inc-failed)
+      (write msg)
+      #+murmel (format t " tequal test failed, expected '%s', got unexpected result '%s'%n" expected-result result)
+      #-murmel (format t " tequal test failed, expected '~A', got unexpected result '~A'~%" expected-result result))))
+
+
 (defmacro deftest (name form expected-result)
   (let ((result (gensym)))
     `(let ((,result ,form))
-       (inc-count)
-       #-murmel
-       (if (equal ,result ,expected-result) nil
-         (progn (inc-failed) (write ',name) (format t " equal test failed") (writeln)))
-       (if (tequal ,result ,expected-result) nil
-         (progn (inc-failed) (write ',name) (format t " tequal test failed, expected '%s', got unexpected result '%s'" ,expected-result ,result) (writeln))))))
+       (assert-equal ,expected-result ,result ',name))))
 
 
 ; a varargs function that echoes all arguments as a list.
@@ -350,11 +361,46 @@
 (deftest null.3 (null 3) nil)
 
 
+;;; test all predicates
+(define *predicates*
+  '(("n/a"   "null"    "atom"      "symbolp"   "consp"     "listp"     "numberp"   "integerp"  "floatp"   "characterp" "stringp")
+    (value    null      atom        symbolp     consp       listp       numberp     integerp    floatp     characterp   stringp)
+    (nil      t         t           t           nil         t           nil         nil         nil        nil          nil)
+    ((a . b)  nil       nil         nil         t           t           nil         nil         nil        nil          nil)
+    (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    (0        nil       t           nil         nil         nil         t           t           nil        nil          nil)
+    (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil)
+    (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil)
+    ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t)
+))
+
+
+(let ((predicate-names (car *predicates*))
+      (predicates (car (cdr *predicates*))))
+  (labels ((do-one-test (predicate-names predicates value expected-results)
+             (let* ((name (car predicate-names))
+                    (predicate (car predicates))
+                    (expected (car expected-results))
+                    (actual (apply predicate (list value))))
+               #+murmel (assert-equal expected actual (format nil "(%s %s)" name value))
+
+               #-murmel (assert-equal expected actual (format nil "(~A ~A)" name value))
+
+               (if (cdr predicate-names)
+                 (do-one-test (cdr predicate-names) (cdr predicates) value (cdr expected-results)))))
+
+           (do-all-tests (test-descriptors)
+             (do-one-test (cdr predicate-names) (cdr predicates) (car (car test-descriptors)) (cdr (car test-descriptors)))
+             (if (cdr test-descriptors)
+               (do-all-tests (cdr test-descriptors)))))
+    (do-all-tests (cdr (cdr *predicates*)))))
+
+
 ;;; test eq
-(deftest eq.1 (eq 'a 'a) t)
+(deftest eq.1 (eq 'a 'a)   t)
 (deftest eq.2 (eq nil nil) t)
-(deftest eq.3 (eq 'a 1) nil)
-(deftest eq.3 (eq 1 1.0) nil)
+(deftest eq.3 (eq 'a 1)    nil)
+(deftest eq.3 (eq 1 1.0)   nil)
 
 
 ;;; test eql
