@@ -207,7 +207,16 @@ public class LambdaJ {
         void printEol();
     }
 
-    @FunctionalInterface public interface Primitive { Object applyPrimitive(ConsCell x); }
+    /** if an atom implements this interface then {@link #printSEx(WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
+    public interface Writeable {
+        /** will be used by the Murmel primitive {@code write} */
+        void printSEx(WriteConsumer out, boolean escapeAtoms);
+    }
+
+    @FunctionalInterface public interface Primitive extends Writeable { 
+        Object applyPrimitive(ConsCell x);
+        @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<primitive>"); }
+    }
 
     public interface CustomEnvironmentSupplier {
         ConsCell customEnvironment(SymbolTable symtab);
@@ -232,7 +241,6 @@ public class LambdaJ {
             return System.lineSeparator() + "error occurred in " + lineInfo(exp) + printSEx(exp);
         }
     }
-
 
 
     /// ## Data types used by interpreter program as well as interpreted programs
@@ -1570,12 +1578,13 @@ public class LambdaJ {
         return ret;
     }
 
-    private abstract static class OpenCodedPrimitive implements Primitive {
+    private static class OpenCodedPrimitive implements Primitive {
         private final LambdaJSymbol symbol;
 
         private OpenCodedPrimitive(LambdaJSymbol symbol) { this.symbol = symbol; }
 
-        @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
+        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<opencoded primitive: " + symbol + '>'); }
+        @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
     }
     private OpenCodedPrimitive ocEval, ocApply;
 
@@ -1892,7 +1901,7 @@ public class LambdaJ {
                             func = null;
                             continue tailcall;
 
-                        } else if (primp(func)) {
+                        } else if (func instanceof Primitive) {
                             result = applyPrimitive((Primitive) func, argList, stack, level); return result;
 
                         } else if (consp(func) && car(func) == sLambda) {
@@ -2590,7 +2599,7 @@ public class LambdaJ {
     static boolean  atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
     static boolean  symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
     static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
-    static boolean  primp(Object o)      { return o instanceof Primitive; }
+
     static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double
                                                   || o instanceof Number; }
     static boolean  stringp(Object o)    { return o instanceof String; }
@@ -2824,7 +2833,7 @@ public class LambdaJ {
                     _printSEx(sb, first, first, true, escapeAtoms);
                 }
                 final Object rest = cdr(obj);
-                if (rest != null) { // todo || ArraySlice#isNil
+                if (rest != null) {
                     if (listp(rest)) {
                         sb.print(" ");
                         if (list == rest) {
@@ -2861,16 +2870,8 @@ public class LambdaJ {
                     return;
                 }
                 sb.print(escapeSymbol((LambdaJSymbol) obj)); return;
-            } else if (obj instanceof OpenCodedPrimitive) {
-                sb.print(obj.toString()); return;
-            } else if (obj instanceof JavaConstructor) {
-                sb.print("#<Java constructor>"); return;
-            } else if (obj instanceof JavaMethod) {
-                sb.print("#<Java method>"); return;
-            } else if (obj instanceof MurmelJavaProgram.CompilerPrimitive) {
-                sb.print("#<compiler primitive>"); return;
-            } else if (primp(obj)) {
-                sb.print("#<primitive>"); return;
+            } else if (obj instanceof Writeable) {
+                ((Writeable) obj).printSEx(sb, escapeAtoms); return;
             } else if (escapeAtoms && stringp(obj)) {
                 sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
             } else if (escapeAtoms && characterp(obj)) {
@@ -2879,7 +2880,7 @@ public class LambdaJ {
             } else if (atom(obj)) {
                 sb.print(obj.toString()); return;
             } else {
-                sb.print("<internal error>"); return;
+                throw errorInternal("don't know how to print this object");
             }
         }
     }
@@ -3478,14 +3479,17 @@ public class LambdaJ {
 
 
     /// Murmel runtime support for Java FFI - Murmel calls Java
-    private static class JavaConstructor implements Primitive {
+    private static class JavaConstructor implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         private final Constructor<?> constructor;
 
         private JavaConstructor(Constructor<?> constructor) { this.constructor = constructor; }
 
+        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java constructor: " + constructor.getName() + '>'); }
+
+        @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
+
         @Override
-        public Object applyPrimitive(ConsCell x) {
-            final Object[] args = listToArray(x);
+        public Object applyCompilerPrimitive(Object... args) {
             // skip argcount check: on errors Constructor.newInstance() will throw e.g. "java.lang.IllegalArgumentException: wrong number of arguments"
             try { return constructor.newInstance(args); }
             catch (InvocationTargetException ite) { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), ite.getTargetException().toString()); }
@@ -3539,11 +3543,12 @@ public class LambdaJ {
             }
         }
 
-        @Override public Object applyPrimitive(ConsCell x) { return apply(listToArray(x)); }
+        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'); }
 
-        @Override public Object applyCompilerPrimitive(Object... args) { return apply(args);}
+        @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
-        private Object apply(Object... args) {
+        @Override 
+        public Object applyCompilerPrimitive(Object... args) {
             argCountCheck(args);
             if (args != null) for (int i = 0; i < args.length; i++) {
                 final UnaryOperator<Object> conv = argConv[i];
@@ -3792,9 +3797,7 @@ public class LambdaJ {
 
         if (haveApply()) {
             final LambdaJSymbol sApply = intern("apply");
-            ocApply = new OpenCodedPrimitive(sApply) {
-                @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
-            };
+            ocApply = new OpenCodedPrimitive(sApply);
             env = addBuiltin(sApply, ocApply, env);
         }
 
@@ -3802,14 +3805,7 @@ public class LambdaJ {
             env = addBuiltin(sDynamic, sDynamic, env);
 
             final LambdaJSymbol sEval = intern("eval");
-            ocEval = new OpenCodedPrimitive(sEval) {
-                @Override public Object applyPrimitive(ConsCell a) {
-                    varargsMinMax("eval", a, 1, 2);
-                    final Object env = cadr(a);
-                    if (!listp(env)) errorMalformed("eval", "'env' to be a list", env);
-                    return eval(car(a), (ConsCell)env);
-                }
-            };
+            ocEval = new OpenCodedPrimitive(sEval);
             env = addBuiltin(sEval, ocEval, env);
 
             env = addBuiltin("trace", (Primitive) this::trace,
@@ -3824,7 +3820,7 @@ public class LambdaJ {
                   addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
                   env));
 
-            env = addBuiltin("values", (Primitive) args -> { values = args; return car(values); }, env);
+            env = addBuiltin("values", (Primitive) a -> { values = a; return car(values); }, env);
         }
 
         if (haveT()) {
@@ -4891,7 +4887,10 @@ public class LambdaJ {
         public static final CompilerGlobal UNASSIGNED = () -> { throw new LambdaJError(false, "unassigned value"); };
         public static final Object[] NOARGS = new Object[0];
 
-        public interface CompilerPrimitive { Object applyCompilerPrimitive(Object... args); }
+        public interface CompilerPrimitive extends Writeable {
+            Object applyCompilerPrimitive(Object... args);
+            @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<compiler primitive>"); }
+        }
 
         private static final class MurmelFunctionCall {
             MurmelFunction next;
