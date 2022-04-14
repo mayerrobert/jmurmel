@@ -161,7 +161,7 @@ public class LambdaJ {
     }
 
     /** A murmel symbol name */
-    public static class LambdaJSymbol implements Serializable {
+    public static class LambdaJSymbol implements Serializable, Writeable {
         private static final long serialVersionUID = 1L;
         private final String name;
         private final WellknownSymbol wellknownSymbol;
@@ -177,10 +177,38 @@ public class LambdaJ {
             assert !wellknown || wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
         }
 
+        @Override
+        public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+            final String name = this.name;
+            if (!escapeAtoms) { out.print(name); return; }
+
+            if (name.isEmpty()) { out.print("||"); return; }
+            if (".".equals(name)) { out.print("|.|"); return; }
+            if (containsSExSyntaxOrWhiteSpace(name)) { out.print("|"); out.print(escapeSymbol(this)); out.print("|"); return; }
+            out.print(escapeSymbol(this));
+        }
+
         @Override public String toString() { return name; }
 
         @Override public int hashCode() { return name.hashCode(); }
         @Override public boolean equals(Object o) { return o == this || o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
+
+        private static String escapeSymbol(LambdaJSymbol s) {
+            if (s.name == null) return null;
+            if (s.name.isEmpty()) return "";
+
+            final StringBuilder ret = new StringBuilder();
+            final String name = s.name;
+            final int len = name.length();
+            for (int i = 0; i < len; i++) {
+                final char c = name.charAt(i);
+                switch (c) {
+                    case '|':  ret.append('\\').append('|'); break;
+                    default: ret.append(c);
+                }
+            }
+            return ret.toString();
+        }
     }
 
     public interface SymbolTable {
@@ -1584,6 +1612,7 @@ public class LambdaJ {
         private OpenCodedPrimitive(LambdaJSymbol symbol) { this.symbol = symbol; }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<opencoded primitive: " + symbol + '>'); }
+        @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
         @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
     }
     private OpenCodedPrimitive ocEval, ocApply;
@@ -2856,20 +2885,6 @@ public class LambdaJ {
                     sb.print(")");
                     return;
                 }
-            } else if (escapeAtoms && symbolp(obj)) {
-                if (obj.toString().isEmpty()) {
-                    sb.print("||");
-                    return;
-                }
-                if (".".equals(obj.toString())) {
-                    sb.print("|.|");
-                    return;
-                }
-                if (containsSExSyntaxOrWhiteSpace(obj.toString())) {
-                    sb.print("|"); sb.print(escapeSymbol((LambdaJSymbol) obj)); sb.print("|");
-                    return;
-                }
-                sb.print(escapeSymbol((LambdaJSymbol) obj)); return;
             } else if (obj instanceof Writeable) {
                 ((Writeable) obj).printSEx(sb, escapeAtoms); return;
             } else if (escapeAtoms && stringp(obj)) {
@@ -2890,23 +2905,6 @@ public class LambdaJ {
          + (c < CTRL.length ? CTRL[c]
         : c < 127 ? String.valueOf((char)c)
         : String.valueOf(c));
-    }
-
-    private static String escapeSymbol(LambdaJSymbol s) {
-        if (s.name == null) return null;
-        if (s.name.isEmpty()) return "";
-
-        final StringBuilder ret = new StringBuilder();
-        final String name = s.name;
-        final int len = name.length();
-        for (int i = 0; i < len; i++) {
-            final char c = name.charAt(i);
-            switch (c) {
-            case '|':  ret.append('\\').append('|'); break;
-            default: ret.append(c);
-            }
-        }
-        return ret.toString();
     }
 
     /** prepend " and \ by a \ */
@@ -3485,6 +3483,7 @@ public class LambdaJ {
         private JavaConstructor(Constructor<?> constructor) { this.constructor = constructor; }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java constructor: " + constructor.getName() + '>'); }
+        @Override public String toString() { return "#<Java constructor: " + constructor.getName() + '>'; }
 
         @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
@@ -3544,6 +3543,7 @@ public class LambdaJ {
         }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'); }
+        @Override public String toString() { return "#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'; }
 
         @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
@@ -3648,6 +3648,7 @@ public class LambdaJ {
             if (args == null) return func.apply();
             else return func.apply(args);
         }
+
     }
 
     Object makeProxy(ConsCell args) {
@@ -3666,7 +3667,11 @@ public class LambdaJ {
                 methodToMurmelFunction.put(m, a -> { throw new LambdaJError(false, "method is not implemented"); });
                 nameToMethod.put(m.getName(), m);
             }
-            methodToMurmelFunction.put(nameToMethod.get("toString"), a -> "#<proxy>");
+
+            final String asString = "#<proxy " + clazz.getName() + ">";
+            methodToMurmelFunction.put(nameToMethod.get("toString"), a -> asString);
+            methodToMurmelFunction.put(Writeable.class.getMethod("printSEx", WriteConsumer.class, boolean.class),
+                                       a -> {final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null;});
 
             for (ConsCell lst = requireList("proxy", cdr(args)); lst != null; ) {
                 if (cdr(lst) == null) throw new LambdaJError(false, "proxy: odd number of method/functions");
@@ -3680,9 +3685,9 @@ public class LambdaJ {
 
                 lst = (ConsCell)cddr(lst);
             }
-            return Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[] { clazz }, new DynamicProxy(methodToMurmelFunction));
+            return Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { clazz, Writeable.class }, new DynamicProxy(methodToMurmelFunction));
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException | NoSuchMethodException e) {
             throw new LambdaJError(true, "exception loading class %s", intf);
         }
     }

@@ -1,3 +1,5 @@
+:: umbenamsen in jcall, proxy umbenamsen in jproxy
+
 format sollte eigentlich auch printSEx benutzen, derzeit verwendet Java für %s einfach toString() der jeweiligen argumente
 die printEscape verzweigung sollte eigentlich nicht in write() stecken sondern im lispprinter/ ObjectWriter
 
