@@ -4322,6 +4322,18 @@ public class LambdaJ {
     private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo, List<Object> prevHistory, String[] args) {
         final BoolHolder echoHolder = new BoolHolder(echo);
 
+        final LambdaJSymbol cmdQuit = interpreter.intern(":q");
+        final LambdaJSymbol cmdHelp = interpreter.intern(":h");
+        final LambdaJSymbol cmdEcho = interpreter.intern(":echo");
+        final LambdaJSymbol cmdNoEcho = interpreter.intern(":noecho");
+        final LambdaJSymbol cmdEnv = interpreter.intern(":env");
+        final LambdaJSymbol cmdRes = interpreter.intern(":res");
+        final LambdaJSymbol cmdList = interpreter.intern(":l");
+        final LambdaJSymbol cmdWrite = interpreter.intern(":w");
+        final LambdaJSymbol cmdJava = interpreter.intern(":java");
+        final LambdaJSymbol cmdRun = interpreter.intern(":r");
+        final LambdaJSymbol cmdJar = interpreter.intern(":jar");
+
         if (!echoHolder.value) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
             System.out.println();
@@ -4366,21 +4378,20 @@ public class LambdaJ {
                 if (istty) { parser.lineNo = parser.charNo == 0 ? 1 : 0;  parser.charNo = 0; } // if parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed
                 final Object exp = parser.readObj(true, eof);
 
-                final String strExp = exp == null ? null : exp.toString();
-                if (exp == eof && parser.look == EOF
-                    || ":q"  .equalsIgnoreCase(strExp)) { System.out.println("bye."); System.out.println();  System.exit(0); }
                 if (exp != null) {
-                    if (":h"      .equalsIgnoreCase(strExp)) { showHelp();  continue; }
-                    if (":echo"   .equalsIgnoreCase(strExp)) { echoHolder.value = true; continue; }
-                    if (":noecho" .equalsIgnoreCase(strExp)) { echoHolder.value = false; continue; }
-                    if (":env"    .equalsIgnoreCase(strExp)) { if (env != null) for (Object entry: env) System.out.println(entry);
+                    if (exp == eof && parser.look == EOF
+                        || exp == cmdQuit) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                    if (exp == cmdHelp)   { showHelp();  continue; }
+                    if (exp == cmdEcho)   { echoHolder.value = true; continue; }
+                    if (exp == cmdNoEcho) { echoHolder.value = false; continue; }
+                    if (exp == cmdEnv)    { if (env != null) for (Object entry: env) System.out.println(entry);
                                                                System.out.println("env length: " + length(env));  System.out.println(); continue; }
-                    if (":res"    .equalsIgnoreCase(strExp)) { isInit = false; history.clear();  continue; }
-                    if (":l"      .equalsIgnoreCase(strExp)) { listHistory(history); continue; }
-                    if (":w"      .equalsIgnoreCase(strExp)) { writeHistory(history, parser.readObj(false)); continue; }
-                    if (":java"   .equalsIgnoreCase(strExp)) { compileToJava(consoleCharset, interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
-                    if (":r"      .equalsIgnoreCase(strExp)) { runForms(history, interpreter, true); continue; }
-                    if (":jar"    .equalsIgnoreCase(strExp)) { compileToJar(interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (exp == cmdRes)    { isInit = false; history.clear();  continue; }
+                    if (exp == cmdList)   { listHistory(history); continue; }
+                    if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
+                    if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
+                    if (exp == cmdRun)    { runForms(history, interpreter, true); continue; }
+                    if (exp == cmdJar)    { compileToJar(interpreter.symtab, interpreter.libDir, history, parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(strExp)) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
                 }
                 history.add(exp);
