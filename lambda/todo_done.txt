@@ -1585,3 +1585,8 @@ macroexpand-1 könnte/sollte jetzt values liefern
 
 LambdaJSymbol.wellknownSymbol sollte ggf nur dann != null sein, wenn das symbol mittels features auch wellknown ist
 -> dann brauchts die ganzen != null checks nach dem case: nicht mehr (eval und evalOpencode)
+
+die printEscape verzweigung sollte eigentlich nicht in write() stecken sondern im lispprinter/ ObjectWriter
+
+format sollte eigentlich auch printSEx benutzen, derzeit verwendet Java für %s einfach toString() der jeweiligen argumente
+-> toString() sollte überall geeignet definiert sein !?

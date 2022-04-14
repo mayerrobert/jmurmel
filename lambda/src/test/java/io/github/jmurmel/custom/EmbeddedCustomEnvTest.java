@@ -31,7 +31,7 @@ public class EmbeddedCustomEnvTest {
         // collect stdout of the Lisp program in a StringBuilder
         final StringBuilder outBuffer = new StringBuilder();
         final ObjectWriter outWriter = new ObjectWriter() {
-            @Override public void printObj(Object o) {
+            @Override public void printObj(Object o, boolean printEscape) {
                 outBuffer.append(o); // if a cons cell was to be printed this will invoke it's toString() method
                                      // which will print it's contents as an S-expression
             }

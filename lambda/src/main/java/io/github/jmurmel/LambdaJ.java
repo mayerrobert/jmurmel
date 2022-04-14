@@ -230,8 +230,9 @@ public class LambdaJ {
     }
 
     public interface ObjectWriter {
-        void printObj(Object o);
-        default void printString(String s) { printObj(s); }
+        void printObj(Object o, boolean printEscape);
+        default void printObj(Object o) { printObj(o, true); }
+        default void printString(String s) { printObj(s, false); }
         void printEol();
     }
 
@@ -728,7 +729,7 @@ public class LambdaJ {
 
         public SExpressionWriter(WriteConsumer out) { this.out = out; }
 
-        @Override public void printObj(Object o) { printSEx(out, o); }
+        @Override public void printObj(Object o, boolean printEscape) { printSEx(out, o, printEscape); }
         @Override public void printEol() { out.print("\n"); }
         @Override public void printString(String s) { out.print(s); }
     }
@@ -2847,6 +2848,10 @@ public class LambdaJ {
         _printSEx(w, obj, obj, true, true);
     }
 
+    static void printSEx(WriteConsumer w, Object obj, boolean printEscape) {
+        _printSEx(w, obj, obj, true, printEscape);
+    }
+
     private static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
         while (true) {
             if (obj == null) {
@@ -3269,6 +3274,7 @@ public class LambdaJ {
     }
 
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
+    // todo assert Math.rint(d) == d vgl #requireIntegralNumber()
     static long checkedToLong(double d) {
         if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
         if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
@@ -3324,15 +3330,13 @@ public class LambdaJ {
 
     final void write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
-        if (printEscape) lispPrinter.printObj(arg);
-        else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(arg, false)));
+        lispPrinter.printObj(arg, printEscape);
     }
 
     final void writeln(final ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
         if (arg != null) {
-            if (printEscape) lispPrinter.printObj(car(arg));
-            else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), false)));
+            lispPrinter.printObj(car(arg), printEscape);
         }
         lispPrinter.printEol();
     }
@@ -3341,8 +3345,7 @@ public class LambdaJ {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
         lispPrinter.printEol();
         if (arg != null) {
-            if (printEscape) lispPrinter.printObj(car(arg));
-            else lispPrinter.printString(EolUtil.anyToUnixEol(printSEx(car(arg), false)));
+            lispPrinter.printObj(car(arg), printEscape);
             lispPrinter.printString(" ");
         }
     }
@@ -3659,12 +3662,13 @@ public class LambdaJ {
             final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
             final Map<String, Method> nameToMethod = new HashMap<>();
 
+            final MurmelFunction notImplemented = a -> { throw new LambdaJError(false, "method is not implemented"); };
             for (Method m: Object.class.getMethods()) {
-                methodToMurmelFunction.put(m, a -> { throw new LambdaJError(false, "method is not implemented"); });
+                methodToMurmelFunction.put(m, notImplemented);
                 nameToMethod.put(m.getName(), m);
             }
             for (Method m: clazz.getMethods()) {
-                methodToMurmelFunction.put(m, a -> { throw new LambdaJError(false, "method is not implemented"); });
+                methodToMurmelFunction.put(m, notImplemented);
                 nameToMethod.put(m.getName(), m);
             }
 
@@ -4304,7 +4308,7 @@ public class LambdaJ {
                 interpreter.traceStats(tEnd - tStart);
                 if (printResult) {
                     System.out.println();
-                    System.out.print("==> "); outWriter.printObj(result); System.out.println();
+                    System.out.print("==> "); outWriter.printObj(result, true); System.out.println();
                 }
             }
             return result;
@@ -4403,10 +4407,10 @@ public class LambdaJ {
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();
                 if (interpreter.values == NO_VALUES) {
-                    System.out.print("==> "); outWriter.printObj(result); System.out.println();
+                    System.out.print("==> "); outWriter.printObj(result, true); System.out.println();
                 } else {
                     if (interpreter.values != null) for (Object value: interpreter.values) {
-                        System.out.print(" -> "); outWriter.printObj(value); System.out.println();
+                        System.out.print(" -> "); outWriter.printObj(value, true); System.out.println();
                     }
                 }
             } catch (LambdaJError e) {
@@ -4465,10 +4469,10 @@ public class LambdaJ {
                 System.out.println();
                 final Object[] multipleValues = ((MurmelJavaProgram)prg).values;
                 if (multipleValues == null) {
-                    System.out.print("==> ");  interpreter.lispPrinter.printObj(result);  System.out.println();
+                    System.out.print("==> ");  interpreter.lispPrinter.printObj(result, true);  System.out.println();
                 } else {
                     for (Object v: multipleValues) {
-                        System.out.print(" -> "); interpreter.lispPrinter.printObj(v); System.out.println();
+                        System.out.print(" -> "); interpreter.lispPrinter.printObj(v, true); System.out.println();
                     }
                 }
             }

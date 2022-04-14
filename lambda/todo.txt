@@ -1,7 +1,6 @@
-:: umbenamsen in jcall, proxy umbenamsen in jproxy
+*features* exposen?
 
-format sollte eigentlich auch printSEx benutzen, derzeit verwendet Java für %s einfach toString() der jeweiligen argumente
-die printEscape verzweigung sollte eigentlich nicht in write() stecken sondern im lispprinter/ ObjectWriter
+:: umbenamsen in jcall, proxy umbenamsen in jproxy
 
 zusammenspiel compiler/interpreter bzgl. values reparieren
 
@@ -139,6 +138,7 @@ strings sind ein array, vector, aber kein simple-vector
 
 -> und make-hash-table, hash-table-p, hash-table-count, clrhash, gethash, remhash, maphash, (puthash, , #H(...)), mlib: (setf (gethash...
    erweiterungen nach alexandria: (hash-table-plist hash) -> plist, (plist-hash-table plist) -> hash
+   oder                           (hash-table->plist hash) -> plist, (plist->hash-table plist) -> hash
 http://clhs.lisp.se/Body/f_mk_has.htm
     make-hash-table &key test size rehash-size rehash-threshold => hash-table
 Creates and returns a new hash table.
