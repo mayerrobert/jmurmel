@@ -1027,7 +1027,7 @@ get the dynamic environment.
 ### Custom primitives
 
 In embedded use primitives may be added, also Java methods
-created by the primitive `::` (see below) act as builtins.
+created by the primitive `jmethod` (see below) act as builtins.
 As far as the language is concerned, all primitives are variadic functions.
 The primitives themselves may have parameter checks, tough.
 In case they are called with the wrong type(s) or number of parameters
@@ -1058,35 +1058,35 @@ interpreter primities).
     (untrace)
 
 
-### (:: classname methodname paramclass...) -> primitive
+### (jmethod classname methodname paramclass...) -> primitive
 
-The primitive `::` will return a newly created primitive
+The primitive `jmethod` will return a newly created primitive
 that is implemented by the method `methodname` of the Java class
 `classname` that has the formal parameters `paramclass...`.
-Parameters to `::` must be strings.
+Parameters to `jmethod` must be strings.
 
-    (:: "java.lang.System" "currentTimeMillis")
+    (jmethod "java.lang.System" "currentTimeMillis")
 
-When invoking primitives created by `::` the first argument must be
+When invoking primitives created by `jmethod` the first argument must be
 a Java object of the primitive's method's class. This is not the case
 for static methods.
 Invoke static method:
 
-    (define ctm (:: "java.lang.System" "currentTimeMillis"))  
+    (define ctm (jmethod "java.lang.System" "currentTimeMillis"))  
     (ctm)
 
 invoke method on an object
 
-    (define make-hash (:: "java.util.HashMap" "new"))
-    (define put-hash (:: "java.util.Map" "put" "java.lang.Object" "java.lang.Object"))
+    (define make-hash (jmethod "java.util.HashMap" "new"))
+    (define put-hash (jmethod "java.util.Map" "put" "java.lang.Object" "java.lang.Object"))
     (define my-hash (make-hash))
     (put-hash my-hash "key-1" "value-1")
     (write my-hash)
 
 
-### (proxy interfacename javamethodname symbol-or-lambda...) -> Java-object
+### (jproxy interfacename javamethodname symbol-or-lambda...) -> Java-object
 
-The primitive `proxy` takes a Java interface name and zero or more
+The primitive `jproxy` takes a Java interface name and zero or more
 methodname/ murmelcode tupels, and returns a Java object that implements
 `interfacename`.
 

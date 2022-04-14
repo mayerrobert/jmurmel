@@ -48,7 +48,7 @@ Flags for REPL:
 
 Feature flags:
 
---no-ffi ......  no function '::'
+--no-ffi ......  no functions 'jmethod' or 'jproxy'
 --no-gui ......  no turtle or bitmap graphics
 --no-extra ....  no special forms if, define, defun, defmacro,
                  let, let*, letrec, progn, setq,

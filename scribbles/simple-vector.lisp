@@ -2,16 +2,16 @@
 ;; currently "vector" is really a mix between vector and simple-vector, and has limitations,
 ;; and is slow because of reflection
 
-(define m%to-int (:: "java.lang.Long" "intValue"))
-(define m%to-long (:: "java.lang.Integer" "longValue"))
+(define m%to-int (jmethod "java.lang.Long" "intValue"))
+(define m%to-long (jmethod "java.lang.Integer" "longValue"))
 
-(define m%svref (:: "java.util.ArrayList" "get"    "int"))
-(define m%svset (:: "java.util.ArrayList" "set"    "int" "java.lang.Object"))
-(define m%svlen (:: "java.util.ArrayList" "size"))
-(define m%svadd (:: "java.util.ArrayList" "add"    "java.lang.Object"))
-(define m%svrem (:: "java.util.ArrayList" "remove" "int"))
+(define m%svref (jmethod "java.util.ArrayList" "get"    "int"))
+(define m%svset (jmethod "java.util.ArrayList" "set"    "int" "java.lang.Object"))
+(define m%svlen (jmethod "java.util.ArrayList" "size"))
+(define m%svadd (jmethod "java.util.ArrayList" "add"    "java.lang.Object"))
+(define m%svrem (jmethod "java.util.ArrayList" "remove" "int"))
 
-(define make-simple-vector (:: "java.util.ArrayList" "new"))
+(define make-simple-vector (jmethod "java.util.ArrayList" "new"))
 
 
 ; das ist aehnlich (oder gleich?) vector-push-extend, siehe http://www.lispworks.com/documentation/HyperSpec/Body/f_vec_ps.htm

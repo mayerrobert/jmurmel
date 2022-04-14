@@ -10,25 +10,25 @@
 (require "mlib")
 
 (defmacro m%long->int (val)
-  `((:: "java.lang.Long" "intValue") ,val))
+  `((jmethod "java.lang.Long" "intValue") ,val))
 
 (defmacro m%int->long (val)
-  `((:: "java.lang.Integer" "longValue") ,val))
+  `((jmethod "java.lang.Integer" "longValue") ,val))
 
 (defmacro m%svref (obj idx)
-  `((:: "java.util.ArrayList" "get" "int") ,obj ,idx))
+  `((jmethod "java.util.ArrayList" "get" "int") ,obj ,idx))
 
 (defmacro m%svset (obj idx val)
-  `((:: "java.util.ArrayList" "set" "int" "java.lang.Object") ,obj ,idx ,val))
+  `((jmethod "java.util.ArrayList" "set" "int" "java.lang.Object") ,obj ,idx ,val))
 
 (defmacro m%svlen (obj)
-  `((:: "java.util.ArrayList" "size") ,obj))
+  `((jmethod "java.util.ArrayList" "size") ,obj))
 
 (defmacro m%svadd (obj val)
-  `((:: "java.util.ArrayList" "add" "java.lang.Object") ,obj ,val))
+  `((jmethod "java.util.ArrayList" "add" "java.lang.Object") ,obj ,val))
 
 (defmacro m%svmak-capacity (capacity)
-  `((:: "java.util.ArrayList" "new" "int") ,capacity))
+  `((jmethod "java.util.ArrayList" "new" "int") ,capacity))
 
 
 (defun make-vector (size)

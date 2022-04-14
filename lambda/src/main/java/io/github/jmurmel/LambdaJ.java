@@ -544,7 +544,7 @@ public class LambdaJ {
 
         HAVE_XTRA,           // extra special forms such as if
 
-        HAVE_FFI,            // ::
+        HAVE_FFI,            // jmethod and jproxy
         
         HAVE_NUMBERS,        // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
 
@@ -3559,7 +3559,7 @@ public class LambdaJ {
             }
             final Class<?> declaringClass = method.getDeclaringClass();
             if (!isStatic && args != null && args.length > 0 && args[0] != null && !declaringClass.isInstance(args[0]))
-                throw new LambdaJError(true, ":: : %s is not an instance of class %s", args[0], declaringClass.getName());
+                throw new LambdaJError(true, "jmethod: %s is not an instance of class %s", args[0], declaringClass.getName());
 
             try { return invoke.invoke(args); }
             catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), t.toString()); }
@@ -3577,8 +3577,8 @@ public class LambdaJ {
     }
 
     private static Primitive findJavaMethod(ConsCell x) {
-        varargsMin(":: ", x, 2);
-        return findMethod(requireString("::", car(x)), requireString("::", cadr(x)), requireList("::", cddr(x)));
+        varargsMin("jmethod", x, 2);
+        return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x)));
     }
 
     /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
@@ -3587,7 +3587,7 @@ public class LambdaJ {
         if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
             final String strParamClassName = (String)paramClassName;
             try { paramClasses.add(findClass(strParamClassName)); }
-            catch (ClassNotFoundException e) { throw new LambdaJError(true, ":: : exception finding parameter class %s: %s", strParamClassName, e.toString()); }
+            catch (ClassNotFoundException e) { throw new LambdaJError(true, "jmethod: exception finding parameter class %s: %s", strParamClassName, e.toString()); }
         }
         final Class<?>[] params = paramClasses.isEmpty() ? null : paramClasses.toArray(EMPTY_CLASS_ARRAY);
         try {
@@ -3596,7 +3596,7 @@ public class LambdaJ {
                     ? new JavaConstructor(clazz.getDeclaredConstructor(params))
                     : new JavaMethod(clazz.getMethod(methodName, params), params);
         }
-        catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }
     }
 
     static final Map<String, Object[]> classByName = new HashMap<>(64);
@@ -3655,8 +3655,8 @@ public class LambdaJ {
     }
 
     Object makeProxy(ConsCell args) {
-        varargsMin("proxy", args, 1);
-        final String intf = requireString("proxy", car(args));
+        varargsMin("jproxy", args, 1);
+        final String intf = requireString("jproxy", car(args));
         try {
             final Class<?> clazz = findClass(intf);
             final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
@@ -3672,19 +3672,19 @@ public class LambdaJ {
                 nameToMethod.put(m.getName(), m);
             }
 
-            final String asString = "#<proxy " + clazz.getName() + ">";
+            final String asString = "#<Java proxy " + clazz.getName() + ">";
             methodToMurmelFunction.put(nameToMethod.get("toString"), a -> asString);
             methodToMurmelFunction.put(Writeable.class.getMethod("printSEx", WriteConsumer.class, boolean.class),
                                        a -> {final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null;});
 
-            for (ConsCell lst = requireList("proxy", cdr(args)); lst != null; ) {
-                if (cdr(lst) == null) throw new LambdaJError(false, "proxy: odd number of method/functions");
-                final String name = requireString("proxy", car(lst));
+            for (ConsCell lst = requireList("jproxy", cdr(args)); lst != null; ) {
+                if (cdr(lst) == null) throw new LambdaJError(false, "jproxy: odd number of method/functions");
+                final String name = requireString("jproxy", car(lst));
 
                 final Object form = cadr(lst);
-                if (form == null) throw new LambdaJError(true, "proxy: not a function: nil");
+                if (form == null) throw new LambdaJError(true, "jproxy: not a function: nil");
                 final Method method = nameToMethod.get(name);
-                if (method == null) throw new LambdaJError(true, "proxy: method %s does not exist in interface %s or is not accessible", name, intf);
+                if (method == null) throw new LambdaJError(true, "jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
                 methodToMurmelFunction.put(method, getFunction(null, form));
 
                 lst = (ConsCell)cddr(lst);
@@ -3867,8 +3867,8 @@ public class LambdaJ {
         }
         
         if (haveFFI()) {
-            env = addBuiltin("::", (Primitive) LambdaJ::findJavaMethod,
-                  addBuiltin("proxy", (Primitive)this::makeProxy, env));
+            env = addBuiltin("jmethod", (Primitive) LambdaJ::findJavaMethod,
+                  addBuiltin("jproxy", (Primitive)this::makeProxy, env));
         }
 
         if (haveAtom()) {
@@ -4821,7 +4821,7 @@ public class LambdaJ {
     private static void showFeatureUsage() {
         System.out.println("Feature flags:\n"
                 + "\n"
-                + "--no-ffi ......  no function '::'\n" 
+                + "--no-ffi ......  no functions 'jmethod' or 'jproxy'\n" 
                 + "--no-gui ......  no turtle or bitmap graphics\n"
                 + "--no-extra ....  no special forms if, define, defun, defmacro,\n"
                 + "                 let, let*, letrec, progn, setq,\n"
@@ -5177,7 +5177,7 @@ public class LambdaJ {
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
 
-        public final Object jambda             (Object... args) { twoArgs(":: ", args.length); return findMethod(args[0], args[0], arraySlice(args, 2)); }
+        public final Object jmethod              (Object... args) { twoArgs("jmethod", args.length); return findMethod(args[0], args[0], arraySlice(args, 2)); }
         public static Primitive findMethod(Object className, Object methodName, ConsCell paramClasses) {
             return LambdaJ.findMethod(requireString(className), requireString(methodName), paramClasses);
         }
@@ -5185,7 +5185,7 @@ public class LambdaJ {
             return LambdaJ.findMethod(requireString(className), requireString(methodName), arraySlice(paramClasses));
         }
 
-        public final Object _proxy            (Object... args) { return intp.makeProxy(arraySlice(args)); }
+        public final Object _jproxy            (Object... args) { return intp.makeProxy(arraySlice(args)); }
 
         public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
         public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
@@ -5584,8 +5584,8 @@ public class LambdaJ {
             case "sleep": return (CompilerPrimitive)this::sleep;
             case "get-universal-time": return (CompilerPrimitive)this::getUniversalTime;
             case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
-            case "::": return (CompilerPrimitive)this::jambda;
-            case "proxy": return (CompilerPrimitive)this::_proxy;
+            case "jmethod": return (CompilerPrimitive)this::jmethod;
+            case "jproxy": return (CompilerPrimitive)this::_jproxy;
             case "make-frame": return (CompilerPrimitive)this::makeFrame;
             case "open-frame": return (CompilerPrimitive)this::openFrame;
             case "close-frame": return (CompilerPrimitive)this::closeFrame;
@@ -5749,7 +5749,7 @@ public class LambdaJ {
         /// * sqrt, log, log10, exp, expt, mod, rem, signum
         /// * get-internal-real-time, get-internal-run-time, get-internal-cpu-time, sleep, get-universal-time, get-decoded-time
         /// * format, format-locale, char-code, code-char, string=, string->list, list->string
-        /// * gensym, trace, untrace, (macroexpand-1), ::
+        /// * gensym, trace, untrace, (macroexpand-1), jmethod, jproxy
         /// * turtle-functions
         ///
         private static final String[] globalvars = { "nil", "t", "pi", "dynamic" };
@@ -5766,7 +5766,7 @@ public class LambdaJ {
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
                 "gensym", "trace", "untrace",
-                "fatal", "proxy",
+                "fatal", "jmethod", "jproxy",
         };
         private static final String[][] aliasedPrimitives = {
             {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
@@ -5778,7 +5778,6 @@ public class LambdaJ {
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
             {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
-            { "::", "jambda" },
 
             { "make-frame", "makeFrame" }, { "open-frame", "openFrame"}, { "close-frame", "closeFrame" },
             { "reset-frame", "resetFrame" }, { "clear-frame", "clearFrame" }, { "repaint-frame", "repaintFrame" }, { "flush-frame", "flushFrame" },
@@ -6298,8 +6297,8 @@ public class LambdaJ {
                     /// * some functions and operators are opencoded:
                     if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx, isLast)) return;
 
-                    if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "::")
-                        && emitJambda(sb, requireCons("calling ::", cdr(operator)), env, topEnv, rsfx, true, ccArguments)) {
+                    if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "jmethod")
+                        && emitJmethod(sb, requireCons("calling ::", cdr(operator)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }
 
@@ -6917,9 +6916,9 @@ public class LambdaJ {
                 return true;
             }
 
-            if (symbolEq(op, "::")) {
-                if (emitJambda(sb, args, null, null, -1, false, null)) return true;
-                emitFuncallVarargs(sb, ":: ", "findMethod", 2, args, env, topEnv, rsfx);
+            if (symbolEq(op, "jmethod")) {
+                if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
+                emitFuncallVarargs(sb, "jmethod", "findMethod", 2, args, env, topEnv, rsfx);
                 return true;
             }
 
@@ -7050,15 +7049,15 @@ public class LambdaJ {
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
-        private boolean emitJambda(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean emitCall, ConsCell ccArguments) {
-            varargsMin(":: ", args, 2);
+        private boolean emitJmethod(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean emitCall, ConsCell ccArguments) {
+            varargsMin("jmethod", args, 2);
             final Object strClazz = car(args), strMethod = cadr(args);
             // if class and method are stringliterals then we can do this at compiletime.
-            // else jambda() will check the runtime type at runtime
+            // else jmethod() will check the runtime type at runtime
             if (!stringp(strClazz) || !stringp(strMethod)) return false;
 
             // check if the class exists in the current (the compiler's) VM. If it can't be loaded then don't opencode,
-            // let jambda handle things at runtime, the class may be available then.
+            // let jmethod handle things at runtime, the class may be available then.
             final Class<?> clazz;
             try {
                 clazz = findClass(((String) strClazz).replace('$', '.'));
@@ -7090,7 +7089,7 @@ public class LambdaJ {
                 if ("new".equals(strMethod)) { m = null; clazz.getDeclaredConstructor(params);  startArg = 0; voidMethod = false; }
                 else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; voidMethod = m.getReturnType() == void.class; }
             }
-            catch (Exception e) { throw new LambdaJError(true, ":: : exception finding method: %s", e.getMessage()); }
+            catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }
 
             final int paramCount = paramTypes.size() + startArg;
             if (emitCall) {

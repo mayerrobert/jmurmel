@@ -14,33 +14,33 @@
 ;;;
 ;;; Create a funcall event and record starttime. m%jfr-begin-function and m%jfr-end-function should be paired.
 (define m%jfr-begin-function
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "beginFunction" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object" "Object"))
+        (jmethod "io.github.jmurmel.LambdaJ$JFRHelper" "beginFunction" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object" "Object"))
 
 ;;; (m%jfr-end-function jfr-funcall-event return-value)
 ;;;
 ;;; End and possibly commit a funcall event. m%jfr-begin-function and m%jfr-end-function should be paired.
 (define m%jfr-end-function
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "endFunction" "io.github.jmurmel.LambdaJ$JFRHelper$JFRFunctionCall" "Object"))
+        (jmethod "io.github.jmurmel.LambdaJ$JFRHelper" "endFunction" "io.github.jmurmel.LambdaJ$JFRHelper$JFRFunctionCall" "Object"))
 
 
 ;;; (m%jfr-begin-event parent name) -> jfr-event
 ;;;
 ;;; Create a generic event and record starttime. m%jfr-begin-event and m%jfr-end-event should be paired.
 (define m%jfr-begin-event
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "beginEvent" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object"))
+        (jmethod "io.github.jmurmel.LambdaJ$JFRHelper" "beginEvent" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object"))
 
 ;;; (m%jfr-end-event jfr-event info) -> nil
 ;;;
 ;;; End and possibly commit a generic event. m%jfr-begin-event and m%jfr-end-event should be paired.
 (define m%jfr-end-event
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "endEvent" "io.github.jmurmel.LambdaJ$JFRHelper$JFREvent" "Object"))
+        (jmethod "io.github.jmurmel.LambdaJ$JFRHelper" "endEvent" "io.github.jmurmel.LambdaJ$JFRHelper$JFREvent" "Object"))
 
 
 ;;; (m%jfr-event parent name info) -> nil
 ;;;
 ;;; Create and possibly commit a generic event. Will be used on it's own, there is no corresponding "commit" function.
 (define m%jfr-event
-        (:: "io.github.jmurmel.LambdaJ$JFRHelper" "event" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object" "Object"))
+        (jmethod "io.github.jmurmel.LambdaJ$JFRHelper" "event" "io.github.jmurmel.LambdaJ$JFRHelper$BaseEvent" "Object" "Object"))
 
 
 (define *m%jfr-parent* nil)

@@ -9,11 +9,11 @@
 
 ; (add-component container component-to-add) -> component-to-add
 (define add-component
-  (:: "java.awt.Container" "add" "java.awt.Component"))
+  (jmethod "java.awt.Container" "add" "java.awt.Component"))
 
 ; (set-component-visible frame) -> void
 (define set-component-visible
-  (:: "java.awt.Component" "setVisible" "boolean"))
+  (jmethod "java.awt.Component" "setVisible" "boolean"))
 
 
 
@@ -30,7 +30,7 @@
 ; Each constructor-function will take one string argument.
 ; (Why copy&paste one line when you can create a macro that does the same :-)
 (defmacro stringarg-constructor (name class)
-  `(define ,name (:: ,(format nil "javax.swing.%s" class) "new" "String")))
+  `(define ,name (jmethod ,(format nil "javax.swing.%s" class) "new" "String")))
 
 (stringarg-constructor make-jframe "JFrame")
 (stringarg-constructor make-jlabel "JLabel")
@@ -38,16 +38,16 @@
 
 ; (get-content-pane frame) -> content-pane-component
 (define get-content-pane
-  (:: "javax.swing.JFrame" "getContentPane"))
+  (jmethod "javax.swing.JFrame" "getContentPane"))
 
 ; (pack-frame frame) -> void
 (define pack-frame
-  (:: "javax.swing.JFrame" "pack"))
+  (jmethod "javax.swing.JFrame" "pack"))
 
 
 ; (invoke-later runnable) -> void
 (define invoke-later
-  (:: "javax.swing.SwingUtilities" "invokeLater" "java.lang.Runnable"))
+  (jmethod "javax.swing.SwingUtilities" "invokeLater" "java.lang.Runnable"))
 
 
 
@@ -61,10 +61,10 @@
          (label (make-jlabel "Hello, World!"))
          (content-pane (get-content-pane frame)))
 
-    ((:: "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
+    ((jmethod "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
     (add-component content-pane label)
     (pack-frame frame)
     (set-component-visible frame t)))
 
 ;;; static void main(String[] args)
-(invoke-later (proxy "java.lang.Runnable" "run" create-and-show-gui))
+(invoke-later (jproxy "java.lang.Runnable" "run" create-and-show-gui))

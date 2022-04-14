@@ -508,15 +508,15 @@ public class MurmelJavaCompilerTest {
     
     @Test
     public void testJavaStatic() throws Exception {
-        MurmelProgram program = compile("((:: \"java.lang.System\" \"currentTimeMillis\"))");
+        MurmelProgram program = compile("((jmethod \"java.lang.System\" \"currentTimeMillis\"))");
         assertNotNull("failed to compile javastatic to class", program);
         assertEquals("javastatic produced wrong result", Long.class, program.body().getClass());
     }
 
     @Test
     public void testJavaInstance() throws Exception {
-        MurmelProgram program = compile("(define my-hash ((:: \"java.util.HashMap\" \"new\")))"
-                                      + "(write ((:: \"java.util.HashMap\" \"toString\") my-hash))");
+        MurmelProgram program = compile("(define my-hash ((jmethod \"java.util.HashMap\" \"new\")))"
+                                      + "(write ((jmethod \"java.util.HashMap\" \"toString\") my-hash))");
         assertNotNull("failed to compile javainstance to class", program);
         assertEquals("javainstance produced wrong result", "t", TestUtils.sexp(program.body()));
     }

@@ -1590,3 +1590,5 @@ die printEscape verzweigung sollte eigentlich nicht in write() stecken sondern i
 
 format sollte eigentlich auch printSEx benutzen, derzeit verwendet Java für %s einfach toString() der jeweiligen argumente
 -> toString() sollte überall geeignet definiert sein !?
+
+:: umbenamsen in jcall, proxy umbenamsen in jproxy
