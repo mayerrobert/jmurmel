@@ -468,60 +468,60 @@ If `result-list` is `nil`, `map-into` returns `nil`.
 Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 
 ### Function: mapcar
-    (mapcar function sequence+) -> list
+    (mapcar function list+) -> list
 
 Since: 1.1
 
-`function` must accept as many arguments as sequences are given,
-and will applied to subsequent items of the given sequences.
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent items of the given lists.
 All `function` application results will be combined into a list
 which is the return value of `mapcar`.
 
 ### Function: maplist
-    (maplist function sequence+) -> list
+    (maplist function list+) -> list
 
 Since: 1.1
 
-`function` must accept as many arguments as sequences are given,
-and will applied to subsequent tails of the given sequences.
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent tails of the given lists.
 
 All `function` application results will be combined into a list
 which is the return value of `maplist`.
 
 ### Function: mapc
-    (mapc function sequence+) -> first-arg
+    (mapc function list+) -> first-arg
 
 Since: 1.1
 
-`function` must accept as many arguments as sequences are given,
-and will applied to subsequent cars items of the given sequences.
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent cars items of the given lists.
 
 ### Function: mapl
-    (mapl function sequence+) -> first-arg
+    (mapl function list+) -> first-arg
 
 Since: 1.1
 
-`function` must accept as many arguments as sequences are given,
-and will applied to subsequent tails of the given sequences.
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent tails of the given lists.
 
 ### Function: mapcan
-    (mapcan function sequence+) -> concatenated-results
+    (mapcan function list+) -> concatenated-results
 
 Since: 1.1
 
-`function` must accept as many arguments as sequences are given,
-and will applied to subsequent items of the given sequences.
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent items of the given lists.
 
 All function application results will be concatenated to a list
 which is the return value of `mapcan`.
 
 ### Function: mapcon
-    (mapcon function sequence+) -> concatenated-results
+    (mapcon function list+) -> concatenated-results
 
 Since: 1.1
 
-`function` must accept as many arguments as sequences are given,
-and will applied to subsequent tails of the given sequences.
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent tails of the given lists.
 
 All function application results will be concatenated to a list
 which is the return value of `mapcon`.
