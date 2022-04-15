@@ -29,7 +29,11 @@ safety könnte werden:
 0 es kann wraparound overflow geben
 
 (integerp 1.): SBCL gibt t, Murmel gibt nil
-
+-> http://clhs.lisp.se/Body/02_ca.htm#syntaxfornumerictokens
+   "2.3.1 Numbers as Tokens" sagt:
+   "digits + ." ist ein integer im dezimalsystem, ohne punkt im "current input radix"
+   float sind immer dezimalsystem: optionale ziffern . "ziffern und/ oder exponent"
+-> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?
 
 
 nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice, und nth wg. Strings
