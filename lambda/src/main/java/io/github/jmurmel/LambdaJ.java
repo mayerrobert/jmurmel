@@ -1047,8 +1047,6 @@ public class LambdaJ {
         private final ConsCell featureList;
 
         private boolean featurep(Object next) {
-            //if (!symbolp(next)) throw new ParseError("only symbols are supported as feature expressions, got %s", printSEx(next));
-            //return "murmel".equalsIgnoreCase(next.toString());
             if (next != null && symbolp(next)) return some(x -> x == next, featureList);
             else if (consp(next)) {
                 if (car(next) == sAnd) return every(this::featurep, cdr(next));
@@ -1076,80 +1074,90 @@ public class LambdaJ {
             return false;
         }
 
-        // todo die folgenden sind spezielle token, koennten ein enum sein? und: readToken könnte bei EOF einen weiteren enumwert TOK_EOF liefern statt null
-        private static final Object LP = new Object();    // (
-        private static final Object RP = new Object();    // )
-        private static final Object DOT = new Object();   // .
-        private static final Object SQ = new Object();    // '
-        private static final Object BQ = new Object();    // `
-        private static final Object COMMA = new Object(); // ,
+        enum Token {
+            LP,    // (
+            RP,    // )
+            DOT,   // .
+            SQ,    // '
+            BQ,    // `
+            COMMA, // ,
+        }
 
+        /** setup {@code tok} with the next token which will be:
+         * <ul>
+         *     <li>one of the values of {@link Token}
+         *     <li>an atom
+         *     <li>an interned symbol
+         *     <li>{@code null} to indicate EOF
+         * </ul> */
         private void readToken() {
             final int EOF = LambdaJ.EOF;
             for (;;) {
                 int index = 0;
                 skipWs();
                 tok = null;
-                if (look != EOF) {
-                    if (isBar(look)) {
-                        look = getchar();
-                        while (look != EOF && !isBar(look)) {
-                            if (index < SYMBOL_MAX) token[index++] = (char) look;
-                            look = getchar(false);
-                        }
-                        if (look == EOF)
-                            throw new ParseError("|-quoted symbol is missing closing |");
-                        look = getchar(); // consume trailing |
-                        final String s = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
-                        tok = intern(s);
-                    } else if (isSyntax(look)) {
-                        switch (look) {
-                        case '(': tok = LP; break;
-                        case ')': tok = RP; break;
-                        case '\'': tok = SQ; break;
-                        case '`': tok = BQ; break;
-                        case ',': tok = COMMA; break;
-                        default: throw new ParseError("internal error - unexpected syntax char %c", (char)look);
-                        }
-                        look = getchar();
-                    } else if (haveString() && isDQuote(look)) {
-                        do {
-                            if (index < TOKEN_MAX) token[index++] = (char) look;
-                            look = getchar(false);
-                        } while (look != EOF && !isDQuote(look));
-                        if (look == EOF)
-                            throw new ParseError("string literal is missing closing \"");
-                        look = getchar(); // consume trailing "
-                        tok = tokenToString(token, 1, index).intern();
-                    } else if (isHash(look)) {
+                if (look == EOF) {
+                    if (trace.ge(TraceLevel.TRC_LEX)) tracer.println("*** scan  EOF");
+                    return;
+                }
+
+                if (isBar(look)) {
+                    look = getchar();
+                    while (look != EOF && !isBar(look)) {
+                        if (index < SYMBOL_MAX) token[index++] = (char) look;
                         look = getchar(false);
-                        final int subChar;
-                        if (escape) subChar = '\\';
-                        else { subChar = look; look = getchar(false); }
-                        tok = readerMacro(subChar);
+                    }
+                    if (look == EOF)
+                        throw new ParseError("|-quoted symbol is missing closing |");
+                    look = getchar(); // consume trailing |
+                    final String s = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
+                    tok = intern(s);
+                } else if (isSyntax(look)) {
+                    switch (look) {
+                        case '(':  tok = Token.LP; break;
+                        case ')':  tok = Token.RP; break;
+                        case '\'': tok = Token.SQ; break;
+                        case '`':  tok = Token.BQ; break;
+                        case ',':  tok = Token.COMMA; break;
+                        default: throw new ParseError("internal error - unexpected syntax char %c", (char)look);
+                    }
+                    look = getchar();
+                } else if (haveString() && isDQuote(look)) {
+                    do {
+                        if (index < TOKEN_MAX) token[index++] = (char) look;
+                        look = getchar(false);
+                    } while (look != EOF && !isDQuote(look));
+                    if (look == EOF)
+                        throw new ParseError("string literal is missing closing \"");
+                    look = getchar(); // consume trailing "
+                    tok = tokenToString(token, 1, index).intern();
+                } else if (isHash(look)) {
+                    look = getchar(false);
+                    final int subChar;
+                    if (escape) subChar = '\\';
+                    else { subChar = look; look = getchar(false); }
+                    tok = readerMacro(subChar);
+                } else {
+                    while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                        if (index < TOKEN_MAX) token[index++] = (char) look;
+                        look = getchar();
+                    }
+                    String s = tokenToString(token, 0, index);
+                    if (!tokEscape && ".".equals(s)) {
+                        tok = Token.DOT;
+                    } else if (haveDouble() && isDouble(s)) {
+                        tok = parseDouble(s);
+                    } else if (haveLong() && isLong(s)) {
+                        tok = parseLong(s, 10);
+                    } else if (haveDouble() && isLong(s)) {
+                        tok = parseDouble(s);
                     } else {
-                        while (look != EOF && !isSpace(look) && !isSyntax(look)) {
-                            if (index < TOKEN_MAX) token[index++] = (char) look;
-                            look = getchar();
-                        }
-                        String s = tokenToString(token, 0, index);
-                        if (!tokEscape && ".".equals(s)) {
-                            tok = DOT;
-                        } else if (haveDouble() && isDouble(s)) {
-                            tok = parseDouble(s);
-                        } else if (haveLong() && isLong(s)) {
-                            tok = parseLong(s, 10);
-                        } else if (haveDouble() && isLong(s)) {
-                            tok = parseDouble(s);
-                        } else {
-                            if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                            tok = intern(s);
-                        }
+                        if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
+                        tok = intern(s);
                     }
                 }
 
-                if (trace.ge(TraceLevel.TRC_LEX))
-                    tracer.println("*** scan  token  |" + tok + '|');
+                if (trace.ge(TraceLevel.TRC_LEX)) tracer.println("*** scan  token  |" + tok + '|');
 
                 if (tok != CONTINUE) return;
             }
@@ -1226,7 +1234,7 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return eof;
             }
-            if (!tokEscape && tok == sNil) { // todo !tokescape ist wsl umsonst/ falsch. oder auch nicht weil tokescape+symbol verboten ist. jedenfalls sollte die nächste if-clause gleich ausschauen
+            if (tok == sNil) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
                 if (haveNil()) return null;
                 else return tok;
@@ -1235,66 +1243,67 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
                 return tok;
             }
-            // todo grosses if !tokEscape statt x-mal?
-            if (!tokEscape && tok == RP)  throw new ParseError("unexpected ')'");
-            if (!tokEscape && tok == LP) {
-                try {
-                final Object list = readList(startLine, startChar, eof);
-                if (!tokEscape && tok == DOT) {
-                    skipWs();
-                    final Object cdr = readList(lineNo, charNo, eof);
-                    if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
-                    final Object cons = combine(startLine, startChar, list, car(cdr));
-                    if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
-                    return cons;
-                }
-                if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
-                return list;
-                }
-                catch (ParseError e) {
-                    errorReaderError(e.getMessage() + posInfo(startLine, startChar));
-                }
-            }
-            if (!tokEscape && tok == SQ) {
-                skipWs();
-                final int _startLine = lineNo, _startChar = charNo;
-                readToken();
-                return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
-            }
-            if (!tokEscape && tok == BQ) {
-                skipWs();
-                final int _startLine = lineNo, _startChar = charNo;
-                readToken();
-                final Object o;
-                try {
-                    backquote++;
-                    final Object exp = readObject(_startLine, _startChar, eof);
-                    if (backquote == 1) {
-                        o = qq_expand(exp);
-                        //System.out.println("bq expansion in:  (backquote " + printSEx(exp) + ')');
-                        //System.out.println("bq expansion out: " + printSEx(o));
-                        //System.out.println();
+            if (!tokEscape) {
+                if (tok == Token.RP) throw new ParseError("unexpected ')'");
+                if (tok == Token.LP) {
+                    try {
+                        final Object list = readList(startLine, startChar, eof);
+                        if (!tokEscape && tok == Token.DOT) {
+                            skipWs();
+                            final Object cdr = readList(lineNo, charNo, eof);
+                            if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
+                            final Object cons = combine(startLine, startChar, list, car(cdr));
+                            if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
+                            return cons;
+                        }
+                        if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
+                        return list;
                     }
-                    else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
+                    catch (ParseError e) {
+                        errorReaderError(e.getMessage() + posInfo(startLine, startChar));
+                    }
                 }
-                finally { backquote--; }
-                return o;
-            }
-            if (!tokEscape && tok == COMMA) {
-                if (backquote == 0) errorReaderError("comma is not inside a backquote" + posInfo(startLine, startChar));
-                skipWs();
-                final boolean splice;
-                if (look == '@') { splice = true; look = getchar(); }
-                else splice = false;
-                final int _startLine = lineNo, _startChar = charNo;
-                readToken();
-                final Object o;
-                try {
-                    backquote--;
-                    o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
+                if (tok == Token.SQ) {
+                    skipWs();
+                    final int _startLine = lineNo, _startChar = charNo;
+                    readToken();
+                    return cons(startLine, startChar, sQuote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
                 }
-                finally { backquote++; }
-                return o;
+                if (tok == Token.BQ) {
+                    skipWs();
+                    final int _startLine = lineNo, _startChar = charNo;
+                    readToken();
+                    final Object o;
+                    try {
+                        backquote++;
+                        final Object exp = readObject(_startLine, _startChar, eof);
+                        if (backquote == 1) {
+                            o = qq_expand(exp);
+                            //System.out.println("bq expansion in:  (backquote " + printSEx(exp) + ')');
+                            //System.out.println("bq expansion out: " + printSEx(o));
+                            //System.out.println();
+                        }
+                        else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
+                    }
+                    finally { backquote--; }
+                    return o;
+                }
+                if (tok == Token.COMMA) {
+                    if (backquote == 0) errorReaderError("comma is not inside a backquote" + posInfo(startLine, startChar));
+                    skipWs();
+                    final boolean splice;
+                    if (look == '@') { splice = true; look = getchar(); }
+                    else splice = false;
+                    final int _startLine = lineNo, _startChar = charNo;
+                    readToken();
+                    final Object o;
+                    try {
+                        backquote--;
+                        o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
+                    }
+                    finally { backquote++; }
+                    return o;
+                }
             }
             if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok);
             return tok;
@@ -1315,7 +1324,7 @@ public class LambdaJ {
                 final int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
                 if (tok == null) throw new ParseError("cannot read list. missing ')'?");
-                if (!tokEscape && (tok == RP || tok == DOT)) {
+                if (!tokEscape && (tok == Token.RP || tok == Token.DOT)) {
                     adjustEnd(first);
                     return first;
                 }
