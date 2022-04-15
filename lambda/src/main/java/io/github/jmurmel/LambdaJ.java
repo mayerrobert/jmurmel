@@ -3482,8 +3482,19 @@ public class LambdaJ {
     /// Murmel runtime support for Java FFI - Murmel calls Java
     private static class JavaConstructor implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         private final Constructor<?> constructor;
+        private final UnaryOperator<Object>[] argConv;
 
-        private JavaConstructor(Constructor<?> constructor) { this.constructor = constructor; }
+        private JavaConstructor(Constructor<?> constructor, Class<?>[] params) {
+            this.constructor = constructor;
+            final int paramCount = constructor.getParameterCount();
+
+            argConv = new UnaryOperator[paramCount];
+            if (params != null) for (int i = 0; i < paramCount; i++) {
+                final String paramClassName = params[i].getName();
+                final Object[] entry = classByName.get(paramClassName);
+                if (entry != null) argConv[i] = (UnaryOperator<Object>) entry[2];
+            }
+        }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java constructor: " + constructor.getName() + '>'); }
         @Override public String toString() { return "#<Java constructor: " + constructor.getName() + '>'; }
@@ -3492,10 +3503,11 @@ public class LambdaJ {
 
         @Override
         public Object applyCompilerPrimitive(Object... args) {
-            // skip argcount check: on errors Constructor.newInstance() will throw e.g. "java.lang.IllegalArgumentException: wrong number of arguments"
+            final String name = "new " + constructor.getDeclaringClass().getName();
+            javaCallArgCheck(name, argConv, args);
             try { return constructor.newInstance(args); }
-            catch (InvocationTargetException ite) { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), ite.getTargetException().toString()); }
-            catch (Exception e)                   { throw new LambdaJError(true, "new %s: %s", constructor.getDeclaringClass().getName(), e.toString()); }
+            catch (InvocationTargetException ite) { throw new LambdaJError(true, "%s: %s", name, ite.getTargetException().toString()); }
+            catch (Exception e)                   { throw new LambdaJError(true, "%s: %s", name, e.toString()); }
         }
     }
 
@@ -3506,20 +3518,16 @@ public class LambdaJ {
     private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         private final Method method;
         private final Invoker invoke;
-        private final int paramCount;
-        private final boolean isStatic;
         private final UnaryOperator<Object>[] argConv;
 
         private JavaMethod(Method method, Class<?>[] params) {
             this.method = method;
             int paramCount = method.getParameterCount();
             final boolean isStatic = Modifier.isStatic(method.getModifiers());
-            this.isStatic = isStatic;
             if (!isStatic) paramCount++; // this + parameters
-            this.paramCount = paramCount;
 
             final int skipThis = isStatic ? 0 : 1;
-            argConv = new UnaryOperator[paramCount + skipThis];
+            argConv = new UnaryOperator[paramCount];
             if (params != null) for (int i = 0; i < paramCount-skipThis; i++) {
                 final String paramClassName = params[i].getName();
                 final Object[] entry = classByName.get(paramClassName);
@@ -3550,29 +3558,27 @@ public class LambdaJ {
 
         @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
-        @Override 
+        @Override
         public Object applyCompilerPrimitive(Object... args) {
-            argCountCheck(args);
-            if (args != null) for (int i = 0; i < args.length; i++) {
-                final UnaryOperator<Object> conv = argConv[i];
-                if (conv != null) args[i] = conv.apply(args[i]);
-            }
-            final Class<?> declaringClass = method.getDeclaringClass();
-            if (!isStatic && args != null && args.length > 0 && args[0] != null && !declaringClass.isInstance(args[0]))
-                throw new LambdaJError(true, "jmethod: %s is not an instance of class %s", args[0], declaringClass.getName());
+            final Method method = this.method;
+            javaCallArgCheck(method.getName(), argConv, args);
+            if (!Modifier.isStatic(method.getModifiers()) && !method.getDeclaringClass().isInstance(args[0]))
+                throw new LambdaJError(true, "jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
             try { return invoke.invoke(args); }
-            catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", declaringClass.getName(), method.getName(), t.toString()); }
+            catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); }
         }
+    }
 
-        private void argCountCheck(Object[] args) {
-            final int paramCount = this.paramCount;
-            if (args == null || args.length == 0) {
-                if (paramCount != 0) errorArgCount(method.getName(), paramCount, paramCount, 0, null);
-            }
-            else {
-                if (paramCount != args.length) errorArgCount(method.getName(), paramCount, paramCount, args.length, null);
-            }
+    /** check the number of args vs. number of parameters, and then convert argument types from Murmel to Java */
+    private static void javaCallArgCheck(String name, UnaryOperator<Object>[] argConv, Object[] args) {
+        final int paramCount = argConv.length;
+        final int argCount = args == null ? 0 : args.length;
+        if (paramCount != argCount) errorArgCount(name, paramCount, paramCount, argCount, null);
+
+        if (args != null) for (int i = 0; i < argCount; i++) {
+            final UnaryOperator<Object> conv = argConv[i];
+            if (conv != null) args[i] = conv.apply(args[i]);
         }
     }
 
@@ -3593,7 +3599,7 @@ public class LambdaJ {
         try {
             final Class<?> clazz = findClass(className);
             return "new".equals(methodName)
-                    ? new JavaConstructor(clazz.getDeclaredConstructor(params))
+                    ? new JavaConstructor(clazz.getDeclaredConstructor(params), params)
                     : new JavaMethod(clazz.getMethod(methodName, params), params);
         }
         catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }

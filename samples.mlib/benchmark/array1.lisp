@@ -9,11 +9,6 @@
 #+murmel (progn
 (require "mlib")
 
-(defmacro m%long->int (val)
-  `((jmethod "java.lang.Long" "intValue") ,val))
-
-(defmacro m%int->long (val)
-  `((jmethod "java.lang.Integer" "longValue") ,val))
 
 (defmacro m%svref (obj idx)
   `((jmethod "java.util.ArrayList" "get" "int") ,obj ,idx))
@@ -32,7 +27,7 @@
 
 
 (defun make-vector (size)
-  (let ((v (m%svmak-capacity (m%long->int size))))
+  (let ((v (m%svmak-capacity size)))
     (let loop ((n size))
       (if (= 0 n) v
         (progn (m%svadd v nil)
@@ -40,21 +35,21 @@
 
 
 (defun vector-set! (v idx elem)
-  (m%svset v (m%long->int idx) elem))
+  (m%svset v idx elem))
 
 (defmacro vector-set! (v idx elem)
-  `(m%svset ,v (m%long->int ,idx) ,elem))
+  `(m%svset ,v ,idx ,elem))
 
 
 (defun vector-ref (v idx)
-  (m%svref v (m%long->int idx)))
+  (m%svref v idx))
 
 (defmacro vector-ref (v idx)
-  `(m%svref ,v (m%long->int ,idx)))
+  `(m%svref ,v ,idx))
 
 
 (defun vector-length (v)
-  (m%int->long (m%svlen v)))
+  (m%svlen v))
 
 ;(defmacro vector-length (v)
 ;  `(m%int->long (m%svlen ,v)))
