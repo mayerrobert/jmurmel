@@ -44,6 +44,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * fixed/ cleaned up feature-flags
  * fixed search directory for load and require
  * fixed defmacro to support multiple body forms
+ * fixed handling of symbol names such as \(\b^2\)\ -\ 4*\a*\c
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0

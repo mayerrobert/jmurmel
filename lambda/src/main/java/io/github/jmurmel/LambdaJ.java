@@ -184,8 +184,20 @@ public class LambdaJ {
 
             if (name.isEmpty()) { out.print("||"); return; }
             if (".".equals(name)) { out.print("|.|"); return; }
-            if (containsSExSyntaxOrWhiteSpace(name)) { out.print("|"); out.print(escapeSymbol(this)); out.print("|"); return; }
+            if (Character.isDigit(name.charAt(0))
+                || containsSExSyntaxOrWhiteSpace(name)) { out.print("|"); out.print(escapeSymbol(this)); out.print("|"); return; }
             out.print(escapeSymbol(this));
+        }
+
+        private static boolean containsSExSyntaxOrWhiteSpace(String s) {
+            for (int i = 0; i < s.length(); i++) {
+                final char c;
+                if (isSExSyntax(c = s.charAt(i))) return true;
+                if (isWhiteSpace(c)) return true;
+                if ('\\' == c) return true;
+                if (!(c >= 32 && c <= 126 || Character.isAlphabetic(c))) return true;
+            }
+            return false;
         }
 
         @Override public String toString() { return name; }
@@ -204,6 +216,7 @@ public class LambdaJ {
                 final char c = name.charAt(i);
                 switch (c) {
                     case '|':  ret.append('\\').append('|'); break;
+                    case '\\': ret.append('\\').append('\\'); break; 
                     default: ret.append(c);
                 }
             }
@@ -776,15 +789,6 @@ public class LambdaJ {
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     private static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
-    private static boolean containsSExSyntaxOrWhiteSpace(String s) {
-        for (int i = 0; i < s.length(); i++) {
-            final char c;
-            if (isSExSyntax(c = s.charAt(i))) return true;
-            if (isWhiteSpace(c)) return true;
-        }
-        return false;
-    }
-
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     static class SExpressionReader implements ObjectReader {
@@ -1138,18 +1142,20 @@ public class LambdaJ {
                     else { subChar = look; look = getchar(false); }
                     tok = readerMacro(subChar);
                 } else {
+                    boolean escapeSeen = false;
                     while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                        if (escape) escapeSeen = true;
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar();
                     }
                     String s = tokenToString(token, 0, index);
                     if (!tokEscape && ".".equals(s)) {
                         tok = Token.DOT;
-                    } else if (haveDouble() && isDouble(s)) {
+                    } else if (!escapeSeen && haveDouble() && isDouble(s)) {
                         tok = parseDouble(s);
-                    } else if (haveLong() && isLong(s)) {
+                    } else if (!escapeSeen && haveLong() && isLong(s)) {
                         tok = parseLong(s, 10);
-                    } else if (haveDouble() && isLong(s)) {
+                    } else if (!escapeSeen && haveDouble() && isLong(s)) {
                         tok = parseDouble(s);
                     } else {
                         if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
@@ -1675,10 +1681,10 @@ public class LambdaJ {
                     final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
-                        if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", form);
+                        if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
                         result = value; return value;
                     }
-                    throw new LambdaJError(true, "%s: '%s' is not bound", "eval", form);
+                    throw new LambdaJError(true, "%s: '%s' is not bound", "eval", printSEx(form));
                 }
 
                 /// eval - atoms that are not symbols eval to themselves
@@ -2921,7 +2927,7 @@ public class LambdaJ {
     }
 
     /** prepend " and \ by a \ */
-    private static String escapeString(String s) {
+    static String escapeString(String s) {
         if (s == null) return null;
         if (s.isEmpty()) return "";
 
@@ -7180,8 +7186,11 @@ public class LambdaJ {
 
             else if (symbolp(form)) {
                 if (symbolEq(form, "t")) sb.append("_t");
-                else if (pool) emitReference(sb, "intern(\"" + form + "\")");
-                else sb.append("intern(\"").append(form).append("\")");
+                else {
+                    final String s = "intern(\"" + escapeString(form.toString()) + "\")";
+                    if (pool) emitReference(sb, s);
+                    else sb.append(s);
+                }
             }
             else if (atom(form))    { emitAtom(sb, form); }
 

@@ -110,6 +110,12 @@
 (deftest reader.4 '(1 2 3 4 . 5) '(1 2 3 4 . 5))
 (deftest reader.5 (echo '()) '(nil))
 
+(deftest reader.6 '\+1                    '|+1|)
+(deftest reader.7 '+\1                    '|+1|)
+(deftest reader.8 'APL\\360               '|APL\\360|)
+(deftest reader.9 '|APL\360|              'APL360)
+(deftest reader.10 '\(\b^2\)\ -\ 4*\a*\c  '|(b^2) - 4*a*c|)
+
 (deftest readermacro.1 #\a #\a)
 (deftest readermacro.2 (char-code #\Nul) 0)
 #+murmel (deftest readermacro.3 (char-code #\200) 200)
@@ -367,9 +373,16 @@
     (value    null      atom        symbolp     consp       listp       numberp     integerp    floatp     characterp   stringp)
     (nil      t         t           t           nil         t           nil         nil         nil        nil          nil)
     ((a . b)  nil       nil         nil         t           t           nil         nil         nil        nil          nil)
+
     (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    ; sbcl chokes on the next line
+    (1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+
     (0        nil       t           nil         nil         nil         t           t           nil        nil          nil)
     (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil)
+    (3.2e15   nil       t           nil         nil         nil         t           nil         t          nil          nil)
     (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil)
     ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t)
 ))

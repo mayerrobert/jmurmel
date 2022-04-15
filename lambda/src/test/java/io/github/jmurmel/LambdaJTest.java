@@ -34,7 +34,7 @@ public class LambdaJTest {
 
         // quoted chars
         /* 12 */ { "(write (quote HELLO\\ ))", "t", "|HELLO |" },
-        /* 13 */ { "(write (quote HELLO\\\\))", "t", "HELLO\\" },
+        /* 13 */ { "(write (quote HELLO\\\\))", "t", "|HELLO\\\\|" },
         /* 14 */ { "(write (quote HELLO\\)))", "t", "|HELLO)|" },
         /* 15 */ { "(write (quote HELLO\\;))", "t", "HELLO;" },
 
