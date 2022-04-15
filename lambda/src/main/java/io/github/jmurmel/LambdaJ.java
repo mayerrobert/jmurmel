@@ -1076,6 +1076,7 @@ public class LambdaJ {
             return false;
         }
 
+        // todo die folgenden sind spezielle token, koennten ein enum sein? und: readToken könnte bei EOF einen weiteren enumwert TOK_EOF liefern statt null
         private static final Object LP = new Object();    // (
         private static final Object RP = new Object();    // )
         private static final Object DOT = new Object();   // .
@@ -1084,6 +1085,7 @@ public class LambdaJ {
         private static final Object COMMA = new Object(); // ,
 
         private void readToken() {
+            final int EOF = LambdaJ.EOF;
             for (;;) {
                 int index = 0;
                 skipWs();
@@ -1099,7 +1101,7 @@ public class LambdaJ {
                             throw new ParseError("|-quoted symbol is missing closing |");
                         look = getchar(); // consume trailing |
                         final String s = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
-                        tok = new LambdaJSymbol(s);
+                        tok = intern(s);
                     } else if (isSyntax(look)) {
                         switch (look) {
                         case '(': tok = LP; break;
@@ -1141,7 +1143,7 @@ public class LambdaJ {
                             tok = parseDouble(s);
                         } else {
                             if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                            tok = new LambdaJSymbol(s);
+                            tok = intern(s);
                         }
                     }
                 }
@@ -1173,10 +1175,6 @@ public class LambdaJ {
             return new String(b, first, end - first);
         }
 
-
-        private LambdaJSymbol intern(LambdaJSymbol sym) {
-            return st.intern(sym);
-        }
 
         private LambdaJSymbol intern(String sym) {
             return st.intern(sym);
@@ -1228,15 +1226,16 @@ public class LambdaJ {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return eof;
             }
-            if (!tokEscape && tok instanceof LambdaJSymbol && "nil".equalsIgnoreCase(tok.toString())) {
+            if (!tokEscape && tok == sNil) { // todo !tokescape ist wsl umsonst/ falsch. oder auch nicht weil tokescape+symbol verboten ist. jedenfalls sollte die nächste if-clause gleich ausschauen
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
                 if (haveNil()) return null;
-                else return intern((LambdaJSymbol)tok);
+                else return tok;
             }
             if (symbolp(tok)) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
-                return intern((LambdaJSymbol)tok);
+                return tok;
             }
+            // todo grosses if !tokEscape statt x-mal?
             if (!tokEscape && tok == RP)  throw new ParseError("unexpected ')'");
             if (!tokEscape && tok == LP) {
                 try {
