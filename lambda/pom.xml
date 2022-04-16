@@ -83,8 +83,9 @@
                     </excludes>
                 </configuration>
 
-                <!-- defaultmaessig verwendet surefire den testng runner, der verschluckt sich an junit tests.
+                <!-- defaultmaessig verwendet surefire den testng runner, der verschluckt(e?) sich an junit tests.
                      damit wird der junit runner aktiviert -->
+                <!--
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
@@ -92,6 +93,7 @@
                         <version>${maven-surefire.version}</version>
                     </dependency>
                 </dependencies>
+                -->
             </plugin>
 
             <plugin>

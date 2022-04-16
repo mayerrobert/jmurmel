@@ -163,8 +163,8 @@ public class LambdaJ {
     /** A murmel symbol name */
     public static class LambdaJSymbol implements Serializable, Writeable {
         private static final long serialVersionUID = 1L;
-        private final String name;
-        private final WellknownSymbol wellknownSymbol;
+        final String name;
+        final WellknownSymbol wellknownSymbol;
 
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
@@ -504,7 +504,7 @@ public class LambdaJ {
 
     private final ConsCell featuresEnvEntry;
 
-    private static final String[] CTRL = {
+    static final String[] CTRL = {
             "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
             "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
             "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
@@ -7603,18 +7603,11 @@ class EolUtil {
         if (inputValue == null) return null;
         if (inputValue.isEmpty()) return "";
 
-        StringBuilder stringBuilder = null;
-        int index = 0;
-        final int len = inputValue.length();
+        int index = inputValue.indexOf('\r');
+        if (index == -1) return inputValue;
 
-        while (index < len) {
-            if (inputValue.charAt(index) == '\r') {
-                stringBuilder = new StringBuilder();
-                break;
-            }
-            index++;
-        }
-        if (stringBuilder == null) return inputValue;
+        final int len = inputValue.length();
+        final StringBuilder stringBuilder = new StringBuilder(len);
 
         // we get here if we just read a '\r'
         // build up the string builder so it contains all the prior characters
