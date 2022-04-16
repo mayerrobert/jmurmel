@@ -597,7 +597,7 @@ public class LambdaJ {
     private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits()) != 0; }
     private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
     private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
-    private boolean haveGui()     { return (features & Features.HAVE_GUI.bits())      != 0; }
+    private boolean haveGui()     { return (features & Features.HAVE_GUI.bits())     != 0; }
     private boolean haveUtil()    { return (features & Features.HAVE_UTIL.bits())    != 0; }
     private boolean haveApply()   { return (features & Features.HAVE_APPLY.bits())   != 0; }
     private boolean haveCons()    { return (features & Features.HAVE_CONS.bits())    != 0; }
