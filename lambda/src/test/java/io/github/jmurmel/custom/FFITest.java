@@ -19,7 +19,7 @@ public class FFITest {
     }
 
     @Test
-    public void testPrimitive() {
+    public void testPrimitive() throws Exception {
         LambdaJ interp = new LambdaJ();
         // must interpret *something* so that environment will be set up. "()->-1" is a ReadSupplier that returns EOF
         interp.interpretExpression(() -> -1, s -> {});
@@ -30,7 +30,7 @@ public class FFITest {
     }
 
     @Test
-    public void testLambda() {
+    public void testLambda() throws Exception {
         LambdaJ interp = new LambdaJ();
         interp.interpretExpression(new StringReader("(defun f (p1 p2) (* p1 p2))")::read, s -> {});
 

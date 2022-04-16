@@ -17,7 +17,7 @@ public class TCOManualTest {
         }
     }
 
-    private static Object funcall(LambdaJ.MurmelFunction f, Object... args) {
+    private static Object funcall(LambdaJ.MurmelFunction f, Object... args) throws Exception {
         Object r = f.apply(args);
         while (r instanceof MurmelFunctionCall) {
             MurmelFunctionCall functionCall = (MurmelFunctionCall)r;
@@ -55,7 +55,7 @@ public class TCOManualTest {
     }
 
     @Test
-    public void testFac() {
+    public void testFac() throws Exception {
         Object res = funcall(this::factorial, 5, 1);
         assertEquals(120.0, dbl(res), 1e-35);
     }
@@ -71,7 +71,7 @@ public class TCOManualTest {
 
     (ackermann 3 6) ; ==> 509
      */
-    Object ackermann(Object... args) {
+    Object ackermann(Object... args) throws Exception {
         Object m = args[0];
         Object n = args[1];
         Object result = null;
@@ -85,7 +85,7 @@ public class TCOManualTest {
     }
 
     @Test
-    public void testAckermann() {
+    public void testAckermann() throws Exception {
         Object res = funcall(this::ackermann, 3.0, 6.0);
         assertEquals(509.0, dbl(res), 1e-35);
     }

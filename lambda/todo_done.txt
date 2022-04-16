@@ -1594,3 +1594,9 @@ format sollte eigentlich auch printSEx benutzen, derzeit verwendet Java für %s 
 :: umbenamsen in jcall, proxy umbenamsen in jproxy
 
 *features* exposen?
+
+:: issues
+methoden die checked exceptions werfen geben im compiler ungültigen Java code
+((:: "java.util.concurrent.Callable" "call") (jproxy "java.util.concurrent.Callable" "call" (lambda () "hello")))
+-> /MurmelProgram.java:25: error: unreported exception Exception; must be caught or declared to be thrown
+           }))).call();

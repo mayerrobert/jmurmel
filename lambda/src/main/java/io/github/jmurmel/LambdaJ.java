@@ -3984,8 +3984,8 @@ public class LambdaJ {
 
     /// JMurmel native embed API: Java calls Murmel with getValue() and getFunction()
 
-    /** embed API: interface for compiled lambdas as well as primitives, used for embedding as well as compiled Murmel */
-    public interface MurmelFunction { Object apply(Object... args) throws LambdaJError; }
+    /** embed API: interface for compiled lambdas as well as primitives and jmethods, used for embedding as well as compiled Murmel */
+    public interface MurmelFunction { Object apply(Object... args) throws Exception; }
 
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
@@ -4994,7 +4994,7 @@ public class LambdaJ {
             throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
         }
 
-        protected abstract Object runbody();
+        protected abstract Object runbody() throws Exception;
         @Override public Object body() {
             try {
                 return runbody();
@@ -5002,12 +5002,12 @@ public class LambdaJ {
             catch (UnsupportedOperationException e) {
                 throw new LambdaJError(e.getMessage() + "\nUnsupported operation occured in " + loc);
             }
-            catch (LambdaJError e) {
+            catch (Exception e) {
                 return rterror(e);
             }
         }
 
-        public final Object rterror(LambdaJError e) {
+        public final Object rterror(Exception e) {
             throw new LambdaJError(e.getMessage() + "\nError occured in " + loc);
         }
 
@@ -5414,7 +5414,7 @@ public class LambdaJ {
                 }
                 return r;
             }
-            catch (InterruptedException e) {
+            catch (Exception e) {
                 throw new LambdaJError(e.getMessage());
             }
         }
@@ -5949,7 +5949,7 @@ public class LambdaJ {
 
             ret.append("    }\n\n"
                      + "    // toplevel forms\n"
-                     + "    protected Object runbody() {\n");
+                     + "    protected Object runbody() throws Exception {\n");
 
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
             intp.speed = prevSpeed;

@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 public class EmbedTest {
 
     @Test
-    public void testInterpretedMurmelProgram() {
+    public void testInterpretedMurmelProgram() throws Exception{
         LambdaJ interpreter = new LambdaJ();
 
         String source = "(defun myadd (lhs rhs) (+ lhs rhs))\n"

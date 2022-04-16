@@ -1,11 +1,5 @@
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
-:: issues
-methoden die checked exceptions werfen geben im compiler ungültigen Java code
-((:: "java.util.concurrent.Callable" "call") (jproxy "java.util.concurrent.Callable" "call" (lambda () "hello")))
--> /MurmelProgram.java:25: error: unreported exception Exception; must be caught or declared to be thrown
-           }))).call();
-
 import könnte alle public methoden einer java klasse ::-en, vielleicht ein optionales präfix als argument für import?
 und/ oder eine funktion (z.B. "reflect"), die eine liste mit :: forms ausspuckt, und define erweitern dass nicht nur symbol/value sondern auch eine liste geht?
 -> reflect könnte auch optional eine liste mit strings bekommen, die enthält die gewünschten methoden (statt alle)
