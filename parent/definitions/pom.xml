@@ -58,6 +58,7 @@
         <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
         <pitest-maven-plugin.version>1.7.5</pitest-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
+        <argLine />
 
         <!-- report maven plugins -->
         <maven-site-plugin.version>3.11.0</maven-site-plugin.version>
@@ -157,6 +158,9 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire.version}</version>
+                    <configuration>
+                        <argLine>@{argLine} -Xss2m</argLine>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>

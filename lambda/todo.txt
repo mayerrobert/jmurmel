@@ -15,6 +15,7 @@ import könnte alle public methoden einer java klasse ::-en, vielleicht ein opti
 und/ oder eine funktion (z.B. "reflect"), die eine liste mit :: forms ausspuckt, und define erweitern dass nicht nur symbol/value sondern auch eine liste geht?
 -> reflect könnte auch optional eine liste mit strings bekommen, die enthält die gewünschten methoden (statt alle)
 -> vielleicht auch getter/ setter generieren für members? nur setter falls nicht final?
+-> vielleicht auch MurmelProgram akzeptieren, ggf. iwie speziell behandeln? vielleicht import für MurmelProgram, reflect für normale Java klassen? oder MurmelProgram in load/ require einbauen?
 
 funktionen symbol->string und string->symbol, wobei symbol->string ist symbol-name, und string->symbol ist make-symbol
 und (intern symbol) -> interned-symbol
