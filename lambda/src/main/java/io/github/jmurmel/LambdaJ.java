@@ -401,13 +401,15 @@ public class LambdaJ {
             super(car, cdr);
             this.path = path; this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
         }
+
+        void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
+        String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
     }
 
     /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
     static String lineInfo(Object form) {
-        if (!(form instanceof SExpConsCell)) return "";
-        final SExpConsCell f = (SExpConsCell)form;
-        return (f.path == null ? "line " : f.path.toString() + ':') + f.startLineNo + ':' + f.startCharNo + ".." + f.lineNo + ':' + f.charNo + ':' + ' ';
+        if (form instanceof SExpConsCell) return ((SExpConsCell) form).lineInfo();
+        else return "";
     }
 
     private static final class ClosureConsCell extends AbstractConsCell {
@@ -420,17 +422,18 @@ public class LambdaJ {
 
     private static class ArraySlice extends ConsCell {
         private static class ArraySliceIterator implements Iterator<Object> {
-            private final ArraySlice coll;
+            private final Object[] arry;
+            private final int len;
             private int cursor;
 
-            private ArraySliceIterator(ArraySlice coll) { this.coll = coll; this.cursor = coll.offset; }
+            private ArraySliceIterator(ArraySlice coll) { this.arry = coll.arry; this.len = arry.length; this.cursor = coll.offset; }
             @Override public boolean hasNext() { return cursor != -1; }
 
             @Override
             public Object next() {
-                if (cursor == -1 || coll.arry == null) throw new NoSuchElementException();
-                final Object ret = coll.arry[cursor++];
-                if (cursor == coll.arry.length)  cursor = -1;
+                if (cursor == -1 || arry == null) throw new NoSuchElementException();
+                final Object ret = arry[cursor++];
+                if (cursor == len)  cursor = -1;
                 return ret;
             }
         }
@@ -466,7 +469,7 @@ public class LambdaJ {
         @Override public String toString() { return printSEx(true, false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
-        private String printSEx(boolean headOfList, boolean escapeAtoms) {
+        String printSEx(boolean headOfList, boolean escapeAtoms) {
             final Object[] arry;
             final int alen, offset;
             if ((arry=this.arry) == null || (alen = arry.length) <= (offset=this.offset)) return LambdaJ.printSEx(null);
@@ -487,8 +490,14 @@ public class LambdaJ {
                 return ret.toString();
             }
         }
-        
-        public boolean isNil() { return arry == null || arry.length <= offset; }
+
+        private boolean isNil() { return arry == null || arry.length <= offset; }
+
+        Object[] listToArray() {
+            if (offset == 0) return arry;
+            if (offset >= arry.length) return EMPTY_ARRAY;
+            return Arrays.copyOfRange(arry, offset, arry.length);
+        }
     }
 
 
@@ -1357,9 +1366,7 @@ public class LambdaJ {
 
         private void adjustEnd(ConsCell c) {
             if (c instanceof SExpConsCell) {
-                final SExpConsCell lc = (SExpConsCell)c;
-                lc.lineNo = prevLineNo;
-                lc.charNo = prevCharNo;
+                ((SExpConsCell)c).adjustEnd(prevLineNo, prevCharNo);
             }
         }
 
@@ -2833,11 +2840,7 @@ public class LambdaJ {
     static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return EMPTY_ARRAY;
         if (maybeList instanceof ArraySlice) {
-            final ArraySlice slice = (ArraySlice)maybeList;
-            if (slice.offset == 0) return slice.arry;
-            if (slice.offset >= slice.arry.length)
-                return EMPTY_ARRAY;
-            return Arrays.copyOfRange(slice.arry, slice.offset, slice.arry.length);
+            return ((ArraySlice)maybeList).listToArray();
         }
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
@@ -2919,7 +2922,7 @@ public class LambdaJ {
         }
     }
 
-    private static String printChar(int c) {
+    static String printChar(int c) {
         return "#\\"
          + (c < CTRL.length ? CTRL[c]
         : c < 127 ? String.valueOf((char)c)
