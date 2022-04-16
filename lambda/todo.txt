@@ -1,4 +1,15 @@
+(integerp 1.): SBCL gibt t, Murmel gibt nil
+-> http://clhs.lisp.se/Body/02_ca.htm#syntaxfornumerictokens
+   "2.3.1 Numbers as Tokens" sagt:
+   "digits + ." ist ein integer im dezimalsystem, ohne punkt im "current input radix"
+   float sind immer dezimalsystem: optionale ziffern . "ziffern und/ oder exponent"
+-> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?
+
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
+
+
+
+
 
 import könnte alle public methoden einer java klasse ::-en, vielleicht ein optionales präfix als argument für import?
 und/ oder eine funktion (z.B. "reflect"), die eine liste mit :: forms ausspuckt, und define erweitern dass nicht nur symbol/value sondern auch eine liste geht?
@@ -8,8 +19,7 @@ und/ oder eine funktion (z.B. "reflect"), die eine liste mit :: forms ausspuckt,
 funktionen symbol->string und string->symbol, wobei symbol->string ist symbol-name, und string->symbol ist make-symbol
 und (intern symbol) -> interned-symbol
 -> vielleicht doch endlich umstellen, dass der reader lc/ uc/ nix macht (mit befehlszeilenoption?), und stringvergleiche case sensitiv sind?!!!!!
-
-
+   -> bei case-insensitiven stringvergleichen gäbe es potenziell gefährliche unterschiede zu CL: in CL ist (intern (make-symbol "AaA")) != aaa, in Murmel wäre das das gleiche symbol
 
 
 macht ein macro with-iterator sinn (für Java iterator)?, siehe auch http://clhs.lisp.se/Body/m_w_hash.htm
@@ -20,15 +30,22 @@ safety könnte werden:
 1 es kann saturating overflow geben
 0 es kann wraparound overflow geben
 
-(integerp 1.): SBCL gibt t, Murmel gibt nil
--> http://clhs.lisp.se/Body/02_ca.htm#syntaxfornumerictokens
-   "2.3.1 Numbers as Tokens" sagt:
-   "digits + ." ist ein integer im dezimalsystem, ohne punkt im "current input radix"
-   float sind immer dezimalsystem: optionale ziffern . "ziffern und/ oder exponent"
--> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?
+nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice, und wg. Strings
+
+(read) sollte einen parameter eof bekommen
+
+eval-when endlich einbauen
+
+funktion die den awt frame eines turtleframe liefert, für java interop
+
+:: könnte statt nur strings auch symbols schlucken:
+-> (:: java.lang.System currentTimeMillis)
+   -> nein, geht so nicht weil :: ist keine special form, der versuch, die symbols aufzulösen gibt fehler
+      -> symbols wären trotzdem sinnvoll, dann könnt man ein macro basteln das quoted, und/ oder ein macro, das aus klasse, methode und einer plist mit typ/wert
+         einen call bastelt (bei instanzmethoden müsste die plist wohl mit "this" <objekt> beginnen)
+         oder alist statt plist? -> egal, plist ist weniger tipparbeit
 
 
-nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice, und nth wg. Strings
 
 dpans3 steht für "Common Lisp ANSI draft 3", das war der Input für AnsiCL
 siehe https://www.reddit.com/r/lisp/comments/5xncjo/is_there_a_lispy_clhs_anywhere/ für eine diskussion re: Lizenz
@@ -39,9 +56,6 @@ https://github.com/antoszka/dpANS3
 
 Is there a straightforward lisp equivalent of Python's generators?
 -> https://stackoverflow.com/questions/32956033/is-there-a-straightforward-lisp-equivalent-of-pythons-generators
-
-
-(read) sollte einen parameter eof bekommen
 
 
 letrec im compiler ist fishy, laut langref sollten folgende variablen undefined sein, sind aber null
@@ -56,18 +70,6 @@ letrec im compiler ist fishy, laut langref sollten folgende variablen undefined 
    io.github.jmurmel.LambdaJ$MurmelJavaProgram$$Lambda$111/209833425@544a2ea6
    ==> t
 
-
-
-eval-when endlich einbauen
-
-funktion die den awt frame eines turtleframe liefert, für java interop
-
-:: könnte statt nur strings auch symbols schlucken:
--> (:: java.lang.System currentTimeMillis)
-   -> nein, geht so nicht weil :: ist keine special form, der versuch, die symbols aufzulösen gibt fehler
-      -> symbols wären trotzdem sinnvoll, dann könnt man ein macro basteln das quoted, und/ oder ein macro, das aus klasse, methode und einer plist mit typ/wert
-         einen call bastelt (bei instanzmethoden müsste die plist wohl mit "this" <objekt> beginnen)
-         oder alist statt plist? -> egal, plist ist weniger tipparbeit
 
 
 ((lambda (exp) (apply exp "hallo")) write)
@@ -262,7 +264,7 @@ tailcallSibling0(Object fn, Object[] oldargs)
 tailcallSibling1(Object fn, Object[] oldargs, Object arg)
 tailcallSibling2(Object fn, Object[] oldargs, Object arg1, Object arg2)
 -> arg array könnte wiederverwendet werden, würde insb. bei let loop viele allokationen einsparen
--> ähnlicher trick wäre im interpreter denkbar, derzeit wächst environment bei tailcalls
+-> ähnlicher trick wäre im interpreter denkbar, derzeit wächst environment bei tailcalls (aber nur bei dynamic lambdas!)
 
 
 compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
@@ -392,7 +394,9 @@ wär hübsch für rekursiven aufruf einer varargs funktion:
    -> vielleicht doch besser desugar?
 -> aufpassen, dass nicht (f a b) 1x argumente evaluiert und (f a . b) 2x
 
-vielleicht müsste es auch sein: (f a b . l) <=> (apply f (append (list a b) l)). oder einfacher: (apply f (list* a b l))
+vielleicht müsste es auch sein:
+ (f a b . l) <=> (apply f (append (list a b) l)). oder einfacher: (apply f (list* a b l))
+ (f . l)     <=> (apply f l)
 
 
 müssen die compiler rt funktionen public sein oder reicht protected? geht static?

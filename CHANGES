@@ -9,6 +9,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
    "apply" now accepts symbols as the first argument as well
  * changed "::": renamed to "jmethod", static Java methods no longer want "nil" as a first (ignored) argument
  * changed macroexpand-1 to return multiple values as one would expect
+ * changed setq to create undefined variables on the fly in interpreted mode
 
  * changed mlib: dotimes, dolist and doplist accept multiple result-forms (in an implicit progn)
    (was: only the first one was eval'd, the rest were silently ignored)

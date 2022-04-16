@@ -6,7 +6,7 @@
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~188kB (size of the compiled jmurmel.jar file
+Currently weighing in at ~191kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
