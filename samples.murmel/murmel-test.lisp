@@ -316,6 +316,20 @@
 ;;; Primitives
 ;;; todo remaining primitives
 
+;;; test rplaca
+#+murmel (progn  ; sbcl stackoverflows on these
+(define *l* (list 1 2 3 4 5))
+(deftest rplaca.1 (format nil "%s" (rplaca (cdr *l*) *l*)) "((1 #<this list> 3 4 5) 3 4 5)")
+(deftest rplaca.2 (format nil "%s" *l*) "(1 #<this list> 3 4 5)")
+
+; test modifying the varargs parameter which in compiled code is different from a regular ConsCell based list
+(defun func l
+  (rplaca (cdr l) l)
+  (format nil "%s" l))
+(deftest rplaca.3 (func 11 22 33 44 55) "(11 #<this list> 33 44 55)")
+)
+
+
 ;;; test eval
 ; when running compiled murmel `eval` starts the embedded interpreter,
 ; and e.g. `(eval '(lambda () ...` returns an interpreted closure.
@@ -377,7 +391,7 @@
     (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil)
     (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
     (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
-    ; sbcl chokes on the next line
+    ; sbcl chokes on the next line even when it's prepended with #+murmel
     (1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil)
 
     (0        nil       t           nil         nil         nil         t           t           nil        nil          nil)

@@ -467,17 +467,21 @@ public class LambdaJ {
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
         private String printSEx(boolean headOfList, boolean escapeAtoms) {
-            if (isNil()) return LambdaJ.printSEx(null);
+            final Object[] arry;
+            final int alen, offset;
+            if ((arry=this.arry) == null || (alen = arry.length) <= (offset=this.offset)) return LambdaJ.printSEx(null);
             else {
                 final StringBuilder ret = new StringBuilder();
                 final WriteConsumer append = ret::append;
                 if (headOfList) ret.append('(');
                 boolean first = true;
-                for (int i = offset; i < arry.length; i++) {
-                    final Object o = arry[i];
+                for (int i = offset; i < alen; i++) {
                     if (first) first = false;
                     else ret.append(' ');
-                    _printSEx(append, arry, o, true, escapeAtoms);
+
+                    final Object obj;
+                    if ((obj=arry[i]) == this) ret.append("#<this list>");
+                    else _printSEx(append, arry, obj, true, escapeAtoms);
                 }
                 ret.append(')');
                 return ret.toString();
@@ -2872,7 +2876,7 @@ public class LambdaJ {
         _printSEx(w, obj, obj, true, printEscape);
     }
 
-    private static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
+    static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
         while (true) {
             if (obj == null) {
                 sb.print("nil"); return;
