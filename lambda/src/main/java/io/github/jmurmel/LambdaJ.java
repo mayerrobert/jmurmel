@@ -4583,8 +4583,7 @@ public class LambdaJ {
      *  </ul> */
     private static boolean compileToJava(Charset charset, MurmelJavaCompiler c, List<Object> history, Object className, Object filename) {
         final String clsName = className == null ? "MurmelProgram" : className.toString();
-        //if (filename == intp.symtab.intern(new LambdaJSymbol("t")) { // todo abchecken ob/warum das nicht geht
-        if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
+        if (filename == c.intp.sT) {
             c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
             return true;
         }
@@ -6383,7 +6382,7 @@ public class LambdaJ {
 
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == intp.sNil) sb.append("false");
-            else if (symbolEq(form, "t")) sb.append("true");
+            else if (form == intp.sT) sb.append("true");
             else if (symbolp(form) || consp(form)) {
                 // optimize "(null ..."
                 if (car(form) == intp.sNull) { sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))"); }
@@ -6445,7 +6444,7 @@ public class LambdaJ {
                     final Object clause = iterator.next();
                     sb.append("\n        : ");
                     final Object condExpr = car(clause), condForms = cdr(clause);
-                    if (symbolEq(condExpr, "t")) {
+                    if (condExpr == intp.sT) {
                         emitProgn(sb, condForms, env, topEnv, rsfx, isLast);  sb.append(')');
                         if (iterator.hasNext()) System.err.println(lineInfo(clause) + "forms following default 't' form will be ignored");
                         return;
@@ -7219,7 +7218,7 @@ public class LambdaJ {
             if (form == null || intp.sNil == form) sb.append("(Object)null");
 
             else if (symbolp(form)) {
-                if (symbolEq(form, "t")) sb.append("_t");
+                if (form == intp.sT) sb.append("_t");
                 else {
                     final String s = "intern(\"" + escapeString(form.toString()) + "\")";
                     if (pool) emitReference(sb, s);
