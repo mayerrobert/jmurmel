@@ -377,7 +377,7 @@ public class LambdaJ {
         private Object car, cdr;
 
         private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        @Override public String toString() { return printObj(this); }
+        @Override public String toString() { return printSEx(this, false); }
         @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
 
         @Override public Object car() { return car; }
@@ -2481,21 +2481,19 @@ public class LambdaJ {
         tracePfx(sb, level);
 
         sb.append('(').append(level+1).append(" enter ").append(op);
-        sb.append(printArgs(args));
+        printArgs(sb, args);
         sb.append(')');
         tracer.println(sb.toString());
     }
 
-    private static String printArgs(ConsCell args) {
-        if (args == null) return "";
-        final StringBuilder sb = new StringBuilder();
+    private static void printArgs(StringBuilder sb, ConsCell args) {
+        if (args == null) return;
         sb.append(':');
         final WriteConsumer append = sb::append;
         for (Object arg: args) {
             sb.append(' ');
             printSEx(append, arg);
         }
-        return sb.toString();
     }
 
     private int traceExit(Object op, Object result, int level) {
@@ -2848,14 +2846,6 @@ public class LambdaJ {
         return ret.toArray();
     }
 
-    /** transform {@code ob} into an S-expression, atoms are not escaped */
-    private static String printObj(Object ob) {
-        if (ob == null) return "nil";
-        final StringBuilder sb = new StringBuilder(200);
-        _printSEx(sb::append, ob, ob, true, false);
-        return sb.toString();
-    }
-
     /** transform {@code obj} into an S-expression, atoms are escaped */
     static String printSEx(Object obj) {
         return printSEx(obj, true);
@@ -2863,7 +2853,7 @@ public class LambdaJ {
 
     static String printSEx(Object obj, boolean printEscape) {
         if (obj == null) return "nil";
-        final StringBuilder sb = new StringBuilder(200);
+        final StringBuilder sb = new StringBuilder();
         _printSEx(sb::append, obj, obj, true, printEscape);
         return sb.toString();
     }
@@ -3321,10 +3311,13 @@ public class LambdaJ {
 
     private static Object listToString(ConsCell a) {
         oneArg("list->string", a);
-        final ConsCell l = requireList("list->string", car(a));
+        return listToStringImpl(requireList("list->string", car(a)));
+    }
+
+    static String listToStringImpl(ConsCell l) {
         if (l == null) return null;
         final StringBuilder ret = new StringBuilder();
-        for (Object c: l) ret.append(requireChar("list->string", c));
+        for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
         return ret.toString();
     }
 
@@ -5166,14 +5159,7 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object   listToString (Object... args) {
-            oneArg("list->string", args.length);
-            final ConsCell l = LambdaJ.requireList("list->string", args[0]);
-            if (l == null) return null;
-            final StringBuilder ret = new StringBuilder();
-            for (Object c: l)  ret.append(requireChar(c));
-            return ret.toString();
-        }
+        public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (toDouble(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (toDouble(args[0])); }
