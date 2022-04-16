@@ -359,8 +359,9 @@ defined macros.
 
 ### (setq symbol value...) -> last-value
 
-`setq` updates the value of the given global or local symbols which must be
-already defined.
+`setq` updates the value(s) of the given global or local symbol(s).
+In interpreted Murmel undefined variables will be created on the fly,
+in compiled mode variables must have been defined previously.
 
     (define a nil)
     (let ((b nil) (c nil))

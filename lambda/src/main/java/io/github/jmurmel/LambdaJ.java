@@ -2026,8 +2026,8 @@ public class LambdaJ {
             if (pairs == null) errorMalformed("setq", "odd number of arguments");
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
             if (envEntry == null)
-                //insertFront(env, symbol, value);
-                throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol); // todo vielleicht im interpreter doch zulassen?
+                insertFront(env, symbol, value);
+                //throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
             else envEntry.rplacd(value);
             res = value;
             pairs = (ConsCell) cdr(pairs);
