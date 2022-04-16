@@ -498,6 +498,8 @@ public class LambdaJ {
             "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
     };
 
+    private final ConsCell featuresEnvEntry;
+
     private static final String[] CTRL = {
             "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
             "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
@@ -628,7 +630,9 @@ public class LambdaJ {
         if (libDir != null) this.libDir = libDir;
         else this.libDir = murmelDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
-        
+
+        this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
+
         /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
         sT =                           haveT() ? internReserved("t") : intern("t");
         sNil =                         haveNil() ? internReserved("nil") : intern("nil");
@@ -719,6 +723,13 @@ public class LambdaJ {
         modules.clear();
     }
 
+    private ConsCell makeFeatureList() {
+        ConsCell l = null;
+        for (String feat: FEATURES) {
+            l = new ListConsCell(intern(feat), l);
+        }
+        return l;
+    }
 
 
     /// ## Printer
@@ -783,8 +794,8 @@ public class LambdaJ {
         }
     }
 
-    public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable()); }
-    public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab) { return new SExpressionReader(in, symtab); }
+    public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null); }
+    public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry); }
 
     private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     private static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
@@ -802,6 +813,7 @@ public class LambdaJ {
         private final TraceConsumer tracer;
 
         private final SymbolTable st;
+        private final ConsCell featuresEnvEntry;
 
         private ReadSupplier in;    // readObj() will read from this
         Path filePath;
@@ -822,12 +834,12 @@ public class LambdaJ {
          *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
          *            {@code Reader::read} will work
          */
-        SExpressionReader(ReadSupplier in, SymbolTable st) {
-            this(in, st, null);
+        SExpressionReader(ReadSupplier in, SymbolTable st, ConsCell featuresEnvEntry) {
+            this(in, st, featuresEnvEntry, null);
         }
 
-        SExpressionReader(ReadSupplier in, SymbolTable st, Path filePath) {
-            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, in, filePath, true);
+        SExpressionReader(ReadSupplier in, SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
+            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, featuresEnvEntry, in, filePath, true);
         }
 
         /** Create an S-expression parser (==reader).
@@ -836,7 +848,7 @@ public class LambdaJ {
          *            {@code Reader::read} will work
          * @param eolConversion if true then any EOL will be converted to Unix EOL
          */
-        SExpressionReader(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable st, ReadSupplier in, Path filePath, boolean eolConversion) {
+        SExpressionReader(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath, boolean eolConversion) {
             this.features = features; this.trace = trace; this.tracer = tracer;
             this.st = st;
             this.in = eolConversion ? new AnyToUnixEol(in) : in;
@@ -855,12 +867,8 @@ public class LambdaJ {
             sListStar       = intern("list*");
             sCons           = intern("cons");
             sNil            = intern("nil");
-
-            ConsCell l = null;
-            for (String feat: FEATURES) {
-                l = new ListConsCell(intern(feat), l);
-            }
-            featureList = l;
+            
+            this.featuresEnvEntry = featuresEnvEntry;
         }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
@@ -1048,10 +1056,8 @@ public class LambdaJ {
         private final Object sAnd;
         private final Object sOr; 
 
-        private final ConsCell featureList;
-
         private boolean featurep(Object next) {
-            if (next != null && symbolp(next)) return some(x -> x == next, featureList);
+            if (next != null && symbolp(next)) return some(x -> x == next, cdr(featuresEnvEntry));
             else if (consp(next)) {
                 if (car(next) == sAnd) return every(this::featurep, cdr(next));
                 if (car(next) == sOr) return some(this::featurep, cdr(next));
@@ -1640,7 +1646,7 @@ public class LambdaJ {
     /** Build environment, setup symbol table, Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
     private ObjectReader init(ReadSupplier in, WriteConsumer out) {
-        final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, in, null, true);
+        final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
         return init(parser, outWriter, null);
     }
@@ -2383,7 +2389,7 @@ public class LambdaJ {
         final Path prevPath = lispReader.getFilePath();
         final Path p = findFile(prevPath, fileName);
         try (Reader r = Files.newBufferedReader(p)) {
-            final SExpressionReader parser = new SExpressionReader(r::read, symtab, p);
+            final SExpressionReader parser = new SExpressionReader(r::read, symtab, featuresEnvEntry, p);
             final Object eof = "EOF";
             Object result = null;
             for (;;) {
@@ -3862,6 +3868,8 @@ public class LambdaJ {
         }
 
         if (haveUtil()) {
+            env = cons(featuresEnvEntry, env);
+
             env = addBuiltin("consp",   (Primitive) a -> { oneArg("consp",   a);  return boolResult(consp  (car(a))); },
                   addBuiltin("symbolp", (Primitive) a -> { oneArg("symbolp", a);  return boolResult(symbolp(car(a))); },
                   addBuiltin("listp",   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); },
@@ -4061,12 +4069,12 @@ public class LambdaJ {
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (lispReader == null) {
-            lispReader = new SExpressionReader(features, trace, tracer, symtab, in::read, null, true);
+            lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null, true);
             topEnv = environment(null);
         }
         final ObjectReader scriptParser = lispReader;
         scriptParser.setInput(program::read, null);
-        setReaderPrinter(new SExpressionReader(in::read, symtab), new SExpressionWriter(new WrappingWriter(out)::append));
+        setReaderPrinter(new SExpressionReader(in::read, symtab, featuresEnvEntry), new SExpressionWriter(new WrappingWriter(out)::append));
         final Object eof = "EOF";
         Object result = null;
         while (true) {
@@ -4100,8 +4108,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier programSupplier, ReadSupplier in, WriteConsumer out) {
-        final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, programSupplier, null, true);
-        final ObjectReader inReader = new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, in, null, true);
+        final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, programSupplier, null, true);
+        final ObjectReader inReader = new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(program, inReader, outWriter, null);
     }
@@ -4211,7 +4219,7 @@ public class LambdaJ {
                 compileFiles(files, toJar, clsName, libPath, outDir);
             }
             else if (run) {
-                final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
+                final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
                         () -> -1, null, true);
 
                 final Object eof = "EOF";
@@ -4268,7 +4276,7 @@ public class LambdaJ {
             final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
             if (toJar || run || toJava) {
-                final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
+                final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
                                                                        new InputStreamReader(System.in, consoleCharset)::read, null, true);
 
                 final Object eof = "EOF";
@@ -4292,7 +4300,7 @@ public class LambdaJ {
                     runForms(program, interpreter, false);
                 }
                 else {
-                    final boolean success = compileToJava(StandardCharsets.UTF_8, interpreter.symtab, libPath, program, clsName, outDir);
+                    final boolean success = compileToJava(StandardCharsets.UTF_8, interpreter.symtab, interpreter.libDir, program, clsName, outDir);
                     if (success) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
                 }
             }
@@ -4312,7 +4320,7 @@ public class LambdaJ {
         try {
             final SExpressionReader reader = (SExpressionReader)interpreter.lispReader;
             reader.setInput(prog, fileName);
-            final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.symtab, System.in::read, null, true);
+            final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.symtab, interpreter.featuresEnvEntry, System.in::read, null, true);
             final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
             final Object eof = "EOF";
@@ -4374,7 +4382,7 @@ public class LambdaJ {
         if (isInit) {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
             final AnyToUnixEol read = new AnyToUnixEol();
-            parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
+            parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
                                            () -> read.read(echoHolder.value), null, false);
             outWriter = interpreter.lispPrinter;
             env = interpreter.topEnv;
@@ -4383,13 +4391,14 @@ public class LambdaJ {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 final AnyToUnixEol read = new AnyToUnixEol();
-                parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab,
+                parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
                                                () -> read.read(echoHolder.value), null, false);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 env = interpreter.environment(null);
                 interpreter.topEnv = env;
                 injectCommandlineArgs(interpreter, args);
+                interpreter.featuresEnvEntry.rplacd(interpreter.makeFeatureList());
                 isInit = true;
             }
 
@@ -4523,6 +4532,8 @@ public class LambdaJ {
     // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
     private static void compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) {
         final SymbolTable symtab = new ListSymbolTable();
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, null);
+
         SExpressionReader objectReader = null;
         final Object eof = "EOF";
         final List<Object> program = new ArrayList<>();
@@ -4531,7 +4542,7 @@ public class LambdaJ {
             final Path p = Paths.get(fileName);
             System.out.println("parsing " + fileName + "...");
             try (Reader reader = Files.newBufferedReader(p)) {
-                if (objectReader == null) objectReader = new SExpressionReader(reader::read, symtab, p);
+                if (objectReader == null) objectReader = new SExpressionReader(reader::read, symtab, c.intp.featuresEnvEntry, p);
                 else objectReader.setInput(reader::read, p);
                 while (true) {
                     final Object sexp = objectReader.readObj(true, eof);
@@ -4548,15 +4559,19 @@ public class LambdaJ {
         final boolean success;
         if (toJar) {
             outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
-            success = compileToJar(symtab, libPath, program, clsName, outFile);
+            success = compileToJar(c, program, clsName, outFile);
         }
         else {
-            success = compileToJava(StandardCharsets.UTF_8, symtab, libPath, program, clsName, outDir);
+            success = compileToJava(StandardCharsets.UTF_8, c, program, clsName, outDir);
             if (clsName == null) clsName = "MurmelProgram";
             if (outDir == null) outDir = ".";
             outFile = outDir + '/' + clsName + ".java";
         }
         if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
+    }
+
+    private static boolean compileToJava(Charset charset, SymbolTable st, Path libDir, List<Object> history, Object className, Object filename) {
+        return compileToJava(charset, new MurmelJavaCompiler(st, libDir, null), history, className, filename);
     }
 
     /** compile history to Java source and print or write to a file.
@@ -4566,8 +4581,7 @@ public class LambdaJ {
      *  <li>if filename is null the filename will be derived from the className
      *  <li>if filename not null then filename is interpreted as a base directory and the classname (with packages) will be appended
      *  </ul> */
-    private static boolean compileToJava(Charset charset, SymbolTable symtab, Path libDir, List<Object> history, Object className, Object filename) {
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libDir, null);
+    private static boolean compileToJava(Charset charset, MurmelJavaCompiler c, List<Object> history, Object className, Object filename) {
         final String clsName = className == null ? "MurmelProgram" : className.toString();
         //if (filename == intp.symtab.intern(new LambdaJSymbol("t")) { // todo abchecken ob/warum das nicht geht
         if (filename != null && "t".equalsIgnoreCase(filename.toString())) {
@@ -4607,9 +4621,23 @@ public class LambdaJ {
         }
     }
 
-    private static boolean compileToJar(SymbolTable symtab, Path libDir, List<Object> history, Object className, Object jarFile) {
+    private static boolean compileToJar(SymbolTable st, Path libDir, List<Object> history, Object className, Object jarFile) {
         try {
-            final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libDir, getTmpDir());
+            return compileToJar(new MurmelJavaCompiler(st, libDir, getTmpDir()), history, className, jarFile);
+        }
+        catch (LambdaJError e) {
+            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
+            return false;
+        }
+        catch (Exception e) {
+            System.out.println("NOT compiled to .jar - error: ");
+            e.printStackTrace(System.out);
+            return false;
+        }
+    }
+
+    private static boolean compileToJar(MurmelJavaCompiler c, List<Object> history, Object className, Object jarFile) {
+        try {
             final String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
             final String clsName = className == null ? "MurmelProgram" : className.toString();
             System.out.println("compiling...");
@@ -4941,9 +4969,11 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.init(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionReader(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, intp.symtab, System.in::read, null, true), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionReader(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, intp.symtab, intp.featuresEnvEntry, System.in::read, null, true), intp.getLispPrinter());
             _t = intern("t");
             _dynamic = intern("dynamic");
+            features = (ConsCell)cdr(intp.featuresEnvEntry); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
+                                                             // vor/nach eval features hintri/firi kopieren, values auch
         }
 
 
@@ -4994,6 +5024,8 @@ public class LambdaJ {
         public final Object itups = 1e9;
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
+
+        public ConsCell features;
 
         /// predefined primitives
         
@@ -5531,6 +5563,7 @@ public class LambdaJ {
             case "pi": return _pi;
             case "internal-time-units-per-second": return itups;
             case "*command-line-argument-list*": return commandlineArgumentList;
+            case "*features*": return features;
             case "car": return (CompilerPrimitive)this::_car;
             case "cdr": return (CompilerPrimitive)this::_cdr;
             case "cons": return (CompilerPrimitive)this::_cons;
@@ -5776,6 +5809,7 @@ public class LambdaJ {
         private static final String[][] aliasedGlobals = {
             { "internal-time-units-per-second", "itups" },
             { "*command-line-argument-list*", "commandlineArgumentList" },
+            { "*features*", "features" },
         };
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
@@ -6794,7 +6828,7 @@ public class LambdaJ {
             final Path p = intp.findFile(prevPath, fileName);
             final Object eof = "EOF";
             try (Reader r = Files.newBufferedReader(p)) {
-                final SExpressionReader parser = new SExpressionReader(r::read, intp.symtab, p);
+                final SExpressionReader parser = new SExpressionReader(r::read, intp.symtab, intp.featuresEnvEntry, p);
                 for (;;) {
                     final Object form = parser.readObj(true, eof);
                     if (form == eof) break;

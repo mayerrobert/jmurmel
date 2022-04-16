@@ -28,6 +28,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * compiled code now can invoke interpreted closures
  * added some benchmarks and found some speedups
  * added some JFR integration
+ * added *features* to the environment making it visible to Murmel code
 
  * mlib: added functions last, map-into, nconc,
    circular-list, compose, multiple-value-compose, conjoin, disjoin, curry, rcurry, doplist,

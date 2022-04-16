@@ -1592,3 +1592,5 @@ format sollte eigentlich auch printSEx benutzen, derzeit verwendet Java für %s 
 -> toString() sollte überall geeignet definiert sein !?
 
 :: umbenamsen in jcall, proxy umbenamsen in jproxy
+
+*features* exposen?

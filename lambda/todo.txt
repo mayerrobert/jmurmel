@@ -1,6 +1,4 @@
-*features* exposen?
-
-zusammenspiel compiler/interpreter bzgl. values reparieren
+zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
 :: issues
 methoden die checked exceptions werfen geben im compiler ungültigen Java code
