@@ -811,6 +811,7 @@ public class LambdaJ {
 
     public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null); }
     public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry); }
+    static SExpressionReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
@@ -1654,7 +1655,7 @@ public class LambdaJ {
 
     /** Build environment, setup symbol table, Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
-    private ObjectReader init(ReadSupplier in, WriteConsumer out) {
+    ObjectReader init(ReadSupplier in, WriteConsumer out) {
         final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null, true);
         final ObjectWriter outWriter = makeWriter(out);
         return init(parser, outWriter, null);
@@ -3589,7 +3590,7 @@ public class LambdaJ {
     }
 
     /** check the number of args vs. number of parameters, and then convert argument types from Murmel to Java */
-    private static void javaCallArgCheck(String name, UnaryOperator<Object>[] argConv, Object[] args) {
+    static void javaCallArgCheck(String name, UnaryOperator<Object>[] argConv, Object[] args) {
         final int paramCount = argConv.length;
         final int argCount = args == null ? 0 : args.length;
         if (paramCount != argCount) errorArgCount(name, paramCount, paramCount, argCount, null);
@@ -3996,12 +3997,14 @@ public class LambdaJ {
     private class CallLambda implements MurmelFunction {
         final ConsCell lambda;
         final ConsCell env;
-        CallLambda(ConsCell lambda) { this.lambda = lambda; this.env = topEnv; }
+        CallLambda(ConsCell lambda, ConsCell topEnv) { this.lambda = lambda; this.env = topEnv; }
         @Override
-        public Object apply(Object... args) {
-            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-            return eval(cons(lambda, arraySlice(args, 0)), env, 0, 0, 0);
-        }
+        public Object apply(Object... args) { return applyClosure(lambda, args, env); }
+    }
+    
+    Object applyClosure(ConsCell closure, Object[] args, ConsCell originalTopEnv) {
+        if (originalTopEnv != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
+        return eval(cons(closure, arraySlice(args, 0)), originalTopEnv, 0, 0, 0);
     }
 
     /** <p>embed API: Return the function {@code funcName}
@@ -4022,7 +4025,7 @@ public class LambdaJ {
 
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
         if (maybeFunction instanceof Primitive)                                 { return args -> ((Primitive)maybeFunction).applyPrimitive(arraySlice(args, 0)); }
-        if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) { return new CallLambda((ConsCell)maybeFunction); }
+        if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) { return new CallLambda((ConsCell)maybeFunction, topEnv); }
         if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
@@ -4966,7 +4969,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.init(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionReader(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, intp.symtab, intp.featuresEnvEntry, System.in::read, null, true), intp.getLispPrinter());
+            intp.setReaderPrinter(new SExpressionReader(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, intp.getSymbolTable(), intp.featuresEnvEntry, System.in::read, null, true), intp.getLispPrinter());
             _t = intern("t");
             _dynamic = intern("dynamic");
             features = (ConsCell)cdr(intp.featuresEnvEntry); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
@@ -5675,13 +5678,12 @@ public class LambdaJ {
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, libDir);
             intp.init(() -> -1, System.out::print);
-            intp.topEnv = intp.environment(null);
             this.intp = intp;
 
             this.javaCompiler = new JavaCompilerHelper(outPath);
         }
 
-        public SymbolTable getSymbolTable() { return intp.symtab; }
+        public SymbolTable getSymbolTable() { return intp.getSymbolTable(); }
 
 
         /// symbols and name mangling
@@ -6818,7 +6820,7 @@ public class LambdaJ {
             final Path p = intp.findFile(prevPath, fileName);
             final Object eof = "EOF";
             try (Reader r = Files.newBufferedReader(p)) {
-                final SExpressionReader parser = new SExpressionReader(r::read, intp.symtab, intp.featuresEnvEntry, p);
+                final SExpressionReader parser = makeReader(r::read, intp.getSymbolTable(), intp.featuresEnvEntry, p);
                 for (;;) {
                     final Object form = parser.readObj(true, eof);
                     if (form == eof) break;
