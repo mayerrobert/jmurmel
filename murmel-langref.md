@@ -77,18 +77,35 @@ Valid S-expressions may or may not be "forms"
     1
     1.0
     "a string"
+    #\a   ; the character 'a'
+    #xff  ; the integer number 255 in hex
+
+
+### Single quote
+
+A single quote `'` is a shorthand for `(quote form)`,
+see [Basic special forms](#basic-special-forms).
+
+    'form
 
 
 ### Atoms that are symbols
 
-    a-symbol
-    |a symbol|
-    a\ symbol
+Symbols usually start with a letter and are composed of
+letters, digits and dashes ('-'),
+but pretty much any token that is not another atom will be
+parsed as a symbol.
+Murmel handles symbols similar to Common Lisp,
+see "CLHS 2.3.4 Symbols as Tokens" http://clhs.lisp.se/Body/02_cd.htm
+for details.
 
+Examples:
 
-A single quote is a shorthand for (quote an-expression)
-
-    'an-expression
+    'a-symbol
+    '|a symbol|
+    'a\ symbol
+    '123"345
+    '123.456.789
 
 
 ### Conses (pairs) and lists
