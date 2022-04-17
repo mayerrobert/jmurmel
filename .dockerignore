@@ -1,0 +1,11 @@
+.github
+.idea
+*/target
+
+Dockerfile
+scribbles*
+*.iml
+*.lisp
+*.md
+*.txt
+CHANGES

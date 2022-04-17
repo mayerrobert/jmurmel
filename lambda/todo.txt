@@ -428,10 +428,6 @@ Adoptium OpenJDK 8u (Nachfolger): https://adoptium.net/?variant=openjdk8&jvmVari
 SRFI 197 hat chain operator & Co, siehe https://srfi.schemers.org/srfi-197/srfi-197.html
 ähnlich wie ->
 
-"inline java" könnte man (im compiler) in etwa so machen
-(java (a b c) "return a + b + c;")
--> (MurmelFunction)(args) -> { /*argCheck(args.length, 3);*/ Object a = args[0]; Object b = args[1]; Object c = args[2]; return a + b + c: }
-
 
 https://www.reddit.com/r/scheme/comments/somz8y/tail_calls_for_native_targets/
 https://github.com/edn-format/edn ist so ne art erweiterte S-expressions spec
@@ -535,8 +531,6 @@ https://github.com/sbcl/sbcl/blob/master/.github/workflows/windows.yml
 -> sbcl baut bei jedem push einen windows installer, der liegt dann als artefact beim workflow run, z.b. auf 
    https://github.com/sbcl/sbcl/actions/runs/1034569455
 
-j.u.l logging iwie anbinden?
-
 mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
 -> oder zusätzlich mapXX*?
 sollte apply eine dotted list akzeptieren?
@@ -559,12 +553,20 @@ parenscript (das ist eine empedded sprache CL -> Javascript) hat die funktion od
 (chain console (log my-list)))) -> console.log(myList)
 -> eine ähnliche funktion/ special form könnte Java direkt in den generierten Code injecten
 
+"inline java" könnte man (im compiler) in etwa so machen (interpreter könnte auch on-the-fly zeugs kompilieren)
+(java (a b c) "return a + b + c;")
+-> (MurmelFunction)(args) -> { /*argCheck(args.length, 3);*/ Object a = args[0]; Object b = args[1]; Object c = args[2]; return a + b + c; }
+-> ggf sollten auch (optional?) typen angegeben werden, dann wird eine typumwandlung reingezwickt so wie jmethod
+-> vielleicht auch (java args "return args[0]") -> (MurmelFunction)(args) -> { return args[0]; }
+
 CL+J ist ein CFFI Binding CL nach Java: https://common-lisp.net/project/cl-plus-j/
 CL+J is a JNI based interface to a Java Virtual Machine through CFFI. It targets safe, exact and complete access to Java 
 from Common Lisp with as high integration as possible of the Java and CL respective runtime environments 
 (especially at the condition/exception level).
 CL+J uses a set of reader dispatch-macros to simplify the Java code interface. In CL+J the traditional "Hello World!" becomes:
   (#_System.out.println (jstr "Hello World!"))
+
+j.u.l logging iwie anbinden?
 
 
 
@@ -634,6 +636,7 @@ JMurmel> (mapcar (lambda (n) (prog1 (-> n princ (->> 1+ 1+) princ (expt 2) round
 
 
 globals koennten eine hashmap sein?!?
+-> hashmap nicht aber ggf multimap
 
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
 vgl. Graham, Paul "On Lisp"  Prentice-Hall, New Jersey, 1994, pp. 348-379, available online at http://www.paulgraham.com/onlisptext.html.
@@ -660,15 +663,12 @@ symbolhandling ist fishy
 
 gensym im compiler (momentan gehts nur in macros)
 
-1\234 sollte als symbol gelesen werden
-
 
 Macros im compiler
 -> http://clhs.lisp.se/Body/m_defmac.htm:
 -> If a defmacro form appears as a top level form... Users must ensure that the body of the macro can be evaluated at compile time if it is referenced within the file being compiled.
 
 init(), parser vs. in aufraeumen
-
 
 
 
@@ -681,6 +681,20 @@ obiges hab ich experimentell ermittelt, jdeps sollte exakte aussagen treffen;
 java.base,java.compiler,java.desktop,java.management
 -> jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.compiler,java.desktop,java.management
 -> da ist aber kein compiler dabei
+
+Java 18:
+jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base
+-> interpreter-only minimalversion, kein awt, swing, jfr, compiler, locale, 26MB
+
+jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs
+-> ohne awt, swing, jfr, 38MB
+
+jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr
+-> mit awt + swing + jfr, 52MB
+-> ohne locale, (format-locale t "de-DE" "%g" pi) printet 3.12..., locale wird ignoriert
+
+jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr,jdk.localedata
+-> w.o. + locale, 61MB
 
 
 
