@@ -40,7 +40,7 @@
 
 (defun run ()
   (do ((i 0 (1+ i)))
-      ((= i 1000.))     ;runs it 5000 times
+      ((= i 1000))     ;runs it 5000 times
     #-murmel (declare (fixnum i))  ;improves the code a little
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))

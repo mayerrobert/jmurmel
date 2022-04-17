@@ -29,7 +29,7 @@ public class EmbeddedStringTest {
     public void testString() {
         final LambdaJ interpreter = new LambdaJ();
         final StringBuilder out = new StringBuilder();
-        final Object result = interpreter.interpretExpression(new StringReader("(format nil \"%g\" 1.)")::read, out::append);
+        final Object result = interpreter.interpretExpression(new StringReader("(format nil \"%g\" 1.0)")::read, out::append);
 
         assertEquals("1.00000", result.toString()); // will be formatted according to default Locale
         assertEquals(0, out.length());

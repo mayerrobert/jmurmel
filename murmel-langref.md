@@ -273,9 +273,9 @@ are interpreted as 64bit integer numbers (java.lang.Long)
 Datatype float: a number in double precision
 
 numbers that contain the characters '.eE' are interpreted
-as double precision (java.lang.Double)
+as floating point numbers (java.lang.Double)
 
-    1.
+    1.0
 
 a float in scientific notation
 

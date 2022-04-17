@@ -36,7 +36,7 @@ public class ScannerTest {
 
     @Test
     public void testPipe() {
-        LambdaJTest.runTest("pipe", "'\\|", "\\|", null);
+        LambdaJTest.runTest("pipe", "'\\|", "|\\||", null);
     }
 
     @Test

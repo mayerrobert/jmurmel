@@ -51,12 +51,12 @@ public class LambdaJBenchmark {
             "                     (if (null (cdr list))\r\n" +
             "                         (car list)\r\n" +
             "                         (print-last (cdr list)))))\r\n" +
-            "        (print-last (quote (0. 1. 2. 3. 4. 5. 6. 7. 8. 9.))))";
+            "        (print-last (quote (0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0))))";
     public static final String FACT =
             "(labels ((factTR (n a)\r\n" +
             "                 (cond ((= n 0) a)\r\n" +
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
-            "        (format-locale nil \"en-US\" \"Factorial of 50 is %g\" (factTR 50. 1.)))";
+            "        (format-locale nil \"en-US\" \"Factorial of 50 is %g\" (factTR 50.0 1.0)))";
 
     public static final String TAK =
             "(labels ((tak´ (x y z)\n"

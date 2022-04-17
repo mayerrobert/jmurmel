@@ -7,7 +7,7 @@
 
 ;;;  DESTRU  --  Destructive  operation  benchmark
 (defun destructive (n m)
-  (let ((l (do ((i 10. (1- i))
+  (let ((l (do ((i 10 (1- i))
                 (a () (push () a)))
                ((= i 0) a))))
     (do ((i n (1- i)))

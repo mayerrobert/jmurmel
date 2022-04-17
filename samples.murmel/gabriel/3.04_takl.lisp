@@ -6,9 +6,9 @@
   (if (not (= 0 n))
         (cons n (listn (1- n)))))
 
-(define 18l (listn 18.)) ;note that these are potential numbers
-(define 12l (listn 12.))
-(define  6l (listn 6.))
+(define 18l (listn 18)) ;note that these are potential numbers
+(define 12l (listn 12))
+(define  6l (listn 6))
 
 (defun mas (x y z)
   (if (not (shorterp y x))

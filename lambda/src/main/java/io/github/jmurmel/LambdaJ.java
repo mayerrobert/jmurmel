@@ -184,8 +184,12 @@ public class LambdaJ {
 
             if (name.isEmpty()) { out.print("||"); return; }
             if (".".equals(name)) { out.print("|.|"); return; }
-            if (Character.isDigit(name.charAt(0))
-                || containsSExSyntaxOrWhiteSpace(name)) { out.print("|"); out.print(escapeSymbol(this)); out.print("|"); return; }
+            final char firstChar = name.charAt(0);
+            if (firstChar == '|' || firstChar == '"'
+                || containsSExSyntaxOrWhiteSpace(name)
+                || isDouble(name) || isLong(name) || isCLDecimalLong(name)) {
+                out.print("|"); out.print(escapeSymbol(this)); out.print("|"); return;
+            }
             out.print(escapeSymbol(this));
         }
 
@@ -816,6 +820,31 @@ public class LambdaJ {
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
+    private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*))");
+    static boolean isLong(String s) {
+        if (s == null || s.isEmpty()) return false;
+        return LONG_PATTERN.matcher(s).matches();
+    }
+
+    private static final Pattern CL_DECIMAL_LONG_PATTERN = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*\\.))");
+    static boolean isCLDecimalLong(String s) {
+        if (s == null || s.isEmpty()) return false;
+        return CL_DECIMAL_LONG_PATTERN.matcher(s).matches();
+    }
+
+    private static final Pattern DOUBLE_PATTERN = Pattern.compile(
+    "[-+]?"                                // optional-sign
+    + "("                                  // either
+    + "(([0-9]+\\.[0-9]+)"                 //   zero-or-more-digits  '.' one-or-more-digits
+    + "([eE][-+]?[0-9]+)?)"                //   optional: e-or-E optional-sign one-or-more-digits
+    + "|"                                  // or
+    + "([0-9]+[eE][-+]?[0-9]+)"            //   one-or-more-digits e-or-E optional-sign one-or-more-digits
+    + ")");
+    static boolean isDouble(String s) {
+        if (s == null || s.isEmpty()) return false;
+        return DOUBLE_PATTERN.matcher(s).matches();
+    }
+
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     static class SExpressionReader implements ObjectReader {
@@ -905,25 +934,6 @@ public class LambdaJ {
         private boolean isHash(int x)   { return !escape && x == '#'; }
 
         private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
-
-        private static final Pattern longPattern = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*))");
-        private static boolean isLong(String s) {
-            if (s == null || s.isEmpty()) return false;
-            return longPattern.matcher(s).matches();
-        }
-
-        private static final Pattern doublePattern = Pattern.compile(
-                "[-+]?"                              // optional-sign
-              + "("                                  // either
-              + "(((([0-9]+\\.)[0-9]*)|\\.[0-9]+)"   //   either: one-or-more-digits '.' zero-or-more-digits  or: '.' one-or-more-digits
-              + "([eE][-+]?[0-9]+)?)"                //   optional: e-or-E optional-sign one-or-more-digits
-              + "|"                                  // or
-              + "([0-9]+[eE][-+]?[0-9]+)"            //   one-or-more-digits e-or-E optional-sign one-or-more-digits
-              + ")");
-        private static boolean isDouble(String s) {
-            if (s == null || s.isEmpty()) return false;
-            return doublePattern.matcher(s).matches();
-        }
 
         /*java.io.PrintWriter debug;
         {
@@ -1182,6 +1192,11 @@ public class LambdaJ {
                         tok = parseLong(s, 10);
                     } else if (!escapeSeen && haveDouble() && isLong(s)) {
                         tok = parseDouble(s);
+                    } else if (!escapeSeen && (haveDouble() || haveLong()) && isCLDecimalLong(s)) {
+                        // reject CL-style 123. for "123 in radix 10" - Murmel doesn't support changing reader radix,
+                        // and non-lispers may think digits followed by a dot are floating point numbers (as is the case in most programming languages)
+                        throw new ParseError("digits followed by '.' to indicate 'integer in radix' 10 is not supported. "
+                                             + "Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
                     } else {
                         if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                         tok = intern(s);
