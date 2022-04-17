@@ -42,6 +42,7 @@ Flags for REPL:
 --trace=stats ....  Print stack and memory stats after each form
 --trace=envstats .  Print stack, memory and environment stats after each form
 --trace=eval .....  Print internal interpreter info during executing programs
+--trace=func .....  Print internal interpreter info re: function and macro calls
 --trace=env ......  Print more internal interpreter info executing programs
 --trace ..........  Print lots of internal interpreter info during
                     reading/ parsing/ executing programs

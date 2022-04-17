@@ -552,7 +552,7 @@ public class LambdaJ {
     private final Path libDir;
 
     public enum TraceLevel {
-        TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_ENV, TRC_FUNC, TRC_PARSE, TRC_TOK, TRC_LEX;
+        TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_FUNC, TRC_ENV, TRC_PARSE, TRC_TOK, TRC_LEX;
         public boolean ge(TraceLevel l) { return ordinal() >= l.ordinal(); }
     }
     private final TraceLevel trace;
@@ -4139,15 +4139,15 @@ public class LambdaJ {
     private void traceStats(long nanos) {
         if (trace.ge(TraceLevel.TRC_STATS)) {
             tracer.println("");
-            tracer.println("*** max eval nesting:  " + maxEvalLevel + " ***");
-            tracer.println("*** max stack used:    " + maxEvalStack + " ***");
+            tracer.println("*** max Murmel evaluator recursion: " + maxEvalLevel + " ***");
+            tracer.println("*** max eval() on Java stack:       " + maxEvalStack + " ***");
 
-            tracer.println("*** total ConsCells:   " + nCells + " ***");
-            if (trace.ge(TraceLevel.TRC_ENVSTATS)) tracer.println("*** max env length:    " + maxEnvLen + " ***");
+            tracer.println("*** total ConsCells:                " + nCells + " ***");
+            if (trace.ge(TraceLevel.TRC_ENVSTATS)) tracer.println("*** max env length:                 " + maxEnvLen + " ***");
 
             final long millis = (long)(nanos * 0.000001D);
             final String ms = Long.toString(millis) + '.' + ((long) (nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
-            tracer.println("*** elapsed wall time: " + ms + "ms ***");
+            tracer.println("*** elapsed wall time:              " + ms + "ms ***");
             tracer.println("");
 
             maxEvalLevel = maxEvalStack = nCells = maxEnvLen = 0;
@@ -4682,6 +4682,7 @@ public class LambdaJ {
         if (hasFlag("--trace=stats", args))    trace = TraceLevel.TRC_STATS;
         if (hasFlag("--trace=envstats", args)) trace = TraceLevel.TRC_ENVSTATS;
         if (hasFlag("--trace=eval", args))     trace = TraceLevel.TRC_EVAL;
+        if (hasFlag("--trace=func", args))     trace = TraceLevel.TRC_FUNC;
         if (hasFlag("--trace=env", args))      trace = TraceLevel.TRC_ENV;
         if (hasFlag("--trace", args))          trace = TraceLevel.TRC_LEX;
         return trace;
@@ -4861,6 +4862,7 @@ public class LambdaJ {
                 + "--trace=stats ....  Print stack and memory stats after each form\n"
                 + "--trace=envstats .  Print stack, memory and environment stats after each form\n"
                 + "--trace=eval .....  Print internal interpreter info during executing programs\n"
+                + "--trace=func .....  Print internal interpreter info re: function and macro calls\n"
                 + "--trace=env ......  Print more internal interpreter info executing programs\n"
                 + "--trace ..........  Print lots of internal interpreter info during\n"
                 + "                    reading/ parsing/ executing programs");

@@ -1,3 +1,9 @@
+symbolprinting stimmt nicht:
+'1+        -> |1+|
+'|"bla"|   -> "bla"
+-> checken ob das erste zeichen eine ziffer ist ist eher hinderlich
+   |name| solls geben, wenn das erste zeichen ein | oder " ist, oder wenn der symbolname dem double oder long pattern entspricht
+
 (integerp 1.): SBCL gibt t, Murmel gibt nil
 -> http://clhs.lisp.se/Body/02_ca.htm#syntaxfornumerictokens
    "2.3.1 Numbers as Tokens" sagt:
