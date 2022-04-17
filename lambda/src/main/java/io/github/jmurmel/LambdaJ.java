@@ -385,6 +385,8 @@ public class LambdaJ {
 
         @Override public Object cdr() { return cdr; }
         @Override public Object rplacd(Object cdr) { this.cdr = cdr; return this; }
+        
+        void adjustEnd(int endLineNo, int endCharNo) {}
     }
 
     private static final class ListConsCell extends AbstractConsCell {
@@ -402,7 +404,7 @@ public class LambdaJ {
             this.path = path; this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
         }
 
-        void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
+        @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
         String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
     }
 
@@ -1343,17 +1345,17 @@ public class LambdaJ {
         }
 
         private Object readList(int listStartLine, int listStartChar, Object eof) {
-            ConsCell first = null, appendTo = null;
+            AbstractConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();
                 final int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
                 if (tok == null) throw new ParseError("cannot read list. missing ')'?");
                 if (!tokEscape && (tok == Token.RP || tok == Token.DOT)) {
-                    adjustEnd(first);
+                    if (first != null) first.adjustEnd(prevLineNo, prevCharNo);
                     return first;
                 }
-                final ConsCell newCell = cons(listStartLine, listStartChar);
+                final AbstractConsCell newCell = cons(listStartLine, listStartChar);
                 if (first == null) first = newCell;
                 if (appendTo != null) appendTo.rplacd(newCell);
                 appendTo = newCell;
@@ -1364,19 +1366,12 @@ public class LambdaJ {
             }
         }
 
-        private void adjustEnd(ConsCell c) {
-            if (c instanceof SExpConsCell) {
-                ((SExpConsCell)c).adjustEnd(prevLineNo, prevCharNo);
-            }
-        }
-
-
 
         private ConsCell cons(int startLine, int startChar, Object car, Object cdr) {
             return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, car, cdr) : new ListConsCell(car, cdr);
         }
 
-        private ConsCell cons(int startLine, int startChar) {
+        private AbstractConsCell cons(int startLine, int startChar) {
             return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, null, null) : new ListConsCell(null, null);
         }
 
