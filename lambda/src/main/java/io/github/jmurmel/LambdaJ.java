@@ -812,8 +812,8 @@ public class LambdaJ {
     public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null); }
     public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry); }
 
-    private static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
-    private static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
+    static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
+    static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
@@ -885,6 +885,9 @@ public class LambdaJ {
             
             this.featuresEnvEntry = featuresEnvEntry;
         }
+
+        // this is really only useful for the repl. If parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed.
+        void resetPos() { lineNo = charNo == 0 ? 1 : 0;  charNo = 0; }
 
         private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
         private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
@@ -4403,11 +4406,11 @@ public class LambdaJ {
             }
 
             try {
-                if (istty) { parser.lineNo = parser.charNo == 0 ? 1 : 0;  parser.charNo = 0; } // if parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed
+                if (istty) parser.resetPos();
                 final Object exp = parser.readObj(true, eof);
 
                 if (exp != null) {
-                    if (exp == eof && parser.look == EOF
+                    if (exp == eof
                         || exp == cmdQuit) { System.out.println("bye."); System.out.println();  System.exit(0); }
                     if (exp == cmdHelp)   { showHelp();  continue; }
                     if (exp == cmdEcho)   { echoHolder.value = true; continue; }
