@@ -513,7 +513,7 @@ public class LambdaJ {
             "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
     };
 
-    private final ConsCell featuresEnvEntry;
+    final ConsCell featuresEnvEntry;
 
     static final String[] CTRL = {
             "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
@@ -811,7 +811,7 @@ public class LambdaJ {
 
     public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null); }
     public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry); }
-    static SExpressionReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
+    final SExpressionReader makeReader(ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
@@ -1668,9 +1668,9 @@ public class LambdaJ {
         return inReader;
     }
 
-    private final Map<Object, ConsCell> macros = new HashMap<>();
-    private final Set<Object> modules = new HashSet<>();
-    private int speed = 1; // changed by (declaim (optimize (speed...
+    final Map<Object, ConsCell> macros = new HashMap<>();
+    final Set<Object> modules = new HashSet<>();
+    int speed = 1; // changed by (declaim (optimize (speed...
 
 
     /// ###  eval - the heart of most if not all Lisp interpreters
@@ -2019,7 +2019,7 @@ public class LambdaJ {
         }
     }
 
-    private static ConsCell listOrMalformed(String op, Object args) {
+    static ConsCell listOrMalformed(String op, Object args) {
         if (!listp(args)) errorMalformed(op, "an argument list", args);
         return (ConsCell)args;
     }
@@ -2084,7 +2084,7 @@ public class LambdaJ {
         return null;
     }
 
-    private Object evalDeclaim(int level, ConsCell arguments) {
+    Object evalDeclaim(int level, ConsCell arguments) {
         if (level != 1) errorMalformed("declaim", "must be a toplevel form");
         if (caar(arguments) == intern("optimize")) {
             final Object rest = cdar(arguments);
@@ -2195,7 +2195,7 @@ public class LambdaJ {
         return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
 
-    private Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
+    Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
         if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
 
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
@@ -2414,7 +2414,7 @@ public class LambdaJ {
         }
     }
 
-    private Path findFile(Path current, String fileName) {
+    final Path findFile(Path current, String fileName) {
         final Path path;
         if (fileName.toLowerCase().endsWith(".lisp")) path = Paths.get(fileName);
         else path = Paths.get(fileName + ".lisp");
@@ -3030,13 +3030,13 @@ public class LambdaJ {
     }
 
     /** ecactly one argument */
-    private static void oneArg(String func, ConsCell a) {
+    static void oneArg(String func, ConsCell a) {
         if (a == null)      errorArgCount(func, 1, 1, 0, null);
         if (cdr(a) != null) errorArgCount(func, 1, 1, 2, a);
     }
 
     /** ecactly two arguments */
-    private static void twoArgs(String func, ConsCell a) {
+    static void twoArgs(String func, ConsCell a) {
         if (a == null) errorArgCount(func, 2, 2, 0, null);
         Object _a = cdr(a);
         if (_a == null) errorArgCount(func, 2, 2, 1, a);
@@ -3049,22 +3049,22 @@ public class LambdaJ {
         if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
         varargs1(func, (ConsCell)a);
     }
-    private static void varargs1(String func, ConsCell a) {
+    static void varargs1(String func, ConsCell a) {
         if (a == null) errorVarargsCount(func, 1, 0);
     }
 
-    private static void varargs1_2(String func, ConsCell a) {
+    static void varargs1_2(String func, ConsCell a) {
         if (a == null || cddr(a) != null) errorArgCount(func, 1, 2, length(a), a);
     }
 
     /** varargs, at least {@code min} args */
-    private static void varargsMin(String func, ConsCell a, int min) {
+    static void varargsMin(String func, ConsCell a, int min) {
         final int actualLength = length(a); // todo alles zaehlen ist umsonst
         if (actualLength < min) errorVarargsCount(func, min, actualLength);
     }
 
     /** varargs, between {@code min} and {@code max} args */
-    private static void varargsMinMax(String func, ConsCell a, int min, int max) {
+    static void varargsMinMax(String func, ConsCell a, int min, int max) {
         final int actualLength = length(a); // todo alles zaehlen ist umsonst
         if (actualLength < min || actualLength > max) errorArgCount(func, min, max, actualLength, a);
     }
@@ -3202,7 +3202,7 @@ public class LambdaJ {
     }
 
     /** Return {@code c} as a String, error if {@code c} is not a string, character or symbol. */
-    private static String requireStringOrNull(String func, Object c) {
+    static String requireStringOrNull(String func, Object c) {
         if (c == null) return null;
         return requireString(func, c);
     }
@@ -3214,13 +3214,13 @@ public class LambdaJ {
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
-    private static ConsCell requireCons(String func, Object a) {
+    static ConsCell requireCons(String func, Object a) {
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a cons argument but got %s", func, printSEx(a));
         return (ConsCell)a;
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
-    private static ConsCell requireList(String func, Object a) {
+    static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
@@ -3723,7 +3723,7 @@ public class LambdaJ {
 
     ConsCell values;
 
-    private TurtleFrame current_frame;
+    TurtleFrame current_frame;
 
     private ObjectReader lispReader;
     private ObjectWriter lispPrinter;
@@ -4969,7 +4969,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             intp.init(() -> -1, System.out::print);
-            intp.setReaderPrinter(new SExpressionReader(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, intp.getSymbolTable(), intp.featuresEnvEntry, System.in::read, null, true), intp.getLispPrinter());
+            intp.setReaderPrinter(intp.makeReader(System.in::read, null), intp.getLispPrinter());
             _t = intern("t");
             _dynamic = intern("dynamic");
             features = (ConsCell)cdr(intp.featuresEnvEntry); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
@@ -5075,8 +5075,8 @@ public class LambdaJ {
         public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
-        public final Object _read      (Object... args) { noArgs("read",         args.length); if (intp.lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-                                                                                               return intp.lispReader.readObj(null); } // todo eof parameter
+        public final Object _read      (Object... args) { noArgs("read",         args.length); if (intp.getLispReader() == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
+                                                                                               return intp.getLispReader().readObj(null); } // todo eof parameter
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
@@ -5232,8 +5232,8 @@ public class LambdaJ {
 
         public final Object _jproxy            (Object... args) { return intp.makeProxy(arraySlice(args)); }
 
-        public final Object _trace             (Object... args) { return intp.trace(arraySlice(args)); }
-        public final Object _untrace           (Object... args) { return intp.untrace(arraySlice(args)); }
+        public final Object _trace             (Object... args) { return null; }
+        public final Object _untrace           (Object... args) { return null; }
 
         public final Object makeFrame          (Object... args) {
             varargsMinMax("make-frame", args.length, 1, 4);
@@ -5499,6 +5499,7 @@ public class LambdaJ {
 
 
         @SuppressWarnings("unused") // used by multiple-value-call
+        // todo how does this work? also: try to avoid access$ method for "private values"
         public class ValuesBuilder {
             private final ArrayList<Object> allValues = new ArrayList<>();
             
@@ -5673,7 +5674,7 @@ public class LambdaJ {
     ///
     public static class MurmelJavaCompiler {
         private final JavaCompilerHelper javaCompiler;
-        private final LambdaJ intp;
+        final LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, libDir);
@@ -6816,11 +6817,11 @@ public class LambdaJ {
             final LambdaJ intp = this.intp;
             if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
             final String fileName = (String) argument;
-            final Path prevPath = intp.lispReader.getFilePath();
+            final Path prevPath = intp.getLispReader().getFilePath();
             final Path p = intp.findFile(prevPath, fileName);
             final Object eof = "EOF";
             try (Reader r = Files.newBufferedReader(p)) {
-                final SExpressionReader parser = makeReader(r::read, intp.getSymbolTable(), intp.featuresEnvEntry, p);
+                final SExpressionReader parser = intp.makeReader(r::read, p);
                 for (;;) {
                     final Object form = parser.readObj(true, eof);
                     if (form == eof) break;
@@ -7302,10 +7303,10 @@ public class LambdaJ {
 
 
 
-    private static final AtomicInteger counter = new AtomicInteger(0);
-
     @SuppressWarnings("unused")
     public static class JFRHelper {
+        private static final AtomicInteger counter = new AtomicInteger(0);
+
         private JFRHelper() {}
 
         @jdk.jfr.Relational
