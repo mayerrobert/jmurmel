@@ -100,7 +100,7 @@ import javax.tools.SimpleJavaFileObject;
  *  </ul>
  *
  *  If you want to read/ write S-expressions from streams other than {@link System#in}/ {@link System#out} then do something like<pre>
- *  intp.setReaderPrinter(intp.new SExpressionParser(() -&gt; myReader::myFunctionThatReturnsCharsAsInt), intp.getLispPrinter());</pre>
+ *  intp.setReaderPrinter(intp.new SExpressionReader(() -&gt; myReader::myFunctionThatReturnsCharsAsInt), intp.getLispPrinter());</pre>
  *
  *  If you want to read/ write a surface representation other than S-expressions then do something like<pre>
  *  ObjectReader myReader = new MyReader(...);
@@ -991,9 +991,9 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                throw new ParseError("characterset conversion error in SExpressionParser: %s", e.toString());
+                throw new ParseError("characterset conversion error in SExpressionReader: %s", e.toString());
             } catch (Exception e) {
-                throw new ParseError("I/O error in SExpressionParser: %s", e.toString());
+                throw new ParseError("I/O error in SExpressionReader: %s", e.toString());
             }
         }
 
