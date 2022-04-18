@@ -2421,6 +2421,7 @@ public class LambdaJ {
                 final Object form = parser.readObj(true, eof);
                 if (form == eof) break;
 
+                //result = eval(expand(form), topEnv, 0, 0, 0);
                 result = eval(form, topEnv, 0, 0, 0);
             }
             return result;
@@ -2726,7 +2727,11 @@ public class LambdaJ {
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
-        final ConsCell ccList = requireCons("assq", maybeList);
+        return assq(atom, requireCons("assq", maybeList));
+    }
+
+    static ConsCell assq(Object atom, ConsCell ccList) {
+        if (ccList == null) return null;
         for (Object entry: ccList) {
             if (entry != null) {
                 final ConsCell ccEntry = (ConsCell) entry;
@@ -3491,18 +3496,96 @@ public class LambdaJ {
     /** expand a single macro call */
     final Object macroexpand1(ConsCell args) {
         oneArg("macroexpand-1", args);
-        if (!consp(car(args))) return car(args);
-        final Object operator = caar(args);
+        final Object maybeMacroCall = car(args);
+        if (!consp(maybeMacroCall)) return maybeMacroCall;
+        return macroexpandImpl((ConsCell) maybeMacroCall);
+    }
+
+    final Object macroexpandImpl(ConsCell args) {
+        final Object operator = car(args);
         final ConsCell macroClosure = macros.get(operator);
         if (macroClosure == null) {
-            final Object expansion = car(args);
-            values = cons(expansion, (cons(null, null)));
-            return expansion;
+            values = cons(args, (cons(null, null)));
+            return args;
         }
-        final ConsCell arguments = (ConsCell) cdar(args);
+        final ConsCell arguments = (ConsCell) cdr(args);
         final Object expansion = evalMacro(operator, macroClosure, arguments, 0, 0, 0);
         values = cons(expansion, (cons(sT, null)));
         return expansion;
+    }
+
+    /** recursively expand all macros in a form */
+    private Object expand(Object form) {
+        if (!consp(form)) return form;
+        final ConsCell ccForm = (ConsCell)form;
+        final Object op = car(ccForm);
+        if (op != null && symbolp(op) && ((LambdaJSymbol)op).wellknownSymbol != null) {
+            switch (((LambdaJSymbol)op).wellknownSymbol) {
+                case sQuote: return form;
+
+                case sDefine:
+                case sLambda:
+                    return new ListBuilder()
+                           .append(op)
+                           .append(cadr(ccForm))
+                           .appendLast(mapcar(this::expand, (ConsCell)cddr(ccForm)))
+                           .first();
+
+                case sDefun:
+                case sDefmacro:
+                    if (op == sDefmacro && cddr(ccForm) == null) return ccForm; // macro "undef"
+                    return new ListBuilder()
+                           .append(op)                                                 // defun or defmacro
+                           .append(cadr(ccForm))                                       // function or macro name
+                           .append(caddr(ccForm))                                      // params
+                           .appendLast(mapcar(this::expand, (ConsCell)cdddr(ccForm)))  // bodyforms
+                           .first();
+
+                case sLet:
+                case sLetStar:
+                case sLetrec:
+                    if (symbolp(cadr(ccForm)))
+                        return new ListBuilder()
+                               .append(op)
+                               .append(cadr(ccForm))
+                               .append(mapcar(this::expand, (ConsCell)caddr(ccForm)))
+                               .appendLast(mapcar(this::expand, (ConsCell)cdddr(ccForm)))
+                               .first();
+                    else
+                        return new ListBuilder()
+                               .append(op)
+                               .append(mapcar(this::expand, (ConsCell)cadr(ccForm)))
+                               .appendLast(mapcar(this::expand, (ConsCell)cddr(ccForm)))
+                               .first();
+
+                case sSetQ:
+                    final ListBuilder setqForm = new ListBuilder();
+                    setqForm.append(sSetQ);
+                    Object o = cdr(ccForm);
+                    while (o != null) {
+                        if (!consp(o)) throw errorMalformed("setq", "illegal dotted list");
+                        setqForm.append(car(o));
+                        o = cdr((ConsCell) o);
+                        if (o == null) throw errorMalformed("setq", "odd number of elements");
+                        if (!consp(o)) throw errorMalformed("setq", "illegal dotted list");
+                        setqForm.append(expand(car((ConsCell)o)));
+                        o = cdr(o);
+                    }
+                    return setqForm.first();
+
+                //case sLabels:
+                case sMultipleValueBind:
+                case sMultipleValueCall:
+                    return ccForm; // todo let eval handle macroexpansion for now
+            }
+        }
+        final ConsCell macro = macros.get(op);
+        if (macro != null) {
+            final Object expanded = macroexpandImpl(cons(car(ccForm), mapcar(this::expand, (ConsCell) cdr(ccForm))));
+            values = NO_VALUES;
+            return expand(expanded);
+        }
+        return mapcar(this::expand, ccForm);
     }
 
     private int gensymCounter;
@@ -4347,6 +4430,7 @@ public class LambdaJ {
                 if (history != null) history.add(form);
 
                 final long tStart = System.nanoTime();
+                //result = interpreter.eval(interpreter.expand(form), interpreter.topEnv, 0, 0, 0);
                 result = interpreter.eval(form, interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
@@ -4447,6 +4531,7 @@ public class LambdaJ {
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
+                //final Object result = interpreter.eval(interpreter.expand(exp), env, 0, 0, 0);
                 final Object result = interpreter.eval(exp, env, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
