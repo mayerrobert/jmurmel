@@ -210,11 +210,11 @@ public class LambdaJ {
         @Override public boolean equals(Object o) { return o == this || o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
 
         private static String escapeSymbol(LambdaJSymbol s) {
-            if (s.name == null) return null;
-            if (s.name.isEmpty()) return "";
+            final String name = s.name;
+            if (name == null) return null;
+            if (name.isEmpty()) return "";
 
             final StringBuilder ret = new StringBuilder();
-            final String name = s.name;
             final int len = name.length();
             for (int i = 0; i < len; i++) {
                 final char c = name.charAt(i);

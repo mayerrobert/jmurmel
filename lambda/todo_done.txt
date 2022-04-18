@@ -1600,3 +1600,16 @@ methoden die checked exceptions werfen geben im compiler ungültigen Java code
 ((:: "java.util.concurrent.Callable" "call") (jproxy "java.util.concurrent.Callable" "call" (lambda () "hello")))
 -> /MurmelProgram.java:25: error: unreported exception Exception; must be caught or declared to be thrown
            }))).call();
+
+symbolprinting stimmt nicht:
+'1+        -> |1+|
+'|"bla"|   -> "bla"
+-> checken ob das erste zeichen eine ziffer ist ist eher hinderlich
+   |name| solls geben, wenn das erste zeichen ein | oder " ist, oder wenn der symbolname dem double oder long pattern entspricht
+
+(integerp 1.): SBCL gibt t, Murmel gibt nil
+-> http://clhs.lisp.se/Body/02_ca.htm#syntaxfornumerictokens
+   "2.3.1 Numbers as Tokens" sagt:
+   "digits + ." ist ein integer im dezimalsystem, ohne punkt im "current input radix"
+   float sind immer dezimalsystem: optionale ziffern . "ziffern und/ oder exponent"
+-> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?

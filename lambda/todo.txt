@@ -1,16 +1,3 @@
-symbolprinting stimmt nicht:
-'1+        -> |1+|
-'|"bla"|   -> "bla"
--> checken ob das erste zeichen eine ziffer ist ist eher hinderlich
-   |name| solls geben, wenn das erste zeichen ein | oder " ist, oder wenn der symbolname dem double oder long pattern entspricht
-
-(integerp 1.): SBCL gibt t, Murmel gibt nil
--> http://clhs.lisp.se/Body/02_ca.htm#syntaxfornumerictokens
-   "2.3.1 Numbers as Tokens" sagt:
-   "digits + ." ist ein integer im dezimalsystem, ohne punkt im "current input radix"
-   float sind immer dezimalsystem: optionale ziffern . "ziffern und/ oder exponent"
--> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?
-
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
 
@@ -147,6 +134,7 @@ svref ist auch ein setf accessor
 -> und char/ schar wären accessoren für strings...
    -> char kamma machen, setf/ schar geht nicht weil strings sind immutable
       -> vielleicht von String auf StringBuilder umstellen?
+         -> oder auf ropes?
 vielleicht auch list->svector und svector->list
 
 svref, (aref), arrayp, vectorp, simple-vector-p
