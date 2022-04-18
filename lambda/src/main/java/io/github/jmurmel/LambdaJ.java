@@ -7734,12 +7734,28 @@ class WrappingWriter extends Writer {
 
     WrappingWriter(Writer w) { wrapped = w; }
 
-    @Override public WrappingWriter append(CharSequence c) { final String s = String.valueOf(c); write(s, 0, s.length()); return this; }
-    @Override public WrappingWriter append(char c)         { final String s = String.valueOf(c); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(int n)          { final String s = String.valueOf(n); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(long l)         { final String s = String.valueOf(l); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(double d)       { final String s = String.valueOf(d); write(s, 0, s.length()); return this; }
-    public           WrappingWriter append(Object o)       { final String s = String.valueOf(o); write(s, 0, s.length()); return this; }
+    @Override public WrappingWriter append(CharSequence c) {
+        try { wrapped.append(c); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+        return this;
+    }
+    @Override public WrappingWriter append(char c) {
+        try { wrapped.write(c); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+        return this;
+    }
+
+    public           WrappingWriter append(String s)       { write(s); return this; }
+    public           WrappingWriter append(int n)          { write(String.valueOf(n)); return this; }
+    public           WrappingWriter append(long l)         { write(String.valueOf(l)); return this; }
+    public           WrappingWriter append(double d)       { write(String.valueOf(d)); return this; }
+    public           WrappingWriter append(Object o)       { write(String.valueOf(o)); return this; }
+
+    @Override
+    public void write(String s) {
+        try { wrapped.write(s); }
+        catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
+    }
 
     @Override
     public void write(String s, int off, int len) {
