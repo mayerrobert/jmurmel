@@ -219,8 +219,8 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) {
                 final char c = name.charAt(i);
                 switch (c) {
-                    case '|':  ret.append('\\').append('|'); break;
-                    case '\\': ret.append('\\').append('\\'); break; 
+                    case '|':  ret.append("\\|"); break;
+                    case '\\': ret.append("\\\\"); break; 
                     default: ret.append(c);
                 }
             }
@@ -2530,7 +2530,7 @@ public class LambdaJ {
 
         tracePfx(sb, level);
 
-        sb.append('(').append(level+1).append(" exit  ").append(op).append(':').append(' ');
+        sb.append('(').append(level+1).append(" exit  ").append(op).append(": ");
         printSEx(sb::append, result);
         sb.append(')');
         tracer.println(sb.toString());
@@ -2953,8 +2953,8 @@ public class LambdaJ {
         for (int i = 0; i < len; i++) {
             final char c = s.charAt(i);
             switch (c) {
-            case '\"':  ret.append('\\').append('\"'); break;
-            case '\\': ret.append('\\').append('\\'); break;
+            case '\"':  ret.append("\\\""); break;
+            case '\\': ret.append("\\\\"); break;
             default: ret.append(c);
             }
         }
@@ -7107,7 +7107,7 @@ public class LambdaJ {
         /** eval form and change to double */
         private void emitFormAsDouble(WrappingWriter sb, String func, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form instanceof Character || form instanceof String) errorNotANumber(func, form);
-            if (form instanceof Long) sb.append(form.toString()).append('.').append('0');
+            if (form instanceof Long) sb.append(form.toString()).append(".0");
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("toDouble("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
         }
