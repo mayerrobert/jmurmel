@@ -1,7 +1,5 @@
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
-die loops, die files an der befehlszeile abschlecken, angleichen: immer "parsing...", und dann alles in eine einzige methode rausziehen
-
 
 
 
