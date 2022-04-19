@@ -1,5 +1,7 @@
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
+die loops, die files an der befehlszeile abschlecken, angleichen: immer "parsing...", und dann alles in eine einzige methode rausziehen
+
 
 
 
@@ -9,6 +11,21 @@ und/ oder eine funktion (z.B. "reflect"), die eine liste mit :: forms ausspuckt,
 -> reflect könnte auch optional eine liste mit strings bekommen, die enthält die gewünschten methoden (statt alle)
 -> vielleicht auch getter/ setter generieren für members? nur setter falls nicht final?
 -> vielleicht auch MurmelProgram akzeptieren, ggf. iwie speziell behandeln? vielleicht import für MurmelProgram, reflect für normale Java klassen? oder MurmelProgram in load/ require einbauen?
+-> load und require sollten auch jar files mit kompiliertem murmel können
+   dazu sollte die java methode loadfile erweitert werden, die wird von allen benutzt, interpreter und compiler.
+   MurmelJavaProgram könnte weitere reflection methoden bekommen (getAllFunctions(), getAllValues()=, die von loadFile
+   genutzt werden können, um das aktuelle interpreter- und/ oder compiler environment zu erweitern.
+   der compiler könnte members für alle importierten methoden generieren, oder nur einen member vom typ Object[],
+   und die environmenteinträge zeigen dann mit fixen indizes in dieses array:
+     statt "write" -> rt()::_write (das gilt in der form eh nur für vordef prim)
+     oder  "pi" -> "_pi"
+       ->  "imported-name2" -> modulname[2]
+     das würd eher einfach gehen, wenn murmelprogram zwei arrays liefert: eins mit den namen, eins mit den werten. oder ein 2dim array mit name/wert tupeln.
+     sollte beim importieren ein neues array mit kopien der werte gemacht werden? soll ein importierendes modul die globals des importierten moduls ändern können?
+     -> wsl keine kopie, beim bisherigen load bzw. require kann auch jeder alles ändern. hiesse dann: 2 arrays, eins mit namen wird zum erzeugen der environmenteinträge verwendet,
+        das andere wird mittels des neuen member referenziert.
+        obiges würd für compiler funktionieren. vielleicht muss es auch zusätzlich oder stattdessen ein array mit enventries (oder eine alist?) für den interpreter geben?
+        oder müssen compiler und interpreter gar nicht synchron laufen, weil eval sieht nur "predef topenv" + das was als argument mitgegeben wird?
 
 funktionen symbol->string und string->symbol, wobei symbol->string ist symbol-name, und string->symbol ist make-symbol
 und (intern symbol) -> interned-symbol

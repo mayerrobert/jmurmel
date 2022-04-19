@@ -1668,7 +1668,7 @@ public class LambdaJ {
     /// ### Global environment - define'd symbols go into this list
     private ConsCell topEnv;
 
-    /** Build environment, setup symbol table, Lisp reader and writer.
+    /** Build environment, setup Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
     ObjectReader init(ReadSupplier in, WriteConsumer out) {
         final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null, true);
@@ -4267,19 +4267,19 @@ public class LambdaJ {
 
     /// static void main() - run JMurmel from the command prompt (interactive)
 
+    enum Action { INTERPRET, TO_JAVA, TO_JAR, COMPILE_AND_RUN, }
+
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String[] args) {
         misc(args);
+        final Action action = action(args);
         final TraceLevel trace = trace(args);
         final int features = features(args);
 
         final boolean istty       = hasFlag("--tty", args) || null != System.console();
         final boolean repl        = hasFlag("--repl", args);
         final boolean echo        = hasFlag("--echo", args);    // used only in repl
-        final boolean printResult = hasFlag("--result", args);  // used only in filemode
-        final boolean toJava      = hasFlag("--java", args);
-        final boolean toJar       = hasFlag("--jar", args);
-        final boolean run         = hasFlag("--run", args);
+        final boolean printResult = hasFlag("--result", args);  // print individual results of toplevel forms, used only when interpreting files given on the commandline or interpreting piped input
         final boolean verbose     = hasFlag("--verbose", args);
         final String clsName      = flagValue("--class", args);
         final String outDir       = flagValue("--outdir", args);
@@ -4290,93 +4290,63 @@ public class LambdaJ {
             System.exit(1);
         }
 
-        Path libPath = null;
-        if (libDir != null) {
-            try {
-                libPath = Paths.get(libDir).toAbsolutePath();
-                if (!Files.isDirectory(libPath)) {
-                    System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
-                    System.exit(1);
-                }
-                if (!Files.isReadable(libPath)) {
-                    System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
-                    System.exit(1);
-                }
-            }
-            catch (Exception e) {
-                System.err.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
-                System.exit(1);
-            }
-        }
+        final Path libPath = getLibPath(libDir);
+
         final LambdaJ interpreter = new LambdaJ(features, trace, null, null, libPath);
 
         final List<Object> history = repl ? new ArrayList<>() : null;
 
+        // process files given on the commandline
         final List<String> files = args(args);
         if (!files.isEmpty()) {
-            if (toJar || toJava) {
-                compileFiles(files, toJar, clsName, libPath, outDir);
-            }
-            else if (run) {
-                final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
-                        () -> -1, null, true);
-
-                final Object eof = "EOF";
-                final List<Object> program = new ArrayList<>();
-                for (String fileName: files) {
-                    if ("--".equals(fileName)) continue;
-                    if (verbose) System.out.println("compiling " + fileName + "...");
-                    final Path p = Paths.get(fileName);
-                    try (Reader r = Files.newBufferedReader(p)) {
-                        parser.setInput(r::read, p);
-                        while (true) {
-                            final Object sexp = parser.readObj(true, eof);
-                            if (sexp == eof) break;
-                            program.add(sexp);
+            switch (action) {
+                case INTERPRET:
+                    interpreter.init(() -> -1, s -> {});
+                    injectCommandlineArgs(interpreter, args);
+                    Object result = null;
+                    for (String fileName : files) {
+                        if ("--".equals(fileName)) continue;
+                        if (verbose) System.out.println("interpreting " + fileName + "...");
+                        final Path p = Paths.get(fileName);
+                        try (Reader r = Files.newBufferedReader(p)) {
+                            result = interpretStream(interpreter, r::read, p, printResult, history);
+                        } catch (IOException e) {
+                            System.err.println();
+                            System.err.println(e);
+                            System.exit(1);
                         }
-                    } catch (IOException e) {
-                        System.err.println();
-                        System.err.println(e);
-                        System.exit(1);
                     }
-                }
-                interpreter.init(System.in::read, System.out::print);
-                injectCommandlineArgs(interpreter, args);
-                final boolean success = runForms(program, interpreter, false);
-                if (!success) System.exit(1);
-            }
-            else {
-                interpreter.init(() -> -1, s -> {});
-                injectCommandlineArgs(interpreter, args);
-                Object result = null;
-                for (String fileName: files) {
-                    if ("--".equals(fileName)) continue;
-                    if (verbose) System.out.println("interpreting " + fileName + "...");
-                    final Path p = Paths.get(fileName);
-                    try (Reader r = Files.newBufferedReader(p)) {
-                        result = interpretStream(interpreter, r::read, p, printResult, history);
-                    } catch (IOException e) {
-                        System.err.println();
-                        System.err.println(e);
-                        System.exit(1);
+                    if (!printResult && result != null) {
+                        System.out.println();
+                        System.out.println("==> " + result);
                     }
-                }
-                if (result != null) {
-                    System.out.println();
-                    System.out.println("==> " + result);
-                }
+                    break;
+                case TO_JAVA:
+                    compileFiles(files, false, clsName, libPath, outDir); break;
+                case TO_JAR:
+                    compileFiles(files, true, clsName, libPath, outDir); break;
+                case COMPILE_AND_RUN:
+                    compileAndRunFiles(files, interpreter, args, verbose); break;
             }
         }
 
-        if (repl || files.isEmpty() && istty) repl(interpreter, !files.isEmpty(), istty, echo, history, args); // repl() doesn't return
+        // repl() doesn't return
+        if (files.isEmpty() && istty || repl) repl(interpreter, !files.isEmpty(), istty, echo, history, args);
 
         if (files.isEmpty()) {
             final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
             final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
-            if (toJar || run || toJava) {
-                final SExpressionReader parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
-                                                                       new InputStreamReader(System.in, consoleCharset)::read, null, true);
+            if (action == Action.INTERPRET) {
+                interpreter.init(() -> -1, s -> {});
+                injectCommandlineArgs(interpreter, args);
+                final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
+                if (!printResult && result != null) {
+                    System.out.println();
+                    System.out.println("==> " + result);
+                }
+            } else {
+                final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(System.in, consoleCharset)::read, null);
 
                 final Object eof = "EOF";
                 final List<Object> program = new ArrayList<>();
@@ -4385,36 +4355,31 @@ public class LambdaJ {
                     if (sexp == eof) break;
                     program.add(sexp);
                 }
-
-                if (toJar) {
-                    final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
-                    final boolean success = compileToJar(interpreter.symtab, libPath, program, clsName, outFile);
-                    if (success) System.out.println("compiled stdin to " + outFile);
-                }
-                else if (run) {
-                    final ObjectWriter outWriter = makeWriter(System.out::print);
-                    interpreter.setReaderPrinter(parser, outWriter);
-                    interpreter.topEnv = interpreter.environment(null);
-                    injectCommandlineArgs(interpreter, args);
-                    runForms(program, interpreter, false);
-                }
-                else {
-                    final boolean success = compileToJava(StandardCharsets.UTF_8, interpreter.symtab, interpreter.libDir, program, clsName, outDir);
-                    if (success) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
-                }
-            }
-            else {
-                interpreter.init(() -> -1, s -> {});
-                injectCommandlineArgs(interpreter, args);
-                final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
-                if (result != null) {
-                    System.out.println();
-                    System.out.println("==> " + result);
+                switch (action) {
+                    case TO_JAVA:
+                        final boolean successJava = compileToJava(StandardCharsets.UTF_8, interpreter.symtab, interpreter.libDir, program, clsName, outDir);
+                        if (successJava) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
+                        break;
+                    case TO_JAR:
+                        final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
+                        final boolean successJar = compileToJar(interpreter.symtab, libPath, program, clsName, outFile);
+                        if (successJar) System.out.println("compiled stdin to " + outFile);
+                        break;
+                    case COMPILE_AND_RUN:
+                        final ObjectWriter outWriter = makeWriter(System.out::print);
+                        interpreter.setReaderPrinter(parser, outWriter);
+                        interpreter.topEnv = interpreter.environment(null);
+                        injectCommandlineArgs(interpreter, args); // todo ins kompilierte programm
+                        runForms(program, interpreter, false);
+                        break;
                 }
             }
         }
     }
 
+
+
+    /// functions to interpret, compile and/ or run files or input streams
     private static Object interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
         try {
             final SExpressionReader reader = (SExpressionReader)interpreter.lispReader;
@@ -4448,6 +4413,209 @@ public class LambdaJ {
         }
     }
 
+    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
+    private static void compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) {
+        final SymbolTable symtab = new ListSymbolTable();
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, null);
+
+        SExpressionReader objectReader = null;
+        final Object eof = "EOF";
+        final List<Object> program = new ArrayList<>();
+        for (String fileName: files) {
+            if ("--".equals(fileName)) continue;
+            System.out.println("parsing " + fileName + "...");
+            final Path p = Paths.get(fileName);
+            try (Reader reader = Files.newBufferedReader(p)) {
+                if (objectReader == null) objectReader = c.intp.makeReader(reader::read, p);
+                else objectReader.setInput(reader::read, p);
+                while (true) {
+                    final Object sexp = objectReader.readObj(true, eof);
+                    if (sexp == eof) break;
+                    program.add(sexp);
+                }
+            } catch (IOException e) {
+                System.err.println();
+                System.err.println(e);
+                System.exit(1);
+            }
+        }
+        final String outFile;
+        final boolean success;
+        if (toJar) {
+            outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
+            success = compileToJar(c, program, clsName, outFile);
+        }
+        else {
+            success = compileToJava(StandardCharsets.UTF_8, c, program, clsName, outDir);
+            if (clsName == null) clsName = "MurmelProgram";
+            if (outDir == null) outDir = ".";
+            outFile = outDir + '/' + clsName + ".java";
+        }
+        if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
+    }
+
+    private static void compileAndRunFiles(List<String> files, LambdaJ interpreter, String[] args, boolean verbose) {
+        SExpressionReader objectReader = null;
+        final Object eof = "EOF";
+        final List<Object> program = new ArrayList<>();
+        for (String fileName: files) {
+            if ("--".equals(fileName)) continue;
+            if (verbose) System.out.println("compiling " + fileName + "...");
+            final Path p = Paths.get(fileName);
+            try (Reader reader = Files.newBufferedReader(p)) {
+                if (objectReader == null) objectReader = interpreter.makeReader(reader::read, p);
+                else objectReader.setInput(reader::read, p);
+                while (true) {
+                    final Object sexp = objectReader.readObj(true, eof);
+                    if (sexp == eof) break;
+                    program.add(sexp);
+                }
+            } catch (IOException e) {
+                System.err.println();
+                System.err.println(e);
+                System.exit(1);
+            }
+        }
+        interpreter.init(System.in::read, System.out::print);
+        injectCommandlineArgs(interpreter, args); // todo die befehlszeilenargs sollten ans kompilierte programm übergeben werden, nicht an den interpreter
+        final boolean success = runForms(program, interpreter, false);
+        if (!success) System.exit(1);
+    }
+
+    /** compile history to a class and run compiled class */
+    private static boolean runForms(List<Object> history, LambdaJ interpreter, boolean repl) {
+        MurmelProgram prg = null;
+        try {
+            final MurmelJavaCompiler c = new MurmelJavaCompiler(interpreter.symtab, interpreter.libDir, getTmpDir());
+            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
+            prg = murmelClass.getDeclaredConstructor().newInstance();
+            final long tStart = System.nanoTime();
+            final Object result = prg.body();
+            final long tEnd = System.nanoTime();
+            interpreter.traceJavaStats(tEnd - tStart);
+            if (repl || result != null) {
+                System.out.println();
+                final Object[] multipleValues = ((MurmelJavaProgram)prg).values;
+                if (multipleValues == null) {
+                    System.out.print("==> ");  interpreter.lispPrinter.printObj(result, true);  System.out.println();
+                } else {
+                    for (Object v: multipleValues) {
+                        System.out.print(" -> "); interpreter.lispPrinter.printObj(v, true); System.out.println();
+                    }
+                }
+            }
+
+            return true;
+        }
+        catch (LambdaJError e) {
+            final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
+            if (repl) {
+                System.out.println("history NOT run as Java - " + msg);
+            } else System.err.println(msg);
+        }
+        catch (Throwable t) {
+            final String loc = location(prg);
+            if (repl) {
+                System.out.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
+                t.printStackTrace(System.out);
+            }
+            else System.err.println("Caught Throwable" + loc + ": " + t);
+        }
+        return false;
+    }
+
+    private static String location(MurmelProgram prg) {
+        return prg instanceof MurmelJavaProgram ? " at " + ((MurmelJavaProgram) prg).loc : "";
+    }
+
+    private static boolean compileToJava(Charset charset, SymbolTable st, Path libDir, List<Object> history, Object className, Object filename) {
+        return compileToJava(charset, new MurmelJavaCompiler(st, libDir, null), history, className, filename);
+    }
+
+    /** compile history to Java source and print or write to a file.
+     *  <ul>
+     *  <li>if className is null "MurmelProgram" will be the class' name.
+     *  <li>if filename is t the compiled Java code will be printed to the screen.
+     *  <li>if filename is null the filename will be derived from the className
+     *  <li>if filename not null then filename is interpreted as a base directory and the classname (with packages) will be appended
+     *  </ul> */
+    private static boolean compileToJava(Charset charset, MurmelJavaCompiler c, List<Object> history, Object className, Object filename) {
+        final String clsName = className == null ? "MurmelProgram" : className.toString();
+        if (filename == c.intp.sT) {
+            c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
+            return true;
+        }
+
+        final Path p;
+        if (null == filename) p = Paths.get(clsName.replace('.', '/') + ".java");
+        else p = Paths.get(filename.toString() + '/' + clsName.replace('.', '/') + ".java");
+
+        try {
+            if (p.getParent() != null) Files.createDirectories(p.getParent());
+        }
+        catch (Exception e) {
+            System.out.println("NOT compiled to Java - error: ");
+            e.printStackTrace(System.out);
+            return false;
+        }
+
+        final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+        try (OutputStream os = Files.newOutputStream(p);
+             WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
+            System.out.println("compiling...");
+            c.formsToJavaSource(writer, clsName, history);
+            System.out.println("compiled to Java file '" + p + '\'');
+            return true;
+        }
+        catch (LambdaJError e) {
+            System.out.println("NOT compiled to Java - error: " + e.getMessage());
+            return false;
+        }
+        catch (Exception e) {
+            System.out.println("NOT compiled to Java - error: ");
+            e.printStackTrace(System.out);
+            return false;
+        }
+    }
+
+    private static boolean compileToJar(SymbolTable st, Path libDir, List<Object> history, Object className, Object jarFile) {
+        try {
+            return compileToJar(new MurmelJavaCompiler(st, libDir, getTmpDir()), history, className, jarFile);
+        }
+        catch (LambdaJError e) {
+            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
+            return false;
+        }
+        catch (Exception e) {
+            System.out.println("NOT compiled to .jar - error: ");
+            e.printStackTrace(System.out);
+            return false;
+        }
+    }
+
+    private static boolean compileToJar(MurmelJavaCompiler c, List<Object> history, Object className, Object jarFile) {
+        try {
+            final String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
+            final String clsName = className == null ? "MurmelProgram" : className.toString();
+            System.out.println("compiling...");
+            c.formsToJavaClass(clsName, history, jarFileName);
+            System.out.println("compiled to .jar file '" + jarFileName + '\'');
+            return true;
+        }
+        catch (LambdaJError e) {
+            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
+            return false;
+        }
+        catch (Exception e) {
+            System.out.println("NOT compiled to .jar - error: ");
+            e.printStackTrace(System.out);
+            return false;
+        }
+    }
+
+
+
+    /// repl and helpers
     private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
 
     /** Enter REPL, doesn't return */
@@ -4577,185 +4745,9 @@ public class LambdaJ {
         }
     }
 
-    private static Path getTmpDir() throws IOException {
-        final Path tmpDir = Files.createTempDirectory("jmurmel");
-        tmpDir.toFile().deleteOnExit();
-        return tmpDir;
-    }
 
-    /** compile history to a class and run compiled class.
-     *  if className is null "MurmelProgram" will be the class' name */
-    private static boolean runForms(List<Object> history, LambdaJ interpreter, boolean repl) {
-        MurmelProgram prg = null;
-        try {
-            final MurmelJavaCompiler c = new MurmelJavaCompiler(interpreter.symtab, interpreter.libDir, getTmpDir());
-            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
-            prg = murmelClass.getDeclaredConstructor().newInstance();
-            final long tStart = System.nanoTime();
-            final Object result = prg.body();
-            final long tEnd = System.nanoTime();
-            interpreter.traceJavaStats(tEnd - tStart);
-            if (repl || result != null) {
-                System.out.println();
-                final Object[] multipleValues = ((MurmelJavaProgram)prg).values;
-                if (multipleValues == null) {
-                    System.out.print("==> ");  interpreter.lispPrinter.printObj(result, true);  System.out.println();
-                } else {
-                    for (Object v: multipleValues) {
-                        System.out.print(" -> "); interpreter.lispPrinter.printObj(v, true); System.out.println();
-                    }
-                }
-            }
 
-            return true;
-        }
-        catch (LambdaJError e) {
-            final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
-            if (repl) {
-                System.out.println("history NOT run as Java - " + msg);
-            } else System.err.println(msg);
-        }
-        catch (Throwable t) {
-            final String loc = location(prg);
-            if (repl) {
-                System.out.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
-                t.printStackTrace(System.out);
-            }
-            else System.err.println("Caught Throwable" + loc + ": " + t);
-        }
-        return false;
-    }
-
-    private static String location(MurmelProgram prg) {
-        return prg instanceof MurmelJavaProgram ? " at " + ((MurmelJavaProgram) prg).loc : "";
-    }
-
-    // todo refactoren dass jedes einzelne file verarbeitet wird, mit parser statt arraylist, wsl am besten gemeinsam mit packages umsetzen
-    private static void compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) {
-        final SymbolTable symtab = new ListSymbolTable();
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, null);
-
-        SExpressionReader objectReader = null;
-        final Object eof = "EOF";
-        final List<Object> program = new ArrayList<>();
-        for (String fileName: files) {
-            if ("--".equals(fileName)) continue;
-            final Path p = Paths.get(fileName);
-            System.out.println("parsing " + fileName + "...");
-            try (Reader reader = Files.newBufferedReader(p)) {
-                if (objectReader == null) objectReader = new SExpressionReader(reader::read, symtab, c.intp.featuresEnvEntry, p);
-                else objectReader.setInput(reader::read, p);
-                while (true) {
-                    final Object sexp = objectReader.readObj(true, eof);
-                    if (sexp == eof) break;
-                    program.add(sexp);
-                }
-            } catch (IOException e) {
-                System.err.println();
-                System.err.println(e);
-                System.exit(1);
-            }
-        }
-        final String outFile;
-        final boolean success;
-        if (toJar) {
-            outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
-            success = compileToJar(c, program, clsName, outFile);
-        }
-        else {
-            success = compileToJava(StandardCharsets.UTF_8, c, program, clsName, outDir);
-            if (clsName == null) clsName = "MurmelProgram";
-            if (outDir == null) outDir = ".";
-            outFile = outDir + '/' + clsName + ".java";
-        }
-        if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
-    }
-
-    private static boolean compileToJava(Charset charset, SymbolTable st, Path libDir, List<Object> history, Object className, Object filename) {
-        return compileToJava(charset, new MurmelJavaCompiler(st, libDir, null), history, className, filename);
-    }
-
-    /** compile history to Java source and print or write to a file.
-     *  <ul>
-     *  <li>if className is null "MurmelProgram" will be the class' name.
-     *  <li>if filename is t the compiled Java code will be printed to the screen.
-     *  <li>if filename is null the filename will be derived from the className
-     *  <li>if filename not null then filename is interpreted as a base directory and the classname (with packages) will be appended
-     *  </ul> */
-    private static boolean compileToJava(Charset charset, MurmelJavaCompiler c, List<Object> history, Object className, Object filename) {
-        final String clsName = className == null ? "MurmelProgram" : className.toString();
-        if (filename == c.intp.sT) {
-            c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
-            return true;
-        }
-
-        final Path p;
-        if (null == filename) p = Paths.get(clsName.replace('.', '/') + ".java");
-        else p = Paths.get(filename.toString() + '/' + clsName.replace('.', '/') + ".java");
-
-        try {
-            if (p.getParent() != null) Files.createDirectories(p.getParent());
-        }
-        catch (Exception e) {
-            System.out.println("NOT compiled to Java - error: ");
-            e.printStackTrace(System.out);
-            return false;
-        }
-
-        final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-        try (OutputStream os = Files.newOutputStream(p);
-             WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
-            System.out.println("compiling...");
-            c.formsToJavaSource(writer, clsName, history);
-            System.out.println("compiled to Java file '" + p + '\'');
-            return true;
-        }
-        catch (LambdaJError e) {
-            System.out.println("NOT compiled to Java - error: " + e.getMessage());
-            return false;
-        }
-        catch (Exception e) {
-            System.out.println("NOT compiled to Java - error: ");
-            e.printStackTrace(System.out);
-            return false;
-        }
-    }
-
-    private static boolean compileToJar(SymbolTable st, Path libDir, List<Object> history, Object className, Object jarFile) {
-        try {
-            return compileToJar(new MurmelJavaCompiler(st, libDir, getTmpDir()), history, className, jarFile);
-        }
-        catch (LambdaJError e) {
-            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
-            return false;
-        }
-        catch (Exception e) {
-            System.out.println("NOT compiled to .jar - error: ");
-            e.printStackTrace(System.out);
-            return false;
-        }
-    }
-
-    private static boolean compileToJar(MurmelJavaCompiler c, List<Object> history, Object className, Object jarFile) {
-        try {
-            final String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
-            final String clsName = className == null ? "MurmelProgram" : className.toString();
-            System.out.println("compiling...");
-            c.formsToJavaClass(clsName, history, jarFileName);
-            System.out.println("compiled to .jar file '" + jarFileName + '\'');
-            return true;
-        }
-        catch (LambdaJError e) {
-            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
-            return false;
-        }
-        catch (Exception e) {
-            System.out.println("NOT compiled to .jar - error: ");
-            e.printStackTrace(System.out);
-            return false;
-        }
-    }
-
+    /// helpers for commandline argument processing
     private static void misc(String[] args) {
         if (hasFlag("--version", args)) {
             showVersion();
@@ -4775,6 +4767,17 @@ public class LambdaJ {
             showFeatureUsage();
             System.exit(0);
         }
+    }
+
+    private static Action action(String[] args) {
+        final boolean toJava      = hasFlag("--java", args);
+        final boolean toJar       = hasFlag("--jar", args);
+        final boolean run         = hasFlag("--run", args);
+        
+        if (toJar) return Action.TO_JAR;
+        if (toJava) return Action.TO_JAVA;
+        if (run) return Action.COMPILE_AND_RUN;
+        return Action.INTERPRET;
     }
 
     private static TraceLevel trace(String[] args) {
@@ -4885,6 +4888,9 @@ public class LambdaJ {
         intp.insertFront(intp.topEnv, intp.intern("*command-line-argument-list*"), arraySlice(args, n));
     }
 
+
+
+    /// functions that print info to the screen, used in REPL as well as from main()
     private static void showVersion() {
         System.out.println(ENGINE_VERSION);
     }
@@ -5039,6 +5045,37 @@ public class LambdaJ {
                 + "                          Using --XX-dyn JMurmel will no longer implement Murmel\n"
                 + "                          and your programs may silently compute different\n"
                 + "                          results!");
+    }
+
+
+
+    /// infrastructure utilities
+    private static Path getLibPath(String libDir) {
+        if (libDir == null) return null;
+        try {
+            Path libPath = null;
+            libPath = Paths.get(libDir).toAbsolutePath();
+            if (!Files.isDirectory(libPath)) {
+                System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
+                System.exit(1);
+            }
+            if (!Files.isReadable(libPath)) {
+                System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
+                System.exit(1);
+            }
+            return libPath;
+        }
+        catch (Exception e) {
+            System.err.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
+            System.exit(1);
+        }
+        return null; // notreached
+    }
+
+    private static Path getTmpDir() throws IOException {
+        final Path tmpDir = Files.createTempDirectory("jmurmel");
+        tmpDir.toFile().deleteOnExit();
+        return tmpDir;
     }
 
 
@@ -5969,7 +6006,7 @@ public class LambdaJ {
 
         /** Compile the Murmel compilation unit to Java source for a standalone application class {@code unitName}
          *  with a "public static void main()" */
-        public void formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
+        public void formsToJavaSource(Writer w, String unitName, ObjectReader forms) { // todo das ist eigentlich kein normaler ObjectReader, dieser muss toplevel forms liefern, sollte wsl ein Iterator sein
             quotedForms.clear();  qCounter = 0;
             ConsCell predefinedEnv = null;
             for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
