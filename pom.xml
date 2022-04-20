@@ -3,14 +3,14 @@
 
     <groupId>io.github.jmurmel</groupId>
     <artifactId>jmurmel-all</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.2</version>
     <packaging>pom</packaging>
 
     <scm>
         <url>https://github.com/mayerrobert/jmurmel/blob/master</url>
         <connection>scm:git:git://github.com/mayerrobert/jmurmel.git</connection>
         <developerConnection>scm:git:git@github.com:mayerrobert/jmurmel.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>jmurmel-all-1.2</tag>
     </scm>
 
     <properties>
