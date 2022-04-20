@@ -13,7 +13,7 @@ by default jmurmel.jar will be built to be Java8 compatible.
 
 Users of Java versions higher than 8 (e.g. 18) will probably do something like
 
-	mvn  install -Djavac.target=18
+    mvn  install -Djavac.target=18
 
 
 
@@ -44,30 +44,33 @@ Useful maven commandlines:
 --------------------------
 
 mvn clean install
-	do a clean build that will run on Java8, run all tests, (re-)recreate murmel-langref.md and mlib.md using sed and install to the local mavenrepo
+    do a clean build that will run on Java8, run all tests, (re-)recreate murmel-langref.md and mlib.md using sed and install to the local mavenrepo
 
 mvn clean package
-	as above but don't run sed and don't install to the local mavenrepo
+    as above but don't run sed and don't install to the local mavenrepo
 
 mvn clean install -Djavac.target=18
-	do a clean build that will run on Java18, run all tests, (re-)recreate murmel-langref.md and mlib.md using sed and install to the local mavenrepo
+    do a clean build that will run on Java18, run all tests, (re-)recreate murmel-langref.md and mlib.md using sed and install to the local mavenrepo
 
 mvn install -pl lambda
-	just rebuild jmurmel.jar, run the unit tests in lambda/src/test/java and run the testfiles in lambda/src/test/lisp
+    just rebuild jmurmel.jar, run the unit tests in lambda/src/test/java and run the testfiles in lambda/src/test/lisp
 
 mvn install -pl lambda -DskipTests
-	just rebuild jmurmel.jar w/o tests
+    just rebuild jmurmel.jar w/o tests
 
 
 mvn pmd:pmd -pl lambda
-	run PMD on JMurmel
+    run PMD on JMurmel, results will be in lambda/target/site
 
-mvn package findbugs:findbugs findbugs:gui -pl lambda
-	build and run findbugs on JMurmel and launch findbugs GUI
+mvn compile findbugs:findbugs findbugs:gui -pl lambda
+    build JMurmel, run findbugs and launch findbugs GUI
 
-mvn package -Ppitest -pl lambda
-	run mutation testing c/o https://pitest.org/, see lambda/target/pit-reports/index.html for test coverage results.
-	PIT likes Java heap memory, if it goes too slow then you might consider increasing the value for -Xmx in .mvn/jvm.config
+mvn package -Pcoverage -pl lambda
+    build JMurmel and run tests with JaCoCo, test execution coverage results will be in lambda/target/site/jacoco
+
+mvn test -Ppitest -pl lambda
+    run mutation testing c/o https://pitest.org/, see lambda/target/pit-reports/index.html for test coverage results.
+    PIT likes Java heap memory, if it goes too slow then you might consider increasing the value for -Xmx in .mvn/jvm.config
 
 
 
@@ -75,40 +78,40 @@ Other useful commandlines:
 --------------------------
 
 doskey jm=java -ea -jar lambda/target/jmurmel.jar --libdir samples.mlib $*
-	Windows cmd alias to run JMurmel
+    Windows cmd alias to run JMurmel
 
 alias jm="java -ea -jar lambda/target/jmurmel.jar --libdir samples.mlib"
-	Unix/Bash style alias that does the same
+    Unix/Bash style alias that does the same
 
 
 jm samples.murmel/murmel-test.lisp
-	run the tests in murmel-test.lisp
+    run the tests in murmel-test.lisp
 
 sbcl samples.murmel/murmel-test.lisp
-	run the tests in murmel-test.lisp using sbcl, useful after adding tests to murmel-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
+    run the tests in murmel-test.lisp using sbcl, useful after adding tests to murmel-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
 
 
 jm samples.mlib/mlib-test.lisp
-	run the tests in mlib-test.lisp, useful after making changes/ additions in mlib.lisp
+    run the tests in mlib-test.lisp, useful after making changes/ additions in mlib.lisp
 
 sbcl samples.mlib/mlib-test.lisp
-	run the tests in mlib-test.lisp using sbcl, useful after adding tests to mlib-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
+    run the tests in mlib-test.lisp using sbcl, useful after adding tests to mlib-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
 
 
 jm --run samples.murmel/julia.lisp
-	compile and run the Julia sample
+    compile and run the Julia sample
 
 cd samples.mlib/benchmark
 jm 3.01_tak.lisp
-	run the single benchmark "TAK" in interpreted mode
+    run the single benchmark "TAK" in interpreted mode
 
 cd samples.mlib/benchmark
 jm --run 3.01_tak.lisp
-	compile and run the single benchmark "TAK" as compiled Murmel
+    compile and run the single benchmark "TAK" as compiled Murmel
 
 
 sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
-	transform the Murmel language reference to markdown. (This is automatically done by "mvn install".)
+    transform the Murmel language reference to markdown. (This is automatically done by "mvn install".)
 
 sed -nf doc/mlib-to-md.sed samples.mlib/mlib.lisp > mlib.md
-	transform the Mlib reference to markdown.  (This is automatically done by "mvn install".)
+    transform the Mlib reference to markdown.  (This is automatically done by "mvn install".)

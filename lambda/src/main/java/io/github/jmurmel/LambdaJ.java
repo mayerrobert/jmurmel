@@ -158,6 +158,8 @@ public class LambdaJ {
         public Object rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
 
         ConsCell closure() { return null; }
+        /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
+        String lineInfo() { return ""; }
     }
 
     /** A murmel symbol name */
@@ -254,17 +256,18 @@ public class LambdaJ {
     }
 
     /** if an atom implements this interface then {@link #printSEx(WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
-    public interface Writeable {
+    @FunctionalInterface public interface Writeable {
         /** will be used by the Murmel primitive {@code write} */
         void printSEx(WriteConsumer out, boolean escapeAtoms);
     }
 
     @FunctionalInterface public interface Primitive extends Writeable { 
         Object applyPrimitive(ConsCell x);
+        default Object applyPrimitiveVarargs(Object... args) { return applyPrimitive(arraySlice(args, 0)); }
         @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<primitive>"); }
     }
 
-    public interface CustomEnvironmentSupplier {
+    @FunctionalInterface public interface CustomEnvironmentSupplier {
         ConsCell customEnvironment(SymbolTable symtab);
     }
 
@@ -278,13 +281,10 @@ public class LambdaJ {
         @Override public String toString() { return "Error: " + getMessage(); }
 
         private static String getErrorExp(Object[] params) {
-            if (params != null && params.length > 0 && params[params.length-1] instanceof ConsCell) return errorExp(params[params.length-1]);
+            final Object exp;
+            if (params != null && params.length > 0 && (exp = params[params.length-1]) instanceof ConsCell)
+                return System.lineSeparator() + "error occurred in " + ((ConsCell) exp).lineInfo() + printSEx(exp);
             return "";
-        }
-
-        private static String errorExp(Object exp) {
-            if (exp == null) return "";
-            return System.lineSeparator() + "error occurred in " + lineInfo(exp) + printSEx(exp);
         }
     }
 
@@ -410,12 +410,6 @@ public class LambdaJ {
 
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
         String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
-    }
-
-    /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
-    static String lineInfo(Object form) {
-        if (form instanceof SExpConsCell) return ((SExpConsCell) form).lineInfo();
-        else return "";
     }
 
     private static final class ClosureConsCell extends AbstractConsCell {
@@ -1130,23 +1124,23 @@ public class LambdaJ {
          *     <li>{@code null} to indicate EOF
          * </ul> */
         private void readToken() {
-            final int EOF = LambdaJ.EOF;
+            final int eof = LambdaJ.EOF;
             for (;;) {
                 int index = 0;
                 skipWs();
                 tok = null;
-                if (look == EOF) {
+                if (look == eof) {
                     if (trace.ge(TraceLevel.TRC_LEX)) tracer.println("*** scan  EOF");
                     return;
                 }
 
                 if (isBar(look)) {
                     look = getchar();
-                    while (look != EOF && !isBar(look)) {
+                    while (look != eof && !isBar(look)) {
                         if (index < SYMBOL_MAX) token[index++] = (char) look;
                         look = getchar(false);
                     }
-                    if (look == EOF)
+                    if (look == eof)
                         throw new ParseError("|-quoted symbol is missing closing |");
                     look = getchar(); // consume trailing |
                     final String s = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
@@ -1165,8 +1159,8 @@ public class LambdaJ {
                     do {
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar(false);
-                    } while (look != EOF && !isDQuote(look));
-                    if (look == EOF)
+                    } while (look != eof && !isDQuote(look));
+                    if (look == eof)
                         throw new ParseError("string literal is missing closing \"");
                     look = getchar(); // consume trailing "
                     tok = tokenToString(token, 1, index).intern();
@@ -1178,7 +1172,7 @@ public class LambdaJ {
                     tok = readerMacro(subChar);
                 } else {
                     boolean escapeSeen = false;
-                    while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+                    while (look != eof && !isSpace(look) && !isSyntax(look)) {
                         if (escape) escapeSeen = true;
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar();
@@ -3630,11 +3624,9 @@ public class LambdaJ {
         }
     }
 
-    private interface Invoker {
-        Object invoke(Object... args) throws Throwable;
-    }
-
     private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
+        @FunctionalInterface private interface Invoker { Object invoke(Object... args) throws Throwable; }
+
         private final Method method;
         private final Invoker invoke;
         private final UnaryOperator<Object>[] argConv;
@@ -3809,7 +3801,7 @@ public class LambdaJ {
 
                 lst = (ConsCell)cddr(lst);
             }
-            return Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { clazz, Writeable.class }, new DynamicProxy(methodToMurmelFunction));
+            return Proxy.newProxyInstance(LambdaJ.class.getClassLoader(), new Class<?>[] { clazz, Writeable.class }, new DynamicProxy(methodToMurmelFunction));
         }
         catch (ClassNotFoundException | NoSuchMethodException e) {
             throw new LambdaJError(true, "exception loading class %s", intf);
@@ -4090,11 +4082,10 @@ public class LambdaJ {
     }
 
     private class CallLambda implements MurmelFunction {
-        final ConsCell lambda;
-        final ConsCell env;
+        private final ConsCell lambda;
+        private final ConsCell env;
         CallLambda(ConsCell lambda, ConsCell topEnv) { this.lambda = lambda; this.env = topEnv; }
-        @Override
-        public Object apply(Object... args) { return applyClosure(lambda, args, env); }
+        @Override public Object apply(Object... args) { return applyClosure(lambda, args, env); }
     }
     
     Object applyClosure(ConsCell closure, Object[] args, ConsCell originalTopEnv) {
@@ -4112,14 +4103,12 @@ public class LambdaJ {
      *  </pre>
      */
     public MurmelFunction getFunction(String funcName) {
-        final Object maybeFunction = getValue(funcName);
-        return getFunction(funcName, maybeFunction);
+        return getFunction(funcName, getValue(funcName));
     }
 
     private MurmelFunction getFunction(String funcName, Object maybeFunction) {
-
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
-        if (maybeFunction instanceof Primitive)                                 { return args -> ((Primitive)maybeFunction).applyPrimitive(arraySlice(args, 0)); }
+        if (maybeFunction instanceof Primitive)                                 { return ((Primitive)maybeFunction)::applyPrimitiveVarargs; }
         if (maybeFunction instanceof ConsCell && car(maybeFunction) == sLambda) { return new CallLambda((ConsCell)maybeFunction, topEnv); }
         if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
@@ -4217,13 +4206,12 @@ public class LambdaJ {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(symtab);
         init(inReader, outWriter, customEnvironment);
         final Object eof = "EOF";
-        Object exp = program.readObj(true, eof);
         Object result = null;
-        while (exp != eof) {
+        Object exp;
+        while ((exp = program.readObj(true, eof)) != eof) {
             final long tStart = System.nanoTime();
             result = eval(exp, topEnv, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
-            exp = program.readObj(true, eof);
         }
         return result;
     }
@@ -4266,8 +4254,9 @@ public class LambdaJ {
 
     static class Exit extends RuntimeException {
         final int rc;
-        public Exit(int rc) { super(null, null, true, true); this.rc = rc; }
+        Exit(int rc) { super(null, null, true, true); this.rc = rc; }
     }
+
     private static final Exit EXIT_SUCCESS = new Exit(0);
     private static final Exit EXIT_ERROR = new Exit(1);
 
@@ -4381,6 +4370,7 @@ public class LambdaJ {
                         injectCommandlineArgs(interpreter, args); // todo ins kompilierte programm
                         runForms(parser, interpreter, false);
                         break;
+                    default: assert false: "can't happen";
                 }
             }
         }
@@ -5687,7 +5677,7 @@ public class LambdaJ {
             case "t": return _t;
             case "pi": return _pi;
             case "internal-time-units-per-second": return itups;
-            case "*command-line-argument-list*": return commandlineArgumentList;
+            case "*command-line-argument-list*": return commandlineArgumentList; // this will be assigned by genereted code at runtime
             case "*features*": return features;
             case "car": return (CompilerPrimitive)this::_car;
             case "cdr": return (CompilerPrimitive)this::_cdr;
@@ -6173,11 +6163,11 @@ public class LambdaJ {
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
-            sb.append("    // ").append(lineInfo(form)).append("(define ").append(symbol).append(" ...)\n"
+            sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
                     + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
-                    + "        loc = \"");  stringToJava(sb, lineInfo(form), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
+                    + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
                     + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = () -> value; }\n"
@@ -6198,11 +6188,11 @@ public class LambdaJ {
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env);
 
-            sb.append("    // ").append(lineInfo(form)).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
+            sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                     + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
-                    + "        loc = \"");  stringToJava(sb, lineInfo(form), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
+                    + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
                     + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
@@ -6231,7 +6221,7 @@ public class LambdaJ {
             boolean ign = false;
             while (it.hasNext()) {
                 final Object form = it.next();
-                ret.append("        loc = \""); stringToJava(ret, lineInfo(form), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        ");
+                if (consp(form)) { ret.append("        loc = \""); stringToJava(ret, ((ConsCell)form).lineInfo(), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        "); }
                 if (it.hasNext()) {
                     if (!ign) {
                         ret.append("Object ");
@@ -6548,18 +6538,18 @@ public class LambdaJ {
             }
         }
 
-        private void emitCond(WrappingWriter sb, ConsCell ccArguments, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (ccArguments == null) {
+        private void emitCond(WrappingWriter sb, ConsCell condForm, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (condForm == null) {
                 sb.append("(Object)null");
             } else {
                 sb.append("(false ? (Object)null");
-                for (final Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
+                for (final Iterator<Object> iterator = condForm.iterator(); iterator.hasNext(); ) {
                     final Object clause = iterator.next();
                     sb.append("\n        : ");
                     final Object condExpr = car(clause), condForms = cdr(clause);
                     if (condExpr == intp.sT) {
                         emitProgn(sb, condForms, env, topEnv, rsfx, isLast);  sb.append(')');
-                        if (iterator.hasNext()) System.err.println(lineInfo(clause) + "forms following default 't' form will be ignored");
+                        if (iterator.hasNext()) System.err.println(condForm.lineInfo() + "forms following default 't' form will be ignored");
                         return;
                     } else {
                         emitTruthiness(sb, condExpr, env, topEnv, rsfx);
