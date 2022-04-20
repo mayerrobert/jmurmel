@@ -1,15 +1,34 @@
 ;;; Based on https://github.com/ecraven/r7rs-benchmarks/blob/master/src/array1.scm which says it is based on
 ;;; ARRAY1 -- One of the Kernighan and Van Wyk benchmarks.
 ;;; i5-1135G7:
-;;; Murmel interpreted:  16 iterations in 5,31676  seconds walltime,   3,00935 iterations/second, 332,297     milliseconds/iteration
-;;; Murmel compiled:    137 iterations in 5,03487  seconds walltime,  27,2103  iterations/second,  36,7508    milliseconds/iteration
-;;; SBCL:              3741 iterations in 5.000085 seconds walltime, 748.18726 iterations/second,   1.3365637 milliseconds/iteration
+;;; Murmel interpreted (w/o macros):  11 iterations in 5,33380  seconds walltime,   2,06232 iterations/second, 484,891     milliseconds/iteration
+;;; Murmel compiled (w/o macros):    461 iterations in 5,00629  seconds walltime,  92,0841  iterations/second,  10,8596    milliseconds/iteration
+;;; Murmel compiled (with macros):   662 iterations in 5,00115  seconds walltime, 132,370   iterations/second,   7,55460   milliseconds/iteration
+;;; SBCL:                           3741 iterations in 5.000085 seconds walltime, 748.18726 iterations/second,   1.3365637 milliseconds/iteration
 (load "bench.lisp")
 
 #+murmel (progn
 (require "mlib")
 
 
+(define m%svref
+  (jmethod "java.util.ArrayList" "get" "int"))
+
+(define m%svset
+  (jmethod "java.util.ArrayList" "set" "int" "java.lang.Object"))
+
+(define m%svlen
+  (jmethod "java.util.ArrayList" "size"))
+
+(define m%svadd
+  (jmethod "java.util.ArrayList" "add" "java.lang.Object"))
+
+(define m%svmak-capacity
+  (jmethod "java.util.ArrayList" "new" "int"))
+
+
+;#+(or)  ; compiled Murmel is faster with macros enabled because jmethod+call will be opencoded, interpreted Murmel is faster with macros disabled
+(progn
 (defmacro m%svref (obj idx)
   `((jmethod "java.util.ArrayList" "get" "int") ,obj ,idx))
 
@@ -24,6 +43,7 @@
 
 (defmacro m%svmak-capacity (capacity)
   `((jmethod "java.util.ArrayList" "new" "int") ,capacity))
+)
 
 
 (defun make-vector (size)

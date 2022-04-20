@@ -3515,6 +3515,7 @@ public class LambdaJ {
     }
 
     /** recursively expand all macros in a form */
+    /*
     private Object expand(Object form) {
         if (!consp(form)) return form;
         final ConsCell ccForm = (ConsCell)form;
@@ -3587,6 +3588,7 @@ public class LambdaJ {
         }
         return mapcar(this::expand, ccForm);
     }
+    */
 
     private int gensymCounter;
     final Object gensym(ConsCell args) {
