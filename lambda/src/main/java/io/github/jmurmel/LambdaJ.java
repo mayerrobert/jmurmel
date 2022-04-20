@@ -4267,8 +4267,24 @@ public class LambdaJ {
 
     enum Action { INTERPRET, TO_JAVA, TO_JAR, COMPILE_AND_RUN, }
 
+    static class Exit extends RuntimeException {
+        final int rc;
+        public Exit(int rc) { super(null, null, true, true); this.rc = rc; }
+    }
+    private static final Exit EXIT_SUCCESS = new Exit(0);
+    private static final Exit EXIT_ERROR = new Exit(1);
+
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String[] args) {
+        try {
+            mainInternal(args);
+        }
+        catch (Exit e) {
+            System.exit(e.rc);
+        }
+    }
+
+    public static void mainInternal(String[] args) {
         misc(args);
         final Action action = action(args);
         final TraceLevel trace = trace(args);
@@ -4285,7 +4301,7 @@ public class LambdaJ {
 
         if (argError(args)) {
             System.err.println("LambdaJ: exiting because of previous errors.");
-            System.exit(1);
+            throw EXIT_ERROR;
         }
 
         final Path libPath = getLibPath(libDir);
@@ -4330,7 +4346,7 @@ public class LambdaJ {
         catch (IOException e) {
             System.err.println();
             System.err.println(e);
-            System.exit(1);
+            throw EXIT_ERROR;
         }
 
         // repl() doesn't return
@@ -4404,8 +4420,7 @@ public class LambdaJ {
         } catch (LambdaJError e) {
             System.err.println();
             System.err.println(e);
-            System.exit(1);
-            return null; // notreached
+            throw EXIT_ERROR;
         }
     }
 
@@ -4434,7 +4449,7 @@ public class LambdaJ {
         interpreter.init(System.in::read, System.out::print); // todo wieso?
         injectCommandlineArgs(interpreter, args); // todo die befehlszeilenargs sollten ans kompilierte programm übergeben werden, nicht an den interpreter
         final boolean success = runForms(program, interpreter, false);
-        if (!success) System.exit(1);
+        if (!success) throw EXIT_ERROR;
     }
 
     /** compile history to a class and run compiled class */
@@ -4636,7 +4651,7 @@ public class LambdaJ {
 
                 if (exp != null) {
                     if (exp == eof
-                        || exp == cmdQuit) { System.out.println("bye."); System.out.println();  System.exit(0); }
+                        || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
                     if (exp == cmdHelp)   { showHelp();  continue; }
                     if (exp == cmdEcho)   { echoHolder.value = true; continue; }
                     if (exp == cmdNoEcho) { echoHolder.value = false; continue; }
@@ -4674,7 +4689,7 @@ public class LambdaJ {
                 } else {
                     System.err.println();
                     System.err.println(e);
-                    System.exit(1);
+                    throw EXIT_ERROR;
                 }
             }
         }
@@ -4706,21 +4721,21 @@ public class LambdaJ {
     private static void misc(String[] args) {
         if (hasFlag("--version", args)) {
             showVersion();
-            System.exit(0);
+            throw EXIT_SUCCESS;
         }
 
         if (hasFlag("--help", args) || hasFlag("--usage", args)) {
             showVersion();
             System.out.println();
             showUsage();
-            System.exit(0);
+            throw EXIT_SUCCESS;
         }
 
         if (hasFlag("--help-features", args)) {
             showVersion();
             System.out.println();
             showFeatureUsage();
-            System.exit(0);
+            throw EXIT_SUCCESS;
         }
     }
 
@@ -5012,19 +5027,18 @@ public class LambdaJ {
             libPath = Paths.get(libDir).toAbsolutePath();
             if (!Files.isDirectory(libPath)) {
                 System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
-                System.exit(1);
+                throw EXIT_ERROR;
             }
             if (!Files.isReadable(libPath)) {
                 System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
-                System.exit(1);
+                throw EXIT_ERROR;
             }
             return libPath;
         }
         catch (Exception e) {
             System.err.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
-            System.exit(1);
+            throw EXIT_ERROR;
         }
-        return null; // notreached
     }
 
     private static Path getTmpDir() throws IOException {
@@ -5410,7 +5424,7 @@ public class LambdaJ {
                                                                   return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
-        private Object[] values;
+        Object[] values;
         public final Object _values            (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
@@ -5620,7 +5634,6 @@ public class LambdaJ {
 
 
         @SuppressWarnings("unused") // used by multiple-value-call
-        // todo how does this work? also: try to avoid access$ method for "private values"
         public class ValuesBuilder {
             private final ArrayList<Object> allValues = new ArrayList<>();
             
