@@ -1657,7 +1657,7 @@ public class LambdaJ {
 
         private OpenCodedPrimitive(LambdaJSymbol symbol) { this.symbol = symbol; }
 
-        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<opencoded primitive: " + symbol + '>'); }
+        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
         @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
         @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
     }
@@ -3615,7 +3615,7 @@ public class LambdaJ {
             }
         }
 
-        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java constructor: " + constructor.getName() + '>'); }
+        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
         @Override public String toString() { return "#<Java constructor: " + constructor.getName() + '>'; }
 
         @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
@@ -3672,7 +3672,7 @@ public class LambdaJ {
             }
         }
 
-        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'); }
+        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
         @Override public String toString() { return "#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'; }
 
         @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
@@ -3699,11 +3699,6 @@ public class LambdaJ {
             final UnaryOperator<Object> conv = argConv[i];
             if (conv != null) args[i] = conv.apply(args[i]);
         }
-    }
-
-    private static Primitive findJavaMethod(ConsCell x) {
-        varargsMin("jmethod", x, 2);
-        return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x)));
     }
 
     /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
@@ -3994,8 +3989,8 @@ public class LambdaJ {
         }
         
         if (haveFFI()) {
-            env = addBuiltin("jmethod", (Primitive) LambdaJ::findJavaMethod,
-                  addBuiltin("jproxy", (Primitive)this::makeProxy, env));
+            env = addBuiltin("jmethod", (Primitive) x -> { varargsMin("jmethod", x, 2); return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x))); },
+                  addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
         }
 
         if (haveAtom()) {
