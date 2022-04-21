@@ -43,8 +43,8 @@ public class CmdlineTest {
             { "error --tty", new String[] { "--tty" }, "errorform\n:q", 0, STDOUT_WELCOME_OUTPUT_ERROR_BYE, "" },
 
             { "invalid cmdline arg", new String[] { "--bla" }, null, 1, "", re("LambdaJ: unknown commandline argument", "LambdaJ: exiting because of previous errors.\n") },
-            { "--version", new String[] { "--version" }, null, 0, re("Version", "Built from jmurmel-all", "Built by", "\n"), "" },
-            { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from jmurmel-all", "Built by", "Usage:\n\n", "\n"), "" },
+            { "--version", new String[] { "--version" }, null, 0, re("Version", "Built from ", "Built by", "\n"), "" },
+            { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from ", "Built by", "Usage:\n\n", "\n"), "" },
         };
     }
 
