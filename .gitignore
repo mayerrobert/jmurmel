@@ -28,7 +28,7 @@ core
 # CVS default ignores end
 /.idea/
 /jmurmel-all.iml
-/doc/doc.iml
+/scripts/scripts.iml
 /doc/target/
 /lambda/jmurmel.iml
 /lambda/target/

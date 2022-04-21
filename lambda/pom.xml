@@ -2,13 +2,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.github.jmurmel.parent</groupId>
-        <artifactId>definitions</artifactId>
-        <relativePath>../parent/definitions/pom.xml</relativePath>
+        <groupId>io.github.jmurmel</groupId>
+        <artifactId>jmurmel-all</artifactId>
+        <relativePath>../pom.xml</relativePath>
         <version>1.3-SNAPSHOT</version>
     </parent>
 
-    <groupId>io.github.jmurmel</groupId>
     <artifactId>jmurmel</artifactId>
     <packaging>jar</packaging>
 
@@ -126,7 +125,7 @@
                 <artifactId>maven-pmd-plugin</artifactId>
                 <configuration>
                     <rulesets>
-                        <ruleset>../parent/definitions/quickstart.xml</ruleset>
+                        <ruleset>../scripts/quickstart.xml</ruleset>
                     </rulesets>
                 </configuration>
             </plugin>
