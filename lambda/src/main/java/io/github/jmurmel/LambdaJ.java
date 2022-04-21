@@ -919,7 +919,7 @@ public class LambdaJ {
         private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
         private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
 
-        @Override public void setInput(ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; init = false; }
+        @Override public void setInput(ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
         @Override public Path getFilePath() { return filePath; }
 
         /// Scanner
@@ -5042,26 +5042,57 @@ public class LambdaJ {
         return (eof) -> i.hasNext() ? i.next() : eof;
     }
 
-    // todo refactoren dass nicht erst in ein array umverpackt wird
-    private static ObjectReader parseFiles(List<String> files, LambdaJ interpreter, boolean verbose) throws IOException {
-        SExpressionReader objectReader = null;
-        final Object eof = "EOF";
-        final List<Object> program = new ArrayList<>();
-        for (String fileName : files) {
-            if ("--".equals(fileName)) continue; // todo wieso nicht break?
-            if (verbose) System.out.println("parsing " + fileName + "...");
-            final Path p = Paths.get(fileName);
-            try (Reader reader = Files.newBufferedReader(p)) {
-                if (objectReader == null) objectReader = interpreter.makeReader(reader::read, p);
-                else objectReader.setInput(reader::read, p);
-                while (true) {
-                    final Object sexp = objectReader.readObj(true, eof);
-                    if (sexp == eof) break;
-                    program.add(sexp);
-                }
-            }
+    private static class MultiFileReadSupplier implements ReadSupplier {
+        private final boolean verbose;
+        private final ObjectReader delegate;
+        private final Iterator<Path> paths;
+        private Reader reader;
+
+        public MultiFileReadSupplier(List<Path> paths, ObjectReader delegate, boolean verbose) {
+            this.paths = paths.iterator();
+            this.delegate = delegate;
+            this.verbose = verbose;
         }
-        return makeReader(program);
+
+        private void next() throws IOException {
+            final Reader old = reader;
+            reader = null;
+            if (old != null) old.close();
+            final Path p = paths.next();
+            if (verbose) System.out.println("parsing " + p.toString() + "...");
+            reader = Files.newBufferedReader(p);
+            delegate.setInput(this, p);
+        }
+
+        @Override
+        public int read() throws IOException {
+            if (reader == null && paths.hasNext()) next();
+            try {
+                final int ret = reader.read();
+                if (ret != -1) return ret;
+                if (paths.hasNext()) next();
+                else return -1;
+            }
+            catch (IOException e) {
+                final Reader old = reader;
+                reader = null;
+                try { if (old != null) old.close(); }
+                catch (IOException e2) { e.addSuppressed(e2); }
+                throw e;
+            }
+            return read();
+        }
+    }
+
+    private static ObjectReader parseFiles(List<String> files, LambdaJ interpreter, boolean verbose) {
+        final List<Path> paths = new ArrayList<>(files.size());
+        for (String fileName : files) {
+            if ("--".equals(fileName)) break;
+            paths.add(Paths.get(fileName));
+        }
+        final ObjectReader reader = interpreter.makeReader(() -> -1, null);
+        reader.setInput(new MultiFileReadSupplier(paths, reader, verbose), paths.get(0));
+        return reader;
     }
 
 
