@@ -125,12 +125,12 @@ public class LambdaJ {
     static {
         String versionInfo;
         final ClassLoader cl = LambdaJ.class.getClassLoader();
-        final URL url = cl.getResource("META-INF/MANIFEST.MF");
+        final URL url = cl.getResource("jmurmelversioninfo.properties");
         if (url == null) versionInfo = "unknown";
         else {
             try (InputStream is = url.openStream()) {
                 final Manifest manifest = new Manifest(is);
-                versionInfo = manifest.getMainAttributes().getValue("Implementation-Version");
+                versionInfo = manifest.getMainAttributes().getValue("Engine-Version");
             } catch (IOException e) {
                 versionInfo = "error";
             }
@@ -4270,7 +4270,7 @@ public class LambdaJ {
         }
     }
 
-    public static void mainInternal(String[] args) {
+    static void mainInternal(String[] args) {
         misc(args);
         final Action action = action(args);
         final TraceLevel trace = trace(args);
