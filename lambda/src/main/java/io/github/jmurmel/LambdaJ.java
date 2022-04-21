@@ -131,6 +131,7 @@ public class LambdaJ {
             try (InputStream is = url.openStream()) {
                 final Manifest manifest = new Manifest(is);
                 versionInfo = manifest.getMainAttributes().getValue("Engine-Version");
+                if (versionInfo == null) versionInfo = "unknown";
             } catch (IOException e) {
                 versionInfo = "error";
             }
@@ -4262,45 +4263,41 @@ public class LambdaJ {
 
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String[] args) {
-        try {
-            mainInternal(args);
-        }
-        catch (Exit e) {
-            System.exit(e.rc);
-        }
+        System.exit(mainInternal(args));
     }
 
-    static void mainInternal(String[] args) {
-        misc(args);
-        final Action action = action(args);
-        final TraceLevel trace = trace(args);
-        final int features = features(args);
-
-        final boolean istty       = hasFlag("--tty", args) || null != System.console();
-        final boolean repl        = hasFlag("--repl", args);
-        final boolean echo        = hasFlag("--echo", args);    // used only in repl
-        final boolean printResult = hasFlag("--result", args);  // print individual results of toplevel forms, used only when interpreting files given on the commandline or interpreting piped input
-        final boolean verbose     = hasFlag("--verbose", args);
-        final String clsName      = flagValue("--class", args);
-        final String outDir       = flagValue("--outdir", args);
-        final String libDir       = flagValue("--libdir", args);
-
-        if (argError(args)) {
-            System.err.println("LambdaJ: exiting because of previous errors.");
-            throw EXIT_ERROR;
-        }
-
-        final Path libPath = getLibPath(libDir);
-
-        final LambdaJ interpreter = new LambdaJ(features, trace, null, null, libPath);
-
-        final List<Object> history = repl ? new ArrayList<>() : null;
-
-        // process files given on the commandline
-        final List<String> files = args(args);
+    static int mainInternal(String[] args) {
         try {
-            if (!files.isEmpty()) {
-                switch (action) {
+            misc(args);
+            final Action action = action(args);
+            final TraceLevel trace = trace(args);
+            final int features = features(args);
+
+            final boolean istty = hasFlag("--tty", args) || null != System.console();
+            final boolean repl = hasFlag("--repl", args);
+            final boolean echo = hasFlag("--echo", args);    // used only in repl
+            final boolean printResult = hasFlag("--result", args);  // print individual results of toplevel forms, used only when interpreting files given on the commandline or interpreting piped input
+            final boolean verbose = hasFlag("--verbose", args);
+            final String clsName = flagValue("--class", args);
+            final String outDir = flagValue("--outdir", args);
+            final String libDir = flagValue("--libdir", args);
+
+            if (argError(args)) {
+                System.err.println("LambdaJ: exiting because of previous errors.");
+                throw EXIT_ERROR;
+            }
+
+            final Path libPath = getLibPath(libDir);
+
+            final LambdaJ interpreter = new LambdaJ(features, trace, null, null, libPath);
+
+            final List<Object> history = repl ? new ArrayList<>() : null;
+
+            // process files given on the commandline
+            final List<String> files = args(args);
+            try {
+                if (!files.isEmpty()) {
+                    switch (action) {
                     case INTERPRET:
                         interpreter.init(() -> -1, s -> {});
                         injectCommandlineArgs(interpreter, args);
@@ -4311,7 +4308,8 @@ public class LambdaJ {
                             final Path p = Paths.get(fileName);
                             try (Reader r = Files.newBufferedReader(p)) {
                                 result = interpretStream(interpreter, r::read, p, printResult, history);
-                            }                        }
+                            }
+                        }
                         if (!printResult && result != null) {
                             System.out.println();
                             System.out.println("==> " + result);
@@ -4326,34 +4324,34 @@ public class LambdaJ {
                     case COMPILE_AND_RUN:
                         compileAndRunFiles(files, interpreter, args, verbose);
                         break;
+                    }
                 }
             }
-        }
-        catch (IOException e) {
-            System.err.println();
-            System.err.println(e);
-            throw EXIT_ERROR;
-        }
+            catch (IOException e) {
+                System.err.println();
+                System.err.println(e);
+                throw EXIT_ERROR;
+            }
 
-        // repl() doesn't return
-        if (files.isEmpty() && istty || repl) repl(interpreter, !files.isEmpty(), istty, echo, history, args);
+            // repl() doesn't return
+            if (files.isEmpty() && istty || repl) repl(interpreter, !files.isEmpty(), istty, echo, history, args);
 
-        if (files.isEmpty()) {
-            final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
-            final Charset  consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
+            if (files.isEmpty()) {
+                final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
+                final Charset consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
-            if (action == Action.INTERPRET) {
-                interpreter.init(() -> -1, s -> {});
-                injectCommandlineArgs(interpreter, args);
-                final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
-                if (!printResult && result != null) {
-                    System.out.println();
-                    System.out.println("==> " + result);
-                }
-            } else {
-                final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(System.in, consoleCharset)::read, null);
+                if (action == Action.INTERPRET) {
+                    interpreter.init(() -> -1, s -> {});
+                    injectCommandlineArgs(interpreter, args);
+                    final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
+                    if (!printResult && result != null) {
+                        System.out.println();
+                        System.out.println("==> " + result);
+                    }
+                } else {
+                    final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(System.in, consoleCharset)::read, null);
 
-                switch (action) {
+                    switch (action) {
                     case TO_JAVA:
                         final boolean successJava = compileToJava(StandardCharsets.UTF_8, interpreter.symtab, interpreter.libDir, parser, clsName, outDir);
                         if (successJava) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
@@ -4366,14 +4364,19 @@ public class LambdaJ {
                     case COMPILE_AND_RUN:
                         final ObjectWriter outWriter = makeWriter(System.out::print);
                         interpreter.setReaderPrinter(parser, outWriter);
-                        interpreter.topEnv = interpreter.environment(null);
+                        interpreter.topEnv = interpreter.environment(null);  // todo wieso und wieso die beiden zeilen davor?
                         injectCommandlineArgs(interpreter, args); // todo ins kompilierte programm
                         runForms(parser, interpreter, false);
                         break;
-                    default: assert false: "can't happen";
+                    default: assert false : "can't happen";
+                    }
                 }
             }
         }
+        catch (Exit e) {
+            return e.rc;
+        }
+        return 0;
     }
 
 

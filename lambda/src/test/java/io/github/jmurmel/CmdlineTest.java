@@ -35,6 +35,14 @@ public class CmdlineTest {
             { "nulltest", new String[] {}, "", 0, "", ""},
             { "error form", new String[] {}, "errorform", 1, "", STDERR_ERROR },
             { "load invalid", new String[] {}, "(load \"invalid\")", 1, "", STDERR_ERROR },
+            { "add 1+2", new String[] {}, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
+
+            { "one file", new String[] { "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
+            { "two files", new String[] { "./src/test/lisp/empty.lisp", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
+
+            { "run one file", new String[] { "--run", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
+            { "run two files", new String[] { "--run", "./src/test/lisp/empty.lisp", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
+            { "run add 1+2", new String[] { "--run" }, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
 
             { "nulltest --repl", new String[] { "--repl" }, ":q", 0, STDOUT_WELCOME_OUTPUT_BYE, ""},
             { "error --repl", new String[] { "--repl" }, "errorform", 1, STDOUT_WELCOME_OUTPUT, STDERR_ERROR },
@@ -45,6 +53,7 @@ public class CmdlineTest {
             { "invalid cmdline arg", new String[] { "--bla" }, null, 1, "", re("LambdaJ: unknown commandline argument", "LambdaJ: exiting because of previous errors.\n") },
             { "--version", new String[] { "--version" }, null, 0, re("Version", "Built from ", "Built by", "\n"), "" },
             { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from ", "Built by", "Usage:\n\n", "\n"), "" },
+            { "--help-features", new String[] { "--help-features" }, null, 0, re("Version", "Built from ", "Built by", "Feature flags:\n\n", "\n"), "" },
         };
     }
 
@@ -61,20 +70,17 @@ public class CmdlineTest {
         final ByteArrayOutputStream captureStderr = new ByteArrayOutputStream();
         System.setErr(new PrintStream(captureStderr));
 
-        try {
-            LambdaJ.mainInternal(args);
-        }
-        catch (LambdaJ.Exit e) {
-            Assert.assertEquals(e.rc, expectRc, name + " wrong exitlevel");
-        }
+        final int rc = LambdaJ.mainInternal(args);
+
+        final String actualStderr = EolUtil.anyToUnixEol(captureStderr.toString());
+        Assert.assertTrue(expectStderr.isEmpty() && actualStderr.isEmpty() || actualStderr.matches(expectStderr),
+        name + " " + failMsg("stderr", expectStderr, actualStderr));
 
         final String actualStdout = EolUtil.anyToUnixEol(captureStdout.toString());
         Assert.assertTrue(expectStdout.isEmpty() && actualStdout.isEmpty() || actualStdout.matches(expectStdout),
                           name + " " + failMsg("stdout", expectStdout, actualStdout));
 
-        final String actualStderr = EolUtil.anyToUnixEol(captureStderr.toString());
-        Assert.assertTrue(expectStderr.isEmpty() && actualStderr.isEmpty() || actualStderr.matches(expectStderr),
-                          name + " " + failMsg("stderr", expectStderr, actualStderr));
+        Assert.assertEquals(rc, expectRc, name + " wrong exitlevel");
 
         if (stdIn != null) System.setIn(oldStdin);
         System.setOut(oldStdout);
@@ -114,7 +120,7 @@ public class CmdlineTest {
         final StringBuilder sb = new StringBuilder();
         for (int i=0; i<s.length(); i++) {
             final char c = s.charAt(i);
-            if (c == '\\' || c == '$' || c == '.' || c == '(' || c == ')') {
+            if (c == '\\' || c == '$' || c == '.' || c == '(' || c == ')' || c == '|') {
                 sb.append('\\');
             }
             sb.append(c);
