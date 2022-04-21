@@ -68,12 +68,12 @@ public class CmdlineTest {
             Assert.assertEquals(e.rc, expectRc, name + " wrong exitlevel");
         }
 
-        final String actualStdout = captureStdout.toString();
-        Assert.assertTrue(expectStdout.isEmpty() && actualStdout.isEmpty() || EolUtil.anyToUnixEol(actualStdout).matches(expectStdout),
+        final String actualStdout = EolUtil.anyToUnixEol(captureStdout.toString());
+        Assert.assertTrue(expectStdout.isEmpty() && actualStdout.isEmpty() || actualStdout.matches(expectStdout),
                           name + " " + failMsg("stdout", expectStdout, actualStdout));
 
-        final String actualStderr = captureStderr.toString();
-        Assert.assertTrue(expectStderr.isEmpty() && actualStderr.isEmpty() || EolUtil.anyToUnixEol(actualStderr).matches(expectStderr),
+        final String actualStderr = EolUtil.anyToUnixEol(captureStderr.toString());
+        Assert.assertTrue(expectStderr.isEmpty() && actualStderr.isEmpty() || actualStderr.matches(expectStderr),
                           name + " " + failMsg("stderr", expectStderr, actualStderr));
 
         if (stdIn != null) System.setIn(oldStdin);
