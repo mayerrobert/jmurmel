@@ -1,32 +1,81 @@
 package io.github.jmurmel;
 
 import org.junit.Test;
+import org.testng.Assert;
 
+import java.io.StringReader;
+
+// todo nicht immer LambdaJ.runTest(), runTest() reicht auch und braucht keinen interpreter
 public class ScannerTest {
+
+    // behaves somewhat similar to LambdaJTest.runTest() but form is only "read" not eval'd, and line ends are Unix style (as are Murmel's internal line ends)
+    private static void runTest(String name, String form, String expectedResult, Object ignored) {
+        final LambdaJ.ObjectReader reader = LambdaJ.makeReader(new StringReader(form)::read);
+        final Object result = reader.readObj("eof");
+        Assert.assertEquals(stringify(result), expectedResult, name + "failed: ");
+    }
+
+    // fake behaviour of LambdaJTest.runTest() which returns strings in dbl quotes
+    private static String stringify(Object result) {
+        if (result == null) return "nil";
+        if (result instanceof String) return "\"" + result + "\"";
+        return String.valueOf(result);
+    }
 
     @Test
     public void testDouble() {
-        LambdaJTest.runTest("double", "42.0", "42.0", null);
+        runTest("double", "42.0", "42.0", null);
     }
 
     @Test
     public void testScientificDouble() {
-        LambdaJTest.runTest("double", "1.0e3", "1000.0", null);
+        runTest("double", "1.0e3", "1000.0", null);
     }
 
     @Test
     public void testScientificNoDot() {
-        LambdaJTest.runTest("double", "1e3", "1000.0", null);
+        runTest("double", "1e3", "1000.0", null);
     }
 
     @Test
     public void testEmptySymbol() {
         LambdaJTest.runTest("empty", "(quote ||)", "||", null);
+        LambdaJTest.runTest("empty", "'||", "||", null);
     }
 
     @Test
-    public void testEmptySymbol2() {
-        LambdaJTest.runTest("empty", "'||", "||", null);
+    public void testNil() {
+        runTest("nil", "nil", "nil", null);
+    }
+
+    @Test
+    public void testSymbol() {
+        LambdaJTest.runTest("symbol starting with dbl quote", "'\\\"123", "|\"123|", null);
+        LambdaJTest.runErrorTest("unclosed |quoted symbol", "'|123", "|-quoted symbol is missing closing |");
+    }
+
+    @Test
+    public void testCharacter() {
+        LambdaJTest.runTest("char as char",   "'#\\a", "#\\a", null);       // quoted character evals to character
+        LambdaJTest.runTest("char as symbol", "'\\#\\a", "|#a|", null);     // if the # is escaped then that's really a symbol and must be printed within ||
+    }
+
+    @Test
+    public void testHash() {
+        LambdaJTest.runTest("hash space", "'#\\ ", "#\\ ", null);
+        LambdaJTest.runTest("hash Tab", "'#\\Tab", "#\\Tab", null);
+        LambdaJTest.runTest("hash Us", "'#\\Us", "#\\Us", null);
+        LambdaJTest.runTest("character specified with ascii value", "'#\\228", "#\\228", null);
+        LambdaJTest.runTest("character 10", "'#\\10", "#\\Newline", null);
+
+        LambdaJTest.runErrorTest("inv character name", "'#\\bla", "unrecognized character");
+        LambdaJTest.runErrorTest("hash invalid symbol", "'#sdf", "no dispatch function defined");
+    }
+
+    @Test
+    public void testComment() {
+        LambdaJTest.runTest("multiline comment",           "#| one\ntwo\nthree|#\n1.0", "1.0", null);
+        LambdaJTest.runErrorTest("open multiline comment", "#| one\ntwo\nthree#\n1.0", "line 1:3: EOF in multiline comment\nerror occurred in line 4:3");
     }
 
     @Test
@@ -54,6 +103,15 @@ public class ScannerTest {
         LambdaJTest.runTest("stringcloseparen", "\")\"", "\")\"", null);
     }
 
+    @Test
+    public void testString() {
+        runTest("cr-lf", "\"one\rtwo\nbla\r\nbla2\"", "\"one\ntwo\nbla\nbla2\"", null);
+
+        LambdaJTest.runErrorTest("open string", "\"blabla", "string literal is missing closing");
+        // check if different line ends mess up linenumbers in error messages
+        LambdaJTest.runErrorTest("cr-lf", "\r\r \r\n\r\n \n\n(list 'one\r'two\n'three\r\nfour)", "eval: 'four' is not bound\n" +
+                                                                               "error occurred in line 7:1..10:5: (list (quote one) (quote two) (quote three) four)");
+    }
 
 
     @Test

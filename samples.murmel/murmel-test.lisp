@@ -398,6 +398,8 @@
     (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil)
     (3.2e15   nil       t           nil         nil         nil         t           nil         t          nil          nil)
     (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil)
+    (\#\a     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    (\#a      nil       t           t           nil         nil         nil         nil         nil        nil          nil)
     ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t)
 ))
 

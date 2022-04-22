@@ -188,7 +188,7 @@ public class LambdaJ {
             if (name.isEmpty()) { out.print("||"); return; }
             if (".".equals(name)) { out.print("|.|"); return; }
             final char firstChar = name.charAt(0);
-            if (firstChar == '|' || firstChar == '"'
+            if (firstChar == '|' || firstChar == '"' || firstChar == '#'
                 || containsSExSyntaxOrWhiteSpace(name)
                 || isDouble(name) || isLong(name) || isCLDecimalLong(name)) {
                 out.print("|"); out.print(escapeSymbol(this)); out.print("|"); return;
@@ -1005,8 +1005,7 @@ public class LambdaJ {
                 if (charOrCharactername.length() == 1) return charOrCharactername.charAt(0);
                 if (isLong(charOrCharactername)) {
                     try {
-                        final int n = Integer.parseInt(charOrCharactername);
-                        if (n > 126) return (char)n;
+                        return (char) Integer.parseInt(charOrCharactername);
                     } catch (NumberFormatException e) {
                         throw new ParseError("'%s' following #\\ is not a valid number", charOrCharactername);
                     }
@@ -4179,7 +4178,7 @@ public class LambdaJ {
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
         final ObjectReader parser = init(in, out);
-        final Object exp = parser.readObj(null);
+        final Object exp = parser.readObj(true, null);
         final long tStart = System.nanoTime();
         final Object result = eval(exp, topEnv, 0, 0, 0);
         traceStats(System.nanoTime() - tStart);
