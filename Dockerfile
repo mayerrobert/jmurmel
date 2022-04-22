@@ -36,7 +36,6 @@ WORKDIR jmurmel
 COPY . .
 
 # "jlink ... --strip-debug" fails because oraclelinux:8-slim is missing objcopy. Would save 4MB in the final image.
-# Could add "jlink ... --add-modules java.desktop" which would add AWT and Swing, but that would only make sense 
 
 RUN mvn -B package -pl lambda -DskipTests && \
     jlink --output jdkbuild/jdk --compress=2 --no-header-files --no-man-pages --add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr,jdk.localedata,java.management
@@ -47,10 +46,14 @@ FROM oraclelinux:8-slim
 WORKDIR jmurmel
 COPY --from=builder /jmurmel/jdkbuild /jmurmel/lambda/target/jmurmel.jar /jmurmel/samples.mlib/mlib.lisp ./
 
+# remove the next line if you don't want/ need turtle graphics.
+# If you do remove X11 then you might also want to remove "java.desktop" in the jlink-command above, because without X11 there is no need/ use for AWT and Swing.
 RUN microdnf -y --nodocs install libX11 libXext libXrender libXtst freetype && microdnf -y clean all
 
-# this will probably not work and you will need to specify the X-server on the commandline e.g.
-# $ podman -it --rm --env DISPLAY=12.34.56.78:0.0
+# set X11 environment variables in order to make turtle frames work.
+# This will probably not work and you will need to specify the X-server on the commandline e.g.
+# $ podman -it --rm --env DISPLAY=12.34.56.78:0.0 jmurmel
 ENV DISPLAY=localhost:0.0
+ENV LIBGL_ALWAYS_INDIRECT=1
 
 ENTRYPOINT [ "./jdk/bin/java", "-Dsun.java2d.opengl=true", "-jar", "jmurmel.jar" ]
