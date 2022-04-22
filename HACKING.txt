@@ -87,6 +87,10 @@ doskey jm=java -ea -jar lambda/target/jmurmel.jar --libdir samples.mlib $*
 alias jm="java -ea -jar lambda/target/jmurmel.jar --libdir samples.mlib"
     Unix/Bash style alias that does the same
 
+export JMURMEL=.../jmurmel
+alias jm="rlwrap -C jm -i -q'\"' -b '\(\)' -f $JMURMEL/murmel.completions java -ea -jar $JMURMEL/lambda/target/jmurmel.jar --libdir $JMURMEL/samples.mlib"
+    Unix/Bash style alias that launches JMurmel with rlwrap and a TAB-completion file for Murmel.
+    (Ruthlessly stolen from https://github.com/elahtrebor/RLWRAP-SBCL-LISP-COMPLETIONS)
 
 jm samples.murmel/murmel-test.lisp
     run the tests in murmel-test.lisp

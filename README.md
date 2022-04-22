@@ -184,6 +184,9 @@ Or use JMurmel from within Emacs: add `(setq inferior-lisp-program "jm --tty")`
 to your `.emacs` file and do `M-x (run-lisp)`
 and use `C-M-x` to eval Murmel S-expressions.
 
+Or see [HACKING](HACKING) for how to use [rlwrap](https://linux.die.net/man/1/rlwrap)
+to get a command history and TAB-completion at the JMurmel REPL.
+
 ## Embedded use
 
 JMurmel can also be used embedded in another Java program.
