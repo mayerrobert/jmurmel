@@ -685,8 +685,6 @@ Macros im compiler
 -> http://clhs.lisp.se/Body/m_defmac.htm:
 -> If a defmacro form appears as a top level form... Users must ensure that the body of the macro can be evaluated at compile time if it is referenced within the file being compiled.
 
-init(), parser vs. in aufraeumen
-
 
 
 ...jdk-15\bin\jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs

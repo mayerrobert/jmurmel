@@ -3419,8 +3419,7 @@ public class LambdaJ {
             lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
             return null;
         } catch (IllegalFormatException e) {
-            throw new LambdaJError(true,
-                    "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+            throw new LambdaJError(true, "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
         }
     }
 
@@ -7744,6 +7743,7 @@ class EolUtil {
         if (index == -1) return inputValue;
 
         final int len = inputValue.length();
+
         final StringBuilder stringBuilder = new StringBuilder(len);
 
         // we get here if we just read a '\r'

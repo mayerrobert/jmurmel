@@ -1613,3 +1613,5 @@ symbolprinting stimmt nicht:
    "digits + ." ist ein integer im dezimalsystem, ohne punkt im "current input radix"
    float sind immer dezimalsystem: optionale ziffern . "ziffern und/ oder exponent"
 -> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?
+
+init(), parser vs. in aufraeumen
