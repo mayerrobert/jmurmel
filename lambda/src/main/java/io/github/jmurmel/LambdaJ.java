@@ -4256,7 +4256,9 @@ public class LambdaJ {
 
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String[] args) {
-        System.exit(mainInternal(args));
+        final int rc = mainInternal(args);
+        // if rc == 0 then don't System.exit() but simply return from main so that the program will only end after all TurtleFrames have been closed
+        if (rc != 0) System.exit(rc);
     }
 
     static int mainInternal(String[] args) {
