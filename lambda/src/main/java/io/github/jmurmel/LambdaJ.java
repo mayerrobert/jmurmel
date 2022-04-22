@@ -879,19 +879,19 @@ public class LambdaJ {
         }
 
         SExpressionReader(ReadSupplier in, SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
-            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, featuresEnvEntry, in, filePath, true);
+            this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, featuresEnvEntry, in, filePath);
         }
 
         /** Create an S-expression parser (==reader).
          * @param in a {@link ReadSupplier} that supplies characters,
          *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
          *            {@code Reader::read} will work
-         * @param eolConversion if true then any EOL will be converted to Unix EOL
+         *
          */
-        SExpressionReader(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath, boolean eolConversion) {
+        SExpressionReader(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath) {
             this.features = features; this.trace = trace; this.tracer = tracer;
             this.st = st;
-            this.in = eolConversion ? new AnyToUnixEol(in) : in;
+            this.in = in;
             this.filePath = filePath;
 
             sNot          = intern("not");
@@ -937,33 +937,30 @@ public class LambdaJ {
             } catch (IOException e) { }
         }*/
 
-        /** Translate the various line end sequences \r, \r\n and \n all to \n */
         // todo ist die lineend behandlung erforderlich? vgl EolUtil,  AnyToUnixEol
-        private void savePrevPos() { prevLineNo = lineNo; prevCharNo = charNo; }
         private int prev = -1;
         private int readchar() throws IOException {
             final int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
             if (c == '\r') {
                 prev = '\r';
-                savePrevPos();
                 lineNo++;
                 charNo = 0;
                 return '\n';
             }
             if (c == '\n' && prev == '\r') {
+                // current char is a \n, previous char was a \r which was returned as a \n.
+                // Therefore the current \n is silently dropped, return the next char.
                 prev = '\n';
                 return readchar();
             }
             if (c == '\n') {
                 prev = '\n';
-                savePrevPos();
                 lineNo++;
                 charNo = 0;
                 return '\n';
             }
-            prev = c;
-            savePrevPos();
+            prev = c; prevLineNo = lineNo; prevCharNo = charNo;
             if (c != EOF) { charNo++; }
             return c;
         }
@@ -1395,10 +1392,9 @@ public class LambdaJ {
         }
 
         /** Append rest at the end of first, modifying first in the process.
-         *  Returns a dotted list unless rest is a proper list. */
-        // ist das nconc (destructive concatenate) ?
+         *  Returns a dotted list unless rest is a proper list. This works like a two arg nconc. */
         private ConsCell appendToList(int startLine, int startChar, ConsCell first, Object rest) {
-            for (ConsCell last = first; last != null; last = (ConsCell) cdr(last)) {
+            for (ConsCell last = first; ; last = (ConsCell) cdr(last)) {
                 if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.rplacd(rest);
@@ -1409,7 +1405,6 @@ public class LambdaJ {
                     return first;
                 }
             }
-            throw errorInternal("appendToList: can't append %s and %s", printSEx(first), printSEx(rest));
         }
 
 
@@ -1665,7 +1660,7 @@ public class LambdaJ {
     /** Build environment, setup Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
     ObjectReader init(ReadSupplier in, WriteConsumer out) {
-        final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null, true);
+        final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null);
         final ObjectWriter outWriter = makeWriter(out);
         return init(parser, outWriter, null);
     }
@@ -4152,7 +4147,7 @@ public class LambdaJ {
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (lispReader == null) {
-            lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null, true);
+            lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
             topEnv = environment(null);
         }
         final ObjectReader scriptParser = lispReader;
@@ -4191,8 +4186,8 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read S-expressions from {@code in}
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpressions(ReadSupplier programSupplier, ReadSupplier in, WriteConsumer out) {
-        final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, programSupplier, null, true);
-        final ObjectReader inReader = new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null, true);
+        final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, programSupplier, null);
+        final ObjectReader inReader = new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null);
         final ObjectWriter outWriter = makeWriter(out);
         return interpretExpressions(program, inReader, outWriter, null);
     }
@@ -4385,7 +4380,7 @@ public class LambdaJ {
         try {
             final ObjectReader reader = interpreter.lispReader;
             reader.setInput(prog, fileName);
-            final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.symtab, interpreter.featuresEnvEntry, System.in::read, null, true);
+            final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.symtab, interpreter.featuresEnvEntry, System.in::read, null);
             final ObjectWriter outWriter = makeWriter(System.out::print);
             interpreter.setReaderPrinter(inReader, outWriter);
             final Object eof = "EOF";
@@ -4575,12 +4570,8 @@ public class LambdaJ {
 
 
     /// repl and helpers
-    private static class BoolHolder { boolean value; BoolHolder(boolean value) { this.value = value; }}
-
     /** Enter REPL, doesn't return */
-    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, final boolean echo, List<Object> prevHistory, String[] args) {
-        final BoolHolder echoHolder = new BoolHolder(echo);
-
+    private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, boolean echo, List<Object> prevHistory, String[] args) {
         final LambdaJSymbol cmdQuit = interpreter.intern(":q");
         final LambdaJSymbol cmdHelp = interpreter.intern(":h");
         final LambdaJSymbol cmdEcho = interpreter.intern(":echo");
@@ -4593,7 +4584,7 @@ public class LambdaJ {
         final LambdaJSymbol cmdRun = interpreter.intern(":r");
         final LambdaJSymbol cmdJar = interpreter.intern(":jar");
 
-        if (!echoHolder.value) {
+        if (!echo) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
             System.out.println();
         }
@@ -4606,20 +4597,20 @@ public class LambdaJ {
         SExpressionReader parser = null;
         ObjectWriter outWriter = null;
         ConsCell env = null;
+        final Reader consoleReader = new InputStreamReader(System.in, consoleCharset);
+        final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
         if (isInit) {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-            final AnyToUnixEol read = new AnyToUnixEol();
             parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
-                                           () -> read.read(echoHolder.value), null, false);
+                                           echo ? echoingSupplier : consoleReader::read, null);
             outWriter = interpreter.lispPrinter;
             env = interpreter.topEnv;
         }
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
-                final AnyToUnixEol read = new AnyToUnixEol();
                 parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
-                                               () -> read.read(echoHolder.value), null, false);
+                                               echo ? echoingSupplier : consoleReader::read, null);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 env = interpreter.environment(null);
@@ -4629,7 +4620,7 @@ public class LambdaJ {
                 isInit = true;
             }
 
-            if (!echoHolder.value) {
+            if (!echo) {
                 System.out.print("JMurmel> ");
                 System.out.flush();
             }
@@ -4642,8 +4633,8 @@ public class LambdaJ {
                     if (exp == eof
                         || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
                     if (exp == cmdHelp)   { showHelp();  continue; }
-                    if (exp == cmdEcho)   { echoHolder.value = true; continue; }
-                    if (exp == cmdNoEcho) { echoHolder.value = false; continue; }
+                    if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null);continue; }
+                    if (exp == cmdNoEcho) { echo = false; parser.setInput(consoleReader::read, null); continue; }
                     if (exp == cmdEnv)    { if (env != null) for (Object entry: env) System.out.println(entry);
                                                                System.out.println("env length: " + length(env));  System.out.println(); continue; }
                     if (exp == cmdRes)    { isInit = false; history.clear();  continue; }
@@ -7786,7 +7777,7 @@ class EolUtil {
  *  When reading from System.in sun.stdout.encoding will be used.
  *  Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
-class AnyToUnixEol implements LambdaJ.ReadSupplier {
+/*class AnyToUnixEol implements LambdaJ.ReadSupplier {
     private static final Charset consoleCharset;
 
     static {
@@ -7823,7 +7814,7 @@ class AnyToUnixEol implements LambdaJ.ReadSupplier {
         if (echo && c != -1) System.out.print((char)c);
         return c;
     }
-}
+}*/
 
 /** A wrapping {@link LambdaJ.WriteConsumer} that translates '\n' to the given line separator {@code eol}. */
 class UnixToAnyEol implements LambdaJ.WriteConsumer {

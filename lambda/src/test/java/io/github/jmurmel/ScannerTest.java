@@ -51,6 +51,8 @@ public class ScannerTest {
     @Test
     public void testSymbol() {
         LambdaJTest.runTest("symbol starting with dbl quote", "'\\\"123", "|\"123|", null);
+        LambdaJTest.runTest("symbol with embedded backslash", "'12\\34", "|1234|", null);
+
         LambdaJTest.runErrorTest("unclosed |quoted symbol", "'|123", "|-quoted symbol is missing closing |");
     }
 
@@ -74,7 +76,7 @@ public class ScannerTest {
 
     @Test
     public void testComment() {
-        LambdaJTest.runTest("multiline comment",           "#| one\ntwo\nthree|#\n1.0", "1.0", null);
+        LambdaJTest.runTest("multiline comment",           "#| one\ntwo|\nthree|#\n1.0", "1.0", null);
         LambdaJTest.runErrorTest("open multiline comment", "#| one\ntwo\nthree#\n1.0", "line 1:3: EOF in multiline comment\nerror occurred in line 4:3");
     }
 
