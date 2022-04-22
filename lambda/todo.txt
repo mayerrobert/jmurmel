@@ -4,6 +4,8 @@ zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
 
 
+mit java.util.concurrent.locks.ReentrantLock kann man synchronized nachbasteln
+
 evlis könnte symbole durch eine environmententry referenz ersetzen:
 -> evlis schaut beim iterieren: ist es ein symbol, wenn ja sucht evlis 1x mit assq die conscell im environment, und ersetzt das symbol durch (envref enventry)
    die neue "special form" envref muss in eval eingebaut werden, und setq muss auch erweitert werden/ damit umgehen können, weil dann kann "(setq (envref enventry) value)" vorkommen

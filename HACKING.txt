@@ -72,6 +72,10 @@ mvn test -Ppitest -pl lambda
     run mutation testing c/o https://pitest.org/, see lambda/target/pit-reports/index.html for test coverage results.
     PIT likes Java heap memory, if it goes too slow then you might consider increasing the value for -Xmx in .mvn/jvm.config
 
+mvn test -Ppitest -pl lambda -DwithHistory=true -DtargetClasses=io.github.jmurmel.LambdaJ$SExpressionReader
+    run mutation testing c/o https://pitest.org/ and only mutate the class SExpressionReader, do incremental processing if possible
+    useful when making changes in one class only and/ or changing/ adding tests that should test one class
+
 
 
 Other useful commandlines:
