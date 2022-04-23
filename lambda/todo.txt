@@ -1,7 +1,5 @@
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
-environment() sollte void sein, in repl brauchts keine variable env
-
 
 
 

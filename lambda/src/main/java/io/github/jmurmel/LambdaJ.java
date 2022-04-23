@@ -1667,7 +1667,7 @@ public class LambdaJ {
 
     private ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
         setReaderPrinter(inReader, outWriter);
-        topEnv = environment(customEnv);
+        environment(customEnv);
         nCells = 0; maxEnvLen = 0;
         return inReader;
     }
@@ -3823,8 +3823,8 @@ public class LambdaJ {
 
 
     /** build an environment by prepending the previous environment {@code env} with the primitive functions,
-     *  generating symbols in the {@link SymbolTable} {@code symtab} on the fly */
-    private ConsCell environment(ConsCell env) {
+     *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
+    private void environment(ConsCell env) {
         if (haveIO()) {
             final Primitive freadobj =  a -> {
                 noArgs("read", a);
@@ -4045,7 +4045,7 @@ public class LambdaJ {
                   env)));
         }
 
-        return env;
+        topEnv = env;
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
@@ -4145,9 +4145,9 @@ public class LambdaJ {
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(Reader program, Reader in, Writer out) {
-        if (lispReader == null) {
+        if (topEnv == null) {
             lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
-            topEnv = environment(null);
+            environment(null);
         }
         final ObjectReader scriptParser = lispReader;
         scriptParser.setInput(program::read, null);
@@ -4359,7 +4359,7 @@ public class LambdaJ {
                     case COMPILE_AND_RUN:
                         final ObjectWriter outWriter = makeWriter(System.out::print);
                         interpreter.setReaderPrinter(parser, outWriter);
-                        interpreter.topEnv = interpreter.environment(null);  // todo wieso und wieso die beiden zeilen davor?
+                        interpreter.environment(null);  // todo wieso und wieso die beiden zeilen davor?
                         injectCommandlineArgs(interpreter, args); // todo ins kompilierte programm
                         runForms(parser, interpreter, false);
                         break;
@@ -4573,17 +4573,18 @@ public class LambdaJ {
     /// repl and helpers
     /** Enter REPL, doesn't return */
     private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, boolean echo, List<Object> prevHistory, String[] args) {
-        final LambdaJSymbol cmdQuit = interpreter.intern(":q");
-        final LambdaJSymbol cmdHelp = interpreter.intern(":h");
-        final LambdaJSymbol cmdEcho = interpreter.intern(":echo");
+        final LambdaJSymbol cmdQuit   = interpreter.intern(":q");
+        final LambdaJSymbol cmdHelp   = interpreter.intern(":h");
+        final LambdaJSymbol cmdEcho   = interpreter.intern(":echo");
         final LambdaJSymbol cmdNoEcho = interpreter.intern(":noecho");
-        final LambdaJSymbol cmdEnv = interpreter.intern(":env");
-        final LambdaJSymbol cmdRes = interpreter.intern(":res");
-        final LambdaJSymbol cmdList = interpreter.intern(":l");
-        final LambdaJSymbol cmdWrite = interpreter.intern(":w");
-        final LambdaJSymbol cmdJava = interpreter.intern(":java");
-        final LambdaJSymbol cmdRun = interpreter.intern(":r");
-        final LambdaJSymbol cmdJar = interpreter.intern(":jar");
+        final LambdaJSymbol cmdEnv    = interpreter.intern(":env");
+        final LambdaJSymbol cmdMacros = interpreter.intern(":macros");
+        final LambdaJSymbol cmdRes    = interpreter.intern(":res");
+        final LambdaJSymbol cmdList   = interpreter.intern(":l");
+        final LambdaJSymbol cmdWrite  = interpreter.intern(":w");
+        final LambdaJSymbol cmdJava   = interpreter.intern(":java");
+        final LambdaJSymbol cmdRun    = interpreter.intern(":r");
+        final LambdaJSymbol cmdJar    = interpreter.intern(":jar");
 
         if (!echo) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
@@ -4597,7 +4598,6 @@ public class LambdaJ {
         final List<Object> history = prevHistory == null ? new ArrayList<>() : prevHistory;
         SExpressionReader parser = null;
         ObjectWriter outWriter = null;
-        ConsCell env = null;
         final Reader consoleReader = new InputStreamReader(System.in, consoleCharset);
         final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
         if (isInit) {
@@ -4605,7 +4605,6 @@ public class LambdaJ {
             parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
                                            echo ? echoingSupplier : consoleReader::read, null);
             outWriter = interpreter.lispPrinter;
-            env = interpreter.topEnv;
         }
         for (;;) {
             if (!isInit) {
@@ -4614,8 +4613,7 @@ public class LambdaJ {
                                                echo ? echoingSupplier : consoleReader::read, null);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
-                env = interpreter.environment(null);
-                interpreter.topEnv = env;
+                interpreter.environment(null);
                 injectCommandlineArgs(interpreter, args);
                 interpreter.featuresEnvEntry.rplacd(interpreter.makeFeatureList());
                 isInit = true;
@@ -4636,8 +4634,6 @@ public class LambdaJ {
                     if (exp == cmdHelp)   { showHelp();  continue; }
                     if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null);continue; }
                     if (exp == cmdNoEcho) { echo = false; parser.setInput(consoleReader::read, null); continue; }
-                    if (exp == cmdEnv)    { if (env != null) for (Object entry: env) System.out.println(entry);
-                                                               System.out.println("env length: " + length(env));  System.out.println(); continue; }
                     if (exp == cmdRes)    { isInit = false; history.clear();  continue; }
                     if (exp == cmdList)   { listHistory(history); continue; }
                     if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
@@ -4645,13 +4641,23 @@ public class LambdaJ {
                     if (exp == cmdRun)    { runForms(makeReader(history), interpreter, true); continue; }
                     if (exp == cmdJar)    { compileToJar(interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek"   .equals(strExp)) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
+                    if (exp == cmdEnv)    {
+                        if (interpreter.topEnv != null) for (Object entry: interpreter.topEnv) System.out.println(entry);
+                        System.out.println("env length: " + length(interpreter.topEnv));  System.out.println(); continue; }
+                    if (exp == cmdMacros) {
+                        final ArrayList<Object> names = new ArrayList<>(interpreter.macros.keySet());
+                        names.sort(Comparator.comparing(Object::toString));
+                        for (Object name: names) System.out.println(name + ": " + interpreter.macros.get(name));
+                        System.out.println("number of macros: " + interpreter.macros.size());
+                        System.out.println(); continue;
+                    }
                 }
                 history.add(exp);
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
                 //final Object result = interpreter.eval(interpreter.expand(exp), env, 0, 0, 0);
-                final Object result = interpreter.eval(exp, env, 0, 0, 0);
+                final Object result = interpreter.eval(exp, interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();
@@ -4852,6 +4858,7 @@ public class LambdaJ {
         + "  :echo .......................... print forms to screen before eval'ing\n"
         + "  :noecho ........................ don't print forms\n"
         + "  :env ........................... list current global environment\n"
+        + "  :macros ........................ list currently defined macros\n"
         + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
         + "\n"
         + "  :l ............................. print history to the screen\n"
