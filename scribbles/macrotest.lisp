@@ -26,8 +26,11 @@
 (setq x 0)
 ; f sollte bereits das 1x expandierte macro enthalten und immer dieselbe zahl ausgeben
 ; in sbcl ist das so, in murmel nicht: murmel expandiert jedesmal und zaehlt hoch
+; -> fixed
 (f)
 (f)
+(pprint f) ; after the first application f will have the macro just-in-time expanded and no longer contain the macro application but the expansion
+(terpri)
 
 
 ; f wird ersetzt durch eine version mit 1x expandiertem macro

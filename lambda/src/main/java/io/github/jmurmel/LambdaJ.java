@@ -1884,7 +1884,7 @@ public class LambdaJ {
 
                     /// eval - function application
                     if (funcall) {
-                        /// eval - macro application
+                        /// eval - macro application. Only toplevel macro applications are expanded here, others are just-in-time expanded with tryExpand()
                         if (null != (macroClosure = macros.get(operator))) {
                             form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
                             isTc = true;
@@ -1990,9 +1990,12 @@ public class LambdaJ {
                     /// eval - eval a list of forms
                     if (ccForms != null) {
                         // todo dotted list wird cce geben
-                        for (; cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms))
+                        for (; cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms)) {
+                            tryExpand(ccForms, stack, level, traceLvl);
                             eval(car(ccForms), env, stack, level, traceLvl);
+                        }
                         traceStack = push(operator, traceStack);
+                        tryExpand(ccForms, stack, level, traceLvl);
                         form = car(ccForms); isTc = true; func = null; values = NO_VALUES; continue tailcall;
                     }
 
@@ -2020,6 +2023,15 @@ public class LambdaJ {
                 final ConsCell entry = (ConsCell) caar(c);
                 entry.rplacd(cdar(c));
             }
+        }
+    }
+
+    private void tryExpand(ConsCell ccForms, int stack, int level, int traceLvl) {
+        final Object maybeMacroCall = car(ccForms);
+        final ConsCell macro, ccMacroCall;
+        final Object macroName;
+        if (consp(maybeMacroCall) && (macro = macros.get(macroName = car(ccMacroCall = (ConsCell)maybeMacroCall))) != null) {
+            ccForms.rplaca(evalMacro(macroName, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
         }
     }
 
@@ -2333,18 +2345,18 @@ public class LambdaJ {
         dbgEvalStart("evlis", forms, env, stack, level);
         ListConsCell head = null;
         ListConsCell insertPos = null;
-        if (forms != null)
-            for (Object form: forms) {
-                final ListConsCell currentArg = cons(eval(form, env, stack, level, traceLvl), null);
-                if (head == null) {
-                    head = currentArg;
-                    insertPos = head;
-                }
-                else {
-                    insertPos.rplacd(currentArg);
-                    insertPos = currentArg;
-                }
+        for (ConsCell rest = forms; rest != null; rest = (ConsCell)cdr(rest)) {
+            tryExpand(rest, stack, level, traceLvl);
+            final ListConsCell currentArg = cons(eval(car(rest), env, stack, level, traceLvl), null);
+            if (head == null) {
+                head = currentArg;
+                insertPos = head;
             }
+            else {
+                insertPos.rplacd(currentArg);
+                insertPos = currentArg;
+            }
+        }
         dbgEvalDone("evlis", forms, head, stack, level);
         return head;
     }
