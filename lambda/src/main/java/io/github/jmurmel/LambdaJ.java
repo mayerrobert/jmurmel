@@ -1699,7 +1699,6 @@ public class LambdaJ {
 
                 level++;
                 dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
-                final Object operator;
 
                 /// eval - lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
@@ -1721,7 +1720,10 @@ public class LambdaJ {
                 /// eval - the form is enclosed in parentheses, either a special form or a function application
                 else if (consp(form)) {
                     final ConsCell ccForm = (ConsCell)form;
-                    operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+
+                    final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                    if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
+
                     final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
 
                     boolean funcall = true;
@@ -1729,7 +1731,7 @@ public class LambdaJ {
                     final ConsCell macroClosure;
 
 
-                    if (operator != null && symbolp(operator)) switch (((LambdaJSymbol)operator).wellknownSymbol) {
+                    if (symbolp(operator)) switch (((LambdaJSymbol)operator).wellknownSymbol) {
                         /// eval - special forms
 
                         /// eval - (quote exp) -> exp
@@ -1865,7 +1867,7 @@ public class LambdaJ {
                         /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
                         case sLet:
                         case sLetStar:
-                        case sLetrec: { if (operator != sLet && operator != sLetStar && operator != sLetrec) break;
+                        case sLetrec: {
                             final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
                             ccForms = formsAndEnv[0];
                             env = formsAndEnv[1];
@@ -1883,19 +1885,19 @@ public class LambdaJ {
                             break; // fall through to "eval a list of forms"
                         }
 
-                        default: break;
+                        default:
+                            /// eval - macro application. Only toplevel macro applications are expanded here, others are just-in-time expanded with tryExpand()
+                            if (null != (macroClosure = ((LambdaJSymbol)operator).macro)) {
+                                form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
+                                isTc = true;
+                                continue tailcall;
+                            }
                     }
 
 
 
                     /// eval - function application
                     if (funcall) {
-                        /// eval - macro application. Only toplevel macro applications are expanded here, others are just-in-time expanded with tryExpand()
-                        if (operator != null && symbolp(operator) && null != (macroClosure = ((LambdaJSymbol)operator).macro)) {
-                            form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
-                            isTc = true;
-                            continue tailcall;
-                        }
 
                         /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
                         if (operator == ocEval) {
@@ -1952,17 +1954,17 @@ public class LambdaJ {
                             // (mostly) respect evaluation order: operator must be eval'd before arguments.
                             // The operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
                             // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
-                            if (speed >= 1 && (operator == null || symbolp(operator) && ((LambdaJSymbol)operator).wellknown())) {
-                                // cheat to gain performance: null aka nil and wellknown symbols are known to exist and will be looked up later out of order if needed
+                            if (speed >= 1 && symbolp(operator) && ((LambdaJSymbol)operator).wellknown()) {
+                                // cheat to gain performance: wellknown symbols are known to exist and will be looked up later out of order if needed
                                 // skip eval with an expensive assq call for now
                             }
                             else func = eval(operator, env, stack, level, traceLvl);
                             argList = evlis(ccArguments, env, stack, level, traceLvl);
-                            if (speed >= 1 && symbolp(operator)) {
+                            if (speed >= 1 && symbolp(operator)) { // todo && wellknown? weil sonst geht opencode eh nicht. und: das ganze if rausziehen, das gibts 2x
                                 result = evalOpencode((LambdaJSymbol) operator, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
-                            if (func == null) func = operator == null ? null : cdr(assq(operator, env));
+                            if (func == null) func = cdr(assq(operator, env));
                             // fall through to "actually perform..."
                         }
 

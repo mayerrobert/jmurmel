@@ -41,6 +41,7 @@ zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 mit java.util.concurrent.locks.ReentrantLock kann man synchronized nachbasteln
 
 
+
 evlis könnte symbole durch eine environmententry referenz ersetzen:
 -> evlis schaut beim iterieren: ist es ein symbol, wenn ja sucht evlis 1x mit assq die conscell im environment, und ersetzt das symbol durch (envref enventry)
    die neue "special form" envref muss in eval eingebaut werden, und setq muss auch erweitert werden/ damit umgehen können, weil dann kann "(setq (envref enventry) value)" vorkommen
@@ -50,6 +51,28 @@ evlis könnte symbole durch eine environmententry referenz ersetzen:
 -> in evlis UND beim abarbeiten einer function application expandieren/ ersetzen
 -> envref für freie variablen, paramref für parameter: paramref enthält einen offset, und gelesen wird mit (cdr (nth env offset)) oder so
    envref geht nicht für parameter weil da würden die argumente des ersten aufrufs hart verdrahtet
+
+statt dem "opencoden" im interpreter könnte ähnlich wie tryExpand gecheckt werden, ob das car der form ein symbol das auf eine primitive zeigt. (muss aber vor evlis call passieren)
+ falls ja wird das car durch ein nicht internes symbol "prim-application" ersetzt und danach die adresse der primitive reingezwickt.
+ z.b. (car 1 2) -> (prim-application #<car> 1 2). "prim-application" kommt in den switch mit den special forms, ist also auch eine special form, die
+ in der sprache aber nicht sichtbar ist weil nicht interned. diese neue "hidden special form" macht evlis und ruft dann die primitive auf.
+ -> darf nur bei speed >= 1 gemacht werden, weil sonst könnte sich das ändern, was hinter dem jeweiligen symbol liegt (bei speed=0 können auch primitives mit setq geändert werden)
+    -> ist aber doch eine änderung zu bisher, weil derzeit kann auch bei primitives ein macro davorschalten
+ -> evalOpencode brauchts dann nicht mehr, und der switch in opencode fällt weg
+ -> wenns einmal umgepatcht ist, werden primitive-aufrufe immer gleich im ersten switch behandelt, keine ifs, kein checken obs ein macro ist
+
+??? ähnlich könnte man CPS on-the-fly machen: eine neue special form, die bekommt als zusätzlichen parameter die "next" funktion. nach abarbeiten der aktuellen forms gehts mit "continue tailcall"
+dorthin. 
+
+der trick mit nicht-internden symbolen müsste für "hidden special forms" aber auch für "jmurmel interne primitives" gehen.
+
+
+zip einen zusätzlichen parameter "append-to" geben, damit könnte man bei tailcalls ConsCells wiederbenutzen. bei "let loop" gibts viele tailcalls, das müsste die churn rate runtersetzen
+ähnliches müsste im compiler auch gehen: statt einen call mit argumenten und commas:
+-> tailcall(f, reassign3(args, v1, v2, v3)) oder
+   tailcall(f, reassign1(args, v1) usw.
+   oder gleich tailcall3(f, args, v1, v2, v3) - wenn args zufällig die passende länge hat, wird wiederbenutzt, sonst wird ein neues array allokiert
+   -> ist aber kompliziert, wsl. ist allokieren+gc schneller als diese komplizierte logik
 
 
 import könnte alle public methoden einer java klasse ::-en, vielleicht ein optionales präfix als argument für import?
