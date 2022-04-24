@@ -168,6 +168,7 @@ public class LambdaJ {
         private static final long serialVersionUID = 1L;
         final String name;
         final WellknownSymbol wellknownSymbol;
+        ConsCell macro;
 
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
@@ -728,17 +729,6 @@ public class LambdaJ {
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
         expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
-
-        // reset the opencoded primitives, new symboltable means new (blank) environment. #environment may or may not re-assign these
-        ocEval = null;
-        ocApply = null;
-
-        topEnv = null;
-
-        traced = null;
-
-        macros.clear();
-        modules.clear();
     }
 
     private ConsCell makeFeatureList() {
@@ -1682,7 +1672,13 @@ public class LambdaJ {
         return inReader;
     }
 
-    final Map<Object, ConsCell> macros = new HashMap<>();
+    void clearMacros() {
+        if (symtab == null) return;
+        for (Object entry: ((ListSymbolTable)symtab).symbols) {
+            if (entry != null) ((LambdaJSymbol)entry).macro = null;
+        }
+    }
+
     final Set<Object> modules = new HashSet<>();
     int speed = 1; // changed by (declaim (optimize (speed...
 
@@ -1895,7 +1891,7 @@ public class LambdaJ {
                     /// eval - function application
                     if (funcall) {
                         /// eval - macro application. Only toplevel macro applications are expanded here, others are just-in-time expanded with tryExpand()
-                        if (null != (macroClosure = macros.get(operator))) {
+                        if (operator != null && symbolp(operator) && null != (macroClosure = ((LambdaJSymbol)operator).macro)) {
                             form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
                             isTc = true;
                             continue tailcall;
@@ -2045,15 +2041,11 @@ public class LambdaJ {
         final Object maybeMacroCall = car(ccForms);
         if (!consp(maybeMacroCall)) return;
 
-        final ConsCell macro, ccMacroCall;
+        final ConsCell ccMacroCall;
         final Object op = car(ccMacroCall = (ConsCell)maybeMacroCall);
         if (symbolp(op)) {
-            if (((LambdaJSymbol)op).specialForm())
-                // avoid macro lookup for special forms. This can happen when a function application argument list contains special forms and tryExpand is called from evlis().
-                // Without this check macros could change special forms, also it's faster.
-                return;
-        }
-        if ((macro = macros.get(op)) != null) {
+            final ConsCell macro = ((LambdaJSymbol)op).macro;
+            if (macro == null) return;
             ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
         }
     }
@@ -2061,6 +2053,11 @@ public class LambdaJ {
     static ConsCell listOrMalformed(String op, Object args) {
         if (!listp(args)) errorMalformed(op, "a list", args);
         return (ConsCell)args;
+    }
+
+    static LambdaJSymbol symbolOrMalformed(String op, Object args) {
+        if (!symbolp(args)) errorMalformed(op, "a symbol", args);
+        return (LambdaJSymbol)args;
     }
 
     private Object evalSetq(ConsCell arguments, ConsCell env, int stack, int level, int traceLvl) {
@@ -2086,16 +2083,17 @@ public class LambdaJ {
 
     private Object evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
         varargs1("defmacro", arguments);
-        final Object macroName = car(arguments);
+        final LambdaJSymbol macroName = symbolOrMalformed("defmacro", car(arguments));
         notReserved("defmacro", macroName);
         final int arglen = length(arguments);
         if (arglen == 1) {
-            return macros.remove(macroName) != null ? macroName : null;
+            final boolean wasMacro = macroName.macro != null;
+            macroName.macro = null;
+            return wasMacro ? macroName : null;
         }
         else if (arglen >= 3) {
             final ListConsCell paramsAndBody = cons(cadr(arguments), cddr(arguments));
-            final ConsCell closure = makeClosureFromForm(cons(sLambda, paramsAndBody), env);
-            macros.put(macroName, closure);
+            macroName.macro = makeClosureFromForm(cons(sLambda, paramsAndBody), env);
             return macroName;
         }
         else throw errorMalformed("defmacro", printSEx(form));
@@ -3263,6 +3261,11 @@ public class LambdaJ {
         return (ConsCell)a;
     }
 
+    static LambdaJSymbol requireNonNilSymbol(String func, Object a) {
+        if (a == null || !symbolp(a)) throw new LambdaJError(true, "%s: expected a nonnil symbol argument but got %s", func, printSEx(a));
+        return (LambdaJSymbol)a;
+    }
+
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
@@ -3525,14 +3528,14 @@ public class LambdaJ {
     }
 
     final Object macroexpandImpl(ConsCell args) {
-        final Object operator = car(args);
-        final ConsCell macroClosure = macros.get(operator);
+        final LambdaJSymbol macroSymbol = requireNonNilSymbol("macroexpand-1", car(args));
+        final ConsCell macroClosure = macroSymbol.macro;
         if (macroClosure == null) {
             values = cons(args, (cons(null, null)));
             return args;
         }
         final ConsCell arguments = (ConsCell) cdr(args);
-        final Object expansion = evalMacro(operator, macroClosure, arguments, 0, 0, 0);
+        final Object expansion = evalMacro(macroSymbol, macroClosure, arguments, 0, 0, 0);
         values = cons(expansion, (cons(sT, null)));
         return expansion;
     }
@@ -4650,6 +4653,8 @@ public class LambdaJ {
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 interpreter.environment(null);
+                interpreter.clearMacros();
+                interpreter.modules.clear();
                 injectCommandlineArgs(interpreter, args);
                 interpreter.featuresEnvEntry.rplacd(interpreter.makeFeatureList());
                 isInit = true;
@@ -4681,10 +4686,15 @@ public class LambdaJ {
                         if (interpreter.topEnv != null) for (Object entry: interpreter.topEnv) System.out.println(entry);
                         System.out.println("env length: " + length(interpreter.topEnv));  System.out.println(); continue; }
                     if (exp == cmdMacros) {
-                        final ArrayList<Object> names = new ArrayList<>(interpreter.macros.keySet());
+                        final ArrayList<LambdaJSymbol> names = new ArrayList<>();
+                        for (Object entry: ((ListSymbolTable)interpreter.symtab).symbols) {
+                            if (entry == null) continue;
+                            final LambdaJSymbol sym = (LambdaJSymbol)entry;
+                            if (sym.macro != null) names.add(sym);
+                        }
                         names.sort(Comparator.comparing(Object::toString));
-                        for (Object name: names) System.out.println(name + ": " + interpreter.macros.get(name));
-                        System.out.println("number of macros: " + interpreter.macros.size());
+                        for (LambdaJSymbol name: names) System.out.println(name + ": " + name.macro);
+                        System.out.println("number of macros: " + names.size());
                         System.out.println(); continue;
                     }
                 }
@@ -6132,7 +6142,7 @@ public class LambdaJ {
             }
             implicitDecl = null;
 
-            intp.macros.clear(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
+            intp.clearMacros(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
 
             // emit getValue() for embed API
             ret.append("    @Override public Object getValue(String symbol) {\n");
@@ -6201,7 +6211,7 @@ public class LambdaJ {
                 }
 
                 final ConsCell macroClosure;
-                if (null != (macroClosure = intp.macros.get(op))) {
+                if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
                     final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(form), 0, 0, 0);
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
                 }
@@ -6349,17 +6359,17 @@ public class LambdaJ {
 
                 if (consp(form)) {
                     final ConsCell ccForm = (ConsCell)form;
-                    final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                    final Object op = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ expressions
 
 
                     /// * special forms:
 
                     ///     - quote
-                    if (intp.sQuote == operator) { emitQuotedForm(sb, car(ccArguments), true); return; }
+                    if (intp.sQuote == op) { emitQuotedForm(sb, car(ccArguments), true); return; }
 
                     ///     - if
-                    if (intp.sIf == operator) {
+                    if (intp.sIf == op) {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.sNull) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
@@ -6376,19 +6386,19 @@ public class LambdaJ {
                     }
 
                     ///     - cond
-                    if (intp.sCond == operator) {
+                    if (intp.sCond == op) {
                         emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - lambda
-                    if (intp.sLambda == operator) {
+                    if (intp.sLambda == op) {
                         emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
                         return;
                     }
 
                     ///     - setq
-                    if (intp.sSetQ == operator) {
+                    if (intp.sSetQ == op) {
                         if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
                         else if (cddr(ccArguments) == null)
                             emitSetq(sb, ccArguments, env, topEnv, rsfx, true);
@@ -6405,7 +6415,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sDefine == operator) {
+                    if (intp.sDefine == op) {
                         if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
                         defined("define", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
@@ -6413,7 +6423,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sDefun == operator) {
+                    if (intp.sDefun == op) {
                         if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
                         defined("defun", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
@@ -6421,7 +6431,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sDefmacro == operator) {
+                    if (intp.sDefmacro == op) {
                         if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
                         final Object result = intp.eval(form, null);
                         if (result != null) sb.append("intern(\"").append(car(ccArguments)).append("\")");
@@ -6430,21 +6440,21 @@ public class LambdaJ {
                     }
 
                     ///     - progn
-                    if (intp.sProgn == operator) {
+                    if (intp.sProgn == op) {
                         emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                    if (intp.sLabels == operator) {
+                    if (intp.sLabels == op) {
                         emitLabels(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
-                    if (intp.sLet == operator) {
+                    if (intp.sLet == op) {
                         if (car(ccArguments) == intp.sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
                         else
@@ -6454,7 +6464,7 @@ public class LambdaJ {
 
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                    if (intp.sLetStar == operator) {
+                    if (intp.sLetStar == op) {
                         if (car(ccArguments) == intp.sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
                         else
@@ -6464,12 +6474,12 @@ public class LambdaJ {
 
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
-                    if (intp.sLetrec == operator) {
+                    if (intp.sLetrec == op) {
                         emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
                         return;
                     }
 
-                    if (intp.sMultipleValueCall == operator) {
+                    if (intp.sMultipleValueCall == op) {
                         sb.append(isLast ? "tailcall(" : "funcall(");
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         if (cdr(ccArguments) != null) {
@@ -6487,7 +6497,7 @@ public class LambdaJ {
                     }
 
                     ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
-                    if (intp.sMultipleValueBind == operator) {
+                    if (intp.sMultipleValueBind == op) {
                         varargsMin("multiple-value-bind", ccArguments, 2);
                         final ConsCell vars = listOrMalformed("multiple-value-bind", car(ccArguments));
                         final boolean varargs = dottedList(vars);
@@ -6505,24 +6515,24 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sLoad == operator) {
+                    if (intp.sLoad == op) {
                         varargs1("load", ccArguments);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
                         loadFile(false, "load", sb, car(ccArguments), env, topEnv, rsfx-1, isLast, null, null);
                         return;
                     }
 
-                    if (intp.sRequire == operator) {
+                    if (intp.sRequire == op) {
                         // pass1 has replaced all toplevel (require)s with the file contents
                         errorNotImplemented("require as non-toplevel form is not implemented");
                     }
 
-                    if (intp.sProvide == operator) {
+                    if (intp.sProvide == op) {
                         // pass 2 shouldn't see this
                         errorNotImplemented("provide as non-toplevel form is not implemented");
                     }
 
-                    if (intp.sDeclaim == operator) {
+                    if (intp.sDeclaim == op) {
                         intp.evalDeclaim(rsfx, ccArguments);
                         sb.append("(Object)null");
                         return;
@@ -6530,14 +6540,14 @@ public class LambdaJ {
 
                     /// * macro expansion
                     final ConsCell macroClosure;
-                    if (null != (macroClosure = intp.macros.get(operator))) {
-                        final Object expansion = intp.evalMacro(operator, macroClosure, ccArguments, 0, 0, 0);
+                    if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
+                        final Object expansion = intp.evalMacro(op, macroClosure, ccArguments, 0, 0, 0);
                         emitForm(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
-                    if (symbolEq(operator, "macroexpand-1")) {
+                    if (symbolEq(op, "macroexpand-1")) {
                         if (intp.sQuote != caar(ccArguments)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
                         sb.append("((Supplier<Object>)(() -> {\n"
                                   + "        final Object expansion").append(rsfx).append(" = ");
@@ -6548,16 +6558,16 @@ public class LambdaJ {
                     }
 
                     /// * some functions and operators are opencoded:
-                    if (intp.speed >= 1 && symbolp(operator) && opencode(sb, (LambdaJSymbol)operator, ccArguments, env, topEnv, rsfx, isLast)) return;
+                    if (intp.speed >= 1 && symbolp(op) && opencode(sb, (LambdaJSymbol)op, ccArguments, env, topEnv, rsfx, isLast)) return;
 
-                    if (intp.speed >= 1 && consp(operator) && symbolp(car(operator)) && symbolEq(car(operator), "jmethod")
-                        && emitJmethod(sb, requireCons("calling ::", cdr(operator)), env, topEnv, rsfx, true, ccArguments)) {
+                    if (intp.speed >= 1 && consp(op) && symbolp(car(op)) && symbolEq(car(op), "jmethod")
+                        && emitJmethod(sb, requireCons("calling ::", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }
 
                     /// * function call
                     sb.append(isLast ? "tailcall(" : "funcall(");
-                    emitForm(sb, operator, env, topEnv, rsfx, false);
+                    emitForm(sb, op, env, topEnv, rsfx, false);
                     if (ccArguments != null) {
                         for (Object arg: ccArguments) {
                             sb.append("\n        , ");
