@@ -1,3 +1,44 @@
+eval-when endlich einbauen
+siehe CLHS "Special Operator EVAL-WHEN" http://clhs.lisp.se/Body/s_eval_w.htm
+siehe CLHS "3.2.3.1 Processing of Top Level Forms" http://www.lispworks.com/documentation/lw60/CLHS/Body/03_bca.htm
+siehe CLtL "5.3.3. Control of Time of Evaluation" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node68.html
+
+-> (eval-when (compile | load | compile load) forms...)
+   nur toplevel, CL hat noch "eval/ :execute", das brauchts eigentlich nur für non-toplevel eval-when
+-> "nur toplevel" heisst, eval-when kann auch in einem progn und/ oder einem anderen eval-toplevel drinstehen
+
+-> (load): "not-compile-time"  (das ist das neue default)
+   interpreter: enthaltene defmacro wird verarbeitet, andere forms werden verarbeitet -> so wie bisher
+   compiler:    enthaltene defmacro wird verarbeitet, andere forms werden nur compiliert -> anders als bisher wird nur defmacro in den compiletime-interpreter gesteckt
+
+   (compile load): "compile-time-too"
+   interpreter: enthaltene defmacro wird verarbeitet, andere forms werden verarbeitet -> so wie bisher
+   compiler:    enthaltene defmacro wird verarbeitet, andere forms werden in den interpreter gesteckt und compiliert
+   -> mit (eval-when (compile load) ...) kann man das bisherige verhalten einstellen. wirds für mlib brauchen. in diesem modus steht auch im compiler alles zum macroschreiben zur verfügung
+
+   (compile): "compile-time-only"
+   interpreter: enthaltene forms werden ignoriert, ergebnis von eval-when ist nil
+   compiler:    enthaltene defmacro wird verarbeitet, andere forms werden nur in den compiletime-interpreter gesteckt
+   -> effektiv kann man mit diesem modus wohl compiler macros machen: die makros werden nur beim kompilieren expandiert, und die makros haben funktionen aus diesem modus zur verfügung
+
+   ()
+   interpreter: enthaltene forms werden ignoriert
+   compiler: enthaltene forms werden ignoriert
+
+-> zulässige übergänge (toplevel eval-when oder nested eval-when innerhalb progn oder eval-when)
+   (compile load) "compile-time-too": wegnehmen ist erlaubt
+   (load) "not-compile-time": load wegnehmen ist erlaubt (aber nicht sinnvoll), compile dazugeben ist erlaubt
+   (compile): wegnehmen ist erlaubt (aber nicht sinnvoll), dazugeben wird ignoriert (oder fehler oder warning?)
+   (): wegnehmen kamma nix mehr, dazugeben wird ignoriert
+
+
+multiline comments sind #|...|#. wenn #!...!# auch zulässig wäre, würden shebang scripts gehen:
+#!/usr/bin/env java -jar jmurmel.jar --shebang
+!#
+die neue option --shebang müsste zuallerst ein "--" an der stelle nach dem filenamen ins String[] args reinzwicken,
+eigentlich: das argument das nach --shebang kommt (das muss der filename sein), ersetzt --shebang, und dorthin wo der filename gestanden ist, kommt "--"
+
+
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
 
@@ -56,8 +97,6 @@ safety könnte werden:
 nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice, und wg. Strings
 
 (read) sollte einen parameter eof bekommen
-
-eval-when endlich einbauen
 
 funktion die den awt frame eines turtleframe liefert, für java interop
 

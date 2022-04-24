@@ -5,7 +5,6 @@ import org.testng.Assert;
 
 import java.io.StringReader;
 
-// todo nicht immer LambdaJ.runTest(), runTest() reicht auch und braucht keinen interpreter
 public class ScannerTest {
 
     // behaves somewhat similar to LambdaJTest.runTest() but form is only "read" not eval'd, and line ends are Unix style (as are Murmel's internal line ends)
@@ -16,6 +15,7 @@ public class ScannerTest {
     }
 
     // fake behaviour of LambdaJTest.runTest() which returns strings in dbl quotes
+    // this method does not change line ends, LambdaJTest.runTest() does
     private static String stringify(Object result) {
         if (result == null) return "nil";
         if (result instanceof String) return "\"" + result + "\"";
@@ -118,32 +118,32 @@ public class ScannerTest {
 
     @Test
     public void testEmptyList() {
-        LambdaJTest.runTest("cons", "'()", "nil", null);
+        LambdaJTest.runTest("nil", "'()", "nil", null);
     }
 
     @Test
     public void testEscapedParens() {
-        LambdaJTest.runTest("cons", "'(\\( b)", "(|(| b)", null);
+        LambdaJTest.runTest("escaped paren", "'(\\( b)", "(|(| b)", null);
     }
 
     @Test
     public void testQuoteList() {
-        LambdaJTest.runTest("cons", "'(a b c)", "(a b c)", null);
+        LambdaJTest.runTest("list", "'(a b c)", "(a b c)", null);
     }
 
     @Test
     public void testQuoteSymbol() {
-        LambdaJTest.runTest("cons", "'('a b c)", "((quote a) b c)", null);
+        LambdaJTest.runTest("symbol list", "'('a b c)", "((quote a) b c)", null);
     }
 
     @Test
     public void testEscapedQuoteSymbol() {
-        LambdaJTest.runTest("cons", "'(\\'a b c)", "(|'a| b c)", null);
+        LambdaJTest.runTest("symbolname with quote", "'(\\'a b c)", "(|'a| b c)", null);
     }
 
     @Test
     public void testPair() {
-        LambdaJTest.runTest("cons", "'(a . b)", "(a . b)", null);
+        LambdaJTest.runTest("dotted pair", "'(a . b)", "(a . b)", null);
     }
 
     @Test
@@ -164,12 +164,12 @@ public class ScannerTest {
 
     @Test
     public void testTwoElemList() {
-        LambdaJTest.runTest("cons", "'(a b)", "(a b)", null);
+        LambdaJTest.runTest("list", "'(a b)", "(a b)", null);
     }
 
     @Test
     public void testEscapedDot() {
-        LambdaJTest.runTest("cons", "'(a \\. b)", "(a |.| b)", null);
+        LambdaJTest.runTest("symbolname is dot", "'(a \\. b)", "(a |.| b)", null);
     }
 
     @Test
