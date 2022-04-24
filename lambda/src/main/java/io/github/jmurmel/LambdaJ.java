@@ -1728,10 +1728,10 @@ public class LambdaJ {
 
                     boolean funcall = true;
                     ConsCell ccForms = null;
-                    final ConsCell macroClosure;
 
 
-                    if (symbolp(operator)) switch (((LambdaJSymbol)operator).wellknownSymbol) {
+                    final LambdaJSymbol symOperator; // will be the car of the form as a LambdaJSymbol if it is a symbol, null otherwise
+                    if (symbolp(operator)) switch ((symOperator = (LambdaJSymbol)operator).wellknownSymbol) {
                         /// eval - special forms
 
                         /// eval - (quote exp) -> exp
@@ -1789,7 +1789,7 @@ public class LambdaJ {
                         case sDefun: {
                             varargsMin("defun", ccArguments, 2);
                             form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
-                            continue tailcall;
+                            isTc = true; continue tailcall;
                         }
 
 
@@ -1887,12 +1887,13 @@ public class LambdaJ {
 
                         default:
                             /// eval - macro application. Only toplevel macro applications are expanded here, others are just-in-time expanded with tryExpand()
-                            if (null != (macroClosure = ((LambdaJSymbol)operator).macro)) {
-                                form = evalMacro(operator, macroClosure, ccArguments, stack, level, traceLvl);
-                                isTc = true;
-                                continue tailcall;
+                            final ConsCell macroClosure;
+                            if (null != (macroClosure = symOperator.macro)) {
+                                form = evalMacro(symOperator, macroClosure, ccArguments, stack, level, traceLvl);
+                                isTc = true;  continue tailcall;
                             }
                     }
+                    else symOperator = null;
 
 
 
@@ -1951,20 +1952,22 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            // (mostly) respect evaluation order: operator must be eval'd before arguments.
-                            // The operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
-                            // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
-                            if (speed >= 1 && symbolp(operator) && ((LambdaJSymbol)operator).wellknown()) {
-                                // cheat to gain performance: wellknown symbols are known to exist and will be looked up later out of order if needed
-                                // skip eval with an expensive assq call for now
-                            }
-                            else func = eval(operator, env, stack, level, traceLvl);
-                            argList = evlis(ccArguments, env, stack, level, traceLvl);
-                            if (speed >= 1 && symbolp(operator)) { // todo && wellknown? weil sonst geht opencode eh nicht. und: das ganze if rausziehen, das gibts 2x
-                                result = evalOpencode((LambdaJSymbol) operator, argList);
+                            if (speed >= 1 && symOperator != null && symOperator.wellknown()) {
+                                // (mostly) respect evaluation order: operator should be eval'd before arguments.
+                                // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
+                                // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
+                                // Cheat here to gain performance: wellknown symbols are known to exist and will be looked up later out of order if needed
+                                // skip eval with an expensive assq call for now.
+                                argList = evlis(ccArguments, env, stack, level, traceLvl);
+                                result = evalOpencode(symOperator, argList);
                                 if (result != NOT_HANDLED) return result;
+
+                                func = cdr(assq(operator, env));
                             }
-                            if (func == null) func = cdr(assq(operator, env));
+                            else {
+                                func = eval(operator, env, stack, level, traceLvl);
+                                argList = evlis(ccArguments, env, stack, level, traceLvl);
+                            }
                             // fall through to "actually perform..."
                         }
 
@@ -1972,11 +1975,10 @@ public class LambdaJ {
                         traceLvl = traceEnter(func, argList, traceLvl);
                         values = NO_VALUES;
                         if (func instanceof OpenCodedPrimitive) {
-                            // currently only "(apply eval ...)" or "(apply apply..." lead here
                             form = cons(func, argList);
                             traceStack = push(func, traceStack);
                             func = null;
-                            continue tailcall;
+                            isTc = true; continue tailcall;
 
                         } else if (func instanceof Primitive) {
                             result = applyPrimitive((Primitive) func, argList, stack, level); return result;
@@ -2008,7 +2010,7 @@ public class LambdaJ {
                         }
                         traceStack = push(operator, traceStack);
                         tryExpand(ccForms, stack, level, traceLvl);
-                        form = car(ccForms); isTc = true; func = null; values = NO_VALUES; continue tailcall;
+                        form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
                     }
 
                     result = null; return null; // lambda/ progn/ labels/... w/o body
@@ -2198,7 +2200,7 @@ public class LambdaJ {
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
                 if (consp(binding) && caddr(binding) != null) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
-                final Object val = eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
+                final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
                     if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
