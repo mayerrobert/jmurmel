@@ -1989,8 +1989,7 @@ public class LambdaJ {
 
                     /// eval - eval a list of forms
                     if (ccForms != null) {
-                        // todo dotted list wird cce geben
-                        for (; cdr(ccForms) != null; ccForms = (ConsCell) cdr(ccForms)) {
+                        for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) {
                             tryExpand(ccForms, stack, level, traceLvl);
                             eval(car(ccForms), env, stack, level, traceLvl);
                         }
@@ -2036,7 +2035,7 @@ public class LambdaJ {
     }
 
     static ConsCell listOrMalformed(String op, Object args) {
-        if (!listp(args)) errorMalformed(op, "an argument list", args);
+        if (!listp(args)) errorMalformed(op, "a list", args);
         return (ConsCell)args;
     }
 
