@@ -2,6 +2,7 @@
 Changes in JMurmel-1.3 relative to JMurmel-1.2
 
  * the interpreter now expands macros only once
+ * allow #!...!# as multiline comment, add commandline argument --script
 
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1

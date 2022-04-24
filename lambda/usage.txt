@@ -1,14 +1,23 @@
 Usage:
 
+java -jar jmurmel.jar <commandline flags>... <source files>...
 java -jar jmurmel.jar <commandline flags>... <source files>... '--' args-for-program
+java -jar jmurmel.jar <commandline flags>... <source files>... '--script' source-file args-for-program
+
+In order to pass commandline arguments to the Murmel program either "--" or "--script <murmelfile>"
+must be used to indicate the end of JMurmel commandline arguments and the start of program
+commandline arguments.
 
 Commandline flags are:
 
 Misc flags:
 
--- ...............  '--' must be used to indicate:
+-- ...............  Can be used to indicate:
                     commandline arguments after this will be passed
                     to the program
+--script <file> ..  Can be used to indicate:
+                    process the file following '--script' and pass any remaining
+                    commandline arguments to the Murmel program.
 
 --version ........  Show version and exit
 --help ...........  Show this message and exit
@@ -27,7 +36,8 @@ Misc flags:
                     in generated .java- or .jar files
 --outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir
 
---result .........  Print the result of the last form.
+--result .........  Print the results of each toplevel form when interpreting
+                    files or stdin.
 --tty ............  By default JMurmel will enter REPL only if there
                     are no filenames given on the commandline and
                     stdin is a tty.

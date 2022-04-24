@@ -1615,3 +1615,10 @@ symbolprinting stimmt nicht:
 -> vielleicht ein pattern für digit+ '.' und dann einen fehler ausgeben, also faktisch den dezimalintegertrick verbieten?
 
 init(), parser vs. in aufraeumen
+
+
+multiline comments sind #|...|#. wenn #!...!# auch zulässig wäre, würden shebang scripts gehen:
+#!/usr/bin/env java -jar jmurmel.jar --shebang
+!#
+die neue option --shebang müsste zuallerst ein "--" an der stelle nach dem filenamen ins String[] args reinzwicken,
+eigentlich: das argument das nach --shebang kommt (das muss der filename sein), ersetzt --shebang, und dorthin wo der filename gestanden ist, kommt "--"

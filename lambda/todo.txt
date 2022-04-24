@@ -32,13 +32,6 @@ siehe CLtL "5.3.3. Control of Time of Evaluation" https://www.cs.cmu.edu/Groups/
    (): wegnehmen kamma nix mehr, dazugeben wird ignoriert
 
 
-multiline comments sind #|...|#. wenn #!...!# auch zulässig wäre, würden shebang scripts gehen:
-#!/usr/bin/env java -jar jmurmel.jar --shebang
-!#
-die neue option --shebang müsste zuallerst ein "--" an der stelle nach dem filenamen ins String[] args reinzwicken,
-eigentlich: das argument das nach --shebang kommt (das muss der filename sein), ersetzt --shebang, und dorthin wo der filename gestanden ist, kommt "--"
-
-
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
 

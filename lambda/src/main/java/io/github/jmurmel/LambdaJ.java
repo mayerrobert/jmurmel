@@ -937,7 +937,6 @@ public class LambdaJ {
             } catch (IOException e) { }
         }*/
 
-        // todo ist die lineend behandlung erforderlich? vgl EolUtil,  AnyToUnixEol
         private int prev = -1;
         private int readchar() throws IOException {
             final int c = in.read();
@@ -1013,11 +1012,13 @@ public class LambdaJ {
                 throw new ParseError("unrecognized character name %s", charOrCharactername);
 
             // #| ... multiline comment ending with |#
+            // or #! ... !# to make hashbang scripts possible
             case '|':
+            case '!':
                 final int ln = lineNo, cn = charNo;
                 while (look != EOF) {
                     // note single & to avoid short-circuiting
-                    if (look == '|' & (look = getchar(false)) == '#') {
+                    if (look == sub_char & (look = getchar(false)) == '#') {
                         look = getchar();
                         return CONTINUE;
                     }
@@ -4274,6 +4275,7 @@ public class LambdaJ {
 
     static int mainInternal(String[] args) {
         try {
+            boolean error = handleScript(args);
             misc(args);
             final Action action = action(args);
             final TraceLevel trace = trace(args);
@@ -4288,7 +4290,7 @@ public class LambdaJ {
             final String outDir = flagValue("--outdir", args);
             final String libDir = flagValue("--libdir", args);
 
-            if (argError(args)) {
+            if (argError(args) || error) {
                 System.err.println("LambdaJ: exiting because of previous errors.");
                 throw EXIT_ERROR;
             }
@@ -4716,6 +4718,25 @@ public class LambdaJ {
 
 
     /// helpers for commandline argument processing
+    /** process --script, return true for error, false for ok */
+    private static boolean handleScript(String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            final String arg = args[i];
+            if ("--".equals(arg)) return false;
+            if ("--script".equals(arg)) {
+                if (args.length <= i+1) {
+                    System.err.println("LambdaJ: commandline argument --script requires one filename");
+                    args[i] = null; // consume the arg
+                    return true;
+                }
+                args[i] = args[i+1];
+                args[i+1] = "--";
+                return false;
+            }
+        }
+        return false;
+    }
+
     private static void misc(String[] args) {
         if (hasFlag("--version", args)) {
             showVersion();
@@ -4894,53 +4915,63 @@ public class LambdaJ {
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
     private static void showUsage() {
         System.out.println("Usage:\n"
-                + "\n"
-                + "java -jar jmurmel.jar <commandline flags>... <source files>... '--' args-for-program\n"
-                + "\n"
-                + "Commandline flags are:\n"
-                + "\n"
-                + "Misc flags:\n"
-                + "\n"
-                + "-- ...............  '--' must be used to indicate:\n"
-                + "                    commandline arguments after this will be passed\n"
-                + "                    to the program\n"
-                + "\n"
-                + "--version ........  Show version and exit\n"
-                + "--help ...........  Show this message and exit\n"
-                + "--help-features ..  Show advanced commandline flags to disable various\n"
-                + "                    Murmel language elements (interpreter only)\n"
-                + "--libdir <dir> ...  (load filespec) also searches in this directory,\n"
-                + "                    default is the directory containing jmurmel.jar.\n"
-                + "--verbose ........  List files given on the commandline as they are interpreted.\n"
-                + "\n"
-                + "--java ...........  Compile input files to Java source 'MurmelProgram.java'\n"
-                + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"
-                + "                    the class MurmelProgram. The generated jar needs\n"
-                + "                    jmurmel.jar in the same directory to run.\n"
-                + "--run ............  Compile and run\n"
-                + "--class <name> ...  Use 'name' instead of 'MurmelProgram' as the classname\n"
-                + "                    in generated .java- or .jar files\n"
-                + "--outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir\n"
-                + "\n"
-                + "--result .........  Print the result of the last form.\n"
-                + "--tty ............  By default JMurmel will enter REPL only if there\n"
-                + "                    are no filenames given on the commandline and\n"
-                + "                    stdin is a tty.\n"
-                + "                    --tty will make JMurmel enter REPL anyways,\n"
-                + "                    i.e. print prompt and results, support :commands and\n"
-                + "                    continue after runtime errors.\n"
-                + "                    Useful e.g. for Emacs' (run-lisp).\n"
-                + "--repl ...........  Same as --tty but terminate after runtime errors.\n"
-                + "\n"
-                + "Flags for REPL:\n"
-                + "--echo ...........  Echo all input while reading\n"
-                + "--trace=stats ....  Print stack and memory stats after each form\n"
-                + "--trace=envstats .  Print stack, memory and environment stats after each form\n"
-                + "--trace=eval .....  Print internal interpreter info during executing programs\n"
-                + "--trace=func .....  Print internal interpreter info re: function and macro calls\n"
-                + "--trace=env ......  Print more internal interpreter info executing programs\n"
-                + "--trace ..........  Print lots of internal interpreter info during\n"
-                + "                    reading/ parsing/ executing programs");
+                           + "\n"
+                           + "java -jar jmurmel.jar <commandline flags>... <source files>...\n"
+                           + "java -jar jmurmel.jar <commandline flags>... <source files>... '--' args-for-program\n"
+                           + "java -jar jmurmel.jar <commandline flags>... <source files>... '--script' source-file args-for-program\n"
+                           + "\n"
+                           + "In order to pass commandline arguments to the Murmel program either \"--\" or \"--script <murmelfile>\"\n"
+                           + "must be used to indicate the end of JMurmel commandline arguments and the start of program\n"
+                           + "commandline arguments.\n"
+                           + "\n"
+                           + "Commandline flags are:\n"
+                           + "\n"
+                           + "Misc flags:\n"
+                           + "\n"
+                           + "-- ...............  Can be used to indicate:\n"
+                           + "                    commandline arguments after this will be passed\n"
+                           + "                    to the program\n"
+                           + "--script <file> ..  Can be used to indicate:\n"
+                           + "                    process the file following '--script' and pass any remaining\n"
+                           + "                    commandline arguments to the Murmel program.\n"
+                           + "\n"
+                           + "--version ........  Show version and exit\n"
+                           + "--help ...........  Show this message and exit\n"
+                           + "--help-features ..  Show advanced commandline flags to disable various\n"
+                           + "                    Murmel language elements (interpreter only)\n"
+                           + "--libdir <dir> ...  (load filespec) also searches in this directory,\n"
+                           + "                    default is the directory containing jmurmel.jar.\n"
+                           + "--verbose ........  List files given on the commandline as they are interpreted.\n"
+                           + "\n"
+                           + "--java ...........  Compile input files to Java source 'MurmelProgram.java'\n"
+                           + "--jar ............  Compile input files to jarfile 'a.jar' containing\n"
+                           + "                    the class MurmelProgram. The generated jar needs\n"
+                           + "                    jmurmel.jar in the same directory to run.\n"
+                           + "--run ............  Compile and run\n"
+                           + "--class <name> ...  Use 'name' instead of 'MurmelProgram' as the classname\n"
+                           + "                    in generated .java- or .jar files\n"
+                           + "--outdir <dir> ...  Save .java or .jar files to 'dir' instead of current dir\n"
+                           + "\n"
+                           + "--result .........  Print the results of each toplevel form when interpreting\n"
+                           + "                    files or stdin.\n"
+                           + "--tty ............  By default JMurmel will enter REPL only if there\n"
+                           + "                    are no filenames given on the commandline and\n"
+                           + "                    stdin is a tty.\n"
+                           + "                    --tty will make JMurmel enter REPL anyways,\n"
+                           + "                    i.e. print prompt and results, support :commands and\n"
+                           + "                    continue after runtime errors.\n"
+                           + "                    Useful e.g. for Emacs' (run-lisp).\n"
+                           + "--repl ...........  Same as --tty but terminate after runtime errors.\n"
+                           + "\n"
+                           + "Flags for REPL:\n"
+                           + "--echo ...........  Echo all input while reading\n"
+                           + "--trace=stats ....  Print stack and memory stats after each form\n"
+                           + "--trace=envstats .  Print stack, memory and environment stats after each form\n"
+                           + "--trace=eval .....  Print internal interpreter info during executing programs\n"
+                           + "--trace=func .....  Print internal interpreter info re: function and macro calls\n"
+                           + "--trace=env ......  Print more internal interpreter info executing programs\n"
+                           + "--trace ..........  Print lots of internal interpreter info during\n"
+                           + "                    reading/ parsing/ executing programs");
     }
 
     private static void showFeatureUsage() {
