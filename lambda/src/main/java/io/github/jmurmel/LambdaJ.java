@@ -171,14 +171,18 @@ public class LambdaJ {
 
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = null;
+            wellknownSymbol = WellknownSymbol.none;
         }
 
         public LambdaJSymbol(String symbolName, boolean wellknown) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : null;
-            assert !wellknown || wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
+            wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.none;
+            assert wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
         }
+
+        public boolean wellknown() { return wellknownSymbol != WellknownSymbol.none; }
+        public boolean specialForm() { return wellknownSymbol.kind == WellknownSymbolKind.SF; }
+        public boolean primitive() { return wellknownSymbol.kind == WellknownSymbolKind.PRIM; }
 
         @Override
         public void printSEx(WriteConsumer out, boolean escapeAtoms) {
@@ -1597,21 +1601,26 @@ public class LambdaJ {
     final LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem,
             sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
 
+    enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
-        sT("t"), sNil("nil"), sLambda("lambda"), sDynamic("dynamic"), sQuote("quote"), sCond("cond"), sLabels("labels"), sIf("if"), sDefine("define"), sDefun("defun"), sDefmacro("defmacro"),
-        sLet("let"), sLetStar("let*"), sLetrec("letrec"), sMultipleValueBind("multiple-value-bind"), sMultipleValueCall("multiple-value-call"),
-        sSetQ("setq"), sProgn("progn"), sLoad("load"), sRequire("require"), sProvide("provide"),
-        sDeclaim("declaim"),
+        none("", null),
+        sT("t", WellknownSymbolKind.SYMBOL), sNil("nil", WellknownSymbolKind.SYMBOL), sLambda("lambda", WellknownSymbolKind.SF), sDynamic("dynamic", WellknownSymbolKind.SYMBOL),
+        sQuote("quote", WellknownSymbolKind.SF), sCond("cond", WellknownSymbolKind.SF), sLabels("labels", WellknownSymbolKind.SF), sIf("if", WellknownSymbolKind.SF),
+        sDefine("define", WellknownSymbolKind.SF), sDefun("defun", WellknownSymbolKind.SF), sDefmacro("defmacro", WellknownSymbolKind.SF),
+        sLet("let", WellknownSymbolKind.SF), sLetStar("let*", WellknownSymbolKind.SF), sLetrec("letrec", WellknownSymbolKind.SF),
+        sMultipleValueBind("multiple-value-bind", WellknownSymbolKind.SF), sMultipleValueCall("multiple-value-call", WellknownSymbolKind.SF),
+        sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF), sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
+        sDeclaim("declaim", WellknownSymbolKind.SF),
 
-        sNeq("="), sNe("/="), sLt("<"), sLe("<="), sGe(">="), sGt(">"), sAdd("+"), sMul("*"), sSub("-"), sDiv("/"), sMod("mod"), sRem("rem"),
-        sCar("car"), sCdr("cdr"), sCons("cons"), sEq("eq"), sEql("eql"), sNull("null"), sInc("1+"), sDec("1-"), sAppend("append"), sList("list"), sListStar("list*");
+        sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM), sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM), sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
+        sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM), sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM);
     
         private final String sym;
-        private static final WellknownSymbol[] values = values();
-        WellknownSymbol(String sym) { this.sym = sym; }
+        final WellknownSymbolKind kind;
+        WellknownSymbol(String sym, WellknownSymbolKind kind) { this.sym = sym; this.kind = kind; }
 
         static WellknownSymbol of(String name) {
-            for (WellknownSymbol s: values) {
+            for (WellknownSymbol s: values()) {
                 if (s.sym.equalsIgnoreCase(name)) return s;
             }
             return null;
@@ -1632,7 +1641,7 @@ public class LambdaJ {
 
     final LambdaJSymbol internWellknown(String sym) {
         final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
-        assert ret.wellknownSymbol != null : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
+        assert ret.wellknownSymbol != WellknownSymbol.none : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
         return ret;
     }
 
@@ -1724,7 +1733,7 @@ public class LambdaJ {
                     final ConsCell macroClosure;
 
 
-                    if (operator != null && symbolp(operator) && ((LambdaJSymbol)operator).wellknownSymbol != null) switch (((LambdaJSymbol)operator).wellknownSymbol) {
+                    if (operator != null && symbolp(operator)) switch (((LambdaJSymbol)operator).wellknownSymbol) {
                         /// eval - special forms
 
                         /// eval - (quote exp) -> exp
@@ -1912,7 +1921,7 @@ public class LambdaJ {
                         if (operator == ocApply) {
                             twoArgs("apply", ccArguments);
                             final Object funcOrSymbol = car(ccArguments);
-                            func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol;
+                            func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call below
                             argList = listOrMalformed("apply", cadr(ccArguments));
                             if (speed >= 1 && symbolp(funcOrSymbol)) {
                                 result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
@@ -1925,7 +1934,7 @@ public class LambdaJ {
                         } else if (operator == sMultipleValueCall) {
                             varargs1("multiple-value-call", ccArguments);
                             final Object funcOrSymbol = car(ccArguments);
-                            func = eval(funcOrSymbol, env, stack, level, traceLvl);
+                            func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
                             ConsCell allArgs = null;
                             final Object valueForms = cdr(ccArguments);
                             if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
@@ -1944,15 +1953,20 @@ public class LambdaJ {
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
                         } else {
-                            // respect evaluation order: operator must be eval'd before arguments.
+                            // (mostly) respect evaluation order: operator must be eval'd before arguments.
                             // The operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
                             // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
-                            func = eval(operator, env, stack, level, traceLvl);
+                            if (speed >= 1 && (operator == null || symbolp(operator) && ((LambdaJSymbol)operator).wellknown())) {
+                                // cheat to gain performance: null aka nil and wellknown symbols are known to exist and will be looked up later out of order if needed
+                                // skip eval with an expensive assq call for now
+                            }
+                            else func = eval(operator, env, stack, level, traceLvl);
                             argList = evlis(ccArguments, env, stack, level, traceLvl);
                             if (speed >= 1 && symbolp(operator)) {
                                 result = evalOpencode((LambdaJSymbol) operator, argList);
                                 if (result != NOT_HANDLED) return result;
                             }
+                            if (func == null) func = operator == null ? null : cdr(assq(operator, env));
                             // fall through to "actually perform..."
                         }
 
@@ -2026,12 +2040,21 @@ public class LambdaJ {
         }
     }
 
+    /** if the first element of {@code ccForms} is not a special form but a macro application then replace the element in the list by the macro application's expansion */
     private void tryExpand(ConsCell ccForms, int stack, int level, int traceLvl) {
         final Object maybeMacroCall = car(ccForms);
+        if (!consp(maybeMacroCall)) return;
+
         final ConsCell macro, ccMacroCall;
-        final Object macroName;
-        if (consp(maybeMacroCall) && (macro = macros.get(macroName = car(ccMacroCall = (ConsCell)maybeMacroCall))) != null) {
-            ccForms.rplaca(evalMacro(macroName, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
+        final Object op = car(ccMacroCall = (ConsCell)maybeMacroCall);
+        if (symbolp(op)) {
+            if (((LambdaJSymbol)op).specialForm())
+                // avoid macro lookup for special forms. This can happen when a function application argument list contains special forms and tryExpand is called from evlis().
+                // Without this check macros could change special forms, also it's faster.
+                return;
+        }
+        if ((macro = macros.get(op)) != null) {
+            ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
         }
     }
 
@@ -2223,11 +2246,11 @@ public class LambdaJ {
     }
 
     private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
-        // bringt ein bisserl performance (1x weniger eval und environment lookup, und die argumente muessen nicht in eine neue alist gezippt werden).
+        // bringt ein bisserl performance: 1x weniger eval und environment lookup, und die argumente muessen nicht (mit cons aufrufen) in eine neue alist gezippt werden.
         // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
         // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
 
-        if (op == null || op.wellknownSymbol == null) return NOT_HANDLED;
+        if (op == null || !op.primitive()) return NOT_HANDLED;
 
         switch (op.wellknownSymbol) {
         case sAdd:  { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
