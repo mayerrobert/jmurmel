@@ -34,7 +34,7 @@ siehe CLtL "5.3.3. Control of Time of Evaluation" https://www.cs.cmu.edu/Groups/
 
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
-
+packed-list könnte ein ArraySlice liefern. wie list, aber weniger allokationen, nth und nthcdr wäre schnell wenns in JMurmel drin wäre, cdr würde allokieren, rplacd geht nicht
 
 
 
@@ -60,6 +60,7 @@ statt dem "opencoden" im interpreter könnte ähnlich wie tryExpand gecheckt wer
     -> ist aber doch eine änderung zu bisher, weil derzeit kann auch bei primitives ein macro davorschalten
  -> evalOpencode brauchts dann nicht mehr, und der switch in opencode fällt weg
  -> wenns einmal umgepatcht ist, werden primitive-aufrufe immer gleich im ersten switch behandelt, keine ifs, kein checken obs ein macro ist
+ -> optimierung wär auch noch möglich: (cdr (cdr x)) -> (prim-application #<cddr> x) oder (prim-application #<nthcdr> 2 x), wobei #<cddr> nicht im environment drin ist, symbol dazu brauchts auch keines
 
 ??? ähnlich könnte man CPS on-the-fly machen: eine neue special form, die bekommt als zusätzlichen parameter die "next" funktion. nach abarbeiten der aktuellen forms gehts mit "continue tailcall"
 dorthin. 
@@ -301,6 +302,48 @@ Serapeum hat dict und erweitert den printer:
      )
     which is a representation that can be read back in.
 Das wiedereinlesen ist aber wsl. nicht dasselbe wie ein readermacro, der reader list halt einen aufruf von dict, der dann irgendwann wirklich passiert
+
+
+
+so kann man structs faken:
+ein Object[] array wird mit konstanten (also name->0-basiertes integer) indiziert
+
+(defstruct structname membername...) spuckt einige konstanten aus (define structname.member1 0) (define structname.member2 1) usw. und funktionen und/ oder macros zum erzeugen und zugreifen
+
+(defstruct mystruct m1 m2 m3) ->
+
+; constructor
+(defun make-mystruct ()
+  (make-array (3)))
+
+; getter für m1
+(defun mystruct-m1 (ms)
+  (svref ms 0))
+
+; getter für m2
+(defun mystruct-m2 (ms)
+  (svref ms 1))
+
+; getter für m3
+(defun mystruct-m3 (ms)
+  (svref ms 2))
+
+; setter für m3
+(defun |(setf-mystruct-m3)| (ms val)
+  (setf (svref ms 2) val))
+
+
+CL scheints ähnlich zu machen: http://www.lispworks.com/documentation/lw70/CLHS/Body/m_defstr.htm
+in CL kann man optional mit (:type ...) die zugrunde liegende struktur angeben, list oder vector oder sonstwas.
+und mit (:include ...) kann man veranlassen, dass der neue struct einen bestehenden erweitert
+mit (:initial-offset) kann man einen zugrundliegenden vector/ list mit mehreren hinter- oder übereinander liegenden structs überlagern
+-> nein, nur ein struct, weil es gibt keinen "placement constructor"
+   -> doch, es gehen doch mehrere: die generierten funktionen der verschiedenen structs bekommen einfach eine liste/ einen vector als parameter
+CL definiert noch ein typprädikat mystruct-p (ausser man verwendet :type ohne zusätzliches :named), und copy-mystruct
+
+wenn man :type und :named verwendet, dann wird im ersten element der list/ vector 'mystruct abgespeichert, und das kann von mystruct-p verwendet werden
+
+
 
 
 (compile) könnte in etwa so gehen:

@@ -1798,9 +1798,12 @@ public class LambdaJ {
                         /// eval - (if condform form optionalform) -> object
                         case sIf: {
                             varargsMinMax("if", ccArguments, 2, 3);
+                            tryExpand(ccArguments, stack, level, traceLvl);
                             if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
+                                tryExpand((ConsCell)cdr(ccArguments), stack, level, traceLvl);
                                 form = cadr(ccArguments); isTc = true; continue tailcall;
                             } else if (caddr(ccArguments) != null) {
+                                tryExpand((ConsCell)cddr(ccArguments), stack, level, traceLvl);
                                 form = caddr(ccArguments); isTc = true; continue tailcall;
                             } else { result = null; return null; } // condition eval'd to false, no else form
                         }
@@ -1831,7 +1834,6 @@ public class LambdaJ {
 
                         /// eval - (progn forms...) -> object
                         case sProgn: {
-                           
                             ccForms = ccArguments;
                             funcall = false;
                             break; // fall through to "eval a list of forms"
@@ -1839,16 +1841,16 @@ public class LambdaJ {
 
                         /// eval - (cond (condform forms...)... ) -> object
                         case sCond: {
-                            if (ccArguments != null)
-                                for (Object c: ccArguments) {
-                                    if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
-                                    if (eval(car(c), env, stack, level, traceLvl) != null) {
-                                        ccForms = (ConsCell) cdr(c);
-                                        break;
-                                    }
+                            if (ccArguments != null) for (Object c: ccArguments) {
+                                if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
+                                if (c != null) tryExpand((ConsCell)c, stack, level, traceLvl);
+                                if (eval(car(c), env, stack, level, traceLvl) != null) {
+                                    ccForms = (ConsCell) cdr(c);
+                                    break;
                                 }
+                            }
 
-                            if (ccForms == null) { result = null; return null; } // no condition was true
+                            if (ccForms == null) { result = null; return null; } // no condition was true or the true condition has no code
                             funcall = false;
                             break; // fall through to "eval a list of forms"
                         }
@@ -2049,8 +2051,10 @@ public class LambdaJ {
         final Object op = car(ccMacroCall = (ConsCell)maybeMacroCall);
         if (symbolp(op)) {
             final ConsCell macro = ((LambdaJSymbol)op).macro;
-            if (macro == null) return;
-            ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
+            if (macro != null) {
+                ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
+                tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
+            }
         }
     }
 
@@ -2074,6 +2078,7 @@ public class LambdaJ {
 
             pairs = (ConsCell) cdr(pairs);
             if (pairs == null) errorMalformed("setq", "odd number of arguments");
+            tryExpand(pairs, stack, level, traceLvl);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
             if (envEntry == null)
                 insertFront(env, symbol, value);
@@ -2184,6 +2189,7 @@ public class LambdaJ {
                 } else if (consp(binding) && symbolp(car(binding)) && listp(cdr(binding))) {
                     sym = car(binding);
                     bindingForm = cadr(binding);
+                    if (bindingForm != null) tryExpand((ConsCell)cdr(binding), stack, level, traceLvl);
                 } else {
                     throw errorMalformed(getOp(operator, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
                 }
@@ -2230,6 +2236,7 @@ public class LambdaJ {
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
         varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
         values = NO_VALUES;
+        tryExpand((ConsCell)cdr(bindingsAndBodyForms), stack, level, traceLvl);
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
         final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
         final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
@@ -2248,7 +2255,7 @@ public class LambdaJ {
     }
 
     private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
-        // bringt ein bisserl performance: 1x weniger eval und environment lookup, und die argumente muessen nicht (mit cons aufrufen) in eine neue alist gezippt werden.
+        // bringt ein bisserl performance: 1x weniger eval und environment lookup mit assq()
         // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
         // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
 
@@ -4685,7 +4692,7 @@ public class LambdaJ {
                     if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                     if (exp == cmdRun)    { runForms(makeReader(history), interpreter, true); continue; }
                     if (exp == cmdJar)    { compileToJar(interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
-                    //if (":peek"   .equals(strExp)) { System.out.println(new java.io.File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName()); return; }
+                    //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                     if (exp == cmdEnv)    {
                         if (interpreter.topEnv != null) for (Object entry: interpreter.topEnv) System.out.println(entry);
                         System.out.println("env length: " + length(interpreter.topEnv));  System.out.println(); continue; }
