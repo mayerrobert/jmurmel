@@ -2042,17 +2042,19 @@ public class LambdaJ {
         }
     }
 
-    /** if the first element of {@code ccForms} is not a special form but a macro application then replace the element in the list by the macro application's expansion */
+    /** if the first element of {@code ccForms} is a macro application then replace the element in the list by the macro application's expansion
+     *  (and recursively repeat until it isn't a macro). */
     private void tryExpand(ConsCell ccForms, int stack, int level, int traceLvl) {
         final Object maybeMacroCall = car(ccForms);
         if (!consp(maybeMacroCall)) return;
 
-        final ConsCell ccMacroCall;
-        final Object op = car(ccMacroCall = (ConsCell)maybeMacroCall);
-        if (symbolp(op)) {
-            final ConsCell macro = ((LambdaJSymbol)op).macro;
+        final ConsCell ccMacroOrFunctionCall;
+        final Object op = car(ccMacroOrFunctionCall = (ConsCell)maybeMacroCall);
+        if (op != null && symbolp(op)) {
+            final LambdaJSymbol symOp = (LambdaJSymbol)op;
+            final ConsCell macro = symOp.macro;
             if (macro != null) {
-                ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroCall), stack, level, traceLvl));
+                ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroOrFunctionCall), stack, level, traceLvl));
                 tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
             }
         }
@@ -2484,6 +2486,9 @@ public class LambdaJ {
         if (traced == null) traced = new HashMap<>();
         for (Object sym: symbols) {
             if (!symbolp(sym)) throw new LambdaJError(true, "trace: can't trace %s: not a symbol", printSEx(sym));
+            if (((LambdaJSymbol)sym).specialForm()) {
+                throw new LambdaJError(true, "trace: can't trace %s: it is a special form", printSEx(sym));
+            }
             final ConsCell envEntry = assq(sym, topEnv);
             if (envEntry == null) throw new LambdaJError(true, "trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
@@ -2513,6 +2518,7 @@ public class LambdaJ {
     private Deque<Object> push(Object op, Deque<Object> traceStack) {
         if (traced == null) return traceStack;
         if (op instanceof LambdaJSymbol) {
+            if (((LambdaJSymbol)op).specialForm()) return traceStack;
             final ConsCell entry = assq(op, topEnv);
             if (entry == null) return traceStack;
             op = cdr(entry);
