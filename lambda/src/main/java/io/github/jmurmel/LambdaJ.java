@@ -2174,7 +2174,8 @@ public class LambdaJ {
 
         ConsCell extenv = env;
         if (ccBindings != null) {
-            final HashSet<Object> seen = new HashSet<>();
+            final boolean useLookup = !(letStar && !letDynamic || cdr(ccBindings) == null); // lookup is not needed for let* or a single binding
+            final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
             ConsCell newValues = null; // used for let dynamic
             extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
@@ -2192,11 +2193,20 @@ public class LambdaJ {
                     throw errorMalformed(getOp(operator, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
                 }
 
+                // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                 if (reserved(sym)) errorReserved(getOp(operator, letDynamic, namedLet), sym);
 
-                final boolean isNewSymbol = seen.add(sym);
-                if (!letStar) { // let and letrec don't allow duplicate symbols
-                    if (!isNewSymbol) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "duplicate symbol %", sym);
+                final boolean isNewSymbol;
+                if (useLookup) {
+                    // let and letrec don't allow duplicate symbols
+                    isNewSymbol = !seen.contains(sym);
+                    if (isNewSymbol) seen.add(sym);
+                    if (!letStar) { // let and letrec don't allow duplicate symbols
+                        if (!isNewSymbol) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "duplicate symbol %", sym);
+                    }
+                }
+                else {
+                    isNewSymbol = true; // ignored/ not needed for "let*", true for a single binding
                 }
 
                 ConsCell newBinding = null;
