@@ -2680,6 +2680,7 @@ public class LambdaJ {
     // todo ggf. spezialfall arrayslice behandeln
     private static Object   nthcdr(int n, Object list) {
         if (list == null) return null;
+        if (n <= 0) return list;
         for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
         return list;
     }
@@ -3065,6 +3066,7 @@ public class LambdaJ {
         if (actual > expectedMax) {
             throw new LambdaJError(true, "%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
         }
+        assert false: "errorArgCount was called, but there is no error";
     }
 
     static void errorVarargsCount(String func, int min, int actual) {
@@ -3118,14 +3120,16 @@ public class LambdaJ {
 
     /** varargs, at least {@code min} args */
     static void varargsMin(String func, ConsCell a, int min) {
-        final int actualLength = length(a); // todo alles zaehlen ist umsonst
-        if (actualLength < min) errorVarargsCount(func, min, actualLength);
+        final Object x = nthcdr(min-1, a);
+        if (x == null) errorVarargsCount(func, min, length(a));
     }
 
     /** varargs, between {@code min} and {@code max} args */
     static void varargsMinMax(String func, ConsCell a, int min, int max) {
-        final int actualLength = length(a); // todo alles zaehlen ist umsonst
-        if (actualLength < min || actualLength > max) errorArgCount(func, min, max, actualLength, a);
+        if (min == 0 && a == null) return;
+        final Object x = nthcdr(min-1, a);
+        final int n = min == 0 ? 0 : min-1;
+        if (x == null || nthcdr(max-n, x) != null) errorArgCount(func, min, max, length(a), a);
     }
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
