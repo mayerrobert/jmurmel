@@ -427,15 +427,24 @@
 ;;; Return `nil` unless any of the `forms` evaluate to non-nil,
 ;;; the result of the first form returning non-nil otherwise.
 (defmacro or args
-   (if args
-         (if (cdr args)
-               (let ((temp (gensym)))
-                 `(let ((,temp ,(car args)))
-                     (if ,temp
-                           ,temp
-                       (or ,@(cdr args)))))
-           (car args))
-     nil))
+  (labels ((m%or (tmp args)
+             (if args
+                   (if (cdr args)
+                         `(if (setq ,tmp ,(car args))
+                                ,tmp
+                            ,(m%or tmp (cdr args)))
+                     (car args))
+               nil)))
+
+    (if args
+          (if (cdr args)
+                (let ((temp (gensym)))
+                  `(let ((,temp ,(car args)))
+                      (if ,temp
+                            ,temp
+                        ,(m%or temp (cdr args)))))
+            (car args))
+      nil)))
 
 
 ;;; = Function: abs
