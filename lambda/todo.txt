@@ -62,6 +62,11 @@ statt dem "opencoden" im interpreter könnte ähnlich wie tryExpand gecheckt wer
  -> wenns einmal umgepatcht ist, werden primitive-aufrufe immer gleich im ersten switch behandelt, keine ifs, kein checken obs ein macro ist
  -> optimierung wär auch noch möglich: (cdr (cdr x)) -> (prim-application #<cddr> x) oder (prim-application #<nthcdr> 2 x), wobei #<cddr> nicht im environment drin ist, symbol dazu brauchts auch keines
 
+evalLet() macht jedesmal ziemlich viele checks inkl HashMap und member
+-> tryExpand könnte 1x checken, old style (let (a b c) ...) -> (let ((a nil) (b nil) (c nil)) ...) umschreiben, dann wär evalLet viel einfacher und schneller
+-> generelles problem ist, dass tryExpand topLevel forms nicht sieht
+   -> umbauen dass tryexpand nicht forms(-liste) bekommt und forms.rplaca macht, sondern die form bekommt und inplace modifiziert: car und cdr austauscht
+
 ??? ähnlich könnte man CPS on-the-fly machen: eine neue special form, die bekommt als zusätzlichen parameter die "next" funktion. nach abarbeiten der aktuellen forms gehts mit "continue tailcall"
 dorthin. 
 

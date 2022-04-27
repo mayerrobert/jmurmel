@@ -560,6 +560,8 @@ public class LambdaJ {
         public boolean ge(TraceLevel l) { return ordinal() >= l.ordinal(); }
     }
     private final TraceLevel trace;
+    private final boolean traceOn;
+    private final boolean traceFunc;
 
     private final TraceConsumer tracer;
 
@@ -643,7 +645,11 @@ public class LambdaJ {
     /** constructor */
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, Path libDir) {
         this.features = features;
+
         this.trace = trace;
+        traceOn = trace != TraceLevel.TRC_NONE;
+        traceFunc = trace.ge(TraceLevel.TRC_FUNC);
+
         this.tracer = tracer != null ? tracer : System.err::println;
         this.symtab = symtab == null ? new ListSymbolTable() : symtab;
         if (libDir != null) this.libDir = libDir;
@@ -1698,7 +1704,7 @@ public class LambdaJ {
                 if (Thread.interrupted()) throw new InterruptedException("got interrupted");
 
                 level++;
-                dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
+                if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
                 /// eval - lookup symbols in the current environment
                 if (symbolp(form)) {                 // this line is a convenient breakpoint
@@ -1974,11 +1980,11 @@ public class LambdaJ {
                         }
 
                         /// eval - actually perform the function call that was set up by "apply" or "function call" above
-                        traceLvl = traceEnter(func, argList, traceLvl);
+                        if (traced != null) traceLvl = traceEnter(func, argList, traceLvl);
                         values = NO_VALUES;
                         if (func instanceof OpenCodedPrimitive) {
                             form = cons(func, argList);
-                            traceStack = push(func, traceStack);
+                            if (traced != null) traceStack = push(func, traceStack);
                             func = null;
                             isTc = true; continue tailcall;
 
@@ -1991,7 +1997,7 @@ public class LambdaJ {
                             if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
                             env = zip(car(lambda), argList, closure != null ? closure : env, true);
 
-                            if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
+                            if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
                             ccForms = (ConsCell) cdr(lambda);
                             // fall through to "eval a list of forms"
 
@@ -2010,7 +2016,7 @@ public class LambdaJ {
                             tryExpand(ccForms, stack, level, traceLvl);
                             eval(car(ccForms), env, stack, level, traceLvl);
                         }
-                        traceStack = push(operator, traceStack);
+                        if (traced != null) traceStack = push(operator, traceStack);
                         tryExpand(ccForms, stack, level, traceLvl);
                         form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
                     }
@@ -2029,8 +2035,8 @@ public class LambdaJ {
             //e.printStackTrace();
             throw errorInternal(e, "eval: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
         } finally {
-            dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
-            if (func != null) traceLvl = traceExit(func, result, traceLvl);
+            if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
+            if (traced != null && func != null) traceLvl = traceExit(func, result, traceLvl);
             Object s;
             if (traceStack != null) {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
@@ -2246,7 +2252,7 @@ public class LambdaJ {
     }
 
     Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
-        if (trace.ge(TraceLevel.TRC_FUNC))  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
+        if (traceFunc)  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
 
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
         final ConsCell menv = zip(car(lambda), arguments, topEnv, true);    // todo predef env statt topenv?!?
@@ -2376,7 +2382,7 @@ public class LambdaJ {
 
     /** eval a list of forms and return a list of results */
     private ConsCell evlis(ConsCell forms, ConsCell env, int stack, int level, int traceLvl) {
-        dbgEvalStart("evlis", forms, env, stack, level);
+        if (traceOn) dbgEvalStart("evlis", forms, env, stack, level);
         ListConsCell head = null;
         ListConsCell insertPos = null;
         for (ConsCell rest = forms; rest != null; rest = (ConsCell)cdr(rest)) {
@@ -2391,7 +2397,7 @@ public class LambdaJ {
                 insertPos = currentArg;
             }
         }
-        dbgEvalDone("evlis", forms, head, stack, level);
+        if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
         return head;
     }
 
@@ -2428,7 +2434,7 @@ public class LambdaJ {
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
-        if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
+        if (traceFunc) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.applyPrimitive(args); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
@@ -2436,7 +2442,7 @@ public class LambdaJ {
 
     /** in case compiled code calls "(eval)" */
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
-        if (trace.ge(TraceLevel.TRC_FUNC)) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
+        if (traceFunc) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
         try { return primfn.applyCompilerPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws exception: %s", e.getMessage()); }
