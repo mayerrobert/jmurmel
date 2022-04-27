@@ -659,36 +659,36 @@ public class LambdaJ {
         this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
 
         /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
-        sT =                           haveT() ? internReserved("t") : intern("t");
-        sNil =                         haveNil() ? internReserved("nil") : intern("nil");
-        sLambda =                      internReserved("lambda");
+        sT =                           haveT() ? internWellknown("t") : intern("t");
+        sNil =                         haveNil() ? internWellknown("nil") : intern("nil");
+        sLambda =                      internWellknown("lambda");
 
-        if (haveQuote())  { sQuote   = internReserved("quote"); }   else sQuote = null;
-        if (haveCond())   { sCond    = internReserved("cond"); }    else sCond = null;
-        if (haveLabels()) { sLabels  = internReserved("labels"); }  else sLabels = null;
+        if (haveQuote())  { sQuote   = internWellknown("quote"); }   else sQuote = null;
+        if (haveCond())   { sCond    = internWellknown("cond"); }    else sCond = null;
+        if (haveLabels()) { sLabels  = internWellknown("labels"); }  else sLabels = null;
 
         if (haveXtra())   {
-            sDynamic = internReserved("dynamic");
+            sDynamic = internWellknown("dynamic");
 
-            sIf      = internReserved("if");
-            sDefine  = internReserved("define");
-            sDefun   = internReserved("defun");
-            sDefmacro= internReserved("defmacro");
-            sLet     = internReserved("let");
-            sLetStar = internReserved("let*");
-            sLetrec  = internReserved("letrec");
+            sIf      = internWellknown("if");
+            sDefine  = internWellknown("define");
+            sDefun   = internWellknown("defun");
+            sDefmacro= internWellknown("defmacro");
+            sLet     = internWellknown("let");
+            sLetStar = internWellknown("let*");
+            sLetrec  = internWellknown("letrec");
 
-            sMultipleValueBind = internReserved("multiple-value-bind");
-            sMultipleValueCall = internReserved("multiple-value-call");
-            sSetQ    = internReserved("setq");
+            sMultipleValueBind = internWellknown("multiple-value-bind");
+            sMultipleValueCall = internWellknown("multiple-value-call");
+            sSetQ    = internWellknown("setq");
 
-            sProgn   = internReserved("progn");
+            sProgn   = internWellknown("progn");
 
-            sLoad    = internReserved("load");
-            sRequire = internReserved("require");
-            sProvide = internReserved("provide");
+            sLoad    = internWellknown("load");
+            sRequire = internWellknown("require");
+            sProvide = internWellknown("provide");
 
-            sDeclaim =  internReserved("declaim");
+            sDeclaim = internWellknown("declaim");
         }
         else sDynamic = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall = sSetQ = sProgn = sLoad = sRequire = sProvide
              = sDeclaim = null;
@@ -1564,19 +1564,17 @@ public class LambdaJ {
     /// ## Murmel interpreter
     ///
 
-    /// Murmel has a list of reserved words may not be used as a symbol
-    private ConsCell reservedWords;
-
-    private void reserve(Object word) { reservedWords = cons(word, reservedWords); }
+    /// Murmel has a list of reserved words may not be used as a symbol: t, nil and special forms
 
     /** Throw error if sym is a reserved symbol */
-    void notReserved(final String op, final Object sym) {
+    void notReserved(final String op, final LambdaJSymbol sym) {
         if (reserved(sym)) errorReserved(op, sym);
     }
 
-    boolean reserved(Object sym) {
-        return sym == null || member(sym, reservedWords);
+    boolean reserved(LambdaJSymbol sym) {
+        return sym == null || sym == sT || sym.specialForm();
     }
+
 
     /// Symboltable
     private final SymbolTable symtab;
@@ -1638,12 +1636,6 @@ public class LambdaJ {
     final LambdaJSymbol internWellknown(String sym) {
         final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
         assert ret.wellknownSymbol != WellknownSymbol.none : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
-        return ret;
-    }
-
-    private LambdaJSymbol internReserved(String sym) {
-        final LambdaJSymbol ret = internWellknown(sym);
-        reserve(ret);
         return ret;
     }
 
@@ -1774,8 +1766,7 @@ public class LambdaJ {
                         /// eval - (define symbol exp) -> symbol with a side of global environment extension
                         case sDefine: {
                             varargs1_2("define", ccArguments);
-                            final Object symbol = car(ccArguments);
-                            if (!symbolp(symbol)) errorMalformed("define", "a symbol", symbol);
+                            final LambdaJSymbol symbol = symbolOrMalformed("define", car(ccArguments));
                             notReserved("define", symbol);
                             final ConsCell envEntry = assq(symbol, topEnv);
 
@@ -2079,8 +2070,7 @@ public class LambdaJ {
     private Object evalSetq(ConsCell arguments, ConsCell env, int stack, int level, int traceLvl) {
         Object res = null;
         for (ConsCell pairs = arguments; pairs != null; ) {
-            final Object symbol = car(pairs);
-            if (!symbolp(symbol)) errorMalformed("setq", "a symbol", symbol);
+            final LambdaJSymbol symbol = symbolOrMalformed("setq", car(pairs));
             notReserved("setq", symbol);
             final ConsCell envEntry = assq(symbol, env);
 
@@ -2160,7 +2150,7 @@ public class LambdaJ {
             for (Object binding: (ConsCell) car(arguments)) {
                 if (!consp(binding)) errorMalformed("labels", "a list (symbol (params...) forms...)", binding);
                 final ConsCell currentFunc = (ConsCell)binding;
-                final Object currentSymbol = car(currentFunc);
+                final LambdaJSymbol currentSymbol = symbolOrMalformed("labels", car(currentFunc));
                 notReserved("labels", currentSymbol);
                 final ConsCell lambda = makeClosure(cdr(currentFunc), extEnv);
                 insertFront(extEnv, currentSymbol, lambda);
@@ -2188,14 +2178,14 @@ public class LambdaJ {
             ConsCell newValues = null; // used for let dynamic
             extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
-                final Object sym;
+                final LambdaJSymbol sym;
                 final Object bindingForm;
 
                 if (symbolp(binding)) {
-                    sym = binding;
+                    sym = (LambdaJSymbol)binding;
                     bindingForm = null;
                 } else if (consp(binding) && symbolp(car(binding)) && listp(cdr(binding))) {
-                    sym = car(binding);
+                    sym = (LambdaJSymbol)car(binding);
                     bindingForm = cadr(binding);
                     if (bindingForm != null) tryExpand((ConsCell)cdr(binding), stack, level, traceLvl);
                 } else {
@@ -3147,13 +3137,13 @@ public class LambdaJ {
         for (;;) {
             if (consp(a) && cdr(a) == start) errorMalformed(func, "circular list of bindings is not allowed");
             if (!symbolp(car(a))) errorMalformed(func, "a symbol or a list of symbols", a);
-            notReserved(func, car(a));
+            notReserved(func, (LambdaJSymbol)car(a));
 
             a = cdr(a);
             if (a == null) return; // end of a proper list, everything a-ok, move along
             if (atom(a)) {
                 if (!symbolp(a)) errorMalformed(func, "a symbol or a list of symbols", a);
-                notReserved(func, a);
+                notReserved(func, (LambdaJSymbol)a);
                 return; // that was the end of a dotted list, everything a-ok, move along
             }
         }
@@ -4004,12 +3994,12 @@ public class LambdaJ {
         }
 
         if (haveT()) {
-            final LambdaJSymbol sT = internReserved("t");
+            final LambdaJSymbol sT = internWellknown("t");
             env = addBuiltin(sT, sT, env);
         }
 
         if (haveNil()) {
-            env = addBuiltin(internReserved("nil"), null, env);
+            env = addBuiltin(internWellknown("nil"), null, env);
         }
 
         if (haveUtil()) {
@@ -6013,7 +6003,7 @@ public class LambdaJ {
         private void notDefined(String func, Object sym, ConsCell env) {
             final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
-                intp.notReserved(func, car(prevEntry));
+                intp.notReserved(func, (LambdaJSymbol)car(prevEntry));
                 errorMalformedFmt(func, "can't redefine symbol %s", sym);
             }
         }
@@ -6218,9 +6208,7 @@ public class LambdaJ {
                 }
 
                 else if (op == intp.sDefmacro) {
-                    final Object sym = cadr(ccForm);
-                    asSymbol("defmacro", sym);
-                    intp.notReserved("defmacro", sym);
+                    intp.notReserved("defmacro", asSymbol("defmacro", cadr(ccForm)));
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
@@ -7034,14 +7022,14 @@ public class LambdaJ {
             int n = 0;
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
-                    final Object param = car(params);
+                    final LambdaJSymbol param = symbolOrMalformed(func, car(params));
                     intp.notReserved(func, param);
                     if (!seen.add(param)) errorMalformedFmt(func, "duplicate symbol %s", param);
                     env = extenvIntern(asSymbol(func, param), "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
-                    intp.notReserved(func, params);
+                    intp.notReserved(func, (LambdaJSymbol)params);
                     if (!seen.add(params)) errorMalformedFmt(func, "duplicate symbol %s", params);
                     env = extenv(func, params, rsfx, env);
                     if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");

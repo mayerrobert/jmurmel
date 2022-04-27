@@ -290,7 +290,7 @@ Stringliterals of the same value are coalesced (interned).
 
 ## Reserved words 
 
-In addition to `nil` and `t` some symbols are reserved, i.e.
+In addition to `nil` and `t` the symbols of the special forms are reserved, i.e.
 may not be used as a function nor as a variable:
 
     nil, t,
