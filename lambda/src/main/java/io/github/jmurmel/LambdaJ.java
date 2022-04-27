@@ -2186,6 +2186,7 @@ public class LambdaJ {
                     sym = (LambdaJSymbol)binding;
                     bindingForm = null;
                 } else if (consp(binding) && symbolp(car(binding)) && listp(cdr(binding))) {
+                    if (cddr(binding) != null) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
                     sym = (LambdaJSymbol)car(binding);
                     bindingForm = cadr(binding);
                     if (bindingForm != null) tryExpand((ConsCell)cdr(binding), stack, level, traceLvl);
@@ -2202,7 +2203,7 @@ public class LambdaJ {
                     isNewSymbol = !seen.contains(sym);
                     if (isNewSymbol) seen.add(sym);
                     if (!letStar) { // let and letrec don't allow duplicate symbols
-                        if (!isNewSymbol) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "duplicate symbol %", sym);
+                        if (!isNewSymbol) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "duplicate symbol %s", sym);
                     }
                 }
                 else {
@@ -2210,12 +2211,14 @@ public class LambdaJ {
                 }
 
                 ConsCell newBinding = null;
-                if (letDynamic) newBinding = assq(sym, topEnv);
+                if (letDynamic) {
+                    newBinding = assq(sym, topEnv);
+                    if (newBinding == null) errorMalformed(getOp(operator, letDynamic, namedLet), "%s is not globally bound. dynamic is only allowed with globally bound symbols.", sym);
+                }
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
-                if (consp(binding) && caddr(binding) != null) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
-                if (letDynamic && newBinding != null) {
+                if (letDynamic) {
                     if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
