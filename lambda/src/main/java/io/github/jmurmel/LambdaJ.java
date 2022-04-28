@@ -2174,11 +2174,13 @@ public class LambdaJ {
         if (!listp(bindings)) throw errorMalformed(getOp(operator, letDynamic, namedLet), "a list of bindings", bindings);
         final ConsCell ccBindings = (ConsCell)bindings;
 
+        ConsCell params = null;
         ConsCell extenv = env;
         if (ccBindings != null) {
             final boolean useLookup = !(letStar && !letDynamic || cdr(ccBindings) == null); // lookup is not needed for let* or a single binding
             final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
             ConsCell newValues = null; // used for let dynamic
+            ConsCell insertPos = null; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
                 final LambdaJSymbol sym;
@@ -2225,6 +2227,16 @@ public class LambdaJ {
                 }
                 else if (letRec) newBinding.rplacd(val);
                 else extenv = acons(sym, val, extenv);
+                
+                if (namedLet) {
+                    if (params == null) {
+                        params = cons(sym, null);
+                        insertPos = params;
+                    } else {
+                        insertPos.rplacd(cons(sym, null));
+                        insertPos = (ConsCell) insertPos.cdr();
+                    }
+                }
             }
             if (newValues != null) for (Object o: newValues) {
                 final ConsCell c = (ConsCell)o;
@@ -2234,8 +2246,7 @@ public class LambdaJ {
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
             extenv = acons(loopSymbol, UNASSIGNED, extenv);
-            final ConsCell bodyParams = extractParamList(ccBindings);
-            final Object closure = makeClosure(cons(bodyParams, bodyForms), extenv);
+            final Object closure = makeClosure(cons(params, bodyForms), extenv);
             ((ConsCell)extenv.car()).rplacd(closure);
         }
         return new ConsCell[] {bodyForms, extenv, restore};
@@ -2319,25 +2330,6 @@ public class LambdaJ {
         env.rplaca(symbolEntry);
         env.rplacd(cons(oldCar, oldCdr));
         return symbolEntry;
-    }
-
-    /** From a list of ((symbol form)...) return the symbols as new a list (symbol...). */
-    private ConsCell extractParamList(final ConsCell bindings) {
-        if (bindings == null) return null;
-        ConsCell params = null, insertPos = null;
-        for (Object binding: bindings) {
-            final Object symbol;
-            if (consp(binding)) symbol = car(binding);
-            else symbol = binding;
-            if (params == null) {
-                params = cons(symbol, null);
-                insertPos = params;
-            } else {
-                insertPos.rplacd(cons(symbol, null));
-                insertPos = (ConsCell) insertPos.cdr();
-            }
-        }
-        return params;
     }
 
     /** build an extended environment for a function invocation:<pre>
