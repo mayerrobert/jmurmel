@@ -2162,9 +2162,11 @@ public class LambdaJ {
     private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final boolean letStar  = operator == sLetStar;
         final boolean letRec   = operator == sLetrec;
-        final boolean letDynamic = car(arguments) == sDynamic;
+        final Object maybeLoopSymbol = car(arguments);
+        final boolean letDynamic = maybeLoopSymbol == sDynamic;
         if (letDynamic && letRec) throw errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
-        final boolean namedLet = !letDynamic && car(arguments) != null && symbolp(car(arguments)); // ohne "car(arguments) != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
+        final boolean namedLet = !letDynamic && maybeLoopSymbol != null && symbolp(maybeLoopSymbol); // ohne "maybeLoopSymbol != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
+        final LambdaJSymbol loopSymbol = namedLet ? (LambdaJSymbol)maybeLoopSymbol : null;
 
         final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
@@ -2177,7 +2179,7 @@ public class LambdaJ {
             final boolean useLookup = !(letStar && !letDynamic || cdr(ccBindings) == null); // lookup is not needed for let* or a single binding
             final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
             ConsCell newValues = null; // used for let dynamic
-            extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
+            if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
                 final LambdaJSymbol sym;
                 final Object bindingForm;
@@ -2196,6 +2198,7 @@ public class LambdaJ {
 
                 // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                 if (reserved(sym)) errorReserved(getOp(operator, letDynamic, namedLet), sym);
+                if (sym == loopSymbol) errorMalformedFmt(getOp(operator, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
 
                 final boolean isNewSymbol;
                 if (useLookup) {
@@ -2230,9 +2233,10 @@ public class LambdaJ {
         }
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
+            extenv = acons(loopSymbol, UNASSIGNED, extenv);
             final ConsCell bodyParams = extractParamList(ccBindings);
-            final Object closure = makeClosure(cons(bodyParams, bodyForms), extenv);   // (optsymbol . (lambda (params bodyforms)))
-            insertFront(extenv, car(arguments), closure);
+            final Object closure = makeClosure(cons(bodyParams, bodyForms), extenv);
+            ((ConsCell)extenv.car()).rplacd(closure);
         }
         return new ConsCell[] {bodyForms, extenv, restore};
     }
