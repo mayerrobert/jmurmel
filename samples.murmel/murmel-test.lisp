@@ -218,6 +218,11 @@
           (list *a* *b* *c*))
   '(123 1 4 1 2 3))
 
+; bind globals and locals
+(deftest letdynamic.3
+  (let #+murmel dynamic ((*a* 11) (*b* 22) (*c* 33) (b 2)) (append (globals-as-list) b))
+  '(11 22 33 . 2))
+
 
 ;;; test let* dynamic
 (deftest let*dynamic.1

@@ -2211,14 +2211,11 @@ public class LambdaJ {
                 }
 
                 ConsCell newBinding = null;
-                if (letDynamic) {
-                    newBinding = assq(sym, topEnv);
-                    if (newBinding == null) errorMalformed(getOp(operator, letDynamic, namedLet), "%s is not globally bound. dynamic is only allowed with globally bound symbols.", sym);
-                }
+                if (letDynamic) newBinding = assq(sym, topEnv);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
-                if (letDynamic) {
+                if (letDynamic && newBinding != null) {
                     if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
@@ -2465,7 +2462,7 @@ public class LambdaJ {
                 final Object form = parser.readObj(true, eof);
                 if (form == eof) break;
 
-                //result = eval(expand(form), topEnv, 0, 0, 0);
+                // could do tryExpand() here, or wait for it happening later
                 result = eval(form, topEnv, 0, 0, 0);
             }
             return result;
@@ -3570,82 +3567,6 @@ public class LambdaJ {
         return expansion;
     }
 
-    /** recursively expand all macros in a form */
-    /*
-    private Object expand(Object form) {
-        if (!consp(form)) return form;
-        final ConsCell ccForm = (ConsCell)form;
-        final Object op = car(ccForm);
-        if (op != null && symbolp(op) && ((LambdaJSymbol)op).wellknownSymbol != null) {
-            switch (((LambdaJSymbol)op).wellknownSymbol) {
-                case sQuote: return form;
-
-                case sDefine:
-                case sLambda:
-                    return new ListBuilder()
-                           .append(op)
-                           .append(cadr(ccForm))
-                           .appendLast(mapcar(this::expand, (ConsCell)cddr(ccForm)))
-                           .first();
-
-                case sDefun:
-                case sDefmacro:
-                    if (op == sDefmacro && cddr(ccForm) == null) return ccForm; // macro "undef"
-                    return new ListBuilder()
-                           .append(op)                                                 // defun or defmacro
-                           .append(cadr(ccForm))                                       // function or macro name
-                           .append(caddr(ccForm))                                      // params
-                           .appendLast(mapcar(this::expand, (ConsCell)cdddr(ccForm)))  // bodyforms
-                           .first();
-
-                case sLet:
-                case sLetStar:
-                case sLetrec:
-                    if (symbolp(cadr(ccForm)))
-                        return new ListBuilder()
-                               .append(op)
-                               .append(cadr(ccForm))
-                               .append(mapcar(this::expand, (ConsCell)caddr(ccForm)))
-                               .appendLast(mapcar(this::expand, (ConsCell)cdddr(ccForm)))
-                               .first();
-                    else
-                        return new ListBuilder()
-                               .append(op)
-                               .append(mapcar(this::expand, (ConsCell)cadr(ccForm)))
-                               .appendLast(mapcar(this::expand, (ConsCell)cddr(ccForm)))
-                               .first();
-
-                case sSetQ:
-                    final ListBuilder setqForm = new ListBuilder();
-                    setqForm.append(sSetQ);
-                    Object o = cdr(ccForm);
-                    while (o != null) {
-                        if (!consp(o)) throw errorMalformed("setq", "illegal dotted list");
-                        setqForm.append(car(o));
-                        o = cdr((ConsCell) o);
-                        if (o == null) throw errorMalformed("setq", "odd number of elements");
-                        if (!consp(o)) throw errorMalformed("setq", "illegal dotted list");
-                        setqForm.append(expand(car((ConsCell)o)));
-                        o = cdr(o);
-                    }
-                    return setqForm.first();
-
-                //case sLabels:
-                case sMultipleValueBind:
-                case sMultipleValueCall:
-                    return ccForm; // todo let eval handle macroexpansion for now
-            }
-        }
-        final ConsCell macro = macros.get(op);
-        if (macro != null) {
-            final Object expanded = macroexpandImpl(cons(car(ccForm), mapcar(this::expand, (ConsCell) cdr(ccForm))));
-            values = NO_VALUES;
-            return expand(expanded);
-        }
-        return mapcar(this::expand, ccForm);
-    }
-    */
-
     private int gensymCounter;
     final Object gensym(ConsCell args) {
         noArgs("gensym", args);
@@ -4461,7 +4382,6 @@ public class LambdaJ {
                 if (history != null) history.add(form);
 
                 final long tStart = System.nanoTime();
-                //result = interpreter.eval(interpreter.expand(form), interpreter.topEnv, 0, 0, 0);
                 result = interpreter.eval(form, interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
@@ -4732,7 +4652,6 @@ public class LambdaJ {
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
-                //final Object result = interpreter.eval(interpreter.expand(exp), env, 0, 0, 0);
                 final Object result = interpreter.eval(exp, interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
