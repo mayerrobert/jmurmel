@@ -2045,15 +2045,13 @@ public class LambdaJ {
         final Object maybeMacroCall = car(ccForms);
         if (!consp(maybeMacroCall)) return;
 
-        final ConsCell ccMacroOrFunctionCall;
-        final Object op = car(ccMacroOrFunctionCall = (ConsCell)maybeMacroCall);
-        if (op != null && symbolp(op)) {
-            final LambdaJSymbol symOp = (LambdaJSymbol)op;
-            final ConsCell macro = symOp.macro;
-            if (macro != null) {
-                ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMacroOrFunctionCall), stack, level, traceLvl));
-                tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
-            }
+        final ConsCell ccMaybeMacroCall = (ConsCell)maybeMacroCall;
+        final Object op = car(ccMaybeMacroCall);
+        if (op == null || !symbolp(op)) return;
+        final ConsCell macro = ((LambdaJSymbol)op).macro;
+        if (macro != null) {
+            ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMaybeMacroCall), stack, level, traceLvl));
+            tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
         }
     }
 
