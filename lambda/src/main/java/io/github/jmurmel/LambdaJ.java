@@ -347,6 +347,25 @@ public class LambdaJ {
         @Override ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
     }
 
+    /*final class ArraySliceBuilder {
+        private Object[] arry = new Object[4];
+        private int size = 0;
+        
+        ArraySliceBuilder append(Object elem) {
+            if (size == arry.length) {
+                arry = Arrays.copyOf(arry, size << 1);
+            }
+            arry[size++] = elem;
+            return this;
+        }
+        
+        ConsCell first() {
+            if (size == 0) return null;
+            if (arry.length == size) return new ArraySlice(arry, 0);
+            return new ArraySlice(Arrays.copyOf(arry, size), 0);
+        }
+    }*/
+
     private abstract static class AbstractConsCell extends ConsCell {
         private static class ListConsCellIterator implements Iterator<Object> {
             private final AbstractConsCell coll;
@@ -2268,7 +2287,7 @@ public class LambdaJ {
         if (traceFunc)  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
 
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
-        final ConsCell menv = zip(car(lambda), arguments, topEnv, true);    // todo predef env statt topenv?!?
+        final ConsCell menv = zip(car(lambda), arguments, topEnv, true);
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, stack, level, traceLvl);
@@ -2394,6 +2413,17 @@ public class LambdaJ {
         if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
         return head;
     }
+    /*private ConsCell evlis(ConsCell forms, ConsCell env, int stack, int level, int traceLvl) {
+        if (traceOn) dbgEvalStart("evlis", forms, env, stack, level);
+        final ArraySliceBuilder builder = new ArraySliceBuilder();
+        for (ConsCell rest = forms; rest != null; rest = (ConsCell)cdr(rest)) {
+            tryExpand(rest, stack, level, traceLvl);
+            builder.append(eval(car(rest), env, stack, level, traceLvl));
+        }
+        final ConsCell head = builder.first();
+        if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
+        return head;
+    }*/
 
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
@@ -2685,7 +2715,7 @@ public class LambdaJ {
         return list;
     }
 
-    private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
+    /*private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
         final ListBuilder b = new ListBuilder();
         Object o = l;
         for (;;) {
@@ -2700,7 +2730,7 @@ public class LambdaJ {
             o = cdr(o);
         }
         return (ConsCell) b.first();
-    }
+    }*/
 
     static boolean eql(Object o1, Object o2) {
         if (o1 == o2) return true;
@@ -2756,12 +2786,12 @@ public class LambdaJ {
     }
 
     /** this method returns true while Lisp member returns the sublist starting at obj */
-    private static boolean member(Object obj, ConsCell list) {
+    /*private static boolean member(Object obj, ConsCell list) {
         if (obj == null) return false;
         if (list == null) return false;
         for (Object e: list) if (e == obj) return true;
         return false;
-    }
+    }*/
 
     /** return the cons whose car is eq to {@code atom}
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
@@ -4246,7 +4276,7 @@ public class LambdaJ {
 
     static int mainInternal(String[] args) {
         try {
-            boolean error = handleScript(args);
+            final boolean error = handleScript(args);
             misc(args);
             final Action action = action(args);
             final TraceLevel trace = trace(args);
@@ -5029,8 +5059,7 @@ public class LambdaJ {
     private static Path getLibPath(String libDir) {
         if (libDir == null) return null;
         try {
-            Path libPath = null;
-            libPath = Paths.get(libDir).toAbsolutePath();
+            final Path libPath = Paths.get(libDir).toAbsolutePath();
             if (!Files.isDirectory(libPath)) {
                 System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
                 throw EXIT_ERROR;
@@ -5466,6 +5495,14 @@ public class LambdaJ {
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
         public final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
+
+        public static Object arrayToList(Object[] args, int start) {
+            if (start >= args.length) return null;
+            if (args.length-start == 1) return cons(args[start], null);
+            final ListBuilder ret = new ListBuilder();
+            for (int i = start; i < args.length; i++) ret.append(args[i]);
+            return ret.first();
+        }
 
         public static ConsCell arraySlice(Object[] o, int offset) { return LambdaJ.arraySlice(o, offset); }
         public static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
@@ -6958,8 +6995,7 @@ public class LambdaJ {
                     intp.notReserved(func, (LambdaJSymbol)params);
                     if (!seen.add(params)) errorMalformedFmt(func, "duplicate symbol %s", params);
                     env = extenv(func, params, rsfx, env);
-                    if (n == 0) sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(");\n");
-                    else        sb.append("        final Object ").append(javasym(params, env)).append(" = arraySlice(args").append(rsfx).append(", ").append(n).append(");\n");
+                    sb.append("        final Object ").append(javasym(params, env)).append(" = arrayToList(args").append(rsfx).append(", ").append(n).append(");\n");
                     return env;
                 }
                 

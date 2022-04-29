@@ -2,7 +2,9 @@
 Changes in JMurmel-1.3 relative to JMurmel-1.2
 
  * the interpreter now expands macros only once
- * allow #!...!# as multiline comment, add commandline argument --script
+ * allow #!...!# as multiline comment, add commandline argument --script to support hashbang scripts.
+ * lifted the compiler restriction "The list containing optional arguments cannot be used
+   as an argument to `rplacd`."
 
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
