@@ -7,15 +7,13 @@
 ;;; Timing results are based on wall time only.
 
 ;;; run the benchmark this many seconds
-(#+murmel define
- #-murmel defparameter
-  *default-duration* 5)
+#-murmel (defmacro define (n v) `(defparameter ,n ,v))
+
+(define *default-duration* 5)
 
 ;;; if > 0 then run the form this many seconds before the timed benchmark
 ;;; 0 for sbcl because sbcl doesn't need warmup
-(#+murmel define
- #-murmel defparameter
-  *warmup-duration* #-sbcl 5 #+sbcl 0)
+(define *warmup-duration* #-sbcl 5 #+sbcl 0)
 
 
 ;;; Macro: bench
@@ -27,10 +25,30 @@
   `(do-bench ,name (lambda () ,form) ,seconds))
 
 
-(defun do-run (f counter endtime)
+(define *min* 1e30)
+(define *max* 0)
+(define *internal-per-ms* (/ internal-time-units-per-second 1000))
+(define *count-per-try* 10)
+
+(defun adjust-minmax (duration)
+  (if (> *min* duration) (setq *min* duration))
+  (if (< *max* duration) (setq *max* duration)))
+
+(defun do-run (f counter endtime tmp)
+  (setq tmp (get-internal-real-time))
   (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (#-murmel funcall f)
+  (adjust-minmax (- (get-internal-real-time) tmp))
   (if (< (get-internal-real-time) endtime)
-        (do-run f (1+ counter) endtime)
+        (do-run f (1+ counter) endtime nil)
     counter))
 
 (defun do-bench (name f seconds)
@@ -41,20 +59,21 @@
 
   (if (> *warmup-duration* 0)
     (progn
-      (do-run f 1 (+ (get-internal-real-time) (* seconds internal-time-units-per-second)))
+      (do-run f 1 (+ (get-internal-real-time) (* seconds internal-time-units-per-second)) nil)
       (format t "warmup done.")
       #+murmel (writeln)
       #-murmel (terpri)))
 
   (let* ((start (get-internal-real-time))
          (endtime (+ start (* seconds internal-time-units-per-second)))
-         (count (do-run f 1 endtime))
+         (count (do-run f 1 endtime nil))
          (end (get-internal-real-time))
+         (count (truncate (* *count-per-try* count)))
          (elapsed-seconds (/ (- end start) internal-time-units-per-second))
          (iterations-per-second (/ count elapsed-seconds))
          (seconds-per-iteration (/ elapsed-seconds count)))
     (format t
-            #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, %g milliseconds/iteration%n"
-            #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, ~F milliseconds/iteration~%"
-            name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration))
+            #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, avg/min/max %g/%g/%g milliseconds/iteration%n"
+            #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, avg/min/max ~F/~F/~F milliseconds/iteration~%"
+            name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration) (/ *min* *internal-per-ms* *count-per-try*) (/ *max* *internal-per-ms* *count-per-try*))
     nil))
