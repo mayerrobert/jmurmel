@@ -316,9 +316,16 @@ public class LambdaJ {
             return (T)this;
         }
 
+        @SuppressWarnings("unchecked")
+        public T appendElements(Object... elems) {
+            final int length = elems.length;
+            for (int i = 0; i < length; i++) append(elems[i]);
+            return (T)this;
+        }
+
         /** add an item at the end of the list to create a dotted list.
-         *  Once {@link #appendLast(Object)} has been invoked subsequent invocations
-         *  of {@link #appendLast(Object)} and/ or {@link #append(Object)} will result in an error as dotted lists can't be appended to. */
+         *  Once {@code #appendLast(Object)} has been invoked subsequent invocations
+         *  of {@code #appendLast(Object)} and/ or {@link #append(Object)} will result in an error as dotted lists can't be appended to. */
         @SuppressWarnings("unchecked")
         public T appendLast(Object lastElem) {
             if (first == null) {
@@ -341,6 +348,12 @@ public class LambdaJ {
     /** Builder class for constructing lists, also used by compiled Murmel */
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
         @Override ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
+
+        public static ConsCell list(Object... elems) {
+            if (elems == null || elems.length == 0) return null;
+            if (elems.length == 1) return new ListConsCell(elems[0], null);
+            return (ConsCell)new ListBuilder().appendElements(elems).first();
+        }
     }
 
     private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
@@ -2676,6 +2689,7 @@ public class LambdaJ {
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
+                                                 : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof Object[] ? ((Object[])o).length == 0 ? null : ((Object[])o)[0]
                                                  : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
@@ -2694,6 +2708,7 @@ public class LambdaJ {
 
     static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     static Object   cdr(Object o)      { return o == null ? null
+                                                 : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                  : o instanceof Object[] ? ((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o)
                                                  : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
@@ -4876,7 +4891,7 @@ public class LambdaJ {
 
     private static void injectCommandlineArgs(MurmelProgram prg, String[] args) {
         int n = 0;
-        for (String arg: args) {
+        if (args != null) for (String arg: args) {
             n++;
             if ("--".equals(arg)) break;
         }
@@ -5296,13 +5311,7 @@ public class LambdaJ {
         public final ConsCell _assoc   (Object... args) { twoArgs("assoc",       args.length); return assoc(args[0], args[1]); }
         public final ConsCell _assq    (Object... args) { twoArgs("assq",        args.length); return assq(args[0], args[1]); }
         public final ConsCell _list    (Object... args) {
-            if (args == null || args.length == 0) return null;
-            if (args.length == 1) return cons(args[0], null);
-            final ListBuilder ret = new ListBuilder();
-            for (Object arg: args) {
-                ret.append(arg);
-            }
-            return (ConsCell)ret.first();
+            return ListBuilder.list(args);
         }
         public final Object listStar   (Object... args) {
             varargs1("list*", args.length);
@@ -6313,6 +6322,7 @@ public class LambdaJ {
             while (it.hasNext()) {
                 final Object form = it.next();
                 if (consp(form)) { ret.append("        loc = \""); stringToJava(ret, ((ConsCell)form).lineInfo(), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        "); }
+                else ret.append("        ");
                 if (it.hasNext()) {
                     if (!ign) {
                         ret.append("Object ");
@@ -6357,8 +6367,8 @@ public class LambdaJ {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.sNull) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final Object[] transformed = { intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)}; 
-                            emitForm(sb, new ArraySlice(transformed, 0), env, topEnv, rsfx, isLast);
+                            final ConsCell transformed = ListBuilder.list(intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)); 
+                            emitForm(sb, transformed, env, topEnv, rsfx, isLast);
                             return;
                         }
                         sb.append("(");
