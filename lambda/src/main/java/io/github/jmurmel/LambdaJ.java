@@ -6587,10 +6587,12 @@ public class LambdaJ {
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == intp.sNil) sb.append("false");
             else if (form == intp.sT) sb.append("true");
-            else if (symbolp(form) || consp(form)) {
+            else if (consp(form) && car(form) == intp.sNull) {
                 // optimize "(null ..."
-                if (car(form) == intp.sNull) { sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))"); }
-                else { sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(") != null"); }
+                sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))");
+            }
+            else if (consp(form) || symbolp(form)) {
+                sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(") != null");
             }
             else sb.append("true"); // must be an atom other than nil or a symbol -> true
         }
@@ -6643,10 +6645,12 @@ public class LambdaJ {
             if (condForm == null) {
                 sb.append("(Object)null");
             } else {
-                sb.append("(false ? (Object)null");
+                sb.append("(");
+                boolean first = true;
                 for (final Iterator<Object> iterator = condForm.iterator(); iterator.hasNext(); ) {
                     final Object clause = iterator.next();
-                    sb.append("\n        : ");
+                    if (first) first = false;
+                    else sb.append("\n        : ");
                     final Object condExpr = car(clause), condForms = cdr(clause);
                     if (condExpr == intp.sT) {
                         emitProgn(sb, condForms, env, topEnv, rsfx, isLast);  sb.append(')');
