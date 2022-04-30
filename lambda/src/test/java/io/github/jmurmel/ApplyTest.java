@@ -90,7 +90,7 @@ public class ApplyTest {
     @Test
     public void lambdaExtraArgs() {
         LambdaJTest.runErrorTest("lambdaExtraArgs", "(apply (lambda (a b) (writeln a) (writeln b)) '(1 2 3))",
-                                 "function application: too many arguments. remaining arguments: (3.0)");
+                                 "function application: too many arguments. Remaining arguments: (3.0)");
     }
 
     @Test

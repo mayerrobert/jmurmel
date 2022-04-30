@@ -40,22 +40,8 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.zone.ZoneRules;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IllegalFormatException;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
 import java.util.jar.Attributes;
@@ -125,13 +111,13 @@ public class LambdaJ {
     static {
         String versionInfo;
         final ClassLoader cl = LambdaJ.class.getClassLoader();
-        final URL url = cl.getResource("jmurmelversioninfo.properties");
+        final URL url = cl.getResource("META-INF/jmurmelversioninfo.properties");
         if (url == null) versionInfo = "unknown";
         else {
             try (InputStream is = url.openStream()) {
-                final Manifest manifest = new Manifest(is);
-                versionInfo = manifest.getMainAttributes().getValue("Engine-Version");
-                if (versionInfo == null) versionInfo = "unknown";
+                final Properties manifest = new Properties();
+                manifest.load(is);
+                versionInfo = manifest.getProperty("Engine-Version", "unknown");
             } catch (IOException e) {
                 versionInfo = "error";
             }
@@ -312,7 +298,7 @@ public class LambdaJ {
                 ((ConsCell) last).rplacd(newCell);
                 last = newCell;
             }
-            else throw new LambdaJ.LambdaJError("can't append list element to dotted list");
+            else throw new LambdaJ.LambdaJError("can't append another element to dotted list");
             return (T)this;
         }
 
@@ -335,7 +321,7 @@ public class LambdaJ {
                 ((ConsCell) last).rplacd(lastElem);
                 last = lastElem;
             }
-            else throw new LambdaJ.LambdaJError("can't append last list element to dotted list");
+            else throw new LambdaJ.LambdaJError("can't append another last element to dotted list");
             return (T)this;
         }
 
@@ -1219,8 +1205,7 @@ public class LambdaJ {
                     } else if (!escapeSeen && (haveDouble() || haveLong()) && isCLDecimalLong(s)) {
                         // reject CL-style 123. for "123 in radix 10" - Murmel doesn't support changing reader radix,
                         // and non-lispers may think digits followed by a dot are floating point numbers (as is the case in most programming languages)
-                        throw new ParseError("digits followed by '.' to indicate 'integer in radix' 10 is not supported. "
-                                             + "Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
+                        throw new ParseError("digits followed by '.' to indicate 'integer in radix' 10 is not supported. Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
                     } else {
                         if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                         tok = intern(s);
@@ -2376,7 +2361,7 @@ public class LambdaJ {
         for (Object params = paramList; params != null; ) {
             // regular param/arg: add to env
             if (consp(params)) {
-                if (match && args == null) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
+                if (match && args == null) throw new LambdaJError(true, "%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
                 env = acons(car(params), car(args), env);
             }
 
@@ -2392,7 +2377,7 @@ public class LambdaJ {
             args = (ConsCell) cdr(args);
             if (args == null) {
                 if (consp(params)) {
-                    if (match) throw new LambdaJError(true, "%s: not enough arguments. parameters w/o argument: %s", "function application", printSEx(params));
+                    if (match) throw new LambdaJError(true, "%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
                     else env = acons(params, null, env);
                 }
                 else if (params != null) {
@@ -2402,7 +2387,7 @@ public class LambdaJ {
                 }
             }
         }
-        if (match && args != null) throw new LambdaJError(true, "%s: too many arguments. remaining arguments: %s", "function application", printSEx(args));
+        if (match && args != null) throw new LambdaJError(true, "%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 
@@ -3084,8 +3069,7 @@ public class LambdaJ {
     }
 
     static void errorReserved(final String op, final Object sym) {
-        if (sym == null) errorMalformed(op, "can't use reserved word nil as a symbol");
-        errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym);
+        errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym);
     }
 
     static RuntimeException errorNotANumber(String func, Object n) {
@@ -3806,7 +3790,7 @@ public class LambdaJ {
                 nameToMethod.put(m.getName(), m);
             }
 
-            final String asString = "#<Java proxy " + clazz.getName() + ">";
+            final String asString = "#<Java proxy: " + clazz.getName() + ">";
             methodToMurmelFunction.put(nameToMethod.get("toString"), a -> asString);
             methodToMurmelFunction.put(Writeable.class.getMethod("printSEx", WriteConsumer.class, boolean.class),
                                        a -> {final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null;});
@@ -5093,7 +5077,7 @@ public class LambdaJ {
     }
 
     private static Path getTmpDir() throws IOException {
-        final Path tmpDir = Files.createTempDirectory("jmurmel");
+        final Path tmpDir = Files.createTempDirectory("JMurmel");
         tmpDir.toFile().deleteOnExit();
         return tmpDir;
     }
@@ -5884,7 +5868,7 @@ public class LambdaJ {
             case "rgb-to-pixel": return (CompilerPrimitive)this::rgbToPixel;
             case "hsb-to-pixel": return (CompilerPrimitive)this::hsbToPixel;
             case "values": return (CompilerPrimitive)this::_values;
-            default: throw new LambdaJError(true, "%s: '%s' is undefined", "getValue", symbol);
+            default: throw new LambdaJError(true, "%s: '%s' not bound", "getValue", symbol);
             }
         }
     }
@@ -6555,7 +6539,7 @@ public class LambdaJ {
                     if (intp.speed >= 1 && symbolp(op) && opencode(sb, (LambdaJSymbol)op, ccArguments, env, topEnv, rsfx, isLast)) return;
 
                     if (intp.speed >= 1 && consp(op) && symbolp(car(op)) && symbolEq(car(op), "jmethod")
-                        && emitJmethod(sb, requireCons("calling ::", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
+                        && emitJmethod(sb, requireCons("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }
 
@@ -6710,7 +6694,7 @@ public class LambdaJ {
                     //emitForm(sb, valueForm, env, topEnv, rsfx, false);
                     //sb.append(")).get()");
 
-                    sb.append("((Supplier)() -> { final Object newVal").append(rsfx).append(" = ");
+                    sb.append("((Supplier<Object>)() -> { final Object newVal").append(rsfx).append(" = ");
                     emitForm(sb, valueForm, env, topEnv, rsfx, false);
                     sb.append("; ").append(symName).append(" = (CompilerGlobal)() -> newVal").append(rsfx).append("; return newVal").append(rsfx).append("; }).get()");
                 }
@@ -6812,7 +6796,7 @@ public class LambdaJ {
             if (bindings == null && body == null) { sb.append("(Object)null"); return; }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
-            sb.append("new MurmelFunction () {\n");
+            sb.append("new MurmelFunction() {\n");
 
             final String op;
             if (named) {
