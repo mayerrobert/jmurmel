@@ -1,6 +1,10 @@
 bei --script sollte ggf. kein result geschrieben werden
 und/ oder das result iwie in einen exitlevel umgelenkt, vielleicht nil-> exit(0), number-> exit(number), sonst exit(-1)
 
+System.err vs. System.out aufräumen: repl sollte alles nach System.out schreiben, !repl sollte fehler nach System.err schreiben
+
+
+
 eval-when endlich einbauen
 siehe CLHS "Special Operator EVAL-WHEN" http://clhs.lisp.se/Body/s_eval_w.htm
 siehe CLHS "3.2.3.1 Processing of Top Level Forms" http://www.lispworks.com/documentation/lw60/CLHS/Body/03_bca.htm

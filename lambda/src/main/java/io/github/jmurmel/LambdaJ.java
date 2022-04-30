@@ -4452,9 +4452,13 @@ public class LambdaJ {
 
     /** compile history to a class and run compiled class */
     private static boolean runForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl) {
+        final Path tmpDir;
+        try { tmpDir = getTmpDir(); }
+        catch (IOException e) { System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage()); return false; }
+
         MurmelProgram prg = null;
         try {
-            final MurmelJavaCompiler c = new MurmelJavaCompiler(interpreter.symtab, interpreter.libDir, getTmpDir());
+            final MurmelJavaCompiler c = new MurmelJavaCompiler(interpreter.symtab, interpreter.libDir, tmpDir);
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
             prg = murmelClass.getDeclaredConstructor().newInstance();
             injectCommandlineArgs(prg, cmdlineArgs);
@@ -4541,18 +4545,11 @@ public class LambdaJ {
     }
 
     private static boolean compileToJar(SymbolTable st, Path libDir, ObjectReader history, Object className, Object jarFile) {
-        try {
-            return compileToJar(new MurmelJavaCompiler(st, libDir, getTmpDir()), history, className, jarFile);
-        }
-        catch (LambdaJError e) {
-            System.out.println("NOT compiled to .jar - error: " + e.getMessage());
-            return false;
-        }
-        catch (Exception e) {
-            System.out.println("NOT compiled to .jar - error: ");
-            e.printStackTrace(System.out);
-            return false;
-        }
+        final Path tmpDir;
+        try { tmpDir = getTmpDir(); }
+        catch (IOException e) { System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage()); return false; }
+
+        return compileToJar(new MurmelJavaCompiler(st, libDir, tmpDir), history, className, jarFile);
     }
 
     private static boolean compileToJar(MurmelJavaCompiler c, ObjectReader history, Object className, Object jarFile) {
