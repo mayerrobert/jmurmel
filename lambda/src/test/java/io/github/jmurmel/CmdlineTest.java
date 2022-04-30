@@ -54,6 +54,9 @@ public class CmdlineTest {
             { "--version", new String[] { "--version" }, null, 0, re("Version", "Built from ", "Built by", "\n"), "" },
             { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from ", "Built by", "Usage:\n\n", "\n"), "" },
             { "--help-features", new String[] { "--help-features" }, null, 0, re("Version", "Built from ", "Built by", "Feature flags:\n\n", "\n"), "" },
+            
+            { "cmdline args", new String[] {          "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> t\n", "" },
+            { "cmdline args", new String[] { "--run", "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> t\n", "" },
         };
     }
 

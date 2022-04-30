@@ -4128,6 +4128,7 @@ public class LambdaJ {
 
         Object body();
 
+        void setCommandlineArgumentList(ConsCell argList);
         ObjectReader getLispReader();
         ObjectWriter getLispPrinter();
         void setReaderPrinter(ObjectReader reader, ObjectWriter writer);
@@ -4140,6 +4141,7 @@ public class LambdaJ {
             @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
             @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
+            @Override public void setCommandlineArgumentList(ConsCell args) { insertFront(topEnv, intern("*command-line-argument-list*"), args); }
             @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
             @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
             @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
@@ -4371,11 +4373,10 @@ public class LambdaJ {
                         if (successJar) System.out.println("compiled stdin to " + outFile);
                         break;
                     case COMPILE_AND_RUN:
-                        final ObjectWriter outWriter = makeWriter(System.out::print);
-                        interpreter.setReaderPrinter(parser, outWriter);
-                        interpreter.environment(null);  // todo wieso und wieso die beiden zeilen davor?
-                        injectCommandlineArgs(interpreter, args); // todo ins kompilierte programm
-                        runForms(parser, interpreter, false);
+                        //final ObjectWriter outWriter = makeWriter(System.out::print);
+                        //interpreter.setReaderPrinter(parser, outWriter);
+                        //interpreter.environment(null);
+                        runForms(parser, args, interpreter, false);
                         break;
                     default: assert false : "can't happen";
                     }
@@ -4444,33 +4445,26 @@ public class LambdaJ {
 
     private static void compileAndRunFiles(List<String> files, LambdaJ interpreter, String[] args, boolean verbose) throws IOException {
         final ObjectReader program = parseFiles(files, interpreter, verbose);
-        interpreter.init(System.in::read, System.out::print); // todo wieso?
-        injectCommandlineArgs(interpreter, args); // todo die befehlszeilenargs sollten ans kompilierte programm übergeben werden, nicht an den interpreter
-        final boolean success = runForms(program, interpreter, false);
+        //interpreter.init(System.in::read, System.out::print);
+        final boolean success = runForms(program, args, interpreter, false);
         if (!success) throw EXIT_ERROR;
     }
 
     /** compile history to a class and run compiled class */
-    private static boolean runForms(ObjectReader history, LambdaJ interpreter, boolean repl) {
+    private static boolean runForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl) {
         MurmelProgram prg = null;
         try {
             final MurmelJavaCompiler c = new MurmelJavaCompiler(interpreter.symtab, interpreter.libDir, getTmpDir());
             final Class<MurmelProgram> murmelClass = c.formsToJavaClass("MurmelProgram", history, null);
             prg = murmelClass.getDeclaredConstructor().newInstance();
+            injectCommandlineArgs(prg, cmdlineArgs);
             final long tStart = System.nanoTime();
             final Object result = prg.body();
             final long tEnd = System.nanoTime();
             interpreter.traceJavaStats(tEnd - tStart);
             if (repl || result != null) {
                 System.out.println();
-                final Object[] multipleValues = ((MurmelJavaProgram)prg).values;
-                if (multipleValues == null) {
-                    System.out.print("==> ");  interpreter.lispPrinter.printObj(result, true);  System.out.println();
-                } else {
-                    for (Object v: multipleValues) {
-                        System.out.print(" -> "); interpreter.lispPrinter.printObj(v, true); System.out.println();
-                    }
-                }
+                System.out.print("==> ");  prg.getLispPrinter().printObj(result, true);  System.out.println();
             }
 
             return true;
@@ -4653,7 +4647,7 @@ public class LambdaJ {
                     if (exp == cmdList)   { listHistory(history); continue; }
                     if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
                     if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
-                    if (exp == cmdRun)    { runForms(makeReader(history), interpreter, true); continue; }
+                    if (exp == cmdRun)    { runForms(makeReader(history), null, interpreter, true); continue; }
                     if (exp == cmdJar)    { compileToJar(interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                     if (exp == cmdEnv)    {
@@ -4881,6 +4875,16 @@ public class LambdaJ {
         }
 
         intp.insertFront(intp.topEnv, intp.intern("*command-line-argument-list*"), arraySlice(args, n));
+    }
+
+    private static void injectCommandlineArgs(MurmelProgram prg, String[] args) {
+        int n = 0;
+        for (String arg: args) {
+            n++;
+            if ("--".equals(arg)) break;
+        }
+
+        prg.setCommandlineArgumentList(arraySlice(args, n));
     }
 
 
@@ -5756,6 +5760,11 @@ public class LambdaJ {
                 System.err.println("Caught Throwable at " + program.loc + ": " + t);
                 System.exit(1);
             }
+        }
+
+        @Override public void setCommandlineArgumentList(ConsCell args) {
+            commandlineArgumentList = args;
+            intp.insertFront(intp.topEnv, intern("*command-line-argument-list*"), args);
         }
 
         @Override public Object getValue(String symbol) {
@@ -6881,7 +6890,7 @@ public class LambdaJ {
                                 sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
                             }
                         }
-                        else globalName = null; // todo ist das nicht ein fehler? undefined symbol?
+                        else globalName = null; // letXX dynamic can bind both global as well as new local variables
 
                         final Object binding = bi.next();
                         sb.append("        ").append(javaName).append(" = ");
