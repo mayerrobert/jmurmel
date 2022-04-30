@@ -45,7 +45,8 @@ public class CmdlineTest {
             { "run add 1+2", new String[] { "--run" }, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
 
             { "nulltest --repl", new String[] { "--repl" }, ":q", 0, STDOUT_WELCOME_OUTPUT_BYE, ""},
-            { "error --repl", new String[] { "--repl" }, "errorform", 1, STDOUT_WELCOME_OUTPUT, STDERR_ERROR },
+            { "error --repl",    new String[] { "--repl" }, "errorform", 1, STDOUT_WELCOME_OUTPUT, STDERR_ERROR },
+            { "runform --repl",  new String[] { "--repl" }, "(write 'hello)\n:r\n", 0, re("Enter a Murmel form", "hello\n==> t\nJMurmel> hello\n==> t\n", "bye.\n\n"), "" },
 
             { "nulltest --tty", new String[] { "--tty" },  "",   0, STDOUT_WELCOME_OUTPUT_BYE, ""},
             { "error --tty", new String[] { "--tty" }, "errorform\n:q", 0, STDOUT_WELCOME_OUTPUT_ERROR_BYE, "" },

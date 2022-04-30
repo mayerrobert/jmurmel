@@ -1,5 +1,6 @@
 bei --script sollte ggf. kein result geschrieben werden
 und/ oder das result iwie in einen exitlevel umgelenkt, vielleicht nil-> exit(0), number-> exit(number), sonst exit(-1)
+vielleicht zus --endresult, default ist false
 
 System.err vs. System.out aufräumen: repl sollte alles nach System.out schreiben, !repl sollte fehler nach System.err schreiben
 
