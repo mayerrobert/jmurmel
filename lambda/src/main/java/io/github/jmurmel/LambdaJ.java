@@ -1542,20 +1542,20 @@ public class LambdaJ {
          * (append lhs (list rhsX))             -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
-            if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sList)
-                return new ListConsCell(sList, new ListConsCell(cadr(lhs), cdr(rhs)));
+            if (consp(lhs) && car(lhs) == sList && cddr(lhs) == null) {
+                if (consp(rhs)) {
+                    final Object carRhs = car(rhs);
+                    if (carRhs == sList)     return new ListConsCell(sList,     new ListConsCell(cadr(lhs), cdr(rhs)));
+                    if (carRhs == sListStar) return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
+                }
 
-            else if (car(lhs) == sList && cddr(lhs) == null && car(rhs) == sListStar)
-                return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
-
-            else if (car(lhs) == sList && cddr(lhs) == null)
                 return list(sListStar, cadr(lhs), rhs);
+            }
 
-            else if (car(rhs) == sList && cddr(rhs) == null)
+            if (consp(rhs) && car(rhs) == sList && cddr(rhs) == null)
                 return list(sAppend, lhs, list(sCons, cadr(rhs), null));
 
-            else
-                return list(sAppend, lhs, rhs);
+            return list(sAppend, lhs, rhs);
         }
 
 
@@ -2673,7 +2673,8 @@ public class LambdaJ {
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
-    static Object   car(Object o)      { return o == null ? null
+    static Object   car(Object o)      { //assert o == null || o instanceof ConsCell: "car: argument ist " + o.getClass().getSimpleName();
+                                         return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
                                                  : o instanceof Object[] ? ((Object[])o).length == 0 ? null : ((Object[])o)[0]
