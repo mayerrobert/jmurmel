@@ -78,15 +78,6 @@ public class BackquoteTest {
     }
 
 
-    /*
-    (define c "C") ==> c
-    (define d "D") ==> d
-    `(a b ,(if t `,c `,d)) ==> sollte (A B "C") geben, gab aber Fehler
-
-    Error: eval: 'quasiquote' is not bound
-    error occurred in S-expression line 1:14..1:17: (quasiquote (unquote c))
-    error occurred in S-expression (list (if t (quasiquote (unquote c)) (quasiquote (unquote d))))
-     */
     @Test
     public void testBQinBQ() {
         eval("(define c \"C\") (define d \"D\") `(a b ,(if t `,c `,d))", "(a b \"C\")");
@@ -95,27 +86,19 @@ public class BackquoteTest {
     @Test
     public void testBQuotedList() {
         eval("`(aaa bbb ccc)", "(aaa bbb ccc)");
-        //assertExpansion("`(aaa bbb ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote (ccc))))");
         assertExpansion("`(aaa bbb ccc)", "(list (quote aaa) (quote bbb) (quote ccc))");
     }
 
     @Test
     public void testBQuotedDottedList() {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
-        //assertExpansion("`(aaa bbb . ccc)", "(append (quote (aaa)) (append (quote (bbb)) (quote ccc)))");
-        //assertExpansion("`(aaa bbb . ccc)", "(append (list (quote aaa)) (append (list (quote bbb)) (quote ccc)))");
-        //assertExpansion("`(aaa bbb . ccc)", "(cons (quote aaa) (cons (quote bbb) (quote ccc)))");
         assertExpansion("`(aaa bbb . ccc)", "(list* (quote aaa) (quote bbb) (quote ccc))");
     }
 
     @Test
     public void testBQuotedListSplicedList() {
         eval("(define l '(1.0 2.0)) `(a ,@l b)", "(a 1.0 2.0 b)");
-        //assertExpansion("`(a ,@l b)", "(append (quote (a)) (append l (quote (b))))");
-        //assertExpansion("`(a ,@l b)", "(append (list (quote a)) (append l (list (quote b))))");
-        //assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (list (quote b))))");
-        //assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
-        assertExpansion("`(a ,@l b)", "(list* (quote a) (append l (cons (quote b) nil)))");
+        assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
     }
 
     // sample from CLHS
@@ -126,19 +109,13 @@ public class BackquoteTest {
     public void testCHLSBackQuote() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,c ,@d)", "((\"A\" b) \"C\" \"D\" \"DD\")");
         //assertExpansion("`((,a b) ,c ,@d)", "(append (list (append (list a) (quote (b)))) (append (list c) d))");
-        //assertExpansion("`((,a b) ,c ,@d)", "(append (list (list a (quote b))) (append (list c) d))");
-        //assertExpansion("`((,a b) ,c ,@d)", "(cons (list a (quote b)) (cons c d))");
         assertExpansion("`((,a b) ,c ,@d)", "(list* (list a (quote b)) c d)");
     }
 
     @Test
     public void testCHLSMod() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,@d ,c)", "((\"A\" b) \"D\" \"DD\" \"C\")");
-        //assertExpansion("`((,a b) ,@d ,c)", "(append (list (append (list a) (quote (b)))) (append d (list c)))");
-        //assertExpansion("`((,a b) ,@d ,c)", "(append (list (list a (quote b))) (append d (list c)))");
-        //assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (list c)))");
-        //assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
-        assertExpansion("`((,a b) ,@d ,c)", "(list* (list a (quote b)) (append d (cons c nil)))");
+        assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
     }
 
     // sample from Ansi Common Lisp pp413
@@ -155,8 +132,6 @@ public class BackquoteTest {
     @Test
     public void testBBquotedSymbol() {
         eval("``a", "(quote a)");
-        //assertExpansion("``a", "(append (quote (quote)) (quote (a)))");
-        // with optimization
         assertExpansion("``a", "(list (quote quote) (quote a))");
     }
 

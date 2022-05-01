@@ -1306,6 +1306,7 @@ public class LambdaJ {
                         if (!tokEscape && tok == Token.DOT) {
                             skipWs();
                             final Object cdr = readList(lineNo, charNo, eof);
+                            if (cdr == null) throw new ParseError("illegal end of dotted list: nothing appears after . in list");
                             if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
                             final Object cons = combine(startLine, startChar, list, car(cdr));
                             if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
@@ -1405,21 +1406,17 @@ public class LambdaJ {
 
         /** Append rest at the end of first. If first is a list it will be modified. */
         private ConsCell combine(int startLine, int startChar, Object first, Object rest) {
-            if (consp(first)) return appendToList(startLine, startChar, (ConsCell)first, rest);
+            if (consp(first)) return nconc2((ConsCell)first, rest);
             else return cons(startLine, startChar, first, rest);
         }
 
         /** Append rest at the end of first, modifying first in the process.
          *  Returns a dotted list unless rest is a proper list. This works like a two arg nconc. */
-        private ConsCell appendToList(int startLine, int startChar, ConsCell first, Object rest) {
+        private static ConsCell nconc2(ConsCell first, Object rest) {
             for (ConsCell last = first; ; last = (ConsCell) cdr(last)) {
                 if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.rplacd(rest);
-                    return first;
-                }
-                if (!consp(cdr(last))) {
-                    last.rplacd(cons(startLine, startChar, last.cdr(), rest));
                     return first;
                 }
             }
@@ -1473,8 +1470,10 @@ public class LambdaJ {
         */
         private Object qq_expand(Object x) {
             if (x == null) return null;
-            if (atom(x))
+            if (symbolp(x))
                 return quote(x);
+            if (atom(x))
+                return x;
 
             final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
@@ -1489,7 +1488,7 @@ public class LambdaJ {
                 return qq_expand(qq_expand(cadr(xCons)));
 
             if (cdr(xCons) == null) return qq_expand_list(op);
-            
+
             //return list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons)));
             return optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
         }
@@ -1512,8 +1511,10 @@ public class LambdaJ {
         */
         private Object qq_expand_list(Object x) {
             if (x == null) return list(sList, sNil);
-            if (atom(x))
+            if (symbolp(x))
                 return list(sList, quote(x));
+            if (atom(x))
+                return list(sList, x);
 
             final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
@@ -1538,18 +1539,22 @@ public class LambdaJ {
          *
          * (append (list lhsX) (list rhsX...))  -> (list lhsX rhsX...)
          * (append (list lhsX) (list* rhsX...)) -> (list* lhsX rhsX...)
-         * (append (list lhsX) rhs)             -> (list* lhsX rhs)  
+         * (append (list lhsX) (cons rhsX...))  -> (list* lhsX rhsX...)
+         * (append (list lhsX) rhs)             -> (cons lhsX rhs)  
          * (append lhs (list rhsX))             -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
-            if (consp(lhs) && car(lhs) == sList && cddr(lhs) == null) {
+            if (consp(lhs) && car(lhs) == sList) {
+                assert cddr(lhs) == null: "expected single argument list call, got: " + lhs;
+
                 if (consp(rhs)) {
                     final Object carRhs = car(rhs);
                     if (carRhs == sList)     return new ListConsCell(sList,     new ListConsCell(cadr(lhs), cdr(rhs)));
-                    if (carRhs == sListStar) return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
+                    if (carRhs == sListStar
+                        || carRhs == sCons)  return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
                 }
 
-                return list(sListStar, cadr(lhs), rhs);
+                return list(sCons, cadr(lhs), rhs);
             }
 
             if (consp(rhs) && car(rhs) == sList && cddr(rhs) == null)
