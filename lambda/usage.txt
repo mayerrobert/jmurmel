@@ -18,6 +18,14 @@ Misc flags:
 --script <file> ..  Can be used to indicate:
                     process the file following '--script' and pass any remaining
                     commandline arguments to the Murmel program.
+                    The last form in the last file will determine the exitlevel
+                    to the OS:
+                    nil -> 0
+                    number -> number & 127
+                    other non-nil -> 1
+--no-final-result
+--final-result ...  Whether or not to print the result of the last form after exit.
+                    Default is to print unless --script is used.
 
 --version ........  Show version and exit
 --help ...........  Show this message and exit

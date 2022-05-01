@@ -1622,3 +1622,7 @@ multiline comments sind #|...|#. wenn #!...!# auch zulässig wäre, würden sheb
 !#
 die neue option --shebang müsste zuallerst ein "--" an der stelle nach dem filenamen ins String[] args reinzwicken,
 eigentlich: das argument das nach --shebang kommt (das muss der filename sein), ersetzt --shebang, und dorthin wo der filename gestanden ist, kommt "--"
+
+bei --script sollte ggf. kein result geschrieben werden
+und/ oder das result iwie in einen exitlevel umgelenkt, vielleicht nil-> exit(0), number-> exit(number), sonst exit(-1)
+vielleicht zus --endresult, default ist false

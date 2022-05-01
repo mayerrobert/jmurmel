@@ -6,6 +6,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2
    as an argument to `rplacd`." no longer exists
 
  * added the commandline argument --script, allow #!...!# as multiline comment to support hashbang scripts.
+ * added --final-result and --no-final-result
 
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1

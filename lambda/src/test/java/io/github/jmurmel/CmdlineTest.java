@@ -33,8 +33,8 @@ public class CmdlineTest {
         return new Object[][] {
             // "null test": piping an empty file into jmurmel
             { "nulltest", new String[] {}, "", 0, "", ""},
-            { "error form", new String[] {}, "errorform", 1, "", STDERR_ERROR },
-            { "load invalid", new String[] {}, "(load \"invalid\")", 1, "", STDERR_ERROR },
+            { "error form", new String[] {}, "errorform", 255, "", STDERR_ERROR },
+            { "load invalid", new String[] {}, "(load \"invalid\")", 255, "", STDERR_ERROR },
             { "add 1+2", new String[] {}, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
 
             { "one file", new String[] { "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
@@ -45,13 +45,13 @@ public class CmdlineTest {
             { "run add 1+2", new String[] { "--run" }, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
 
             { "nulltest --repl", new String[] { "--repl" }, ":q", 0, STDOUT_WELCOME_OUTPUT_BYE, ""},
-            { "error --repl",    new String[] { "--repl" }, "errorform", 1, STDOUT_WELCOME_OUTPUT, STDERR_ERROR },
+            { "error --repl",    new String[] { "--repl" }, "errorform", 255, STDOUT_WELCOME_OUTPUT, STDERR_ERROR },
             { "runform --repl",  new String[] { "--repl" }, "(write 'hello)\n:r\n", 0, re("Enter a Murmel form", "hello\n==> t\nJMurmel> hello\n==> t\n", "bye.\n\n"), "" },
 
             { "nulltest --tty", new String[] { "--tty" },  "",   0, STDOUT_WELCOME_OUTPUT_BYE, ""},
             { "error --tty", new String[] { "--tty" }, "errorform\n:q", 0, STDOUT_WELCOME_OUTPUT_ERROR_BYE, "" },
 
-            { "invalid cmdline arg", new String[] { "--bla" }, null, 1, "", re("LambdaJ: unknown commandline argument", "LambdaJ: exiting because of previous errors.\n") },
+            { "invalid cmdline arg", new String[] { "--bla" }, null, 128, "", re("LambdaJ: unknown commandline argument", "LambdaJ: exiting because of previous errors.\n") },
             { "--version", new String[] { "--version" }, null, 0, re("Version", "Built from ", "Built by", "\n"), "" },
             { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from ", "Built by", "Usage:\n\n", "\n"), "" },
             { "--help-features", new String[] { "--help-features" }, null, 0, re("Version", "Built from ", "Built by", "Feature flags:\n\n", "\n"), "" },

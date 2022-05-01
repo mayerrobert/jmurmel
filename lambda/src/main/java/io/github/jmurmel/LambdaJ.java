@@ -4271,8 +4271,13 @@ public class LambdaJ {
         Exit(int rc) { super(null, null, true, true); this.rc = rc; }
     }
 
-    private static final Exit EXIT_SUCCESS = new Exit(0);
-    private static final Exit EXIT_ERROR = new Exit(1);
+    private static final Exit EXIT_SUCCESS =       new Exit(0);
+
+    private static final Exit EXIT_PROGRAM_ERROR = new Exit(1);
+
+    private static final Exit EXIT_CMDLINE_ERROR = new Exit(128);
+    private static final Exit EXIT_IO_ERROR =      new Exit(129);
+    private static final Exit EXIT_RUNTIME_ERROR = new Exit(255);
 
     /** static main() function for commandline use of the Murmel interpreter */
     public static void main(String[] args) {
@@ -4283,7 +4288,17 @@ public class LambdaJ {
 
     static int mainInternal(String[] args) {
         try {
+            final boolean finalResult = finalResult(args);
+            final boolean script = hasFlag("--script", args, false);
             final boolean error = handleScript(args);
+            final boolean scriptFlagError;
+            if (script && (hasFlag("--repl", args, false) || hasFlag("--tty", args, false))) {
+                scriptFlagError = true;
+                System.err.println("LambdaJ: when using --script neither --repl nor --tty may be used as well");
+            }
+            else scriptFlagError = false;
+
+
             misc(args);
             final Action action = action(args);
             final TraceLevel trace = trace(args);
@@ -4298,9 +4313,9 @@ public class LambdaJ {
             final String outDir = flagValue("--outdir", args);
             final String libDir = flagValue("--libdir", args);
 
-            if (argError(args) || error) {
+            if (argError(args) || error || scriptFlagError) {
                 System.err.println("LambdaJ: exiting because of previous errors.");
-                throw EXIT_ERROR;
+                throw EXIT_CMDLINE_ERROR;
             }
 
             final Path libPath = getLibPath(libDir);
@@ -4326,19 +4341,23 @@ public class LambdaJ {
                                 result = interpretStream(interpreter, r::read, p, printResult, history);
                             }
                         }
-                        if (!printResult && result != null) {
+                        if (finalResult && !printResult && result != null) {
                             System.out.println();
                             System.out.println("==> " + result);
                         }
+                        if (script) exit(result);
                         break;
                     case TO_JAVA:
-                        compileFiles(files, false, clsName, libPath, outDir);
+                        final boolean javaSuccess = compileFiles(files, false, clsName, libPath, outDir);
+                        if (!istty && !javaSuccess) throw EXIT_RUNTIME_ERROR;
                         break;
                     case TO_JAR:
-                        compileFiles(files, true, clsName, libPath, outDir);
+                        final boolean jarSuccess = compileFiles(files, true, clsName, libPath, outDir);
+                        if (!istty && !jarSuccess) throw EXIT_RUNTIME_ERROR;
                         break;
                     case COMPILE_AND_RUN:
-                        compileAndRunFiles(files, interpreter, args, verbose);
+                        final Object res = compileAndRunFiles(files, interpreter, args, verbose, finalResult);
+                        if (script) exit(res);
                         break;
                     }
                 }
@@ -4346,7 +4365,7 @@ public class LambdaJ {
             catch (IOException e) {
                 System.err.println();
                 System.err.println(e);
-                throw EXIT_ERROR;
+                throw EXIT_IO_ERROR;
             }
 
             // repl() doesn't return
@@ -4360,7 +4379,7 @@ public class LambdaJ {
                     interpreter.init(() -> -1, s -> {});
                     injectCommandlineArgs(interpreter, args);
                     final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
-                    if (!printResult && result != null) {
+                    if (finalResult && !printResult && result != null) {
                         System.out.println();
                         System.out.println("==> " + result);
                     }
@@ -4381,7 +4400,7 @@ public class LambdaJ {
                         //final ObjectWriter outWriter = makeWriter(System.out::print);
                         //interpreter.setReaderPrinter(parser, outWriter);
                         //interpreter.environment(null);
-                        runForms(parser, args, interpreter, false);
+                        compileAndRunForms(parser, args, interpreter, false, finalResult);
                         break;
                     default: assert false : "can't happen";
                     }
@@ -4392,6 +4411,14 @@ public class LambdaJ {
             return e.rc;
         }
         return 0;
+    }
+
+    /** exit by throwing an {@link Exit} exception, doesn't return. The last form of the program will determine the exitlevel:
+     *  nil will result in 0, a number will result in an exitlevel of number&127, any other non-nil value will result in an exitlevel of 1. */
+    private static void exit(Object murmelResult) {
+        if (murmelResult == null) return;
+        if (numberp(murmelResult)) throw new Exit(((Number)murmelResult).intValue() & 0x7f);
+        throw EXIT_PROGRAM_ERROR;
     }
 
 
@@ -4424,11 +4451,11 @@ public class LambdaJ {
         } catch (LambdaJError e) {
             System.err.println();
             System.err.println(e);
-            throw EXIT_ERROR;
+            throw EXIT_RUNTIME_ERROR;
         }
     }
 
-    private static void compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
+    private static boolean compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
         final SymbolTable symtab = new ListSymbolTable();
         final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, null);
 
@@ -4446,20 +4473,24 @@ public class LambdaJ {
             outFile = outDir + '/' + clsName + ".java";
         }
         if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
+        return success;
     }
 
-    private static void compileAndRunFiles(List<String> files, LambdaJ interpreter, String[] args, boolean verbose) throws IOException {
+    private static Object compileAndRunFiles(List<String> files, LambdaJ interpreter, String[] args, boolean verbose, boolean finalResult) throws IOException {
         final ObjectReader program = parseFiles(files, interpreter, verbose);
         //interpreter.init(System.in::read, System.out::print);
-        final boolean success = runForms(program, args, interpreter, false);
-        if (!success) throw EXIT_ERROR;
+        return compileAndRunForms(program, args, interpreter, false, finalResult);
     }
 
     /** compile history to a class and run compiled class */
-    private static boolean runForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl) {
+    private static Object compileAndRunForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl, boolean finalResult) {
         final Path tmpDir;
         try { tmpDir = getTmpDir(); }
-        catch (IOException e) { System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage()); return false; }
+        catch (IOException e) { 
+            System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage());
+            if (!repl) throw EXIT_IO_ERROR;
+            return null;
+        }
 
         MurmelProgram prg = null;
         try {
@@ -4471,12 +4502,12 @@ public class LambdaJ {
             final Object result = prg.body();
             final long tEnd = System.nanoTime();
             interpreter.traceJavaStats(tEnd - tStart);
-            if (repl || result != null) {
+            if (repl || finalResult && result != null) {
                 System.out.println();
                 System.out.print("==> ");  prg.getLispPrinter().printObj(result, true);  System.out.println();
             }
 
-            return true;
+            return result;
         }
         catch (LambdaJError e) {
             final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
@@ -4492,7 +4523,8 @@ public class LambdaJ {
             }
             else System.err.println("Caught Throwable" + loc + ": " + t);
         }
-        return false;
+        if (!repl) throw EXIT_RUNTIME_ERROR;
+        return null;
     }
 
     private static String location(MurmelProgram prg) {
@@ -4649,7 +4681,7 @@ public class LambdaJ {
                     if (exp == cmdList)   { listHistory(history); continue; }
                     if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
                     if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
-                    if (exp == cmdRun)    { runForms(makeReader(history), null, interpreter, true); continue; }
+                    if (exp == cmdRun)    { compileAndRunForms(makeReader(history), null, interpreter, true, false); continue; }
                     if (exp == cmdJar)    { compileToJar(interpreter.symtab, interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                     //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                     if (exp == cmdEnv)    {
@@ -4691,7 +4723,7 @@ public class LambdaJ {
                 } else {
                     System.err.println();
                     System.err.println(e);
-                    throw EXIT_ERROR;
+                    throw EXIT_RUNTIME_ERROR;
                 }
             }
         }
@@ -4720,6 +4752,22 @@ public class LambdaJ {
 
 
     /// helpers for commandline argument processing
+
+    /** whether to print a non-nil result of the final form after exit. Must be called before {@link #handleScript}. Default is false when --script is used, true when --script is not used.
+     *  --final-result turns on printing of a non-nil result of the last form, --no-final-result turns it off.
+     *  If both are given then the last one wins. */
+    private static boolean finalResult(String[] args) {
+        boolean ret = !hasFlag("--script", args, false);
+
+        for (int i = 0; i < args.length; i++) {
+            final String arg = args[i];
+            if ("--".equals(arg)) return ret;
+            if ("--final-result".equals(arg))    { args[i] = null; ret = true; }
+            if ("--no-final-result".equals(arg)) { args[i] = null; ret = false; }
+        }
+        return ret;
+    }
+
     /** process --script, return true for error, false for ok */
     private static boolean handleScript(String[] args) {
         for (int i = 0; i < args.length; i++) {
@@ -4814,11 +4862,15 @@ public class LambdaJ {
     }
 
     private static boolean hasFlag(String flag, String[] args) {
+        return hasFlag(flag, args, true);
+    }
+
+    private static boolean hasFlag(String flag, String[] args, boolean erase) {
         for (int i = 0; i < args.length; i++) {
             final String arg = args[i];
             if ("--".equals(arg)) return false;
             if (flag.equals(arg)) {
-                args[i] = null; // consume the arg
+                if (erase) args[i] = null; // consume the arg
                 return true;
             }
         }
@@ -4946,6 +4998,14 @@ public class LambdaJ {
                            + "--script <file> ..  Can be used to indicate:\n"
                            + "                    process the file following '--script' and pass any remaining\n"
                            + "                    commandline arguments to the Murmel program.\n"
+                           + "                    The last form in the last file will determine the exitlevel\n"
+                           + "                    to the OS:\n"
+                           + "                    nil -> 0\n"
+                           + "                    number -> number & 127\n"
+                           + "                    other non-nil -> 1\n"
+                           + "--no-final-result\n"
+                           + "--final-result ...  Whether or not to print the result of the last form after exit.\n"
+                           + "                    Default is to print unless --script is used.\n"
                            + "\n"
                            + "--version ........  Show version and exit\n"
                            + "--help ...........  Show this message and exit\n"
@@ -5068,17 +5128,17 @@ public class LambdaJ {
             final Path libPath = Paths.get(libDir).toAbsolutePath();
             if (!Files.isDirectory(libPath)) {
                 System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
-                throw EXIT_ERROR;
+                throw EXIT_CMDLINE_ERROR;
             }
             if (!Files.isReadable(libPath)) {
                 System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
-                throw EXIT_ERROR;
+                throw EXIT_CMDLINE_ERROR;
             }
             return libPath;
         }
         catch (Exception e) {
             System.err.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
-            throw EXIT_ERROR;
+            throw EXIT_CMDLINE_ERROR;
         }
     }
 
