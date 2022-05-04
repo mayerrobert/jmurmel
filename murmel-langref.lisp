@@ -1123,7 +1123,8 @@ pi ; ==> 3.141592653589793
 ;   other use as non-toplevel form will throw a "not-yet-implemented" compiler error.
 ; - define-ing an already define-d symbol is not supported
 ; - macroexpand-1 is limited to quoted forms
-; - let dynamic, let* dynamic and setq with predefined primitives is not supported
+; - reassigning predefined primitives with setq is not supported, e.g.
+;   `(setq trunc (lambda (p) (1+ p)))` is an error (and wouldn't make much sense). 
 
 
 ;;; == Copyright ======================

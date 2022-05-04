@@ -1,6 +1,24 @@
 System.err vs. System.out aufräumen: repl sollte alles nach System.out schreiben, !repl sollte fehler nach System.err schreiben
 
 
+wenn funcall und tailcall einen weiteren parameter "finally" bekämen, könnte unwind-protect umgesetzt werden, und letXX dynamic könnte TCO werden. conditions gehen damit aber nicht
+CL hat catch, throw und unwind-protect als special forms.
+unwind-protect sollte wsl isoliert von catch/throw betrachtet/umgesetzt werden
+catch/throw sind die non-local variante von block/return-from
+mit catch+throw müsste man eigentlich conditions nachbauen können
+-> LambdaJError sollte einen zus member "LambdaJSymbol tag" bekommen, tag ist das tag aus "CLHS Special Operator THROW" http://clhs.lisp.se/Body/s_throw.htm#throw, und wsl. einen member
+   für das ergebnis von result-form
+-> eval bekommt ähnlich wie "restore" eine zus lokale liste "ConsCell catchtags".
+-> der schleifenbody wird in try/catch LambdaJException eingepackt, der catch handler schaut ob e.tag in der liste enthalten, falls ja -> return result-form, falls nein-> rethrow.
+   -> vielleicht die zus member nicht in LambdaJError reinpacken sondern klasse (LambdaJCondition?) ableiten, und im schleifenbody gibts try/ catch LambdaJCondition
+      primitives sollten exceptions in geeignetes tag umlenken (dann kann das try/catch in applyPrimitive() entfallen), oder applyPrimitive() umbauen
+   -> type-error usw. (die wellknown tags) brauchen wsl. nicht im environment sein
+-> wsl brauchts doch einen zus parameter "catchtags". wenn für ein throw kein catchhandler existiert, soll control-error signalisiert werden, und zwar im environment des throw.
+   -> also checken ob das tag in der lokalen liste "catchtags" ist -> return result
+      sonst checken ob das tag in der liste ist die eval als parameter bekommen hat -> rethrow
+      sonst signal(control-error) aufrufen (sobalds signal gibt), oder eval((list 'throw 'control-error, ...), ...) bsw. form=(list 'throw 'control-error, ...); continue tailcall;
+   -> die lokale liste catchtags könnte wsl mit dem parameter initialisiert werden, und mit für die lokale suche bricht man ab wenn lokalptr == parameter
+
 
 eval-when endlich einbauen
 siehe CLHS "Special Operator EVAL-WHEN" http://clhs.lisp.se/Body/s_eval_w.htm
