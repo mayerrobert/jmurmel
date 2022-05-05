@@ -5215,11 +5215,30 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as embed API support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
-        public interface CompilerGlobal {
-            Object get();
+        public static class CompilerGlobal {
+            private Object value;
+            private ConsCell dynamicStack;
+
+            public CompilerGlobal(Object value) { this.value = value; }
+
+            public Object get() { return value; }
+            public Object set(Object value) { return this.value = value; }
+            
+            public void push() { dynamicStack = cons(value, dynamicStack); }
+            public Object push(Object value) {
+                dynamicStack = cons(this.value, dynamicStack);
+                return this.value = value;
+            }
+            public void pop() {
+                value = car(dynamicStack);
+                dynamicStack = (ConsCell)cdr(dynamicStack);
+            }
         }
 
-        public static final CompilerGlobal UNASSIGNED = () -> { throw new LambdaJError(false, "unassigned value"); };
+        public static final CompilerGlobal UNASSIGNED = new CompilerGlobal(null) {
+            public Object get() { throw new LambdaJError(false, "unassigned value"); }
+        };
+
         public static final Object[] NOARGS = new Object[0];
 
         public interface CompilerPrimitive extends Writeable {
@@ -5312,9 +5331,11 @@ public class LambdaJ {
         // gibts unter Java 8, 17 und 19 einen Compilefehler.
         public final Object   _car     (Object... args) { oneArg("car",     args.length); return car(args[0]); }
         public static Object car (Object l)  { return LambdaJ.car(l); } // also used by generated code
+        public static Object car (ConsCell l)  { return LambdaJ.car(l); }
 
         public final Object   _cdr     (Object... args) { oneArg("cdr",     args.length); return cdr(args[0]); }
         public static Object cdr (Object l)  { return LambdaJ.cdr(l); } // also used by generated code
+        public static Object cdr (ConsCell l)  { return LambdaJ.cdr(l); }
 
         public final ConsCell _cons    (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
         public static ConsCell cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
@@ -6320,7 +6341,7 @@ public class LambdaJ {
                     + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                     + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
                     + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
-                    + "        ").append(javasym).append(" = () -> value; }\n"
+                    + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
@@ -6348,7 +6369,7 @@ public class LambdaJ {
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
-                    + "        ").append(javasym).append(" = () -> func;\n"
+                    + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
 
@@ -6445,13 +6466,13 @@ public class LambdaJ {
                     if (intp.sSetQ == op) {
                         if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
                         else if (cddr(ccArguments) == null)
-                            emitSetq(sb, ccArguments, env, topEnv, rsfx, true);
+                            emitSetq(sb, ccArguments, env, topEnv, rsfx);
                         else {
                             sb.append("((Supplier<Object>)(() -> {\n");
                             String javaName = null;
                             for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
                                 sb.append("        ");
-                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx-1, false);
+                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx-1);
                                 sb.append(";\n");
                             }
                             sb.append("        return ").append(javaName).append(";})).get()");
@@ -6741,7 +6762,7 @@ public class LambdaJ {
             }
         }
 
-        private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx, boolean expr) {
+        private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = asSymbol("setq", car(pairs));
             intp.notReserved("setq", symbol);
             final String javaName = javasym(symbol, env);
@@ -6750,24 +6771,9 @@ public class LambdaJ {
             final Object valueForm = cadr(pairs);
 
             notAPrimitive("setq", symbol, javaName);
-            if (javaName.endsWith(".get()")) { // todo ugly method to find out whether it's a global
+            if (assq(symbol, env) == assq(symbol, topEnv)) {
                 final String symName = mangle(symbol.toString(), 0);
-
-                if (expr) {
-                    // "(define g 1) (setq g (1+ g))" should not lead to a StackOverflowError
-
-                    //sb.append('(').append(symName).append(" = ((Function<Object,CompilerGlobal>)((x) -> ((CompilerGlobal)() -> x))).apply("); // geht einfacher, s.u.
-                    //emitForm(sb, valueForm, env, topEnv, rsfx, false);
-                    //sb.append(")).get()");
-
-                    sb.append("((Supplier<Object>)() -> { final Object newVal").append(rsfx).append(" = ");
-                    emitForm(sb, valueForm, env, topEnv, rsfx, false);
-                    sb.append("; ").append(symName).append(" = (CompilerGlobal)() -> newVal").append(rsfx).append("; return newVal").append(rsfx).append("; }).get()");
-                }
-                else {
-                    sb.append("{ final Object newVal").append(rsfx).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);  sb.append(";  ");
-                    sb.append(symName).append(" = (CompilerGlobal)() -> newVal").append(rsfx).append("; }");
-                }
+                sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
             } else {
                 sb.append(javaName).append(" = ");
                 emitForm(sb, valueForm, env, topEnv, rsfx, false);
@@ -6948,7 +6954,7 @@ public class LambdaJ {
                             globalName = mangle(sym.toString(), 0);
                             if (!seen) {
                                 hasGlobal = true;
-                                sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
+                                sb.append("        ").append(globalName).append(".push();\n");
                             }
                         }
                         else globalName = null; // letXX dynamic can bind both global as well as new local variables
@@ -6959,7 +6965,7 @@ public class LambdaJ {
                         sb.append(";\n");
                         if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, env);
 
-                        if (maybeGlobal != null) sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                        if (maybeGlobal != null) sb.append("        ").append(globalName).append(".set(").append(javasym(sym, _env)).append(");\n");
                     }
                 }
                 else {
@@ -6971,8 +6977,7 @@ public class LambdaJ {
                             notAPrimitive("let dynamic", sym, cdr(maybeGlobal).toString());
                             hasGlobal = true;
                             final String globalName = mangle(sym.toString(), 0);
-                            sb.append("        final CompilerGlobal old").append(globalName).append(rsfx + 1).append(" = ").append(globalName).append(";\n");
-                            sb.append("        ").append(globalName).append(" = () -> ").append(javasym(sym, _env)).append(";\n");
+                            sb.append("        ").append(globalName).append(".push(").append(javasym(sym, _env)).append(");\n");
                         }
                     }
                 }
@@ -6992,7 +6997,7 @@ public class LambdaJ {
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
                             final String globalName = mangle(sym.toString(), 0);
-                            sb.append("        ").append(globalName).append(" = ").append("old").append(globalName).append(rsfx + 1).append(";\n");
+                            sb.append("        ").append(globalName).append(".pop();\n");
                         }
                     }
                 }
