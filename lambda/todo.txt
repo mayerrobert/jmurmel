@@ -139,6 +139,7 @@ safety könnte werden:
 0 es kann wraparound overflow geben
 
 nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice, und wg. Strings
+-> besser (elt sequence index), http://www.lispworks.com/documentation/HyperSpec/Body/f_elt.htm
 
 (read) sollte einen parameter eof bekommen
 
@@ -221,13 +222,15 @@ nicht aber bei einem loop mittendrin
 vector ist ein 1-dimensionales array, strings sind 1-dimensionale array von character, hash-tables sind "assoziative arrays"
 welche gemeinsamen eigenschaften haben list, vector/array, string, hash-table?
 -> elementzugriff
-   (aref array 0)          -> element mit index 0
-   (svref simple-vector 0) -> element mit index 0
-   (char string 0)         -> character mit index 0
-   (schar simple-string 0) -> character mit index 0
-   (gethash hash-table 0)  -> element mit key 0
-   
-   (nth 0 list)            -> element mit "index" 0
+   (aref    array         0) -> element mit index 0
+   (svref   simple-vector 0) -> element mit index 0
+   (char    string        0) -> character mit index 0
+   (schar   simple-string 0) -> character mit index 0
+
+   (elt     sequence      0) -> element mit index 0
+
+   (gethash 0 hash-table)  -> element mit key 0
+   (nth     0 list)        -> element mit "index" 0
 
 -> iteration
    mapcar&co, dolist geht nur für lists

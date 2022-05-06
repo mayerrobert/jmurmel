@@ -1602,7 +1602,7 @@ public class LambdaJ {
     private final SymbolTable symtab;
     public SymbolTable getSymbolTable() { return symtab; }
 
-    private static final Object UNASSIGNED = "value is not assigned";          // only relevant in letrec
+    private static final Object UNASSIGNED = "#<value is not assigned>";          // only relevant in letrec
     private static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
@@ -5229,7 +5229,8 @@ public class LambdaJ {
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
-        public static final CompilerGlobal UNASSIGNED = new CompilerGlobal(null) { public Object get() { throw new LambdaJError(false, "unassigned value"); } };
+        public static final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { public Object get() { throw new LambdaJError(false, "unassigned value"); } };
+        public static final Object UNASSIGNED_LOCAL = "#<value is not assigned>";
 
         public static final Object[] NOARGS = new Object[0];
 
@@ -5659,7 +5660,7 @@ public class LambdaJ {
             throw errorNotAFrame(s, o);
         }
 
-        public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; Arrays.fill(ret, UNASSIGNED); return ret; }
+        public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; Arrays.fill(ret, UNASSIGNED_LOCAL); return ret; }
 
         public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
         public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
@@ -6345,11 +6346,11 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
+                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
                     + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                    + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate define\"));\n"
+                    + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
                     + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
                     + "        catch (LambdaJError e) { rterror(e); }\n"
@@ -6370,11 +6371,11 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
-                    + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED;\n");
+                    + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
                     + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                    + "        if (").append(javasym).append(" != UNASSIGNED) rterror(new LambdaJError(\"duplicate defun\"));\n"
+                    + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
                     + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
@@ -6900,7 +6901,7 @@ public class LambdaJ {
             sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
             final int argCount = length(bindings);
             if (argCount != 0) {
-                sb.append("        if (args").append(rsfx).append("[0] == UNASSIGNED) {\n");
+                sb.append("        if (args").append(rsfx).append("[0] == UNASSIGNED_LOCAL) {\n");
 
                 // letrec: ALL let-bindings are in the environment during binding of the initial values todo value should be undefined
                 int current = 0;
