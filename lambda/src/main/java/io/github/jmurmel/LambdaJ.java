@@ -5225,19 +5225,11 @@ public class LambdaJ {
             public Object set(Object value) { return this.value = value; }
             
             public void push() { dynamicStack = cons(value, dynamicStack); }
-            public Object push(Object value) {
-                dynamicStack = cons(this.value, dynamicStack);
-                return this.value = value;
-            }
-            public void pop() {
-                value = car(dynamicStack);
-                dynamicStack = (ConsCell)cdr(dynamicStack);
-            }
+            public void push(Object value) { dynamicStack = cons(this.value, dynamicStack); this.value = value; }
+            public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
-        public static final CompilerGlobal UNASSIGNED = new CompilerGlobal(null) {
-            public Object get() { throw new LambdaJError(false, "unassigned value"); }
-        };
+        public static final CompilerGlobal UNASSIGNED = new CompilerGlobal(null) { public Object get() { throw new LambdaJError(false, "unassigned value"); } };
 
         public static final Object[] NOARGS = new Object[0];
 
@@ -5246,8 +5238,8 @@ public class LambdaJ {
             @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<compiler primitive>"); }
         }
 
-        private static final class MurmelFunctionCall {
-            MurmelFunction next;
+        private static final class Tailcall {
+            MurmelFunction fn;
             Object[] args;
         }
 
@@ -5691,9 +5683,9 @@ public class LambdaJ {
         public static Object funcall(MurmelFunction fn, Object... args) {
             try {
                 Object r = fn.apply(args);
-                while (r instanceof MurmelFunctionCall) {
-                    final MurmelFunctionCall functionCall = (MurmelFunctionCall) r;
-                    r = functionCall.next.apply(functionCall.args);
+                while (r instanceof Tailcall) {
+                    final Tailcall functionCall = (Tailcall) r;
+                    r = functionCall.fn.apply(functionCall.args);
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                 }
                 return r;
@@ -5708,7 +5700,7 @@ public class LambdaJ {
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
             if (fn instanceof ClosureConsCell)   return interpret(fn, args);
-            
+
             throw errorNotAFunction(fn);
         }
 
@@ -5722,21 +5714,18 @@ public class LambdaJ {
                              null);
         }
 
-        private final MurmelFunctionCall tailcall = new MurmelFunctionCall();
+        private final Tailcall tailcall = new Tailcall();
         /** used for function calls */
         public final Object tailcall(MurmelFunction fn, Object... args) {
-                final MurmelFunctionCall tailcall = this.tailcall;
-                tailcall.next = fn;
-                tailcall.args = args;
-                return tailcall;
+            final Tailcall tailcall = this.tailcall;
+            tailcall.fn = fn;
+            tailcall.args = args;
+            return tailcall;
         }
 
         public final Object tailcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    {
-                final MurmelFunctionCall tailcall = this.tailcall;
-                tailcall.next = (MurmelFunction)fn;
-                tailcall.args = args;
-                return tailcall;
+                return tailcall((MurmelFunction)fn, args);
             }
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
