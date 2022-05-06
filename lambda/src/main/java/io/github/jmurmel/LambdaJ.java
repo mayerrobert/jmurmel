@@ -6836,10 +6836,12 @@ public class LambdaJ {
             }
             if (ccBindings != null) {
                 for (Object binding : ccBindings) {
-                    // todo consp(binding) ist eig unnoetig?!?
-                    if (consp(binding) && caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     sb.append("\n        , ");
-                    emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
+                    if (consp(binding)) {
+                        if (caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
+                        emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
+                    }
+                    else sb.append("(Object)null"); // simplified let: (let (aaa) aaa)
                 }
             } else sb.append(", NOARGS");
             sb.append(')');
@@ -7009,7 +7011,6 @@ public class LambdaJ {
 
 
         /** from a list of bindings extract a new list of symbols: ((symbol1 form1)|symbol...) -> (symbol1...) */
-        // todo vgl. LambdaJ.extractParamList()
         private static ConsCell paramList(String func, Object bindings, boolean lists) {
             if (bindings == null) return null;
             ConsCell params = null, insertPos = null;
