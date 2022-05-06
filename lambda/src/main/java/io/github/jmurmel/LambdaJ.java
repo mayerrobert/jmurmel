@@ -5240,6 +5240,7 @@ public class LambdaJ {
 
         private static final class Tailcall {
             MurmelFunction fn;
+            MurmelFunction cleanup;
             Object[] args;
         }
 
@@ -5681,18 +5682,29 @@ public class LambdaJ {
 
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public static Object funcall(MurmelFunction fn, Object... args) {
+            ConsCell cleanups = null;
+            LambdaJError ex = null;
+            Object r = null;
             try {
-                Object r = fn.apply(args);
+                r = fn.apply(args);
                 while (r instanceof Tailcall) {
                     final Tailcall functionCall = (Tailcall) r;
                     r = functionCall.fn.apply(functionCall.args);
+                    if (functionCall.cleanup != null) cleanups = cons(functionCall.cleanup, cleanups);
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                 }
-                return r;
             }
-            catch (Exception e) {
-                throw new LambdaJError(e.getMessage());
+            catch (LambdaJError e) { ex = e; }
+            catch (Exception e) { ex = new LambdaJError(e, e.getMessage()); }
+            finally {
+                if (cleanups != null) for (Object cl: cleanups) {
+                    try { ((MurmelFunction)cl).apply((Object[])null); }
+                    catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
+                    catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); }
+                }
+                if (ex != null) throw ex;
             }
+            return r;
         }
 
         public final Object funcall(Object fn, Object... args) {
@@ -5717,13 +5729,22 @@ public class LambdaJ {
         private final Tailcall tailcall = new Tailcall();
         /** used for function calls */
         public final Object tailcall(MurmelFunction fn, Object... args) {
+            return tailcallWithCleanup(fn, null, args);
+        }
+
+        public final Object tailcallWithCleanup(MurmelFunction fn, MurmelFunction cleanup, Object... args) {
             final Tailcall tailcall = this.tailcall;
             tailcall.fn = fn;
+            tailcall.cleanup = cleanup;
             tailcall.args = args;
             return tailcall;
         }
 
         public final Object tailcall(Object fn, Object... args) {
+            return tailcallWithCleanup(fn, null, args);
+        }
+
+        public final Object tailcallWithCleanup(Object fn, MurmelFunction cleanup, Object... args) {
             if (fn instanceof MurmelFunction)    {
                 return tailcall((MurmelFunction)fn, args);
             }
@@ -6838,7 +6859,7 @@ public class LambdaJ {
                 for (Object binding : ccBindings) {
                     sb.append("\n        , ");
                     if (consp(binding)) {
-                        if (caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
+                        if (cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                         emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                     }
                     else sb.append("(Object)null"); // simplified let: (let (aaa) aaa)
@@ -6896,7 +6917,7 @@ public class LambdaJ {
                 for (Object binding: (ConsCell)bindings) {
                     final LambdaJSymbol sym;
                     final Object form;
-                    if (consp(binding) && caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
+                    if (consp(binding) && cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; form = null; }
                     else { sym = asSymbol(op, car(binding)); form = cadr(binding); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
@@ -6918,12 +6939,12 @@ public class LambdaJ {
             if (car(bindingsAndForms) == null && cdr(bindingsAndForms) == null) { sb.append("(Object)null"); return; }
 
             final String op = letStar ? "let* dynamic" : "let dynamic";
-            sb.append(isLast ? "tailcall(" : "funcall(");
+            sb.append(isLast ? "tailcallWithCleanup(" : "funcall(");
 
             sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n");
 
-            boolean hasGlobal = false;
-            
+            final ArrayList<String> globals = new ArrayList<>();
+
             final Object bindings = car(bindingsAndForms);
             final ConsCell params = paramList(op, bindings, false);
             ConsCell _env = env;
@@ -6944,7 +6965,7 @@ public class LambdaJ {
                             notAPrimitive("let* dynamic", sym, cdr(maybeGlobal).toString());
                             globalName = mangle(sym.toString(), 0);
                             if (!seen) {
-                                hasGlobal = true;
+                                globals.add(globalName);
                                 sb.append("        ").append(globalName).append(".push();\n");
                             }
                         }
@@ -6960,47 +6981,49 @@ public class LambdaJ {
                     }
                 }
                 else {
-                    final String expr = "(let dynamic " + printSEx(params) + ')';
-                    _env = params("let dynamic", sb, params, env, rsfx + 1, expr, false);
+                    _env = params("let dynamic", sb, params, env, rsfx + 1, null, false);
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = assq(sym, topEnv);
                         if (maybeGlobal != null) {
                             notAPrimitive("let dynamic", sym, cdr(maybeGlobal).toString());
-                            hasGlobal = true;
                             final String globalName = mangle(sym.toString(), 0);
+                            globals.add(globalName);
                             sb.append("        ").append(globalName).append(".push(").append(javasym(sym, _env)).append(");\n");
                         }
                     }
                 }
-                if (hasGlobal) sb.append("        try {\n");
             }
 
-            // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-            emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx+1, params != null);
-
-            if (hasGlobal) {
-                sb.append("        }\n");
-                sb.append("        finally {\n");
-                final HashSet<Object> seenSymbols = new HashSet<>();
-                for (Object sym : params) {
-                    final boolean seen = !seenSymbols.add(sym);
-                    if (!seen) {
-                        final ConsCell maybeGlobal = assq(sym, topEnv);
-                        if (maybeGlobal != null) {
-                            final String globalName = mangle(sym.toString(), 0);
-                            sb.append("        ").append(globalName).append(".pop();\n");
-                        }
-                    }
+            if (isLast) {
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx + 1, false);
+                sb.append("        })\n");
+                if (globals.isEmpty()) {
+                    sb.append("        , null");
                 }
-                sb.append("        }\n");
+                else {
+                    sb.append("        , (MurmelFunction)(args").append(rsfx+1).append(" -> {\n");
+                    for (String globalName : globals) sb.append("        ").append(globalName).append(".pop();\n");
+                    sb.append("        return null;\n        })");
+                }
             }
+            else {
+                if (!globals.isEmpty()) sb.append("        try {\n");
 
-            sb.append("        })");
+                // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx + 1, params != null);
+
+                if (!globals.isEmpty()) {
+                    sb.append("        }\n        finally {\n");
+                    for (String globalName : globals) sb.append("        ").append(globalName).append(".pop();\n");
+                    sb.append("        }\n");
+                }
+                sb.append("        })");
+            }
 
             if (bindings != null)
                 for (Object binding: (ConsCell)bindings) {
                     sb.append("\n        , ");
-                    if (consp(binding) && caddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
+                    if (consp(binding) && cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (letStar) sb.append("(Object)null");
                     else emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }

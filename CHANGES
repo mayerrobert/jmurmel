@@ -8,6 +8,8 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2
  * added the commandline argument --script, allow #!...!# as multiline comment to support hashbang scripts.
  * added --final-result and --no-final-result
 
+ * fixed the compiler to tailcall-optimize let/let* dynamic
+
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
 
