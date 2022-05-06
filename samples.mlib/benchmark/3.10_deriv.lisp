@@ -2,7 +2,7 @@
 ;;; p 170
 
 #+murmel (require "mlib")
-(load "bench.lisp")
+(require "bench" "bench.lisp")
 
 
 ;;; DERIV -- This is the Common Lisp version of a symbolic

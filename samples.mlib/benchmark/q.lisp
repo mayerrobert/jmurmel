@@ -1,7 +1,7 @@
 ;;; from http://www.ulisp.com/show?1EO1
 
 #+murmel (require "mlib")
-(load "bench.lisp")
+(require "bench" "bench.lisp")
 
 
 ; Hofstadter Q sequence

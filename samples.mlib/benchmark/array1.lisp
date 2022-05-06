@@ -5,7 +5,8 @@
 ;;; Murmel compiled (w/o macros):    461 iterations in 5,00629  seconds walltime,  92,0841  iterations/second,  10,8596    milliseconds/iteration
 ;;; Murmel compiled (with macros):   662 iterations in 5,00115  seconds walltime, 132,370   iterations/second,   7,55460   milliseconds/iteration
 ;;; SBCL:                           3741 iterations in 5.000085 seconds walltime, 748.18726 iterations/second,   1.3365637 milliseconds/iteration
-(load "bench.lisp")
+
+(require "bench" "bench.lisp")
 
 #+murmel (progn
 (require "mlib")

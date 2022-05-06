@@ -5,7 +5,7 @@ wenn funcall und tailcall einen weiteren parameter "finally" bekämen, könnte u
 CL hat catch, throw und unwind-protect als special forms.
 unwind-protect sollte wsl isoliert von catch/throw betrachtet/umgesetzt werden
 catch/throw sind die non-local variante von block/return-from
-mit catch+throw müsste man eigentlich conditions nachbauen können
+mit catch+throw+defstruct müsste man eigentlich conditions nachbauen können
 -> LambdaJError sollte einen zus member "LambdaJSymbol tag" bekommen, tag ist das tag aus "CLHS Special Operator THROW" http://clhs.lisp.se/Body/s_throw.htm#throw, und wsl. einen member
    für das ergebnis von result-form
 -> eval bekommt ähnlich wie "restore" eine zus lokale liste "ConsCell catchtags".

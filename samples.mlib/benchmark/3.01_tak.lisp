@@ -2,7 +2,7 @@
 ;;; p 82
 
 #+murmel (require "mlib")
-(load "bench.lisp")
+(require "bench" "bench.lisp")
 
 
 (defun tak (x y z)
