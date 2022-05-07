@@ -139,10 +139,10 @@ public class LambdaJ {
         public static ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
 
         public abstract Object car();
-        public Object rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
+        public ConsCell rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
 
         public abstract Object cdr();
-        public Object rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
+        public ConsCell rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
 
         ConsCell closure() { return null; }
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
@@ -409,10 +409,10 @@ public class LambdaJ {
         @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
 
         @Override public Object car() { return car; }
-        @Override public Object rplaca(Object car) { this.car = car; return this; }
+        @Override public ConsCell rplaca(Object car) { this.car = car; return this; }
 
         @Override public Object cdr() { return cdr; }
-        @Override public Object rplacd(Object cdr) { this.cdr = cdr; return this; }
+        @Override public ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
         
         void adjustEnd(int endLineNo, int endCharNo) {}
     }
@@ -486,7 +486,7 @@ public class LambdaJ {
         }
 
         @Override public Object     car() { return isNil() ? null : arry[offset]; }
-        @Override public Object rplaca(Object car) { arry[offset] = car; return this; }
+        @Override public ConsCell rplaca(Object car) { arry[offset] = car; return this; }
 
         @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
 
@@ -3404,12 +3404,12 @@ public class LambdaJ {
 
 
 
-    private static Object cl_rplaca(ConsCell args) {
+    private static ConsCell cl_rplaca(ConsCell args) {
         twoArgs("rplaca", args);
         return requireCons("rplaca", car(args)).rplaca(cadr(args));
     }
 
-    private static Object cl_rplacd(ConsCell args) {
+    private static ConsCell cl_rplacd(ConsCell args) {
         twoArgs("rplacd", args);
         return requireCons("rplacd", car(args)).rplacd(cadr(args));
     }
@@ -5334,11 +5334,13 @@ public class LambdaJ {
         public final ConsCell _cons    (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
         public static ConsCell cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
 
-        public final Object   _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        public static Object rplaca(Object l, Object newCar) { return requireList(l).rplaca(newCar); }
+        public final ConsCell _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
+        public static ConsCell rplaca(Object l, Object newCar) { return requireList(l).rplaca(newCar); }
+        public static ConsCell rplaca(ConsCell l, Object newCar) { return l.rplaca(newCar); }
 
-        public final Object   _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        public static Object rplacd(Object l, Object newCdr) { return requireList(l).rplacd(newCdr); }
+        public final ConsCell _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
+        public static ConsCell rplacd(Object l, Object newCdr) { return requireList(l).rplacd(newCdr); }
+        public static ConsCell rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
 
         public final Object _apply (Object... args) {
             twoArgs("apply", args.length);
@@ -5729,11 +5731,11 @@ public class LambdaJ {
 
         private final Tailcall tailcall = new Tailcall();
         /** used for function calls */
-        public final Object tailcall(MurmelFunction fn, Object... args) {
+        public final Tailcall tailcall(MurmelFunction fn, Object... args) {
             return tailcallWithCleanup(fn, null, args);
         }
 
-        public final Object tailcallWithCleanup(MurmelFunction fn, MurmelFunction cleanup, Object... args) {
+        public final Tailcall tailcallWithCleanup(MurmelFunction fn, MurmelFunction cleanup, Object... args) {
             final Tailcall tailcall = this.tailcall;
             tailcall.fn = fn;
             tailcall.cleanup = cleanup;
@@ -5747,8 +5749,9 @@ public class LambdaJ {
 
         public final Object tailcallWithCleanup(Object fn, MurmelFunction cleanup, Object... args) {
             if (fn instanceof MurmelFunction)    {
-                return tailcall((MurmelFunction)fn, args);
+                return tailcallWithCleanup((MurmelFunction)fn, cleanup, args);
             }
+            assert cleanup == null : "unexpected: cleanup != null, fn is a " + fn.getClass().getSimpleName();
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
             if (fn instanceof ClosureConsCell)   return interpret(fn, args);
