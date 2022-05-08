@@ -1,4 +1,4 @@
-;;;; Delimited continuations implemented in Murmel.
+;;;; Experiments with delimited continuations implemented in Murmel using the monad pattern.
 ;;;;
 ;;;; (Quite literally) based on https://8c6794b6.github.io/posts/Delimited-continuations-with-monadic-functions-in-Common-Lisp.html
 ;;;; which has the following notice:
@@ -40,10 +40,14 @@
                              (run-cont (f x) k))))))
 
 
-; > (run-cont (returnc 'foo) #'values)
-; FOO
-; > (run-cont (bindc (returnc 21) (lambda (x) (returnc (* x 2)))) #'values)
-; 42
+#|
+(run-cont (returnc 'foo)
+          #'values)
+; ==> FOO
+(run-cont (bindc (returnc 21) (lambda (x) (returnc (* x 2))))
+          #'values)
+; ==> 42
+|#
 
 
 (defmacro letc* (bindings . body)
@@ -54,10 +58,12 @@
                      (letc* ,(cdr bindings) ,@body))))))
 
 
-; > (run-cont (letc* ((x (returnc 21)))
-;               (returnc (* x 2)))
-;             #'values)
-; 42
+#|
+(run-cont (letc* ((x (returnc 21)))
+            (returnc (* x 2)))
+          #'values)
+; ==> 42
+|#
 
 
 (defmacro progc body
@@ -71,7 +77,8 @@
 
 (defun reset (k)
   (if (cont-p k)
-      (run-cont k #'values)
+      (run-cont k
+                #'values)
       k))
 
 
@@ -84,17 +91,19 @@
                     ,expr)))))
 
 
-; > (reset (shift k (k 2)))
-; 2
+#|
+(reset (shift k (k 2)))
+; ==> 2
 
-; > (reset (letc* ((x (shift k (k 2))))
-;            (returnc (+ x 3))))
-; 5
+(reset (letc* ((x (shift k (k 2))))
+         (returnc (+ x 3))))
+; ==> 5
 
-; > (reset (letc* ((x (returnc 100))
-;                  (y (shift k 'foo)))
-;            (returnc (+ x y))))
-; FOO
+(reset (letc* ((x (returnc 100))
+               (y (shift k 'foo)))
+         (returnc (+ x y))))
+; ==> FOO
+|#
 
 
 (defun fail ()
@@ -112,8 +121,9 @@
         (fail))))
 
 
-; > (reset (letc* ((ijk (triple 9 15)))
-;            (returnc (print ijk))))
+#|
+(reset (letc* ((ijk (triple 9 15)))
+         (returnc (print ijk))))
 ; (6 5 4)
 ; (7 5 3)
 ; (7 6 2)
@@ -122,7 +132,8 @@
 ; (8 6 1)
 ; (9 4 2)
 ; (9 5 1)
-; no
+; ==> no
+|#
 
 
 (defun donep (x) (eq 'done x))
@@ -154,9 +165,10 @@
          (reset (walkerc t2)))))
 
 
-; > (same-fringe '((1) (2 (3 (4) 5))) '((1 (2) (3 4) 5)))
-; T
-; > (same-fringe '((1) (2 (3 (4) 5))) '((1 (2) (4) 5)))
-; NIL
-
+#|
 (same-fringe '((1) (2 (3 (4) 5))) '((1 (2) (3 4) 5)))
+; ==> T
+
+(same-fringe '((1) (2 (3 (4) 5))) '((1 (2) (4) 5)))
+; ==> NIL
+|#
