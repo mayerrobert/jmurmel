@@ -1742,7 +1742,7 @@ public class LambdaJ {
                     final ConsCell ccForm = (ConsCell)form;
 
                     final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
+                    if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
 
                     final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
 
@@ -2058,6 +2058,95 @@ public class LambdaJ {
                 final ConsCell entry = (ConsCell) caar(c);
                 entry.rplacd(cdar(c));
             }
+        }
+    }
+
+    /** expand all macros within a form and do some syntax checks. Macro-expansion is done in place, i.e. form may be modified. */
+    Object expandForm(Object form) {
+        if (atom(form)) return form;
+        final ConsCell ccForm = (ConsCell)form;
+        final Object op = car(ccForm);
+        if (op == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
+        final ConsCell ccArgs = listOrMalformed("eval", cdr(ccForm));
+
+        if (symbolp(op)) {
+            final LambdaJSymbol symOp = (LambdaJSymbol)op;
+            if (symOp.specialForm()) switch (symOp.wellknownSymbol) {
+            case sQuote:
+                oneArg("quote", ccArgs);  return form;
+
+            case sLambda:
+                varargsMin("lambda", ccArgs, 1);
+                if (car(ccArgs) == sDynamic) expandForms(listOrMalformed("lambda", cddr(ccArgs)));
+                else expandForms(listOrMalformed("lambda", cdr(ccArgs)));
+                return form;
+
+            case sIf:
+                varargsMinMax("if", ccArgs, 2, 3);
+                expandForm(car(ccArgs));
+                expandForm(cadr(ccArgs));
+                if (cddr(ccArgs) != null) expandForm(caddr(ccArgs));
+                return form;
+
+            case sCond:
+                return form; // todo
+
+            case sProgn:
+                if (ccArgs != null) expandForms(ccArgs); return form;
+
+            case sLabels:
+                return form; // todo
+
+            case sDefine:
+                varargs1_2("define", ccArgs);  if (cdr(ccArgs) != null) ((ConsCell)cdr(ccArgs)).rplaca(expandForm(cadr(ccArgs))); return form;
+
+            case sDefun:
+                varargsMin("defun", ccArgs, 2);
+                if (cddr(ccArgs) != null) expandForms(listOrMalformed("defun", cddr(ccArgs)));
+                return form;
+
+            case sDefmacro:
+
+            case sLet:
+            case sLetStar:
+            case sLetrec:
+            case sMultipleValueBind:
+
+            case sSetQ:
+
+            case sDeclaim:
+            case sLoad:
+            case sRequire:
+            case sProvide:
+
+            case sMultipleValueCall:
+                return form; // todo
+
+            default:
+                assert false: ccForm.lineInfo() + "special form " + symOp + " is not implemented";
+            }
+
+            // not a special form, must be a function or macro application
+            if (symOp.macro != null) {
+                final Object expansion = macroexpandImpl(ccForm);
+                if (cadr(values) != null) {
+                    values = NO_VALUES;
+                    if (atom(expansion)) { return expansion; }
+                    else { ccForm.rplaca(car(expansion)); ccForm.rplacd(cdr(expansion)); return expandForm(form); }
+                }
+            }
+        }
+
+        expandForms(ccForm);
+
+        return ccForm;
+    }
+
+    private void expandForms(ConsCell ccForm) {
+        for (ConsCell i = ccForm; i != null; i = listOrMalformed("eval", cdr(i))) {
+            final Object subForm = car(i);
+            final Object expansion = expandForm(subForm);
+            if (expansion != subForm) i.rplaca(expansion);
         }
     }
 
@@ -2490,7 +2579,7 @@ public class LambdaJ {
                 if (form == eof) break;
 
                 // could do tryExpand() here, or wait for it happening later
-                result = eval(form, topEnv, 0, 0, 0);
+                result = eval(expandForm(form), topEnv, 0, 0, 0);
             }
             return result;
         } catch (IOException e) {
@@ -4177,7 +4266,7 @@ public class LambdaJ {
         while (true) {
             final Object exp = scriptParser.readObj(true, eof);
             if (exp == eof) return result;
-            else result = eval(exp, topEnv, 0, 0, 0);
+            else result = eval(expandForm(exp), topEnv, 0, 0, 0);
         }
     }
 
@@ -4194,7 +4283,7 @@ public class LambdaJ {
         final ObjectReader parser = init(in, out);
         final Object exp = parser.readObj(true, null);
         final long tStart = System.nanoTime();
-        final Object result = eval(exp, topEnv, 0, 0, 0);
+        final Object result = eval(exp, topEnv, 0, 0, 0); // todo solls hier auch expandAll geben? oder diese methode überhaupt küblen? interpretExpressions() kann fast dasselbe
         traceStats(System.nanoTime() - tStart);
         return result;
     }
@@ -4224,7 +4313,7 @@ public class LambdaJ {
         Object exp;
         while ((exp = program.readObj(true, eof)) != eof) {
             final long tStart = System.nanoTime();
-            result = eval(exp, topEnv, 0, 0, 0);
+            result = eval(expandForm(exp), topEnv, 0, 0, 0);
             traceStats(System.nanoTime() - tStart);
         }
         return result;
@@ -4439,7 +4528,7 @@ public class LambdaJ {
                 if (history != null) history.add(form);
 
                 final long tStart = System.nanoTime();
-                result = interpreter.eval(form, interpreter.topEnv, 0, 0, 0);
+                result = interpreter.eval(interpreter.expandForm(form), interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 if (printResult) {
@@ -4704,7 +4793,7 @@ public class LambdaJ {
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
-                final Object result = interpreter.eval(exp, interpreter.topEnv, 0, 0, 0);
+                final Object result = interpreter.eval(interpreter.expandForm(exp), interpreter.topEnv, 0, 0, 0);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();
@@ -7523,6 +7612,7 @@ public class LambdaJ {
                     qsb.append("))");
                 }
                 else {
+                    // todo vielleicht statt .append() kette .appendElements() verwenden?
                     qsb.append("new ListBuilder()");
                     for (Object o = form; ; o = cdr(o)) {
                         qsb.append("\n        .append(");
