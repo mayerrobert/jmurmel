@@ -138,6 +138,9 @@ public class LambdaJ {
 
         public static ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
 
+        public ConsCell copy() { throw new UnsupportedOperationException("copy not supported on " + getClass().getSimpleName()); }
+        public Object shallowCopyCdr() { throw new UnsupportedOperationException("shallowCopyCdr not supported on " + getClass().getSimpleName()); }
+
         public abstract Object car();
         public ConsCell rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
 
@@ -408,6 +411,8 @@ public class LambdaJ {
         @Override public String toString() { return printSEx(this, false); }
         @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
 
+        @Override public Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
+
         @Override public Object car() { return car; }
         @Override public ConsCell rplaca(Object car) { this.car = car; return this; }
 
@@ -420,6 +425,8 @@ public class LambdaJ {
     private static final class ListConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
         private ListConsCell(Object car, Object cdr) { super(car, cdr); }
+
+        @Override public ConsCell copy() { return cons(car(), cdr()); }
     }
 
     private static final class SExpConsCell extends AbstractConsCell {
@@ -427,6 +434,9 @@ public class LambdaJ {
         private final transient Path path;
         private final int startLineNo, startCharNo;
         private int lineNo, charNo;
+        
+        @Override public SExpConsCell copy() { return new SExpConsCell(path, startLineNo, startCharNo, lineNo, charNo, car(), cdr()); }
+
         private SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
             super(car, cdr);
             this.path = path; this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
@@ -2043,7 +2053,7 @@ public class LambdaJ {
             }
 
         } catch (LambdaJError | InterruptedException e) {
-            throw new LambdaJError(false, e.getMessage(), form);
+            throw new LambdaJError(false, e.getMessage(), form); // todo bei InterruptedException Thread.interrupt()?
         } catch (Exception e) {
             //e.printStackTrace();
             throw errorInternal(e, "eval: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
@@ -2061,13 +2071,13 @@ public class LambdaJ {
         }
     }
 
-    /** expand all macros within a form and do some syntax checks. Macro-expansion is done in place, i.e. form may be modified. */
+    /** expand all macros within a form and do some syntax checks. Macro-expansion is done in a copy, i.e. form will not be modified. */
     Object expandForm(Object form) {
         if (atom(form)) return form;
-        final ConsCell ccForm = (ConsCell)form;
+        final ConsCell ccForm = ((ConsCell)form).copy();
         final Object op = car(ccForm);
         if (op == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
-        final ConsCell ccArgs = listOrMalformed("eval", cdr(ccForm));
+        final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
 
         if (symbolp(op)) {
             final LambdaJSymbol symOp = (LambdaJSymbol)op;
@@ -2077,50 +2087,72 @@ public class LambdaJ {
 
             case sLambda:
                 varargsMin("lambda", ccArgs, 1);
-                if (car(ccArgs) == sDynamic) expandForms(listOrMalformed("lambda", cddr(ccArgs)));
-                else expandForms(listOrMalformed("lambda", cdr(ccArgs)));
-                return form;
+                if (car(ccArgs) == sDynamic) expandForms("lambda", cddrShallowCopyList("lambda", ccArgs));
+                else expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                return ccForm;
 
             case sIf:
                 varargsMinMax("if", ccArgs, 2, 3);
-                expandForm(car(ccArgs));
-                expandForm(cadr(ccArgs));
-                if (cddr(ccArgs) != null) expandForm(caddr(ccArgs));
-                return form;
+                expandForms("if", ccArgs);
+                return ccForm;
 
             case sCond:
-                return form; // todo
+                if (ccArgs != null) expandForms("cond", ccArgs); return ccForm;
 
             case sProgn:
-                if (ccArgs != null) expandForms(ccArgs); return form;
+                if (ccArgs != null) expandForms("progn", ccArgs); return ccForm;
 
             case sLabels:
-                return form; // todo
+                for (ConsCell i = listOrMalformed("labels", car(ccArgs)).copy(); i != null; i = cdrShallowCopyList("labels", i)) {
+                    final ConsCell localFunc = listOrMalformed("labels", car(i));
+                    varargsMin("labels", localFunc, 2);
+                    // todo check if the name of the local function is the name of a macro. Currently macros shadow local functions -> error or warning
+                    if (cddr(localFunc) != null) {
+                        final ConsCell body = cddrShallowCopyList("labels", localFunc);
+                        i.rplaca(expandForm(body));
+                    }
+                }
+                if (cdr(ccArgs) != null) expandForms("labels", ccArgs.shallowCopyCdr());
+                return ccForm;
 
-            case sDefine:
-                varargs1_2("define", ccArgs);  if (cdr(ccArgs) != null) ((ConsCell)cdr(ccArgs)).rplaca(expandForm(cadr(ccArgs))); return form;
+            case sDefine: {
+                varargs1_2("define", ccArgs);
+                if (cdr(ccArgs) != null) expandForm(car(cdrShallowCopyList("define", ccArgs)));
+                return ccForm;
+            }
 
-            case sDefun:
+            case sDefun: {
                 varargsMin("defun", ccArgs, 2);
-                if (cddr(ccArgs) != null) expandForms(listOrMalformed("defun", cddr(ccArgs)));
+                if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
                 return form;
+            }
 
             case sDefmacro:
+                return form; // todo
 
             case sLet:
             case sLetStar:
             case sLetrec:
+                return form; // todo
+
             case sMultipleValueBind:
+                varargsMin("multiple-value-bind", ccArgs, 2);
+                expandForms("multiple-value-bind", ccArgs.shallowCopyCdr());
+                return ccForm;
 
             case sSetQ:
+                return form; // todo
 
             case sDeclaim:
             case sLoad:
             case sRequire:
             case sProvide:
+                return form; // no macroexpansion in declaim, load, require, provide forms
 
             case sMultipleValueCall:
-                return form; // todo
+                varargs1("multiple-value-call", ccArgs);
+                expandForms("multiple-value-call", ccArgs);
+                return ccForm;
 
             default:
                 assert false: ccForm.lineInfo() + "special form " + symOp + " is not implemented";
@@ -2132,21 +2164,30 @@ public class LambdaJ {
                 if (cadr(values) != null) {
                     values = NO_VALUES;
                     if (atom(expansion)) { return expansion; }
-                    else { ccForm.rplaca(car(expansion)); ccForm.rplacd(cdr(expansion)); return expandForm(form); }
+                    else { ccForm.rplaca(car(expansion)); ccForm.rplacd(cdr(expansion)); return expandForm(ccForm); }
                 }
             }
         }
-
-        expandForms(ccForm);
-
+        expandForms("function application", ccForm);
         return ccForm;
     }
 
-    private void expandForms(ConsCell ccForm) {
-        for (ConsCell i = ccForm; i != null; i = listOrMalformed("eval", cdr(i))) {
-            final Object subForm = car(i);
-            final Object expansion = expandForm(subForm);
-            if (expansion != subForm) i.rplaca(expansion);
+    private static ConsCell cdrShallowCopyList(String sfName, ConsCell i) {
+        return listOrMalformed(sfName, i.shallowCopyCdr());
+    }
+
+    private static ConsCell cddrShallowCopyList(String sfName, ConsCell i) {
+        return listOrMalformed(sfName, listOrMalformed(sfName, i.shallowCopyCdr()).shallowCopyCdr());
+    }
+
+    /** expand all elements in the list ccForms. The first conscell is modified in place, subsequent conscells are copied.  */
+    private void expandForms(String func, Object forms) {
+        expandForms(func, listOrMalformed(func, forms));
+    }
+
+    private void expandForms(String func, ConsCell ccForms) {
+        for (ConsCell i = ccForms; i != null; i = cdrShallowCopyList(func, i)) {
+            i.rplaca(expandForm(car(i)));
         }
     }
 
@@ -2371,6 +2412,7 @@ public class LambdaJ {
         tryExpand((ConsCell)cdr(bindingsAndBodyForms), stack, level, traceLvl);
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
         final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
+        values = NO_VALUES;
         final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
         return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
@@ -3014,6 +3056,10 @@ public class LambdaJ {
 
     final Object eval(Object form, ConsCell env) {
         return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
+    }
+
+    final Object expandAndEval(Object form, ConsCell env) {
+        return eval(expandForm(form), env);
     }
 
 
@@ -4263,11 +4309,11 @@ public class LambdaJ {
         setReaderPrinter(new SExpressionReader(in::read, symtab, featuresEnvEntry), new SExpressionWriter(new WrappingWriter(out)::append));
         final Object eof = "EOF";
         Object result = null;
-        while (true) {
-            final Object exp = scriptParser.readObj(true, eof);
-            if (exp == eof) return result;
-            else result = eval(expandForm(exp), topEnv, 0, 0, 0);
+        Object exp;
+        while ((exp = scriptParser.readObj(true, eof)) != eof) {
+            result = eval(expandForm(exp), topEnv, 0, 0, 0);
         }
+        return result;
     }
 
 
@@ -5442,7 +5488,7 @@ public class LambdaJ {
             if (symbolp(fn)) fn = getValue(fn.toString());
             return applyTailcallHelper(fn, args[1]);
         }
-        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.eval(args[0], args.length == 2 ? requireList(args[1]) : null); }
+        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.expandAndEval(args[0], args.length == 2 ? requireList(args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
         public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
@@ -6351,17 +6397,17 @@ public class LambdaJ {
 
                 if (op == intp.sDefine) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
-                    intp.eval(ccForm, null);
+                    intp.expandAndEval(ccForm, null);
                 }
 
                 else if (op == intp.sDefun) {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
-                    intp.eval(ccForm, null);
+                    intp.expandAndEval(ccForm, null);
                 }
 
                 else if (op == intp.sDefmacro) {
                     intp.notReserved("defmacro", asSymbol("defmacro", cadr(ccForm)));
-                    intp.eval(ccForm, null);
+                    intp.expandAndEval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
                 }

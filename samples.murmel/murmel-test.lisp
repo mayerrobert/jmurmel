@@ -285,13 +285,15 @@
 
 ;;; multiple-value-bind
 (deftest mvb.1  (multiple-value-bind nil nil) nil)
-(deftest mvb.2  (multiple-value-bind (a b) (values 1 2) (echo a b)) '(1 2))
-(deftest mvb.3  (multiple-value-bind (a b) (values 1 2 3 4) (echo a b)) '(1 2))
-(deftest mvb.4  (multiple-value-bind (a b c d) (values 1 2) (echo a b c d)) '(1 2 nil nil))
-(deftest mvb.5  (multiple-value-bind (a b c d) 11 (echo a b c d)) '(11 nil nil nil))
+(deftest mvb.2  (multiple-value-bind (a b c) nil) nil)
+(deftest mvb.3  (multiple-value-bind (a b c) (values 1 2 3)) nil)
+(deftest mvb.4  (multiple-value-bind (a b) (values 1 2) (echo a b)) '(1 2))
+(deftest mvb.5  (multiple-value-bind (a b) (values 1 2 3 4) (echo a b)) '(1 2))
+(deftest mvb.6  (multiple-value-bind (a b c d) (values 1 2) (echo a b c d)) '(1 2 nil nil))
+(deftest mvb.7  (multiple-value-bind (a b c d) 11 (echo a b c d)) '(11 nil nil nil))
 
-#+murmel (deftest mvb.6  (multiple-value-bind (a b . c) (values 1 2 3 4 5) (echo a b c)) '(1 2 (3 4 5)))
-#+murmel (deftest mvb.7  (multiple-value-bind (a b . c) (values 1) (echo a b c)) '(1 nil nil))
+#+murmel (deftest mvb.8  (multiple-value-bind (a b . c) (values 1 2 3 4 5) (echo a b c)) '(1 2 (3 4 5)))
+#+murmel (deftest mvb.9  (multiple-value-bind (a b . c) (values 1) (echo a b c)) '(1 nil nil))
 
 
 ;;; multiple-value-call
