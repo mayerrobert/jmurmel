@@ -2106,7 +2106,8 @@ public class LambdaJ {
                 for (ConsCell i = listOrMalformed("labels", car(ccArgs)).copy(); i != null; i = cdrShallowCopyList("labels", i)) {
                     final ConsCell localFunc = listOrMalformed("labels", car(i));
                     varargsMin("labels", localFunc, 2);
-                    // todo check if the name of the local function is the name of a macro. Currently macros shadow local functions -> error or warning
+                    final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
+                    if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
                     if (cddr(localFunc) != null) {
                         final ConsCell body = cddrShallowCopyList("labels", localFunc);
                         i.rplaca(expandForm(body));
@@ -2117,7 +2118,10 @@ public class LambdaJ {
 
             case sDefine: {
                 varargs1_2("define", ccArgs);
-                if (cdr(ccArgs) != null) expandForm(car(cdrShallowCopyList("define", ccArgs)));
+                if (cdr(ccArgs) != null) {
+                    final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
+                    valueForm.rplaca(expandForm(car(valueForm)));
+                }
                 return ccForm;
             }
 
@@ -2128,12 +2132,32 @@ public class LambdaJ {
             }
 
             case sDefmacro:
-                return form; // todo
+                return form; // todo entweder so lassen oder hier das macro definieren und eval umbauen dass nur symbol oder null returned wird
 
             case sLet:
             case sLetStar:
             case sLetrec:
-                return form; // todo
+                final String sfName = symOp.toString();
+                final ConsCell bindingsAndBody;
+                if (car(ccArgs) != null && symbolp(car(ccArgs))) bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
+                else bindingsAndBody = ccArgs;
+                if (car(bindingsAndBody) != null) {
+                    final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
+                    for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
+                        if (consp(car(i))) {
+                            if (consp(cadar(i))) {
+                                final ConsCell binding = carShallowCopyList(sfName, i);
+                                final ConsCell valueFormList = cdrShallowCopyList(sfName, binding);
+                                valueFormList.rplaca(expandForm(car(valueFormList)));
+                            }
+                        }
+                    }
+                }
+                if (cdr(bindingsAndBody) != null) {
+                    final ConsCell bodyCopy = cdrShallowCopyList(sfName, bindingsAndBody);
+                    expandForms(sfName, bodyCopy);
+                }
+                return ccForm;
 
             case sMultipleValueBind:
                 varargsMin("multiple-value-bind", ccArgs, 2);
@@ -2141,7 +2165,14 @@ public class LambdaJ {
                 return ccForm;
 
             case sSetQ:
-                return form; // todo
+                for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
+                    final LambdaJSymbol symbol = symbolOrMalformed("setq", car(pairs));
+                    notReserved("setq", symbol);
+                    if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
+                    pairs = cdrShallowCopyList("setq", pairs);
+                    pairs.rplaca(expandForm(car(pairs)));
+                }
+                return ccForm;
 
             case sDeclaim:
             case sLoad:
@@ -2170,6 +2201,12 @@ public class LambdaJ {
         }
         expandForms("function application", ccForm);
         return ccForm;
+    }
+
+    private static ConsCell carShallowCopyList(String sfName, ConsCell bindingsAndBody) {
+        final ConsCell carCopy = listOrMalformed(sfName, car(bindingsAndBody)).copy();
+        bindingsAndBody.rplaca(carCopy);
+        return carCopy;
     }
 
     private static ConsCell cdrShallowCopyList(String sfName, ConsCell i) {
