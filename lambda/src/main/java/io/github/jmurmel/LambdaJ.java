@@ -1917,7 +1917,7 @@ public class LambdaJ {
                         }
 
                         default:
-                            /// eval - macro application. Only toplevel macro applications are expanded here, others are just-in-time expanded with tryExpand()
+                            /// eval - macro application. expandForm() expands some macro applications but not all
                             final ConsCell macroClosure;
                             if (null != (macroClosure = symOperator.macro)) {
                                 form = evalMacro(symOperator, macroClosure, ccArguments, stack, level, traceLvl);
@@ -2100,7 +2100,7 @@ public class LambdaJ {
                 if (ccArgs != null) expandForms("cond", ccArgs); return ccForm;
 
             case sProgn:
-                if (ccArgs != null) expandForms("progn", ccArgs); return ccForm;
+                if (ccArgs != null) expandForms("progn", ccArgs); return ccForm; // ggf. progn wegoptimieren wenns nur eine/ keine form enthält
 
             case sLabels:
                 for (ConsCell i = listOrMalformed("labels", car(ccArgs)).copy(); i != null; i = cdrShallowCopyList("labels", i)) {
@@ -2128,11 +2128,12 @@ public class LambdaJ {
             case sDefun: {
                 varargsMin("defun", ccArgs, 2);
                 if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
-                return form;
+                return ccForm;
             }
 
             case sDefmacro:
                 return form; // todo entweder so lassen oder hier das macro definieren und eval umbauen dass nur symbol oder null returned wird
+                             // oder zumindest den macro body expandieren? dabei würden nur bestehende makros expandiert, keine selbst rekursiven macro calls
 
             case sLet:
             case sLetStar:
@@ -2275,7 +2276,7 @@ public class LambdaJ {
         return res;
     }
 
-    private Object evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
+    private LambdaJSymbol evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
         varargs1("defmacro", arguments);
         final LambdaJSymbol macroName = symbolOrMalformed("defmacro", car(arguments));
         notReserved("defmacro", macroName);
@@ -4366,7 +4367,7 @@ public class LambdaJ {
         final ObjectReader parser = init(in, out);
         final Object exp = parser.readObj(true, null);
         final long tStart = System.nanoTime();
-        final Object result = eval(exp, topEnv, 0, 0, 0); // todo solls hier auch expandAll geben? oder diese methode überhaupt küblen? interpretExpressions() kann fast dasselbe
+        final Object result = eval(exp, topEnv, 0, 0, 0); // todo solls hier auch expandForm() geben? oder diese methode überhaupt küblen? interpretExpressions() kann fast dasselbe
         traceStats(System.nanoTime() - tStart);
         return result;
     }
@@ -6379,7 +6380,7 @@ public class LambdaJ {
             Object form;
             while (eof != (form = forms.readObj(true, eof))) {
                 try {
-                    globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, form);
+                    globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(form));
                 }
                 catch (LambdaJError e) {
                     throw new LambdaJError(false, e.getMessage(), form);
@@ -6434,17 +6435,17 @@ public class LambdaJ {
 
                 if (op == intp.sDefine) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
-                    intp.expandAndEval(ccForm, null);
+                    intp.eval(ccForm, null);
                 }
 
                 else if (op == intp.sDefun) {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
-                    intp.expandAndEval(ccForm, null);
+                    intp.eval(ccForm, null);
                 }
 
                 else if (op == intp.sDefmacro) {
                     intp.notReserved("defmacro", asSymbol("defmacro", cadr(ccForm)));
-                    intp.expandAndEval(ccForm, null);
+                    intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
                 }
