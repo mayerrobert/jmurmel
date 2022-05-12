@@ -64,7 +64,7 @@
 
   (if (> *warmup-duration* 0)
     (progn
-      (do-run f 1 (+ (get-internal-real-time) (* seconds internal-time-units-per-second)) nil)
+      (do-run f 1 (+ (get-internal-real-time) (* *warmup-duration* internal-time-units-per-second)) nil)
       (format t "warmup done.")
       #+murmel (writeln)
       #-murmel (terpri)))
