@@ -2132,8 +2132,9 @@ public class LambdaJ {
             }
 
             case sDefmacro:
-                return form; // todo entweder so lassen oder hier das macro definieren und eval umbauen dass nur symbol oder null returned wird
-                             // oder zumindest den macro body expandieren? dabei würden nur bestehende makros expandiert, keine selbst rekursiven macro calls
+                varargs1("defmacro", ccArgs);
+                if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
+                return ccForm;
 
             case sLet:
             case sLetStar:
@@ -2179,7 +2180,7 @@ public class LambdaJ {
             case sLoad:
             case sRequire:
             case sProvide:
-                return form; // no macroexpansion in declaim, load, require, provide forms
+                return form; // no macroexpansion in declaim, load, require, provide forms. Todo or should there be?
 
             case sMultipleValueCall:
                 varargs1("multiple-value-call", ccArgs);

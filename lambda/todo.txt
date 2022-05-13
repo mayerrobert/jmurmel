@@ -1,3 +1,10 @@
+car und cdr auf strings und symbols macht nur probleme
+-> (list-length '(a . b)) -> 3 !?! sollte fehler geben
+-> ist auch blöd zum opencoden
+-> und vor allem ist das eigentlich das typsystem, und zwar ein schlechtes
+   -> Murmel hat ein typsystem (für values), ist aber ad-hoc durch die instanceof ketten "implementiert", sollte an CLTL2 angepasst werden 
+
+
 jetzt wos einen vorgeschalten macroexpand/ check pass gibt, könnten einige checks in eval wegfallen
 -> checks in expandForm vervollständigen (v.a. duplicate symbols in let, letrec und lambdalist, und check ob sf als variable verwendet wird)
    checks in eval ausbauen oder durch asserts ersetzen
@@ -662,10 +669,6 @@ warum ist assoc in jmurmel drin?
 -> support für plists (ähnlich alists aber alist hat tupel, plist hat abwechselnd key und value in einer flachen liste plus eq statt eql),
    symbol-plist wäre optional auch möglich (und get, getf, ...). get verarbeitet symbol plist, getf verarbeitet alleinstehende plists
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
-
-car und cdr auf strings und symbols macht nur probleme
--> (list-length '(a . b)) -> 3 !?! sollte fehler geben
--> ist auch blöd zum opencoden
 
 sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
 
