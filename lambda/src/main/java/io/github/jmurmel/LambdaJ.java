@@ -1917,12 +1917,11 @@ public class LambdaJ {
                         }
 
                         default:
-                            /// eval - macro application. expandForm() expands some macro applications but not all
-                            final ConsCell macroClosure;
-                            if (null != (macroClosure = symOperator.macro)) {
-                                form = evalMacro(symOperator, macroClosure, ccArguments, stack, level, traceLvl);
-                                isTc = true;  continue tailcall;
-                            }
+                            // check if we forgot to handle a special form. All special forms (except multiple-value-call) should be handled in the cases above.
+                            assert !symOperator.specialForm() || symOperator.wellknownSymbol == WellknownSymbol.sMultipleValueCall: ccForms.lineInfo() + "unexpected special form " + symOperator;
+
+                            // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
+                            assert symOperator.macro == null: ccForm.lineInfo() + "unexpanded macro call: " + symOperator;
                     }
                     else symOperator = null;
 
@@ -2194,11 +2193,10 @@ public class LambdaJ {
             // not a special form, must be a function or macro application
             if (symOp.macro != null) {
                 final Object expansion = macroexpandImpl(ccForm);
-                if (cadr(values) != null) {
-                    values = NO_VALUES;
-                    if (atom(expansion)) { return expansion; }
-                    else { ccForm.rplaca(car(expansion)); ccForm.rplacd(cdr(expansion)); return expandForm(ccForm); }
-                }
+                assert cadr(values) != null: ccForm.lineInfo() + "macro " + symOp + " was not expanded - secondary value is nil, form was " + form;
+                assert expansion != ccForm: ccForm.lineInfo() + "macro " + symOp + " was not expanded - expansion == ccForm, form was " + form;
+                values = NO_VALUES;
+                return expandForm(expansion);
             }
         }
         expandForms("function application", ccForm);
@@ -2241,6 +2239,7 @@ public class LambdaJ {
         if (op == null || !symbolp(op)) return;
         final ConsCell macro = ((LambdaJSymbol)op).macro;
         if (macro != null) {
+            //assert false: ccForms.lineInfo() + "unexpanded macro " + op;
             ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMaybeMacroCall), stack, level, traceLvl));
             tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
         }
