@@ -2103,14 +2103,14 @@ public class LambdaJ {
                 if (ccArgs != null) expandForms("progn", ccArgs); return ccForm; // ggf. progn wegoptimieren wenns nur eine/ keine form enthält
 
             case sLabels:
-                for (ConsCell i = listOrMalformed("labels", car(ccArgs)).copy(); i != null; i = cdrShallowCopyList("labels", i)) {
-                    final ConsCell localFunc = listOrMalformed("labels", car(i));
+                for (ConsCell i = listOrMalformed("labels", carShallowCopyList("labels", ccArgs)); i != null; i = cdrShallowCopyList("labels", i)) {
+                    final ConsCell localFunc = listOrMalformed("labels", carShallowCopyList("labels", i));
                     varargsMin("labels", localFunc, 2);
                     final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
                     if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
                     if (cddr(localFunc) != null) {
                         final ConsCell body = cddrShallowCopyList("labels", localFunc);
-                        i.rplaca(expandForm(body));
+                        expandForms("labels", body);
                     }
                 }
                 if (cdr(ccArgs) != null) expandForms("labels", ccArgs.shallowCopyCdr());
@@ -7285,7 +7285,7 @@ public class LambdaJ {
                     final Object form = parser.readObj(true, eof);
                     if (form == eof) break;
 
-                    if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, form);
+                    if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
                     else emitForm(sb, form, _env, topEnv, rsfx, isLast);
                 }
                 return topEnv;
