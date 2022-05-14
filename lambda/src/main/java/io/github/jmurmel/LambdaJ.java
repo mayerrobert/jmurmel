@@ -2133,6 +2133,7 @@ public class LambdaJ {
             case sDefmacro:
                 varargs1("defmacro", ccArgs);
                 if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
+                evalDefmacro(ccArgs, topEnv, form);
                 return ccForm;
 
             case sLet:
@@ -2646,10 +2647,7 @@ public class LambdaJ {
 
 
     private Object loadFile(String func, Object argument) {
-        if (!stringp(argument)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(argument));
-        final String fileName = (String) argument;
-        final Path prevPath = lispReader.getFilePath();
-        final Path p = findFile(prevPath, fileName);
+        final Path p = findFile(func, lispReader, argument);
         try (Reader r = Files.newBufferedReader(p)) {
             final SExpressionReader parser = new SExpressionReader(r::read, symtab, featuresEnvEntry, p);
             final Object eof = "EOF";
@@ -2658,7 +2656,6 @@ public class LambdaJ {
                 final Object form = parser.readObj(true, eof);
                 if (form == eof) break;
 
-                // could do tryExpand() here, or wait for it happening later
                 result = eval(expandForm(form), topEnv, 0, 0, 0);
             }
             return result;
@@ -2667,10 +2664,13 @@ public class LambdaJ {
         }
     }
 
-    final Path findFile(Path current, String fileName) {
+    final Path findFile(String func, ObjectReader lispReader, Object argument) {
+        if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
+        final String filename = (String)argument;
+        Path current = lispReader.getFilePath();
         final Path path;
-        if (fileName.toLowerCase().endsWith(".lisp")) path = Paths.get(fileName);
-        else path = Paths.get(fileName + ".lisp");
+        if (filename.toLowerCase().endsWith(".lisp")) path = Paths.get(filename);
+        else path = Paths.get(filename + ".lisp");
         if (path.isAbsolute()) return path;
         if (current == null) current = Paths.get("dummy");
         Path ret = current.resolveSibling(path);
@@ -7273,10 +7273,7 @@ public class LambdaJ {
 
         private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
             final LambdaJ intp = this.intp;
-            if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
-            final String fileName = (String) argument;
-            final Path prevPath = intp.getLispReader().getFilePath();
-            final Path p = intp.findFile(prevPath, fileName);
+            final Path p = intp.findFile(func, intp.getLispReader(), argument);
             final Object eof = "EOF";
             try (Reader r = Files.newBufferedReader(p)) {
                 final SExpressionReader parser = intp.makeReader(r::read, p);
