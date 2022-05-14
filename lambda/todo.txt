@@ -9,6 +9,7 @@ jetzt wos einen vorgeschalten macroexpand/ check pass gibt, könnten einige chec
 -> checks in expandForm vervollständigen (v.a. duplicate symbols in let, letrec und lambdalist, und check ob sf als variable verwendet wird)
    checks in eval ausbauen oder durch asserts ersetzen
 -> tryExpand() müsste unnötig sein
+   -> ist es (noch) nicht, weil (progn (load...) (macro...)) nicht richtig verarbeitet wird: defmacro im load file werden erst später verarbeitet
 -> im compiler fällt auch bissl was weg
 -> ggf. in expandForm() (defun... -> (define (lambda... auflösen
 -> ggf. in expandForm() einfache optimierungen machen wie (cdr (cdr... -> (cddr, wenn speed >= 1
