@@ -2099,7 +2099,10 @@ public class LambdaJ {
                 if (ccArgs != null) expandForms("cond", ccArgs); return ccForm;
 
             case sProgn:
-                if (ccArgs != null) expandForms("progn", ccArgs); return ccForm; // ggf. progn wegoptimieren wenns nur eine/ keine form enthält
+                if (ccArgs == null) return null;
+                if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
+                expandForms("progn", ccArgs);
+                return ccForm;
 
             case sLabels:
                 for (ConsCell i = listOrMalformed("labels", carShallowCopyList("labels", ccArgs)); i != null; i = cdrShallowCopyList("labels", i)) {
