@@ -1783,7 +1783,7 @@ public class LambdaJ {
                         }
 
                         case sDefmacro: {
-                            result = evalDefmacro(ccArguments, env, form);
+                            result = car(ccArguments);
                             return result;
                         }
 
@@ -2235,7 +2235,8 @@ public class LambdaJ {
     /** if the first element of {@code ccForms} is a macro application then replace the element in the list by the macro application's expansion
      *  (and recursively repeat until it isn't a macro). */
     private void tryExpand(ConsCell ccForms, int stack, int level, int traceLvl) {
-        final Object maybeMacroCall = car(ccForms);
+        assert atom(ccForms) || car(ccForms) == null || !symbolp(car(ccForms)) || ((LambdaJSymbol)car(ccForms)).macro == null : ccForms.lineInfo() + "unexpanded macro " + ccForms;
+        /*final Object maybeMacroCall = car(ccForms);
         if (!consp(maybeMacroCall)) return;
 
         final ConsCell ccMaybeMacroCall = (ConsCell)maybeMacroCall;
@@ -2243,10 +2244,9 @@ public class LambdaJ {
         if (op == null || !symbolp(op)) return;
         final ConsCell macro = ((LambdaJSymbol)op).macro;
         if (macro != null) {
-            //assert false: ccForms.lineInfo() + "unexpanded macro " + op;
             ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMaybeMacroCall), stack, level, traceLvl));
             tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
-        }
+        }*/
     }
 
     static ConsCell listOrMalformed(String op, Object args) {
@@ -2659,7 +2659,7 @@ public class LambdaJ {
                 final Object form = parser.readObj(true, eof);
                 if (form == eof) break;
 
-                result = eval(expandForm(form), topEnv, 0, 0, 0);
+                result = expandAndEval(form, null);
             }
             return result;
         } catch (IOException e) {
@@ -2860,14 +2860,15 @@ public class LambdaJ {
                                                  : carCdrError("car", o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
-    static Object   caadr(ConsCell c)  { return c == null ? null : car(cadr(c)); }
+
     static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
     static Object   cadr(Object o)     { return o == null ? null : car(cdr(o)); }
+
     static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
+
     static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
-    static Object   caddr(Object o)    { return o == null ? null : car(cddr(o)); }
+
     static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
-    static Object   cadddr(Object o)   { return o == null ? null : car(cdddr(o)); }
 
     static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     static Object   cdr(Object o)      { return o == null ? null
@@ -2879,11 +2880,11 @@ public class LambdaJ {
                                                  : carCdrError("cdr", o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
-    static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
+
     static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
     static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
+
     static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
-    static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
     // todo ggf. spezialfall arrayslice behandeln
     private static Object   nthcdr(int n, Object list) {
@@ -3100,9 +3101,21 @@ public class LambdaJ {
     }
 
     final Object expandAndEval(Object form, ConsCell env) {
-        return eval(expandForm(form), env);
+        if (form == null) return null;
+        final Object expansion = expandForm(form);
+        if (consp(expansion) && car(expansion) == sProgn) {
+            return expandAndEvalForms(listOrMalformed("progn", cdr(expansion)), env);
+        }
+        return eval(expansion, env);
     }
 
+    private Object expandAndEvalForms(ConsCell forms, ConsCell env) {
+        Object result = null;
+        for (ConsCell rest = forms; rest != null; rest = listOrMalformed("progn", cdr(rest))) {
+            result = expandAndEval(car(rest), env);
+        }
+        return result;
+    }
 
 
     /// ###  Misc. helpers and printing of S-expressions
@@ -4352,7 +4365,7 @@ public class LambdaJ {
         Object result = null;
         Object exp;
         while ((exp = scriptParser.readObj(true, eof)) != eof) {
-            result = eval(expandForm(exp), topEnv, 0, 0, 0);
+            result = expandAndEval(exp, null);
         }
         return result;
     }
@@ -4400,7 +4413,7 @@ public class LambdaJ {
         Object exp;
         while ((exp = program.readObj(true, eof)) != eof) {
             final long tStart = System.nanoTime();
-            result = eval(expandForm(exp), topEnv, 0, 0, 0);
+            result = expandAndEval(exp, null);
             traceStats(System.nanoTime() - tStart);
         }
         return result;
@@ -4615,7 +4628,7 @@ public class LambdaJ {
                 if (history != null) history.add(form);
 
                 final long tStart = System.nanoTime();
-                result = interpreter.eval(interpreter.expandForm(form), interpreter.topEnv, 0, 0, 0);
+                result = interpreter.expandAndEval(form, null);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 if (printResult) {
@@ -4880,7 +4893,7 @@ public class LambdaJ {
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
-                final Object result = interpreter.eval(interpreter.expandForm(exp), interpreter.topEnv, 0, 0, 0);
+                final Object result = interpreter.expandAndEval(exp, null);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
                 System.out.println();
@@ -6688,9 +6701,8 @@ public class LambdaJ {
 
                     if (intp.sDefmacro == op) {
                         if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
-                        final Object result = intp.eval(form, null);
-                        if (result != null) sb.append("intern(\"").append(car(ccArguments)).append("\")");
-                        else sb.append("(Object)null");
+                        intp.expandForm(form); // this will process the macro definition as a side effect
+                        sb.append("intern(\"").append(car(ccArguments)).append("\")");
                         return;
                     }
 

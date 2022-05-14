@@ -370,7 +370,7 @@ defined macros.
     (defmacro twice (arg) (list '* arg 2))  ; ==> twice
     (twice 3) ; ==> 6.0
     (defmacro twice) ; ==> twice; macro is unbound
-    (defmacro twice) ; ==> nil
+    (defmacro twice) ; ==> twice; no-op
 
 ### (setq symbol value...) -> last-value
 

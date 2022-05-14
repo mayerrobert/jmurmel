@@ -1,4 +1,11 @@
 
+Changes in JMurmel-1.2.2 relative to JMurmel-1.2.1
+
+ * macroexpansion is no longer done on-the-fly but in a seperate macroexpansion phase.
+   This fixes issues with macros being expanded that are actually defined later,
+   or expanding the wrong version of a macro that is defined more than once.
+
+
 Changes in JMurmel-1.2.1 relative to JMurmel-1.2
 
  * changed the interpreter to expand macros only once
