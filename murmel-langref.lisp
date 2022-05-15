@@ -1114,7 +1114,7 @@ pi ; ==> 3.141592653589793
 ; Murmel language:
 ;
 ; - needs some means of catching and processing runtime errors,
-;   e.g. unwind-potect and handler-case
+;   e.g. unwind-potect and catch/ throw
 ; - file i/o
 ;
 ; Compiler issues:
@@ -1123,8 +1123,10 @@ pi ; ==> 3.141592653589793
 ;   other use as non-toplevel form will throw a "not-yet-implemented" compiler error.
 ; - define-ing an already define-d symbol is not supported
 ; - macroexpand-1 is limited to quoted forms
+; - macro expansion is only done at compiletime, e.g. (defmacro m() 1) (eval '(m))
+;   won't work
 ; - reassigning predefined primitives with setq is not supported, e.g.
-;   `(setq trunc (lambda (p) (1+ p)))` is an error (and wouldn't make much sense). 
+;   `(setq trunc (lambda (p) (1+ p)))` is an error (and wouldn't make much sense)
 
 
 ;;; == Copyright ======================

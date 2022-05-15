@@ -3087,7 +3087,7 @@ public class LambdaJ {
                 sb.print("nil"); return;
             } else if (obj instanceof ArraySlice) {
                 sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return;
-            } else if (listp(obj)) {
+            } else if (consp(obj)) {
                 if (headOfList) sb.print("(");
                 final Object first = car(obj);
                 if (first == list) {
@@ -3097,21 +3097,16 @@ public class LambdaJ {
                 }
                 final Object rest = cdr(obj);
                 if (rest != null) {
-                    if (listp(rest)) {
+                    if (consp(rest)) {
                         sb.print(" ");
                         if (list == rest) {
                             sb.print("#<circular list>)"); return;
                         } else {
                             obj = rest; headOfList = false; continue;
                         }
-                    } else if (headOfList) {
-                        sb.print(" . ");
-                        _printSEx(sb, list, rest, false, escapeAtoms);
-                        sb.print(")");
-                        return;
                     } else {
                         sb.print(" . ");
-                        _printSEx(sb, list, rest, false, escapeAtoms); // must be an atom
+                        _printSEx(sb, list, rest, false, escapeAtoms);
                         sb.print(")");
                         return;
                     }
@@ -3124,12 +3119,9 @@ public class LambdaJ {
             } else if (escapeAtoms && stringp(obj)) {
                 sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
             } else if (escapeAtoms && characterp(obj)) {
-                sb.print(printChar((int)(Character)obj));
-                return;
-            } else if (atom(obj)) {
-                sb.print(obj.toString()); return;
+                sb.print(printChar((int)(Character)obj)); return;
             } else {
-                throw errorInternal("don't know how to print this object");
+                sb.print(obj.toString()); return;
             }
         }
     }
