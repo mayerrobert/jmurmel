@@ -1895,7 +1895,7 @@ public class LambdaJ {
 
                         default:
                             // check if we forgot to handle a special form. All special forms (except multiple-value-call) should be handled in the cases above.
-                            assert !symOperator.specialForm() || symOperator.wellknownSymbol == WellknownSymbol.sMultipleValueCall: ccForms.lineInfo() + "unexpected special form " + symOperator;
+                            assert !symOperator.specialForm() || symOperator.wellknownSymbol == WellknownSymbol.sMultipleValueCall: ccForm.lineInfo() + "unexpected special form " + symOperator;
 
                             // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                             assert symOperator.macro == null: ccForm.lineInfo() + "unexpanded macro call: " + symOperator;
