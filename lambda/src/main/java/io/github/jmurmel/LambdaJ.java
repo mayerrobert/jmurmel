@@ -1712,318 +1712,305 @@ public class LambdaJ {
                 if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
                 /// eval - lookup symbols in the current environment
-                if (symbolp(form)) {                 // this line is a convenient breakpoint
-                    if (form == null) { result = null; return null; }
+                if (form == null) return result = null;
+                if (symbolp(form)) {
                     final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
                         if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
-                        result = value; return value;
+                        return result = value;
                     }
                     throw new LambdaJError(true, "%s: '%s' is not bound", "eval", printSEx(form));
                 }
 
                 /// eval - atoms that are not symbols eval to themselves
-                else if (atom(form)) {
-                    return form;   // this catches nil as well
+                if (atom(form)) return result = form;
+
+                /// eval - form is not an atom - must be a cons (nonempty list) containing either a special form or a function application
+                final ConsCell ccForm = (ConsCell)form;
+
+                final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
+
+                final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
+
+                final boolean funcall;
+                ConsCell ccForms = null;
+
+
+                final LambdaJSymbol symOperator; // will be the car of the form as a LambdaJSymbol if it is a symbol, null otherwise
+                if (symbolp(operator)) switch ((symOperator = (LambdaJSymbol)operator).wellknownSymbol) {
+                /// eval - special forms
+
+                /// eval - (quote exp) -> exp
+                case sQuote: {
+                    oneArg("quote", ccArguments);
+                    return result = car(ccArguments);
                 }
 
-                /// eval - the form is enclosed in parentheses, either a special form or a function application
-                else if (consp(form)) {
-                    final ConsCell ccForm = (ConsCell)form;
+                /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
+                case sLambda: {
+                    result = "#<lambda>";
+                    return makeClosureFromForm(ccForm, env);
+                }
 
-                    final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
+                case sSetQ: {
+                    return result = evalSetq(ccArguments, env, stack, level, traceLvl);
+                }
 
-                    final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
+                case sDefmacro: {
+                    return result = car(ccArguments);
+                }
 
-                    boolean funcall = true;
-                    ConsCell ccForms = null;
+                case sDeclaim: {
+                    return result = evalDeclaim(level, ccArguments);
+                }
 
 
-                    final LambdaJSymbol symOperator; // will be the car of the form as a LambdaJSymbol if it is a symbol, null otherwise
-                    if (symbolp(operator)) switch ((symOperator = (LambdaJSymbol)operator).wellknownSymbol) {
-                        /// eval - special forms
+                /// eval - special forms that change the global environment
 
-                        /// eval - (quote exp) -> exp
-                        case sQuote: {
-                            oneArg("quote", ccArguments);
-                            result = car(ccArguments);
-                            return result;
+                /// eval - (define symbol exp) -> symbol with a side of global environment extension
+                case sDefine: {
+                    varargs1_2("define", ccArguments);
+                    final LambdaJSymbol symbol = symbolOrMalformed("define", car(ccArguments));
+                    notReserved("define", symbol);
+                    final ConsCell envEntry = assq(symbol, topEnv);
+
+                    // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
+                    //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
+
+                    final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    if (envEntry == null) insertFront(topEnv, symbol, value);
+                    else envEntry.rplacd(value);
+
+                    return result = symbol;
+                }
+
+                /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
+                // shortcut for (define symbol (lambda (params...) forms...))
+                case sDefun: {
+                    varargsMin("defun", ccArguments, 2);
+                    form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
+                    isTc = true; continue tailcall;
+                }
+
+
+                /// eval - special forms that run expressions
+
+                /// eval - (if condform form optionalform) -> object
+                case sIf: {
+                    varargsMinMax("if", ccArguments, 2, 3);
+                    if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
+                        form = cadr(ccArguments); isTc = true; continue tailcall;
+                    } else if (caddr(ccArguments) != null) {
+                        form = caddr(ccArguments); isTc = true; continue tailcall;
+                    } else { return result = null; } // condition eval'd to false, no else form
+                }
+
+                /// eval - (load filespec) -> object
+                case sLoad: {
+                    oneArg("load", ccArguments);
+                    return result = loadFile("load", car(ccArguments));
+                }
+
+                /// eval - (require modulename optfilespec) -> object
+                case sRequire: {
+                    return result = evalRequire(ccArguments);
+                }
+
+                /// eval - (provide modulename) -> nil
+                case sProvide: {
+                    return result = evalProvide(ccArguments);
+                }
+
+
+
+                // the case clauses below will set "funcall" to false and set up "ccForms" depending on the special form.
+                // "ccForms" will then be used in "eval a list of forms" below
+
+                /// eval - (progn forms...) -> object
+                case sProgn: {
+                    ccForms = ccArguments;
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
+                }
+
+                /// eval - (cond (condform forms...)... ) -> object
+                case sCond: {
+                    if (ccArguments != null) for (Object c: ccArguments) {
+                        if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
+                        if (eval(car(c), env, stack, level, traceLvl) != null) {
+                            ccForms = (ConsCell) cdr(c);
+                            break;
                         }
-
-                        /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
-                        case sLambda: {
-                            result = "#<lambda>";
-                            return makeClosureFromForm(ccForm, env);
-                        }
-
-                        case sSetQ: {
-                            result = evalSetq(ccArguments, env, stack, level, traceLvl);
-                            return result;
-                        }
-
-                        case sDefmacro: {
-                            result = car(ccArguments);
-                            return result;
-                        }
-
-                        case sDeclaim: {
-                            result = evalDeclaim(level, ccArguments);
-                            return result;
-                        }
-
-
-                        /// eval - special forms that change the global environment
-
-                        /// eval - (define symbol exp) -> symbol with a side of global environment extension
-                        case sDefine: {
-                            varargs1_2("define", ccArguments);
-                            final LambdaJSymbol symbol = symbolOrMalformed("define", car(ccArguments));
-                            notReserved("define", symbol);
-                            final ConsCell envEntry = assq(symbol, topEnv);
-
-                            // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
-                            //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
-
-                            final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                            if (envEntry == null) insertFront(topEnv, symbol, value);
-                            else envEntry.rplacd(value);
-
-                            result = symbol;
-                            return result;
-                        }
-
-                        /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
-                        // shortcut for (define symbol (lambda (params...) forms...))
-                        case sDefun: {
-                            varargsMin("defun", ccArguments, 2);
-                            form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
-                            isTc = true; continue tailcall;
-                        }
-
-
-                        /// eval - special forms that run expressions
-
-                        /// eval - (if condform form optionalform) -> object
-                        case sIf: {
-                            varargsMinMax("if", ccArguments, 2, 3);
-                            if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
-                                form = cadr(ccArguments); isTc = true; continue tailcall;
-                            } else if (caddr(ccArguments) != null) {
-                                form = caddr(ccArguments); isTc = true; continue tailcall;
-                            } else { result = null; return null; } // condition eval'd to false, no else form
-                        }
-
-                        /// eval - (load filespec) -> object
-                        case sLoad: {
-                            oneArg("load", ccArguments);
-                            result = loadFile("load", car(ccArguments));
-                            return result;
-                        }
-
-                        /// eval - (require modulename optfilespec) -> object
-                        case sRequire: {
-                            result = evalRequire(ccArguments);
-                            return result;
-                        }
-
-                        /// eval - (provide modulename) -> nil
-                        case sProvide: {
-                            result = evalProvide(ccArguments);
-                            return result;
-                        }
-
-
-
-                        // the case clauses below will set "funcall" to false and set up "ccForms" depending on the special form.
-                        // "ccForms" will then be used in "eval a list of forms" below
-
-                        /// eval - (progn forms...) -> object
-                        case sProgn: {
-                            ccForms = ccArguments;
-                            funcall = false;
-                            break; // fall through to "eval a list of forms"
-                        }
-
-                        /// eval - (cond (condform forms...)... ) -> object
-                        case sCond: {
-                            if (ccArguments != null) for (Object c: ccArguments) {
-                                if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
-                                if (eval(car(c), env, stack, level, traceLvl) != null) {
-                                    ccForms = (ConsCell) cdr(c);
-                                    break;
-                                }
-                            }
-
-                            if (ccForms == null) { result = null; return null; } // no condition was true or the true condition has no code
-                            funcall = false;
-                            break; // fall through to "eval a list of forms"
-                        }
-
-                        /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
-                        case sLabels: {
-                            final ConsCell[] formsAndEnv = evalLabels(ccArguments, env);
-                            ccForms = formsAndEnv[0];
-                            env = formsAndEnv[1];
-                            funcall = false;
-                            break; // fall through to "eval a list of forms"
-                        }
-
-                        /// eval - (let {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
-                        /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
-                        /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
-                        case sLet:
-                        case sLetStar:
-                        case sLetrec: {
-                            final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
-                            ccForms = formsAndEnv[0];
-                            env = formsAndEnv[1];
-                            restore = formsAndEnv[2];
-                            funcall = false;
-                            break; // fall through to "eval a list of forms"
-                        }
-
-                        /// eval - (multiple-value-bind (symbols...) values-form bodyforms...) -> object
-                        case sMultipleValueBind: {
-                            final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
-                            ccForms = formsAndEnv[0];
-                            env = formsAndEnv[1];
-                            funcall = false;
-                            break; // fall through to "eval a list of forms"
-                        }
-
-                        default:
-                            // check if we forgot to handle a special form. All special forms (except multiple-value-call) should be handled in the cases above.
-                            assert !symOperator.specialForm() || symOperator.wellknownSymbol == WellknownSymbol.sMultipleValueCall: ccForm.lineInfo() + "unexpected special form " + symOperator;
-
-                            // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
-                            assert symOperator.macro == null: ccForm.lineInfo() + "unexpanded macro call: " + symOperator;
                     }
-                    else symOperator = null;
+
+                    if (ccForms == null) return result = null; // no condition was true or the true condition has no code
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
+                }
+
+                /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
+                case sLabels: {
+                    final ConsCell[] formsAndEnv = evalLabels(ccArguments, env);
+                    ccForms = formsAndEnv[0];
+                    env = formsAndEnv[1];
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
+                }
+
+                /// eval - (let {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
+                /// eval - (let* {optsymbol | dynamic}? (bindings...) bodyforms...) -> object
+                /// eval - (letrec optsymbol? (bindings...) bodyforms...) -> object
+                case sLet:
+                case sLetStar:
+                case sLetrec: {
+                    final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
+                    ccForms = formsAndEnv[0];
+                    env = formsAndEnv[1];
+                    restore = formsAndEnv[2];
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
+                }
+
+                /// eval - (multiple-value-bind (symbols...) values-form bodyforms...) -> object
+                case sMultipleValueBind: {
+                    final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
+                    ccForms = formsAndEnv[0];
+                    env = formsAndEnv[1];
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
+                }
+
+                default:
+                    // check if we forgot to handle a special form. All special forms (except multiple-value-call) should be handled in the cases above.
+                    assert !symOperator.specialForm() || symOperator.wellknownSymbol == WellknownSymbol.sMultipleValueCall: ccForm.lineInfo() + "unexpected special form " + symOperator;
+
+                    // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
+                    assert symOperator.macro == null: ccForm.lineInfo() + "unexpanded macro call: " + symOperator;
+                    
+                    funcall = true;
+                }
+                else {
+                    symOperator = null;
+                    funcall = true;
+                }
 
 
 
-                    /// eval - function application
-                    if (funcall) {
+                /// eval - function application
+                if (funcall) {
 
-                        /// eval - (eval form) -> object ; this is not really a special form but is handled here for TCO
-                        if (operator == ocEval) {
-                            varargsMinMax("eval", ccArguments, 1, 2);
-                            form = car(ccArguments);
-                            if (cdr(ccArguments) == null) env = topEnv; // todo topEnv sind ALLE globals, eval sollte nur predefined globals bekommen
-                            else {
-                                final Object additionalEnv = cadr(ccArguments);
-                                if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
-                                env = (ConsCell) append2(additionalEnv, topEnv);
-                            }
-                            isTc = true; continue tailcall;
+                    /// eval - (eval form) -> object
+                    if (operator == ocEval) {
+                        varargsMinMax("eval", ccArguments, 1, 2);
+                        form = car(ccArguments);
+                        if (cdr(ccArguments) == null) env = topEnv; // todo unterschied zu kompiliertem eval: topEnv sind ALLE globals, kompiliertes eval sieht nur predefined globals
+                        else {
+                            final Object additionalEnv = cadr(ccArguments);
+                            if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
+                            env = (ConsCell) append2(additionalEnv, topEnv);
                         }
+                        isTc = true; continue tailcall;
+                    }
 
-                        final ConsCell argList;
+                    final ConsCell argList;
 
-                        /// eval - apply function to list
-                        /// eval - (apply form argform) -> object
-                        if (operator == ocApply) {
-                            twoArgs("apply", ccArguments);
-                            final Object funcOrSymbol = car(ccArguments);
-                            func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call below
-                            argList = listOrMalformed("apply", cadr(ccArguments));
-                            if (speed >= 1 && symbolp(funcOrSymbol)) {
-                                result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
-                                if (result != NOT_HANDLED) return result;
-                            }
-                            // fall through to "actually perform..."
+                    /// eval - apply a function to an argument list
+                    /// eval - (apply form argform) -> object
+                    if (operator == ocApply) {
+                        twoArgs("apply", ccArguments);
+                        final Object funcOrSymbol = car(ccArguments);
+                        func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call below
+                        argList = listOrMalformed("apply", cadr(ccArguments));
+                        if (speed >= 1 && symbolp(funcOrSymbol)) {
+                            result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
+                            if (result != NOT_HANDLED) return result;
+                        }
+                        // fall through to "actually perform..."
 
                         /// eval - multiple-value-call
                         /// eval - (multiple-value-call function-form values-form*) -> object
-                        } else if (operator == sMultipleValueCall) {
-                            varargs1("multiple-value-call", ccArguments);
-                            final Object funcOrSymbol = car(ccArguments);
-                            func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
-                            ConsCell allArgs = null;
-                            final Object valueForms = cdr(ccArguments);
-                            if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
-                                values = NO_VALUES;
-                                final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                                final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
-                                if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
-                            }
-                            argList = allArgs;
-                            if (speed >= 1 && symbolp(funcOrSymbol)) {
-                                result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
-                                if (result != NOT_HANDLED) return result;
-                            }
-                            // fall through to "actually perform..."
+                    } else if (operator == sMultipleValueCall) {
+                        varargs1("multiple-value-call", ccArguments);
+                        final Object funcOrSymbol = car(ccArguments);
+                        func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
+                        ConsCell allArgs = null;
+                        final Object valueForms = cdr(ccArguments);
+                        if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
+                            values = NO_VALUES;
+                            final Object prim = eval(valueForm, env, stack, level, traceLvl);
+                            final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
+                            if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
+                        }
+                        argList = allArgs;
+                        if (speed >= 1 && symbolp(funcOrSymbol)) {
+                            result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
+                            if (result != NOT_HANDLED) return result;
+                        }
+                        // fall through to "actually perform..."
 
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
-                        } else {
-                            if (speed >= 1 && symOperator != null && symOperator.wellknown()) {
-                                // (mostly) respect evaluation order: operator should be eval'd before arguments.
-                                // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
-                                // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
-                                // Cheat here to gain performance: wellknown symbols are known to exist and will be looked up later out of order if needed
-                                // skip eval with an expensive assq call for now.
-                                argList = evlis(ccArguments, env, stack, level, traceLvl);
-                                result = evalOpencode(symOperator, argList);
-                                if (result != NOT_HANDLED) return result;
+                    } else if (speed >= 1 && symOperator != null && symOperator.wellknown()) {
+                        // (mostly) respect evaluation order: operator should be eval'd before arguments.
+                        // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
+                        // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
+                        // Cheat here to gain performance: wellknown symbols are known to exist and will be looked up later out of order if needed
+                        // skip eval with an expensive assq call for now.
+                        argList = evlis(ccArguments, env, stack, level, traceLvl);
+                        result = evalOpencode(symOperator, argList);
+                        if (result != NOT_HANDLED) return result;
 
-                                func = cdr(assq(operator, env));
-                            }
-                            else {
-                                func = eval(operator, env, stack, level, traceLvl);
-                                argList = evlis(ccArguments, env, stack, level, traceLvl);
-                            }
-                            // fall through to "actually perform..."
-                        }
-
-                        /// eval - actually perform the function call that was set up by "apply" or "function call" above
-                        if (traced != null) traceLvl = traceEnter(func, argList, traceLvl);
-                        values = NO_VALUES;
-                        if (func instanceof OpenCodedPrimitive) {
-                            form = cons(func, argList);
-                            if (traced != null) traceStack = push(func, traceStack);
-                            func = null;
-                            isTc = true; continue tailcall;
-
-                        } else if (func instanceof Primitive) {
-                            result = applyPrimitive((Primitive) func, argList, stack, level); return result;
-
-                        } else if (consp(func) && car(func) == sLambda) {
-                            final Object lambda = cdr(func);          // ((params...) (forms...))
-                            final ConsCell closure = ((ConsCell)func).closure();
-                            if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
-                            env = zip(car(lambda), argList, closure != null ? closure : env, true);
-
-                            if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
-                            ccForms = (ConsCell) cdr(lambda);
-                            // fall through to "eval a list of forms"
-
-                        } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
-                            // compiled function or compiler runtime func
-                            result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level); return result;
-
-                        } else {
-                            throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
-                        }
+                        func = cdr(assq(operator, env));
+                        // fall through to "actually perform..."
+                    } else {
+                        func = eval(operator, env, stack, level, traceLvl);
+                        argList = evlis(ccArguments, env, stack, level, traceLvl);
+                        // fall through to "actually perform..."
                     }
 
-                    /// eval - eval a list of forms
-                    if (ccForms != null) {
-                        for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) {
-                            eval(car(ccForms), env, stack, level, traceLvl);
-                        }
-                        if (traced != null) traceStack = push(operator, traceStack);
-                        form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
+                    /// eval - actually perform the function call that was set up by "apply" or "multiple-value-call" or "function call" above
+                    if (traced != null) traceLvl = traceEnter(func, argList, traceLvl);
+                    values = NO_VALUES;
+                    if (func instanceof OpenCodedPrimitive) {
+                        form = cons(func, argList);
+                        if (traced != null) traceStack = push(func, traceStack);
+                        func = null;
+                        isTc = true; continue tailcall;
+
+                    } else if (func instanceof Primitive) {
+                        return result = applyPrimitive((Primitive) func, argList, stack, level);
+
+                    } else if (consp(func) && car(func) == sLambda) {
+                        final Object lambda = cdr(func);          // ((params...) (forms...))
+                        final ConsCell closure = ((ConsCell)func).closure();
+                        if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
+                        env = zip(car(lambda), argList, closure != null ? closure : env, true);
+
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
+                        ccForms = (ConsCell) cdr(lambda);
+                        // fall through to "eval a list of forms"
+
+                    } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
+                        // compiled function or compiler runtime func
+                        return result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);
+
+                    } else {
+                        throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
                     }
-
-                    result = null; return null; // lambda/ progn/ labels/... w/o body
-
                 }
 
-                /// eval - Not a symbol/atom/cons - something is really wrong here. Let's sprinkle some crack on him and get out of here, Dave.
-                throw errorInternal("eval: cannot eval form", form);
+                /// eval - eval a list of forms
+                if (ccForms != null) {
+                    for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) {
+                        eval(car(ccForms), env, stack, level, traceLvl);
+                    }
+                    if (traced != null) traceStack = push(operator, traceStack);
+                    form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
+                }
+
+                return result = null; // lambda/ progn/ labels/... w/o body
             }
 
         } catch (LambdaJError | InterruptedException e) {
@@ -2484,10 +2471,8 @@ public class LambdaJ {
         case sList:     { return args; }
         case sListStar: { return listStar(args); }
 
-        default: break;
+        default:    return NOT_HANDLED;
         }
-
-        return NOT_HANDLED;
     }
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
