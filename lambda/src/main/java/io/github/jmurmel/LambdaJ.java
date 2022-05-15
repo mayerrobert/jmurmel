@@ -349,25 +349,6 @@ public class LambdaJ {
         @Override ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
     }
 
-    /*final class ArraySliceBuilder {
-        private Object[] arry = new Object[4];
-        private int size = 0;
-        
-        ArraySliceBuilder append(Object elem) {
-            if (size == arry.length) {
-                arry = Arrays.copyOf(arry, size << 1);
-            }
-            arry[size++] = elem;
-            return this;
-        }
-        
-        ConsCell first() {
-            if (size == 0) return null;
-            if (arry.length == size) return new ArraySlice(arry, 0);
-            return new ArraySlice(Arrays.copyOf(arry, size), 0);
-        }
-    }*/
-
     private abstract static class AbstractConsCell extends ConsCell {
         private static class ListConsCellIterator implements Iterator<Object> {
             private final AbstractConsCell coll;
@@ -1827,12 +1808,9 @@ public class LambdaJ {
                         /// eval - (if condform form optionalform) -> object
                         case sIf: {
                             varargsMinMax("if", ccArguments, 2, 3);
-                            tryExpand(ccArguments, stack, level, traceLvl);
                             if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
-                                tryExpand((ConsCell)cdr(ccArguments), stack, level, traceLvl);
                                 form = cadr(ccArguments); isTc = true; continue tailcall;
                             } else if (caddr(ccArguments) != null) {
-                                tryExpand((ConsCell)cddr(ccArguments), stack, level, traceLvl);
                                 form = caddr(ccArguments); isTc = true; continue tailcall;
                             } else { result = null; return null; } // condition eval'd to false, no else form
                         }
@@ -1872,7 +1850,6 @@ public class LambdaJ {
                         case sCond: {
                             if (ccArguments != null) for (Object c: ccArguments) {
                                 if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
-                                if (c != null) tryExpand((ConsCell)c, stack, level, traceLvl);
                                 if (eval(car(c), env, stack, level, traceLvl) != null) {
                                     ccForms = (ConsCell) cdr(c);
                                     break;
@@ -2035,11 +2012,9 @@ public class LambdaJ {
                     /// eval - eval a list of forms
                     if (ccForms != null) {
                         for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) {
-                            tryExpand(ccForms, stack, level, traceLvl);
                             eval(car(ccForms), env, stack, level, traceLvl);
                         }
                         if (traced != null) traceStack = push(operator, traceStack);
-                        tryExpand(ccForms, stack, level, traceLvl);
                         form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
                     }
 
@@ -2068,6 +2043,27 @@ public class LambdaJ {
                 entry.rplacd(cdar(c));
             }
         }
+    }
+
+    final Object eval(Object form, ConsCell env) {
+        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
+    }
+
+    final Object expandAndEval(Object form, ConsCell env) {
+        if (form == null) return null;
+        final Object expansion = expandForm(form);
+        if (consp(expansion) && car(expansion) == sProgn) {
+            return expandAndEvalForms(listOrMalformed("progn", cdr(expansion)), env);
+        }
+        return eval(expansion, env);
+    }
+
+    private Object expandAndEvalForms(ConsCell forms, ConsCell env) {
+        Object result = null;
+        for (ConsCell rest = forms; rest != null; rest = listOrMalformed("progn", cdr(rest))) {
+            result = expandAndEval(car(rest), env);
+        }
+        return result;
     }
 
     /** expand all macros within a form and do some syntax checks. Macro-expansion is done in a copy, i.e. form will not be modified. */
@@ -2232,23 +2228,6 @@ public class LambdaJ {
         }
     }
 
-    /** if the first element of {@code ccForms} is a macro application then replace the element in the list by the macro application's expansion
-     *  (and recursively repeat until it isn't a macro). */
-    private void tryExpand(ConsCell ccForms, int stack, int level, int traceLvl) {
-        assert atom(ccForms) || car(ccForms) == null || !symbolp(car(ccForms)) || ((LambdaJSymbol)car(ccForms)).macro == null : ccForms.lineInfo() + "unexpanded macro " + ccForms;
-        /*final Object maybeMacroCall = car(ccForms);
-        if (!consp(maybeMacroCall)) return;
-
-        final ConsCell ccMaybeMacroCall = (ConsCell)maybeMacroCall;
-        final Object op = car(ccMaybeMacroCall);
-        if (op == null || !symbolp(op)) return;
-        final ConsCell macro = ((LambdaJSymbol)op).macro;
-        if (macro != null) {
-            ccForms.rplaca(evalMacro(op, macro, (ConsCell)cdr(ccMaybeMacroCall), stack, level, traceLvl));
-            tryExpand(ccForms, stack, level, traceLvl);  // try to expand again in case the first macro call expanded into another macro call
-        }*/
-    }
-
     static ConsCell listOrMalformed(String op, Object args) {
         if (!listp(args)) errorMalformed(op, "a list", args);
         return (ConsCell)args;
@@ -2268,7 +2247,6 @@ public class LambdaJ {
 
             pairs = (ConsCell) cdr(pairs);
             if (pairs == null) errorMalformed("setq", "odd number of arguments");
-            tryExpand(pairs, stack, level, traceLvl);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
             if (envEntry == null)
                 insertFront(env, symbol, value);
@@ -2385,7 +2363,6 @@ public class LambdaJ {
                     if (cddr(binding) != null) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
                     sym = (LambdaJSymbol)car(binding);
                     bindingForm = cadr(binding);
-                    if (bindingForm != null) tryExpand((ConsCell)cdr(binding), stack, level, traceLvl);
                 } else {
                     throw errorMalformed(getOp(operator, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
                 }
@@ -2451,7 +2428,6 @@ public class LambdaJ {
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
         varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
         values = NO_VALUES;
-        tryExpand((ConsCell)cdr(bindingsAndBodyForms), stack, level, traceLvl);
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
         final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
         values = NO_VALUES;
@@ -2575,7 +2551,6 @@ public class LambdaJ {
         ListConsCell head = null;
         ListConsCell insertPos = null;
         for (ConsCell rest = forms; rest != null; rest = (ConsCell)cdr(rest)) {
-            tryExpand(rest, stack, level, traceLvl);
             final ListConsCell currentArg = cons(eval(car(rest), env, stack, level, traceLvl), null);
             if (head == null) {
                 head = currentArg;
@@ -2589,17 +2564,6 @@ public class LambdaJ {
         if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
         return head;
     }
-    /*private ConsCell evlis(ConsCell forms, ConsCell env, int stack, int level, int traceLvl) {
-        if (traceOn) dbgEvalStart("evlis", forms, env, stack, level);
-        final ArraySliceBuilder builder = new ArraySliceBuilder();
-        for (ConsCell rest = forms; rest != null; rest = (ConsCell)cdr(rest)) {
-            tryExpand(rest, stack, level, traceLvl);
-            builder.append(eval(car(rest), env, stack, level, traceLvl));
-        }
-        final ConsCell head = builder.first();
-        if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
-        return head;
-    }*/
 
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
@@ -3094,27 +3058,6 @@ public class LambdaJ {
         if (n instanceof Short) return ((Short)n).longValue() - 1;
         if (n instanceof Integer) return ((Integer)n).longValue() - 1;
         return toDouble("1-", n) - 1;
-    }
-
-    final Object eval(Object form, ConsCell env) {
-        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
-    }
-
-    final Object expandAndEval(Object form, ConsCell env) {
-        if (form == null) return null;
-        final Object expansion = expandForm(form);
-        if (consp(expansion) && car(expansion) == sProgn) {
-            return expandAndEvalForms(listOrMalformed("progn", cdr(expansion)), env);
-        }
-        return eval(expansion, env);
-    }
-
-    private Object expandAndEvalForms(ConsCell forms, ConsCell env) {
-        Object result = null;
-        for (ConsCell rest = forms; rest != null; rest = listOrMalformed("progn", cdr(rest))) {
-            result = expandAndEval(car(rest), env);
-        }
-        return result;
     }
 
 
@@ -3788,7 +3731,7 @@ public class LambdaJ {
     private int gensymCounter;
     final Object gensym(ConsCell args) {
         noArgs("gensym", args);
-        return new LambdaJSymbol("gensym" + ++gensymCounter);
+        return new LambdaJSymbol("#:g" + ++gensymCounter);
     }
 
 
