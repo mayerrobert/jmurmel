@@ -1,3 +1,14 @@
+(let loop ((n 10)) (writeln n) (if (= n 3) (setq loop (lambda (n) (writeln (quote done))))) (loop (1- n)))
+-> geht im interpreter, gibt java compile fehler im compiler (cannot assign a value to final variable _loop2)
+(labels ((l () (writeln 'vorher) (setq l (lambda () (writeln 'nachher))))) (l) (l))
+-> geht im interpreter, gibt java compile fehler im compiler (cannot assign a value to final variable _l2)
+-> in sbcl können lokale funktionen mit setq auch nicht verändert werden (local call vs. full call), dafür fallen runtime argcount checks usw weg
+-> murmel sollte setq mit loop labels und labels-lokalen funktionen verweigern, dann könnten argcount checks 1x gemacht werden, ggf. könnte der environment lookup wegfallen
+   -> vielleicht sollte expandForm() ein environment mit lokalen funktionen (und primitivies?) mitführen, mit symbol->parameteranzahl tupeln.
+      damit könnte zuweisung an locals (und bei speed>=1 an primitives) erkannt und verweigert werden, und argcount checks könnte 1x in expandForm() gemacht werden.
+      1x argcount check wär für interpreter und compiler nützlich, und ggf. wäre auch notAPrimitive() im compiler hinfällig und/ oder interpreter und compiler würden sich gleich verhalten
+
+
 car und cdr auf strings und symbols macht nur probleme
 -> (list-length '(a . b)) -> 3 !?! sollte fehler geben
 -> ist auch blöd zum opencoden
