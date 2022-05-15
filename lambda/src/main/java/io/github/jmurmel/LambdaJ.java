@@ -1773,7 +1773,6 @@ public class LambdaJ {
                 case sDefine: {
                     varargs1_2("define", ccArguments);
                     final LambdaJSymbol symbol = symbolOrMalformed("define", car(ccArguments));
-                    notReserved("define", symbol);
                     final ConsCell envEntry = assq(symbol, topEnv);
 
                     // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
@@ -2154,8 +2153,7 @@ public class LambdaJ {
 
             case sSetQ:
                 for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
-                    final LambdaJSymbol symbol = symbolOrMalformed("setq", car(pairs));
-                    notReserved("setq", symbol);
+                    symbolOrMalformed("setq", car(pairs));
                     if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
                     pairs = cdrShallowCopyList("setq", pairs);
                     pairs.rplaca(expandForm(car(pairs)));
@@ -2220,16 +2218,17 @@ public class LambdaJ {
         return (ConsCell)args;
     }
 
-    static LambdaJSymbol symbolOrMalformed(String op, Object args) {
-        if (!symbolp(args)) errorMalformed(op, "a symbol", args);
-        return (LambdaJSymbol)args;
+    final LambdaJSymbol symbolOrMalformed(String op, Object maybeSymbol) {
+        if (!symbolp(maybeSymbol)) errorMalformed(op, "a symbol", maybeSymbol);
+        final LambdaJSymbol symbol = (LambdaJSymbol)maybeSymbol;
+        notReserved(op, symbol);
+        return symbol;
     }
 
     private Object evalSetq(ConsCell arguments, ConsCell env, int stack, int level, int traceLvl) {
         Object res = null;
         for (ConsCell pairs = arguments; pairs != null; ) {
             final LambdaJSymbol symbol = symbolOrMalformed("setq", car(pairs));
-            notReserved("setq", symbol);
             final ConsCell envEntry = assq(symbol, env);
 
             pairs = (ConsCell) cdr(pairs);
@@ -2245,20 +2244,16 @@ public class LambdaJ {
         return res;
     }
 
-    private LambdaJSymbol evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
+    private void evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
         varargs1("defmacro", arguments);
         final LambdaJSymbol macroName = symbolOrMalformed("defmacro", car(arguments));
-        notReserved("defmacro", macroName);
         final int arglen = length(arguments);
         if (arglen == 1) {
-            final boolean wasMacro = macroName.macro != null;
             macroName.macro = null;
-            return wasMacro ? macroName : null;
         }
         else if (arglen >= 3) {
             final ListConsCell paramsAndBody = cons(cadr(arguments), cddr(arguments));
             macroName.macro = makeClosureFromForm(cons(sLambda, paramsAndBody), env);
-            return macroName;
         }
         else throw errorMalformed("defmacro", printSEx(form));
     }
@@ -2308,7 +2303,6 @@ public class LambdaJ {
                 if (!consp(binding)) errorMalformed("labels", "a list (symbol (params...) forms...)", binding);
                 final ConsCell currentFunc = (ConsCell)binding;
                 final LambdaJSymbol currentSymbol = symbolOrMalformed("labels", car(currentFunc));
-                notReserved("labels", currentSymbol);
                 final ConsCell lambda = makeClosure(cdr(currentFunc), extEnv);
                 insertFront(extEnv, currentSymbol, lambda);
             }
@@ -6135,8 +6129,7 @@ public class LambdaJ {
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
          *  symbols that are reserved words throw an error. */
         private ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
-            final LambdaJSymbol sym = asSymbol(func, symbol);
-            intp.notReserved(func, sym);
+            final LambdaJSymbol sym = intp.symbolOrMalformed(func, symbol);
             return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
         }
 
@@ -6187,11 +6180,6 @@ public class LambdaJ {
         }
 
 
-
-        private static LambdaJSymbol asSymbol(String func, Object symbol) {
-            if (symbol != null && !(symbol instanceof LambdaJSymbol)) errorMalformedFmt(func, "not a symbol: %s", symbol);
-            return (LambdaJSymbol)symbol;
-        }
 
         private static void notAPrimitive(String func, Object symbol, String javaName) {
             if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("%s: assigning primitives is not implemented: %s", func, symbol.toString());
@@ -6380,7 +6368,7 @@ public class LambdaJ {
                 }
 
                 else if (op == intp.sDefmacro) {
-                    intp.notReserved("defmacro", asSymbol("defmacro", cadr(ccForm)));
+                    intp.symbolOrMalformed("defmacro", cadr(ccForm));
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
@@ -6450,10 +6438,9 @@ public class LambdaJ {
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             varargs1_2("toplevel define", listOrMalformed("toplevel define", cdr(form)));
-            final LambdaJSymbol symbol = asSymbol("define", cadr(form));
-
-            intp.notReserved("define", symbol);
+            final LambdaJSymbol symbol = intp.symbolOrMalformed("define", cadr(form));
             notDefined("define", symbol, env);
+
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
@@ -6473,12 +6460,11 @@ public class LambdaJ {
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final LambdaJSymbol symbol = asSymbol("defun", cadr(form));
+            final LambdaJSymbol symbol = intp.symbolOrMalformed("defun", cadr(form));
             final Object params = caddr(form);
             final Object body = cdddr(form);
-
-            intp.notReserved("defun", symbol);
             notDefined("defun", symbol, env);
+
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env);
 
@@ -6885,8 +6871,7 @@ public class LambdaJ {
         }
 
         private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = asSymbol("setq", car(pairs));
-            intp.notReserved("setq", symbol);
+            final LambdaJSymbol symbol = intp.symbolOrMalformed("setq", car(pairs));
             final String javaName = javasym(symbol, env);
 
             if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
@@ -6905,7 +6890,7 @@ public class LambdaJ {
 
         /** args = (formsym (sym...) form...) */
         private void emitLabel(String func, WrappingWriter sb, final Object symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = asSymbol(func, car(symbolParamsAndForms));
+            final LambdaJSymbol symbol = intp.symbolOrMalformed(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
             sb.append("new MurmelFunction() {\n");
@@ -7019,7 +7004,7 @@ public class LambdaJ {
                 if (letrec) for (Object binding: (ConsCell)bindings) {
                     final LambdaJSymbol sym;
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; }
-                    else { sym = asSymbol(op, car(binding)); }
+                    else { sym = intp.symbolOrMalformed(op, car(binding)); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     env = extenvIntern(sym, symName, env);
                 }
@@ -7031,7 +7016,7 @@ public class LambdaJ {
                     final Object form;
                     if (consp(binding) && cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; form = null; }
-                    else { sym = asSymbol(op, car(binding)); form = cadr(binding); }
+                    else { sym = intp.symbolOrMalformed(op, car(binding)); form = cadr(binding); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     sb.append("        { ").append(symName).append(" = ");
                     emitForm(sb, form, env, topEnv, rsfx, false);
@@ -7185,10 +7170,9 @@ public class LambdaJ {
             int n = 0;
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
-                    final LambdaJSymbol param = symbolOrMalformed(func, car(params));
-                    intp.notReserved(func, param);
+                    final LambdaJSymbol param = intp.symbolOrMalformed(func, car(params));
                     if (!seen.add(param)) errorMalformedFmt(func, "duplicate symbol %s", param);
-                    env = extenvIntern(asSymbol(func, param), "args" + rsfx + "[" + n++ + "]", env);
+                    env = extenvIntern(param, "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
