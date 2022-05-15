@@ -1904,7 +1904,7 @@ public class LambdaJ {
                     /// eval - (eval form) -> object
                     if (operator == ocEval) {
                         varargsMinMax("eval", ccArguments, 1, 2);
-                        form = car(ccArguments);
+                        form = expandForm(car(ccArguments));
                         if (cdr(ccArguments) == null) env = topEnv; // todo unterschied zu kompiliertem eval: topEnv sind ALLE globals, kompiliertes eval sieht nur predefined globals
                         else {
                             final Object additionalEnv = cadr(ccArguments);

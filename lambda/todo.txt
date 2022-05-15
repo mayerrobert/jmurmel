@@ -9,6 +9,11 @@
       1x argcount check wär für interpreter und compiler nützlich, und ggf. wäre auch notAPrimitive() im compiler hinfällig und/ oder interpreter und compiler würden sich gleich verhalten
 
 
+(defmacro m() 1)
+(eval '(m))
+-> geht im interpreter, geht nicht im compiler, weil m müsste zur laufzeit aufgelöst werden
+
+
 car und cdr auf strings und symbols macht nur probleme
 -> (list-length '(a . b)) -> 3 !?! sollte fehler geben
 -> ist auch blöd zum opencoden
