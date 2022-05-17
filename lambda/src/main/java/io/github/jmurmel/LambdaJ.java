@@ -1951,7 +1951,7 @@ public class LambdaJ {
 
                         /// eval - function call
                         /// eval - (operatorform argforms...) -> object
-                    } else if (speed >= 1 && symOperator != null && symOperator.wellknown()) {
+                    } else if (speed >= 1 && symOperator != null && symOperator.primitive()) {
                         // (mostly) respect evaluation order: operator should be eval'd before arguments.
                         // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
                         // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
