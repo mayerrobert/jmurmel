@@ -1667,6 +1667,7 @@ public class LambdaJ {
 
     /// ### Global environment - define'd symbols go into this list
     private ConsCell topEnv;
+    private static final ConsCell DYNAMIC_ENV = new ListConsCell(null, null);
 
     /** Build environment, setup Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
@@ -1981,14 +1982,31 @@ public class LambdaJ {
                     } else if (func instanceof Primitive) {
                         return result = applyPrimitive((Primitive) func, argList, stack, level);
 
-                    } else if (consp(func) && car(func) == sLambda) {
-                        final Object lambda = cdr(func);          // ((params...) (forms...))
-                        final ConsCell closure = ((ConsCell)func).closure();
-                        if (closure == null) varargs1("lambda application", lambda); // if closure != null then it was created by the special form lambda, no need to check again
-                        env = zip(car(lambda), argList, closure != null ? closure : env, true);
+                    } else if (func instanceof ClosureConsCell) {
+                        assert car(func) == sLambda: ccForm.lineInfo() + "expected car of ClosureConsCell to be lambda but was " + car(func);
+                        final ConsCell ccFunc = (ClosureConsCell)func;
+                        final Object paramsAndBody = cdr(ccFunc);
+                        final ConsCell closure = ccFunc.closure();
+                        env = zip(car(paramsAndBody), argList, closure == DYNAMIC_ENV ? env : closure, true);
 
-                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + lambda + "> " + printSEx(argList));
-                        ccForms = (ConsCell) cdr(lambda);
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + paramsAndBody + "> " + printSEx(argList));
+                        ccForms = (ConsCell) cdr(paramsAndBody);
+                        // fall through to "eval a list of forms"
+
+                    } else if (func instanceof ConsCell && car(func) == sLambda) {
+                        /* something like
+                             (define l '(lambda () 'hello))
+                             (l)
+                           would end up here. That's not really legal (or is it/ should it be?), and wouldn't work in compiled Murmel,
+                           nor would something similar work in Common Lisp.
+                           Maybe this should throw an error "not a function..." ?
+                         */
+                        final ConsCell ccFunc = (ConsCell)func;
+                        final Object paramsAndBody = cdr(ccFunc);
+                        env = zip(car(paramsAndBody), argList, env, true);
+
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<list lambda " + paramsAndBody + "> " + printSEx(argList));
+                        ccForms = (ConsCell) cdr(paramsAndBody);
                         // fall through to "eval a list of forms"
 
                     } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
@@ -2547,21 +2565,16 @@ public class LambdaJ {
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
     private ConsCell makeClosureFromForm(final ConsCell form, ConsCell env) {
-        final ConsCell paramsAndForms = (ConsCell) cdr(form);
-
+        Object paramsAndForms = cdr(form);
         if (car(paramsAndForms) == sDynamic) {
-            final Object _paramsAndForms = cdr(paramsAndForms);
-            varargs1("lambda dynamic", _paramsAndForms);
-            symbolArgs("lambda dynamic", car(_paramsAndForms));
-            noDuplicates("lambda dynamic", car(_paramsAndForms));
-            return cons(sLambda, _paramsAndForms);
+            paramsAndForms = cdr(paramsAndForms);
+            env = DYNAMIC_ENV;
         }
         varargs1("lambda", paramsAndForms);
         symbolArgs("lambda", car(paramsAndForms));
         noDuplicates("lambda", car(paramsAndForms));
 
-        if (haveLexC()) return makeClosure(paramsAndForms, env);
-        return form;
+        return makeClosure(paramsAndForms, env);
     }
 
     private static void noDuplicates(String func, Object symList) {
@@ -2573,7 +2586,8 @@ public class LambdaJ {
 
     /** make a lexical closure (if enabled) or lambda */
     private ConsCell makeClosure(final Object paramsAndForms, ConsCell env) {
-        return cons3(sLambda, paramsAndForms, haveLexC() ? env : null);
+        nCells++;
+        return new ClosureConsCell(sLambda, paramsAndForms, haveLexC() ? env : DYNAMIC_ENV);
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
@@ -2787,7 +2801,7 @@ public class LambdaJ {
 
     /// ###  (Mostly) Lisp-like functions used by interpreter program, a subset is used by interpreted programs as well
     final   ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
-    private ConsCell cons3(Object car, Object cdr, ConsCell closure) { nCells++; return new ClosureConsCell(car, cdr, closure); }
+
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
     private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
