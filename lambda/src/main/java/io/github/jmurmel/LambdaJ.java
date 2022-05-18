@@ -5820,7 +5820,7 @@ public class LambdaJ {
                 if (cleanups != null) for (Object cl: cleanups) {
                     try { ((MurmelFunction)cl).apply((Object[])null); }
                     catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
-                    catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); }
+                    catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); else ex.addSuppressed(e); }
                 }
                 if (ex != null) throw ex;
             }
