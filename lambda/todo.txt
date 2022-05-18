@@ -1,3 +1,5 @@
+performance impact von assert: https://stackoverflow.com/questions/4624919/performance-drag-of-java-assertions-when-disabled/40919125#40919125
+
 (let loop ((n 10)) (writeln n) (if (= n 3) (setq loop (lambda (n) (writeln (quote done))))) (loop (1- n)))
 -> geht im interpreter, gibt java compile fehler im compiler (cannot assign a value to final variable _loop2)
 (labels ((l () (writeln 'vorher) (setq l (lambda () (writeln 'nachher))))) (l) (l))

@@ -1901,58 +1901,11 @@ public class LambdaJ {
                 /// eval - function application
                 if (funcall) {
 
-                    /// eval - (eval form) -> object
-                    if (operator == ocEval) {
-                        varargsMinMax("eval", ccArguments, 1, 2);
-                        form = expandForm(car(ccArguments));
-                        if (cdr(ccArguments) == null) env = topEnv; // todo unterschied zu kompiliertem eval: topEnv sind ALLE globals, kompiliertes eval sieht nur predefined globals
-                        else {
-                            final Object additionalEnv = cadr(ccArguments);
-                            if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
-                            env = (ConsCell) append2(additionalEnv, topEnv);
-                        }
-                        isTc = true; continue tailcall;
-                    }
-
                     final ConsCell argList;
 
-                    /// eval - apply a function to an argument list
-                    /// eval - (apply form argform) -> object
-                    if (operator == ocApply) {
-                        twoArgs("apply", ccArguments);
-                        final Object funcOrSymbol = car(ccArguments);
-                        func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call below
-                        argList = listOrMalformed("apply", cadr(ccArguments));
-                        if (speed >= 1 && symbolp(funcOrSymbol)) {
-                            result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
-                            if (result != NOT_HANDLED) return result;
-                        }
-                        // fall through to "actually perform..."
-
-                        /// eval - multiple-value-call
-                        /// eval - (multiple-value-call function-form values-form*) -> object
-                    } else if (operator == sMultipleValueCall) {
-                        varargs1("multiple-value-call", ccArguments);
-                        final Object funcOrSymbol = car(ccArguments);
-                        func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
-                        ConsCell allArgs = null;
-                        final Object valueForms = cdr(ccArguments);
-                        if (valueForms != null) for (Object valueForm: listOrMalformed("multiple-value-call", valueForms)) {
-                            values = NO_VALUES;
-                            final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                            final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
-                            if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
-                        }
-                        argList = allArgs;
-                        if (speed >= 1 && symbolp(funcOrSymbol)) {
-                            result = evalOpencode((LambdaJSymbol) funcOrSymbol, argList);
-                            if (result != NOT_HANDLED) return result;
-                        }
-                        // fall through to "actually perform..."
-
-                        /// eval - function call
-                        /// eval - (operatorform argforms...) -> object
-                    } else if (speed >= 1 && symOperator != null && symOperator.primitive()) {
+                    /// eval - function call
+                    /// eval - (operatorform argforms...) -> object
+                    if (speed >= 1 && symOperator != null && symOperator.primitive()) {
                         // (mostly) respect evaluation order: operator should be eval'd before arguments.
                         // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
                         // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
@@ -1964,11 +1917,66 @@ public class LambdaJ {
 
                         func = cdr(assq(operator, env));
                         // fall through to "actually perform..."
-                    } else {
+                    }
+
+                    /// eval - multiple-value-call
+                    /// eval - (multiple-value-call function-form values-form*) -> object
+                    else if (operator == sMultipleValueCall) {
+                        varargs1("multiple-value-call", ccArguments);
+                        final Object funcOrSymbol = car(ccArguments);
+                        func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
+                        ConsCell allArgs = null;
+                        final Object valueForms = cdr(ccArguments);
+                        if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
+                            values = NO_VALUES;
+                            final Object prim = eval(valueForm, env, stack, level, traceLvl);
+                            final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
+                            if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
+                        }
+                        argList = allArgs;
+                        if (speed >= 1 && symbolp(funcOrSymbol)) {
+                            result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
+                            if (result != NOT_HANDLED) return result;
+                        }
+                        // fall through to "actually perform..."
+                    }
+
+
+                    /// eval - apply a function to an argument list
+                    /// eval - (apply form argform) -> object
+                    else if (operator == ocApply) {
+                        twoArgs("apply", ccArguments);
+                        final Object funcOrSymbol = car(ccArguments);
+                        func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call below
+                        argList = listOrMalformed("apply", cadr(ccArguments));
+                        if (speed >= 1 && symbolp(funcOrSymbol)) {
+                            result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
+                            if (result != NOT_HANDLED) return result;
+                        }
+                        // fall through to "actually perform..."
+                    }
+
+                    /// eval - (eval form) -> object
+                    else if (operator == ocEval) {
+                        varargsMinMax("eval", ccArguments, 1, 2);
+                        form = expandForm(car(ccArguments));
+                        if (cdr(ccArguments) == null) env = topEnv; // todo unterschied zu kompiliertem eval: topEnv sind ALLE globals, kompiliertes eval sieht nur predefined globals
+                        else {
+                            final Object additionalEnv = cadr(ccArguments);
+                            if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
+                            env = (ConsCell) append2(additionalEnv, topEnv);
+                        }
+                        isTc = true; continue tailcall;
+                    }
+
+
+                    else {
                         func = eval(operator, env, stack, level, traceLvl);
                         argList = evlis(ccArguments, env, stack, level, traceLvl);
                         // fall through to "actually perform..."
                     }
+
+
 
                     /// eval - actually perform the function call that was set up by "apply" or "multiple-value-call" or "function call" above
                     if (traced != null) traceLvl = traceEnter(func, argList, traceLvl);
@@ -1978,11 +1986,13 @@ public class LambdaJ {
                         if (traced != null) traceStack = push(func, traceStack);
                         func = null;
                         isTc = true; continue tailcall;
+                    }
 
-                    } else if (func instanceof Primitive) {
+                    else if (func instanceof Primitive) {
                         return result = applyPrimitive((Primitive) func, argList, stack, level);
+                    }
 
-                    } else if (func instanceof ClosureConsCell) {
+                    else if (func instanceof ClosureConsCell) {
                         assert car(func) == sLambda: ccForm.lineInfo() + "expected car of ClosureConsCell to be lambda but was " + car(func);
                         final ConsCell ccFunc = (ClosureConsCell)func;
                         final Object paramsAndBody = cdr(ccFunc);
@@ -1992,8 +2002,9 @@ public class LambdaJ {
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + paramsAndBody + "> " + printSEx(argList));
                         ccForms = (ConsCell) cdr(paramsAndBody);
                         // fall through to "eval a list of forms"
+                    }
 
-                    } else if (func instanceof ConsCell && car(func) == sLambda) {
+                    else if (func instanceof ConsCell && car(func) == sLambda) {
                         /* something like
                              (define l '(lambda () 'hello))
                              (l)
@@ -2008,12 +2019,14 @@ public class LambdaJ {
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<list lambda " + paramsAndBody + "> " + printSEx(argList));
                         ccForms = (ConsCell) cdr(paramsAndBody);
                         // fall through to "eval a list of forms"
+                    }
 
-                    } else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
+                    else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
                         // compiled function or compiler runtime func
                         return result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);
+                    }
 
-                    } else {
+                    else {
                         throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
                     }
                 }
