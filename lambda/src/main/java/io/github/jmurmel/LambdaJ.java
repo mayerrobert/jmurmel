@@ -2071,11 +2071,16 @@ public class LambdaJ {
             if (traceStack != null) {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
             }
+            LambdaJError e = null;
             for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
                 final Object o = car(c);
                 if (o instanceof RestoreDynamic) ((RestoreDynamic)o).restore();
-                else eval(o, env, stack, level, traceLvl);
+                else {
+                    try { eval(o, env, stack, level, traceLvl); }
+                    catch (LambdaJError le) { e = le; }
+                }
             }
+            if (e != null) throw e;
         }
     }
 
