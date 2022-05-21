@@ -689,6 +689,11 @@ public class LambdaJ {
 
             sMultipleValueBind = internWellknown("multiple-value-bind");
             sMultipleValueCall = internWellknown("multiple-value-call");
+
+            sUnwindProtect = internWellknown(WellknownSymbol.sUnwindProtect.sym);
+            sCatch         = internWellknown(WellknownSymbol.sCatch.sym);
+            sThrow         = internWellknown(WellknownSymbol.sThrow.sym);
+
             sSetQ    = internWellknown("setq");
 
             sProgn   = internWellknown("progn");
@@ -699,7 +704,9 @@ public class LambdaJ {
 
             sDeclaim = internWellknown("declaim");
         }
-        else sDynamic = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall = sSetQ = sProgn = sLoad = sRequire = sProvide
+        else sDynamic = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall
+             = sUnwindProtect = sCatch = sThrow
+             = sSetQ = sProgn = sLoad = sRequire = sProvide
              = sDeclaim = null;
 
         if (haveUtil()) {
@@ -1601,6 +1608,7 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t and nil, and for the special forms */
     final LambdaJSymbol sT, sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro,
             sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
+            sUnwindProtect, sCatch, sThrow,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim;
 
@@ -1616,6 +1624,7 @@ public class LambdaJ {
         sDefine("define", WellknownSymbolKind.SF), sDefun("defun", WellknownSymbolKind.SF), sDefmacro("defmacro", WellknownSymbolKind.SF),
         sLet("let", WellknownSymbolKind.SF), sLetStar("let*", WellknownSymbolKind.SF), sLetrec("letrec", WellknownSymbolKind.SF),
         sMultipleValueBind("multiple-value-bind", WellknownSymbolKind.SF), sMultipleValueCall("multiple-value-call", WellknownSymbolKind.SF),
+        sUnwindProtect("unwind-protect", WellknownSymbolKind.SF), sCatch("catch", WellknownSymbolKind.SF), sThrow("throw", WellknownSymbolKind.SF),
         sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF), sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
         sDeclaim("declaim", WellknownSymbolKind.SF),
 
@@ -1834,6 +1843,13 @@ public class LambdaJ {
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
+
+                /// eval - (unwind-protect protected-form cleanup-forms...) -> object
+                case sUnwindProtect:
+                    restore = cons(cons(sProgn, cdr(ccArguments)), restore);
+                    ccForms = cons(car(ccArguments), null);
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
 
                 /// eval - (cond (condform forms...)... ) -> object
                 case sCond: {
@@ -2056,8 +2072,9 @@ public class LambdaJ {
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
             }
             for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
-                final ConsCell entry = (ConsCell) caar(c);
-                entry.rplacd(cdar(c));
+                final Object o = car(c);
+                if (o instanceof RestoreDynamic) ((RestoreDynamic)o).restore();
+                else eval(o, env, stack, level, traceLvl);
             }
         }
     }
@@ -2180,6 +2197,12 @@ public class LambdaJ {
             case sMultipleValueBind:
                 varargsMin("multiple-value-bind", ccArgs, 2);
                 expandForms("multiple-value-bind", ccArgs.shallowCopyCdr());
+                return ccForm;
+
+            case sUnwindProtect:
+                varargs1("unwind-protect", ccArgs);
+                if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
+                expandForms("unwind-protect", ccArgs);
                 return ccForm;
 
             case sSetQ:
@@ -2402,7 +2425,7 @@ public class LambdaJ {
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
-                    if (isNewSymbol) restore = acons(newBinding, cdr(newBinding), restore);
+                    if (isNewSymbol) restore = cons(new RestoreDynamic(newBinding, cdr(newBinding)), restore);
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
                 }
@@ -2437,6 +2460,16 @@ public class LambdaJ {
         return letDynamic ? operator + " dynamic" : (namedLet ? "named " : "") + operator;
     }
 
+    private static class RestoreDynamic {
+        final ConsCell entry;
+        final Object oldValue;
+
+        RestoreDynamic(ConsCell entry, Object oldValue) {
+            this.entry = entry;
+            this.oldValue = oldValue;
+        }
+        void restore() { entry.rplacd(oldValue); }
+    }
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
         varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
         values = NO_VALUES;

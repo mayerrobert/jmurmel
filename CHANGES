@@ -4,6 +4,8 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
  * changed car and cdr so that they are no longer defined for symbols, i.e. (car 'aaa)
    now is an error.
 
+ * added unwind-protect
+
 
 Changes in JMurmel-1.2.2 relative to JMurmel-1.2.1
 
