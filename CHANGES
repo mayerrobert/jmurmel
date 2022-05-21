@@ -1,4 +1,7 @@
 
+Changes in JMurmel-1.3 relative to JMurmel-1.2.2
+
+
 Changes in JMurmel-1.2.2 relative to JMurmel-1.2.1
 
  * macroexpansion is no longer done on-the-fly but in a seperate macroexpansion phase.
