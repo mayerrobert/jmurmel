@@ -2532,7 +2532,7 @@ public class LambdaJ {
             // if paramList is a dotted list then the last param will be bound to the list of remaining args
             else {
                 env = acons(params, args, env);
-                if (match) { args = null; break; }
+                args = null; break;
             }
 
             params = cdr(params);
@@ -2817,16 +2817,13 @@ public class LambdaJ {
 
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
-    private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one pair or symbol or string argument but got %s", func, printSEx(o)); }
+    private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one list or string argument but got %s", func, printSEx(o)); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
-    static Object   car(Object o)      { //assert o == null || o instanceof ConsCell: "car: argument ist " + o.getClass().getSimpleName();
-                                         return o == null ? null
+    static Object   car(Object o)      { return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                  : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                 : o instanceof Object[] ? ((Object[])o).length == 0 ? null : ((Object[])o)[0]
                                                  : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
-                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.isEmpty() ? null : ((LambdaJSymbol)o).name.charAt(0)
                                                  : carCdrError("car", o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
@@ -2844,9 +2841,7 @@ public class LambdaJ {
     static Object   cdr(Object o)      { return o == null ? null
                                                  : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                  : o instanceof ConsCell ? ((ConsCell)o).cdr()
-                                                 : o instanceof Object[] ? ((Object[])o).length <= 1 ? null : new ArraySlice((Object[])o)
                                                  : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
-                                                 : o instanceof LambdaJSymbol ? ((LambdaJSymbol)o).name.length() <= 1 ? null : ((LambdaJSymbol)o).name.substring(1)
                                                  : carCdrError("cdr", o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }

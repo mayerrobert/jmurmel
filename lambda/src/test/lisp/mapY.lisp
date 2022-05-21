@@ -1,4 +1,4 @@
-;;; implement map using Y-combinator and apply it to "car '(the rain in spain)"
+;;; implement map using Y-combinator
 
 ; result: (#\t #\r #\i #\s)
 ; output: (empty)
@@ -10,4 +10,4 @@
               '()
           (cons (f (car n)) (map map f (cdr n))) )) ))
    car ; here are the arguments to MAP
-   '(the rain in spain)) ; ==> (t r i s)
+   '("the" "rain" "in" "spain")) ; ==> (t r i s)

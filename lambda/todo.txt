@@ -16,13 +16,6 @@ performance impact von assert: https://stackoverflow.com/questions/4624919/perfo
 -> geht im interpreter, geht nicht im compiler, weil m müsste zur laufzeit aufgelöst werden
 
 
-car und cdr auf strings und symbols macht nur probleme
--> (list-length '(a . b)) -> 3 !?! sollte fehler geben
--> ist auch blöd zum opencoden
--> und vor allem ist das eigentlich das typsystem, und zwar ein schlechtes
-   -> Murmel hat ein typsystem (für values), ist aber ad-hoc durch die instanceof ketten "implementiert", sollte an CLTL2 angepasst werden 
-
-
 jetzt wos einen vorgeschalten macroexpand/ check pass gibt, könnten einige checks in eval wegfallen
 -> checks in expandForm vervollständigen (v.a. duplicate symbols in let, letrec und lambdalist, und check ob sf als variable verwendet wird)
    checks in eval ausbauen oder durch asserts ersetzen

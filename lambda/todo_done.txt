@@ -1626,3 +1626,10 @@ eigentlich: das argument das nach --shebang kommt (das muss der filename sein), 
 bei --script sollte ggf. kein result geschrieben werden
 und/ oder das result iwie in einen exitlevel umgelenkt, vielleicht nil-> exit(0), number-> exit(number), sonst exit(-1)
 vielleicht zus --endresult, default ist false
+
+
+car und cdr auf strings und symbols macht nur probleme
+-> (list-length '(a . b)) -> 3 !?! sollte fehler geben
+-> ist auch blöd zum opencoden
+-> und vor allem ist das eigentlich das typsystem, und zwar ein schlechtes
+   -> Murmel hat ein typsystem (für values), ist aber ad-hoc durch die instanceof ketten "implementiert", sollte an CLTL2 angepasst werden 
