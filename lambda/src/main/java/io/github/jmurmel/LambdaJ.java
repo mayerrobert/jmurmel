@@ -6678,6 +6678,12 @@ public class LambdaJ {
                         return;
                     }
 
+                    ///     - unwind-protect
+                    if (intp.sUnwindProtect == op) {
+                        emitUnwindProtect(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
                     if (intp.sLabels == op) {
@@ -6930,6 +6936,37 @@ public class LambdaJ {
             }
         }
 
+        private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (!listp(forms)) errorMalformed("unwind-protect", "a list of forms", forms);
+            final ConsCell ccForms = (ConsCell)forms;
+            final Object protectedForm = car(ccForms);
+            final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
+            if (isLast) {
+                sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
+                emitForm(sb, cons(intp.sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false);
+                sb.append("; },\n");
+                sb.append("        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
+                emitForms(sb, cleanupForms, env, topEnv, rsfx, false);
+                sb.append("        },\n");
+                sb.append("        (Object[])null)");
+            }
+            else {
+                sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
+                emitForm(sb, cons(intp.sProgn, cons(protectedForm, null)), env, topEnv, rsfx, true);
+                sb.append("; }\n");
+                sb.append("        finally {\n");
+                final String tmp = "tmp" + rsfx;
+                sb.append("        Object ").append(tmp).append(";\n");
+                for (Object cleanup: cleanupForms) {
+                    sb.append("        ").append(tmp).append(" = ");
+                    emitForm(sb, cleanup, env, topEnv, rsfx, false);
+                    sb.append(";\n");
+                }
+                sb.append("        } },\n");
+                sb.append("        (Object[])null)");
+            }
+        }
+
         private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = intp.symbolOrMalformed("setq", car(pairs));
             final String javaName = javasym(symbol, env);
@@ -7025,9 +7062,8 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        /**
-         * let* and letrec
-         * args = ([name] ((symbol form)...) forms...) */
+        /** let* and letrec
+         *  args = ([name] ((symbol form)...) forms...) */
         private void emitLetStarLetrec(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean letrec, boolean isLast) {
             final boolean named = car(args) instanceof LambdaJSymbol;
             final Object loopLabel, bindings, body;
