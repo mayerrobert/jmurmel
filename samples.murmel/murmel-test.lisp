@@ -277,6 +277,14 @@
 )
 
 
+;;; unwind-protect
+(setq *a* 0)
+(deftest unwind-protect.1 (unwind-protect 1 2)          1)
+(deftest unwind-protect.2 (unwind-protect 1 2 3 4 5)    1)
+(deftest unwind-protect.3 (unwind-protect 1 (setq *a* (1+ *a*)) (setq *a* (1+ *a*)))    1)
+(deftest unwind-protect.3a *a* 2)
+
+
 ;;; values
 (deftest values.1 (values) nil)                   ; primary value is nil
 (deftest values.2 (values 1 2 3) 1)               ; secondary values are discarded
@@ -399,7 +407,7 @@
     (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
     (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
     ; sbcl chokes on the next line even when it's prepended with #+murmel
-    (1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    ;(1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil)
 
     (0        nil       t           nil         nil         nil         t           t           nil        nil          nil)
     (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil)
