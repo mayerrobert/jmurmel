@@ -250,7 +250,7 @@ public class LambdaJ {
         void printEol();
     }
 
-    /** if an atom implements this interface then {@link #printSEx(WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
+    /** if an atom implements this interface then {@link Writeable#printSEx(LambdaJ.WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
     @FunctionalInterface public interface Writeable {
         /** will be used by the Murmel primitive {@code write} */
         void printSEx(WriteConsumer out, boolean escapeAtoms);
@@ -499,7 +499,7 @@ public class LambdaJ {
 
                     final Object obj;
                     if ((obj=arry[i]) == this) ret.append("#<this list>");
-                    else _printSEx(append, arry, obj, true, escapeAtoms);
+                    else _printSEx(append, arry, obj, escapeAtoms);
                 }
                 ret.append(')');
                 return ret.toString();
@@ -3123,61 +3123,48 @@ public class LambdaJ {
     static String printSEx(Object obj, boolean printEscape) {
         if (obj == null) return "nil";
         final StringBuilder sb = new StringBuilder();
-        _printSEx(sb::append, obj, obj, true, printEscape);
+        _printSEx(sb::append, obj, obj, printEscape);
         return sb.toString();
     }
 
     static void printSEx(WriteConsumer w, Object obj) {
-        _printSEx(w, obj, obj, true, true);
+        _printSEx(w, obj, obj, true);
     }
 
     static void printSEx(WriteConsumer w, Object obj, boolean printEscape) {
-        _printSEx(w, obj, obj, true, printEscape);
+        _printSEx(w, obj, obj, printEscape);
     }
 
-    static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean headOfList, boolean escapeAtoms) {
+    static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean escapeAtoms) {
+        boolean headOfList = true;
         while (true) {
-            if (obj == null) {
-                sb.print("nil"); return;
-            } else if (obj instanceof ArraySlice) {
-                sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return;
-            } else if (consp(obj)) {
+            if (obj == null) { sb.print("nil"); return; }
+            else if (obj instanceof ArraySlice) { sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return; }
+            else if (consp(obj)) {
                 if (headOfList) sb.print("(");
                 final Object first = car(obj);
-                if (first == list) {
-                    sb.print(headOfList ? "#<this cons>" : "#<this list>");
-                } else {
-                    _printSEx(sb, first, first, true, escapeAtoms);
-                }
+                if (first == list) { sb.print(headOfList ? "#<this cons>" : "#<this list>"); }
+                else { _printSEx(sb, first, first, escapeAtoms); }
                 final Object rest = cdr(obj);
                 if (rest != null) {
                     if (consp(rest)) {
                         sb.print(" ");
-                        if (list == rest) {
-                            sb.print("#<circular list>)"); return;
-                        } else {
-                            obj = rest; headOfList = false; continue;
-                        }
-                    } else {
-                        sb.print(" . ");
-                        _printSEx(sb, list, rest, false, escapeAtoms);
-                        sb.print(")");
-                        return;
+                        if (list == rest) { sb.print("#<circular list>)"); return; }
+                        else { obj = rest; headOfList = false; } // continue loop
                     }
-                } else {
-                    sb.print(")");
-                    return;
+                    else { sb.print(" . ");  printAtom(sb, rest, escapeAtoms);  sb.print(")");  return; }
                 }
-            } else if (obj instanceof Writeable) {
-                ((Writeable) obj).printSEx(sb, escapeAtoms); return;
-            } else if (escapeAtoms && stringp(obj)) {
-                sb.print("\""); sb.print(escapeString(obj.toString())); sb.print("\""); return;
-            } else if (escapeAtoms && characterp(obj)) {
-                sb.print(printChar((int)(Character)obj)); return;
-            } else {
-                sb.print(obj.toString()); return;
+                else { sb.print(")"); return; }
             }
+            else { printAtom(sb, obj, escapeAtoms); return; }
         }
+    }
+
+    private static void printAtom(WriteConsumer sb, Object atom, boolean escapeAtoms) {
+        if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
+        else if (escapeAtoms && stringp(atom))    { sb.print("\""); sb.print(escapeString(atom.toString())); sb.print("\""); }
+        else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
+        else                                      { sb.print(atom.toString()); }
     }
 
     static String printChar(int c) {

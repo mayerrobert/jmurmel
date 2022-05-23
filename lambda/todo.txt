@@ -1,3 +1,7 @@
+https://docs.oracle.com/en/java/javase/17/vm/class-data-sharing.html
+-> vielleicht ein massgeschneidertes classes.jsa für das dockerimage erzeugen?
+
+
 die members sCond, sLabels usw. braucht eigentlich nur der compiler. die members könnten zum compiler verschoben werden,
 oder der compiler macht jeweils intern(), oder der compiler vergleicht auch WellknownSymbol.
 gilt auch für die meisten oder für alle primitives wie sCar, sCons usw.
