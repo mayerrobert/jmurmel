@@ -2,13 +2,6 @@ https://docs.oracle.com/en/java/javase/17/vm/class-data-sharing.html
 -> vielleicht ein massgeschneidertes classes.jsa für das dockerimage erzeugen?
 
 
-die members sCond, sLabels usw. braucht eigentlich nur der compiler. die members könnten zum compiler verschoben werden,
-oder der compiler macht jeweils intern(), oder der compiler vergleicht auch WellknownSymbol.
-gilt auch für die meisten oder für alle primitives wie sCar, sCons usw.
-opencode() könnte/ sollte auch auf switch umgestellt werden, dann braucht auch der compiler von den 
-würde die größe von LambdaJ drastisch verringern, derzeit 296 byte.
-
-
 performance impact von assert: https://stackoverflow.com/questions/4624919/performance-drag-of-java-assertions-when-disabled/40919125#40919125
 
 (let loop ((n 10)) (writeln n) (if (= n 3) (setq loop (lambda (n) (writeln (quote done))))) (loop (1- n)))

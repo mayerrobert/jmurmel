@@ -673,41 +673,38 @@ public class LambdaJ {
         sLambda =                      internWellknown("lambda");
 
         if (haveQuote())  { sQuote   = internWellknown("quote"); }   else sQuote = null;
-        if (haveCond())   { sCond    = internWellknown("cond"); }    else sCond = null;
-        if (haveLabels()) { sLabels  = internWellknown("labels"); }  else sLabels = null;
+        if (haveCond())   { internWellknown("cond"); }
+        if (haveLabels()) { internWellknown("labels"); }
 
         if (haveXtra())   {
             sDynamic = internWellknown("dynamic");
 
             sIf      = internWellknown("if");
             sDefine  = internWellknown("define");
-            sDefun   = internWellknown("defun");
-            sDefmacro= internWellknown("defmacro");
-            sLet     = internWellknown("let");
-            sLetStar = internWellknown("let*");
-            sLetrec  = internWellknown("letrec");
+            internWellknown("defun");
+            internWellknown("defmacro");
+            internWellknown("let");
+            internWellknown("let*");
+            internWellknown("letrec");
 
-            sMultipleValueBind = internWellknown("multiple-value-bind");
+            internWellknown("multiple-value-bind");
             sMultipleValueCall = internWellknown("multiple-value-call");
 
-            sUnwindProtect = internWellknown("unwind-protect");
-            sCatch         = internWellknown("catch");
-            sThrow         = internWellknown("throw");
+            internWellknown("unwind-protect");
+            internWellknown("catch");
+            internWellknown("throw");
 
-            sSetQ    = internWellknown("setq");
+            internWellknown("setq");
 
             sProgn   = internWellknown("progn");
 
-            sLoad    = internWellknown("load");
-            sRequire = internWellknown("require");
-            sProvide = internWellknown("provide");
+            internWellknown("load");
+            internWellknown("require");
+            internWellknown("provide");
 
-            sDeclaim = internWellknown("declaim");
+            internWellknown("declaim");
         }
-        else sDynamic = sIf = sDefine = sDefun = sDefmacro = sLet = sLetStar = sLetrec = sMultipleValueBind = sMultipleValueCall
-             = sUnwindProtect = sCatch = sThrow
-             = sSetQ = sProgn = sLoad = sRequire = sProvide
-             = sDeclaim = null;
+        else sDynamic = sIf = sDefine = sMultipleValueCall = sProgn = null;
 
         if (haveUtil()) {
             internWellknown("null");
@@ -907,6 +904,7 @@ public class LambdaJ {
             this.in = in;
             this.filePath = filePath;
 
+            // todo not, and, or, quasiquote, unquote, unquote-splice braucht wsl. gar nicht interned werden?!?
             sNot          = intern("not");
             sAnd          = intern("and");
             sOr           = intern("or");
@@ -1589,7 +1587,7 @@ public class LambdaJ {
     }
 
     boolean reserved(LambdaJSymbol sym) {
-        return sym == null || sym == sT || sym.specialForm();
+        return sym == null || sym == sNil || sym == sT || sym.specialForm();
     }
 
 
@@ -1603,11 +1601,7 @@ public class LambdaJ {
     private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for the reserved symbols t, nil and dynamic, and for the special operators */
-    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro,
-            sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
-            sUnwindProtect, sCatch, sThrow,
-            sSetQ, sProgn, sLoad, sRequire, sProvide,
-            sDeclaim;
+    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sQuote, sIf, sDefine, sMultipleValueCall, sProgn;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1636,6 +1630,14 @@ public class LambdaJ {
             }
             return null;
         }
+    }
+
+    /** return true if {@code op} is a symbol and is the given wellknown symbol {@code wellknownOp} */
+    static boolean isOperator(Object op, WellknownSymbol wellknownOp) {
+        if (op == null) return wellknownOp == WellknownSymbol.sNil;
+        if (!symbolp(op)) return false;
+        final LambdaJSymbol sym = (LambdaJSymbol)op;
+        return sym.wellknownSymbol == wellknownOp;
     }
 
     private Supplier<Object> expTrue;
@@ -2365,8 +2367,8 @@ public class LambdaJ {
 
 
     private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
-        final boolean letStar  = operator == sLetStar;
-        final boolean letRec   = operator == sLetrec;
+        final boolean letStar  = isOperator(operator, WellknownSymbol.sLetStar);
+        final boolean letRec   = isOperator(operator, WellknownSymbol.sLetrec);
         final Object maybeLoopSymbol = car(arguments);
         final boolean letDynamic = maybeLoopSymbol == sDynamic;
         if (letDynamic && letRec) throw errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
@@ -6399,24 +6401,24 @@ public class LambdaJ {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);
 
-                if (op == intp.sDefine) {
+                if (isOperator(op, WellknownSymbol.sDefine)) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
                 }
 
-                else if (op == intp.sDefun) {
+                else if (isOperator(op, WellknownSymbol.sDefun)) {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
                 }
 
-                else if (op == intp.sDefmacro) {
+                else if (isOperator(op, WellknownSymbol.sDefmacro)) {
                     intp.symbolOrMalformed("defmacro", cadr(ccForm));
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
                 }
 
-                else if (op == intp.sProgn) {
+                else if (isOperator(op, WellknownSymbol.sProgn)) {
                     // toplevel progn will be replaced by the forms it contains
                     final Object body = cdr(ccForm);
                     if (consp(body)) {
@@ -6433,13 +6435,13 @@ public class LambdaJ {
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
                 }
 
-                else if (op == intp.sLoad) {
+                else if (isOperator(op, WellknownSymbol.sLoad)) {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(form));
                     oneArg("load", ccArgs);
                     globalEnv = loadFile(true, "load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
                 }
 
-                else if (op == intp.sRequire) {
+                else if (isOperator(op, WellknownSymbol.sRequire)) {
                     final ConsCell ccArgs = listOrMalformed("require", cdr(form));
                     varargsMinMax("require", ccArgs, 1, 2);
                     if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
@@ -6452,7 +6454,7 @@ public class LambdaJ {
                     }
                 }
 
-                else if (op == intp.sProvide) {
+                else if (isOperator(op, WellknownSymbol.sProvide)) {
                     final ConsCell ccArgs = listOrMalformed("provide", cdr(form));
                     oneArg("provide", ccArgs);
                     if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
@@ -6460,14 +6462,14 @@ public class LambdaJ {
                     intp.modules.add(modName);
                 }
 
-                else if (op == intp.sDeclaim) {
+                else if (isOperator(op, WellknownSymbol.sDeclaim)) {
                     intp.evalDeclaim(1, (ConsCell)cdr(form)); // todo kann form eine dotted list sein und der cast schiefgehen?
                     bodyForms.add(form);
                 }
 
                 else bodyForms.add(form);
 
-                if (op == intp.sDefine || op == intp.sDefun)
+                if (isOperator(op, WellknownSymbol.sDefine) || isOperator(op, WellknownSymbol.sDefun))
                     globals.append("        case \"").append(cadr(form)).append("\": return ").append(javasym(cadr(form), globalEnv)).append(";\n");
 
             } else bodyForms.add(form);
@@ -6582,10 +6584,10 @@ public class LambdaJ {
                     /// * special forms:
 
                     ///     - quote
-                    if (intp.sQuote == op) { emitQuotedForm(sb, car(ccArguments), true); return; }
+                    if (isOperator(op, WellknownSymbol.sQuote)) { emitQuotedForm(sb, car(ccArguments), true); return; }
 
                     ///     - if
-                    if (intp.sIf == op) {
+                    if (isOperator(op, WellknownSymbol.sIf)) {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
@@ -6602,19 +6604,19 @@ public class LambdaJ {
                     }
 
                     ///     - cond
-                    if (intp.sCond == op) {
+                    if (isOperator(op, WellknownSymbol.sCond)) {
                         emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - lambda
-                    if (intp.sLambda == op) {
+                    if (isOperator(op, WellknownSymbol.sLambda)) {
                         emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
                         return;
                     }
 
                     ///     - setq
-                    if (intp.sSetQ == op) {
+                    if (isOperator(op, WellknownSymbol.sSetQ)) {
                         if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
                         else if (cddr(ccArguments) == null)
                             emitSetq(sb, ccArguments, env, topEnv, rsfx);
@@ -6631,7 +6633,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sDefine == op) {
+                    if (isOperator(op, WellknownSymbol.sDefine)) {
                         if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
                         defined("define", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
@@ -6639,7 +6641,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sDefun == op) {
+                    if (isOperator(op, WellknownSymbol.sDefun)) {
                         if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
                         defined("defun", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
@@ -6647,7 +6649,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sDefmacro == op) {
+                    if (isOperator(op, WellknownSymbol.sDefmacro)) {
                         if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
                         intp.expandForm(form); // this will process the macro definition as a side effect
                         sb.append("intern(\"").append(car(ccArguments)).append("\")");
@@ -6655,27 +6657,27 @@ public class LambdaJ {
                     }
 
                     ///     - progn
-                    if (intp.sProgn == op) {
+                    if (isOperator(op, WellknownSymbol.sProgn)) {
                         emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - unwind-protect
-                    if (intp.sUnwindProtect == op) {
+                    if (isOperator(op, WellknownSymbol.sUnwindProtect)) {
                         emitUnwindProtect(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
                     // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                    if (intp.sLabels == op) {
+                    if (isOperator(op, WellknownSymbol.sLabels)) {
                         emitLabels(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
 
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
-                    if (intp.sLet == op) {
+                    if (isOperator(op, WellknownSymbol.sLet)) {
                         if (car(ccArguments) == intp.sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
                         else
@@ -6685,7 +6687,7 @@ public class LambdaJ {
 
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                    if (intp.sLetStar == op) {
+                    if (isOperator(op, WellknownSymbol.sLetStar)) {
                         if (car(ccArguments) == intp.sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
                         else
@@ -6695,12 +6697,12 @@ public class LambdaJ {
 
                     ///     - letrec:       (letrec ((sym form)...) forms) -> Object
                     ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
-                    if (intp.sLetrec == op) {
+                    if (isOperator(op, WellknownSymbol.sLetrec)) {
                         emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
                         return;
                     }
 
-                    if (intp.sMultipleValueCall == op) {
+                    if (isOperator(op, WellknownSymbol.sMultipleValueCall)) {
                         sb.append(isLast ? "tailcall(" : "funcall(");
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         if (cdr(ccArguments) != null) {
@@ -6718,7 +6720,7 @@ public class LambdaJ {
                     }
 
                     ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
-                    if (intp.sMultipleValueBind == op) {
+                    if (isOperator(op, WellknownSymbol.sMultipleValueBind)) {
                         varargsMin("multiple-value-bind", ccArguments, 2);
                         final ConsCell vars = listOrMalformed("multiple-value-bind", car(ccArguments));
                         final boolean varargs = dottedList(vars);
@@ -6736,24 +6738,24 @@ public class LambdaJ {
                         return;
                     }
 
-                    if (intp.sLoad == op) {
+                    if (isOperator(op, WellknownSymbol.sLoad)) {
                         varargs1("load", ccArguments);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
                         loadFile(false, "load", sb, car(ccArguments), env, topEnv, rsfx-1, isLast, null, null);
                         return;
                     }
 
-                    if (intp.sRequire == op) {
+                    if (isOperator(op, WellknownSymbol.sRequire)) {
                         // pass1 has replaced all toplevel (require)s with the file contents
                         errorNotImplemented("require as non-toplevel form is not implemented");
                     }
 
-                    if (intp.sProvide == op) {
+                    if (isOperator(op, WellknownSymbol.sProvide)) {
                         // pass 2 shouldn't see this
                         errorNotImplemented("provide as non-toplevel form is not implemented");
                     }
 
-                    if (intp.sDeclaim == op) {
+                    if (isOperator(op, WellknownSymbol.sDeclaim)) {
                         intp.evalDeclaim(rsfx, ccArguments);
                         sb.append("(Object)null");
                         return;
@@ -7665,7 +7667,7 @@ public class LambdaJ {
          *  <p>If pool is true then above Java expression is added as an entry to the constant pool
          *  and a reference to the new or already existing identical constant pool entry is emitted. */
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
-            if (form == null || intp.sNil == form) sb.append("(Object)null");
+            if (form == null || form == intp.sNil) sb.append("(Object)null");
 
             else if (symbolp(form)) {
                 if (form == intp.sT) sb.append("_t");

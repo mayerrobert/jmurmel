@@ -1633,3 +1633,10 @@ car und cdr auf strings und symbols macht nur probleme
 -> ist auch blöd zum opencoden
 -> und vor allem ist das eigentlich das typsystem, und zwar ein schlechtes
    -> Murmel hat ein typsystem (für values), ist aber ad-hoc durch die instanceof ketten "implementiert", sollte an CLTL2 angepasst werden 
+
+
+die members sCond, sLabels usw. braucht eigentlich nur der compiler. die members könnten zum compiler verschoben werden,
+oder der compiler macht jeweils intern(), oder der compiler vergleicht auch WellknownSymbol.
+gilt auch für die meisten oder für alle primitives wie sCar, sCons usw.
+opencode() könnte/ sollte auch auf switch umgestellt werden, dann braucht auch der compiler von den 
+würde die größe von LambdaJ drastisch verringern, derzeit 296 byte.
