@@ -690,9 +690,9 @@ public class LambdaJ {
             sMultipleValueBind = internWellknown("multiple-value-bind");
             sMultipleValueCall = internWellknown("multiple-value-call");
 
-            sUnwindProtect = internWellknown(WellknownSymbol.sUnwindProtect.sym);
-            sCatch         = internWellknown(WellknownSymbol.sCatch.sym);
-            sThrow         = internWellknown(WellknownSymbol.sThrow.sym);
+            sUnwindProtect = internWellknown("unwind-protect");
+            sCatch         = internWellknown("catch");
+            sThrow         = internWellknown("throw");
 
             sSetQ    = internWellknown("setq");
 
@@ -710,43 +710,40 @@ public class LambdaJ {
              = sDeclaim = null;
 
         if (haveUtil()) {
-            sNull =    internWellknown("null");
-            sList =    internWellknown("list");
-            sListStar= internWellknown("list*");
-            sAppend =  internWellknown("append");
-            sEql =     internWellknown("eql");
+            internWellknown("null");
+            internWellknown("list");
+            internWellknown("list*");
+            internWellknown("append");
+            internWellknown("eql");
         }
-        else sNull = sList = sListStar = sAppend = sEql = null;
 
         if (haveNumbers()) {
-            sInc =     internWellknown("1+");
-            sDec =     internWellknown("1-");
+            internWellknown("1+");
+            internWellknown("1-");
 
-            sMod =     internWellknown("mod");
-            sRem =     internWellknown("rem");
+            internWellknown("mod");
+            internWellknown("rem");
 
-            sNeq =     internWellknown("=");
-            sLt  =     internWellknown("<");
-            sLe  =     internWellknown("<=");
-            sGe  =     internWellknown(">=");
-            sGt  =     internWellknown(">");
-            sNe  =     internWellknown("/=");
+            internWellknown("=");
+            internWellknown("<");
+            internWellknown("<=");
+            internWellknown(">=");
+            internWellknown(">");
+            internWellknown("/=");
 
-            sAdd =     internWellknown("+");
-            sMul =     internWellknown("*");
-            sSub =     internWellknown("-");
-            sDiv =     internWellknown("/");
+            internWellknown("+");
+            internWellknown("*");
+            internWellknown("-");
+            internWellknown("/");
         }
-        else sInc = sDec = sMod = sRem = sNeq = sLt = sLe = sGe = sGt = sNe = sAdd = sMul = sSub = sDiv = null;
 
-        if (haveEq()) sEq = internWellknown("eq"); else sEq = null;
+        if (haveEq()) internWellknown("eq");
 
         if (haveCons()) {
-            sCar =     internWellknown("car");
-            sCdr =     internWellknown("cdr");
-            sCons =    internWellknown("cons");
+            internWellknown("car");
+            internWellknown("cdr");
+            internWellknown("cons");
         }
-        else sCar = sCdr = sCons = null;
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1605,16 +1602,12 @@ public class LambdaJ {
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
-    /** well known symbols for the reserved symbols t and nil, and for the special forms */
-    final LambdaJSymbol sT, sNil, sLambda, sDynamic, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro,
+    /** well known symbols for the reserved symbols t, nil and dynamic, and for the special operators */
+    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sQuote, sCond, sLabels, sIf, sDefine, sDefun, sDefmacro,
             sLet, sLetStar, sLetrec, sMultipleValueBind, sMultipleValueCall,
             sUnwindProtect, sCatch, sThrow,
             sSetQ, sProgn, sLoad, sRequire, sProvide,
             sDeclaim;
-
-    /** well known symbols for some primitives */
-    final LambdaJSymbol sNeq, sNe, sLt, sLe, sGe, sGt, sAdd, sMul, sSub, sDiv, sMod, sRem,
-            sCar, sCdr, sCons, sEq, sEql, sNull, sInc, sDec, sAppend, sList, sListStar;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1628,9 +1621,11 @@ public class LambdaJ {
         sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF), sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
         sDeclaim("declaim", WellknownSymbolKind.SF),
 
-        sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM), sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM), sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
-        sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM), sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM);
-    
+        sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM), sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
+        sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
+        sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
+        sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM);
+
         private final String sym;
         final WellknownSymbolKind kind;
         WellknownSymbol(String sym, WellknownSymbolKind kind) { this.sym = sym; this.kind = kind; }
@@ -4207,9 +4202,9 @@ public class LambdaJ {
         }
 
         if (haveCons()) {
-            env = addBuiltin(sCar,     (Primitive) a -> { oneArg("car", a);    return caar(a); },
-                  addBuiltin(sCdr,     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
-                  addBuiltin(sCons,    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
+            env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    return caar(a); },
+                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
+                  addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
                   env)));
         }
 
@@ -6592,7 +6587,7 @@ public class LambdaJ {
                     ///     - if
                     if (intp.sIf == op) {
                         varargsMinMax("if", ccArguments, 2, 3);
-                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.sNull) {
+                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ListBuilder.list(intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)); 
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
@@ -6819,7 +6814,7 @@ public class LambdaJ {
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == intp.sNil) sb.append("false");
             else if (form == intp.sT) sb.append("true");
-            else if (consp(form) && car(form) == intp.sNull) {
+            else if (consp(form) && car(form) == intp.intern("null")) {
                 // optimize "(null ..."
                 sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))");
             }
@@ -7303,6 +7298,8 @@ public class LambdaJ {
 
         /** opencode some primitives, avoid trampoline for other primitives and avoid some argcount checks */
         private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            if (op == null) return false;
+
             final LambdaJ intp = this.intp;
             final LambdaJSymbol sApply = intp.intern("apply");
 
@@ -7311,7 +7308,7 @@ public class LambdaJ {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
-                if (applyOp == intp.sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
+                if (applyOp == intp.intern("list")) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
                     for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
@@ -7325,13 +7322,15 @@ public class LambdaJ {
                 return true;
             }
 
-            if (op == intp.sAdd) { emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sMul) { emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sSub) { emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sDiv) { emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+            final WellknownSymbol prim = op.wellknownSymbol;
 
-            if (op == intp.sMod) { emitFuncall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
-            if (op == intp.sRem) {
+            if (prim == WellknownSymbol.sAdd) { emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sMul) { emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sSub) { emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sDiv) { emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+
+            if (prim == WellknownSymbol.sMod) { emitFuncall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sRem) {
                 twoArgs("rem", args);
                 sb.append("(");
                 emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);  sb.append(" % ");  emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
@@ -7349,32 +7348,32 @@ public class LambdaJ {
             if (symbolEq(op, "fceiling"))  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
             if (symbolEq(op, "ftruncate")) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (op == intp.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
-                                   emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true;
-                                   emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true;
-                                   emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true;
-                                   emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true;
-                                   emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
-            if (op == intp.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true;
-                                   emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
+                                       emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true;
+                                     emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true;
+                                       emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true;
+                                       emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true;
+                                       emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true;
+                                       emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
-            if (op == intp.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
-            if (op == intp.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
-            if (op == intp.sCons)       { emitFuncall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sCons)       { emitFuncall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
             if (symbolEq(op, "rplaca")) { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
             if (symbolEq(op, "rplacd")) { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
 
-            if (op == intp.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (op == intp.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
-            if (op == intp.sEql)  { emitFuncall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
-            if (op == intp.sInc)  { emitFuncall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
-            if (op == intp.sDec)  { emitFuncall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sEql)  { emitFuncall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sInc)  { emitFuncall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sDec)  { emitFuncall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
 
-            if (op == intp.sAppend) {
+            if (prim == WellknownSymbol.sAppend) {
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
                 }
@@ -7382,7 +7381,7 @@ public class LambdaJ {
                 emitFuncallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
             }
 
-            if (op == intp.sList) {
+            if (prim == WellknownSymbol.sList) {
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
                 }
@@ -7399,7 +7398,7 @@ public class LambdaJ {
                 return true;
             }
 
-            if (op == intp.sListStar) {
+            if (prim == WellknownSymbol.sListStar) {
                 varargs1("list*", args);
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
@@ -7426,8 +7425,8 @@ public class LambdaJ {
                 return true;
             }
 
-            for (String prim: primitives)          if (symbolEq(op, prim))    { emitCallPrimitive(sb, "_" + prim, args, env, topEnv, rsfx, null);  return true; }
-            for (String[] prim: aliasedPrimitives) if (symbolEq(op, prim[0])) { emitCallPrimitive(sb, prim[1], args, env, topEnv, rsfx, null);  return true; }
+            for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx, null);  return true; }
+            for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx, null);  return true; }
 
             return false;
         }
