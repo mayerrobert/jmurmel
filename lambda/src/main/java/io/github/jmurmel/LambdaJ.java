@@ -904,15 +904,15 @@ public class LambdaJ {
             this.in = in;
             this.filePath = filePath;
 
-            // todo not, and, or, quasiquote, unquote, unquote-splice braucht wsl. gar nicht interned werden?!?
+            sQuasiquote     = "quasiquote";
+            sUnquote        = "unquote";
+            sUnquote_splice = "unquote-splice";
+
             sNot          = intern("not");
             sAnd          = intern("and");
             sOr           = intern("or");
 
             sQuote          = intern("quote");
-            sQuasiquote     = intern("quasiquote");
-            sUnquote        = intern("unquote");
-            sUnquote_splice = intern("unquote-splice");
             sAppend         = intern("append");
             sList           = intern("list");
             sListStar       = intern("list*");
