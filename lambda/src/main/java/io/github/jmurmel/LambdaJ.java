@@ -1563,8 +1563,6 @@ public class LambdaJ {
         }
 
         private static ConsCell list(Object o1, Object o2) {
-            if (o2 == null)
-                return new ListConsCell(o1, null);
             return new ListConsCell(o1, new ListConsCell(o2, null));
         }
 

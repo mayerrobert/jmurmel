@@ -6,6 +6,9 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
 
  * added unwind-protect
 
+ * fixed backquote expansion:
+   e.g. `(a ,nil) was eval'd to (a); correct expansion is (a nil)
+
 
 Changes in JMurmel-1.2.2 relative to JMurmel-1.2.1
 

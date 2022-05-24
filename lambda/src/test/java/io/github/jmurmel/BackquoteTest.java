@@ -79,6 +79,19 @@ public class BackquoteTest {
 
 
     @Test
+    public void testUnquotedNil() {
+        eval("`(a ,nil)", "(a nil)");
+        assertExpansion("`(a ,nil)", "(list (quote a) nil)");
+    }
+
+    @Test
+    public void testUnquoteSplicedNil() {
+        eval("`(a ,@nil)", "(a)");
+        assertExpansion("`(a ,@nil)", "(cons (quote a) nil)");
+    }
+
+
+    @Test
     public void testBQinBQ() {
         eval("(define c \"C\") (define d \"D\") `(a b ,(if t `,c `,d))", "(a b \"C\")");
     }
