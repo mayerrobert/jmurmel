@@ -286,6 +286,19 @@ public class LambdaJ {
 
     /// ## Data types used by interpreter program as well as interpreted programs
 
+    /** for nonlocal returns */
+    static class ReturnException extends LambdaJError {
+        final Object tag, result;
+        final Object[] values; 
+
+        public ReturnException(Object tag, Object result, Object[] values) {
+            super("#<returnexception tag=" + tag + ", result=" + result + '>');
+            this.tag = tag;
+            this.result = result;
+            this.values = values;
+        }
+    }
+
     private abstract static class AbstractListBuilder<T extends AbstractListBuilder<T>> {
         private Object first;
         private Object last;
@@ -1811,6 +1824,17 @@ public class LambdaJ {
                     } else { return result = null; } // condition eval'd to false, no else form
                 }
 
+
+                /// eval - (throw tagform resultform) -> |
+                case sThrow: {
+                    twoArgs("throw", ccArguments);
+                    final Object throwTag = eval(car(ccArguments), env, stack, level, traceLvl);
+                    final Object throwResult = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    // todo checken obs tag gibt, sonst (error 'control-error)
+                    throw new ReturnException(throwTag, throwResult, listToArray(values));
+                }
+
+
                 /// eval - (load filespec) -> object
                 case sLoad: {
                     oneArg("load", ccArguments);
@@ -2123,6 +2147,11 @@ public class LambdaJ {
             case sIf:
                 varargsMinMax("if", ccArgs, 2, 3);
                 expandForms("if", ccArgs);
+                return ccForm;
+
+            case sThrow:
+                twoArgs("throw", ccArgs);
+                expandForms("throw", ccArgs);
                 return ccForm;
 
             case sCond:
