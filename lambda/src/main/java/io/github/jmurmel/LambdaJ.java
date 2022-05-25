@@ -5938,6 +5938,11 @@ public class LambdaJ {
         /** used for (apply sym form) */
         public final Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
 
+        public final Object doThrow(Object tag, Object primaryResult) {
+            // todo checken obs tag gibt, sonst (error 'control-error)
+            throw new ReturnException(tag, primaryResult, values);
+        }
+
 
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
@@ -6636,6 +6641,13 @@ public class LambdaJ {
                         return;
                     }
 
+                    /// eval - (throw tagform resultform) -> |
+                    if (isOperator(op, WellknownSymbol.sThrow)) {
+                        twoArgs("throw", ccArguments);
+                        emitThrow(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
                     ///     - lambda
                     if (isOperator(op, WellknownSymbol.sLambda)) {
                         emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
@@ -6921,6 +6933,10 @@ public class LambdaJ {
                 }
                 sb.append("\n        : (Object)null)");
             }
+        }
+
+        private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            emitFuncall2(sb, "throw", "doThrow", tagAndResultForms, env, topEnv, rsfx);
         }
 
         /** paramsAndForms = ((sym...) form...) */
