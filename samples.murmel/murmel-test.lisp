@@ -277,6 +277,13 @@
 )
 
 
+;;; catch, throw
+(deftest catch.1 (catch 'dummy-tag 1 2 (throw 'dummy-tag 3) 4)  3)
+(deftest catch.1 (catch 'dummy-tag 1 2 3 4)                     4)
+(defun throw-back (tag) (throw tag t)) ; =>  THROW-BACK
+(deftest catch.1 (catch 'dummy-tag (throw-back 'dummy-tag) 2)   t)
+
+
 ;;; unwind-protect
 (setq *a* 0)
 (deftest unwind-protect.1 (unwind-protect 1 2)          1)

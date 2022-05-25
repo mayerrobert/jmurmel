@@ -297,6 +297,15 @@ public class LambdaJ {
             this.result = result;
             this.values = values;
         }
+
+        public ReturnException(Object tag, Object result, ConsCell values) {
+            this(tag, result, values == NO_VALUES? null : listToArray(values));
+        }
+
+        ConsCell valuesAsList() {
+            if (values == null) return NO_VALUES;
+            return arraySlice(values, 0);
+        }
     }
 
     private abstract static class AbstractListBuilder<T extends AbstractListBuilder<T>> {
@@ -1711,6 +1720,8 @@ public class LambdaJ {
     final Set<Object> modules = new HashSet<>();
     int speed = 1; // changed by (declaim (optimize (speed...
 
+    ConsCell catchTags = null;
+
 
     /// ###  eval - the heart of most if not all Lisp interpreters
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
@@ -1718,6 +1729,7 @@ public class LambdaJ {
         Object result = null;  /* should be assigned even if followed by a "return" because it will be used in the "finally" clause*/
         Deque<Object> traceStack = null;
         ConsCell restore = null;
+        ConsCell localCatchTags = null;
         boolean isTc = false;
         try {
             stack++;
@@ -1831,7 +1843,7 @@ public class LambdaJ {
                     final Object throwTag = eval(car(ccArguments), env, stack, level, traceLvl);
                     final Object throwResult = eval(cadr(ccArguments), env, stack, level, traceLvl);
                     // todo checken obs tag gibt, sonst (error 'control-error)
-                    throw new ReturnException(throwTag, throwResult, listToArray(values));
+                    throw new ReturnException(throwTag, throwResult, values);
                 }
 
 
@@ -1859,6 +1871,16 @@ public class LambdaJ {
                 /// eval - (progn forms...) -> object
                 case sProgn: {
                     ccForms = ccArguments;
+                    funcall = false;
+                    break; // fall through to "eval a list of forms"
+                }
+
+                /// eval - (catch tagform forms...) -> object
+                case sCatch: {
+                    varargs1("catch", ccArguments);
+                    final Object tag = eval(car(ccArguments), env, stack, level, traceLvl);
+                    localCatchTags = cons(tag, localCatchTags);
+                    ccForms = listOrMalformed("catch", cdr(ccArguments));
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
@@ -2078,12 +2100,22 @@ public class LambdaJ {
                 return result = null; // lambda/ progn/ labels/... w/o body
             }
 
-        } catch (LambdaJError | InterruptedException e) {
+        }
+        catch (ReturnException re) {
+            final Object thrownTag = re.tag;
+            if (localCatchTags != null) for (ConsCell i = localCatchTags; i != catchTags; i = (ConsCell)cdr(i)) {
+                if (car(i) == thrownTag) { values = re.valuesAsList(); return result = re.result; }
+            }
+            throw re;
+        }
+        catch (LambdaJError | InterruptedException e) {
             throw new LambdaJError(false, e.getMessage(), form); // todo bei InterruptedException Thread.interrupt()?
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             //e.printStackTrace();
             throw errorInternal(e, "eval: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
-        } finally {
+        }
+        finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
             if (traced != null && func != null) traceLvl = traceExit(func, result, traceLvl);
             Object s;
@@ -2147,11 +2179,6 @@ public class LambdaJ {
             case sIf:
                 varargsMinMax("if", ccArgs, 2, 3);
                 expandForms("if", ccArgs);
-                return ccForm;
-
-            case sThrow:
-                twoArgs("throw", ccArgs);
-                expandForms("throw", ccArgs);
                 return ccForm;
 
             case sCond:
@@ -2226,6 +2253,17 @@ public class LambdaJ {
             case sMultipleValueBind:
                 varargsMin("multiple-value-bind", ccArgs, 2);
                 expandForms("multiple-value-bind", ccArgs.shallowCopyCdr());
+                return ccForm;
+
+            case sCatch:
+                varargs1("catch", ccArgs);
+                if (cdr(ccArgs) == null) return null;
+                expandForms("catch", ccArgs);
+                return ccForm;
+
+            case sThrow:
+                twoArgs("throw", ccArgs);
+                expandForms("throw", ccArgs);
                 return ccForm;
 
             case sUnwindProtect:
@@ -5938,6 +5976,18 @@ public class LambdaJ {
         /** used for (apply sym form) */
         public final Object applyTailcallHelper(Object fn, Object argList) { return tailcall(fn, toArray(argList)); }
 
+        public final Object doCatch(Object tag, MurmelFunction body) {
+            try {
+                return body.apply(NOARGS);
+            }
+            catch (ReturnException re) {
+                if (tag == re.tag) { values = re.values; return re.result; }
+                throw re;
+            }
+            catch (LambdaJError le) { throw le; }
+            catch (Exception e) { return rterror(e); }
+        }
+
         public final Object doThrow(Object tag, Object primaryResult) {
             // todo checken obs tag gibt, sonst (error 'control-error)
             throw new ReturnException(tag, primaryResult, values);
@@ -6641,9 +6691,14 @@ public class LambdaJ {
                         return;
                     }
 
+                    /// eval - (catch tagform forms...) -> object
+                    if (isOperator(op, WellknownSymbol.sCatch)) {
+                        emitCatch(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
                     /// eval - (throw tagform resultform) -> |
                     if (isOperator(op, WellknownSymbol.sThrow)) {
-                        twoArgs("throw", ccArguments);
                         emitThrow(sb, ccArguments, env, topEnv, rsfx, isLast);
                         return;
                     }
@@ -6935,10 +6990,6 @@ public class LambdaJ {
             }
         }
 
-        private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            emitFuncall2(sb, "throw", "doThrow", tagAndResultForms, env, topEnv, rsfx);
-        }
-
         /** paramsAndForms = ((sym...) form...) */
         private void emitLambda(WrappingWriter sb, final ConsCell paramsAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean argCheck) {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
@@ -6961,6 +7012,18 @@ public class LambdaJ {
                 emitForms(sb, ccForms, env, topEnv, rsfx, false);
                 sb.append("        }, (Object[])null)");
             }
+        }
+
+        private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            varargs1("catch", tagAndForms);
+            final ConsCell body = cons(intern("lambda"), cons(null, cdr(tagAndForms)));
+            final ConsCell args = cons(car(tagAndForms), cons(body, null));
+            emitFuncall2(sb, "catch", "doCatch", args, env, topEnv, rsfx);
+        }
+
+        private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForm, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            twoArgs("throw", tagAndResultForm);
+            emitFuncall2(sb, "throw", "doThrow", tagAndResultForm, env, topEnv, rsfx);
         }
 
         private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
