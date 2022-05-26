@@ -2131,7 +2131,16 @@ public class LambdaJ {
                     catch (LambdaJError le) { e = le; }
                 }
             }
-            if (e != null) throw e;
+            if (e != null) {
+                if (e instanceof ReturnException) {
+                    final ReturnException re = (ReturnException)e;
+                    final Object thrownTag = re.tag;
+                    if (localCatchTags != null) for (ConsCell i = localCatchTags; i != catchTags; i = (ConsCell)cdr(i)) {
+                        if (car(i) == thrownTag) { values = re.valuesAsList(); return re.result; }
+                    }
+                }
+                throw e;
+            }
         }
     }
 
@@ -5914,8 +5923,10 @@ public class LambdaJ {
             finally {
                 if (cleanups != null) for (Object cl: cleanups) {
                     try { ((MurmelFunction)cl).apply((Object[])null); }
-                    catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
-                    catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); else ex.addSuppressed(e); }
+                    //catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
+                    //catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); else ex.addSuppressed(e); }
+                    catch (LambdaJError e) { ex = e; }
+                    catch (Exception e)    { ex = new LambdaJError(e, e.getMessage()); }
                 }
                 if (ex != null) throw ex;
             }
@@ -5978,7 +5989,7 @@ public class LambdaJ {
 
         public final Object doCatch(Object tag, MurmelFunction body) {
             try {
-                return body.apply(NOARGS);
+                return funcall(body, NOARGS);
             }
             catch (ReturnException re) {
                 if (tag == re.tag) { values = re.values; return re.result; }
@@ -7031,7 +7042,8 @@ public class LambdaJ {
             final ConsCell ccForms = (ConsCell)forms;
             final Object protectedForm = car(ccForms);
             final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
-            if (isLast) {
+            if (false) {
+                // todo TCO reparieren und wieder aufdrehen
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
                 emitForm(sb, cons(intp.sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false);
                 sb.append("; },\n");

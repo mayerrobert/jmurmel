@@ -642,6 +642,12 @@ public class MurmelJavaCompilerTest {
 
 
 
+    static void compileAndRun(String source, Object expectedResult) throws Exception {
+        final MurmelProgram program = compile(source);
+        final Object actualResult = program.body();
+        assertEquals(expectedResult, actualResult);
+    }
+
     private static MurmelProgram compile(String source) throws Exception {
         MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
 
