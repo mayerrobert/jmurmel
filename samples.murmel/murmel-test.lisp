@@ -152,7 +152,7 @@
 
 
 ;;; test let, let*, letrec
-; no bindings
+; no bindings, in CL a let w/o bindings is malformed
 #+murmel (deftest let.1 (echo (let)) '(nil))
 #+murmel (deftest let.2 (echo (let*)) '(nil))
 #+murmel (deftest let.3 (echo (letrec)) '(nil))
@@ -279,9 +279,13 @@
 
 ;;; catch, throw
 (deftest catch.1 (catch 'dummy-tag 1 2 (throw 'dummy-tag 3) 4)  3)
-(deftest catch.1 (catch 'dummy-tag 1 2 3 4)                     4)
+(deftest catch.2 (catch 'dummy-tag 1 2 3 4)                     4)
 (defun throw-back (tag) (throw tag t)) ; =>  THROW-BACK
-(deftest catch.1 (catch 'dummy-tag (throw-back 'dummy-tag) 2)   t)
+(deftest catch.3 (catch 'dummy-tag (throw-back 'dummy-tag) 2)   t)
+(deftest catch.4 (catch 'c
+                   (labels ((c1 () (throw 'c 1)))
+                     (catch 'c (c1) (write 'unreachable))
+                     2))  2)
 
 
 ;;; unwind-protect
@@ -291,6 +295,9 @@
 (deftest unwind-protect.3 (unwind-protect 1 (setq *a* (1+ *a*)) (setq *a* (1+ *a*)))    1)
 (deftest unwind-protect.3a *a* 2)
 (deftest unwind-protect.4 (catch 'tag (unwind-protect (unwind-protect (unwind-protect 'result (throw 'tag "inner")) (throw 'tag "middle")) (throw 'tag "outer"))) "outer")
+(deftest unwind-protect.5  (catch nil 
+                             (unwind-protect (throw nil 1)
+                               (throw nil 2)))  2)
 
 
 ;;; values
