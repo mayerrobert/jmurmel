@@ -382,20 +382,20 @@ in compiled mode variables must have been defined previously.
     (let ((b nil) (c nil))
       (setq a 1 b 2 c (+ a b))) ; ==> 3.0
 
-### (if condform form optionalform) -> object
+### (if condform form optionalform) -> result
 
     (if nil 'YASSS! 'OHNOOO!!!) ; ==> OHNOOO!!!
 
-### (progn expr...) -> object
+### (progn expr...) -> result
 
     (if t (progn (write 'abc) (write 'def)))
 
-### (cond (condform forms...)... ) -> object
+### (cond (condform forms...)... ) -> result
 
-### (labels ((symbol (params...) forms...)...) forms...) -> object
+### (labels ((symbol (params...) forms...)...) forms...) -> result
 
 
-### (let optsymbol? ((symbol bindingform)...) bodyforms...) -> object
+### (let optsymbol? ((symbol bindingform)...) bodyforms...) -> result
 
 Works similar to CL's `let` with the addition
 of Scheme's "named let".
@@ -412,7 +412,7 @@ recursive calls within `bodyforms`.
           (write msg)
         (progn (write (floor x)) (loop (- x 1) msg))))
 
-### (let dynamic ((symbol bindingform)...) bodyforms...) -> object
+### (let dynamic ((symbol bindingform)...) bodyforms...) -> result
 
 Similar to `let` except: globals are not shadowed but temporarily
 bound to the given value, and the previous value is restored when
@@ -429,7 +429,7 @@ I.e. `let dynamic` treats globals as "special".
     (f)
 will print (1 . 2)(11 . 1)(1 . 2)
 
-### (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> object
+### (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> result
 
 Works like `let` (see above) with the addition:
 each `bindingform` "sees" the previous symbols. If multiple
@@ -444,7 +444,7 @@ preceeding ones.
           (write msg)
         (progn (write (floor x)) (loop 0 0 (- x 1) msg))))
 
-### (let* dynamic ((symbol bindingform)...) bodyforms...) -> object
+### (let* dynamic ((symbol bindingform)...) bodyforms...) -> result
 
 Similar to `let*` except: globals are not shadowed but temporarily
 bound to the given value, and the previous value is restored when
@@ -456,7 +456,7 @@ I.e. `let* dynamic` treats globals as "special".
     (let* dynamic ((*g* 'temp)) (fun)) ; fun will write temp
     *g* ; ==> 'global
 
-### (letrec optsybol? ((symbol bindingform)...) bodyforms...) -> object
+### (letrec optsybol? ((symbol bindingform)...) bodyforms...) -> result
 
 `letrec` works like `let` and `let*` except each bindingform "sees"
 all other let symbols as well as it's own symbol.
@@ -467,7 +467,24 @@ That way a let-bound variable could be a recursive lambda.
     (letrec ((x 1) (y (+ x 1))) (write y))
 
 
-### (multiple-value-call function-form values-form*) -> object
+### (catch tagform forms...) -> result
+
+`catch` is used as the destination of a non-local control transfer by `throw`.
+
+### (throw tagform resultform) -> |
+
+`throw` causes a non-local control transfer to a `catch` whose tag is `eq` to tag.
+TODO: If there is no outstanding catch tag that matches the throw tag,
+no unwinding of the stack is performed, and an error of type control-error is signaled.
+
+### (unwind-protect protected-form cleanupforms...) -> result
+
+`unwind-protect` evaluates `protected-form` and guarantees that `cleanup-forms`
+are executed before unwind-protect exits, whether it terminates normally or is aborted
+by a control transfer of some kind.
+
+
+### (multiple-value-call function-form values-form*) -> result
 
 `multiple-value-call` first evaluates the `function-form` to obtain function,
 and then evaluates each `values-form`. All the values of each form
@@ -476,7 +493,7 @@ to the function.
 
     (multiple-value-call + 0.0 (values 1 2) 3) ; ==> 6.0
 
-### (multiple-value-bind (symbols...) values-form bodyforms...) -> object
+### (multiple-value-bind (symbols...) values-form bodyforms...) -> result
 
 `values-form` is evaluated, and each of the `symbols` is bound
 to the respective value returned by that form.
@@ -490,7 +507,7 @@ which make up an implicit progn.
      ; ==> "Hello, World!"
 
 
-### (load filespec) -> object
+### (load filespec) -> result
 
 Eval the contents of the given file, return value
 is the value returned by the last form or nil
@@ -576,14 +593,14 @@ except: comma-dot is not supported.
 
 ## Predefined Primitives 
 
-### (apply form argform) -> object
+### (apply form argform) -> result
 
 `form` must eval to a symbol, primitive or lambda.
 `argform` must eval to a proper list. 
 
     (apply + '(1 2)) ; ==> 3.0
 
-### (eval form) -> object<br/> (eval form env) -> object
+### (eval form) -> result<br/> (eval form env) -> result
 
 `form` will be eval'd, it must return a form.
 The optional argument `env` will be eval'd, it must return a list of `(symbol . value)`.
