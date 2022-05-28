@@ -5913,8 +5913,8 @@ public class LambdaJ {
                 r = fn.apply(args);
                 while (r instanceof Tailcall) {
                     final Tailcall functionCall = (Tailcall) r;
-                    r = functionCall.fn.apply(functionCall.args);
                     if (functionCall.cleanup != null) cleanups = cons(functionCall.cleanup, cleanups);
+                    r = functionCall.fn.apply(functionCall.args);
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                 }
             }
@@ -7042,8 +7042,7 @@ public class LambdaJ {
             final ConsCell ccForms = (ConsCell)forms;
             final Object protectedForm = car(ccForms);
             final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
-            if (false) {
-                // todo TCO reparieren und wieder aufdrehen
+            if (isLast) {
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
                 emitForm(sb, cons(intp.sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false);
                 sb.append("; },\n");

@@ -35,7 +35,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
    when an integral number is needed
  * changed argument to sleep to "seconds" (was: internal-time-units-per-second),
    changed return value to nil (was: actually slept time in internal-time-units-per-second)
- * changed/ fixed "apply" from a special form to a function, "apply" no longer is a reserved word,
+ * changed/ fixed "apply" from a special operator to a function, "apply" no longer is a reserved word,
    "apply" now accepts symbols as the first argument as well
  * changed "::": renamed to "jmethod", static Java methods no longer want "nil" as a first (ignored) argument
  * changed macroexpand-1 to return multiple values as one would expect
@@ -50,7 +50,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
  * added values, multiple-value-call and multiple-value-bind
  * added primitive functions assq, list*
  * added an optional parameter print-escape-p for primitive functions write, writeln, lnwrite
- * added special form "(declaim (optimize..."
+ * added special operator "(declaim (optimize..."
  * added limited support for "macroexpand-1" in compiled code (quoted forms only)
  * errormessages contain the filename and linenumber (was: only linenumber)
  * added more complete support for "let dynamic" and "let* dynamic"

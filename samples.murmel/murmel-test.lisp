@@ -294,7 +294,15 @@
 (deftest unwind-protect.2 (unwind-protect 1 2 3 4 5)    1)
 (deftest unwind-protect.3 (unwind-protect 1 (setq *a* (1+ *a*)) (setq *a* (1+ *a*)))    1)
 (deftest unwind-protect.3a *a* 2)
-(deftest unwind-protect.4 (catch 'tag (unwind-protect (unwind-protect (unwind-protect 'result (throw 'tag "inner")) (throw 'tag "middle")) (throw 'tag "outer"))) "outer")
+(deftest unwind-protect.4 (catch 'tag (unwind-protect
+                                        (unwind-protect
+                                          (unwind-protect
+                                            'result
+                                            (throw 'tag "inner"))
+                                          (throw 'tag "middle"))
+                                        (throw 'tag "outer")))
+                          "outer")
+
 (deftest unwind-protect.5  (catch nil 
                              (unwind-protect (throw nil 1)
                                (throw nil 2)))  2)
