@@ -481,12 +481,6 @@ public class LambdaJ {
         private final int offset;
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
-        private ArraySlice(Object[] arry) {
-            if (arry != null && arry.length > 1) { this.arry = arry; offset = 1; }
-            else { this.arry = null; offset = -1; }
-        }
-
-        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(Object[] arry, int offset) {
             if (arry != null && arry.length > offset) { this.arry = arry; this.offset = offset; }
             else { this.arry = null; this.offset = -1; }
@@ -2556,14 +2550,14 @@ public class LambdaJ {
         return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
 
-    Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments, int stack, int level, int traceLvl) {
-        if (traceFunc)  tracer.println(pfx(stack, level) + " #<macro " + operator + "> " + printSEx(arguments));
+    Object evalMacro(Object operator, final ConsCell macroClosure, final ConsCell arguments) {
+        if (traceFunc)  tracer.println(pfx(0, 0) + " #<macro " + operator + "> " + printSEx(arguments));
 
         final Object lambda = cdr(macroClosure);      // (params . (forms...))
         final ConsCell menv = zip(car(lambda), arguments, topEnv, true);
         Object expansion = null;
         for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
-            expansion = eval(macroform, menv, stack, level, traceLvl);
+            expansion = eval(macroform, menv, 0, 0, 0);
         return expansion;
     }
 
@@ -3038,7 +3032,7 @@ public class LambdaJ {
         return n;
     }
 
-    /** this method returns true while Lisp member returns the sublist starting at obj */
+    /* this method returns true while Lisp member returns the sublist starting at obj */
     /*private static boolean member(Object obj, ConsCell list) {
         if (obj == null) return false;
         if (list == null) return false;
@@ -3538,11 +3532,6 @@ public class LambdaJ {
         return (ConsCell)a;
     }
 
-    static LambdaJSymbol requireNonNilSymbol(String func, Object a) {
-        if (a == null || !symbolp(a)) throw new LambdaJError(true, "%s: expected a nonnil symbol argument but got %s", func, printSEx(a));
-        return (LambdaJSymbol)a;
-    }
-
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
@@ -3805,14 +3794,16 @@ public class LambdaJ {
     }
 
     final Object macroexpandImpl(ConsCell args) {
-        final LambdaJSymbol macroSymbol = requireNonNilSymbol("macroexpand-1", car(args));
+        final Object maybeSymbol = car(args);
+        if (maybeSymbol == null || !symbolp(maybeSymbol)) throw new LambdaJError(true, "%s: expected a nonnil symbol argument but got %s", "macroexpand-1", printSEx(maybeSymbol));
+        final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
         final ConsCell macroClosure = macroSymbol.macro;
         if (macroClosure == null) {
             values = cons(args, (cons(null, null)));
             return args;
         }
         final ConsCell arguments = (ConsCell) cdr(args);
-        final Object expansion = evalMacro(macroSymbol, macroClosure, arguments, 0, 0, 0);
+        final Object expansion = evalMacro(macroSymbol, macroClosure, arguments);
         values = cons(expansion, (cons(sT, null)));
         return expansion;
     }
@@ -3830,6 +3821,7 @@ public class LambdaJ {
         private final Constructor<?> constructor;
         private final UnaryOperator<Object>[] argConv;
 
+        @SuppressWarnings("unchecked")
         private JavaConstructor(Constructor<?> constructor, Class<?>[] params) {
             this.constructor = constructor;
             final int paramCount = constructor.getParameterCount();
@@ -3864,6 +3856,7 @@ public class LambdaJ {
         private final Invoker invoke;
         private final UnaryOperator<Object>[] argConv;
 
+        @SuppressWarnings("unchecked")
         private JavaMethod(Method method, Class<?>[] params) {
             this.method = method;
             int paramCount = method.getParameterCount();
@@ -4637,7 +4630,7 @@ public class LambdaJ {
     /** exit by throwing an {@link Exit} exception, doesn't return. The last form of the program will determine the exitlevel:
      *  nil will result in 0, a number will result in an exitlevel of number&127, any other non-nil value will result in an exitlevel of 1. */
     private static void exit(Object murmelResult) {
-        if (murmelResult == null) return;
+        if (murmelResult == null) return; // todo throw new Exit(0) statt return?
         if (numberp(murmelResult)) throw new Exit(((Number)murmelResult).intValue() & 0x7f);
         throw EXIT_PROGRAM_ERROR;
     }
@@ -4699,7 +4692,6 @@ public class LambdaJ {
 
     private static Object compileAndRunFiles(List<String> files, LambdaJ interpreter, String[] args, boolean verbose, boolean finalResult) throws IOException {
         final ObjectReader program = parseFiles(files, interpreter, verbose);
-        //interpreter.init(System.in::read, System.out::print);
         return compileAndRunForms(program, args, interpreter, false, finalResult);
     }
 
@@ -4708,7 +4700,7 @@ public class LambdaJ {
         final Path tmpDir;
         try { tmpDir = getTmpDir(); }
         catch (IOException e) { 
-            System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage());
+            System.out.println("history NOT run as Java - cannot get/ create tmp directory: " + e.getMessage());
             if (!repl) throw EXIT_IO_ERROR;
             return null;
         }
@@ -6524,7 +6516,7 @@ public class LambdaJ {
 
                 final ConsCell macroClosure;
                 if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
-                    final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(form), 0, 0, 0);
+                    final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(form));
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
                 }
 
@@ -6869,7 +6861,7 @@ public class LambdaJ {
                     /// * macro expansion
                     final ConsCell macroClosure;
                     if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
-                        final Object expansion = intp.evalMacro(op, macroClosure, ccArguments, 0, 0, 0);
+                        final Object expansion = intp.evalMacro(op, macroClosure, ccArguments);
                         emitForm(sb, expansion, env, topEnv, rsfx-1, isLast);
                         return;
                     }
@@ -8217,7 +8209,7 @@ class EolUtil {
     }
 }
 
-/** A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in.
+/* A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in.
  *  When reading from System.in sun.stdout.encoding will be used.
  *  Various lineendings will all be translated to '\n'.
  *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
