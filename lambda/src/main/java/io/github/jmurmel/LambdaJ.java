@@ -2686,11 +2686,33 @@ public class LambdaJ {
             paramsAndForms = cdr(paramsAndForms);
             env = DYNAMIC_ENV;
         }
-        varargs1("lambda", paramsAndForms);
+        if (!consp(paramsAndForms)) errorMalformed("lambda", "an argument list", paramsAndForms);
+        varargs1("lambda", (ConsCell)paramsAndForms);
         symbolArgs("lambda", car(paramsAndForms));
         noDuplicates("lambda", car(paramsAndForms));
 
         return makeClosure(paramsAndForms, env);
+    }
+
+    /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
+     *  Also 'a' must not contain reserved symbols. */
+    private void symbolArgs(String func, Object a) {
+        if (symbolp(a)) return;
+        if (atom(a)) errorMalformed(func, "bindings to be a symbol or list of symbols", a);
+        final ConsCell start = (ConsCell) a;
+        for (;;) {
+            if (consp(a) && cdr(a) == start) errorMalformed(func, "circular list of bindings is not allowed");
+            if (!symbolp(car(a))) errorMalformed(func, "a symbol or a list of symbols", a);
+            notReserved(func, (LambdaJSymbol)car(a));
+
+            a = cdr(a);
+            if (a == null) return; // end of a proper list, everything a-ok, move along
+            if (atom(a)) {
+                if (!symbolp(a)) errorMalformed(func, "a symbol or a list of symbols", a);
+                notReserved(func, (LambdaJSymbol)a);
+                return; // that was the end of a dotted list, everything a-ok, move along
+            }
+        }
     }
 
     private static void noDuplicates(String func, Object symList) {
@@ -2991,11 +3013,11 @@ public class LambdaJ {
     static boolean  symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
     static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
 
-    static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double
-                                                  || o instanceof Number; }
-    static boolean  stringp(Object o)    { return o instanceof String; }
+    static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double || o instanceof Number; }
     static boolean  floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
     static boolean  integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer, BigInteger?
+
+    static boolean  stringp(Object o)    { return o instanceof String; }
     static boolean  characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
@@ -3356,10 +3378,6 @@ public class LambdaJ {
     }
 
     /** varargs, at least one arg */
-    private static void varargs1(String func, Object a) {
-        if (!consp(a)) errorMalformed(func, "an argument list", a); // todo consp check should probably done at callsite
-        varargs1(func, (ConsCell)a);
-    }
     static void varargs1(String func, ConsCell a) {
         if (a == null) errorVarargsCount(func, 1, 0);
     }
@@ -3380,27 +3398,6 @@ public class LambdaJ {
         final Object x = nthcdr(min-1, a);
         final int n = min == 0 ? 0 : min-1;
         if (x == null || nthcdr(max-n, x) != null) errorArgCount(func, min, max, length(a), a);
-    }
-
-    /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
-     *  Also 'a' must not contain reserved symbols. */
-    private void symbolArgs(String func, Object a) {
-        if (symbolp(a)) return;
-        if (atom(a)) errorMalformed(func, "bindings to be a symbol or list of symbols", a);
-        final ConsCell start = (ConsCell) a;
-        for (;;) {
-            if (consp(a) && cdr(a) == start) errorMalformed(func, "circular list of bindings is not allowed");
-            if (!symbolp(car(a))) errorMalformed(func, "a symbol or a list of symbols", a);
-            notReserved(func, (LambdaJSymbol)car(a));
-
-            a = cdr(a);
-            if (a == null) return; // end of a proper list, everything a-ok, move along
-            if (atom(a)) {
-                if (!symbolp(a)) errorMalformed(func, "a symbol or a list of symbols", a);
-                notReserved(func, (LambdaJSymbol)a);
-                return; // that was the end of a dotted list, everything a-ok, move along
-            }
-        }
     }
 
     ///
@@ -3514,15 +3511,14 @@ public class LambdaJ {
         return (Character)c;
     }
 
-    /** Return {@code c} as a String, error if {@code c} is not a string, character or symbol. */
+    /** return {@code c} as a String, error if {@code c} is not a string or null (nil) */
     static String requireStringOrNull(String func, Object c) {
         if (c == null) return null;
         return requireString(func, c);
     }
 
-    // todo requireString steht im widerspruch zu stringp
     private static String requireString(String func, Object c) {
-        if (!(c instanceof String) && !(c instanceof Character) && !(c instanceof LambdaJSymbol)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
+        if (!(c instanceof String)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
         return c.toString();
     }
 
