@@ -1883,9 +1883,6 @@ public class LambdaJ {
                             break;
                         }
                     }
-
-                    if (ccForms == null) return result = null; // no condition was true or the true condition has no code
-
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
@@ -1894,10 +1891,12 @@ public class LambdaJ {
                 case sIf: {
                     varargsMinMax("if", ccArguments, 2, 3);
                     if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
-                        form = cadr(ccArguments); isTc = true; continue tailcall;
-                    } else if (caddr(ccArguments) != null) {
-                        form = caddr(ccArguments); isTc = true; continue tailcall;
-                    } else { return result = null; } // condition eval'd to false, no else form
+                        form = cadr(ccArguments);
+                    } else {
+                        form = caddr(ccArguments);
+                    }
+                    if (form == null) return result = null;
+                    isTc = true; continue tailcall;
                 }
 
 
