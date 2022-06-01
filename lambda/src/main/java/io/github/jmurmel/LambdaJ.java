@@ -1820,27 +1820,6 @@ public class LambdaJ {
 
                 /// eval - special forms that run expressions
 
-                /// eval - (if condform form optionalform) -> object
-                case sIf: {
-                    varargsMinMax("if", ccArguments, 2, 3);
-                    if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
-                        form = cadr(ccArguments); isTc = true; continue tailcall;
-                    } else if (caddr(ccArguments) != null) {
-                        form = caddr(ccArguments); isTc = true; continue tailcall;
-                    } else { return result = null; } // condition eval'd to false, no else form
-                }
-
-
-                /// eval - (throw tagform resultform) -> |
-                case sThrow: {
-                    twoArgs("throw", ccArguments);
-                    final Object throwTag = eval(car(ccArguments), env, stack, level, traceLvl);
-                    final Object throwResult = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    // todo checken obs tag gibt, sonst (error 'control-error)
-                    throw new ReturnException(throwTag, throwResult, values);
-                }
-
-
                 /// eval - (load filespec) -> object
                 case sLoad: {
                     oneArg("load", ccArguments);
@@ -1879,6 +1858,15 @@ public class LambdaJ {
                     break; // fall through to "eval a list of forms"
                 }
 
+                /// eval - (throw tagform resultform) -> |
+                case sThrow: {
+                    twoArgs("throw", ccArguments);
+                    final Object throwTag = eval(car(ccArguments), env, stack, level, traceLvl);
+                    final Object throwResult = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    // todo checken obs tag gibt, sonst (error 'control-error)
+                    throw new ReturnException(throwTag, throwResult, values);
+                }
+
                 /// eval - (unwind-protect protected-form cleanup-forms...) -> object
                 case sUnwindProtect:
                     restore = cons(cons(sProgn, cdr(ccArguments)), restore);
@@ -1897,9 +1885,21 @@ public class LambdaJ {
                     }
 
                     if (ccForms == null) return result = null; // no condition was true or the true condition has no code
+
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
+
+                /// eval - (if condform form optionalform) -> object
+                case sIf: {
+                    varargsMinMax("if", ccArguments, 2, 3);
+                    if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
+                        form = cadr(ccArguments); isTc = true; continue tailcall;
+                    } else if (caddr(ccArguments) != null) {
+                        form = caddr(ccArguments); isTc = true; continue tailcall;
+                    } else { return result = null; } // condition eval'd to false, no else form
+                }
+
 
                 /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                 case sLabels: {
