@@ -45,8 +45,8 @@ public class LambdaJTest {
         /* 19 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "t", "(HELLO . HELLO)" },
 
         // lambda
-        /* 20 */ { "(lambda () (write (quote noparam)))", "(lambda nil (write (quote noparam)))", null },
-        /* 21 */ { "(write (lambda () (write (quote noparam))))", "t", "(lambda nil (write (quote noparam)))" },
+        /* 20 */ { "(lambda () (write (quote noparam)))", "#<interpreted closure>", null },
+        /* 21 */ { "(write (lambda () (write (quote noparam))))", "t", "#<interpreted closure>" },
         /* 22 */ { "((lambda () (write (quote noparam))))", "t", "noparam" },
         /* 23 */ { "((lambda (x) (write x)) (quote hello))", "t", "hello" },
         /* 24 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "t", "(p1 . p2)" },

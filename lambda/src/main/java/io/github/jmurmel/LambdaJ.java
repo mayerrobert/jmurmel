@@ -156,7 +156,7 @@ public class LambdaJ {
         private static final long serialVersionUID = 1L;
         final String name;
         final WellknownSymbol wellknownSymbol;
-        ClosureConsCell macro;
+        Closure macro;
 
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
@@ -448,21 +448,15 @@ public class LambdaJ {
         String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
     }
 
-    private static final class ClosureConsCell implements Writeable {
-        private final Object car;
-        private final ConsCell cdr;
-        private final ConsCell closure;
+    private static final class Closure implements Writeable {
+        final Object params;
+        final ConsCell body, closure;
 
-        private ClosureConsCell(Object car, ConsCell cdr, ConsCell closure)    { this.car = car; this.cdr = cdr; this.closure = closure; }
+        private Closure(Object params, ConsCell body, ConsCell closure)    { this.params = params; this.body = body; this.closure = closure; }
 
-        ConsCell cdr() { return cdr; }
-        ConsCell closure() { return closure; }
-
-        // todo just write #<lambda>, adjust tests and remove car
         @Override
         public void printSEx(WriteConsumer out, boolean escapeAtoms) {
-            final ConsCell exp = ConsCell.cons(car, cdr);
-            LambdaJ.printSEx(out, exp, escapeAtoms);
+            out.print("#<interpreted closure>");
         }
     }
 
@@ -2051,14 +2045,13 @@ public class LambdaJ {
                         return result = applyPrimitive((Primitive) func, argList, stack, level);
                     }
 
-                    else if (func instanceof ClosureConsCell) {
-                        final ClosureConsCell ccFunc = (ClosureConsCell)func;
-                        final ConsCell paramsAndBody = ccFunc.cdr();
-                        final ConsCell closure = ccFunc.closure();
-                        env = zip(car(paramsAndBody), argList, closure == DYNAMIC_ENV ? env : closure, true);
+                    else if (func instanceof Closure) {
+                        final Closure ccFunc = (Closure)func;
+                        final ConsCell closure = ccFunc.closure;
+                        env = zip(ccFunc.params, argList, closure == DYNAMIC_ENV ? env : closure, true);
 
-                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + paramsAndBody + "> " + printSEx(argList));
-                        ccForms = (ConsCell) cdr(paramsAndBody);
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + ccFunc.params + "> " + printSEx(argList));
+                        ccForms = ccFunc.body;
                         // fall through to "eval a list of forms"
                     }
 
@@ -2434,7 +2427,8 @@ public class LambdaJ {
                 if (!consp(binding)) errorMalformed("labels", "a list (symbol (params...) forms...)", binding);
                 final ConsCell currentFunc = (ConsCell)binding;
                 final LambdaJSymbol currentSymbol = symbolOrMalformed("labels", car(currentFunc));
-                final Object lambda = makeClosure(listOrMalformed("labels", cdr(currentFunc)), extEnv);
+                final ConsCell ccParamsAndForms = listOrMalformed("labels", cdr(currentFunc));
+                final Object lambda = makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv);
                 insertFront(extEnv, currentSymbol, lambda);
             }
         return new ConsCell[]{ (ConsCell) cdr(arguments), extEnv};
@@ -2527,7 +2521,7 @@ public class LambdaJ {
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
             extenv = acons(loopSymbol, UNASSIGNED, extenv);
-            final Object closure = makeClosure(cons(params, bodyForms), extenv);
+            final Object closure = makeClosure(params, bodyForms, extenv);
             ((ConsCell)extenv.car()).rplacd(closure);
         }
         return new ConsCell[] {bodyForms, extenv, restore};
@@ -2557,13 +2551,12 @@ public class LambdaJ {
         return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
 
-    Object evalMacro(Object operator, final ClosureConsCell macroClosure, final ConsCell arguments) {
+    Object evalMacro(Object operator, final Closure macroClosure, final ConsCell arguments) {
         if (traceFunc)  tracer.println(pfx(0, 0) + " #<macro " + operator + "> " + printSEx(arguments));
 
-        final ConsCell lambda = macroClosure.cdr();      // (params . (forms...))
-        final ConsCell menv = zip(car(lambda), arguments, topEnv, true);
+        final ConsCell menv = zip(macroClosure.params, arguments, topEnv, true);
         Object expansion = null;
-        for (Object macroform: (ConsCell) cdr(lambda)) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
+        for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, 0, 0, 0);
         return expansion;
     }
@@ -2687,7 +2680,7 @@ public class LambdaJ {
 
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
      *  considering whether or not "dynamic" was specified after "lambda" */
-    private ClosureConsCell makeClosureFromForm(final ConsCell form, ConsCell env) {
+    private Closure makeClosureFromForm(final ConsCell form, ConsCell env) {
         Object paramsAndForms = cdr(form);
         if (car(paramsAndForms) == sDynamic) {
             paramsAndForms = cdr(paramsAndForms);
@@ -2696,10 +2689,11 @@ public class LambdaJ {
         if (!consp(paramsAndForms)) errorMalformed("lambda", "an argument list", paramsAndForms);
         final ConsCell ccParamsAndForms = (ConsCell)paramsAndForms; 
         varargs1("lambda", ccParamsAndForms);
-        symbolArgs("lambda", car(ccParamsAndForms));
-        noDuplicates("lambda", car(ccParamsAndForms));
+        final Object params = car(ccParamsAndForms);
+        symbolArgs("lambda", params);
+        noDuplicates("lambda", params);
 
-        return makeClosure(ccParamsAndForms, env);
+        return makeClosure(params, listOrMalformed("lambda", cdr(ccParamsAndForms)), env);
     }
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
@@ -2731,9 +2725,9 @@ public class LambdaJ {
     }
 
     /** make a lexical closure (if enabled) or lambda */
-    private ClosureConsCell makeClosure(final ConsCell paramsAndForms, ConsCell env) {
+    private Closure makeClosure(Object params, ConsCell body, ConsCell env) {
         nCells++;
-        return new ClosureConsCell(sLambda, paramsAndForms, haveLexC() ? env : DYNAMIC_ENV);
+        return new Closure(params, body, haveLexC() ? env : DYNAMIC_ENV);
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
@@ -3801,7 +3795,7 @@ public class LambdaJ {
         final Object maybeSymbol = car(args);
         if (maybeSymbol == null || !symbolp(maybeSymbol)) throw new LambdaJError(true, "%s: expected a nonnil symbol argument but got %s", "macroexpand-1", printSEx(maybeSymbol));
         final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
-        final ClosureConsCell macroClosure = macroSymbol.macro;
+        final Closure macroClosure = macroSymbol.macro;
         if (macroClosure == null) {
             values = cons(args, (cons(null, null)));
             return args;
@@ -4312,13 +4306,13 @@ public class LambdaJ {
     }
 
     private class CallLambda implements MurmelFunction {
-        private final ClosureConsCell lambda;
+        private final Closure lambda;
         private final ConsCell env;
-        CallLambda(ClosureConsCell lambda, ConsCell topEnv) { this.lambda = lambda; this.env = topEnv; }
+        CallLambda(Closure lambda, ConsCell topEnv) { this.lambda = lambda; this.env = topEnv; }
         @Override public Object apply(Object... args) { return applyClosure(lambda, args, env); }
     }
 
-    Object applyClosure(ClosureConsCell closure, Object[] args, ConsCell originalTopEnv) {
+    Object applyClosure(Closure closure, Object[] args, ConsCell originalTopEnv) {
         if (originalTopEnv != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
         return eval(cons(closure, arraySlice(args, 0)), originalTopEnv, 0, 0, 0);
     }
@@ -4339,7 +4333,7 @@ public class LambdaJ {
     private MurmelFunction getFunction(String funcName, Object maybeFunction) {
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
         if (maybeFunction instanceof Primitive)                                 { return ((Primitive)maybeFunction)::applyPrimitiveVarargs; }
-        if (maybeFunction instanceof ClosureConsCell)                           { return new CallLambda((ClosureConsCell)maybeFunction, topEnv); }
+        if (maybeFunction instanceof Closure)                           { return new CallLambda((Closure)maybeFunction, topEnv); }
         if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
@@ -4912,7 +4906,7 @@ public class LambdaJ {
                             if (sym.macro != null) names.add(sym);
                         }
                         names.sort(Comparator.comparing(Object::toString));
-                        for (LambdaJSymbol name: names) System.out.println(name + ": " + name.macro);
+                        for (LambdaJSymbol name: names) System.out.println(name + ": " + printSEx(ConsCell.cons(name.macro.params, name.macro.body)));
                         System.out.println("number of macros: " + names.size());
                         System.out.println(); continue;
                     }
@@ -5933,7 +5927,7 @@ public class LambdaJ {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
-            if (fn instanceof ClosureConsCell)   return interpret(fn, args);
+            if (fn instanceof Closure)   return interpret(fn, args);
 
             throw errorNotAFunction(fn);
         }
@@ -5973,7 +5967,7 @@ public class LambdaJ {
             assert cleanup == null : "unexpected: cleanup != null, fn is a " + fn.getClass().getSimpleName();
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
-            if (fn instanceof ClosureConsCell)   return interpret(fn, args);
+            if (fn instanceof Closure)   return interpret(fn, args);
             throw errorNotAFunction(fn);
         }
 
@@ -6518,7 +6512,7 @@ public class LambdaJ {
                     }
                 }
 
-                final ClosureConsCell macroClosure;
+                final Closure macroClosure;
                 if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
                     final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(form));
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
@@ -6863,7 +6857,7 @@ public class LambdaJ {
                     }
 
                     /// * macro expansion
-                    final ClosureConsCell macroClosure;
+                    final Closure macroClosure;
                     if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
                         final Object expansion = intp.evalMacro(op, macroClosure, ccArguments);
                         emitForm(sb, expansion, env, topEnv, rsfx-1, isLast);
