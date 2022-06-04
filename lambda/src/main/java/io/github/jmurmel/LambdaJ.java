@@ -1767,6 +1767,7 @@ public class LambdaJ {
                 final boolean funcall;
                 ConsCell ccForms = null;
 
+                ConsCell argList = null;
 
                 final LambdaJSymbol symOperator; // will be the car of the form as a LambdaJSymbol if it is a symbol, null otherwise
                 if (symbolp(operator)) switch ((symOperator = (LambdaJSymbol)operator).wellknownSymbol) {
@@ -1874,11 +1875,12 @@ public class LambdaJ {
                 }
 
                 /// eval - (unwind-protect protected-form cleanup-forms...) -> object
-                case sUnwindProtect:
+                case sUnwindProtect: {
                     restore = cons(cons(sProgn, cdr(ccArguments)), restore);
                     ccForms = cons(car(ccArguments), null);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
+                }
 
                 /// eval - (cond (condform forms...)... ) -> object
                 case sCond: {
@@ -1938,30 +1940,39 @@ public class LambdaJ {
                     break; // fall through to "eval a list of forms"
                 }
 
+                /// eval - multiple-value-call
+                /// eval - (multiple-value-call function-form values-form*) -> object
+                case sMultipleValueCall: {
+                    varargs1("multiple-value-call", ccArguments);
+                    final Object funcOrSymbol = car(ccArguments);
+                    func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
+                    ConsCell allArgs = null;
+                    final Object valueForms = cdr(ccArguments);
+                    if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
+                        values = NO_VALUES;
+                        final Object prim = eval(valueForm, env, stack, level, traceLvl);
+                        final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
+                        if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
+                    }
+                    argList = allArgs;
+                    if (speed >= 1 && symbolp(funcOrSymbol)) {
+                        result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
+                        if (result != NOT_HANDLED) return result;
+                    }
+                    funcall = true;
+                    break; // fall through to "actually perform..."
+                }
+
+                /// eval - function call
+                /// eval - (operatorform argforms...) -> object
                 default:
-                    // check if we forgot to handle a special form. All special forms (except multiple-value-call) should be handled in the cases above.
-                    assert !symOperator.specialForm() || symOperator.wellknownSymbol == WellknownSymbol.sMultipleValueCall: ccForm.lineInfo() + "unexpected special form " + symOperator;
+                    // check if we forgot to handle a special form. All special forms should be handled in the cases above.
+                    assert !symOperator.specialForm() : ccForm.lineInfo() + "unexpected special form " + symOperator;
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                     assert symOperator.macro == null: ccForm.lineInfo() + "unexpanded macro call: " + symOperator;
-                    
-                    funcall = true;
-                }
-                else {
-                    symOperator = null;
-                    funcall = true;
-                }
 
-
-
-                /// eval - function application
-                if (funcall) {
-
-                    final ConsCell argList;
-
-                    /// eval - function call
-                    /// eval - (operatorform argforms...) -> object
-                    if (speed >= 1 && symOperator != null && symOperator.primitive()) {
+                    if (speed >= 1 && symOperator.primitive()) {
                         // (mostly) respect evaluation order: operator should be eval'd before arguments.
                         // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
                         // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
@@ -1971,39 +1982,24 @@ public class LambdaJ {
                         result = evalOpencode(symOperator, argList);
                         if (result != NOT_HANDLED) return result;
 
-                        func = cdr(assq(operator, env));
-                        // fall through to "actually perform..."
+                        func = cdr(assq(symOperator, env));
                     }
 
-                    /// eval - multiple-value-call
-                    /// eval - (multiple-value-call function-form values-form*) -> object
-                    else if (operator == sMultipleValueCall) {
-                        varargs1("multiple-value-call", ccArguments);
-                        final Object funcOrSymbol = car(ccArguments);
-                        func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
-                        ConsCell allArgs = null;
-                        final Object valueForms = cdr(ccArguments);
-                        if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
-                            values = NO_VALUES;
-                            final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                            final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
-                            if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
-                        }
-                        argList = allArgs;
-                        if (speed >= 1 && symbolp(funcOrSymbol)) {
-                            result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
-                            if (result != NOT_HANDLED) return result;
-                        }
-                        // fall through to "actually perform..."
+                    else {
+                        func = eval(operator, env, stack, level, traceLvl);
+                        argList = evlis(ccArguments, env, stack, level, traceLvl);
                     }
 
-
+                    funcall = true;
+                    // fall through to "actually perform..."
+                }
+                else {
                     /// eval - apply a function to an argument list
                     /// eval - (apply form argform) -> object
-                    else if (operator == ocApply) {
+                    if (operator == ocApply) {
                         twoArgs("apply", ccArguments);
                         final Object funcOrSymbol = car(ccArguments);
-                        func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call below
+                        func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call above
                         argList = listOrMalformed("apply", cadr(ccArguments));
                         if (speed >= 1 && symbolp(funcOrSymbol)) {
                             result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
@@ -2032,9 +2028,14 @@ public class LambdaJ {
                         // fall through to "actually perform..."
                     }
 
+                    funcall = true;
+                }
 
 
-                    /// eval - actually perform the function call that was set up by "apply" or "multiple-value-call" or "function call" above
+
+                if (funcall) {
+
+                    /// eval - actually perform the function call that was set up by "apply" or "multiple-value-call" or "function call" above. "set up" means: func and argList were assigned
                     if (traced != null) traceLvl = traceEnter(func, argList, traceLvl);
                     values = NO_VALUES;
                     if (func instanceof OpenCodedPrimitive) {
@@ -2058,25 +2059,24 @@ public class LambdaJ {
                         // fall through to "eval a list of forms"
                     }
 
+                    else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
+                        // compiled function or compiler runtime func
+                        return result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);
+                    }
+
                     /* something like
                          (define l '(lambda () 'hello))
                          (l)
                        would end up here. That's not really legal (or is it/ should it be?), and wouldn't work in compiled Murmel,
                        nor would something similar work in Common Lisp (see "Issue FUNCTION-TYPE Writeup" http://www.lispworks.com/documentation/lw71/CLHS/Issues/iss175_w.htm).
                      */
-                    else if (haveOldLambda() && func instanceof ConsCell && car(func) == sLambda) {
-                        final ConsCell ccFunc = (ConsCell)func;
-                        final Object paramsAndBody = cdr(ccFunc);
+                    else if (haveOldLambda() && consp(func) && car(func) == sLambda) {
+                        final Object paramsAndBody = cdr(func);
                         env = zip(car(paramsAndBody), argList, env, true);
 
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<list lambda " + paramsAndBody + "> " + printSEx(argList));
                         ccForms = (ConsCell) cdr(paramsAndBody);
                         // fall through to "eval a list of forms"
-                    }
-
-                    else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
-                        // compiled function or compiler runtime func
-                        return result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);
                     }
 
                     else {
