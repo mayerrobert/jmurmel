@@ -4,29 +4,20 @@
 ;;; see also Lisp challenge (Lisp in Lisp): https://github.com/jart/sectorlisp/blob/main/lisp.lisp
 
 
-; needs a LISP 1 (dyn or lex env) with symbols and cons, car, cdr, eq, atom, quote, cond, lambda (and S-expressions i.e. a reader)
+; needs a LISP 1 (dyn or lex env) with symbols and cons, car, cdr, eq, atom, quote, cond, lambda and labels (and S-expressions i.e. a reader)
 ; implements a LISP 1 (dyn env)   with symbols and cons, car, cdr, eq, atom, quote, cond, lambda and label
 
 ;;; result of the test function:
 ; result: (AA BB CC DD EE FF)
 ; output: (empty)
 
+(declaim (optimize (speed 0)))
 
-((lambda (eval evcon evlis assoc pairlis)
 
-    ;;; test eval: use the provided append to append two lists
-    (eval (quote ((label append
-                    (lambda (a b)
-                      (cond ((eq () a) b)
-                            (t (cons (car a)
-                                     (append (cdr a) b))))))
-                  (quote (AA BB CC))  
-                  (quote (DD EE FF))))
-          (quote ((t t)))))
-
+(labels
 
   ;;; eval
-  (quote (lambda (x e)
+  ((eval (x e)
      (cond ((atom x)                                    ;;; symbol
              (assoc x e))
            ((atom (car x))                              ;;; special forms und forms
@@ -58,28 +49,39 @@
            ((eq (car (car x)) (quote label))            ; label
              (eval (cons (car (cdr (cdr (car x)))) (cdr x))  
                    (cons (cons (car (cdr (car x))) (car x))
-                         e))))))
+                         e)))))
 
    ;;; evcon
-   (quote (lambda (c e)
+   (evcon (c e)
      (cond ((eval (car (car c)) e)
             (eval (car (cdr (car c))) e))
-           ((quote t) (evcon (cdr c) e)))))
+           ((quote t) (evcon (cdr c) e))))
 
    ;;; evlis
-   (quote (lambda (a e)
+   (evlis (a e)
      (cond ((eq () a) ())
            ((quote t) (cons (eval (car a) e)
-                            (evlis (cdr a) e))))))
+                            (evlis (cdr a) e)))))
 
    ;;; assoc
-   (quote (lambda (x a)
+   (assoc (x a)
      (cond ((eq () a) ())
            ((eq x (car (car a))) (cdr (car a)))
-           ((quote t) (assoc x (cdr a))))))
+           ((quote t) (assoc x (cdr a)))))
 
    ;;; pairlis
-   (quote (lambda (a b e)
+   (pairlis (a b e)
      (cond ((eq () a) e)
            ((quote t) (cons (cons (car a) (car b))
-                            (pairlis (cdr a) (cdr b) e)))))))
+                            (pairlis (cdr a) (cdr b) e))))))
+
+
+  ;;; test eval: use the provided append to append two lists
+  (eval (quote ((label append
+                  (lambda (a b)
+                    (cond ((eq () a) b)
+                          (t (cons (car a)
+                                   (append (cdr a) b))))))
+                (quote (AA BB CC))  
+                (quote (DD EE FF))))
+        (quote ((t t)))))

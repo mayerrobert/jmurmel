@@ -622,6 +622,8 @@ public class LambdaJ {
 
         HAVE_LEXC,           // use lexical environments with dynamic global environment
 
+        HAVE_OLDLAMBDA,      // lists whose car is 'lambda' are functions, too
+
         /** untyped lambda calculus with dynamic environments, S-expressions, that's all */
         HAVE_LAMBDA     { @Override public int bits() { return 0; } },
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
@@ -638,23 +640,24 @@ public class LambdaJ {
 
     private final int features;
 
-    private boolean haveLabels()  { return (features & Features.HAVE_LABELS.bits())  != 0; }
-    private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
-    private boolean haveT()       { return (features & Features.HAVE_T.bits())       != 0; }
-    private boolean haveXtra()    { return (features & Features.HAVE_XTRA.bits())    != 0; }
-    private boolean haveFFI()     { return (features & Features.HAVE_FFI.bits())     != 0; }
-    private boolean haveNumbers() { return (features & Features.HAVE_NUMBERS.bits()) != 0; }
-    private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
-    private boolean haveIO()      { return (features & Features.HAVE_IO.bits())      != 0; }
-    private boolean haveGui()     { return (features & Features.HAVE_GUI.bits())     != 0; }
-    private boolean haveUtil()    { return (features & Features.HAVE_UTIL.bits())    != 0; }
-    private boolean haveApply()   { return (features & Features.HAVE_APPLY.bits())   != 0; }
-    private boolean haveCons()    { return (features & Features.HAVE_CONS.bits())    != 0; }
-    private boolean haveCond()    { return (features & Features.HAVE_COND.bits())    != 0; }
-    private boolean haveAtom()    { return (features & Features.HAVE_ATOM.bits())    != 0; }
-    private boolean haveEq()      { return (features & Features.HAVE_EQ.bits())      != 0; }
-    private boolean haveQuote()   { return (features & Features.HAVE_QUOTE.bits())   != 0; }
-    private boolean haveLexC()    { return (features & Features.HAVE_LEXC.bits())    != 0; }
+    private boolean haveLabels()    { return (features & Features.HAVE_LABELS.bits())    != 0; }
+    private boolean haveNil()       { return (features & Features.HAVE_NIL.bits())       != 0; }
+    private boolean haveT()         { return (features & Features.HAVE_T.bits())         != 0; }
+    private boolean haveXtra()      { return (features & Features.HAVE_XTRA.bits())      != 0; }
+    private boolean haveFFI()       { return (features & Features.HAVE_FFI.bits())       != 0; }
+    private boolean haveNumbers()   { return (features & Features.HAVE_NUMBERS.bits())   != 0; }
+    private boolean haveString()    { return (features & Features.HAVE_STRING.bits())    != 0; }
+    private boolean haveIO()        { return (features & Features.HAVE_IO.bits())        != 0; }
+    private boolean haveGui()       { return (features & Features.HAVE_GUI.bits())       != 0; }
+    private boolean haveUtil()      { return (features & Features.HAVE_UTIL.bits())      != 0; }
+    private boolean haveApply()     { return (features & Features.HAVE_APPLY.bits())     != 0; }
+    private boolean haveCons()      { return (features & Features.HAVE_CONS.bits())      != 0; }
+    private boolean haveCond()      { return (features & Features.HAVE_COND.bits())      != 0; }
+    private boolean haveAtom()      { return (features & Features.HAVE_ATOM.bits())      != 0; }
+    private boolean haveEq()        { return (features & Features.HAVE_EQ.bits())        != 0; }
+    private boolean haveQuote()     { return (features & Features.HAVE_QUOTE.bits())     != 0; }
+    private boolean haveLexC()      { return (features & Features.HAVE_LEXC.bits())      != 0; }
+    private boolean haveOldLambda() { return (features & Features.HAVE_OLDLAMBDA.bits()) != 0; }
 
     /** constructor with all features, no tracing */
     public LambdaJ() {
@@ -2055,14 +2058,13 @@ public class LambdaJ {
                         // fall through to "eval a list of forms"
                     }
 
-                    else if (func instanceof ConsCell && car(func) == sLambda) {
-                        /* something like
-                             (define l '(lambda () 'hello))
-                             (l)
-                           would end up here. That's not really legal (or is it/ should it be?), and wouldn't work in compiled Murmel,
-                           nor would something similar work in Common Lisp.
-                           Maybe this should throw an error "not a function..." ?
-                         */
+                    /* something like
+                         (define l '(lambda () 'hello))
+                         (l)
+                       would end up here. That's not really legal (or is it/ should it be?), and wouldn't work in compiled Murmel,
+                       nor would something similar work in Common Lisp (see "Issue FUNCTION-TYPE Writeup" http://www.lispworks.com/documentation/lw71/CLHS/Issues/iss175_w.htm).
+                     */
+                    else if (haveOldLambda() && func instanceof ConsCell && car(func) == sLambda) {
                         final ConsCell ccFunc = (ConsCell)func;
                         final Object paramsAndBody = cdr(ccFunc);
                         env = zip(car(paramsAndBody), argList, env, true);
@@ -5043,7 +5045,6 @@ public class LambdaJ {
 
     private static int features(String[] args) {
         int features = Features.HAVE_ALL_LEXC.bits();
-        if (hasFlag("--XX-dyn", args))      features =  Features.HAVE_ALL_DYN.bits();
 
         if (hasFlag("--min+", args))        features =  Features.HAVE_MINPLUS.bits();
         if (hasFlag("--min", args))         features =  Features.HAVE_MIN.bits();
@@ -5068,6 +5069,9 @@ public class LambdaJ {
         if (hasFlag("--no-atom", args))     features &= ~Features.HAVE_ATOM.bits();
         if (hasFlag("--no-eq", args))       features &= ~Features.HAVE_EQ.bits();
         if (hasFlag("--no-quote", args))    features &= ~Features.HAVE_QUOTE.bits();
+
+        if (hasFlag("--XX-dyn", args))       features &= ~Features.HAVE_ALL_DYN.bits();
+        if (hasFlag("--XX-oldlambda", args)) features |= Features.HAVE_OLDLAMBDA.bits();
 
         return features;
     }
@@ -5320,6 +5324,7 @@ public class LambdaJ {
                 + "                   the special form lambda\n"
                 + "\n"
                 + "\n"
+                + "--XX-oldlambda   Lists whose car is 'lambda' are (anonymous) functions, too.\n" 
                 + "--XX-dyn ......  Use dynamic environments instead of Murmel's\n"
                 + "                 lexical closures with dynamic global environment.\n"
                 + "                 WARNING: This flag is for experimentation purposes only\n"

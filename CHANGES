@@ -3,6 +3,11 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
 
  * changed car and cdr so that they are no longer defined for symbols, i.e. (car 'aaa)
    now is an error.
+ * changed the evaluator of the interpreter so that lists whose car is 'lambda' are
+   no longer valid functions. e.g.
+     (apply '(lambda (a b) (+ a b)) '(1 2))
+   no longer works but gives an error.
+   Old behaviour can be restored by the commandline flag '--XX-oldlambda' (interpreter only).
 
  * added the special operators catch, throw and unwind-protect
 

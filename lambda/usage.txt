@@ -127,6 +127,7 @@ Feature flags:
                    the special form lambda
 
 
+--XX-oldlambda   Lists whose car is 'lambda' are (anonymous) functions, too. 
 --XX-dyn ......  Use dynamic environments instead of Murmel's
                  lexical closures with dynamic global environment.
                  WARNING: This flag is for experimentation purposes only
