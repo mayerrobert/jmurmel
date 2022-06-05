@@ -701,16 +701,16 @@ public class LambdaJ {
         if (haveXtra())   {
             sDynamic = internWellknown("dynamic");
 
-            sIf      = internWellknown("if");
             sDefine  = internWellknown("define");
             internWellknown("defun");
             internWellknown("defmacro");
+            internWellknown("if");
             internWellknown("let");
             internWellknown("let*");
             internWellknown("letrec");
 
             internWellknown("multiple-value-bind");
-            sMultipleValueCall = internWellknown("multiple-value-call");
+            internWellknown("multiple-value-call");
 
             internWellknown("unwind-protect");
             internWellknown("catch");
@@ -726,7 +726,7 @@ public class LambdaJ {
 
             internWellknown("declaim");
         }
-        else sDynamic = sIf = sDefine = sMultipleValueCall = sProgn = null;
+        else sDynamic = sDefine = sProgn = null;
 
         if (haveUtil()) {
             internWellknown("null");
@@ -1620,8 +1620,8 @@ public class LambdaJ {
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
-    /** well known symbols for the reserved symbols t, nil and dynamic, and for the special operators */
-    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sQuote, sIf, sDefine, sMultipleValueCall, sProgn;
+    /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators */
+    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sQuote, sDefine, sProgn;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1719,8 +1719,6 @@ public class LambdaJ {
 
     final Set<Object> modules = new HashSet<>();
     int speed = 1; // changed by (declaim (optimize (speed...
-
-    ConsCell catchTags = null;
 
 
     /// ###  eval - the heart of most if not all Lisp interpreters
@@ -2099,7 +2097,7 @@ public class LambdaJ {
         }
         catch (ReturnException re) {
             final Object thrownTag = re.tag;
-            if (localCatchTags != null) for (ConsCell i = localCatchTags; i != catchTags; i = (ConsCell)cdr(i)) {
+            if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
                 if (car(i) == thrownTag) { values = re.valuesAsList(); return result = re.result; }
             }
             throw re;
@@ -2131,7 +2129,7 @@ public class LambdaJ {
                 if (e instanceof ReturnException) {
                     final ReturnException re = (ReturnException)e;
                     final Object thrownTag = re.tag;
-                    if (localCatchTags != null) for (ConsCell i = localCatchTags; i != catchTags; i = (ConsCell)cdr(i)) {
+                    if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
                         if (car(i) == thrownTag) { values = re.valuesAsList(); return re.result; }
                     }
                 }
@@ -6679,7 +6677,7 @@ public class LambdaJ {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final ConsCell transformed = ListBuilder.list(intp.sIf, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)); 
+                            final ConsCell transformed = ListBuilder.list(op, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)); 
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
                             return;
                         }
