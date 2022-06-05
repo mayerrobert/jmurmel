@@ -694,7 +694,7 @@ public class LambdaJ {
         sNil =                         haveNil() ? internWellknown("nil") : intern("nil");
         sLambda =                      internWellknown("lambda");
 
-        if (haveQuote())  { sQuote   = internWellknown("quote"); }   else sQuote = null;
+        if (haveQuote())  { internWellknown("quote"); }
         if (haveCond())   { internWellknown("cond"); }
         if (haveLabels()) { internWellknown("labels"); }
 
@@ -1621,7 +1621,7 @@ public class LambdaJ {
     private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators */
-    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sQuote, sDefine, sProgn;
+    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sDefine, sProgn;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1664,7 +1664,7 @@ public class LambdaJ {
 
     private Object makeExpTrue() {
         if (haveT()) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (haveQuote()) return cons(sQuote, cons(sT, null));
+        else if (haveQuote()) return cons(intern("quote"), cons(sT, null));
         else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
     }
 
@@ -5930,7 +5930,7 @@ public class LambdaJ {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
-            if (fn instanceof Closure)   return interpret(fn, args);
+            if (fn instanceof Closure)           return interpret(fn, args);
 
             throw errorNotAFunction(fn);
         }
@@ -5938,7 +5938,7 @@ public class LambdaJ {
         private Object interpret(Object fn, Object[] args) {
             return intp.eval(cons(intp.intern("apply"),
                                   cons(fn,
-                                       cons(cons(intp.sQuote,
+                                       cons(cons(intp.intern("quote"),
                                                  cons(arraySlice(args),
                                                       null)),
                                             null))),
@@ -6869,7 +6869,7 @@ public class LambdaJ {
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (symbolEq(op, "macroexpand-1")) {
-                        if (intp.sQuote != caar(ccArguments)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        if (!symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
                         sb.append("((Supplier<Object>)(() -> {\n"
                                   + "        final Object expansion").append(rsfx).append(" = ");
                         emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)), true);
