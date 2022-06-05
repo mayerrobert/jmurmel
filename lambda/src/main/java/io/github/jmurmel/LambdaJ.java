@@ -689,10 +689,9 @@ public class LambdaJ {
 
         this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
 
-        /* Look up the symbols for special forms only once. Also start to build the table of reserved words. */
-        sT =                           haveT() ? internWellknown("t") : intern("t");
-        sNil =                         haveNil() ? internWellknown("nil") : intern("nil");
-        sLambda =                      internWellknown("lambda");
+        sT = haveT() ? internWellknown("t") : intern("t");
+        if (haveNil()) internWellknown("nil");
+        sLambda = internWellknown("lambda");
 
         if (haveQuote())  { internWellknown("quote"); }
         if (haveCond())   { internWellknown("cond"); }
@@ -1602,12 +1601,12 @@ public class LambdaJ {
     /// Murmel has a list of reserved words may not be used as a symbol: t, nil and special forms
 
     /** Throw error if sym is a reserved symbol */
-    void notReserved(final String op, final LambdaJSymbol sym) {
+    static void notReserved(final String op, final LambdaJSymbol sym) {
         if (reserved(sym)) errorReserved(op, sym);
     }
 
-    boolean reserved(LambdaJSymbol sym) {
-        return sym == null || sym == sNil || sym == sT || sym.specialForm();
+    static boolean reserved(LambdaJSymbol sym) {
+        return sym == null || sym.wellknownSymbol == WellknownSymbol.sNil || sym.wellknownSymbol == WellknownSymbol.sT || sym.specialForm();
     }
 
 
@@ -1621,7 +1620,7 @@ public class LambdaJ {
     private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators */
-    final LambdaJSymbol sT, sNil, sDynamic, sLambda, sDefine, sProgn;
+    final LambdaJSymbol sT, sDynamic, sLambda, sDefine, sProgn;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -2342,7 +2341,7 @@ public class LambdaJ {
         return (ConsCell)args;
     }
 
-    final LambdaJSymbol symbolOrMalformed(String op, Object maybeSymbol) {
+    static LambdaJSymbol symbolOrMalformed(String op, Object maybeSymbol) {
         if (!symbolp(maybeSymbol)) errorMalformed(op, "a symbol", maybeSymbol);
         final LambdaJSymbol symbol = (LambdaJSymbol)maybeSymbol;
         notReserved(op, symbol);
@@ -2698,7 +2697,7 @@ public class LambdaJ {
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols. */
-    private void symbolArgs(String func, Object a) {
+    private static void symbolArgs(String func, Object a) {
         if (symbolp(a)) return;
         if (atom(a)) errorMalformed(func, "bindings to be a symbol or list of symbols", a);
         final ConsCell start = (ConsCell) a;
@@ -6216,11 +6215,13 @@ public class LambdaJ {
     public static class MurmelJavaCompiler {
         private final JavaCompilerHelper javaCompiler;
         final LambdaJ intp;
+        private final LambdaJSymbol sNil;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, libDir);
             intp.init(() -> -1, System.out::print);
             this.intp = intp;
+            sNil = intp.intern("nil");
 
             this.javaCompiler = new JavaCompilerHelper(outPath);
         }
@@ -6230,7 +6231,7 @@ public class LambdaJ {
 
         /// symbols and name mangling
         private LambdaJSymbol intern(String symname) {
-            if (symname == null) return intp.sNil;
+            if (symname == null) return sNil;
             return intp.intern(symname);
         }
 
@@ -6258,8 +6259,8 @@ public class LambdaJ {
         /// environment
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
          *  symbols that are reserved words throw an error. */
-        private ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
-            final LambdaJSymbol sym = intp.symbolOrMalformed(func, symbol);
+        private static ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
+            final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(func, symbol);
             return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
         }
 
@@ -6279,7 +6280,7 @@ public class LambdaJ {
         private Set<String> implicitDecl;
         /** return {@code form} as a Java expression */
         private String javasym(Object form, ConsCell env) {
-            if (form == null || form == intp.sNil) return "(Object)null";
+            if (form == null || form == sNil) return "(Object)null";
             final ConsCell symentry = assq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
@@ -6295,16 +6296,16 @@ public class LambdaJ {
             return javasym;
         }
 
-        private void notDefined(String func, Object sym, ConsCell env) {
+        private static void notDefined(String func, Object sym, ConsCell env) {
             final ConsCell prevEntry = assq(sym, env);
             if (prevEntry != null) {
-                intp.notReserved(func, (LambdaJSymbol)car(prevEntry));
+                LambdaJ.notReserved(func, (LambdaJSymbol)car(prevEntry));
                 errorMalformedFmt(func, "can't redefine symbol %s", sym);
             }
         }
 
-        private void defined(String func, Object sym, ConsCell env) {
-            if (sym == null) sym = intern("nil");
+        private static void defined(String func, Object sym, ConsCell env) {
+            if (sym == null) return; // nil is always defined
             final ConsCell symentry = assq(sym, env);
             if (symentry == null) errorMalformedFmt(func, "undefined symbol %s", sym.toString());
         }
@@ -6498,7 +6499,7 @@ public class LambdaJ {
                 }
 
                 else if (isOperator(op, WellknownSymbol.sDefmacro)) {
-                    intp.symbolOrMalformed("defmacro", cadr(ccForm));
+                    LambdaJ.symbolOrMalformed("defmacro", cadr(ccForm));
                     intp.eval(ccForm, null);
                     bodyForms.add(form);
                     return globalEnv;
@@ -6568,7 +6569,7 @@ public class LambdaJ {
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
             varargs1_2("toplevel define", listOrMalformed("toplevel define", cdr(form)));
-            final LambdaJSymbol symbol = intp.symbolOrMalformed("define", cadr(form));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("define", cadr(form));
             notDefined("define", symbol, env);
 
             final String javasym = mangle(symbol.toString(), 0);
@@ -6590,7 +6591,7 @@ public class LambdaJ {
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final LambdaJSymbol symbol = intp.symbolOrMalformed("defun", cadr(form));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("defun", cadr(form));
             final Object params = caddr(form);
             final Object body = cdddr(form);
             notDefined("defun", symbol, env);
@@ -6912,7 +6913,7 @@ public class LambdaJ {
         }
 
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (form == null || form == intp.sNil) sb.append("false");
+            if (form == null || form == sNil) sb.append("false");
             else if (form == intp.sT) sb.append("true");
             else if (consp(form) && car(form) == intp.intern("null")) {
                 // optimize "(null ..."
@@ -6926,7 +6927,7 @@ public class LambdaJ {
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
         private void emitAtom(WrappingWriter sb, Object form) {
-            if (form == null || form == intp.sNil) sb.append("(Object)null");
+            if (form == null || form == sNil) sb.append("(Object)null");
             else if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else if (form instanceof Double) sb.append(Double.toString((Double) form));
             else if (form instanceof Character) {
@@ -7062,7 +7063,7 @@ public class LambdaJ {
         }
 
         private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = intp.symbolOrMalformed("setq", car(pairs));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("setq", car(pairs));
             final String javaName = javasym(symbol, env);
 
             if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
@@ -7081,7 +7082,7 @@ public class LambdaJ {
 
         /** args = (formsym (sym...) form...) */
         private void emitLabel(String func, WrappingWriter sb, final Object symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = intp.symbolOrMalformed(func, car(symbolParamsAndForms));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
             sb.append("new MurmelFunction() {\n");
@@ -7194,7 +7195,7 @@ public class LambdaJ {
                 if (letrec) for (Object binding: (ConsCell)bindings) {
                     final LambdaJSymbol sym;
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; }
-                    else { sym = intp.symbolOrMalformed(op, car(binding)); }
+                    else { sym = LambdaJ.symbolOrMalformed(op, car(binding)); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     env = extenvIntern(sym, symName, env);
                 }
@@ -7206,7 +7207,7 @@ public class LambdaJ {
                     final Object form;
                     if (consp(binding) && cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (symbolp(binding)) { sym = (LambdaJSymbol)binding; form = null; }
-                    else { sym = intp.symbolOrMalformed(op, car(binding)); form = cadr(binding); }
+                    else { sym = LambdaJ.symbolOrMalformed(op, car(binding)); form = cadr(binding); }
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     sb.append("        { ").append(symName).append(" = ");
                     emitForm(sb, form, env, topEnv, rsfx, false);
@@ -7360,13 +7361,13 @@ public class LambdaJ {
             int n = 0;
             for (Object params = paramList; params != null; ) {
                 if (consp(params)) {
-                    final LambdaJSymbol param = intp.symbolOrMalformed(func, car(params));
+                    final LambdaJSymbol param = LambdaJ.symbolOrMalformed(func, car(params));
                     if (!seen.add(param)) errorMalformedFmt(func, "duplicate symbol %s", param);
                     env = extenvIntern(param, "args" + rsfx + "[" + n++ + "]", env);
                 }
 
                 else if (symbolp(params)) {
-                    intp.notReserved(func, (LambdaJSymbol)params);
+                    LambdaJ.notReserved(func, (LambdaJSymbol)params);
                     if (!seen.add(params)) errorMalformedFmt(func, "duplicate symbol %s", params);
                     env = extenv(func, params, rsfx, env);
                     sb.append("        final Object ").append(javasym(params, env)).append(" = arrayToList(args").append(rsfx).append(", ").append(n).append(");\n");
@@ -7777,7 +7778,7 @@ public class LambdaJ {
          *  <p>If pool is true then above Java expression is added as an entry to the constant pool
          *  and a reference to the new or already existing identical constant pool entry is emitted. */
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
-            if (form == null || form == intp.sNil) sb.append("(Object)null");
+            if (form == null || form == sNil) sb.append("(Object)null");
 
             else if (symbolp(form)) {
                 if (form == intp.sT) sb.append("_t");
