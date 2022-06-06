@@ -290,14 +290,14 @@ public class LambdaJ {
         final Object tag, result;
         final Object[] values; 
 
-        public ReturnException(Object tag, Object result, Object[] values) {
+        ReturnException(Object tag, Object result, Object[] values) {
             super("#<returnexception tag=" + tag + ", result=" + result + '>');
             this.tag = tag;
             this.result = result;
             this.values = values;
         }
 
-        public ReturnException(Object tag, Object result, ConsCell values) {
+        ReturnException(Object tag, Object result, ConsCell values) {
             this(tag, result, values == NO_VALUES? null : listToArray(values));
         }
 
@@ -537,21 +537,16 @@ public class LambdaJ {
 
 
     /// ## Infrastructure
-    private static final int EOF = -1;
-    public static final Object[] EMPTY_ARRAY = new Object[0];
-    private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
-
-    private static final String[] FEATURES = {
-            "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point"
-    };
+    static final int EOF = -1;
+    static final Object[] EMPTY_ARRAY = new Object[0];
 
     final ConsCell featuresEnvEntry;
 
     static final String[] CTRL = {
-            "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
-            "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
-            "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
-            "Us"
+        "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
+        "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
+        "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
+        "Us"
     };
 
     /** installation directory */
@@ -770,7 +765,7 @@ public class LambdaJ {
 
     private ConsCell makeFeatureList() {
         ConsCell l = null;
-        for (String feat: FEATURES) {
+        for (String feat: new String[] { "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" }) {
             l = new ListConsCell(intern(feat), l);
         }
         return l;
@@ -796,7 +791,7 @@ public class LambdaJ {
     private static class SExpressionWriter implements ObjectWriter {
         private final WriteConsumer out;
 
-        public SExpressionWriter(WriteConsumer out) { this.out = out; }
+        SExpressionWriter(WriteConsumer out) { this.out = out; }
 
         @Override public void printObj(Object o, boolean printEscape) { printSEx(out, o, printEscape); }
         @Override public void printEol() { out.print("\n"); }
@@ -809,7 +804,7 @@ public class LambdaJ {
 
     static class ListSymbolTable implements SymbolTable {
         /// A symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
-        private ConsCell symbols;
+        ConsCell symbols;
 
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override
@@ -1615,7 +1610,7 @@ public class LambdaJ {
     public SymbolTable getSymbolTable() { return symtab; }
 
     private static final Object UNASSIGNED = "#<value is not assigned>";          // only relevant in letrec
-    private static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
+    static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
@@ -1806,7 +1801,7 @@ public class LambdaJ {
                     //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
 
                     final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    if (envEntry == null) insertFront(topEnv, symbol, value);
+                    if (envEntry == null) insertFrontTopEnv(symbol, value);
                     else envEntry.rplacd(value);
 
                     return result = symbol;
@@ -2610,6 +2605,10 @@ public class LambdaJ {
         env.rplaca(symbolEntry);
         env.rplacd(cons(oldCar, oldCdr));
         return symbolEntry;
+    }
+
+    void insertFrontTopEnv(Object symbol, Object value) {
+        insertFront(topEnv, symbol, value);
     }
 
     /** build an extended environment for a function invocation:<pre>
@@ -3921,6 +3920,7 @@ public class LambdaJ {
         }
     }
 
+    private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
     /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
     static Primitive findMethod(String className, String methodName, Iterable<?> paramClassNames) {
         final ArrayList<Class<?>> paramClasses = new ArrayList<>(10);
@@ -3980,7 +3980,7 @@ public class LambdaJ {
     private static class DynamicProxy implements InvocationHandler {
         private final Map<Method, MurmelFunction> methods;
 
-        public DynamicProxy(Map<Method, MurmelFunction> methods) {
+        DynamicProxy(Map<Method, MurmelFunction> methods) {
             this.methods = methods;
         }
 
@@ -4362,7 +4362,7 @@ public class LambdaJ {
             @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
             @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
-            @Override public void setCommandlineArgumentList(ConsCell args) { insertFront(topEnv, intern("*command-line-argument-list*"), args); }
+            @Override public void setCommandlineArgumentList(ConsCell args) { insertFrontTopEnv(intern("*command-line-argument-list*"), args); }
             @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
             @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
             @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
@@ -5145,7 +5145,7 @@ public class LambdaJ {
             if ("--".equals(arg)) break;
         }
 
-        intp.insertFront(intp.topEnv, intp.intern("*command-line-argument-list*"), arraySlice(args, n));
+        intp.insertFrontTopEnv(intp.intern("*command-line-argument-list*"), arraySlice(args, n));
     }
 
     private static void injectCommandlineArgs(MurmelProgram prg, String[] args) {
@@ -5377,7 +5377,7 @@ public class LambdaJ {
         private final Iterator<Path> paths;
         private Reader reader;
 
-        public MultiFileReadSupplier(List<Path> paths, ObjectReader delegate, boolean verbose) {
+        MultiFileReadSupplier(List<Path> paths, ObjectReader delegate, boolean verbose) {
             this.paths = paths.iterator();
             this.delegate = delegate;
             this.verbose = verbose;
@@ -6092,7 +6092,7 @@ public class LambdaJ {
 
         @Override public void setCommandlineArgumentList(ConsCell args) {
             commandlineArgumentList = args;
-            intp.insertFront(intp.topEnv, intern("*command-line-argument-list*"), args);
+            intp.insertFrontTopEnv(intern("*command-line-argument-list*"), args);
         }
 
         @Override public Object getValue(String symbol) {
@@ -7880,7 +7880,6 @@ public class LambdaJ {
 
     @SuppressWarnings("unused")
     public static class JFRHelper {
-        private static final AtomicInteger counter = new AtomicInteger(0);
 
         private JFRHelper() {}
 
@@ -7893,6 +7892,7 @@ public class LambdaJ {
         @jdk.jfr.Category({"JMurmel", "User Events"})
         @jdk.jfr.StackTrace(false)
         public abstract static class BaseEvent extends jdk.jfr.Event {
+            private static final AtomicInteger counter = new AtomicInteger(0);
 
             @jdk.jfr.Description("Parent Event Id")
             @jdk.jfr.Label("Parent") @ParentId final int parent;
