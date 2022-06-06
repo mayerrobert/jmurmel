@@ -445,7 +445,7 @@ public class LambdaJ {
         }
 
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
-        String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
+        @Override String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
     }
 
     private static final class Closure implements Writeable {
@@ -3786,7 +3786,7 @@ public class LambdaJ {
         oneArg("macroexpand-1", args);
         final Object maybeMacroCall = car(args);
         if (!consp(maybeMacroCall)) {
-            values = cons(maybeMacroCall, (cons(null, null)));
+            values = cons(maybeMacroCall, cons(null, null));
             return maybeMacroCall;
         }
         return macroexpandImpl((ConsCell) maybeMacroCall);
@@ -3798,12 +3798,12 @@ public class LambdaJ {
         final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
         final Closure macroClosure = macroSymbol.macro;
         if (macroClosure == null) {
-            values = cons(args, (cons(null, null)));
+            values = cons(args, cons(null, null));
             return args;
         }
         final ConsCell arguments = (ConsCell) cdr(args);
         final Object expansion = evalMacro(macroSymbol, macroClosure, arguments);
-        values = cons(expansion, (cons(sT, null)));
+        values = cons(expansion, cons(sT, null));
         return expansion;
     }
 
@@ -5444,7 +5444,7 @@ public class LambdaJ {
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
-        public static final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { public Object get() { throw new LambdaJError(false, "unassigned value"); } };
+        public static final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { @Override public Object get() { throw new LambdaJError(false, "unassigned value"); } };
         public static final Object UNASSIGNED_LOCAL = "#<value is not assigned>";
 
         public static final Object[] NOARGS = new Object[0];
@@ -7996,7 +7996,7 @@ public class LambdaJ {
 /// ## class JavaCompilerHelper
 /// class JavaCompilerHelper - a helper class that wraps the Java system compiler in tools.jar,
 /// used by MurmelJavaCompiler to compile the generated Java to an in-memory class and optionally a .jar file.
-class JavaCompilerHelper {
+final class JavaCompilerHelper {
     private static final Map<String, String> ENV = Collections.singletonMap("create", "true");
     private final MurmelClassLoader murmelClassLoader;
 
@@ -8108,7 +8108,7 @@ class JavaCompilerHelper {
     }
 }
 
-class JavaSourceFromString extends SimpleJavaFileObject {
+final class JavaSourceFromString extends SimpleJavaFileObject {
     /**
      * The source code of this "file".
      */
@@ -8130,7 +8130,7 @@ class JavaSourceFromString extends SimpleJavaFileObject {
     }
 }
 
-class MurmelClassLoader extends ClassLoader {
+final class MurmelClassLoader extends ClassLoader {
     private final Path outPath;
 
     MurmelClassLoader(Path outPath) { this.outPath = outPath; }
@@ -8157,7 +8157,7 @@ class MurmelClassLoader extends ClassLoader {
     }
 }
 
-class EolUtil {
+final class EolUtil {
     private EolUtil() {}
 
     /**
@@ -8189,7 +8189,7 @@ class EolUtil {
         // we get here if we just read a '\r'
         // build up the string builder so it contains all the prior characters
         stringBuilder.append(inputValue, 0, index);
-        if ((index + 1 < len) && inputValue.charAt(index + 1) == '\n') {
+        if (index + 1 < len && inputValue.charAt(index + 1) == '\n') {
             // this means we encountered a \r\n  ... move index forward one more character
             index++;
         }
@@ -8198,7 +8198,7 @@ class EolUtil {
         while (index < len) {
             final char c = inputValue.charAt(index);
             if (c == '\r') {
-                if ((index + 1 < len) && inputValue.charAt(index + 1) == '\n') {
+                if (index + 1 < len && inputValue.charAt(index + 1) == '\n') {
                     // this means we encountered a \r\n  ... move index forward one more character
                     index++;
                 }
@@ -8257,7 +8257,7 @@ class EolUtil {
 }*/
 
 /** A wrapping {@link LambdaJ.WriteConsumer} that translates '\n' to the given line separator {@code eol}. */
-class UnixToAnyEol implements LambdaJ.WriteConsumer {
+final class UnixToAnyEol implements LambdaJ.WriteConsumer {
     final LambdaJ.WriteConsumer wrapped;
     final String eol;
 
@@ -8285,7 +8285,7 @@ class UnixToAnyEol implements LambdaJ.WriteConsumer {
 }
 
 /** Wrap a java.io.Writer, methods throw unchecked LambdaJError, also add {@code append()} methods for basic data types. */
-class WrappingWriter extends Writer {
+final class WrappingWriter extends Writer {
     private final Writer wrapped;
 
     WrappingWriter(Writer w) { wrapped = w; }
@@ -8339,7 +8339,7 @@ class WrappingWriter extends Writer {
 }
 
 /** A frame (window) with methods to draw lines and print text. */
-class TurtleFrame {
+final class TurtleFrame {
     private static final Color[] colors = {
         Color.white,        //  0
         Color.black,        //  1
