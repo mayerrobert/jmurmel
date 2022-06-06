@@ -1655,8 +1655,7 @@ public class LambdaJ {
     static boolean isOperator(Object op, WellknownSymbol wellknownOp) {
         if (op == null) return wellknownOp == WellknownSymbol.sNil;
         if (!symbolp(op)) return false;
-        final LambdaJSymbol sym = (LambdaJSymbol)op;
-        return sym.wellknownSymbol == wellknownOp;
+        return ((LambdaJSymbol)op).wellknownSymbol == wellknownOp;
     }
 
     private Supplier<Object> expTrue;
@@ -3786,7 +3785,10 @@ public class LambdaJ {
     final Object macroexpand1(ConsCell args) {
         oneArg("macroexpand-1", args);
         final Object maybeMacroCall = car(args);
-        if (!consp(maybeMacroCall)) return maybeMacroCall;
+        if (!consp(maybeMacroCall)) {
+            values = cons(maybeMacroCall, (cons(null, null)));
+            return maybeMacroCall;
+        }
         return macroexpandImpl((ConsCell) maybeMacroCall);
     }
 
