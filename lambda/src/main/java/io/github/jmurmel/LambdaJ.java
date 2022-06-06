@@ -3792,16 +3792,19 @@ public class LambdaJ {
         return macroexpandImpl((ConsCell) maybeMacroCall);
     }
 
-    final Object macroexpandImpl(ConsCell args) {
-        final Object maybeSymbol = car(args);
-        if (maybeSymbol == null || !symbolp(maybeSymbol)) throw new LambdaJError(true, "%s: expected a nonnil symbol argument but got %s", "macroexpand-1", printSEx(maybeSymbol));
+    final Object macroexpandImpl(ConsCell form) {
+        final Object maybeSymbol = car(form);
+        if (maybeSymbol == null || !symbolp(maybeSymbol)) {
+            values = cons(form, cons(null, null));
+            return form;
+        }
         final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
         final Closure macroClosure = macroSymbol.macro;
         if (macroClosure == null) {
-            values = cons(args, cons(null, null));
-            return args;
+            values = cons(form, cons(null, null));
+            return form;
         }
-        final ConsCell arguments = (ConsCell) cdr(args);
+        final ConsCell arguments = (ConsCell) cdr(form);
         final Object expansion = evalMacro(macroSymbol, macroClosure, arguments);
         values = cons(expansion, cons(sT, null));
         return expansion;
