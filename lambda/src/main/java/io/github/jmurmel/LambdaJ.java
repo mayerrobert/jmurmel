@@ -763,11 +763,10 @@ public class LambdaJ {
         expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
+    private static final String[] FEATURES = { "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" };
     private ConsCell makeFeatureList() {
         ConsCell l = null;
-        for (String feat: new String[] { "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" }) {
-            l = new ListConsCell(intern(feat), l);
-        }
+        for (String feat: FEATURES) l = new ListConsCell(intern(feat), l);
         return l;
     }
 
@@ -4358,21 +4357,32 @@ public class LambdaJ {
     /** Turn {@code program} into an interpreted Murmel program: {@code program} will be wrapped in the method
      *  {@link MurmelProgram#body} that can be run multiple times. */
     public MurmelProgram formsToInterpretedProgram(String program, ReadSupplier in, WriteConsumer out) {
-        return new MurmelProgram() {
-            @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
-            @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
-
-            @Override public void setCommandlineArgumentList(ConsCell args) { insertFrontTopEnv(intern("*command-line-argument-list*"), args); }
-            @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
-            @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
-            @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
-
-            @Override public Object body() {
-                return interpretExpressions(new StringReader(program)::read, in, out);
-            }
-        };
+        return new CallProgram(program, in, out);
     }
 
+    private class CallProgram implements MurmelProgram {
+        private final String program;
+        private final ReadSupplier in;
+        private final WriteConsumer out;
+
+        public CallProgram(String program, ReadSupplier in, WriteConsumer out) {
+            this.program = program;
+            this.in = in;
+            this.out = out;
+        }
+
+        @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
+        @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
+
+        @Override public void setCommandlineArgumentList(ConsCell args) { insertFrontTopEnv(intern("*command-line-argument-list*"), args); }
+        @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
+        @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
+        @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
+
+        @Override public Object body() {
+            return interpretExpressions(new StringReader(program)::read, in, out);
+        }
+    };
 
 
     /// JMurmel JSR-223 embed API - Java calls Murmel with JSR223 eval
@@ -4480,9 +4490,9 @@ public class LambdaJ {
 
     /// static void main() - run JMurmel from the command prompt (interactive)
 
-    enum Action { INTERPRET, TO_JAVA, TO_JAR, COMPILE_AND_RUN, }
+    private enum Action { INTERPRET, TO_JAVA, TO_JAR, COMPILE_AND_RUN, }
 
-    static class Exit extends RuntimeException {
+    private static class Exit extends RuntimeException {
         final int rc;
         Exit(int rc) { super(null, null, true, true); this.rc = rc; }
     }
