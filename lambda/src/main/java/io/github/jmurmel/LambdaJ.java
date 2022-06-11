@@ -314,7 +314,7 @@ public class LambdaJ {
         /** add an item at the end of the list */
         @SuppressWarnings("unchecked")
         public T append(Object elem) {
-            final ConsCell newCell = cons(elem, null);
+            final ConsCell newCell = newCell(elem);
             if (first == null) {
                 last = first = newCell;
             }
@@ -352,12 +352,12 @@ public class LambdaJ {
         /** return the constructed list so far */
         public Object first() { return first; }
 
-        abstract ConsCell cons(Object car, Object cdr);
+        abstract ConsCell newCell(Object car);
     }
 
     /** Builder class for constructing lists, also used by compiled Murmel */
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
-        @Override ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
+        @Override ConsCell newCell(Object car) { return new ListConsCell(car, null); }
 
         public static ConsCell list(Object... elems) {
             if (elems == null || elems.length == 0) return null;
@@ -367,7 +367,7 @@ public class LambdaJ {
     }
 
     private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
-        @Override ConsCell cons(Object car, Object cdr) { return LambdaJ.this.cons(car, cdr); }
+        @Override ConsCell newCell(Object car) { return LambdaJ.this.cons(car, null); }
     }
 
     private abstract static class AbstractConsCell extends ConsCell {
@@ -4382,7 +4382,7 @@ public class LambdaJ {
         @Override public Object body() {
             return interpretExpressions(new StringReader(program)::read, in, out);
         }
-    };
+    }
 
 
     /// JMurmel JSR-223 embed API - Java calls Murmel with JSR223 eval
@@ -8032,32 +8032,6 @@ final class JavaCompilerHelper {
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
         mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, new File(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName());
 
-        /*
-        try (JarOutputStream jar = new JarOutputStream(new FileOutputStream(jarFileName), mf)) {
-            final String[] dirs = className.split("\\.");
-            final StringBuilder path = new StringBuilder();
-            for (int i = 0; i < dirs.length; i++) {
-                path.append(dirs[i]);
-                if (i == dirs.length - 1) {
-                    final JarEntry entry = new JarEntry(path.toString() + ".class");
-                    jar.putNextEntry(entry);
-                    jar.write(murmelClassLoader.getBytes(className));
-
-                    // add classes for Murmel lambdas
-                    Class<?>[] nestedClasses = program.getClasses();
-                    for (Class<?> clazz: nestedClasses) {
-                        jar.write(murmelClassLoader.getBytes(clazz.getName()));
-                    }
-                }
-                else {
-                    path.append('/');
-                    final JarEntry entry = new JarEntry(path.toString());
-                    jar.putNextEntry(entry);
-                }
-                jar.closeEntry();
-            }
-        }
-        */
         final Path zipPath = Paths.get(jarFileName);
         final URI uri = URI.create("jar:" + zipPath.toUri());
 
