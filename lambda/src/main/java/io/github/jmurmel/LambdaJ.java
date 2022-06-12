@@ -594,6 +594,9 @@ public class LambdaJ {
         HAVE_EQ,
 
         HAVE_CONS,           // cons, car, cdr
+
+        HAVE_VECTOR,         // vector, svref
+
         HAVE_COND,
 
         HAVE_APPLY,          // McCarthy didn't list apply, he probably implied eval, tough
@@ -625,7 +628,7 @@ public class LambdaJ {
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
         HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits(); } },
         HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
-                                                               | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits()
+                                                               | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_VECTOR.bits()
                                                                | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_GUI.bits() | HAVE_UTIL.bits(); } },
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
         ;
@@ -647,6 +650,7 @@ public class LambdaJ {
     private boolean haveUtil()      { return (features & Features.HAVE_UTIL.bits())      != 0; }
     private boolean haveApply()     { return (features & Features.HAVE_APPLY.bits())     != 0; }
     private boolean haveCons()      { return (features & Features.HAVE_CONS.bits())      != 0; }
+    private boolean haveVector()    { return (features & Features.HAVE_VECTOR.bits())    != 0; }
     private boolean haveCond()      { return (features & Features.HAVE_COND.bits())      != 0; }
     private boolean haveAtom()      { return (features & Features.HAVE_ATOM.bits())      != 0; }
     private boolean haveEq()        { return (features & Features.HAVE_EQ.bits())        != 0; }
@@ -756,6 +760,12 @@ public class LambdaJ {
             internWellknown("car");
             internWellknown("cdr");
             internWellknown("cons");
+        }
+        
+        if (haveVector()) {
+            internWellknown("vector");
+            internWellknown("vectorp");
+            internWellknown("svref");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1631,7 +1641,8 @@ public class LambdaJ {
         sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM), sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
         sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
-        sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM);
+        sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
+        sVector("vector", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM);
 
         private final String sym;
         final WellknownSymbolKind kind;
@@ -2591,6 +2602,10 @@ public class LambdaJ {
         case sList:     { return args; }
         case sListStar: { return listStar(args); }
 
+        case sVector:   { return listToArray(args); }
+        case sVectorp:  { oneArg("vectorp", args); return boolResult(vectorp  (car(args))); }
+        case sSvRef:    { twoArgs("svref", args);  return svref(car(args), toInt("svref", cadr(args))); }
+
         default:    return NOT_HANDLED;
         }
     }
@@ -3006,22 +3021,23 @@ public class LambdaJ {
         return false;
     }
 
-    static boolean  consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
-    static boolean  atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
-    static boolean  symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
-    static boolean  listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+    static boolean consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
+    static boolean atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
+    static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+    static boolean listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+    static boolean vectorp(Object o)    { return o != null && (o instanceof String || o.getClass().isArray()); } // todo List, ArrayList & Co?
 
-    static boolean  numberp(Object o)    { return o instanceof Long || o instanceof Double || o instanceof Number; }
-    static boolean  floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
-    static boolean  integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer, BigInteger?
+    static boolean numberp(Object o)    { return o instanceof Long || o instanceof Double || o instanceof Number; }
+    static boolean floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
+    static boolean integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer, BigInteger?
 
-    static boolean  stringp(Object o)    { return o instanceof String; }
-    static boolean  characterp(Object o) { return o instanceof Character; }
+    static boolean stringp(Object o)    { return o instanceof String; }
+    static boolean characterp(Object o) { return o instanceof Character; }
 
     // these *should* have no usages as these checks would be superfluous
     // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
-    static boolean  consp(ConsCell ignored)  { throw errorInternal("consp(ConsCell c) should NOT be called"); }
-    static boolean  listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
+    static boolean consp(ConsCell ignored)  { throw errorInternal("consp(ConsCell c) should NOT be called"); }
+    static boolean listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
 
     static ConsCell arraySlice(Object[] o, int offset) { return o == null || offset >= o.length ? null : new ArraySlice(o, offset); }
     static ConsCell arraySlice(Object... elems) {
@@ -3050,6 +3066,12 @@ public class LambdaJ {
         int n = 0;
         for (Object ignored: (ConsCell)list) n++;
         return n;
+    }
+
+    // todo List, ArrayList & Co?
+    static Object svref(Object maybeVector, int idx) {
+        if (!(maybeVector instanceof Object[])) errorNotASimpleVector("svref", maybeVector);
+        return ((Object[])maybeVector)[idx];
     }
 
     /* this method returns true while Lisp member returns the sublist starting at obj */
@@ -3249,6 +3271,7 @@ public class LambdaJ {
         if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
         else if (escapeAtoms && stringp(atom))    { sb.print("\""); sb.print(escapeString(atom.toString())); sb.print("\""); }
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
+        else if (escapeAtoms && vectorp(atom))    { printVector(sb, atom, escapeAtoms); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -3275,6 +3298,20 @@ public class LambdaJ {
             }
         }
         return ret.toString();
+    }
+
+    static void printVector(WriteConsumer sb, Object vector, boolean escapeAtoms) {
+        sb.print("#(");
+        if (vector instanceof Object[]) {
+            boolean first = true;
+            for (Object o: (Object[])vector) {
+                if (first) first = false;
+                else sb.print(" ");
+                _printSEx(sb, o, o, escapeAtoms);
+            }
+        }
+        else throw errorNotImplemented("printing vectors of class %s is not implemented", vector.getClass().getSimpleName());
+        sb.print(")");
     }
 
 
@@ -3319,6 +3356,10 @@ public class LambdaJ {
 
     static RuntimeException errorNotAnIntegralNumber(String func, Object n) {
         throw new LambdaJError(true, "%s: expected an integral number argument but got %s", func, printSEx(n));
+    }
+
+    static RuntimeException errorNotASimpleVector(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorOverflow(String func, String targetType, Object n) {
@@ -3484,6 +3525,7 @@ public class LambdaJ {
         throw errorNotANumber(func, n);
     }
 
+    // todo min/max checken, auch fuer long/int/short/byte
     static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
         if (n == null) errorNotANumber(func, null);
         if (n instanceof Long)    return (Long)n;
@@ -4178,6 +4220,13 @@ public class LambdaJ {
 
         if (haveNil()) {
             env = addBuiltin(internWellknown("nil"), null, env);
+        }
+
+        if (haveVector()) {
+            env = addBuiltin("vector",  (Primitive)LambdaJ::listToArray,
+                  addBuiltin("vectorp", (Primitive) a -> { oneArg("vectorp", a); return boolResult(vectorp  (car(a))); },
+                  addBuiltin("svref",   (Primitive) a -> { twoArgs("svref", a);  return svref(car(a), toInt("svref", cadr(a))); },
+                  env)));
         }
 
         if (haveUtil()) {
