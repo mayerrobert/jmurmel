@@ -5669,6 +5669,11 @@ public class LambdaJ {
             b.appendLast(nth(i, args));
             return b.first();
         }
+
+        public final Object[] _vector  (Object... args) { return args; }
+        public final Object   _vectorp (Object... args) { oneArg("vectorp", args.length); return vectorp(args[0]) ? _t : null; }
+        public final Object   _svref   (Object... args) { twoArgs("svref",  args.length); return svref(args[0], toInt(args[1])); }
+
         public final Object   _append  (Object... args) {
             final int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
@@ -6178,6 +6183,9 @@ public class LambdaJ {
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
             case "atom": return (CompilerPrimitive)this::_atom;
             case "consp": return (CompilerPrimitive)this::_consp;
+            case "vector": return (CompilerPrimitive)this::_vector;
+            case "vectorp": return (CompilerPrimitive)this::_vectorp;
+            case "svref": return (CompilerPrimitive)this::_svref;
             case "listp": return (CompilerPrimitive)this::_listp;
             case "symbolp": return (CompilerPrimitive)this::_symbolp;
             case "numberp": return (CompilerPrimitive)this::_numberp;
@@ -6407,8 +6415,8 @@ public class LambdaJ {
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
-                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp",
-                "assoc", "assq", "list", "append", "values",
+                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
+                "assoc", "assq", "list", "vector", "svref", "append", "values",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",

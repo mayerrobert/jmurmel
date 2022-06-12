@@ -246,6 +246,10 @@ nicht aber bei einem loop mittendrin
 
 
 
+mlib: length muss auch vector unterstützen (ggf. length nach Murmel schieben)
+      div funktionen sollten "sequence" können, können aber nur list (und string?!?)
+sv->list, list->sv?
+
 vector ist ein 1-dimensionales array, strings sind 1-dimensionale array von character, hash-tables sind "assoziative arrays"
 welche gemeinsamen eigenschaften haben list, vector/array, string, hash-table?
 -> elementzugriff
@@ -262,7 +266,7 @@ welche gemeinsamen eigenschaften haben list, vector/array, string, hash-table?
 -> iteration
    mapcar&co, dolist geht nur für lists
    reduce geht für list, vector/array, string
-   
+
 
 
 vielleicht beginnen mit #() und #H() lesen und schreiben, plus svref und gethash?

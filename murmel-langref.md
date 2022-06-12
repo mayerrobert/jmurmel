@@ -235,7 +235,7 @@ will be bound to the last parameter.
 Murmel supports symbols and lists as well as other atoms
 that are not symbols.
 These other atoms are double precision floating point numbers,
-64bit integer numbers, strings and characters. Custom primitives
+64bit integer numbers, vectors, strings and characters. Custom primitives
 may support additional atoms.
 
 Murmel treats symbols case-insensitive.
@@ -676,6 +676,16 @@ Examples:
 - `numberp` returns `t` for all Java Number types.
 - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
+
+### vector, vectorp, svref
+
+Vectors are on-dimensional arrays (which internally are Object[]).
+
+Example usage:
+
+    (define *v* (vector 1 2 3))
+    (vectorp *v*) ; ==> t
+    (svref *v* 1) ; ==> 2
 
 ### (assoc key alist) -> cons or nil
 
