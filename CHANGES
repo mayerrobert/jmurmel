@@ -10,7 +10,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
    Old behaviour can be restored by the commandline flag '--XX-oldlambda' (interpreter only).
 
  * added the special operators catch, throw and unwind-protect
- * added vector, vectorp and svref
+ * added vector, vectorp, svref and svlength
 
  * fixed backquote expansion:
    e.g. `(a ,nil) was eval'd to (a); correct expansion is (a nil)

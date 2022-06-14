@@ -766,6 +766,7 @@ public class LambdaJ {
             internWellknown("vector");
             internWellknown("vectorp");
             internWellknown("svref");
+            internWellknown("svlength");
         }
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
@@ -1642,7 +1643,7 @@ public class LambdaJ {
         sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
-        sVector("vector", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM);
+        sVector("vector", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM);
 
         private final String sym;
         final WellknownSymbolKind kind;
@@ -2603,8 +2604,9 @@ public class LambdaJ {
         case sListStar: { return listStar(args); }
 
         case sVector:   { return listToArray(args); }
-        case sVectorp:  { oneArg("vectorp", args); return boolResult(vectorp  (car(args))); }
-        case sSvRef:    { twoArgs("svref", args);  return svref(car(args), toInt("svref", cadr(args))); }
+        case sVectorp:  { oneArg ("vectorp", args);   return boolResult(vectorp  (car(args))); }
+        case sSvRef:    { twoArgs("svref", args);     return svref(car(args), toInt("svref", cadr(args))); }
+        case sSvLength: { oneArg ("svlength", args);  return svlength(car(args)); }
 
         default:    return NOT_HANDLED;
         }
@@ -3073,14 +3075,13 @@ public class LambdaJ {
         if (!(maybeVector instanceof Object[])) errorNotASimpleVector("svref", maybeVector);
         return ((Object[])maybeVector)[idx];
     }
-
-    /* this method returns true while Lisp member returns the sublist starting at obj */
-    /*private static boolean member(Object obj, ConsCell list) {
-        if (obj == null) return false;
-        if (list == null) return false;
-        for (Object e: list) if (e == obj) return true;
-        return false;
-    }*/
+    
+    static int svlength(Object maybeVector) {
+        if (maybeVector == null) return 0;
+        if (maybeVector instanceof String) return ((String)maybeVector).length();
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
+        throw errorNotASimpleVector("svlength", maybeVector);
+    }
 
     /** return the cons whose car is eq to {@code atom}
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
@@ -4223,10 +4224,11 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
-            env = addBuiltin("vector",  (Primitive)LambdaJ::listToArray,
-                  addBuiltin("vectorp", (Primitive) a -> { oneArg("vectorp", a); return boolResult(vectorp  (car(a))); },
-                  addBuiltin("svref",   (Primitive) a -> { twoArgs("svref", a);  return svref(car(a), toInt("svref", cadr(a))); },
-                  env)));
+            env = addBuiltin("vector",   (Primitive)LambdaJ::listToArray,
+                  addBuiltin("vectorp",  (Primitive) a -> { oneArg ("vectorp", a);   return boolResult(vectorp  (car(a))); },
+                  addBuiltin("svref",    (Primitive) a -> { twoArgs("svref", a);     return svref(car(a), toInt("svref", cadr(a))); },
+                  addBuiltin("svlength", (Primitive) a -> { oneArg ("svlength", a);  return svlength(car(a)); },
+                  env))));
         }
 
         if (haveUtil()) {
@@ -5671,8 +5673,9 @@ public class LambdaJ {
         }
 
         public final Object[] _vector  (Object... args) { return args; }
-        public final Object   _vectorp (Object... args) { oneArg("vectorp", args.length); return vectorp(args[0]) ? _t : null; }
-        public final Object   _svref   (Object... args) { twoArgs("svref",  args.length); return svref(args[0], toInt(args[1])); }
+        public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
+        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toInt(args[1])); }
+        public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
         public final Object   _append  (Object... args) {
             final int nArgs;
@@ -6186,6 +6189,7 @@ public class LambdaJ {
             case "vector": return (CompilerPrimitive)this::_vector;
             case "vectorp": return (CompilerPrimitive)this::_vectorp;
             case "svref": return (CompilerPrimitive)this::_svref;
+            case "svlength": return (CompilerPrimitive)this::_svlength;
             case "listp": return (CompilerPrimitive)this::_listp;
             case "symbolp": return (CompilerPrimitive)this::_symbolp;
             case "numberp": return (CompilerPrimitive)this::_numberp;
@@ -6416,7 +6420,7 @@ public class LambdaJ {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
                 "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-                "assoc", "assq", "list", "vector", "svref", "append", "values",
+                "assoc", "assq", "list", "vector", "svref", "svlength", "append", "values",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",

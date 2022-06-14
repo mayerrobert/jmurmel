@@ -679,7 +679,7 @@ pi ; ==> 3.141592653589793
 ; - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 ; - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
-; = vector, vectorp, svref
+; = vector, vectorp, svref, svlength
 ;
 ; Vectors are on-dimensional arrays (which internally are Object[]).
 ;
@@ -687,6 +687,7 @@ pi ; ==> 3.141592653589793
 
 (define *v* (vector 1 2 3))
 (vectorp *v*) ; ==> t
+(svlength *v*) ; ==> 3
 (svref *v* 1) ; ==> 2
 
 ; = (assoc key alist) -> cons or nil
