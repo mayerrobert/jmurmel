@@ -8,7 +8,7 @@ interpreter/ compiler written in Java8 that can be used standalone as well as em
 
 Currently weighing in at ~200kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
-or one single Java source file.
+or one single Java source file, compatible with Java 8 through Java 19-ea.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
