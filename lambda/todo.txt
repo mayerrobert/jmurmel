@@ -1,3 +1,6 @@
+beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
+-> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert
+
 
 -> sollte kompiliertes catch und/ oder throw TCO bekommen?
 -> interpreter + compiler:  (error 'control-error) falls es ein throw tag nicht gibt, braucht man wsl nicht für ein fertiges programm, aber fürs interaktive entwickeln
@@ -248,6 +251,7 @@ nicht aber bei einem loop mittendrin
 
 mlib: length muss auch vector unterstützen (ggf. length nach Murmel schieben)
       div funktionen sollten "sequence" können, können aber nur list (und string?!?)
+      (setf (svref...
 sv->list, list->sv?
 
 vector ist ein 1-dimensionales array, strings sind 1-dimensionale array von character, hash-tables sind "assoziative arrays"

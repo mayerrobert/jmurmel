@@ -2375,7 +2375,7 @@ public class LambdaJ {
     private void evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
         varargs1("defmacro", arguments);
         final LambdaJSymbol macroName = symbolOrMalformed("defmacro", car(arguments));
-        final int arglen = length(arguments);
+        final int arglen = listLength(arguments);
         if (arglen == 1) {
             macroName.macro = null;
         }
@@ -2917,7 +2917,7 @@ public class LambdaJ {
                 final String pfx = pfx(stack, level);
                 tracer.println(pfx + ' ' + evFunc + " (" + stack + '/' + level + ") exp:           " + printSEx(exp));
                 if (trace.ge(TraceLevel.TRC_ENV)) {
-                    tracer.println(pfx + " -> env size:" + length(env) + " env:     " + printSEx(env));
+                    tracer.println(pfx + " -> env size:" + listLength(env) + " env:     " + printSEx(env));
                 }
             }
         }
@@ -2925,7 +2925,7 @@ public class LambdaJ {
 
     private void dbgEvalDone(String evFunc, Object exp, Object env, int stack, int level) {
         if (trace.ge(TraceLevel.TRC_ENVSTATS)) {
-            final int envLen = length(env);
+            final int envLen = listLength(env);
             if (maxEnvLen < envLen) maxEnvLen = envLen;
             if (trace.ge(TraceLevel.TRC_EVAL)) {
                 evFunc = fmtEvFunc(evFunc);
@@ -3023,23 +3023,49 @@ public class LambdaJ {
         return false;
     }
 
-    static boolean consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
-    static boolean atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
-    static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
-    static boolean listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
-    static boolean vectorp(Object o)    { return o != null && (o instanceof String || o.getClass().isArray()); } // todo List, ArrayList & Co?
 
-    static boolean numberp(Object o)    { return o instanceof Long || o instanceof Double || o instanceof Number; }
+
+    /*
+    the following predicates more or less implement Murmel's type system which looks like so:
+
+    t
+        null                    ; nil is the only object of type null
+        cons
+        symbol
+        number
+            integer
+            float
+        character
+        vector
+            simple-vector
+            string
+                simple-string
+
+    The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
+     */
+    static boolean consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
+    static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+
+    static boolean numberp(Object o)    { return integerp(o) || floatp(o) || o instanceof Number; }
     static boolean floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
     static boolean integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer, BigInteger?
 
-    static boolean stringp(Object o)    { return o instanceof String; }
     static boolean characterp(Object o) { return o instanceof Character; }
 
-    // these *should* have no usages as these checks would be superfluous
-    // the purpose of these functions is: if such extra checks were made then this would be discovered during testing
+    static boolean vectorp(Object o)    { return stringp(o) || svectorp(o); }
+    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray(); } // todo List, ArrayList & Co?
+    static boolean stringp(Object o)    { return o instanceof String; }
+
+
+    static boolean atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
+    static boolean listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+
+
+    // these *should* have no usages as these checks would be superfluous.
+    // The purpose of these functions is: if such extra checks were made then this would be discovered during testing.
     static boolean consp(ConsCell ignored)  { throw errorInternal("consp(ConsCell c) should NOT be called"); }
     static boolean listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
+
 
     static ConsCell arraySlice(Object[] o, int offset) { return o == null || offset >= o.length ? null : new ArraySlice(o, offset); }
     static ConsCell arraySlice(Object... elems) {
@@ -3063,22 +3089,21 @@ public class LambdaJ {
         return ret;
     }
 
-    static int length(Object list) {
+    static int listLength(Object list) {
         if (list == null) return 0;
         int n = 0;
         for (Object ignored: (ConsCell)list) n++;
         return n;
     }
 
-    // todo List, ArrayList & Co?
+    // todo int[], long[], List, ArrayList & Co?
     static Object svref(Object maybeVector, int idx) {
-        if (!(maybeVector instanceof Object[])) errorNotASimpleVector("svref", maybeVector);
-        return ((Object[])maybeVector)[idx];
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
+        throw errorNotASimpleVector("svref", maybeVector);
     }
     
     static int svlength(Object maybeVector) {
         if (maybeVector == null) return 0;
-        if (maybeVector instanceof String) return ((String)maybeVector).length();
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         throw errorNotASimpleVector("svlength", maybeVector);
     }
@@ -3423,13 +3448,13 @@ public class LambdaJ {
     }
 
     static void varargs1_2(String func, ConsCell a) {
-        if (a == null || cddr(a) != null) errorArgCount(func, 1, 2, length(a), a);
+        if (a == null || cddr(a) != null) errorArgCount(func, 1, 2, listLength(a), a);
     }
 
     /** varargs, at least {@code min} args */
     static void varargsMin(String func, ConsCell a, int min) {
         final Object x = nthcdr(min-1, a);
-        if (x == null) errorVarargsCount(func, min, length(a));
+        if (x == null) errorVarargsCount(func, min, listLength(a));
     }
 
     /** varargs, between {@code min} and {@code max} args */
@@ -3437,7 +3462,7 @@ public class LambdaJ {
         if (min == 0 && a == null) return;
         final Object x = nthcdr(min-1, a);
         final int n = min == 0 ? 0 : min-1;
-        if (x == null || nthcdr(max-n, x) != null) errorArgCount(func, min, max, length(a), a);
+        if (x == null || nthcdr(max-n, x) != null) errorArgCount(func, min, max, listLength(a), a);
     }
 
     ///
@@ -4962,7 +4987,7 @@ public class LambdaJ {
                     //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                     if (exp == cmdEnv)    {
                         if (interpreter.topEnv != null) for (Object entry: interpreter.topEnv) System.out.println(entry);
-                        System.out.println("env length: " + length(interpreter.topEnv));  System.out.println(); continue; }
+                        System.out.println("env length: " + listLength(interpreter.topEnv));  System.out.println(); continue; }
                     if (exp == cmdMacros) {
                         final ArrayList<LambdaJSymbol> names = new ArrayList<>();
                         for (Object entry: ((ListSymbolTable)interpreter.symtab).symbols) {
@@ -6899,7 +6924,7 @@ public class LambdaJ {
                         varargsMin("multiple-value-bind", ccArguments, 2);
                         final ConsCell vars = listOrMalformed("multiple-value-bind", car(ccArguments));
                         final boolean varargs = dottedList(vars);
-                        int length = length(vars);
+                        int length = listLength(vars);
                         if (varargs) length--;
                         sb.append(isLast ? "tailcall(" : "funcall(");
                         emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
@@ -7262,7 +7287,7 @@ public class LambdaJ {
                 sb.append("        private final Object ").append(javasym(loopLabel, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
-            final int argCount = length(bindings);
+            final int argCount = listLength(bindings);
             if (argCount != 0) {
                 sb.append("        if (args").append(rsfx).append("[0] == UNASSIGNED_LOCAL) {\n");
 
@@ -7429,9 +7454,9 @@ public class LambdaJ {
                 // (lambda a forms...) - style varargs
             }
             else if (dottedList(paramList)) {
-                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
+                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(listLength(paramList)).append(", args").append(rsfx).append(".length);\n");
             }
-            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(length(paramList)).append(", args").append(rsfx).append(".length);\n");
+            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(listLength(paramList)).append(", args").append(rsfx).append(".length);\n");
 
             final HashSet<Object> seen = new HashSet<>();
             int n = 0;
@@ -7786,7 +7811,7 @@ public class LambdaJ {
             final int paramCount = paramTypes.size() + startArg;
             if (emitCall) {
                 // emit new clazz(args...)/ clazz.method(args...)/ firstarg.method(restargs...)
-                final int argCount = length(ccArguments);
+                final int argCount = listLength(ccArguments);
                 if (argCount != paramCount) errorArgCount((String) strMethod, paramCount, paramCount, argCount, null);
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
