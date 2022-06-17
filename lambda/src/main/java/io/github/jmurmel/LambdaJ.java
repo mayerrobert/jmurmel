@@ -761,7 +761,7 @@ public class LambdaJ {
             internWellknown("cdr");
             internWellknown("cons");
         }
-        
+
         if (haveVector()) {
             internWellknown("vector");
             internWellknown("vectorp");
@@ -3040,6 +3040,7 @@ public class LambdaJ {
             simple-vector
             string
                 simple-string
+        function
 
     The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
      */
@@ -3054,8 +3055,14 @@ public class LambdaJ {
 
     static boolean vectorp(Object o)    { return stringp(o) || svectorp(o); }
     static boolean svectorp(Object o)   { return o != null && o.getClass().isArray(); } // todo List, ArrayList & Co?
-    static boolean stringp(Object o)    { return o instanceof String; }
+    static boolean stringp(Object o)    { return sstringp(o); }
+    static boolean sstringp(Object o)   { return o instanceof String; }
 
+    final boolean functionp(Object o)   { return o instanceof Primitive
+                                                 || o instanceof Closure
+                                                 || o instanceof MurmelJavaProgram.CompilerPrimitive
+                                                 || o instanceof MurmelFunction
+                                                 || (haveOldLambda() && consp(o) && car(o) == sLambda); }
 
     static boolean atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
     static boolean listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
@@ -4259,17 +4266,18 @@ public class LambdaJ {
         if (haveUtil()) {
             env = cons(featuresEnvEntry, env);
 
-            env = addBuiltin("consp",   (Primitive) a -> { oneArg("consp",   a);  return boolResult(consp  (car(a))); },
-                  addBuiltin("symbolp", (Primitive) a -> { oneArg("symbolp", a);  return boolResult(symbolp(car(a))); },
-                  addBuiltin("listp",   (Primitive) a -> { oneArg("listp",   a);  return boolResult(listp  (car(a))); },
-                  addBuiltin("null",    (Primitive) a -> { oneArg("null",    a);  return boolResult(car(a) == null); },
-                  addBuiltin("assoc",   (Primitive) a -> { twoArgs("assoc",  a);  return assoc(car(a), cadr(a)); },
-                  addBuiltin("assq",    (Primitive) a -> { twoArgs("assq",   a);  return assq(car(a), cadr(a)); },
-                  addBuiltin("list",    (Primitive) a -> a,
-                  addBuiltin("list*",   (Primitive) this::listStar,
-                  addBuiltin("append",  (Primitive) this::append,
-                  addBuiltin("eql",     (Primitive) a -> { twoArgs("eql",    a);  return boolResult(eql(car(a), cadr(a))); },
-                  env))))))))));
+            env = addBuiltin("consp",     (Primitive) a -> { oneArg("consp",     a);  return boolResult(consp  (car(a))); },
+                  addBuiltin("symbolp",   (Primitive) a -> { oneArg("symbolp",   a);  return boolResult(symbolp(car(a))); },
+                  addBuiltin("listp",     (Primitive) a -> { oneArg("listp",     a);  return boolResult(listp  (car(a))); },
+                  addBuiltin("functionp", (Primitive) a -> { oneArg("functionp", a);  return boolResult(functionp(car(a))); },
+                  addBuiltin("null",      (Primitive) a -> { oneArg("null",      a);  return boolResult(car(a) == null); },
+                  addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
+                  addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
+                  addBuiltin("list",      (Primitive) a -> a,
+                  addBuiltin("list*",     (Primitive) this::listStar,
+                  addBuiltin("append",    (Primitive) this::append,
+                  addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
+                  env)))))))))));
 
             env = addBuiltin("internal-time-units-per-second", 1e9,
                   addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
@@ -5672,6 +5680,7 @@ public class LambdaJ {
         public final Object _atom      (Object... args) { oneArg("atom",         args.length); return atom      (args[0]) ? _t : null; }
         public final Object _consp     (Object... args) { oneArg("consp",        args.length); return consp     (args[0]) ? _t : null; }
         public final Object _listp     (Object... args) { oneArg("listp",        args.length); return listp     (args[0]) ? _t : null; }
+        public final Object _functionp (Object... args) { oneArg("functionp",    args.length); return intp.functionp(args[0]) ? _t : null; }
         public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length); return symbolp   (args[0]) ? _t : null; }
         public final Object _numberp   (Object... args) { oneArg("numberp",      args.length); return numberp   (args[0]) ? _t : null; }
         public final Object _stringp   (Object... args) { oneArg("stringp",      args.length); return stringp   (args[0]) ? _t : null; }
@@ -6216,6 +6225,7 @@ public class LambdaJ {
             case "svref": return (CompilerPrimitive)this::_svref;
             case "svlength": return (CompilerPrimitive)this::_svlength;
             case "listp": return (CompilerPrimitive)this::_listp;
+            case "functionp": return (CompilerPrimitive)this::_functionp;
             case "symbolp": return (CompilerPrimitive)this::_symbolp;
             case "numberp": return (CompilerPrimitive)this::_numberp;
             case "stringp": return (CompilerPrimitive)this::_stringp;
@@ -6444,7 +6454,7 @@ public class LambdaJ {
         private static final String[] primitives = {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
-                "atom", "consp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
+                "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
                 "assoc", "assq", "list", "vector", "svref", "svlength", "append", "values",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",

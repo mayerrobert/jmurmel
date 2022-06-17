@@ -669,7 +669,7 @@ Examples:
     (eql #\a (car "aaa")) ; ==> t
     (eql -0.0 0.0) ; ==> nil
 
-### null, atom, consp, listp, symbolp, stringp, characterp
+### null, atom, consp, listp, symbolp, stringp, characterp, functionp
 
 ### numberp, integerp, floatp
 
