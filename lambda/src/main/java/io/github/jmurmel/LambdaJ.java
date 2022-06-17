@@ -3545,6 +3545,10 @@ public class LambdaJ {
         return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
     }
 
+    private static int toNonnegInt(String func, Object a) {
+        return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
+    }
+
     private static Number requireNumberOrNull(String func, Object a) {
         if (a == null) return null;
         return requireNumber(func, a);
@@ -4260,9 +4264,10 @@ public class LambdaJ {
             env = addBuiltin("vector",          (Primitive)LambdaJ::listToArray,
                   addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
                   addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
-                  addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toInt("svref", cadr(a))); },
+                  addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
-                  env)))));
+                  addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
+                  env))))));
         }
 
         if (haveUtil()) {
@@ -5712,8 +5717,10 @@ public class LambdaJ {
         public final Object   _vector  (Object... args) { return args; }
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
-        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toInt(args[1])); }
+        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toNonnegInt(args[1])); }
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
+
+        public final Object   makeArray(Object... args) { oneArg("make-array", args.length); return new Object[toNonnegInt(args[0])]; }
 
         public final Object   _append  (Object... args) {
             final int nArgs;
@@ -5947,7 +5954,8 @@ public class LambdaJ {
         public static long  toLong(Long n) { if (n != null) return n;  throw errorNotANumber(null); }
         public static long  toLong(long n) { return n; }
 
-        public static int   toInt(Object n)   { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }
+        public static int   toInt(Object n)       { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }
+        public static int   toNonnegInt(Object n) { return requireIntegralNumber("toInt", n, 0, Integer.MAX_VALUE).intValue(); }
         public static float toFloat(Object o) {
             final Number n = requireNumber("toFloat", o);
             final double d = n.doubleValue();
@@ -6229,6 +6237,7 @@ public class LambdaJ {
             case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
             case "svref": return (CompilerPrimitive)this::_svref;
             case "svlength": return (CompilerPrimitive)this::_svlength;
+            case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
             case "functionp": return (CompilerPrimitive)this::_functionp;
             case "symbolp": return (CompilerPrimitive)this::_symbolp;
@@ -6475,6 +6484,7 @@ public class LambdaJ {
             {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
             {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
             {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
+            {"make-array", "makeArray"},
             {"list*", "listStar"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },

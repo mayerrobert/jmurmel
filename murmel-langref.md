@@ -677,6 +677,10 @@ Examples:
 - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
+### (make-array length) -> simple-vector
+
+Only one-dimensional simple arrays of element-type T are supported
+
 ### vector, vectorp, simple-vector-p, svref, svlength
 
 Vectors are on-dimensional arrays (which internally are Object[]).
