@@ -4202,14 +4202,15 @@ public class LambdaJ {
         }
 
         if (haveString()) {
-            env = addBuiltin("stringp",    (Primitive) a -> { oneArg("stringp", a);    return boolResult(stringp(car(a))); },
-                  addBuiltin("characterp", (Primitive) a -> { oneArg("characterp", a); return boolResult(characterp(car(a))); },
-                  addBuiltin("char-code",  (Primitive) a -> { oneArg("char-code", a);  return (long) requireChar("char-code", car(a)); },
-                  addBuiltin("code-char",  (Primitive) a -> { oneArg("code-char", a);  return (char) toInt("code-char", car(a)); },
-                  addBuiltin("string=",    (Primitive) a -> { twoArgs("string=", a);   return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
-                  addBuiltin("string->list", (Primitive) this::stringToList,
-                  addBuiltin("list->string", (Primitive) LambdaJ::listToString,
-                  env)))))));
+            env = addBuiltin("stringp",         (Primitive) a -> { oneArg("stringp", a);         return boolResult(stringp(car(a))); },
+                  addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
+                  addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
+                  addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
+                  addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
+                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
+                  addBuiltin("string->list",    (Primitive) this::stringToList,
+                  addBuiltin("list->string",    (Primitive) LambdaJ::listToString,
+                  env))))))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
@@ -4256,11 +4257,12 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
-            env = addBuiltin("vector",   (Primitive)LambdaJ::listToArray,
-                  addBuiltin("vectorp",  (Primitive) a -> { oneArg ("vectorp", a);   return boolResult(vectorp  (car(a))); },
-                  addBuiltin("svref",    (Primitive) a -> { twoArgs("svref", a);     return svref(car(a), toInt("svref", cadr(a))); },
-                  addBuiltin("svlength", (Primitive) a -> { oneArg ("svlength", a);  return svlength(car(a)); },
-                  env))));
+            env = addBuiltin("vector",          (Primitive)LambdaJ::listToArray,
+                  addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
+                  addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
+                  addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toInt("svref", cadr(a))); },
+                  addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
+                  env)))));
         }
 
         if (haveUtil()) {
@@ -4290,7 +4292,7 @@ public class LambdaJ {
 
             env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
         }
-        
+
         if (haveFFI()) {
             env = addBuiltin("jmethod", (Primitive) x -> { varargsMin("jmethod", x, 2); return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x))); },
                   addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
@@ -5684,6 +5686,7 @@ public class LambdaJ {
         public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length); return symbolp   (args[0]) ? _t : null; }
         public final Object _numberp   (Object... args) { oneArg("numberp",      args.length); return numberp   (args[0]) ? _t : null; }
         public final Object _stringp   (Object... args) { oneArg("stringp",      args.length); return stringp   (args[0]) ? _t : null; }
+        public final Object sstringp   (Object... args) { oneArg("simple-string-p", args.length); return LambdaJ.sstringp(args[0]) ? _t : null; }
         public final Object _characterp(Object... args) { oneArg("characterp",   args.length); return characterp(args[0]) ? _t : null; }
         public final Object _integerp  (Object... args) { oneArg("integerp",     args.length); return integerp  (args[0]) ? _t : null; }
         public final Object _floatp    (Object... args) { oneArg("floatp",       args.length); return floatp    (args[0]) ? _t : null; }
@@ -5706,8 +5709,9 @@ public class LambdaJ {
             return b.first();
         }
 
-        public final Object[] _vector  (Object... args) { return args; }
+        public final Object   _vector  (Object... args) { return args; }
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
+        public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toInt(args[1])); }
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
@@ -6222,6 +6226,7 @@ public class LambdaJ {
             case "consp": return (CompilerPrimitive)this::_consp;
             case "vector": return (CompilerPrimitive)this::_vector;
             case "vectorp": return (CompilerPrimitive)this::_vectorp;
+            case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
             case "svref": return (CompilerPrimitive)this::_svref;
             case "svlength": return (CompilerPrimitive)this::_svlength;
             case "listp": return (CompilerPrimitive)this::_listp;
@@ -6229,6 +6234,7 @@ public class LambdaJ {
             case "symbolp": return (CompilerPrimitive)this::_symbolp;
             case "numberp": return (CompilerPrimitive)this::_numberp;
             case "stringp": return (CompilerPrimitive)this::_stringp;
+            case "simple-string-p": return (CompilerPrimitive)this::sstringp;
             case "characterp": return (CompilerPrimitive)this::_characterp;
             case "integerp": return (CompilerPrimitive)this::_integerp;
             case "floatp": return (CompilerPrimitive)this::_floatp;
@@ -6468,6 +6474,7 @@ public class LambdaJ {
             {"1+", "inc"}, {"1-", "dec"},
             {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
             {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
+            {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
             {"list*", "listStar"},
             //{ "macroexpand-1", "macroexpand1" },
             {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },

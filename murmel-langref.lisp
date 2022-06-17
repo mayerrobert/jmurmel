@@ -671,7 +671,7 @@ pi ; ==> 3.141592653589793
 (eql #\a (car "aaa")) ; ==> t
 (eql -0.0 0.0) ; ==> nil
 
-; = null, atom, consp, listp, symbolp, stringp, characterp, functionp
+; = null, atom, consp, listp, symbolp, stringp, simple-string-p, characterp, functionp
 
 ; = numberp, integerp, floatp
 ;
@@ -679,7 +679,7 @@ pi ; ==> 3.141592653589793
 ; - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 ; - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
-; = vector, vectorp, svref, svlength
+; = vector, vectorp, simple-vector-p, svref, svlength
 ;
 ; Vectors are on-dimensional arrays (which internally are Object[]).
 ;
