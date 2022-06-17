@@ -681,7 +681,7 @@ Examples:
 
 Only one-dimensional simple arrays of element-type T are supported
 
-### vector, vectorp, simple-vector-p, svref, svlength
+### vector, vectorp, simple-vector-p, svref, svset, svlength
 
 Vectors are on-dimensional arrays (which internally are Object[]).
 

@@ -3108,7 +3108,12 @@ public class LambdaJ {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
         throw errorNotASimpleVector("svref", maybeVector);
     }
-    
+
+    static Object svset(Object maybeVector, int idx, Object newValue) {
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
+        throw errorNotASimpleVector("svset", maybeVector);
+    }
+
     static int svlength(Object maybeVector) {
         if (maybeVector == null) return 0;
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
@@ -3447,6 +3452,17 @@ public class LambdaJ {
         if (_a == null) errorArgCount(func, 2, 2, 1, a);
         _a = cdr(_a);
         if (_a != null) errorArgCount(func, 2, 2, 3, a);
+    }
+
+    /** ecactly three arguments */
+    static void threeArgs(String func, ConsCell a) {
+        if (a == null) errorArgCount(func, 3, 3, 0, null);
+        Object _a = cdr(a);
+        if (_a == null) errorArgCount(func, 3, 3, 1, a);
+        _a = cdr(_a);
+        if (_a == null) errorArgCount(func, 3, 3, 2, a);
+        _a = cdr(_a);
+        if (_a != null) errorArgCount(func, 3, 3, 4, a);
     }
 
     /** varargs, at least one arg */
@@ -4265,9 +4281,10 @@ public class LambdaJ {
                   addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
                   addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
                   addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
+                  addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
                   addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
-                  env))))));
+                  env)))))));
         }
 
         if (haveUtil()) {
@@ -5718,6 +5735,7 @@ public class LambdaJ {
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toNonnegInt(args[1])); }
+        public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], toNonnegInt(args[1]), args[2]); }
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
         public final Object   makeArray(Object... args) { oneArg("make-array", args.length); return new Object[toNonnegInt(args[0])]; }
@@ -6236,6 +6254,7 @@ public class LambdaJ {
             case "vectorp": return (CompilerPrimitive)this::_vectorp;
             case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
             case "svref": return (CompilerPrimitive)this::_svref;
+            case "svset": return (CompilerPrimitive)this::_svset;
             case "svlength": return (CompilerPrimitive)this::_svlength;
             case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
@@ -6470,7 +6489,7 @@ public class LambdaJ {
                 "car", "cdr", "cons", "rplaca", "rplacd",
                 /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
                 "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-                "assoc", "assq", "list", "vector", "svref", "svlength", "append", "values",
+                "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "append", "values",
                 "round", "floor", "ceiling", "truncate",
                 "fround", "ffloor", "fceiling", "ftruncate",
                 "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
