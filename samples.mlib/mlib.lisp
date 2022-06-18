@@ -225,7 +225,9 @@
 
               ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
 
-              (t (fatal "only symbols, car..cdddr and nth are supported for 'place'")))))))
+              ((eq 'svref op)  `(nil         nil               (,read-var)  (svset ,@args ,read-var)        ,place))
+
+              (t (fatal "only symbols, car..cdddr, nth and svref are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -241,6 +243,7 @@
 ;;; - symbols
 ;;; - car..cdddr
 ;;; - nth
+;;; - svref
 (defmacro setf args
   (if args
         (if (cdr args)
