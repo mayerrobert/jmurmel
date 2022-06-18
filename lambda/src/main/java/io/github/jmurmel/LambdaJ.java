@@ -765,6 +765,7 @@ public class LambdaJ {
         if (haveVector()) {
             internWellknown("vector");
             internWellknown("vectorp");
+            internWellknown("vector-length");
             internWellknown("svref");
             internWellknown("svlength");
         }
@@ -1643,7 +1644,7 @@ public class LambdaJ {
         sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
-        sVector("vector", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM);
+        sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM);
 
         private final String sym;
         final WellknownSymbolKind kind;
@@ -2603,10 +2604,11 @@ public class LambdaJ {
         case sList:     { return args; }
         case sListStar: { return listStar(args); }
 
-        case sVector:   { return listToArray(args); }
-        case sVectorp:  { oneArg ("vectorp", args);   return boolResult(vectorp  (car(args))); }
-        case sSvRef:    { twoArgs("svref", args);     return svref(car(args), toInt("svref", cadr(args))); }
-        case sSvLength: { oneArg ("svlength", args);  return svlength(car(args)); }
+        case sVector:       { return listToArray(args); }
+        case sVectorLength: { oneArg ("vector-length", args);  return vectorLength(car(args)); }
+        case sVectorp:      { oneArg ("vectorp", args);        return boolResult(vectorp(car(args))); }
+        case sSvRef:        { twoArgs("svref", args);          return svref(car(args), toInt("svref", cadr(args))); }
+        case sSvLength:     { oneArg ("svlength", args);       return svlength(car(args)); }
 
         default:    return NOT_HANDLED;
         }
@@ -3103,6 +3105,19 @@ public class LambdaJ {
         return n;
     }
 
+    static int vectorLength(Object maybeVector) {
+        if (maybeVector == null) return 0;
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
+        if (maybeVector instanceof String) return ((String)maybeVector).length();
+        throw errorNotAVector("vector-length", maybeVector);
+    }
+
+    static int svlength(Object maybeVector) {
+        if (maybeVector == null) return 0;
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
+        throw errorNotASimpleVector("svlength", maybeVector);
+    }
+
     // todo int[], long[], List, ArrayList & Co?
     static Object svref(Object maybeVector, int idx) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
@@ -3112,12 +3127,6 @@ public class LambdaJ {
     static Object svset(Object maybeVector, int idx, Object newValue) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
         throw errorNotASimpleVector("svset", maybeVector);
-    }
-
-    static int svlength(Object maybeVector) {
-        if (maybeVector == null) return 0;
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
-        throw errorNotASimpleVector("svlength", maybeVector);
     }
 
     /** return the cons whose car is eq to {@code atom}
@@ -3394,6 +3403,10 @@ public class LambdaJ {
 
     static RuntimeException errorNotAnIntegralNumber(String func, Object n) {
         throw new LambdaJError(true, "%s: expected an integral number argument but got %s", func, printSEx(n));
+    }
+
+    static RuntimeException errorNotAVector(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a vector argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotASimpleVector(String func, Object n) {
@@ -4278,13 +4291,14 @@ public class LambdaJ {
 
         if (haveVector()) {
             env = addBuiltin("vector",          (Primitive)LambdaJ::listToArray,
+                  addBuiltin("vector-length",   (Primitive) a -> { oneArg ("vector-length", a);   return vectorLength(car(a)); },
                   addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
                   addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
                   addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
                   addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
                   addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
-                  env)))))));
+                  env))))))));
         }
 
         if (haveUtil()) {
@@ -5733,6 +5747,8 @@ public class LambdaJ {
 
         public final Object   _vector  (Object... args) { return args; }
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
+        public final Object   vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
+
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toNonnegInt(args[1])); }
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], toNonnegInt(args[1]), args[2]); }
@@ -6251,6 +6267,7 @@ public class LambdaJ {
             case "atom": return (CompilerPrimitive)this::_atom;
             case "consp": return (CompilerPrimitive)this::_consp;
             case "vector": return (CompilerPrimitive)this::_vector;
+            case "vector-length": return (CompilerPrimitive)this::vectorLength;
             case "vectorp": return (CompilerPrimitive)this::_vectorp;
             case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
             case "svref": return (CompilerPrimitive)this::_svref;
@@ -6502,7 +6519,7 @@ public class LambdaJ {
             {"1+", "inc"}, {"1-", "dec"},
             {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
             {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
-            {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
+            {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
             {"make-array", "makeArray"},
             {"list*", "listStar"},
             //{ "macroexpand-1", "macroexpand1" },

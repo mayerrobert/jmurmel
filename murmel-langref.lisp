@@ -683,7 +683,7 @@ pi ; ==> 3.141592653589793
 ;
 ; Only one-dimensional simple arrays of element-type T are supported
 
-; = vector, vectorp, simple-vector-p, svref, svset, svlength
+; = vector, vector-length, vectorp, simple-vector-p, svref, svset, svlength
 ;
 ; Vectors are on-dimensional arrays (which internally are Object[]).
 ;

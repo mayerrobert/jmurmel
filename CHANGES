@@ -11,7 +11,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
 
  * added the special operators catch, throw and unwind-protect
  * added functionp
- * added make-array, vector, vectorp, simple-vector-p, svref, svset and svlength
+ * added make-array, vector, vector-length, vectorp, simple-vector-p, svref, svset and svlength
  * added simple-string-p
 
  * fixed backquote expansion:
