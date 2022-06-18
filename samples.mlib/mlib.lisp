@@ -1232,8 +1232,12 @@
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Same as `list-length`.
-(define length list-length)
+;;; Returns the length of `sequence`.
+(defun length (seq)
+  (cond ((null seq) 0)
+        ((listp seq) (list-length seq))
+        ((vectorp seq) (vector-length seq))
+        (t (fatal "not a sequence"))))
 
 
 ; helper function for time

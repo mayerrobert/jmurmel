@@ -3106,14 +3106,12 @@ public class LambdaJ {
     }
 
     static int vectorLength(Object maybeVector) {
-        if (maybeVector == null) return 0;
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         if (maybeVector instanceof String) return ((String)maybeVector).length();
         throw errorNotAVector("vector-length", maybeVector);
     }
 
     static int svlength(Object maybeVector) {
-        if (maybeVector == null) return 0;
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         throw errorNotASimpleVector("svlength", maybeVector);
     }
