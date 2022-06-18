@@ -129,6 +129,7 @@ knows a corresponding setting form, which currently are:
 - symbols
 - car..cdddr
 - nth
+- svref
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value

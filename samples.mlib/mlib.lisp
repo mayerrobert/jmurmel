@@ -203,7 +203,10 @@
 ;;;
 ;;; Since: 1.1
 (defun get-setf-expansion (place)
-  (let ((read-var (gensym)) (store-var (gensym)))
+  (let ((read-var (gensym))
+        (tmp1 (gensym))
+        (tmp2 (gensym))
+        (store-var (gensym)))
     (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
       (let ((op (car place))
             (args (cdr place)))
@@ -225,7 +228,12 @@
 
               ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) (,store-var) (m%rplaca ,read-var ,store-var) (car ,read-var)))
 
-              ((eq 'svref op)  `(nil         nil               (,read-var)  (svset ,@args ,read-var)        ,place))
+              ((eq 'svref op)
+               `((,tmp1 ,tmp2 ,read-var)
+                 (,(car args) ,(cadr args) (svref ,tmp1 ,tmp2))
+                 (,read-var)
+                 (svset ,tmp1 ,tmp2 ,read-var)
+                 (svref ,tmp1 ,tmp2)))
 
               (t (fatal "only symbols, car..cdddr, nth and svref are supported for 'place'")))))))
 
@@ -258,10 +266,12 @@
 
                 (if (symbolp (car args))
                       `(setq ,(car args) ,(cadr args))
-                  (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
-                    `(let* (,@(mapcar list vars vals)
-                            (,(car store-vars) ,@(cdr args)))
-                       ,writer-form))))
+                  (if (eq 'svref (caar args))
+                        `(svset ,@(cdar args) ,(cadr args))
+                    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
+                      `(let* (,@(mapcar list vars vals)
+                              (,(car store-vars) ,@(cdr args)))
+                         ,writer-form)))))
           (fatal "odd number of arguments to setf"))))
 
 
