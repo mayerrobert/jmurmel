@@ -3615,6 +3615,11 @@ public class LambdaJ {
         return (Character)c;
     }
 
+    private static Object[] requireSimpleVector(String func, Object c) {
+        if (!svectorp(c)) throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(c));
+        return (Object[])c;
+    }
+
     /** return {@code c} as a String, error if {@code c} is not a string or null (nil) */
     static String requireStringOrNull(String func, Object c) {
         if (c == null) return null;
@@ -3724,6 +3729,31 @@ public class LambdaJ {
         return requireCons("rplacd", car(args)).rplacd(cadr(args));
     }
 
+
+    private static Object listToSimpleVector(ConsCell a) {
+        oneArg("list->simple-vector", a);
+        return listToSimpleVectorImpl(requireList("list->simple-vector", car(a)));
+    }
+
+    static Object[] listToSimpleVectorImpl(ConsCell l) {
+        if (l == null) return null;
+        final ArrayList<Object> ret = new ArrayList<>();
+        for (Object o : l) ret.add(o); // todo cyclecheck
+        return ret.toArray();
+    }
+
+    private Object simpleVectorToList(ConsCell a) {
+        oneArg("simple-vector->list", a);
+        final Object maybeVector = car(a);
+        if (maybeVector == null) return null;
+        final Object[] s = requireSimpleVector("simple-vector->list", maybeVector);
+        final CountingListBuilder ret = new CountingListBuilder();
+        final int len = s.length;
+        for (int i = 0; i < len; i++) ret.append(s[i]);
+        return ret.first();
+    }
+
+
     private static Object listToString(ConsCell a) {
         oneArg("list->string", a);
         return listToStringImpl(requireList("list->string", car(a)));
@@ -3738,13 +3768,15 @@ public class LambdaJ {
 
     private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
-        final String s = requireStringOrNull("string->list", car(a));
-        if (s == null) return null;
+        final Object maybeString = car(a);
+        if (maybeString == null) return null;
+        final String s = requireString("string->list", maybeString);
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length();
         for (int i = 0; i < len; i++) ret.append(s.charAt(i));
         return ret.first();
     }
+
 
     private Object listStar(ConsCell args) {
         varargs1("list*", args);
@@ -4296,7 +4328,9 @@ public class LambdaJ {
                   addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
                   addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
-                  env))))))));
+                  addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
+                  addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
+                  env))))))))));
         }
 
         if (haveUtil()) {
@@ -5805,6 +5839,19 @@ public class LambdaJ {
         }
         public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
 
+        public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToSimpleVector(LambdaJ.requireList("list->simple-vector", args[0])); }
+
+        public final Object   simpleVectorToList (Object... args) {
+            oneArg("simple-vector->list", args.length);
+            final Object maybeVector = args[0];
+            if (maybeVector == null) return null;
+            final Object[] s = LambdaJ.requireSimpleVector("simple-vector->list", maybeVector);
+            final ListBuilder ret = new ListBuilder();
+            final int len = s.length;
+            for (int i = 0; i < len; i++) ret.append(s[i]);
+            return ret.first();
+        }
+
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (toDouble(args[0])); }
         public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (toDouble(args[0])); }
         public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(toDouble(args[0])); }
@@ -6324,6 +6371,8 @@ public class LambdaJ {
             case "string=": return (CompilerPrimitive)this::stringeq;
             case "string->list": return (CompilerPrimitive)this::stringToList;
             case "list->string": return (CompilerPrimitive)this::listToString;
+            case "simple-vector->list": return (CompilerPrimitive)this::simpleVectorToList;
+            case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
             case "list*": return (CompilerPrimitive)this::listStar;
             case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
             case "get-internal-run-time": return (CompilerPrimitive)this::getInternalRunTime;
@@ -6517,6 +6566,7 @@ public class LambdaJ {
             {"1+", "inc"}, {"1-", "dec"},
             {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
             {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
+            {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
             {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
             {"make-array", "makeArray"},
             {"list*", "listStar"},

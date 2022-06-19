@@ -841,8 +841,11 @@
   (labels ((rev (l lp)
              (if l (rev (cdr l) (cons (car l) lp))
                lp)))
-    (if (stringp l) (list->string (rev l nil))
-      (rev l nil))))
+    (cond ((null l) nil)
+          ((consp l) (rev l nil))
+          ((stringp l) (list->string (rev (string->list l) nil)))
+          ((simple-vector-p l) (list->simple-vector (rev (simple-vector->list l) nil)))
+          (t (fatal "not a sequence")))))
 
 
 ;;; = Function: unzip
@@ -1009,6 +1012,33 @@
 ;;; which is the return value of `mapcon`.
 (m%mapx mapcon  append  nil nil nil nil)
 
+; undef m%mapx
+(defmacro m%mapx)
+
+
+; coerce a sequence to a list
+(defun m%s2l (seq)
+  (cond ((null seq) nil)
+        ((consp seq) seq)
+        ((stringp seq) (string->list seq))
+        ((simple-vector-p seq) (simple-vector->list seq))
+        (t (fatal "not a sequence"))))
+
+; Helper macro to generate defuns for every and some
+(defmacro m%mapxx (name comb lastelem)
+  `(defun ,name (f l . more)
+     (if more
+           (labels ((none-nil (lists)
+                      (if lists (and (car lists) (none-nil (cdr lists)))
+                        t)))
+             (let loop ((args (mapcar m%s2l (cons l more))))
+               (if (none-nil args)
+                     (,comb (apply f (unzip args)) (loop (unzip-tails args)))
+                 ,lastelem)))
+       (let loop ((l (m%s2l l)))
+         (if l (,comb (f (car l)) (loop (cdr l)))
+           ,lastelem)))))
+
 
 ;;; = Function: every
 ;;;     (every function sequence+) -> boolean
@@ -1020,7 +1050,7 @@
 ;;;
 ;;; Immediately return `nil` if an application of function returns `nil`,
 ;;; `t` otherwise.
-(m%mapx every and car unzip nil t)
+(m%mapxx every and t)
 
 
 ;;; = Function: some
@@ -1033,10 +1063,9 @@
 ;;;
 ;;; Immediately return the first non-nil-value of an application of `function`,
 ;;; or `nil` if no applications yield non-nil.
-(m%mapx some or car unzip nil nil)
+(m%mapxx some or nil)
 
-; undef m%mapx
-(defmacro m%mapx)
+(defmacro m%mapxx)
 
 
 ;;; = Function: notevery
@@ -1120,17 +1149,22 @@
 ;;; result from `func`.
 (defun reduce (f seq . from-end)
   (let ((from-end-p (car from-end)))
-    (if seq
-          (if (cdr seq)
-                (let loop ((elem (car seq))
-                           (tail (cdr seq)))
-                  (if (cdr tail)
-                        (if from-end-p
-                              (f elem (loop (car tail) (cdr tail)))
-                          (loop (f elem (car tail)) (cdr tail)))
-                    (f elem (car tail))))
-            (car seq))
-      (f))))
+    (labels ((reduce/list (lst)
+               (if (cdr lst)
+                     (let loop ((elem (car lst))
+                                (tail (cdr lst)))
+                       (if (cdr tail)
+                             (if from-end-p
+                                   (f elem (loop (car tail) (cdr tail)))
+                               (loop (f elem (car tail)) (cdr tail)))
+                         (f elem (car tail))))
+                 (car lst))))
+
+      (cond ((null seq)             (f))
+            ((consp seq)            (reduce/list seq))
+            ((stringp seq)          (reduce/list (string->list seq)))
+            ((simple-vector-p seq)  (reduce/list (simple-vector->list seq)))
+            (t (fatal "not a sequence"))))))
 
 
 ;;; = Function: write-char

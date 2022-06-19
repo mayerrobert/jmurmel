@@ -694,6 +694,8 @@ pi ; ==> 3.141592653589793
 (svlength *v*) ; ==> 3
 (svref *v* 1) ; ==> 2
 
+; = list->simple-vector and simple-vector->list
+
 ; = (assoc key alist) -> cons or nil
 ;
 ; `assoc` takes a key and a list of key/value tupels (lists or conses).

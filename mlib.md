@@ -641,7 +641,7 @@ See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
 
 Since: 1.1
 
-Same as `list-length`.
+Returns the length of `sequence`.
 
 ### Macro: time
     (time form) -> result
