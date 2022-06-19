@@ -1089,7 +1089,12 @@ public class LambdaJ {
             case 'X':
                 skipWs();
                 return parseLong(readerMacroToken(sub_char), 16);
-                
+
+            case '(':
+                final Object eof = new Object();
+                final Object o = readList(lineNo, charNo, eof);
+                return listToArray(o);
+
             default:
                 look = getchar();
                 throw new ParseError("no dispatch function defined for %s", printChar(sub_char));
@@ -4723,7 +4728,7 @@ public class LambdaJ {
                         }
                         if (finalResult && !printResult && result != null) {
                             System.out.println();
-                            System.out.println("==> " + result);
+                            System.out.println("==> " + printSEx(result));
                         }
                         if (script) exit(result);
                         break;
@@ -4761,7 +4766,7 @@ public class LambdaJ {
                     final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
                     if (finalResult && !printResult && result != null) {
                         System.out.println();
-                        System.out.println("==> " + result);
+                        System.out.println("==> " + printSEx(result));
                     }
                 } else {
                     final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(System.in, consoleCharset)::read, null);

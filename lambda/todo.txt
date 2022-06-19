@@ -249,11 +249,6 @@ nicht aber bei einem loop mittendrin
 
 
 
-mlib: length muss auch vector unterstützen (ggf. length nach Murmel schieben)
-      div funktionen sollten "sequence" können, können aber nur list (und string?!?)
-      (setf (svref...
-sv->list, list->sv?
-
 vector ist ein 1-dimensionales array, strings sind 1-dimensionale array von character, hash-tables sind "assoziative arrays"
 welche gemeinsamen eigenschaften haben list, vector/array, string, hash-table?
 -> elementzugriff
