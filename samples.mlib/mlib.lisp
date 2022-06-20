@@ -1095,35 +1095,49 @@
 
 
 ;;; = Function: remove-if
-;;;     (remove-if pred list) -> list
+;;;     (remove-if pred sequence) -> sequence
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Return a fresh list without the elements for which `pred`
+;;; Return a fresh sequence without the elements for which `pred`
 ;;; evaluates to non-nil.
-(defun remove-if (pred l)
-  (if l
-        (let ((obj (car l)))
-          (if (pred obj)
-                (remove-if pred (cdr l))
-            (cons obj (remove-if pred (cdr l)))))
-    nil))
+(defun remove-if (pred seq)
+  (labels ((remove-if/list (l)
+              (if l
+                   (let ((obj (car l)))
+                     (if (pred obj)
+                           (remove-if/list (cdr l))
+                       (cons obj (remove-if/list (cdr l)))))
+                nil)))
+
+    (cond ((null seq)             nil)
+          ((consp seq)            (remove-if/list seq))
+          ((stringp seq)          (list->string (remove-if/list (string->list seq))))
+          ((simple-vector-p seq)  (list->simple-vector (remove-if/list (simple-vector->list seq))))
+          (t (fatal "not a sequence")))))
 
 
 ;;; = Function: remove
-;;;     (remove elem list) -> list
+;;;     (remove elem sequence) -> sequence
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Return a fresh list without occurrences of `elem`.
+;;; Return a fresh sequence without occurrences of `elem`.
 ;;; An occurrence is determined by `eql`.
-(defun remove (elem l)
-  (if l
-        (let ((obj (car l)))
-          (if (eql elem obj)
-                (remove elem (cdr l))
-            (cons obj (remove elem (cdr l)))))
-    nil))
+(defun remove (elem seq)
+  (labels ((remove/list (l)
+              (if l
+                   (let ((obj (car l)))
+                     (if (eql elem obj)
+                           (remove/list (cdr l))
+                       (cons obj (remove/list (cdr l)))))
+                nil)))
+
+    (cond ((null seq)             nil)
+          ((consp seq)            (remove/list seq))
+          ((stringp seq)          (list->string (remove/list (string->list seq))))
+          ((simple-vector-p seq)  (list->simple-vector (remove/list (simple-vector->list seq))))
+          (t (fatal "not a sequence")))))
 
 
 ;;; = Function: reduce

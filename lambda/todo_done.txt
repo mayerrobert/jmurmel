@@ -1664,3 +1664,5 @@ mlib: length muss auch vector unterstützen (ggf. length nach Murmel schieben)
       div funktionen sollten "sequence" können, können aber nur list (und string?!?)
       (setf (svref...
 sv->list, list->sv?
+
+mlib: remove und remove-if sollten sequence akzeptieren

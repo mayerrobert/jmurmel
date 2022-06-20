@@ -570,19 +570,19 @@ and will be applied to subsequent items of the given sequences.
     (notany predicate sequence+) == (not (some predicate sequence+))
 
 ### Function: remove-if
-    (remove-if pred list) -> list
+    (remove-if pred sequence) -> sequence
 
 Since: 1.1
 
-Return a fresh list without the elements for which `pred`
+Return a fresh sequence without the elements for which `pred`
 evaluates to non-nil.
 
 ### Function: remove
-    (remove elem list) -> list
+    (remove elem sequence) -> sequence
 
 Since: 1.1
 
-Return a fresh list without occurrences of `elem`.
+Return a fresh sequence without occurrences of `elem`.
 An occurrence is determined by `eql`.
 
 ### Function: reduce

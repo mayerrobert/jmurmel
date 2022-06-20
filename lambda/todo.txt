@@ -1,3 +1,7 @@
+rekursive aufrufe sind derzeit late-bound
+-> compiler könnte das ändern, indem defuns eine (final) variable "recur" bekommen, und das geht ins environment
+   -> aufpassen: das ändert die semantik von setq: (defun f...  (setq f... würd dann ggf. nicht mehr gehen?!?
+
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
 -> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert
 
@@ -246,6 +250,7 @@ runtime check brauchts wohl trotzdem für apply und higher order functions
 
 teilweise gibts ringlistenerkennung (cdr(a) == start), das funktioniert aber nur bei listen, wo anfang mit ende verknüpft ist,
 nicht aber bei einem loop mittendrin
+
 
 
 
