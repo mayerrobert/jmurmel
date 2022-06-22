@@ -7161,7 +7161,7 @@ public class LambdaJ {
                 }
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
-            else if (form instanceof String) { sb.append('"'); stringToJava(sb, (String)form, -1); sb.append('"'); }
+            else if (vectorp(form)) emitVectorLiteral(sb, form);
             else errorInternal("emitAtom: atom %s is not implemented", form.toString());
         }
 
@@ -7984,6 +7984,31 @@ public class LambdaJ {
             return true;
         }
 
+
+        private void emitVectorLiteral(WrappingWriter sb, Object form) {
+            if (form instanceof String) { emitStringLiteral(sb, (String)form); }
+            else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form, true); }
+            else errorInternal("emitVectorLiteral: vector type %s is not implemented", form.toString());
+        }
+
+        private static void emitStringLiteral(WrappingWriter sb, String form) { sb.append('"'); stringToJava(sb, form, -1); sb.append('"'); }
+
+        private void emitSimpleVectorLiteral(WrappingWriter sb, Object[] form, boolean pool) {
+            final StringWriter b = new StringWriter();
+            final WrappingWriter qsb = new WrappingWriter(b);
+
+            qsb.append("new Object[] {");
+            boolean first = true;
+            for (Object elem: form) {
+                if (first) first = false;
+                else qsb.append(',');
+                emitQuotedForm(qsb, elem, pool);
+            }
+            qsb.append("}");
+
+            if (pool) emitReference(sb, b.toString());
+            else sb.append(b);
+        }
 
         /** <p>emit a quoted form.
          * 
