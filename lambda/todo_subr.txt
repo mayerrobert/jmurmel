@@ -1,3 +1,5 @@
+last-n: last mit optionalem parameter N siehe http://clhs.lisp.se/Issues/iss209_w.htm
+
 funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write arg nil) und dann (fatal)
 -> eher was für mlib
 
@@ -8,13 +10,20 @@ evenp, oddp mit x & 0x1 machen.
 https://github.com/cl21/cl21 ist Common Lisp 2021
 -> neuerfindungen in Murmel sollten dagegen gecheckt werden, z.B. hash literals (defvar *hash* #H())
 
+Hashmaps
+-> make-hash-table
+   get-hash key -> value
+
 Lambdaj hat assoceq, Emacs Lisp hat assq, ggf umbenamsen, evtl. als primitive anbieten
 assoc, delete, member, rassoc, remove use eql in Common Lisp
 In Emacs Lisp they have counterparts that use eq instead: assq, delq, memq, rassq, remq
 -> siehe https://yoo2080.wordpress.com/2013/08/16/differences-between-common-lisp-and-emacs-lisp/
 
 IO vielleicht auf NIO2 Channels aufsetzen? https://blogs.oracle.com/javamagazine/post/java-nio-nio2-buffers-channels-async-future-callback
-Concurrent access to file I/O is handled by the interface java.nio.channels.SeekableByteChannel. The main implementation of this interface (FileChannel) can hold the current position of where you are reading from a file, as well as the position in the file that you are writing to. This means you can have multiple threads reading from and/or writing to the same channel at different positions, making for faster file I/O.
+Concurrent access to file I/O is handled by the interface java.nio.channels.SeekableByteChannel.
+The main implementation of this interface (FileChannel) can hold the current position of where you are reading from a file,
+as well as the position in the file that you are writing to.
+This means you can have multiple threads reading from and/or writing to the same channel at different positions, making for faster file I/O.
 
 Helidon ist eine Art Application Server als Jar
 https://blogs.oracle.com/javamagazine/post/you-dont-always-need-an-application-server-to-run-jakarta-ee-applications?=2-
@@ -24,10 +33,6 @@ http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
 
 (min numbers...), (max numbers...), (gcd integers...), (lcm integers...)
 -> siehe https://www.youtube.com/watch?v=UVUjnzpQKUo
-
-Hashmaps
--> make-hash-table
-   get-hash key -> value
 
 ggf. ein subset von lisp printer umsetzen http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/fun_writecm_p_rintcm_princ.html
 prin1 object &optional output-stream => object
