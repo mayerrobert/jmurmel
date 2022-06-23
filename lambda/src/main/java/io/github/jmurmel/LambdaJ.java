@@ -2184,9 +2184,8 @@ public class LambdaJ {
                 oneArg("quote", ccArgs);  return form;
 
             case sLambda:
-                varargsMin("lambda", ccArgs, 1);
-                if (car(ccArgs) == sDynamic) expandForms("lambda", cddrShallowCopyList("lambda", ccArgs));
-                else expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                if (car(ccArgs) == sDynamic) { varargsMin("lambda dynamic", ccArgs, 2); expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs)); }
+                else { varargsMin("lambda", ccArgs, 1); expandForms("lambda", cdrShallowCopyList("lambda", ccArgs)); }
                 return ccForm;
 
             case sIf:
@@ -2719,7 +2718,7 @@ public class LambdaJ {
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols. */
     private static void symbolArgs(String func, Object a) {
-        if (symbolp(a)) return;
+        if (symbolp(a)) { if (a != null) notReserved(func, (LambdaJSymbol)a); return; }
         if (atom(a)) errorMalformed(func, "bindings to be a symbol or list of symbols", a);
         final ConsCell start = (ConsCell) a;
         for (;;) {
