@@ -2184,8 +2184,16 @@ public class LambdaJ {
                 oneArg("quote", ccArgs);  return form;
 
             case sLambda:
-                if (car(ccArgs) == sDynamic) { varargsMin("lambda dynamic", ccArgs, 2); expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs)); }
-                else { varargsMin("lambda", ccArgs, 1); expandForms("lambda", cdrShallowCopyList("lambda", ccArgs)); }
+                if (car(ccArgs) == sDynamic) {
+                    varargsMin("lambda dynamic", ccArgs, 2);
+                    checkLambdaList("lambda dynamic", cadr(ccArgs));
+                    expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
+                }
+                else {
+                    varargsMin("lambda", ccArgs, 1);
+                    checkLambdaList("lambda", car(ccArgs));
+                    expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                }
                 return ccForm;
 
             case sIf:
@@ -2208,6 +2216,7 @@ public class LambdaJ {
                     varargsMin("labels", localFunc, 2);
                     final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
                     if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
+                    checkLambdaList(printSEx(funcSymbol), cadr(localFunc));
                     if (cddr(localFunc) != null) {
                         final ConsCell body = cddrShallowCopyList("labels", localFunc);
                         expandForms("labels", body);
@@ -2705,20 +2714,14 @@ public class LambdaJ {
             paramsAndForms = cdr(paramsAndForms);
             env = DYNAMIC_ENV;
         }
-        if (!consp(paramsAndForms)) errorMalformed("lambda", "an argument list", paramsAndForms);
         final ConsCell ccParamsAndForms = (ConsCell)paramsAndForms; 
-        varargs1("lambda", ccParamsAndForms);
-        final Object params = car(ccParamsAndForms);
-        checkLambdaList(params);
-
-        return makeClosure(params, listOrMalformed("lambda", cdr(ccParamsAndForms)), env);
+        return makeClosure(car(ccParamsAndForms), listOrMalformed("lambda", cdr(ccParamsAndForms)), env);
     }
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols or duplicate symbols. */
-    private static void checkLambdaList(Object a) {
+    private static void checkLambdaList(String func, Object a) {
         if (a == null) return; // empty lambda list is fine
-        final String func = "lambda";
         if (symbolp(a)) { notReserved(func, (LambdaJSymbol)a); return; }
         if (atom(a)) errorMalformed(func, "a symbol or list of symbols", a);
 
