@@ -2395,8 +2395,9 @@ public class LambdaJ {
             macroName.macro = null;
         }
         else if (arglen >= 3) {
-            final ListConsCell paramsAndBody = cons(cadr(arguments), cddr(arguments));
-            macroName.macro = makeClosureFromForm(cons(sLambda, paramsAndBody), env);
+            final Object params = cadr(arguments);
+            checkLambdaList("defmacro", params);
+            macroName.macro = makeClosure(params, (ConsCell)cddr(arguments), env);
         }
         else throw errorMalformed("defmacro", printSEx(form));
     }
