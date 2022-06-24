@@ -2236,6 +2236,7 @@ public class LambdaJ {
 
             case sDefun: {
                 varargsMin("defun", ccArgs, 2);
+                checkLambdaList("defun", cadr(ccArgs));
                 if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
                 return ccForm;
             }
