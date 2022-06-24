@@ -2709,38 +2709,37 @@ public class LambdaJ {
         final ConsCell ccParamsAndForms = (ConsCell)paramsAndForms; 
         varargs1("lambda", ccParamsAndForms);
         final Object params = car(ccParamsAndForms);
-        symbolArgs("lambda", params);
-        noDuplicates("lambda", params);
+        checkLambdaList(params);
 
         return makeClosure(params, listOrMalformed("lambda", cdr(ccParamsAndForms)), env);
     }
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
-     *  Also 'a' must not contain reserved symbols. */
-    private static void symbolArgs(String func, Object a) {
-        if (symbolp(a)) { if (a != null) notReserved(func, (LambdaJSymbol)a); return; }
-        if (atom(a)) errorMalformed(func, "bindings to be a symbol or list of symbols", a);
+     *  Also 'a' must not contain reserved symbols or duplicate symbols. */
+    private static void checkLambdaList(Object a) {
+        if (a == null) return; // empty lambda list is fine
+        final String func = "lambda";
+        if (symbolp(a)) { notReserved(func, (LambdaJSymbol)a); return; }
+        if (atom(a)) errorMalformed(func, "a symbol or list of symbols", a);
+
+        final HashSet<Object> seen = new HashSet<>();
         final ConsCell start = (ConsCell) a;
         for (;;) {
-            if (consp(a) && cdr(a) == start) errorMalformed(func, "circular list of bindings is not allowed");
-            if (!symbolp(car(a))) errorMalformed(func, "a symbol or a list of symbols", a);
-            notReserved(func, (LambdaJSymbol)car(a));
+            if (consp(a) && cdr(a) == start) errorMalformed(func, "circular list of parameters is not allowed");
+            final Object param = car(a);
+            if (!symbolp(param)) errorMalformed(func, "a symbol or a list of symbols", a);
+            notReserved(func, (LambdaJSymbol)param);
+            if (!seen.add(param)) errorMalformedFmt(func, "duplicate symbol %s", param);
 
             a = cdr(a);
             if (a == null) return; // end of a proper list, everything a-ok, move along
             if (atom(a)) {
                 if (!symbolp(a)) errorMalformed(func, "a symbol or a list of symbols", a);
                 notReserved(func, (LambdaJSymbol)a);
+                if (!seen.add(a)) errorMalformedFmt(func, "duplicate symbol %s", a);
                 return; // that was the end of a dotted list, everything a-ok, move along
             }
         }
-    }
-
-    private static void noDuplicates(String func, Object symList) {
-        if (symList == null) return;
-        if (!consp(symList)) return;
-        final HashSet<Object> seen = new HashSet<>();
-        for (Object o: (ConsCell)symList) if (!seen.add(o)) errorMalformedFmt(func, "duplicate symbol %s", o);
     }
 
     /** make a lexical closure (if enabled) or lambda */
