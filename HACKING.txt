@@ -76,6 +76,9 @@ mvn test -Ppitest -pl lambda -DwithHistory=true -DtargetClasses=io.github.jmurme
     run mutation testing c/o https://pitest.org/ and only mutate the class SExpressionReader, do incremental processing if possible
     useful when making changes in one class only and/ or changing/ adding tests that should test one class
 
+mvn8 test -Ppitest -pl lambda -DwithHistory=true -DtargetClasses=io.github.jmurmel.LambdaJ$SExpressionReader -DtargetTests=io.github.jmurmel.ScannerTest
+    as above but only run one test class during mutation analysis
+
 
 
 Other useful commandlines:
