@@ -1918,9 +1918,10 @@ public class LambdaJ {
 
                 /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                 case sLabels: {
-                    final ConsCell[] formsAndEnv = evalLabels(ccArguments, env);
-                    ccForms = formsAndEnv[0];
-                    env = formsAndEnv[1];
+                    varargs1("labels", ccArguments);
+                    final ConsCell localFunctions = (ConsCell)car(ccArguments);
+                    env = localFunctions == null ? env : evalLabels(localFunctions, env);
+                    ccForms = (ConsCell)cdr(ccArguments);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
@@ -2212,7 +2213,8 @@ public class LambdaJ {
 
             case sLabels:
                 for (ConsCell i = listOrMalformed("labels", carShallowCopyList("labels", ccArgs)); i != null; i = cdrShallowCopyList("labels", i)) {
-                    final ConsCell localFunc = listOrMalformed("labels", carShallowCopyList("labels", i));
+                    if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
+                    final ConsCell localFunc = carShallowCopyList("labels", i);
                     varargsMin("labels", localFunc, 2);
                     final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
                     if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
@@ -2244,7 +2246,7 @@ public class LambdaJ {
             case sDefmacro:
                 varargs1("defmacro", ccArgs);
                 if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
-                evalDefmacro(ccArgs, topEnv, form);
+                evalDefmacro(ccArgs, topEnv);
                 return ccForm;
 
             case sLet:
@@ -2346,19 +2348,19 @@ public class LambdaJ {
     }
 
     /** expand all elements in the list ccForms. The first conscell is modified in place, subsequent conscells are copied.  */
-    private void expandForms(String func, Object forms) {
-        expandForms(func, listOrMalformed(func, forms));
+    private void expandForms(String func, Object maybeList) {
+        expandForms(func, listOrMalformed(func, maybeList));
     }
 
-    private void expandForms(String func, ConsCell ccForms) {
-        for (ConsCell i = ccForms; i != null; i = cdrShallowCopyList(func, i)) {
-            i.rplaca(expandForm(car(i)));
+    private void expandForms(String func, ConsCell forms) {
+        for (; forms != null; forms = cdrShallowCopyList(func, forms)) {
+            forms.rplaca(expandForm(car(forms)));
         }
     }
 
-    static ConsCell listOrMalformed(String op, Object args) {
-        if (!listp(args)) errorMalformed(op, "a list", args);
-        return (ConsCell)args;
+    static ConsCell listOrMalformed(String op, Object maybeList) {
+        if (!listp(maybeList)) errorMalformed(op, "a list", maybeList);
+        return (ConsCell)maybeList;
     }
 
     static LambdaJSymbol symbolOrMalformed(String op, Object maybeSymbol) {
@@ -2368,18 +2370,15 @@ public class LambdaJ {
         return symbol;
     }
 
-    private Object evalSetq(ConsCell arguments, ConsCell env, int stack, int level, int traceLvl) {
+    private Object evalSetq(ConsCell pairs, ConsCell env, int stack, int level, int traceLvl) {
         Object res = null;
-        for (ConsCell pairs = arguments; pairs != null; ) {
+        while (pairs != null) {
             final LambdaJSymbol symbol = symbolOrMalformed("setq", car(pairs));
             final ConsCell envEntry = assq(symbol, env);
 
             pairs = (ConsCell) cdr(pairs);
-            if (pairs == null) errorMalformed("setq", "odd number of arguments");
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
-            if (envEntry == null)
-                insertFront(env, symbol, value);
-                //throw new LambdaJError(true, "%s: '%s' is not bound", "setq", symbol);
+            if (envEntry == null) insertFront(env, symbol, value);
             else envEntry.rplacd(value);
             res = value;
             pairs = (ConsCell) cdr(pairs);
@@ -2387,19 +2386,14 @@ public class LambdaJ {
         return res;
     }
 
-    private void evalDefmacro(ConsCell arguments, ConsCell env, Object form) {
-        varargs1("defmacro", arguments);
-        final LambdaJSymbol macroName = symbolOrMalformed("defmacro", car(arguments));
-        final int arglen = listLength(arguments);
-        if (arglen == 1) {
-            macroName.macro = null;
-        }
-        else if (arglen >= 3) {
-            final Object params = cadr(arguments);
-            checkLambdaList("defmacro", params);
-            macroName.macro = makeClosure(params, (ConsCell)cddr(arguments), env);
-        }
-        else throw errorMalformed("defmacro", printSEx(form));
+    private void evalDefmacro(ConsCell nameParamsBody, ConsCell env) {
+        varargs1("defmacro", nameParamsBody);
+        final LambdaJSymbol sym = symbolOrMalformed("defmacro", car(nameParamsBody));
+        if (cdr(nameParamsBody) == null) { sym.macro = null;  return; }
+
+        final Object params = cadr(nameParamsBody);
+        checkLambdaList("defmacro", params);
+        sym.macro = makeClosure(params, (ConsCell)cddr(nameParamsBody), env);
     }
 
     private Object evalRequire(ConsCell arguments) {
@@ -2438,22 +2432,16 @@ public class LambdaJ {
         return null;
     }
 
-    private ConsCell[] evalLabels(ConsCell arguments, ConsCell env) {
-        varargs1("labels", arguments);
+    private ConsCell evalLabels(ConsCell localFunctions, ConsCell env) {
         final ListConsCell extEnv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
-        // stick the functions into the env
-        if (car(arguments) != null)
-            for (Object binding: (ConsCell) car(arguments)) {
-                if (!consp(binding)) errorMalformed("labels", "a list (symbol (params...) forms...)", binding);
-                final ConsCell currentFunc = (ConsCell)binding;
-                final LambdaJSymbol currentSymbol = symbolOrMalformed("labels", car(currentFunc));
-                final ConsCell ccParamsAndForms = listOrMalformed("labels", cdr(currentFunc));
-                final Object lambda = makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv);
-                insertFront(extEnv, currentSymbol, lambda);
-            }
-        return new ConsCell[]{ (ConsCell) cdr(arguments), extEnv};
+        for (Object localFunction : localFunctions) {
+            final ConsCell currentFunc = (ConsCell)localFunction;
+            final LambdaJSymbol currentSymbol = symbolOrMalformed("labels", car(currentFunc));
+            final ConsCell ccParamsAndForms = listOrMalformed("labels", cdr(currentFunc));
+            insertFront(extEnv, currentSymbol, makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv));
+        }
+        return extEnv;
     }
-
 
     private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final boolean letStar  = isOperator(operator, WellknownSymbol.sLetStar);
@@ -2561,6 +2549,7 @@ public class LambdaJ {
         }
         void restore() { entry.rplacd(oldValue); }
     }
+
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
         varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
         values = NO_VALUES;
@@ -2576,7 +2565,7 @@ public class LambdaJ {
 
         final ConsCell menv = zip(macroClosure.params, arguments, topEnv, true);
         Object expansion = null;
-        for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
+        if (macroClosure.body != null) for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, 0, 0, 0);
         return expansion;
     }
