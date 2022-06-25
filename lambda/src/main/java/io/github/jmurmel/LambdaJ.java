@@ -1918,7 +1918,6 @@ public class LambdaJ {
 
                 /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                 case sLabels: {
-                    varargs1("labels", ccArguments);
                     final ConsCell localFunctions = (ConsCell)car(ccArguments);
                     env = localFunctions == null ? env : evalLabels(localFunctions, env);
                     ccForms = (ConsCell)cdr(ccArguments);
@@ -2212,7 +2211,8 @@ public class LambdaJ {
                 return ccForm;
 
             case sLabels:
-                for (ConsCell i = listOrMalformed("labels", carShallowCopyList("labels", ccArgs)); i != null; i = cdrShallowCopyList("labels", i)) {
+                varargs1("labels", ccArgs);
+                for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null && car(i) != null; i = cdrShallowCopyList("labels", i)) {
                     if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
                     final ConsCell localFunc = carShallowCopyList("labels", i);
                     varargsMin("labels", localFunc, 2);
@@ -2333,9 +2333,10 @@ public class LambdaJ {
         return ccForm;
     }
 
-    private static ConsCell carShallowCopyList(String sfName, ConsCell bindingsAndBody) {
-        final ConsCell carCopy = listOrMalformed(sfName, car(bindingsAndBody)).copy();
-        bindingsAndBody.rplaca(carCopy);
+    private static ConsCell carShallowCopyList(String sfName, ConsCell cons) {
+        if (car(cons) == null) return null;
+        final ConsCell carCopy = listOrMalformed(sfName, car(cons)).copy();
+        cons.rplaca(carCopy);
         return carCopy;
     }
 
@@ -4571,7 +4572,7 @@ public class LambdaJ {
         final ObjectReader parser = init(in, out);
         final Object exp = parser.readObj(true, null);
         final long tStart = System.nanoTime();
-        final Object result = eval(exp, topEnv, 0, 0, 0); // todo solls hier auch expandForm() geben? oder diese methode überhaupt küblen? interpretExpressions() kann fast dasselbe
+        final Object result = expandAndEval(exp, null); // don't just use eval - maybe there are no macros to expand but expandAndEval also does syntax checks. Also they could pass a progn form containing macros.
         traceStats(System.nanoTime() - tStart);
         return result;
     }
