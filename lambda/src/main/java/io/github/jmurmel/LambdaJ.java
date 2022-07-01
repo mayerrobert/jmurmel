@@ -2253,19 +2253,32 @@ public class LambdaJ {
             case sLetStar:
             case sLetrec:
                 final String sfName = symOp.toString();
+                final boolean letDynamic, namedLet;
                 final ConsCell bindingsAndBody;
-                if (car(ccArgs) != null && symbolp(car(ccArgs))) bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
-                else bindingsAndBody = ccArgs;
+                if (car(ccArgs) != null && symbolp(car(ccArgs))) {
+                    final Object tag = car(ccArgs);
+                    if (tag == sDynamic) { letDynamic = true; namedLet = false; }
+                    else { letDynamic = false; namedLet = true; }
+                    bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
+                }
+                else {
+                    letDynamic = false; namedLet = false;
+                    bindingsAndBody = ccArgs;
+                }
                 if (car(bindingsAndBody) != null) {
                     final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
                     for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
-                        if (consp(car(i))) {
+                        final Object binding = car(i);
+                        if (consp(binding)) {
+                            if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
                             if (consp(cadar(i))) {
-                                final ConsCell binding = carShallowCopyList(sfName, i);
-                                final ConsCell valueFormList = cdrShallowCopyList(sfName, binding);
+                                final ConsCell ccBinding = carShallowCopyList(sfName, i);
+                                final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
                                 valueFormList.rplaca(expandForm(car(valueFormList)));
                             }
                         }
+                        else if (symbolp(binding)) i.rplaca(cons(binding, null)); // change (let (a) ...) -> (let ((a)) ...)
+                        else throw errorMalformed(getOp(sfName, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
                     }
                 }
                 if (cdr(bindingsAndBody) != null) {
@@ -2468,19 +2481,8 @@ public class LambdaJ {
             ConsCell insertPos = null; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
-                final LambdaJSymbol sym;
-                final Object bindingForm;
-
-                if (symbolp(binding)) {
-                    sym = (LambdaJSymbol)binding;
-                    bindingForm = null;
-                } else if (consp(binding) && symbolp(car(binding)) && listp(cdr(binding))) {
-                    if (cddr(binding) != null) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
-                    sym = (LambdaJSymbol)car(binding);
-                    bindingForm = cadr(binding);
-                } else {
-                    throw errorMalformed(getOp(operator, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
-                }
+                final LambdaJSymbol sym = (LambdaJSymbol)car(binding);
+                final Object bindingForm = cadr(binding);
 
                 // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                 if (reserved(sym)) errorReserved(getOp(operator, letDynamic, namedLet), sym);
@@ -7357,11 +7359,7 @@ public class LambdaJ {
             if (ccBindings != null) {
                 for (Object binding : ccBindings) {
                     sb.append("\n        , ");
-                    if (consp(binding)) {
-                        if (cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
-                        emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
-                    }
-                    else sb.append("(Object)null"); // simplified let: (let (aaa) aaa)
+                    emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
             } else sb.append(", NOARGS");
             sb.append(')');
@@ -7403,9 +7401,7 @@ public class LambdaJ {
                 // letrec: ALL let-bindings are in the environment during binding of the initial values todo value should be undefined
                 int current = 0;
                 if (letrec) for (Object binding: (ConsCell)bindings) {
-                    final LambdaJSymbol sym;
-                    if (symbolp(binding)) { sym = (LambdaJSymbol)binding; }
-                    else { sym = LambdaJ.symbolOrMalformed(op, car(binding)); }
+                    final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(op, car(binding));
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     env = extenvIntern(sym, symName, env);
                 }
@@ -7413,11 +7409,8 @@ public class LambdaJ {
                 // initial assignments. let*: after the assignment add the let-symbol to the environment so that subsequent bindings will see it
                 current = 0;
                 for (Object binding: (ConsCell)bindings) {
-                    final LambdaJSymbol sym;
-                    final Object form;
-                    if (consp(binding) && cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
-                    if (symbolp(binding)) { sym = (LambdaJSymbol)binding; form = null; }
-                    else { sym = LambdaJ.symbolOrMalformed(op, car(binding)); form = cadr(binding); }
+                    final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(op, car(binding));
+                    final Object form = cadr(binding);
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     sb.append("        { ").append(symName).append(" = ");
                     emitForm(sb, form, env, topEnv, rsfx, false);
@@ -7521,7 +7514,6 @@ public class LambdaJ {
             if (bindings != null)
                 for (Object binding: (ConsCell)bindings) {
                     sb.append("\n        , ");
-                    if (consp(binding) && cddr(binding) != null) errorMalformedFmt(op, "illegal variable specification %s", printSEx(binding));
                     if (letStar) sb.append("(Object)null");
                     else emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
