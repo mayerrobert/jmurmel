@@ -2259,6 +2259,7 @@ public class LambdaJ {
                     final Object tag = car(ccArgs);
                     if (tag == sDynamic) { letDynamic = true; namedLet = false; }
                     else { letDynamic = false; namedLet = true; }
+                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
                     bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
                 }
                 else {
@@ -2266,6 +2267,7 @@ public class LambdaJ {
                     bindingsAndBody = ccArgs;
                 }
                 if (car(bindingsAndBody) != null) {
+                    if (!listp(car(bindingsAndBody))) throw errorMalformed(getOp(sfName, letDynamic, namedLet), "a list of bindings", car(bindingsAndBody));
                     final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
                     for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
                         final Object binding = car(i);
@@ -2322,7 +2324,7 @@ public class LambdaJ {
             case sLoad:
             case sRequire:
             case sProvide:
-                return form; // no macroexpansion in declaim, load, require, provide forms. Todo or should there be?
+                return form; // no macroexpansion in declaim, load, require, provide forms
 
             case sMultipleValueCall:
                 varargs1("multiple-value-call", ccArgs);
@@ -2462,15 +2464,12 @@ public class LambdaJ {
         final boolean letRec   = isOperator(operator, WellknownSymbol.sLetrec);
         final Object maybeLoopSymbol = car(arguments);
         final boolean letDynamic = maybeLoopSymbol == sDynamic;
-        if (letDynamic && letRec) throw errorMalformed(operator.toString(), "dynamic is not allowed with letrec");
         final boolean namedLet = !letDynamic && maybeLoopSymbol != null && symbolp(maybeLoopSymbol); // ohne "maybeLoopSymbol != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
         final LambdaJSymbol loopSymbol = namedLet ? (LambdaJSymbol)maybeLoopSymbol : null;
 
         final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
 
-        final Object bindings = car(bindingsAndBodyForms);
-        if (!listp(bindings)) throw errorMalformed(getOp(operator, letDynamic, namedLet), "a list of bindings", bindings);
-        final ConsCell ccBindings = (ConsCell)bindings;
+        final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
 
         ConsCell params = null;
         ConsCell extenv = env;
