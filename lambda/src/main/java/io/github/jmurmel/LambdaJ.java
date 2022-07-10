@@ -2258,7 +2258,7 @@ public class LambdaJ {
                 if (car(ccArgs) != null && symbolp(car(ccArgs))) {
                     final Object tag = car(ccArgs);
                     if (tag == sDynamic) { letDynamic = true; namedLet = false; }
-                    else { letDynamic = false; namedLet = true; }
+                    else { notReserved(sfName, (LambdaJSymbol)tag); letDynamic = false; namedLet = true; }
                     if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
                     bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
                 }
