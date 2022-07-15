@@ -2171,181 +2171,196 @@ public class LambdaJ {
 
     /** expand all macros within a form and do some syntax checks. Macro-expansion is done in a copy, i.e. form will not be modified. */
     Object expandForm(Object form) {
-        if (atom(form)) return form;
-        final ConsCell ccForm = ((ConsCell)form).copy();
-        final Object op = car(ccForm);
-        if (op == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
-        final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
+        try {
+            if (atom(form)) return form;
+            final ConsCell ccForm = ((ConsCell)form).copy();
+            final Object op = car(ccForm);
+            if (op == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
+            final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
 
-        if (symbolp(op)) {
-            final LambdaJSymbol symOp = (LambdaJSymbol)op;
-            if (symOp.specialForm()) switch (symOp.wellknownSymbol) {
-            case sQuote:
-                oneArg("quote", ccArgs);  return form;
+            if (symbolp(op)) {
+                final LambdaJSymbol symOp = (LambdaJSymbol)op;
+                if (symOp.specialForm()) switch (symOp.wellknownSymbol) {
+                case sQuote:
+                    oneArg("quote", ccArgs);
+                    return form;
 
-            case sLambda:
-                if (car(ccArgs) == sDynamic) {
-                    varargsMin("lambda dynamic", ccArgs, 2);
-                    checkLambdaList("lambda dynamic", cadr(ccArgs));
-                    expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
-                }
-                else {
-                    varargsMin("lambda", ccArgs, 1);
-                    checkLambdaList("lambda", car(ccArgs));
-                    expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
-                }
-                return ccForm;
-
-            case sIf:
-                varargsMinMax("if", ccArgs, 2, 3);
-                expandForms("if", ccArgs);
-                return ccForm;
-
-            case sCond:
-                if (ccArgs != null) expandForms("cond", ccArgs); return ccForm;
-
-            case sProgn:
-                if (ccArgs == null) return null;
-                if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
-                expandForms("progn", ccArgs);
-                return ccForm;
-
-            case sLabels:
-                varargs1("labels", ccArgs);
-                for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null && car(i) != null; i = cdrShallowCopyList("labels", i)) {
-                    if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
-                    final ConsCell localFunc = carShallowCopyList("labels", i);
-                    varargsMin("labels", localFunc, 2);
-                    final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
-                    if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
-                    checkLambdaList(printSEx(funcSymbol), cadr(localFunc));
-                    if (cddr(localFunc) != null) {
-                        final ConsCell body = cddrShallowCopyList("labels", localFunc);
-                        expandForms("labels", body);
+                case sLambda:
+                    if (car(ccArgs) == sDynamic) {
+                        varargsMin("lambda dynamic", ccArgs, 2);
+                        checkLambdaList("lambda dynamic", cadr(ccArgs));
+                        expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
                     }
-                }
-                if (cdr(ccArgs) != null) expandForms("labels", ccArgs.shallowCopyCdr());
-                return ccForm;
+                    else {
+                        varargsMin("lambda", ccArgs, 1);
+                        checkLambdaList("lambda", car(ccArgs));
+                        expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                    }
+                    return ccForm;
 
-            case sDefine: {
-                varargs1_2("define", ccArgs);
-                if (cdr(ccArgs) != null) {
-                    final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
-                    valueForm.rplaca(expandForm(car(valueForm)));
-                }
-                return ccForm;
-            }
+                case sIf:
+                    varargsMinMax("if", ccArgs, 2, 3);
+                    expandForms("if", ccArgs);
+                    return ccForm;
 
-            case sDefun: {
-                varargsMin("defun", ccArgs, 2);
-                checkLambdaList("defun", cadr(ccArgs));
-                if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
-                return ccForm;
-            }
+                case sCond:
+                    if (ccArgs != null) expandForms("cond", ccArgs);
+                    return ccForm;
 
-            case sDefmacro:
-                varargs1("defmacro", ccArgs);
-                if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
-                evalDefmacro(ccArgs, topEnv);
-                return ccForm;
+                case sProgn:
+                    if (ccArgs == null) return null;
+                    if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
+                    expandForms("progn", ccArgs);
+                    return ccForm;
 
-            case sLet:
-            case sLetStar:
-            case sLetrec:
-                final String sfName = symOp.toString();
-                final boolean letDynamic, namedLet;
-                final ConsCell bindingsAndBody;
-                if (car(ccArgs) != null && symbolp(car(ccArgs))) {
-                    final Object tag = car(ccArgs);
-                    if (tag == sDynamic) { letDynamic = true; namedLet = false; }
-                    else { notReserved(sfName, (LambdaJSymbol)tag); letDynamic = false; namedLet = true; }
-                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
-                    bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
-                }
-                else {
-                    letDynamic = false; namedLet = false;
-                    bindingsAndBody = ccArgs;
-                }
-                if (car(bindingsAndBody) != null) {
-                    if (!listp(car(bindingsAndBody))) throw errorMalformed(getOp(sfName, letDynamic, namedLet), "a list of bindings", car(bindingsAndBody));
-                    final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
-                    for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
-                        final Object binding = car(i);
-                        if (consp(binding)) {
-                            if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
-                            if (consp(cadar(i))) {
-                                final ConsCell ccBinding = carShallowCopyList(sfName, i);
-                                final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
-                                valueFormList.rplaca(expandForm(car(valueFormList)));
-                            }
+                case sLabels:
+                    varargs1("labels", ccArgs);
+                    for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null && car(i) != null; i = cdrShallowCopyList("labels", i)) {
+                        if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
+                        final ConsCell localFunc = carShallowCopyList("labels", i);
+                        varargsMin("labels", localFunc, 2);
+                        final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
+                        if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
+                        checkLambdaList(printSEx(funcSymbol), cadr(localFunc));
+                        if (cddr(localFunc) != null) {
+                            final ConsCell body = cddrShallowCopyList("labels", localFunc);
+                            expandForms("labels", body);
                         }
-                        else if (symbolp(binding)) i.rplaca(cons(binding, null)); // change (let (a) ...) -> (let ((a)) ...)
-                        else throw errorMalformed(getOp(sfName, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
                     }
+                    if (cdr(ccArgs) != null) expandForms("labels", ccArgs.shallowCopyCdr());
+                    return ccForm;
+
+                case sDefine: {
+                    varargs1_2("define", ccArgs);
+                    if (cdr(ccArgs) != null) {
+                        final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
+                        valueForm.rplaca(expandForm(car(valueForm)));
+                    }
+                    return ccForm;
                 }
-                if (cdr(bindingsAndBody) != null) {
-                    final ConsCell bodyCopy = cdrShallowCopyList(sfName, bindingsAndBody);
-                    expandForms(sfName, bodyCopy);
+
+                case sDefun: {
+                    varargsMin("defun", ccArgs, 2);
+                    checkLambdaList("defun", cadr(ccArgs));
+                    if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
+                    return ccForm;
                 }
-                return ccForm;
 
-            case sMultipleValueBind:
-                varargsMin("multiple-value-bind", ccArgs, 2);
-                expandForms("multiple-value-bind", ccArgs.shallowCopyCdr());
-                return ccForm;
+                case sDefmacro:
+                    varargs1("defmacro", ccArgs);
+                    if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
+                    evalDefmacro(ccArgs, topEnv);
+                    return ccForm;
 
-            case sCatch:
-                varargs1("catch", ccArgs);
-                if (cdr(ccArgs) == null) return null;
-                expandForms("catch", ccArgs);
-                return ccForm;
+                case sLet:
+                case sLetStar:
+                case sLetrec:
+                    final String sfName = symOp.toString();
+                    final boolean letDynamic, namedLet;
+                    final ConsCell bindingsAndBody;
+                    if (car(ccArgs) != null && symbolp(car(ccArgs))) {
+                        final Object tag = car(ccArgs);
+                        if (tag == sDynamic) {
+                            letDynamic = true;
+                            namedLet = false;
+                        }
+                        else {
+                            notReserved(sfName, (LambdaJSymbol)tag);
+                            letDynamic = false;
+                            namedLet = true;
+                        }
+                        if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
+                        bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
+                    }
+                    else {
+                        letDynamic = false;
+                        namedLet = false;
+                        bindingsAndBody = ccArgs;
+                    }
+                    if (car(bindingsAndBody) != null) {
+                        if (!listp(car(bindingsAndBody))) throw errorMalformed(getOp(sfName, letDynamic, namedLet), "a list of bindings", car(bindingsAndBody));
+                        final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
+                        for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
+                            final Object binding = car(i);
+                            if (consp(binding)) {
+                                if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
+                                if (consp(cadar(i))) {
+                                    final ConsCell ccBinding = carShallowCopyList(sfName, i);
+                                    final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
+                                    valueFormList.rplaca(expandForm(car(valueFormList)));
+                                }
+                            }
+                            else if (symbolp(binding)) i.rplaca(cons(binding, null)); // change (let (a) ...) -> (let ((a)) ...)
+                            else throw errorMalformed(getOp(sfName, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
+                        }
+                    }
+                    if (cdr(bindingsAndBody) != null) {
+                        final ConsCell bodyCopy = cdrShallowCopyList(sfName, bindingsAndBody);
+                        expandForms(sfName, bodyCopy);
+                    }
+                    return ccForm;
 
-            case sThrow:
-                twoArgs("throw", ccArgs);
-                expandForms("throw", ccArgs);
-                return ccForm;
+                case sMultipleValueBind:
+                    varargsMin("multiple-value-bind", ccArgs, 2);
+                    expandForms("multiple-value-bind", ccArgs.shallowCopyCdr());
+                    return ccForm;
 
-            case sUnwindProtect:
-                varargs1("unwind-protect", ccArgs);
-                if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
-                expandForms("unwind-protect", ccArgs);
-                return ccForm;
+                case sCatch:
+                    varargs1("catch", ccArgs);
+                    if (cdr(ccArgs) == null) return null;
+                    expandForms("catch", ccArgs);
+                    return ccForm;
 
-            case sSetQ:
-                for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
-                    symbolOrMalformed("setq", car(pairs));
-                    if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
-                    pairs = cdrShallowCopyList("setq", pairs);
-                    pairs.rplaca(expandForm(car(pairs)));
+                case sThrow:
+                    twoArgs("throw", ccArgs);
+                    expandForms("throw", ccArgs);
+                    return ccForm;
+
+                case sUnwindProtect:
+                    varargs1("unwind-protect", ccArgs);
+                    if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
+                    expandForms("unwind-protect", ccArgs);
+                    return ccForm;
+
+                case sSetQ:
+                    for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
+                        symbolOrMalformed("setq", car(pairs));
+                        if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
+                        pairs = cdrShallowCopyList("setq", pairs);
+                        pairs.rplaca(expandForm(car(pairs)));
+                    }
+                    return ccForm;
+
+                case sDeclaim:
+                case sLoad:
+                case sRequire:
+                case sProvide:
+                    return form; // no macroexpansion in declaim, load, require, provide forms
+
+                case sMultipleValueCall:
+                    varargs1("multiple-value-call", ccArgs);
+                    expandForms("multiple-value-call", ccArgs);
+                    return ccForm;
+
+                default:
+                    assert false : ccForm.lineInfo() + "special form " + symOp + " is not implemented";
                 }
-                return ccForm;
 
-            case sDeclaim:
-            case sLoad:
-            case sRequire:
-            case sProvide:
-                return form; // no macroexpansion in declaim, load, require, provide forms
-
-            case sMultipleValueCall:
-                varargs1("multiple-value-call", ccArgs);
-                expandForms("multiple-value-call", ccArgs);
-                return ccForm;
-
-            default:
-                assert false: ccForm.lineInfo() + "special form " + symOp + " is not implemented";
+                // not a special form, must be a function or macro application
+                if (symOp.macro != null) {
+                    final Object expansion = macroexpandImpl(ccForm);
+                    assert cadr(values) != null : ccForm.lineInfo() + "macro " + symOp + " was not expanded - secondary value is nil, form was " + form;
+                    assert expansion != ccForm : ccForm.lineInfo() + "macro " + symOp + " was not expanded - expansion == ccForm, form was " + form;
+                    values = NO_VALUES;
+                    return expandForm(expansion);
+                }
             }
-
-            // not a special form, must be a function or macro application
-            if (symOp.macro != null) {
-                final Object expansion = macroexpandImpl(ccForm);
-                assert cadr(values) != null: ccForm.lineInfo() + "macro " + symOp + " was not expanded - secondary value is nil, form was " + form;
-                assert expansion != ccForm: ccForm.lineInfo() + "macro " + symOp + " was not expanded - expansion == ccForm, form was " + form;
-                values = NO_VALUES;
-                return expandForm(expansion);
-            }
+            expandForms("function application", ccForm);
+            return ccForm;
         }
-        expandForms("function application", ccForm);
-        return ccForm;
+        catch (LambdaJError e) {
+            throw new LambdaJError(false, e.getMessage(), form);
+        }
     }
 
     private static ConsCell carShallowCopyList(String sfName, ConsCell cons) {
