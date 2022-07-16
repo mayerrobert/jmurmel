@@ -2282,6 +2282,11 @@ public class LambdaJ {
                     if (car(bindingsAndBody) != null) {
                         if (!listp(car(bindingsAndBody))) throw errorMalformed(getOp(sfName, letDynamic, namedLet), "a list of bindings", car(bindingsAndBody));
                         final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
+
+                        // check for duplicate variable names for let and letrec with more than one binding
+                        final boolean useLookup = symOp.wellknownSymbol != WellknownSymbol.sLetStar && cdr(bindings) != null;
+                        final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
+
                         for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
                             final Object binding = car(i);
                             if (consp(binding)) {
@@ -2299,6 +2304,11 @@ public class LambdaJ {
                             // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                             if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
                             if (sym == tag) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
+                            
+                            if (seen != null) {
+                                if (seen.contains(sym)) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "duplicate symbol %s", sym);
+                                seen.add(sym);
+                            }
                         }
                     }
                     if (cdr(bindingsAndBody) != null) {
@@ -2491,7 +2501,7 @@ public class LambdaJ {
         ConsCell params = null;
         ConsCell extenv = env;
         if (ccBindings != null) {
-            final boolean useLookup = !(letStar && !letDynamic || cdr(ccBindings) == null); // lookup is not needed for let* or a single binding
+            final boolean useLookup = letDynamic && cdr(ccBindings) != null;
             final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
             ConsCell newValues = null; // used for let dynamic
             ConsCell insertPos = null; // used for named let
@@ -2500,25 +2510,16 @@ public class LambdaJ {
                 final LambdaJSymbol sym = (LambdaJSymbol)car(binding);
                 final Object bindingForm = cadr(binding);
 
-                final boolean isNewSymbol;
-                if (useLookup) {
-                    // let and letrec don't allow duplicate symbols
-                    isNewSymbol = !seen.contains(sym);
-                    if (isNewSymbol) seen.add(sym);
-                    if (!letStar) { // let and letrec don't allow duplicate symbols
-                        if (!isNewSymbol) throw errorMalformedFmt(getOp(operator, letDynamic, namedLet), "duplicate symbol %s", sym);
-                    }
-                }
-                else {
-                    isNewSymbol = true; // ignored/ not needed for "let*", true for a single binding
-                }
-
                 ConsCell newBinding = null;
                 if (letDynamic) newBinding = assq(sym, topEnv);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
+                    final boolean isNewSymbol;
+                    if (seen != null) { isNewSymbol = !seen.contains(sym); if (isNewSymbol) seen.add(sym); }
+                    else isNewSymbol = true; // ignored/ not needed for "let*", true for a single binding
+
                     if (isNewSymbol) restore = cons(new RestoreDynamic(newBinding, cdr(newBinding)), restore);
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
