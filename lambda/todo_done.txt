@@ -1666,3 +1666,6 @@ mlib: length muss auch vector unterstützen (ggf. length nach Murmel schieben)
 sv->list, list->sv?
 
 mlib: remove und remove-if sollten sequence akzeptieren
+
+eval gibt bei fehlern/ malformed locationinfo aus, expandForm nicht
+-> try/catch/rethrow analog eval einbauen

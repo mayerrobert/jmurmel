@@ -2227,7 +2227,7 @@ public class LambdaJ {
                             expandForms("labels", body);
                         }
                     }
-                    if (cdr(ccArgs) != null) expandForms("labels", ccArgs.shallowCopyCdr());
+                    if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
                     return ccForm;
 
                 case sDefine: {
@@ -2302,7 +2302,7 @@ public class LambdaJ {
 
                 case sMultipleValueBind:
                     varargsMin("multiple-value-bind", ccArgs, 2);
-                    expandForms("multiple-value-bind", ccArgs.shallowCopyCdr());
+                    expandForms("multiple-value-bind", cdrShallowCopyList("multiple-value-bind", ccArgs));
                     return ccForm;
 
                 case sCatch:
@@ -2379,10 +2379,6 @@ public class LambdaJ {
     }
 
     /** expand all elements in the list ccForms. The first conscell is modified in place, subsequent conscells are copied.  */
-    private void expandForms(String func, Object maybeList) {
-        expandForms(func, listOrMalformed(func, maybeList));
-    }
-
     private void expandForms(String func, ConsCell forms) {
         for (; forms != null; forms = cdrShallowCopyList(func, forms)) {
             forms.rplaca(expandForm(car(forms)));
