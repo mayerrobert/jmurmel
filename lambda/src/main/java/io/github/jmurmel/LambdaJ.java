@@ -2257,9 +2257,10 @@ public class LambdaJ {
                 case sLetrec:
                     final String sfName = symOp.toString();
                     final boolean letDynamic, namedLet;
+                    final Object tag;
                     final ConsCell bindingsAndBody;
                     if (car(ccArgs) != null && symbolp(car(ccArgs))) {
-                        final Object tag = car(ccArgs);
+                        tag = car(ccArgs);
                         if (tag == sDynamic) {
                             letDynamic = true;
                             namedLet = false;
@@ -2275,6 +2276,7 @@ public class LambdaJ {
                     else {
                         letDynamic = false;
                         namedLet = false;
+                        tag = null;
                         bindingsAndBody = ccArgs;
                     }
                     if (car(bindingsAndBody) != null) {
@@ -2284,7 +2286,7 @@ public class LambdaJ {
                             final Object binding = car(i);
                             if (consp(binding)) {
                                 if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
-                                if (consp(cadar(i))) {
+                                if (consp(cadr(binding))) {
                                     final ConsCell ccBinding = carShallowCopyList(sfName, i);
                                     final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
                                     valueFormList.rplaca(expandForm(car(valueFormList)));
@@ -2292,6 +2294,11 @@ public class LambdaJ {
                             }
                             else if (symbolp(binding)) i.rplaca(cons(binding, null)); // change (let (a) ...) -> (let ((a)) ...)
                             else throw errorMalformed(getOp(sfName, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
+                            final LambdaJSymbol sym = symbolOrMalformed(sfName, caar(i));
+
+                            // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
+                            if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
+                            if (sym == tag) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
                         }
                     }
                     if (cdr(bindingsAndBody) != null) {
@@ -2370,12 +2377,12 @@ public class LambdaJ {
         return carCopy;
     }
 
-    private static ConsCell cdrShallowCopyList(String sfName, ConsCell i) {
-        return listOrMalformed(sfName, i.shallowCopyCdr());
+    private static ConsCell cdrShallowCopyList(String sfName, ConsCell cons) {
+        return listOrMalformed(sfName, cons.shallowCopyCdr());
     }
 
-    private static ConsCell cddrShallowCopyList(String sfName, ConsCell i) {
-        return listOrMalformed(sfName, listOrMalformed(sfName, i.shallowCopyCdr()).shallowCopyCdr());
+    private static ConsCell cddrShallowCopyList(String sfName, ConsCell cons) {
+        return listOrMalformed(sfName, listOrMalformed(sfName, cons.shallowCopyCdr()).shallowCopyCdr());
     }
 
     /** expand all elements in the list ccForms. The first conscell is modified in place, subsequent conscells are copied.  */
@@ -2478,8 +2485,7 @@ public class LambdaJ {
         final boolean namedLet = !letDynamic && maybeLoopSymbol != null && symbolp(maybeLoopSymbol); // ohne "maybeLoopSymbol != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
         final LambdaJSymbol loopSymbol = namedLet ? (LambdaJSymbol)maybeLoopSymbol : null;
 
-        final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;  // ((bindings...) bodyforms...)
-
+        final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;
         final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
 
         ConsCell params = null;
@@ -2493,10 +2499,6 @@ public class LambdaJ {
             for (Object binding : ccBindings) {
                 final LambdaJSymbol sym = (LambdaJSymbol)car(binding);
                 final Object bindingForm = cadr(binding);
-
-                // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
-                if (reserved(sym)) errorReserved(getOp(operator, letDynamic, namedLet), sym);
-                if (sym == loopSymbol) errorMalformedFmt(getOp(operator, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
 
                 final boolean isNewSymbol;
                 if (useLookup) {
