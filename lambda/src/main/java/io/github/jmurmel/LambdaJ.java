@@ -855,13 +855,13 @@ public class LambdaJ {
     private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*))");
     static boolean isLong(String s) {
         if (s == null || s.isEmpty()) return false;
-        return LONG_PATTERN.matcher(s).matches();
+        return LONG_PATTERN.matcher(s).matches(); // todo handgeschnitzer check statt regex?
     }
 
     private static final Pattern CL_DECIMAL_LONG_PATTERN = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*\\.))");
     static boolean isCLDecimalLong(String s) {
         if (s == null || s.isEmpty()) return false;
-        return CL_DECIMAL_LONG_PATTERN.matcher(s).matches();
+        return CL_DECIMAL_LONG_PATTERN.matcher(s).matches(); // todo handgeschnitzer check statt regex?
     }
 
     private static final Pattern DOUBLE_PATTERN = Pattern.compile(
@@ -1810,8 +1810,7 @@ public class LambdaJ {
 
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
-                    varargs1_2("define", ccArguments);
-                    final LambdaJSymbol symbol = symbolOrMalformed("define", car(ccArguments));
+                    final LambdaJSymbol symbol = (LambdaJSymbol)car(ccArguments);
                     final ConsCell envEntry = assq(symbol, topEnv);
 
                     // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
@@ -1827,7 +1826,6 @@ public class LambdaJ {
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                 // shortcut for (define symbol (lambda (params...) forms...))
                 case sDefun: {
-                    varargsMin("defun", ccArguments, 2);
                     form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
                     isTc = true; continue tailcall;
                 }
@@ -1865,17 +1863,15 @@ public class LambdaJ {
 
                 /// eval - (catch tagform forms...) -> object
                 case sCatch: {
-                    varargs1("catch", ccArguments);
                     final Object tag = eval(car(ccArguments), env, stack, level, traceLvl);
                     localCatchTags = cons(tag, localCatchTags);
-                    ccForms = listOrMalformed("catch", cdr(ccArguments));
+                    ccForms = (ConsCell)cdr(ccArguments);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
 
                 /// eval - (throw tagform resultform) -> |
                 case sThrow: {
-                    twoArgs("throw", ccArguments);
                     final Object throwTag = eval(car(ccArguments), env, stack, level, traceLvl);
                     final Object throwResult = eval(cadr(ccArguments), env, stack, level, traceLvl);
                     // todo checken obs tag gibt, sonst (error 'control-error)
@@ -1951,7 +1947,6 @@ public class LambdaJ {
                 /// eval - multiple-value-call
                 /// eval - (multiple-value-call function-form values-form*) -> object
                 case sMultipleValueCall: {
-                    varargs1("multiple-value-call", ccArguments);
                     final Object funcOrSymbol = car(ccArguments);
                     func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
                     ConsCell allArgs = null;
@@ -2232,6 +2227,7 @@ public class LambdaJ {
 
                 case sDefine: {
                     varargs1_2("define", ccArgs);
+                    symbolOrMalformed("define", car(ccArgs));
                     if (cdr(ccArgs) != null) {
                         final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
                         valueForm.rplaca(expandForm(car(valueForm)));
@@ -2325,7 +2321,7 @@ public class LambdaJ {
                 case sCatch:
                     varargs1("catch", ccArgs);
                     if (cdr(ccArgs) == null) return null;
-                    expandForms("catch", ccArgs);
+                    expandForms("catch", cdrShallowCopyList("catch", ccArgs));
                     return ccForm;
 
                 case sThrow:
@@ -2417,7 +2413,7 @@ public class LambdaJ {
     private Object evalSetq(ConsCell pairs, ConsCell env, int stack, int level, int traceLvl) {
         Object res = null;
         while (pairs != null) {
-            final LambdaJSymbol symbol = symbolOrMalformed("setq", car(pairs));
+            final LambdaJSymbol symbol = (LambdaJSymbol)car(pairs);
             final ConsCell envEntry = assq(symbol, env);
 
             pairs = (ConsCell) cdr(pairs);
