@@ -1901,7 +1901,6 @@ public class LambdaJ {
 
                 /// eval - (if condform form optionalform) -> object
                 case sIf: {
-                    varargsMinMax("if", ccArguments, 2, 3);
                     if (eval(car(ccArguments), env, stack, level, traceLvl) != null) {
                         form = cadr(ccArguments);
                     } else {
