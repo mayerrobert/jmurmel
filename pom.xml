@@ -60,14 +60,14 @@
         <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
-        <pitest-maven-plugin.version>1.9.2</pitest-maven-plugin.version>
+        <pitest-maven-plugin.version>1.9.3</pitest-maven-plugin.version>
         <pitest-testng-plugin.version>1.0.0</pitest-testng-plugin.version>
         <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
         <argLine />
 
         <!-- report maven plugins -->
         <maven-site-plugin.version>3.12.0</maven-site-plugin.version>
-        <maven-project-info-reports-plugin.version>3.3.0</maven-project-info-reports-plugin.version>
+        <maven-project-info-reports-plugin.version>3.4.0</maven-project-info-reports-plugin.version>
         <maven-jxr-plugin.version>3.2.0</maven-jxr-plugin.version>
         <maven-dependency-plugin.version>3.3.0</maven-dependency-plugin.version>
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
