@@ -2224,7 +2224,7 @@ public class LambdaJ {
                     if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
                     return ccForm;
 
-                case sDefine: {
+                case sDefine:
                     varargs1_2("define", ccArgs);
                     symbolOrMalformed("define", car(ccArgs));
                     if (cdr(ccArgs) != null) {
@@ -2232,14 +2232,12 @@ public class LambdaJ {
                         valueForm.rplaca(expandForm(car(valueForm)));
                     }
                     return ccForm;
-                }
 
-                case sDefun: {
+                case sDefun:
                     varargsMin("defun", ccArgs, 2);
                     checkLambdaList("defun", cadr(ccArgs));
                     if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
                     return ccForm;
-                }
 
                 case sDefmacro:
                     varargs1("defmacro", ccArgs);
@@ -2475,8 +2473,8 @@ public class LambdaJ {
         final ListConsCell extEnv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
         for (Object localFunction : localFunctions) {
             final ConsCell currentFunc = (ConsCell)localFunction;
-            final LambdaJSymbol currentSymbol = symbolOrMalformed("labels", car(currentFunc));
-            final ConsCell ccParamsAndForms = listOrMalformed("labels", cdr(currentFunc));
+            final LambdaJSymbol currentSymbol = (LambdaJSymbol)car(currentFunc);
+            final ConsCell ccParamsAndForms = (ConsCell)cdr(currentFunc);
             insertFront(extEnv, currentSymbol, makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv));
         }
         return extEnv;
