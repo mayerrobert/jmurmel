@@ -215,9 +215,9 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) {
                 final char c = name.charAt(i);
                 switch (c) {
-                    case '|':  ret.append("\\|"); break;
-                    case '\\': ret.append("\\\\"); break; 
-                    default: ret.append(c);
+                case '|':  ret.append("\\|"); break;
+                case '\\': ret.append("\\\\"); break;
+                default: ret.append(c);
                 }
             }
             return ret.toString();
@@ -235,7 +235,7 @@ public class LambdaJ {
 
     @FunctionalInterface public interface ObjectReader {
         Object readObj(Object eof);
-        
+
         /** if {@code recordPos == true} then it would be desirable to reconrd file/line positions inside the objects */
         default Object readObj(boolean recordPos, Object eof) { return readObj(eof); }
         default void setInput(ReadSupplier input, Path filePath) { throw new UnsupportedOperationException("this ObjectReader does not support changing input"); }
@@ -255,7 +255,7 @@ public class LambdaJ {
         void printSEx(WriteConsumer out, boolean escapeAtoms);
     }
 
-    @FunctionalInterface public interface Primitive extends Writeable { 
+    @FunctionalInterface public interface Primitive extends Writeable {
         Object applyPrimitive(ConsCell x);
         default Object applyPrimitiveVarargs(Object... args) { return applyPrimitive(arraySlice(args, 0)); }
         @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<primitive>"); }
@@ -288,7 +288,7 @@ public class LambdaJ {
     /** for nonlocal returns */
     static class ReturnException extends LambdaJError {
         final Object tag, result;
-        final Object[] values; 
+        final Object[] values;
 
         ReturnException(Object tag, Object result, Object[] values) {
             super("#<returnexception tag=" + tag + ", result=" + result + '>');
@@ -420,7 +420,7 @@ public class LambdaJ {
 
         @Override public Object cdr() { return cdr; }
         @Override public ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
-        
+
         void adjustEnd(int endLineNo, int endCharNo) {}
     }
 
@@ -436,7 +436,7 @@ public class LambdaJ {
         private final transient Path path;
         private final int startLineNo, startCharNo;
         private int lineNo, charNo;
-        
+
         @Override public SExpConsCell copy() { return new SExpConsCell(path, startLineNo, startCharNo, lineNo, charNo, car(), cdr()); }
 
         private SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
@@ -543,10 +543,10 @@ public class LambdaJ {
     final ConsCell featuresEnvEntry;
 
     static final String[] CTRL = {
-        "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
-        "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
-        "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
-        "Us"
+    "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
+    "Vt", "Page", "Return", "So", "Si", "Dle", "Dc1", "Dc2", "Dc3", "Dc4",
+    "Nak", "Syn", "Etb", "Can", "Em", "Sub", "Esc", "Fs", "Gs", "Rs",
+    "Us"
     };
 
     /** installation directory */
@@ -607,7 +607,7 @@ public class LambdaJ {
         HAVE_XTRA,           // extra special forms such as if
 
         HAVE_FFI,            // jmethod and jproxy
-        
+
         HAVE_NUMBERS,        // numbers, +-<>..., numberp, without it the remaining datatypes are symbols and cons-cells (lists)
 
         HAVE_DOUBLE,         // turns on Double support in the reader, you'll want NUMBERS as well
@@ -945,7 +945,7 @@ public class LambdaJ {
             sListStar       = intern("list*");
             sCons           = intern("cons");
             sNil            = intern("nil");
-            
+
             this.featuresEnvEntry = featuresEnvEntry;
         }
 
@@ -1029,7 +1029,7 @@ public class LambdaJ {
         private void skipWs() { while (isSpace(look)) { look = getchar(); } }
 
         private static final Object CONTINUE = new Object();
-        
+
         /** if we get here then we have already read '#' and look contains the character after #subchar */
         private Object readerMacro(int sub_char) {
             switch (sub_char) {
@@ -1049,8 +1049,8 @@ public class LambdaJ {
                 }
                 throw new ParseError("unrecognized character name %s", charOrCharactername);
 
-            // #| ... multiline comment ending with |#
-            // or #! ... !# to make hashbang scripts possible
+                // #| ... multiline comment ending with |#
+                // or #! ... !# to make hashbang scripts possible
             case '|':
             case '!':
                 final int ln = lineNo, cn = charNo;
@@ -1063,7 +1063,7 @@ public class LambdaJ {
                 }
                 throw new ParseError("line %d:%d: EOF in multiline comment", ln, cn);
 
-            // #' ... function, ignore for CL compatibility
+                // #' ... function, ignore for CL compatibility
             case '\'':
                 return CONTINUE;
 
@@ -1118,7 +1118,7 @@ public class LambdaJ {
 
         private final Object sNot;
         private final Object sAnd;
-        private final Object sOr; 
+        private final Object sOr;
 
         private boolean featurep(Object next) {
             if (next != null && symbolp(next)) return some(x -> x == next, cdr(featuresEnvEntry));
@@ -1188,12 +1188,12 @@ public class LambdaJ {
                     tok = intern(s);
                 } else if (isSyntax(look)) {
                     switch (look) {
-                        case '(':  tok = Token.LP; break;
-                        case ')':  tok = Token.RP; break;
-                        case '\'': tok = Token.SQ; break;
-                        case '`':  tok = Token.BQ; break;
-                        case ',':  tok = Token.COMMA; break;
-                        default: throw new ParseError("internal error - unexpected syntax char %c", (char)look);
+                    case '(':  tok = Token.LP; break;
+                    case ')':  tok = Token.RP; break;
+                    case '\'': tok = Token.SQ; break;
+                    case '`':  tok = Token.BQ; break;
+                    case ',':  tok = Token.COMMA; break;
+                    default: throw new ParseError("internal error - unexpected syntax char %c", (char)look);
                     }
                     look = getchar();
                 } else if (haveString() && isDQuote(look)) {
@@ -1770,7 +1770,7 @@ public class LambdaJ {
                 final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
                 if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
 
-                final ConsCell ccArguments = listOrMalformed("eval", cdr(ccForm));   // list with remaining atoms/ expressions
+                final ConsCell ccArguments = (ConsCell)cdr(ccForm);   // list with remaining atoms/ expressions
 
                 final boolean funcall;
                 ConsCell ccForms = null;
@@ -1782,8 +1782,8 @@ public class LambdaJ {
                 /// eval - special forms
 
                 /// eval - (quote exp) -> exp
-                case sQuote: {
-                    oneArg("quote", ccArguments);
+                case sQuote:
+                case sDefmacro: {
                     return result = car(ccArguments);
                 }
 
@@ -1795,10 +1795,6 @@ public class LambdaJ {
 
                 case sSetQ: {
                     return result = evalSetq(ccArguments, env, stack, level, traceLvl);
-                }
-
-                case sDefmacro: {
-                    return result = car(ccArguments);
                 }
 
                 case sDeclaim: {
@@ -2069,7 +2065,7 @@ public class LambdaJ {
                     /* something like
                          (define l '(lambda () 'hello))
                          (l)
-                       would end up here. That's not really legal (or is it/ should it be?), and wouldn't work in compiled Murmel,
+                       would end up here. That was legal in CLtL1 and was made illegal in Common Lisp, and wouldn't work in compiled Murmel,
                        nor would something similar work in Common Lisp (see "Issue FUNCTION-TYPE Writeup" http://www.lispworks.com/documentation/lw71/CLHS/Issues/iss175_w.htm).
                      */
                     else if (haveOldLambda() && consp(func) && car(func) == sLambda) {
@@ -2097,8 +2093,8 @@ public class LambdaJ {
 
                 return result = null; // lambda/ progn/ labels/... w/o body
             }
-
         }
+
         catch (ReturnException re) {
             final Object thrownTag = re.tag;
             if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
@@ -2116,8 +2112,8 @@ public class LambdaJ {
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
             if (traced != null && func != null) traceLvl = traceExit(func, result, traceLvl);
-            Object s;
             if (traceStack != null) {
+                Object s;
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
             }
             LambdaJError e = null;
@@ -2297,7 +2293,7 @@ public class LambdaJ {
                             // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                             if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
                             if (sym == tag) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
-                            
+
                             if (seen != null) {
                                 if (seen.contains(sym)) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "duplicate symbol %s", sym);
                                 seen.add(sym);
@@ -2519,7 +2515,7 @@ public class LambdaJ {
                 }
                 else if (letRec) newBinding.rplacd(val);
                 else extenv = acons(sym, val, extenv);
-                
+
                 if (namedLet) {
                     if (params == null) {
                         params = cons(sym, null);
@@ -2647,7 +2643,7 @@ public class LambdaJ {
      *    construct a cons (param . arg)
      *    stick above list in front of the environment
      *  return extended environment</pre>
-     *  
+     *
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
     private ConsCell zip(Object paramList, ConsCell args, ConsCell env, boolean match) {
@@ -2714,7 +2710,7 @@ public class LambdaJ {
             paramsAndForms = cdr(paramsAndForms);
             env = DYNAMIC_ENV;
         }
-        final ConsCell ccParamsAndForms = (ConsCell)paramsAndForms; 
+        final ConsCell ccParamsAndForms = (ConsCell)paramsAndForms;
         return makeClosure(car(ccParamsAndForms), listOrMalformed("lambda", cdr(ccParamsAndForms)), env);
     }
 
@@ -2969,10 +2965,10 @@ public class LambdaJ {
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
-                                                 : o instanceof ListConsCell ? ((ListConsCell)o).car()
-                                                 : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                 : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
-                                                 : carCdrError("car", o); }
+                                                          : o instanceof ListConsCell ? ((ListConsCell)o).car()
+                                                                                      : o instanceof ConsCell ? ((ConsCell)o).car()
+                                                                                                              : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
+                                                                                                                                    : carCdrError("car", o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
 
@@ -2987,10 +2983,10 @@ public class LambdaJ {
 
     static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     static Object   cdr(Object o)      { return o == null ? null
-                                                 : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
-                                                 : o instanceof ConsCell ? ((ConsCell)o).cdr()
-                                                 : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
-                                                 : carCdrError("cdr", o); }
+                                                          : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
+                                                                                      : o instanceof ConsCell ? ((ConsCell)o).cdr()
+                                                                                                              : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
+                                                                                                                                    : carCdrError("cdr", o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
 
@@ -3209,7 +3205,7 @@ public class LambdaJ {
 
     static Number cl_signum(Object n) {
         if (n instanceof Double) return Math.signum((Double)n);
-        if (n instanceof Long)       { return (long)Long.signum((Long)n); } 
+        if (n instanceof Long)       { return (long)Long.signum((Long)n); }
         if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
         if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
         if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
@@ -3328,9 +3324,9 @@ public class LambdaJ {
 
     static String printChar(int c) {
         return "#\\"
-         + (c < CTRL.length ? CTRL[c]
-        : c < 127 ? String.valueOf((char)c)
-        : String.valueOf(c));
+               + (c < CTRL.length ? CTRL[c]
+                                  : c < 127 ? String.valueOf((char)c)
+                                            : String.valueOf(c));
     }
 
     /** prepend " and \ by a \ */
@@ -3423,8 +3419,8 @@ public class LambdaJ {
 
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
         final String argPhrase = expectedMin == expectedMax
-                ? expectedArgPhrase(expectedMin)
-                : expectedMin + " to " + expectedMax + " arguments";
+                                 ? expectedArgPhrase(expectedMin)
+                                 : expectedMin + " to " + expectedMax + " arguments";
 
         if (actual < expectedMin) {
             throw new LambdaJError(true, "%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
@@ -3919,8 +3915,8 @@ public class LambdaJ {
         final double offset = -rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
         //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
         return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
-               cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
-               cons(boolResult(daylightSavings), cons(offset, null)))))))));
+                                                            cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
+                                                                                                                                   cons(boolResult(daylightSavings), cons(offset, null)))))))));
     }
 
     /** expand a single macro call */
@@ -4018,15 +4014,15 @@ public class LambdaJ {
             try {
                 final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
                 switch (paramCount) {
-                    case 0:  invoke = args -> mh.invoke();  break;
-                    case 1:  invoke = args -> mh.invoke(args[0]);  break;
-                    case 2:  invoke = args -> mh.invoke(args[0], args[1]);  break;
-                    case 3:  invoke = args -> mh.invoke(args[0], args[1], args[2]);  break;
-                    case 4:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3]);  break;
-                    case 5:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4]);  break;
-                    case 6:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);  break;
-                    case 7:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);  break;
-                    default: invoke = mh::invokeWithArguments; // that's slow
+                case 0:  invoke = args -> mh.invoke();  break;
+                case 1:  invoke = args -> mh.invoke(args[0]);  break;
+                case 2:  invoke = args -> mh.invoke(args[0], args[1]);  break;
+                case 3:  invoke = args -> mh.invoke(args[0], args[1], args[2]);  break;
+                case 4:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3]);  break;
+                case 5:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4]);  break;
+                case 6:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);  break;
+                case 7:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);  break;
+                default: invoke = mh::invokeWithArguments; // that's slow
                 }
             }
             catch (IllegalAccessException iae) {
@@ -4076,8 +4072,8 @@ public class LambdaJ {
         try {
             final Class<?> clazz = findClass(className);
             return "new".equals(methodName)
-                    ? new JavaConstructor(clazz.getDeclaredConstructor(params), params)
-                    : new JavaMethod(clazz.getMethod(methodName, params), params);
+                   ? new JavaConstructor(clazz.getDeclaredConstructor(params), params)
+                   : new JavaMethod(clazz.getMethod(methodName, params), params);
         }
         catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }
     }
@@ -4209,10 +4205,10 @@ public class LambdaJ {
                 return lispReader.readObj(null); // todo eof als parameter
             };
             env = addBuiltin("read",    freadobj,
-                  addBuiltin("write",   (Primitive) a -> { varargsMinMax("write",   a, 1, 2);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  addBuiltin("writeln", (Primitive) a -> { varargsMinMax("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  addBuiltin("lnwrite", (Primitive) a -> { varargsMinMax("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  env))));
+                             addBuiltin("write",   (Primitive) a -> { varargsMinMax("write",   a, 1, 2);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                                        addBuiltin("writeln", (Primitive) a -> { varargsMinMax("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                                                   addBuiltin("lnwrite", (Primitive) a -> { varargsMinMax("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                                                              env))));
         }
 
         if (haveGui()) {
@@ -4224,67 +4220,67 @@ public class LambdaJ {
                 return ret;
             };
             env = addBuiltin("make-frame",    makeFrame,
-                  addBuiltin("open-frame",    (Primitive) a -> { varargsMinMax("open-frame",    a, 0, 1); return requireFrame("open-frame",    car(a)).open();    },
-                  addBuiltin("close-frame",   (Primitive) a -> { varargsMinMax("close-frame",   a, 0, 1); return requireFrame("close-frame",   car(a)).close();   },
-                  addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return requireFrame("reset-frame",   car(a)).reset();   },
-                  addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return requireFrame("clear-frame",   car(a)).clear();   },
-                  addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return requireFrame("repaint-frame", car(a)).repaint(); },
-                  addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return requireFrame("flush-frame",   car(a)).flush();   },
+                             addBuiltin("open-frame",    (Primitive) a -> { varargsMinMax("open-frame",    a, 0, 1); return requireFrame("open-frame",    car(a)).open();    },
+                                        addBuiltin("close-frame",   (Primitive) a -> { varargsMinMax("close-frame",   a, 0, 1); return requireFrame("close-frame",   car(a)).close();   },
+                                                   addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return requireFrame("reset-frame",   car(a)).reset();   },
+                                                              addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return requireFrame("clear-frame",   car(a)).clear();   },
+                                                                         addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return requireFrame("repaint-frame", car(a)).repaint(); },
+                                                                                    addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return requireFrame("flush-frame",   car(a)).flush();   },
 
-                  // set new current frame, return previous frame
-                  addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; },
+                                                                                               // set new current frame, return previous frame
+                                                                                               addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; },
 
-                  addBuiltin("push-pos",      (Primitive) a -> { varargsMinMax("push-pos",a, 0, 1); return requireFrame("push-pos",car(a)).pushPos(); },
-                  addBuiltin("pop-pos",       (Primitive) a -> { varargsMinMax("pop-pos", a, 0, 1); return requireFrame("pop-pos", car(a)).popPos();  },
+                                                                                                          addBuiltin("push-pos",      (Primitive) a -> { varargsMinMax("push-pos",a, 0, 1); return requireFrame("push-pos",car(a)).pushPos(); },
+                                                                                                                     addBuiltin("pop-pos",       (Primitive) a -> { varargsMinMax("pop-pos", a, 0, 1); return requireFrame("pop-pos", car(a)).popPos();  },
 
-                  addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return requireFrame("pen-up",   car(a)).penUp();   },
-                  addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return requireFrame("pen-down", car(a)).penDown(); },
+                                                                                                                                addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return requireFrame("pen-up",   car(a)).penUp();   },
+                                                                                                                                           addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return requireFrame("pen-down", car(a)).penDown(); },
 
-                  addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 1, 2); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); },
-                  addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 1, 2); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); },
+                                                                                                                                                      addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 1, 2); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); },
+                                                                                                                                                                 addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 1, 2); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); },
 
-                  addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return requireFrame("text",    cadr(a)).text   (car(a).toString()); },
+                                                                                                                                                                            addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return requireFrame("text",    cadr(a)).text   (car(a).toString()); },
 
-                  addBuiltin("right",         (Primitive) a -> { varargsMinMax("right",   a, 1, 2); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
-                  addBuiltin("left",          (Primitive) a -> { varargsMinMax("left",    a, 1, 2); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
-                  addBuiltin("forward",       (Primitive) a -> { varargsMinMax("forward", a, 1, 2); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
-                  env))))))))))))))))));
+                                                                                                                                                                                       addBuiltin("right",         (Primitive) a -> { varargsMinMax("right",   a, 1, 2); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
+                                                                                                                                                                                                  addBuiltin("left",          (Primitive) a -> { varargsMinMax("left",    a, 1, 2); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
+                                                                                                                                                                                                             addBuiltin("forward",       (Primitive) a -> { varargsMinMax("forward", a, 1, 2); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
+                                                                                                                                                                                                                        env))))))))))))))))));
 
             env = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  },
-                  addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
-                  addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
-                  addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
-                  env))));
+                             addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
+                                        addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
+                                                   addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
+                                                              env))));
 
             env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); },
-                  addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
-                  addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
-                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
-                                                                 return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                                  | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                                  | toInt("rgb-to-pixel", caddr(a))); },
-                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
-                                                                 return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                             toFloat("hsb-to-pixel", cadr(a)),
-                                                                                             toFloat("hsb-to-pixel", caddr(a)));  },
-                  env)))));
+                             addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
+                                        addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
+                                                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
+                                                                  return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                                     | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                                     | toInt("rgb-to-pixel", caddr(a))); },
+                                                              addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
+                                                                             return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                                         toFloat("hsb-to-pixel", cadr(a)),
+                                                                                                         toFloat("hsb-to-pixel", caddr(a)));  },
+                                                                         env)))));
         }
 
         if (haveString()) {
             env = addBuiltin("stringp",         (Primitive) a -> { oneArg("stringp", a);         return boolResult(stringp(car(a))); },
-                  addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
-                  addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
-                  addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
-                  addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
-                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
-                  addBuiltin("string->list",    (Primitive) this::stringToList,
-                  addBuiltin("list->string",    (Primitive) LambdaJ::listToString,
-                  env))))))));
+                             addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
+                                        addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
+                                                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
+                                                              addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
+                                                                         addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
+                                                                                    addBuiltin("string->list",    (Primitive) this::stringToList,
+                                                                                               addBuiltin("list->string",    (Primitive) LambdaJ::listToString,
+                                                                                                          env))))))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
-                      addBuiltin("format-locale", (Primitive) this::formatLocale,
-                      env));
+                                 addBuiltin("format-locale", (Primitive) this::formatLocale,
+                                            env));
             }
         }
 
@@ -4302,16 +4298,16 @@ public class LambdaJ {
             env = addBuiltin(sEval, ocEval, env);
 
             env = addBuiltin("trace", (Primitive) this::trace,
-                  addBuiltin("untrace", (Primitive) this::untrace,
-                  env));
+                             addBuiltin("untrace", (Primitive) this::untrace,
+                                        env));
 
             env = addBuiltin("macroexpand-1", (Primitive)this::macroexpand1,
-                  addBuiltin("gensym", (Primitive)this::gensym,
-                  env));
+                             addBuiltin("gensym", (Primitive)this::gensym,
+                                        env));
 
             env = addBuiltin("rplaca", (Primitive) LambdaJ::cl_rplaca,
-                  addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
-                  env));
+                             addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
+                                        env));
 
             env = addBuiltin("values", (Primitive) a -> { values = a; return car(values); }, env);
         }
@@ -4327,115 +4323,115 @@ public class LambdaJ {
 
         if (haveVector()) {
             env = addBuiltin("vector",          (Primitive)LambdaJ::listToArray,
-                  addBuiltin("vector-length",   (Primitive) a -> { oneArg ("vector-length", a);   return vectorLength(car(a)); },
-                  addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
-                  addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
-                  addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
-                  addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
-                  addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
-                  addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
-                  addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
-                  addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
-                  env))))))))));
+                             addBuiltin("vector-length",   (Primitive) a -> { oneArg ("vector-length", a);   return vectorLength(car(a)); },
+                                        addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
+                                                   addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
+                                                              addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
+                                                                         addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
+                                                                                    addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
+                                                                                               addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
+                                                                                                          addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
+                                                                                                                     addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
+                                                                                                                                env))))))))));
         }
 
         if (haveUtil()) {
             env = cons(featuresEnvEntry, env);
 
             env = addBuiltin("consp",     (Primitive) a -> { oneArg("consp",     a);  return boolResult(consp  (car(a))); },
-                  addBuiltin("symbolp",   (Primitive) a -> { oneArg("symbolp",   a);  return boolResult(symbolp(car(a))); },
-                  addBuiltin("listp",     (Primitive) a -> { oneArg("listp",     a);  return boolResult(listp  (car(a))); },
-                  addBuiltin("functionp", (Primitive) a -> { oneArg("functionp", a);  return boolResult(functionp(car(a))); },
-                  addBuiltin("null",      (Primitive) a -> { oneArg("null",      a);  return boolResult(car(a) == null); },
-                  addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
-                  addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
-                  addBuiltin("list",      (Primitive) a -> a,
-                  addBuiltin("list*",     (Primitive) this::listStar,
-                  addBuiltin("append",    (Primitive) this::append,
-                  addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
-                  env)))))))))));
+                             addBuiltin("symbolp",   (Primitive) a -> { oneArg("symbolp",   a);  return boolResult(symbolp(car(a))); },
+                                        addBuiltin("listp",     (Primitive) a -> { oneArg("listp",     a);  return boolResult(listp  (car(a))); },
+                                                   addBuiltin("functionp", (Primitive) a -> { oneArg("functionp", a);  return boolResult(functionp(car(a))); },
+                                                              addBuiltin("null",      (Primitive) a -> { oneArg("null",      a);  return boolResult(car(a) == null); },
+                                                                         addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
+                                                                                    addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
+                                                                                               addBuiltin("list",      (Primitive) a -> a,
+                                                                                                          addBuiltin("list*",     (Primitive) this::listStar,
+                                                                                                                     addBuiltin("append",    (Primitive) this::append,
+                                                                                                                                addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
+                                                                                                                                           env)))))))))));
 
             env = addBuiltin("internal-time-units-per-second", 1e9,
-                  addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
-                  addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
-                  addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
-                  addBuiltin("sleep",                  (Primitive) LambdaJ::sleep,
-                  addBuiltin("get-universal-time",     (Primitive) LambdaJ::getUniversalTime, // seconds since 1.1.1900
-                  addBuiltin("get-decoded-time",       (Primitive) this::getDecodedTime,
-                  env)))))));
+                             addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
+                                        addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
+                                                   addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
+                                                              addBuiltin("sleep",                  (Primitive) LambdaJ::sleep,
+                                                                         addBuiltin("get-universal-time",     (Primitive) LambdaJ::getUniversalTime, // seconds since 1.1.1900
+                                                                                    addBuiltin("get-decoded-time",       (Primitive) this::getDecodedTime,
+                                                                                               env)))))));
 
             env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
         }
 
         if (haveFFI()) {
             env = addBuiltin("jmethod", (Primitive) x -> { varargsMin("jmethod", x, 2); return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x))); },
-                  addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
+                             addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
         }
 
         if (haveAtom()) {
             env = addBuiltin("atom", (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); },
-                  env);
+                             env);
         }
 
         if (haveNumbers()) {
             env = addBuiltin("numberp",  (Primitive) args -> { oneArg("numberp", args);  return boolResult(numberp(car(args))); },
-                  addBuiltin("floatp",   (Primitive) args -> { oneArg("floatp", args);   return boolResult(floatp(car(args))); },
-                  addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
-                  env)));
+                             addBuiltin("floatp",   (Primitive) args -> { oneArg("floatp", args);   return boolResult(floatp(car(args))); },
+                                        addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
+                                                   env)));
 
             env = addBuiltin("pi",      Math.PI,
-                  env);
+                             env);
 
             env = addBuiltin("fround",   (Primitive) args -> { varargsMinMax("fround",   args, 1, 2); return Math.rint  (quot12("fround", args)); },
-                  addBuiltin("ffloor",   (Primitive) args -> { varargsMinMax("ffloor",   args, 1, 2); return Math.floor (quot12("ffloor", args)); },
-                  addBuiltin("fceiling", (Primitive) args -> { varargsMinMax("fceiling", args, 1, 2); return Math.ceil  (quot12("fceiling", args)); },
-                  addBuiltin("ftruncate",(Primitive) args -> { varargsMinMax("ftruncate",args, 1, 2); return cl_truncate(quot12("ftruncate", args)); },
+                             addBuiltin("ffloor",   (Primitive) args -> { varargsMinMax("ffloor",   args, 1, 2); return Math.floor (quot12("ffloor", args)); },
+                                        addBuiltin("fceiling", (Primitive) args -> { varargsMinMax("fceiling", args, 1, 2); return Math.ceil  (quot12("fceiling", args)); },
+                                                   addBuiltin("ftruncate",(Primitive) args -> { varargsMinMax("ftruncate",args, 1, 2); return cl_truncate(quot12("ftruncate", args)); },
 
-                  addBuiltin("round",   (Primitive) args -> { varargsMinMax("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12("round", args))); },
-                  addBuiltin("floor",   (Primitive) args -> { varargsMinMax("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12("floor", args))); },
-                  addBuiltin("ceiling", (Primitive) args -> { varargsMinMax("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12("ceiling", args))); },
-                  addBuiltin("truncate",(Primitive) args -> { varargsMinMax("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12("truncate", args))); },
-                  env))))))));
+                                                              addBuiltin("round",   (Primitive) args -> { varargsMinMax("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12("round", args))); },
+                                                                         addBuiltin("floor",   (Primitive) args -> { varargsMinMax("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12("floor", args))); },
+                                                                                    addBuiltin("ceiling", (Primitive) args -> { varargsMinMax("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12("ceiling", args))); },
+                                                                                               addBuiltin("truncate",(Primitive) args -> { varargsMinMax("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12("truncate", args))); },
+                                                                                                          env))))))));
 
             env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(car(args)); },
-                  addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
+                             addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
 
-                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
-                  addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
-                  addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
-                  addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
-                  addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt", car(args)), toDouble("expt", cadr(args))); },
+                                        addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
+                                                   addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
+                                                              addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
+                                                                         addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
+                                                                                    addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt", car(args)), toDouble("expt", cadr(args))); },
 
-                  addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
-                  addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
-                          
-                  addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
-                  env))))))))));
+                                                                                               addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
+                                                                                                          addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
+
+                                                                                                                     addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
+                                                                                                                                env))))))))));
 
             env = addBuiltin("=",       (Primitive) args -> compare(args, "=",  (d1, d2) -> d1 == d2),
-                  addBuiltin(">",       (Primitive) args -> compare(args, ">",  (d1, d2) -> d1 > d2),
-                  addBuiltin(">=",      (Primitive) args -> compare(args, ">=", (d1, d2) -> d1 >= d2),
-                  addBuiltin("<",       (Primitive) args -> compare(args, "<",  (d1, d2) -> d1 < d2),
-                  addBuiltin("<=",      (Primitive) args -> compare(args, "<=", (d1, d2) -> d1 <= d2),
-                  addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
+                             addBuiltin(">",       (Primitive) args -> compare(args, ">",  (d1, d2) -> d1 > d2),
+                                        addBuiltin(">=",      (Primitive) args -> compare(args, ">=", (d1, d2) -> d1 >= d2),
+                                                   addBuiltin("<",       (Primitive) args -> compare(args, "<",  (d1, d2) -> d1 < d2),
+                                                              addBuiltin("<=",      (Primitive) args -> compare(args, "<=", (d1, d2) -> d1 <= d2),
+                                                                         addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
 
-                  addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
-                  addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
-                  addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
-                  addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
-                  env))))))))));
+                                                                                    addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
+                                                                                               addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
+                                                                                                          addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
+                                                                                                                     addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
+                                                                                                                                env))))))))));
         }
 
         if (haveEq()) {
             env = addBuiltin("eq", (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); },
-                  env);
+                             env);
         }
 
         if (haveCons()) {
             env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    return caar(a); },
-                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
-                  addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
-                  env)));
+                             addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
+                                        addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
+                                                   env)));
         }
 
         topEnv = env;
@@ -4871,7 +4867,7 @@ public class LambdaJ {
     private static Object compileAndRunForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl, boolean finalResult) {
         final Path tmpDir;
         try { tmpDir = getTmpDir(); }
-        catch (IOException e) { 
+        catch (IOException e) {
             System.out.println("history NOT run as Java - cannot get/ create tmp directory: " + e.getMessage());
             if (!repl) throw EXIT_IO_ERROR;
             return null;
@@ -5125,8 +5121,8 @@ public class LambdaJ {
             final Path p = Paths.get(filename.toString());
             Files.createFile(p);
             Files.write(p, history.stream()
-                    .map(LambdaJ::printSEx)
-                    .collect(Collectors.toList()));
+                                  .map(LambdaJ::printSEx)
+                                  .collect(Collectors.toList()));
             System.out.println("wrote history to file '" + p + '\'');
         }
         catch (Exception e) {
@@ -5197,7 +5193,7 @@ public class LambdaJ {
         final boolean toJava      = hasFlag("--java", args);
         final boolean toJar       = hasFlag("--jar", args);
         final boolean run         = hasFlag("--run", args);
-        
+
         if (toJar) return Action.TO_JAR;
         if (toJava) return Action.TO_JAVA;
         if (run) return Action.COMPILE_AND_RUN;
@@ -5337,30 +5333,30 @@ public class LambdaJ {
 
     private static void showHelp() {
         System.out.println("Available commands:\n"
-        + "  :h ............................. this help screen\n"
-        + "  :echo .......................... print forms to screen before eval'ing\n"
-        + "  :noecho ........................ don't print forms\n"
-        + "  :env ........................... list current global environment\n"
-        + "  :macros ........................ list currently defined macros\n"
-        + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
-        + "\n"
-        + "  :l ............................. print history to the screen\n"
-        + "  :w filename .................... write history to a new file with the given filename\n"
-        + "\n"
-        + "  :r ............................. compile history to Java class 'MurmelProgram' and run it\n"
-        + "\n"
-        + "  :java classname t .............. compile history to Java class 'classname' and print to the screen\n"
-        + "  :java classname nil ............ compile history to Java class 'classname' and save to a file based on 'classname' in current directory\n"
-        + "  :java classname directory ...... compile history to Java class 'classname' and save to a file based on 'classname' in directory 'directory'\n"
-        + "\n"
-        + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
-        + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
-        + "\n"
-        + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
-        + "  If 'jarfilename' is nil then 'a.jar' will be used as the jar file name.\n"
-        + "  classname, directory and jarfilename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
-        + "\n"
-        + "  :q ............................. quit JMurmel\n");
+                           + "  :h ............................. this help screen\n"
+                           + "  :echo .......................... print forms to screen before eval'ing\n"
+                           + "  :noecho ........................ don't print forms\n"
+                           + "  :env ........................... list current global environment\n"
+                           + "  :macros ........................ list currently defined macros\n"
+                           + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
+                           + "\n"
+                           + "  :l ............................. print history to the screen\n"
+                           + "  :w filename .................... write history to a new file with the given filename\n"
+                           + "\n"
+                           + "  :r ............................. compile history to Java class 'MurmelProgram' and run it\n"
+                           + "\n"
+                           + "  :java classname t .............. compile history to Java class 'classname' and print to the screen\n"
+                           + "  :java classname nil ............ compile history to Java class 'classname' and save to a file based on 'classname' in current directory\n"
+                           + "  :java classname directory ...... compile history to Java class 'classname' and save to a file based on 'classname' in directory 'directory'\n"
+                           + "\n"
+                           + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
+                           + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
+                           + "\n"
+                           + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
+                           + "  If 'jarfilename' is nil then 'a.jar' will be used as the jar file name.\n"
+                           + "  classname, directory and jarfilename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
+                           + "\n"
+                           + "  :q ............................. quit JMurmel\n");
     }
 
     // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -5435,76 +5431,76 @@ public class LambdaJ {
 
     private static void showFeatureUsage() {
         System.out.println("Feature flags:\n"
-                + "\n"
-                + "--no-ffi ......  no functions 'jmethod' or 'jproxy'\n" 
-                + "--no-gui ......  no turtle or bitmap graphics\n"
-                + "--no-extra ....  no special forms if, define, defun, defmacro,\n"
-                + "                 let, let*, letrec, progn, setq,\n"
-                + "                 multiple-value-call, multiple-value-bind,\n"
-                + "                 load, require, provide, declaim\n"
-                + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n"
-                + "                 values, macroexpand-1\n"
-                + "--no-number ...  no number support\n"
-                + "--no-string ...  no string support\n"
-                + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
-                + "--no-util .....  no primitive functions consp, symbolp, listp, null,\n"
-                + "                 append, assoc, assq, list, list*, format, format-locale\n"
-                + "                 no time related primitives\n"
-                + "\n"
-                + "--min+ ........  turn off all above features, leaving a Lisp\n"
-                + "                 with 10 special forms and primitives:\n"
-                + "                   S-expressions\n"
-                + "                   symbols and cons-cells (i.e. lists)\n"
-                + "                   function application\n"
-                + "                   the special forms quote, lambda, cond, labels\n"
-                + "                   the primitive functions atom, eq, cons, car, cdr, apply\n"
-                + "                   the symbols nil, t\n"
-                + "\n"
-                + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
-                + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
-                + "--no-apply ....  no function 'apply'\n"
-                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
-                + "\n"
-                + "--min .........  turn off all above features, leaving a Lisp with\n"
-                + "                 8 special forms and primitives:\n"
-                + "                   S-expressions\n"
-                + "                   symbols and cons-cells (i.e. lists)\n"
-                + "                   function application\n"
-                + "                   the special forms quote, lambda, cond\n"
-                + "                   the primitive functions atom, eq, cons, car, cdr\n"
-                + "\n"
-                + "--no-cons .....  no primitive functions cons/ car/ cdr\n"
-                + "--no-cond .....  no special form 'cond'\n"
-                + "\n"
-                + "--lambda+ .....  turn off pretty much everything except Lambda calculus,\n"
-                + "                 leaving a Lisp with 4 special forms and primitives:\n"
-                + "                   S-expressions\n"
-                + "                   symbols and cons-cells (i.e. lists)\n"
-                + "                   function application\n"
-                + "                   the special form quote, lambda\n"
-                + "                   the primitive functions atom, eq\n"
-                + "\n"
-                + "--no-atom .....  no primitive function 'atom'\n"
-                + "--no-eq .......  no primitive function 'eq'\n"
-                + "--no-quote ....  no special form quote\n"
-                + "\n"
-                + "--lambda ......  turns off yet even more stuff, leaving I guess\n"
-                + "                 bare bones Lambda calculus:\n"
-                + "                   S-expressions\n"
-                + "                   symbols and cons-cells (i.e. lists)\n"
-                + "                   function application\n"
-                + "                   the special form lambda\n"
-                + "\n"
-                + "\n"
-                + "--XX-oldlambda   Lists whose car is 'lambda' are (anonymous) functions, too.\n" 
-                + "--XX-dyn ......  Use dynamic environments instead of Murmel's\n"
-                + "                 lexical closures with dynamic global environment.\n"
-                + "                 WARNING: This flag is for experimentation purposes only\n"
-                + "                          and may be removed in future versions.\n"
-                + "                          Use at your own discretion.\n"
-                + "                          Using --XX-dyn JMurmel will no longer implement Murmel\n"
-                + "                          and your programs may silently compute different\n"
-                + "                          results!");
+                           + "\n"
+                           + "--no-ffi ......  no functions 'jmethod' or 'jproxy'\n"
+                           + "--no-gui ......  no turtle or bitmap graphics\n"
+                           + "--no-extra ....  no special forms if, define, defun, defmacro,\n"
+                           + "                 let, let*, letrec, progn, setq,\n"
+                           + "                 multiple-value-call, multiple-value-bind,\n"
+                           + "                 load, require, provide, declaim\n"
+                           + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n"
+                           + "                 values, macroexpand-1\n"
+                           + "--no-number ...  no number support\n"
+                           + "--no-string ...  no string support\n"
+                           + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
+                           + "--no-util .....  no primitive functions consp, symbolp, listp, null,\n"
+                           + "                 append, assoc, assq, list, list*, format, format-locale\n"
+                           + "                 no time related primitives\n"
+                           + "\n"
+                           + "--min+ ........  turn off all above features, leaving a Lisp\n"
+                           + "                 with 10 special forms and primitives:\n"
+                           + "                   S-expressions\n"
+                           + "                   symbols and cons-cells (i.e. lists)\n"
+                           + "                   function application\n"
+                           + "                   the special forms quote, lambda, cond, labels\n"
+                           + "                   the primitive functions atom, eq, cons, car, cdr, apply\n"
+                           + "                   the symbols nil, t\n"
+                           + "\n"
+                           + "--no-nil ......  don't predefine symbol nil (hint: use '()' instead)\n"
+                           + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
+                           + "--no-apply ....  no function 'apply'\n"
+                           + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
+                           + "\n"
+                           + "--min .........  turn off all above features, leaving a Lisp with\n"
+                           + "                 8 special forms and primitives:\n"
+                           + "                   S-expressions\n"
+                           + "                   symbols and cons-cells (i.e. lists)\n"
+                           + "                   function application\n"
+                           + "                   the special forms quote, lambda, cond\n"
+                           + "                   the primitive functions atom, eq, cons, car, cdr\n"
+                           + "\n"
+                           + "--no-cons .....  no primitive functions cons/ car/ cdr\n"
+                           + "--no-cond .....  no special form 'cond'\n"
+                           + "\n"
+                           + "--lambda+ .....  turn off pretty much everything except Lambda calculus,\n"
+                           + "                 leaving a Lisp with 4 special forms and primitives:\n"
+                           + "                   S-expressions\n"
+                           + "                   symbols and cons-cells (i.e. lists)\n"
+                           + "                   function application\n"
+                           + "                   the special form quote, lambda\n"
+                           + "                   the primitive functions atom, eq\n"
+                           + "\n"
+                           + "--no-atom .....  no primitive function 'atom'\n"
+                           + "--no-eq .......  no primitive function 'eq'\n"
+                           + "--no-quote ....  no special form quote\n"
+                           + "\n"
+                           + "--lambda ......  turns off yet even more stuff, leaving I guess\n"
+                           + "                 bare bones Lambda calculus:\n"
+                           + "                   S-expressions\n"
+                           + "                   symbols and cons-cells (i.e. lists)\n"
+                           + "                   function application\n"
+                           + "                   the special form lambda\n"
+                           + "\n"
+                           + "\n"
+                           + "--XX-oldlambda   Lists whose car is 'lambda' are (anonymous) functions, too.\n"
+                           + "--XX-dyn ......  Use dynamic environments instead of Murmel's\n"
+                           + "                 lexical closures with dynamic global environment.\n"
+                           + "                 WARNING: This flag is for experimentation purposes only\n"
+                           + "                          and may be removed in future versions.\n"
+                           + "                          Use at your own discretion.\n"
+                           + "                          Using --XX-dyn JMurmel will no longer implement Murmel\n"
+                           + "                          and your programs may silently compute different\n"
+                           + "                          results!");
     }
 
 
@@ -5535,7 +5531,7 @@ public class LambdaJ {
         tmpDir.toFile().deleteOnExit();
         return tmpDir;
     }
-    
+
     private static ObjectReader makeReader(List<Object> forms) {
         final Iterator<Object> i = forms.iterator();
         return (eof) -> i.hasNext() ? i.next() : eof;
@@ -5611,7 +5607,7 @@ public class LambdaJ {
 
             public Object get() { return value; }
             public Object set(Object value) { return this.value = value; }
-            
+
             public void push() { dynamicStack = cons(value, dynamicStack); }
             public void push(Object value) { dynamicStack = cons(this.value, dynamicStack); this.value = value; }
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
@@ -5641,7 +5637,7 @@ public class LambdaJ {
             _t = intern("t");
             _dynamic = intern("dynamic");
             features = (ConsCell)cdr(intp.featuresEnvEntry); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
-                                                             // vor/nach eval features hintri/firi kopieren, values auch
+            // vor/nach eval features hintri/firi kopieren, values auch
         }
 
 
@@ -5696,7 +5692,7 @@ public class LambdaJ {
         public ConsCell features;
 
         /// predefined primitives
-        
+
         // Predefined primitives sind vom typ CompilerPrimitive. Benutzt werden sie im generierten code so:
         //
         //     (CompilerPrimitive)rt()::add
@@ -5748,7 +5744,7 @@ public class LambdaJ {
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
         public final Object _read      (Object... args) { noArgs("read",         args.length); if (intp.getLispReader() == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-                                                                                               return intp.getLispReader().readObj(null); } // todo eof parameter
+            return intp.getLispReader().readObj(null); } // todo eof parameter
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
@@ -5879,11 +5875,11 @@ public class LambdaJ {
         public final double mul     (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret *= toDouble(args[i]); return ret; } return 1.0; }
 
         public final double sub     (Object... args) { varargs1("-", args.length);
-                                                       if (args.length == 1) return 0.0 - toDouble(args[0]);
-                                                       double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret -= toDouble(args[i]); return ret; }
+            if (args.length == 1) return 0.0 - toDouble(args[0]);
+            double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret -= toDouble(args[i]); return ret; }
         public final double quot    (Object... args) { varargs1("/", args.length);
-                                                       if (args.length == 1) return 1.0 / toDouble(args[0]);
-                                                       double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
+            if (args.length == 1) return 1.0 / toDouble(args[0]);
+            double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
 
         public final Object numbereq(Object... args) { return compare("=",  args, (d1, d2) -> d1 == d2); }
         public final Object lt      (Object... args) { return compare("<",  args, (d1, d2) -> d1 <  d2); }
@@ -5971,15 +5967,15 @@ public class LambdaJ {
 
         public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return requireFrame("set-pixel",      nth(3, args)).setRGB(toInt(args[0]), toInt(args[1]), toInt(args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
-                                                                  final int r = toInt(args[0]);
-                                                                  final int g = toInt(args[1]);
-                                                                  final int b = toInt(args[2]);
-                                                                  return (long)(int)((r << 16) | (g << 8) | b); }
+            final int r = toInt(args[0]);
+            final int g = toInt(args[1]);
+            final int b = toInt(args[2]);
+            return (long)(int)((r << 16) | (g << 8) | b); }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
-                                                                  final float hue = toFloat(args[0]);
-                                                                  final float sat = toFloat(args[1]);
-                                                                  final float bri = toFloat(args[2]);
-                                                                  return (long)Color.HSBtoRGB(hue, sat, bri); }
+            final float hue = toFloat(args[0]);
+            final float sat = toFloat(args[1]);
+            final float bri = toFloat(args[2]);
+            return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
         Object[] values;
@@ -6240,7 +6236,7 @@ public class LambdaJ {
         @SuppressWarnings("unused") // used by multiple-value-call
         public class ValuesBuilder {
             private final ArrayList<Object> allValues = new ArrayList<>();
-            
+
             public ValuesBuilder() { values = null; }
 
             public ValuesBuilder add(Object primary) {
@@ -6551,45 +6547,45 @@ public class LambdaJ {
         ///
         private static final String[] globalvars = { "nil", "t", "pi", "dynamic" };
         private static final String[][] aliasedGlobals = {
-            { "internal-time-units-per-second", "itups" },
-            { "*command-line-argument-list*", "commandlineArgumentList" },
-            { "*features*", "features" },
+        { "internal-time-units-per-second", "itups" },
+        { "*command-line-argument-list*", "commandlineArgumentList" },
+        { "*features*", "features" },
         };
         private static final String[] primitives = {
-                "car", "cdr", "cons", "rplaca", "rplacd",
-                /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
-                "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-                "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "append", "values",
-                "round", "floor", "ceiling", "truncate",
-                "fround", "ffloor", "fceiling", "ftruncate",
-                "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
-                "gensym", "trace", "untrace",
-                "fatal", "jmethod", "jproxy",
+        "car", "cdr", "cons", "rplaca", "rplacd",
+        /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
+        "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
+        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "append", "values",
+        "round", "floor", "ceiling", "truncate",
+        "fround", "ffloor", "fceiling", "ftruncate",
+        "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
+        "gensym", "trace", "untrace",
+        "fatal", "jmethod", "jproxy",
         };
         private static final String[][] aliasedPrimitives = {
-            {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
-            {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
-            {"1+", "inc"}, {"1-", "dec"},
-            {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"}, 
-            {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
-            {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
-            {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
-            {"make-array", "makeArray"},
-            {"list*", "listStar"},
-            //{ "macroexpand-1", "macroexpand1" },
-            {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
-            {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
+        {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
+        {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
+        {"1+", "inc"}, {"1-", "dec"},
+        {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
+        {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
+        {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
+        {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
+        {"make-array", "makeArray"},
+        {"list*", "listStar"},
+        //{ "macroexpand-1", "macroexpand1" },
+        {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
+        {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
 
-            { "make-frame", "makeFrame" }, { "open-frame", "openFrame"}, { "close-frame", "closeFrame" },
-            { "reset-frame", "resetFrame" }, { "clear-frame", "clearFrame" }, { "repaint-frame", "repaintFrame" }, { "flush-frame", "flushFrame" },
-            { "current-frame", "currentFrame" },
-            { "push-pos", "pushPos" }, { "pop-pos", "popPos" }, { "pen-up", "penUp" }, { "pen-down", "penDown" },
-            { "color", "color" }, { "bgcolor", "bgColor" }, { "text", "text" },
-            { "right", "right" }, { "left", "left" }, { "forward", "forward" },
-            { "move-to", "moveTo" }, { "line-to", "lineTo" }, { "move-rel", "moveRel" }, { "line-rel", "lineRel" },
-            { "make-bitmap", "makeBitmap" }, { "discard-bitmap", "discardBitmap" },
-            { "set-pixel", "setPixel" },
-            { "rgb-to-pixel", "rgbToPixel" }, { "hsb-to-pixel", "hsbToPixel" },
+        { "make-frame", "makeFrame" }, { "open-frame", "openFrame"}, { "close-frame", "closeFrame" },
+        { "reset-frame", "resetFrame" }, { "clear-frame", "clearFrame" }, { "repaint-frame", "repaintFrame" }, { "flush-frame", "flushFrame" },
+        { "current-frame", "currentFrame" },
+        { "push-pos", "pushPos" }, { "pop-pos", "popPos" }, { "pen-up", "penUp" }, { "pen-down", "penDown" },
+        { "color", "color" }, { "bgcolor", "bgColor" }, { "text", "text" },
+        { "right", "right" }, { "left", "left" }, { "forward", "forward" },
+        { "move-to", "moveTo" }, { "line-to", "lineTo" }, { "move-rel", "moveRel" }, { "line-rel", "lineRel" },
+        { "make-bitmap", "makeBitmap" }, { "discard-bitmap", "discardBitmap" },
+        { "set-pixel", "setPixel" },
+        { "rgb-to-pixel", "rgbToPixel" }, { "hsb-to-pixel", "hsbToPixel" },
         };
 
 
@@ -6631,15 +6627,15 @@ public class LambdaJ {
                 clsName = unitName.substring(dotpos+1);
             }
             ret.append("import java.util.function.Function;\n"
-                     + "import java.util.function.Supplier;\n"
-                     + "import io.github.jmurmel.LambdaJ.*;\n\n"
-                     + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
-                     + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
-                     + "    public static void main(String[] args) {\n"
-                     + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"
-                     + "        program.commandlineArgumentList = arraySlice(args);\n"
-                     + "        main(program);\n"
-                     + "    }\n\n");
+                       + "import java.util.function.Supplier;\n"
+                       + "import io.github.jmurmel.LambdaJ.*;\n\n"
+                       + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
+                                                                 + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
+                                                                                                            + "    public static void main(String[] args) {\n"
+                                                                                                            + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"
+                                                                                                                                                                                                 + "        program.commandlineArgumentList = arraySlice(args);\n"
+                                                                                                                                                                                                 + "        main(program);\n"
+                                                                                                                                                                                                 + "    }\n\n");
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
             final StringBuilder globals = new StringBuilder();
@@ -6684,8 +6680,8 @@ public class LambdaJ {
             ret.append("        return super.getValue(symbol);\n");
 
             ret.append("    }\n\n"
-                     + "    // toplevel forms\n"
-                     + "    protected Object runbody() throws Exception {\n");
+                       + "    // toplevel forms\n"
+                       + "    protected Object runbody() throws Exception {\n");
 
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
             intp.speed = prevSpeed;
@@ -6794,16 +6790,16 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+                                                                                                  + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
-                    + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                    + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
-                    + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
-                    + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                    + "        catch (LambdaJError e) { rterror(e); }\n"
-                    + "        return intern(\"").append(symbol).append("\");\n"
-                    + "    }\n\n");
+                                                                          + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
+                                                                                                                                                                                           + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
+                                                                                                                                                                                                                                    + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
+                                                                                                                                                                                                                                                                                                                                       + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
+                                                                                                                                                                                                                                                                                                                                                                            + "        catch (LambdaJError e) { rterror(e); }\n"
+                                                                                                                                                                                                                                                                                                                                                                            + "        return intern(\"").append(symbol).append("\");\n"
+                                                                                                                                                                                                                                                                                                                                                                                                                                + "    }\n\n");
             return env;
         }
 
@@ -6818,18 +6814,18 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
-                    + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+                                                                                                                                               + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
-                    + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                    + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
-                    + "        final MurmelFunction func = (args0) -> {\n");
+                                                                                + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
+                                                                                                                                                                                                 + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
+                                                                                                                                                                                                                                          + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
-                    + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
-                    + "        return intern(\"").append(symbol).append("\");\n"
-                    + "    }\n\n");
+                      + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
+                                                           + "        return intern(\"").append(symbol).append("\");\n"
+                                                                                                               + "    }\n\n");
 
             return env;
         }
@@ -6896,7 +6892,7 @@ public class LambdaJ {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final ConsCell transformed = ListBuilder.list(op, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments)); 
+                            final ConsCell transformed = ListBuilder.list(op, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
                             return;
                         }
@@ -7088,7 +7084,7 @@ public class LambdaJ {
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (symbolEq(op, "macroexpand-1")) {
-                        if (!symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '..."); 
+                        if (!symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
                         sb.append("((Supplier<Object>)(() -> {\n"
                                   + "        final Object expansion").append(rsfx).append(" = ");
                         emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)), true);
@@ -7581,7 +7577,7 @@ public class LambdaJ {
                     sb.append("        final Object ").append(javasym(params, env)).append(" = arrayToList(args").append(rsfx).append(", ").append(n).append(");\n");
                     return env;
                 }
-                
+
                 else errorMalformed(func, "a symbol or a list of symbols", params);
 
                 params = cdr(params);
@@ -7670,17 +7666,17 @@ public class LambdaJ {
             if (symbolEq(op, "ftruncate")) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
             if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
-                                       emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+                emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true;
-                                     emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+                emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true;
-                                       emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+                emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true;
-                                       emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+                emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true;
-                                       emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+                emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true;
-                                       emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
+                emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
@@ -8002,12 +7998,12 @@ public class LambdaJ {
         }
 
         /** <p>emit a quoted form.
-         * 
+         *
          *  <p>Nil, t and atoms that are not symbols are emitted as is.
-         *  
+         *
          *  <p>For symbols or lists a Java expression is emitted that re-creates the
          *  quoted form at runtime.
-         *  
+         *
          *  <p>If pool is true then above Java expression is added as an entry to the constant pool
          *  and a reference to the new or already existing identical constant pool entry is emitted. */
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
@@ -8273,9 +8269,9 @@ final class JavaCompilerHelper {
         try (Stream<Path> files = Files.walk(murmelClassLoader.getOutPath())) {
             // delete directory including files and sub-folders
             files.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    //.peek(f -> System.out.println("delete " + f.toString()))
-                    .forEach(File::deleteOnExit);
+                 .map(Path::toFile)
+                 //.peek(f -> System.out.println("delete " + f.toString()))
+                 .forEach(File::deleteOnExit);
         }
     }
 
@@ -8546,23 +8542,23 @@ final class WrappingWriter extends Writer {
 /** A frame (window) with methods to draw lines and print text. */
 final class TurtleFrame {
     private static final Color[] colors = {
-        Color.white,        //  0
-        Color.black,        //  1
-        Color.red,          //  2
-        Color.green,        //  3
-        Color.blue,         //  4
-        Color.pink,         //  5
-        Color.orange,       //  6
-        Color.yellow,       //  7
-        Color.magenta,      //  8
-        Color.cyan,         //  9
-        Color.darkGray,     // 10
-        Color.gray,         // 11
-        Color.lightGray,    // 12
+    Color.white,        //  0
+    Color.black,        //  1
+    Color.red,          //  2
+    Color.green,        //  3
+    Color.blue,         //  4
+    Color.pink,         //  5
+    Color.orange,       //  6
+    Color.yellow,       //  7
+    Color.magenta,      //  8
+    Color.cyan,         //  9
+    Color.darkGray,     // 10
+    Color.gray,         // 11
+    Color.lightGray,    // 12
 
-        Color.red.darker(),
-        Color.green.darker(),
-        Color.blue.darker(),
+    Color.red.darker(),
+    Color.green.darker(),
+    Color.blue.darker(),
     };
 
     private static class Text {
@@ -8884,10 +8880,10 @@ final class TurtleFrame {
                         //System.out.println("line x1=" + trX(fac, xoff, line.getX1()) + " y1=" + (h - trY(fac, yoff, line.getY1())) + " x2=" + trX(fac, xoff, line.getX2()) + " y2=" + (h - trY(fac, yoff, line.getY2())));
 
                         g.drawLine(
-                            trX(fac, xoff, line.getX1()),
-                            h - trY(fac, yoff, line.getY1()),
-                            trX(fac, xoff, line.getX2()),
-                            h - trY(fac, yoff, line.getY2())
+                        trX(fac, xoff, line.getX1()),
+                        h - trY(fac, yoff, line.getY1()),
+                        trX(fac, xoff, line.getX2()),
+                        h - trY(fac, yoff, line.getY2())
                         );
                     }
                 }
