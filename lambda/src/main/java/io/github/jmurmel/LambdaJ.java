@@ -1884,8 +1884,7 @@ public class LambdaJ {
 
                 /// eval - (cond (condform forms...)... ) -> object
                 case sCond: {
-                    if (ccArguments != null) for (Object c: ccArguments) {
-                        if (!listp(c)) errorMalformed("cond", "a list (condexpr forms...)", c);
+                    for (Object c: ccArguments) {
                         if (eval(car(c), env, stack, level, traceLvl) != null) {
                             ccForms = (ConsCell) cdr(c);
                             break;
@@ -2194,7 +2193,11 @@ public class LambdaJ {
                     return ccForm;
 
                 case sCond:
-                    if (ccArgs != null) expandForms("cond", ccArgs);
+                    if (ccArgs == null) return null;
+                    for (ConsCell i = ccArgs; i != null; i = cdrShallowCopyList("cond", i)) {
+                        if (!consp(car(i))) errorMalformed("cond", "a list (condexpr forms...)", car(i));
+                        expandForms("cond", carShallowCopyList("cond", i));
+                    }
                     return ccForm;
 
                 case sProgn:
@@ -2205,7 +2208,7 @@ public class LambdaJ {
 
                 case sLabels:
                     varargs1("labels", ccArgs);
-                    for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null && car(i) != null; i = cdrShallowCopyList("labels", i)) {
+                    for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null; i = cdrShallowCopyList("labels", i)) {
                         if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
                         final ConsCell localFunc = carShallowCopyList("labels", i);
                         varargsMin("labels", localFunc, 2);
@@ -2237,8 +2240,14 @@ public class LambdaJ {
 
                 case sDefmacro:
                     varargs1("defmacro", ccArgs);
-                    if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
-                    evalDefmacro(ccArgs, topEnv);
+                    final LambdaJSymbol sym1 = symbolOrMalformed("defmacro", car(ccArgs));
+                    if (cdr(ccArgs) == null) sym1.macro = null;
+                    else {
+                        if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
+                        final Object params = cadr(ccArgs);
+                        checkLambdaList("defmacro", params);
+                        sym1.macro = makeClosure(params, (ConsCell)cddr(ccArgs), topEnv);
+                    }
                     return ccForm;
 
                 case sLet:
@@ -2417,16 +2426,6 @@ public class LambdaJ {
             pairs = (ConsCell) cdr(pairs);
         }
         return res;
-    }
-
-    private void evalDefmacro(ConsCell nameParamsBody, ConsCell env) {
-        varargs1("defmacro", nameParamsBody);
-        final LambdaJSymbol sym = symbolOrMalformed("defmacro", car(nameParamsBody));
-        if (cdr(nameParamsBody) == null) { sym.macro = null;  return; }
-
-        final Object params = cadr(nameParamsBody);
-        checkLambdaList("defmacro", params);
-        sym.macro = makeClosure(params, (ConsCell)cddr(nameParamsBody), env);
     }
 
     private Object evalRequire(ConsCell arguments) {
