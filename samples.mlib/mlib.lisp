@@ -626,10 +626,10 @@
                              `(t ,@forms)
                          `((eql ,tmp ',keydesignator) ,@forms)))))))
     (if (atom keyform)
-          `(cond ,@(mapcar (lambda (clause) (do-clause keyform clause)) clauses))
+          `(cond ,@(remove nil (mapcar (lambda (clause) (do-clause keyform clause)) clauses)))
       (let ((tmp (gensym)))
         `(let ((,tmp ,keyform))
-           (cond ,@(mapcar (lambda (clause) (do-clause tmp clause)) clauses)))))))
+           (cond ,@(remove nil (mapcar (lambda (clause) (do-clause tmp clause)) clauses))))))))
 
 
 ;;; = Macro: do, do*
