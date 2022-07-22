@@ -5,6 +5,9 @@ Murmel verwendet long->double bei math operatoren und das verwirft genauigkeit:
 -> entweder fixnums auf integer umstellen, oder nur [-2>>52 .. 2>>52] zulassen
    -> fixnum als 32 int wär schlecht, weil das kann get-internal-real-time nicht abbilden. 52 bit reicht aus
 
+get-decoded-time von list auf values umstellen
+read sollte EOF übernehmen
+
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
 -> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert
 

@@ -2007,7 +2007,7 @@ public class LambdaJ {
 
                     /// eval - (eval form) -> object
                     else if (operator == ocEval) {
-                        varargsMinMax("eval", ccArguments, 1, 2);
+                        varargs1_2("eval", ccArguments);
                         form = expandForm(car(ccArguments));
                         if (cdr(ccArguments) == null) env = topEnv; // todo unterschied zu kompiliertem eval: topEnv sind ALLE globals, kompiliertes eval sieht nur predefined globals
                         else {
@@ -2429,7 +2429,7 @@ public class LambdaJ {
     }
 
     private Object evalRequire(ConsCell arguments) {
-        varargsMinMax("require", arguments, 1, 2);
+        varargs1_2("require", arguments);
         if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
         final Object modName = car(arguments);
         if (!modules.contains(modName)) {
@@ -3477,6 +3477,16 @@ public class LambdaJ {
         if (_a != null) errorArgCount(func, 3, 3, 4, a);
     }
 
+    /** varargs, 0 or 1 arg */
+    static void varargs0_1(String func, ConsCell a) {
+        if (cdr(a) != null) errorArgCount(func, 0, 1, listLength(a), a);
+    }
+
+    /** varargs, 0 to 2 args */
+    static void varargs0_2(String func, ConsCell a) {
+        if (cddr(a) != null) errorArgCount(func, 0, 2, listLength(a), a);
+    }
+
     /** varargs, at least one arg */
     static void varargs1(String func, ConsCell a) {
         if (a == null) errorVarargsCount(func, 1, 0);
@@ -4204,10 +4214,10 @@ public class LambdaJ {
                 return lispReader.readObj(null); // todo eof als parameter
             };
             env = addBuiltin("read",    freadobj,
-                             addBuiltin("write",   (Primitive) a -> { varargsMinMax("write",   a, 1, 2);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                                        addBuiltin("writeln", (Primitive) a -> { varargsMinMax("writeln", a, 0, 2);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                                                   addBuiltin("lnwrite", (Primitive) a -> { varargsMinMax("lnwrite", a, 0, 2);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                                                              env))));
+                  addBuiltin("write",   (Primitive) a -> { varargs1_2("write",   a);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  addBuiltin("writeln", (Primitive) a -> { varargs0_2("writeln", a);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  addBuiltin("lnwrite", (Primitive) a -> { varargs0_2("lnwrite", a);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  env))));
         }
 
         if (haveGui()) {
@@ -4219,67 +4229,67 @@ public class LambdaJ {
                 return ret;
             };
             env = addBuiltin("make-frame",    makeFrame,
-                             addBuiltin("open-frame",    (Primitive) a -> { varargsMinMax("open-frame",    a, 0, 1); return requireFrame("open-frame",    car(a)).open();    },
-                                        addBuiltin("close-frame",   (Primitive) a -> { varargsMinMax("close-frame",   a, 0, 1); return requireFrame("close-frame",   car(a)).close();   },
-                                                   addBuiltin("reset-frame",   (Primitive) a -> { varargsMinMax("reset-frame",   a, 0, 1); return requireFrame("reset-frame",   car(a)).reset();   },
-                                                              addBuiltin("clear-frame",   (Primitive) a -> { varargsMinMax("clear-frame",   a, 0, 1); return requireFrame("clear-frame",   car(a)).clear();   },
-                                                                         addBuiltin("repaint-frame", (Primitive) a -> { varargsMinMax("repaint-frame", a, 0, 1); return requireFrame("repaint-frame", car(a)).repaint(); },
-                                                                                    addBuiltin("flush-frame",   (Primitive) a -> { varargsMinMax("flush-frame",   a, 0, 1); return requireFrame("flush-frame",   car(a)).flush();   },
+                  addBuiltin("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    },
+                  addBuiltin("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   },
+                  addBuiltin("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   },
+                  addBuiltin("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   },
+                  addBuiltin("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); },
+                  addBuiltin("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   },
 
-                                                                                               // set new current frame, return previous frame
-                                                                                               addBuiltin("current-frame", (Primitive) a -> { varargsMinMax("current-frame", a, 0, 1); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; },
+                  // set new current frame, return previous frame
+                  addBuiltin("current-frame", (Primitive) a -> { varargs0_1("current-frame", a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; },
 
-                                                                                                          addBuiltin("push-pos",      (Primitive) a -> { varargsMinMax("push-pos",a, 0, 1); return requireFrame("push-pos",car(a)).pushPos(); },
-                                                                                                                     addBuiltin("pop-pos",       (Primitive) a -> { varargsMinMax("pop-pos", a, 0, 1); return requireFrame("pop-pos", car(a)).popPos();  },
+                  addBuiltin("push-pos",      (Primitive) a -> { varargs0_1("push-pos", a); return requireFrame("push-pos",car(a)).pushPos(); },
+                  addBuiltin("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",  a); return requireFrame("pop-pos", car(a)).popPos();  },
 
-                                                                                                                                addBuiltin("pen-up",        (Primitive) a -> { varargsMinMax("pen-up",  a, 0, 1); return requireFrame("pen-up",   car(a)).penUp();   },
-                                                                                                                                           addBuiltin("pen-down",      (Primitive) a -> { varargsMinMax("pen-down",a, 0, 1); return requireFrame("pen-down", car(a)).penDown(); },
+                  addBuiltin("pen-up",        (Primitive) a -> { varargs0_1("pen-up",   a); return requireFrame("pen-up",   car(a)).penUp();   },
+                  addBuiltin("pen-down",      (Primitive) a -> { varargs0_1("pen-down", a); return requireFrame("pen-down", car(a)).penDown(); },
 
-                                                                                                                                                      addBuiltin("color",         (Primitive) a -> { varargsMinMax("color",   a, 1, 2); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); },
-                                                                                                                                                                 addBuiltin("bgcolor",       (Primitive) a -> { varargsMinMax("bgcolor", a, 1, 2); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); },
+                  addBuiltin("color",         (Primitive) a -> { varargs1_2("color",   a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); },
+                  addBuiltin("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor", a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); },
 
-                                                                                                                                                                            addBuiltin("text",          (Primitive) a -> { varargsMinMax("text",    a, 1, 2); return requireFrame("text",    cadr(a)).text   (car(a).toString()); },
+                  addBuiltin("text",          (Primitive) a -> { varargs1_2("text",    a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); },
 
-                                                                                                                                                                                       addBuiltin("right",         (Primitive) a -> { varargsMinMax("right",   a, 1, 2); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
-                                                                                                                                                                                                  addBuiltin("left",          (Primitive) a -> { varargsMinMax("left",    a, 1, 2); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
-                                                                                                                                                                                                             addBuiltin("forward",       (Primitive) a -> { varargsMinMax("forward", a, 1, 2); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
-                                                                                                                                                                                                                        env))))))))))))))))));
+                  addBuiltin("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
+                  addBuiltin("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
+                  addBuiltin("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
+                  env))))))))))))))))));
 
             env = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  },
-                             addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
-                                        addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
-                                                   addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
-                                                              env))));
+                  addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
+                  addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
+                  addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
+                  env))));
 
             env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); },
-                             addBuiltin("discard-bitmap",(Primitive) a -> { varargsMinMax("discard-bitmap", a, 0, 1); return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
-                                        addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
-                                                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { varargsMinMax("rgb-to-pixel",   a, 3, 3);
-                                                                  return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                                     | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                                     | toInt("rgb-to-pixel", caddr(a))); },
-                                                              addBuiltin("hsb-to-pixel",  (Primitive) a -> { varargsMinMax("hsb-to-pixel",   a, 3, 3);
-                                                                             return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                                         toFloat("hsb-to-pixel", cadr(a)),
-                                                                                                         toFloat("hsb-to-pixel", caddr(a)));  },
-                                                                         env)))));
+                  addBuiltin("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
+                  addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
+                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
+                                                                 return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                                    | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                                    | toInt("rgb-to-pixel", caddr(a))); },
+                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",   a);
+                                                                 return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                             toFloat("hsb-to-pixel", cadr(a)),
+                                                                                             toFloat("hsb-to-pixel", caddr(a)));  },
+                  env)))));
         }
 
         if (haveString()) {
             env = addBuiltin("stringp",         (Primitive) a -> { oneArg("stringp", a);         return boolResult(stringp(car(a))); },
-                             addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
-                                        addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
-                                                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
-                                                              addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
-                                                                         addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
-                                                                                    addBuiltin("string->list",    (Primitive) this::stringToList,
-                                                                                               addBuiltin("list->string",    (Primitive) LambdaJ::listToString,
-                                                                                                          env))))))));
+                  addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
+                  addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
+                  addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
+                  addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
+                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
+                  addBuiltin("string->list",    (Primitive) this::stringToList,
+                  addBuiltin("list->string",    (Primitive) LambdaJ::listToString,
+                  env))))))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
-                                 addBuiltin("format-locale", (Primitive) this::formatLocale,
-                                            env));
+                      addBuiltin("format-locale", (Primitive) this::formatLocale,
+                      env));
             }
         }
 
@@ -4297,16 +4307,16 @@ public class LambdaJ {
             env = addBuiltin(sEval, ocEval, env);
 
             env = addBuiltin("trace", (Primitive) this::trace,
-                             addBuiltin("untrace", (Primitive) this::untrace,
-                                        env));
+                  addBuiltin("untrace", (Primitive) this::untrace,
+                  env));
 
             env = addBuiltin("macroexpand-1", (Primitive)this::macroexpand1,
-                             addBuiltin("gensym", (Primitive)this::gensym,
-                                        env));
+                  addBuiltin("gensym", (Primitive)this::gensym,
+                  env));
 
             env = addBuiltin("rplaca", (Primitive) LambdaJ::cl_rplaca,
-                             addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
-                                        env));
+                  addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
+                  env));
 
             env = addBuiltin("values", (Primitive) a -> { values = a; return car(values); }, env);
         }
@@ -4322,115 +4332,115 @@ public class LambdaJ {
 
         if (haveVector()) {
             env = addBuiltin("vector",          (Primitive)LambdaJ::listToArray,
-                             addBuiltin("vector-length",   (Primitive) a -> { oneArg ("vector-length", a);   return vectorLength(car(a)); },
-                                        addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
-                                                   addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
-                                                              addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
-                                                                         addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
-                                                                                    addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
-                                                                                               addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
-                                                                                                          addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
-                                                                                                                     addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
-                                                                                                                                env))))))))));
+                  addBuiltin("vector-length",   (Primitive) a -> { oneArg ("vector-length", a);   return vectorLength(car(a)); },
+                  addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
+                  addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
+                  addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
+                  addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
+                  addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
+                  addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
+                  addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
+                  addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
+                  env))))))))));
         }
 
         if (haveUtil()) {
             env = cons(featuresEnvEntry, env);
 
             env = addBuiltin("consp",     (Primitive) a -> { oneArg("consp",     a);  return boolResult(consp  (car(a))); },
-                             addBuiltin("symbolp",   (Primitive) a -> { oneArg("symbolp",   a);  return boolResult(symbolp(car(a))); },
-                                        addBuiltin("listp",     (Primitive) a -> { oneArg("listp",     a);  return boolResult(listp  (car(a))); },
-                                                   addBuiltin("functionp", (Primitive) a -> { oneArg("functionp", a);  return boolResult(functionp(car(a))); },
-                                                              addBuiltin("null",      (Primitive) a -> { oneArg("null",      a);  return boolResult(car(a) == null); },
-                                                                         addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
-                                                                                    addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
-                                                                                               addBuiltin("list",      (Primitive) a -> a,
-                                                                                                          addBuiltin("list*",     (Primitive) this::listStar,
-                                                                                                                     addBuiltin("append",    (Primitive) this::append,
-                                                                                                                                addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
-                                                                                                                                           env)))))))))));
+                  addBuiltin("symbolp",   (Primitive) a -> { oneArg("symbolp",   a);  return boolResult(symbolp(car(a))); },
+                  addBuiltin("listp",     (Primitive) a -> { oneArg("listp",     a);  return boolResult(listp  (car(a))); },
+                  addBuiltin("functionp", (Primitive) a -> { oneArg("functionp", a);  return boolResult(functionp(car(a))); },
+                  addBuiltin("null",      (Primitive) a -> { oneArg("null",      a);  return boolResult(car(a) == null); },
+                  addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
+                  addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
+                  addBuiltin("list",      (Primitive) a -> a,
+                  addBuiltin("list*",     (Primitive) this::listStar,
+                  addBuiltin("append",    (Primitive) this::append,
+                  addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
+                  env)))))))))));
 
             env = addBuiltin("internal-time-units-per-second", 1e9,
-                             addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
-                                        addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
-                                                   addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
-                                                              addBuiltin("sleep",                  (Primitive) LambdaJ::sleep,
-                                                                         addBuiltin("get-universal-time",     (Primitive) LambdaJ::getUniversalTime, // seconds since 1.1.1900
-                                                                                    addBuiltin("get-decoded-time",       (Primitive) this::getDecodedTime,
-                                                                                               env)))))));
+                  addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
+                  addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
+                  addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
+                  addBuiltin("sleep",                  (Primitive) LambdaJ::sleep,
+                  addBuiltin("get-universal-time",     (Primitive) LambdaJ::getUniversalTime, // seconds since 1.1.1900
+                  addBuiltin("get-decoded-time",       (Primitive) this::getDecodedTime,
+                  env)))))));
 
             env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
         }
 
         if (haveFFI()) {
             env = addBuiltin("jmethod", (Primitive) x -> { varargsMin("jmethod", x, 2); return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x))); },
-                             addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
+                  addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
         }
 
         if (haveAtom()) {
             env = addBuiltin("atom", (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); },
-                             env);
+                  env);
         }
 
         if (haveNumbers()) {
             env = addBuiltin("numberp",  (Primitive) args -> { oneArg("numberp", args);  return boolResult(numberp(car(args))); },
-                             addBuiltin("floatp",   (Primitive) args -> { oneArg("floatp", args);   return boolResult(floatp(car(args))); },
-                                        addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
-                                                   env)));
+                  addBuiltin("floatp",   (Primitive) args -> { oneArg("floatp", args);   return boolResult(floatp(car(args))); },
+                  addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
+                  env)));
 
             env = addBuiltin("pi",      Math.PI,
-                             env);
+                  env);
 
-            env = addBuiltin("fround",   (Primitive) args -> { varargsMinMax("fround",   args, 1, 2); return Math.rint  (quot12("fround", args)); },
-                             addBuiltin("ffloor",   (Primitive) args -> { varargsMinMax("ffloor",   args, 1, 2); return Math.floor (quot12("ffloor", args)); },
-                                        addBuiltin("fceiling", (Primitive) args -> { varargsMinMax("fceiling", args, 1, 2); return Math.ceil  (quot12("fceiling", args)); },
-                                                   addBuiltin("ftruncate",(Primitive) args -> { varargsMinMax("ftruncate",args, 1, 2); return cl_truncate(quot12("ftruncate", args)); },
+            env = addBuiltin("fround",   (Primitive) args -> { varargs1_2("fround",   args); return Math.rint  (quot12("fround", args)); },
+                  addBuiltin("ffloor",   (Primitive) args -> { varargs1_2("ffloor",   args); return Math.floor (quot12("ffloor", args)); },
+                  addBuiltin("fceiling", (Primitive) args -> { varargs1_2("fceiling", args); return Math.ceil  (quot12("fceiling", args)); },
+                  addBuiltin("ftruncate",(Primitive) args -> { varargs1_2("ftruncate",args); return cl_truncate(quot12("ftruncate", args)); },
 
-                                                              addBuiltin("round",   (Primitive) args -> { varargsMinMax("round",   args, 1, 2); return checkedToLong(Math.rint  (quot12("round", args))); },
-                                                                         addBuiltin("floor",   (Primitive) args -> { varargsMinMax("floor",   args, 1, 2); return checkedToLong(Math.floor (quot12("floor", args))); },
-                                                                                    addBuiltin("ceiling", (Primitive) args -> { varargsMinMax("ceiling", args, 1, 2); return checkedToLong(Math.ceil  (quot12("ceiling", args))); },
-                                                                                               addBuiltin("truncate",(Primitive) args -> { varargsMinMax("truncate",args, 1, 2); return checkedToLong(cl_truncate(quot12("truncate", args))); },
-                                                                                                          env))))))));
+                  addBuiltin("round",   (Primitive) args -> { varargs1_2("round",   args); return checkedToLong(Math.rint  (quot12("round", args))); },
+                  addBuiltin("floor",   (Primitive) args -> { varargs1_2("floor",   args); return checkedToLong(Math.floor (quot12("floor", args))); },
+                  addBuiltin("ceiling", (Primitive) args -> { varargs1_2("ceiling", args); return checkedToLong(Math.ceil  (quot12("ceiling", args))); },
+                  addBuiltin("truncate",(Primitive) args -> { varargs1_2("truncate",args); return checkedToLong(cl_truncate(quot12("truncate", args))); },
+                  env))))))));
 
             env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(car(args)); },
-                             addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
+                  addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
 
-                                        addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
-                                                   addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
-                                                              addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
-                                                                         addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
-                                                                                    addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt", car(args)), toDouble("expt", cadr(args))); },
+                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
+                  addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
+                  addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
+                  addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
+                  addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt", car(args)), toDouble("expt", cadr(args))); },
 
-                                                                                               addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
-                                                                                                          addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
+                  addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
+                  addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
 
-                                                                                                                     addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
-                                                                                                                                env))))))))));
+                  addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
+                  env))))))))));
 
             env = addBuiltin("=",       (Primitive) args -> compare(args, "=",  (d1, d2) -> d1 == d2),
-                             addBuiltin(">",       (Primitive) args -> compare(args, ">",  (d1, d2) -> d1 > d2),
-                                        addBuiltin(">=",      (Primitive) args -> compare(args, ">=", (d1, d2) -> d1 >= d2),
-                                                   addBuiltin("<",       (Primitive) args -> compare(args, "<",  (d1, d2) -> d1 < d2),
-                                                              addBuiltin("<=",      (Primitive) args -> compare(args, "<=", (d1, d2) -> d1 <= d2),
-                                                                         addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
+                  addBuiltin(">",       (Primitive) args -> compare(args, ">",  (d1, d2) -> d1 > d2),
+                  addBuiltin(">=",      (Primitive) args -> compare(args, ">=", (d1, d2) -> d1 >= d2),
+                  addBuiltin("<",       (Primitive) args -> compare(args, "<",  (d1, d2) -> d1 < d2),
+                  addBuiltin("<=",      (Primitive) args -> compare(args, "<=", (d1, d2) -> d1 <= d2),
+                  addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
 
-                                                                                    addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
-                                                                                               addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
-                                                                                                          addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
-                                                                                                                     addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
-                                                                                                                                env))))))))));
+                  addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
+                  addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
+                  addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
+                  addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
+                  env))))))))));
         }
 
         if (haveEq()) {
             env = addBuiltin("eq", (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); },
-                             env);
+                  env);
         }
 
         if (haveCons()) {
             env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    return caar(a); },
-                             addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
-                                        addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
-                                                   env)));
+                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
+                  addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
+                  env)));
         }
 
         topEnv = env;
@@ -5931,30 +5941,30 @@ public class LambdaJ {
             return ret;
         }
 
-        public final Object openFrame          (Object... args) { varargsMinMax("open-frame",    args.length, 0, 1); return requireFrame("open-frame",     nth(0, args)).open();    }
-        public final Object closeFrame         (Object... args) { varargsMinMax("close-frame",   args.length, 0, 1); return requireFrame("close-frame",    nth(0, args)).close();   }
-        public final Object resetFrame         (Object... args) { varargsMinMax("reset-frame",   args.length, 0, 1); return requireFrame("reset-frame",    nth(0, args)).reset();   }
-        public final Object clearFrame         (Object... args) { varargsMinMax("clear-frame",   args.length, 0, 1); return requireFrame("clear-frame",    nth(0, args)).clear();   }
-        public final Object repaintFrame       (Object... args) { varargsMinMax("repaint-frame", args.length, 0, 1); return requireFrame("repaint-frame",  nth(0, args)).repaint(); }
-        public final Object flushFrame         (Object... args) { varargsMinMax("flush-frame",   args.length, 0, 1); return requireFrame("flush-frame",    nth(0, args)).flush();   }
+        public final Object openFrame          (Object... args) { varargs0_1("open-frame",    args.length); return requireFrame("open-frame",     nth(0, args)).open();    }
+        public final Object closeFrame         (Object... args) { varargs0_1("close-frame",   args.length); return requireFrame("close-frame",    nth(0, args)).close();   }
+        public final Object resetFrame         (Object... args) { varargs0_1("reset-frame",   args.length); return requireFrame("reset-frame",    nth(0, args)).reset();   }
+        public final Object clearFrame         (Object... args) { varargs0_1("clear-frame",   args.length); return requireFrame("clear-frame",    nth(0, args)).clear();   }
+        public final Object repaintFrame       (Object... args) { varargs0_1("repaint-frame", args.length); return requireFrame("repaint-frame",  nth(0, args)).repaint(); }
+        public final Object flushFrame         (Object... args) { varargs0_1("flush-frame",   args.length); return requireFrame("flush-frame",    nth(0, args)).flush();   }
 
         // set new current frame, return previous frame
-        public final Object currentFrame       (Object... args) { varargsMinMax("current-frame", args.length, 0, 1); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = requireFrame("current-frame", args[0]); return prev; }
+        public final Object currentFrame       (Object... args) { varargs0_1("current-frame", args.length); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = requireFrame("current-frame", args[0]); return prev; }
 
-        public final Object pushPos            (Object... args) { varargsMinMax("push-pos",      args.length, 0, 1); return requireFrame("push-pos",       nth(0, args)).pushPos(); }
-        public final Object popPos             (Object... args) { varargsMinMax("pop-pos",       args.length, 0, 1); return requireFrame("pop-pos",        nth(0, args)).popPos();  }
+        public final Object pushPos            (Object... args) { varargs0_1("push-pos",      args.length); return requireFrame("push-pos",       nth(0, args)).pushPos(); }
+        public final Object popPos             (Object... args) { varargs0_1("pop-pos",       args.length); return requireFrame("pop-pos",        nth(0, args)).popPos();  }
 
-        public final Object penUp              (Object... args) { varargsMinMax("pen-up",        args.length, 0, 1); return requireFrame("pen-up",         nth(0, args)).penUp();   }
-        public final Object penDown            (Object... args) { varargsMinMax("pen-down",      args.length, 0, 1); return requireFrame("pen-down",       nth(0, args)).penDown(); }
+        public final Object penUp              (Object... args) { varargs0_1("pen-up",        args.length); return requireFrame("pen-up",         nth(0, args)).penUp();   }
+        public final Object penDown            (Object... args) { varargs0_1("pen-down",      args.length); return requireFrame("pen-down",       nth(0, args)).penDown(); }
 
-        public final Object color              (Object... args) { varargsMinMax("color",         args.length, 1, 2); return requireFrame("color",          nth(1, args)).color  (toInt(nth(0, args))); }
-        public final Object bgColor            (Object... args) { varargsMinMax("bgcolor",       args.length, 1, 2); return requireFrame("bgcolor",        nth(1, args)).bgColor(toInt(nth(0, args))); }
+        public final Object color              (Object... args) { varargs1_2("color",         args.length); return requireFrame("color",          nth(1, args)).color  (toInt(nth(0, args))); }
+        public final Object bgColor            (Object... args) { varargs1_2("bgcolor",       args.length); return requireFrame("bgcolor",        nth(1, args)).bgColor(toInt(nth(0, args))); }
 
-        public final Object text               (Object... args) { varargsMinMax("text",          args.length, 1, 2); return requireFrame("text",           nth(1, args)).text   (args[0].toString()); }
+        public final Object text               (Object... args) { varargs1_2("text",          args.length); return requireFrame("text",           nth(1, args)).text   (args[0].toString()); }
 
-        public final Object right              (Object... args) { varargsMinMax("right",         args.length, 1, 2); return requireFrame("right",          nth(1, args)).right  (toDouble(args[0])); }
-        public final Object left               (Object... args) { varargsMinMax("left",          args.length, 1, 2); return requireFrame("left",           nth(1, args)).left   (toDouble(args[0])); }
-        public final Object forward            (Object... args) { varargsMinMax("forward",       args.length, 1, 2); return requireFrame("forward",        nth(1, args)).forward(toDouble(args[0])); }
+        public final Object right              (Object... args) { varargs1_2("right",         args.length); return requireFrame("right",          nth(1, args)).right  (toDouble(args[0])); }
+        public final Object left               (Object... args) { varargs1_2("left",          args.length); return requireFrame("left",           nth(1, args)).left   (toDouble(args[0])); }
+        public final Object forward            (Object... args) { varargs1_2("forward",       args.length); return requireFrame("forward",        nth(1, args)).forward(toDouble(args[0])); }
 
         public final Object moveTo             (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return requireFrame("move-to",        nth(2, args)).moveTo(toDouble(args[0]), toDouble(args[1]));  }
         public final Object lineTo             (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return requireFrame("line-to",        nth(2, args)).lineTo(toDouble(args[0]), toDouble(args[1]));  }
@@ -5962,7 +5972,7 @@ public class LambdaJ {
         public final Object lineRel            (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return requireFrame("line-rel",       nth(2, args)).lineRel(toDouble(args[0]), toDouble(args[1])); }
 
         public final Object makeBitmap         (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return requireFrame("make-bitmap",    nth(2, args)).makeBitmap(toInt(args[0]), toInt(args[1]));  }
-        public final Object discardBitmap      (Object... args) { varargsMinMax("discard-bitmap",args.length, 0, 1); return requireFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
+        public final Object discardBitmap      (Object... args) { varargs0_1("discard-bitmap",args.length); return requireFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
 
         public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return requireFrame("set-pixel",      nth(3, args)).setRGB(toInt(args[0]), toInt(args[1]), toInt(args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
@@ -6203,6 +6213,8 @@ public class LambdaJ {
         private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
         private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
 
+        /** 0..1 args */
+        private static void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
         /** 0..2 args */
         private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
         /** 1..2 args */
@@ -6743,7 +6755,7 @@ public class LambdaJ {
 
                 else if (isOperator(op, WellknownSymbol.sRequire)) {
                     final ConsCell ccArgs = listOrMalformed("require", cdr(form));
-                    varargsMinMax("require", ccArgs, 1, 2);
+                    varargs1_2("require", ccArgs);
                     if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     if (!intp.modules.contains(modName)) {
@@ -7758,7 +7770,7 @@ public class LambdaJ {
          *  in both cases if {@code asLong == true} then the result is converted to {@code long}
          */
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
-            varargsMinMax(murmel, args, 1, 2);
+            varargs1_2(murmel, args);
             if (asLong) sb.append("checkedToLong(");
             sb.append(javaOp).append("(toDouble(");
             if (cdr(args) == null) {
