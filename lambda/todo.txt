@@ -38,20 +38,6 @@ rekursive aufrufe sind derzeit late-bound
 (eval '(m))
 -> geht im interpreter, geht nicht im compiler, weil m müsste zur laufzeit aufgelöst werden
 
-
-jetzt wos einen vorgeschalten macroexpand/ check pass gibt, könnten einige checks in eval wegfallen
--> checks in expandForm vervollständigen (v.a. duplicate symbols in let, letrec und lambdalist, und check ob sf als variable verwendet wird)
-   checks in eval ausbauen oder durch asserts ersetzen
--> tryExpand() müsste unnötig sein
-   -> ist es (noch) nicht, weil (progn (load...) (macro...)) nicht richtig verarbeitet wird: defmacro im load file werden erst später verarbeitet
--> im compiler fällt auch bissl was weg
--> ggf. in expandForm() (defun... -> (define (lambda... auflösen
--> ggf. in expandForm() einfache optimierungen machen wie (cdr (cdr... -> (cddr, wenn speed >= 1
-   -> das beisst sich mit evalOpencode()
-   -> es könnte aber auf eine versteckte specialform "primcall" umgeschlüsselt werden, ähnlich wie im primcall branch aber vorgeschaltet statt just-in-time
--> vielleicht auch (let () forms...) -> (progn forms...), oder (let () form) -> form, oder (if (null form) a b) -> (if form b a)
--> sollte alles mit patterns möglich sein?!
-
 (defmacro x nil 1)
 (labels ((x (y) 11))
   (x)) ; sbcl ruft die lokale funktion auf (mit fehler wg. argument), Murmel ruft das makro

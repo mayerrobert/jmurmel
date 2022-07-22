@@ -292,16 +292,22 @@ JMurmel supports the special forms:
     - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
 * `defun` ... `(<symbol> (<params>*) <bodyform>*)`, e.g. `(defun addone (n) (+ n 1))`
 * `let, let <symbol> ` (i.e. named let)`, let*, letrec, progn`
+* `setq`
 * `defmacro`
+* `throw, catch, unwind-protect`
+* `multiple-value-call, multiple-value-bind`
+* `declaim, load, require, provide`
 
 The environment contains the symbols `nil`, `t`, `pi`, `*command-line-argument-list*`
-and the special forms and functions
+and the functions
 
 * `cons, car, cdr, rplaca, rplacd`
 * `apply` ... works similar to Scheme, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
-* `eval, eq, eql, null, atom, consp, listp, floatp, integerp, numberp, characterp, stringp, symbolp`
+* `eval, eq, eql, null, atom`
+* `consp, listp, functionp, floatp, integerp, numberp, characterp, stringp, symbolp, vectorp`
 
 * `assq, assoc, append, list, list*`
+* `vector, svref, svset, svlength, make-array, simple-vector->list, list->simple-vector`
 * `read, write, writeln`
 
 * `=, <, <=, >, >=, /=, +, -, *, /, 1+, 1-`
