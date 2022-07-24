@@ -125,6 +125,12 @@ public class LambdaJ {
         ENGINE_VERSION = versionInfo;
     }
 
+    /** largest positive long that can be represented as a double w/o any loss */
+    public static long MOST_POSITIVE_FIXNUM = +(1L << 53) - 1;
+
+    /** largest negative long that can be represented as a double w/o any loss */
+    public static long MOST_NEGATIVE_FIXNUM = -(1L << 53);
+
     /** Max length of symbols*/
     public static final int SYMBOL_MAX = 30;
 
@@ -2965,9 +2971,9 @@ public class LambdaJ {
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).car()
-                                                                                      : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                                                                              : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
-                                                                                                                                    : carCdrError("car", o); }
+                                                          : o instanceof ConsCell ? ((ConsCell)o).car()
+                                                          : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
+                                                          : carCdrError("car", o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
 
@@ -2983,9 +2989,9 @@ public class LambdaJ {
     static Object   cdr(ConsCell c)    { return c == null ? null : c.cdr(); }
     static Object   cdr(Object o)      { return o == null ? null
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
-                                                                                      : o instanceof ConsCell ? ((ConsCell)o).cdr()
-                                                                                                              : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
-                                                                                                                                    : carCdrError("cdr", o); }
+                                                          : o instanceof ConsCell ? ((ConsCell)o).cdr()
+                                                          : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
+                                                          : carCdrError("cdr", o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
 
@@ -3230,7 +3236,7 @@ public class LambdaJ {
         if (n instanceof Double) return ((Double)n) + 1;
         if (n instanceof Long) {
             final long l;
-            if ((l = (Long) n) == Long.MAX_VALUE) throw new LambdaJError("1+: overflow");
+            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow");
             return l + 1;
         }
         if (n instanceof Byte) return ((Byte)n).longValue() + 1;
@@ -3243,7 +3249,7 @@ public class LambdaJ {
         if (n instanceof Double) return ((Double)n) - 1;
         if (n instanceof Long) {
             final long l;
-            if ((l = (Long) n) == Long.MIN_VALUE) throw new LambdaJError("1-: underflow");
+            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow");
             return l - 1;
         }
         if (n instanceof Byte) return ((Byte)n).longValue() - 1;
@@ -3552,41 +3558,6 @@ public class LambdaJ {
     }
 
 
-    /** convert {@code a} to a float, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
-    private static float toFloat(String func, Object a) {
-        final Number n = requireNumber(func, a);
-
-        final float ret = n.floatValue();
-        if (n instanceof BigInteger || n instanceof BigDecimal) {
-            if (Float.isNaN(ret)) errorOverflow(func, "float", a);
-            return ret;
-        }
-        final double dbl = n.doubleValue();
-        if (dbl > Float.MAX_VALUE || dbl < Float.MIN_VALUE) errorOverflow(func, "float", a);
-        return ret;
-    }
-
-    /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
-    static double toDouble(String func, Object a) {
-        final Number n = requireNumber(func, a);
-
-        final double ret = n.doubleValue();
-        if (n instanceof BigInteger || n instanceof BigDecimal) {
-            if (Double.isNaN(ret)) errorOverflow(func, "double", a);
-            return ret;
-        }
-        return ret;
-    }
-
-    /** convert {@code a} to an int, error if {@code a} is not a number. */
-    private static int toInt(String func, Object a) {
-        return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
-    }
-
-    private static int toNonnegInt(String func, Object a) {
-        return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
-    }
-
     private static Number requireNumberOrNull(String func, Object a) {
         if (a == null) return null;
         return requireNumber(func, a);
@@ -3600,14 +3571,13 @@ public class LambdaJ {
         throw errorNotANumber(func, n);
     }
 
-    // todo min/max checken, auch fuer long/int/short/byte
     static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
         if (n == null) errorNotANumber(func, null);
-        if (n instanceof Long)    return (Long)n;
+        if (n instanceof Long)    { return requireIntegralNumber(func, (Long) n, n, minIncl, maxIncl); }
         if (n instanceof Double)  { return requireIntegralNumber(func, (Double) n, n, minIncl, maxIncl); }
-        if (n instanceof Byte)    return (Byte)n;
-        if (n instanceof Short)   return (Short)n;
-        if (n instanceof Integer) return (Integer)n;
+        if (n instanceof Byte)    { return requireIntegralNumber(func, (Byte) n, n, minIncl, maxIncl); }
+        if (n instanceof Short)   { return requireIntegralNumber(func, (Short) n, n, minIncl, maxIncl); }
+        if (n instanceof Integer) { return requireIntegralNumber(func, (Integer) n, n, minIncl, maxIncl); }
         if (n instanceof Float)   { return requireIntegralNumber(func, (double) (Float) n, n, minIncl, maxIncl); }
         if (n instanceof Number)  { return requireIntegralNumber(func, toDouble(func, n), n, minIncl, maxIncl); }
         throw errorNotANumber(func, n);
@@ -3616,6 +3586,11 @@ public class LambdaJ {
     private static Number requireIntegralNumber(String func, double d, Object originalValue, long minIncl, long maxIncl) {
         // see https://stackoverflow.com/questions/9898512/how-to-test-if-a-double-is-an-integer
         if (Math.rint(d) == d && !Double.isInfinite(d) && d >= minIncl && d <= maxIncl) return d;
+        throw errorNotAnIntegralNumber(func, originalValue);
+    }
+
+    private static Number requireIntegralNumber(String func, long l, Object originalValue, long minIncl, long maxIncl) {
+        if (l >= minIncl && l <= maxIncl) return l;
         throw errorNotAnIntegralNumber(func, originalValue);
     }
 
@@ -3653,6 +3628,54 @@ public class LambdaJ {
         if (a == null) return null;
         if (!consp(a)) throw new LambdaJError(true, "%s: expected a list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
+    }
+
+
+
+    /// Number type conversions
+
+    /** return the argument w/o decimal places as a long, exception if conversion is not possible */
+    static long toFixnum(double d) {
+        if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
+        if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
+        if (d < MOST_NEGATIVE_FIXNUM) throw new LambdaJError("underflow");
+        if (d > MOST_POSITIVE_FIXNUM) throw new LambdaJError("overflow");
+        return (long)d;
+    }
+
+    /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+    static double toDouble(String func, Object a) {
+        final Number n = requireNumber(func, a);
+
+        final double ret = n.doubleValue();
+        if (n instanceof BigInteger || n instanceof BigDecimal) {
+            if (Double.isNaN(ret)) errorOverflow(func, "double", a);
+            return ret;
+        }
+        return ret;
+    }
+
+    /** convert {@code a} to a float, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+    private static float toFloat(String func, Object a) {
+        final Number n = requireNumber(func, a);
+
+        final float ret = n.floatValue();
+        if (n instanceof BigInteger || n instanceof BigDecimal) {
+            if (Float.isNaN(ret)) errorOverflow(func, "float", a);
+            return ret;
+        }
+        final double dbl = n.doubleValue();
+        if (dbl > Float.MAX_VALUE || dbl < Float.MIN_VALUE) errorOverflow(func, "float", a);
+        return ret;
+    }
+
+    /** convert {@code a} to an int, error if {@code a} is not a number. */
+    private static int toInt(String func, Object a) {
+        return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
+    }
+
+    private static int toNonnegInt(String func, Object a) {
+        return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
     }
 
 
@@ -3716,16 +3739,6 @@ public class LambdaJ {
     private static double quot12(String func, ConsCell args) {
         final double lhs = toDouble(func, car(args));
         return cdr(args) == null ? lhs : lhs / toDouble(func, cadr(args));
-    }
-
-    /** return the argument w/o decimal places as a long, exception if conversion is not possible */
-    // todo assert Math.rint(d) == d vgl #requireIntegralNumber()
-    static long checkedToLong(double d) {
-        if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
-        if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
-        if (d < Long.MIN_VALUE) throw new LambdaJError("underflow");
-        if (d > Long.MAX_VALUE) throw new LambdaJError("overflow");
-        return (long)d;
     }
 
 
@@ -4389,23 +4402,25 @@ public class LambdaJ {
                   env)));
 
             env = addBuiltin("pi",      Math.PI,
-                  env);
+                  addBuiltin("most-positive-fixnum", MOST_POSITIVE_FIXNUM,
+                  addBuiltin("most-negative-fixnum", MOST_NEGATIVE_FIXNUM,
+                  env)));
 
             env = addBuiltin("fround",   (Primitive) args -> { varargs1_2("fround",   args); return Math.rint  (quot12("fround", args)); },
                   addBuiltin("ffloor",   (Primitive) args -> { varargs1_2("ffloor",   args); return Math.floor (quot12("ffloor", args)); },
                   addBuiltin("fceiling", (Primitive) args -> { varargs1_2("fceiling", args); return Math.ceil  (quot12("fceiling", args)); },
                   addBuiltin("ftruncate",(Primitive) args -> { varargs1_2("ftruncate",args); return cl_truncate(quot12("ftruncate", args)); },
 
-                  addBuiltin("round",   (Primitive) args -> { varargs1_2("round",   args); return checkedToLong(Math.rint  (quot12("round", args))); },
-                  addBuiltin("floor",   (Primitive) args -> { varargs1_2("floor",   args); return checkedToLong(Math.floor (quot12("floor", args))); },
-                  addBuiltin("ceiling", (Primitive) args -> { varargs1_2("ceiling", args); return checkedToLong(Math.ceil  (quot12("ceiling", args))); },
-                  addBuiltin("truncate",(Primitive) args -> { varargs1_2("truncate",args); return checkedToLong(cl_truncate(quot12("truncate", args))); },
+                  addBuiltin("round",   (Primitive) args -> { varargs1_2("round",   args); return toFixnum(Math.rint  (quot12("round", args))); },
+                  addBuiltin("floor",   (Primitive) args -> { varargs1_2("floor",   args); return toFixnum(Math.floor (quot12("floor", args))); },
+                  addBuiltin("ceiling", (Primitive) args -> { varargs1_2("ceiling", args); return toFixnum(Math.ceil  (quot12("ceiling", args))); },
+                  addBuiltin("truncate",(Primitive) args -> { varargs1_2("truncate",args); return toFixnum(cl_truncate(quot12("truncate", args))); },
                   env))))))));
 
             env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(car(args)); },
                   addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
 
-                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("srtq", car(args))); },
+                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("sqrt", car(args))); },
                   addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
                   addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
                   addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
@@ -5690,6 +5705,8 @@ public class LambdaJ {
         /// predefined global variables
         public final Object _t;
         public final Object _pi = Math.PI;
+        public final Object mostPositiveFixnum = MOST_POSITIVE_FIXNUM;
+        public final Object mostNegativeFixnum = MOST_NEGATIVE_FIXNUM;
         public final Object _dynamic;
 
         /// predefined aliased global variables
@@ -5826,14 +5843,14 @@ public class LambdaJ {
         public final double   _fceiling (Object... args) { varargs1_2("fceiling", args.length); return Math.ceil  (quot12(args)); }
         public final double   _ftruncate(Object... args) { varargs1_2("ftruncate",args.length); return cl_truncate(quot12(args)); }
 
-        public final long     _round   (Object... args) { varargs1_2("round",     args.length); return checkedToLong(cl_round   (quot12(args))); }
-        public final long     _floor   (Object... args) { varargs1_2("floor",     args.length); return checkedToLong(Math.floor (quot12(args))); }
-        public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return checkedToLong(Math.ceil  (quot12(args))); }
-        public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return checkedToLong(cl_truncate(quot12(args))); }
+        public final long     _round   (Object... args) { varargs1_2("round",     args.length); return toFixnum(cl_round   (quot12(args))); }
+        public final long     _floor   (Object... args) { varargs1_2("floor",     args.length); return toFixnum(Math.floor (quot12(args))); }
+        public final long     _ceiling (Object... args) { varargs1_2("ceiling",   args.length); return toFixnum(Math.ceil  (quot12(args))); }
+        public final long     _truncate(Object... args) { varargs1_2("truncate",  args.length); return toFixnum(cl_truncate(quot12(args))); }
 
         public static double cl_round(double d) { return Math.rint(d); }
         public static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
-        public static long checkedToLong(double d) { return LambdaJ.checkedToLong(d); }
+        public static long toFixnum(double d) { return LambdaJ.toFixnum(d); }
         private static double quot12(Object[] args) { return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) requireChar(args[0]); }
@@ -6305,6 +6322,8 @@ public class LambdaJ {
             case "nil": return null;
             case "t": return _t;
             case "pi": return _pi;
+            case "most-positive-fixnum": return mostPositiveFixnum;
+            case "most-negative-fixnum": return mostNegativeFixnum;
             case "internal-time-units-per-second": return itups;
             case "*command-line-argument-list*": return commandlineArgumentList; // this will be assigned by genereted code at runtime
             case "*features*": return features;
@@ -6558,6 +6577,7 @@ public class LambdaJ {
         ///
         private static final String[] globalvars = { "nil", "t", "pi", "dynamic" };
         private static final String[][] aliasedGlobals = {
+        { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
         { "internal-time-units-per-second", "itups" },
         { "*command-line-argument-list*", "commandlineArgumentList" },
         { "*features*", "features" },
@@ -7771,7 +7791,7 @@ public class LambdaJ {
          */
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargs1_2(murmel, args);
-            if (asLong) sb.append("checkedToLong(");
+            if (asLong) sb.append("toFixnum(");
             sb.append(javaOp).append("(toDouble(");
             if (cdr(args) == null) {
                 emitForm(sb, car(args), env, topEnv, rsfx, false);

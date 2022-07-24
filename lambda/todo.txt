@@ -1,9 +1,3 @@
-Murmel verwendet long->double bei math operatoren und das verwirft genauigkeit:
-(define v1 (floor (expt 2 55))) ; ==> v1
-(define v2 (1+ v1)) ; ==> v2
-(= v1 v2) ; ==> t, sollte nil sein
--> entweder fixnums auf integer umstellen, oder nur [-2>>52 .. 2>>52] zulassen
-   -> fixnum als 32 int wär schlecht, weil das kann get-internal-real-time nicht abbilden. 52 bit reicht aus
 
 get-decoded-time von list auf values umstellen
 read sollte EOF übernehmen

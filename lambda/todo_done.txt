@@ -1683,3 +1683,10 @@ jetzt wos einen vorgeschalten macroexpand/ check pass gibt, könnten einige chec
    -> es könnte aber auf eine versteckte specialform "primcall" umgeschlüsselt werden, ähnlich wie im primcall branch aber vorgeschaltet statt just-in-time
 -> vielleicht auch (let () forms...) -> (progn forms...), oder (let () form) -> form, oder (if (null form) a b) -> (if form b a)
 -> sollte alles mit patterns möglich sein?!
+
+Murmel verwendet long->double bei math operatoren und das verwirft genauigkeit:
+(define v1 (floor (expt 2 55))) ; ==> v1
+(define v2 (1+ v1)) ; ==> v2
+(= v1 v2) ; ==> t, sollte nil sein
+-> entweder fixnums auf integer umstellen, oder nur [-2>>52 .. 2>>52] zulassen
+   -> fixnum als 32 int wär schlecht, weil das kann get-internal-real-time nicht abbilden. 52 bit reicht aus
