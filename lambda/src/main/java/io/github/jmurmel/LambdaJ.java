@@ -3038,33 +3038,39 @@ public class LambdaJ {
     the following predicates more or less implement Murmel's type system which looks like so:
 
     t
-        null                    ; nil is the only object of type null
         cons
-        symbol
-        number
-            integer
-            float
-        character
-        vector
-            simple-vector
-            string
-                simple-string
-        function
+        atom
+            symbol
+                null                    ; nil is the only object of type null
+            number
+                float
+                integer
+            character
+            vector
+                simple-vector
+                string
+                    simple-string
+            function
+
+            (list ::= cons | null)
+            (sequence ::= list | vector)
 
     The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
      */
     static boolean consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
-    static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; } // null (aka nil) is a symbol too
+    static boolean atom(Object o)       { return !consp(o); }
+
+    static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; }
 
     static boolean numberp(Object o)    { return integerp(o) || floatp(o) || o instanceof Number; }
-    static boolean floatp(Object o)     { return o instanceof Double; } // todo float, BigDecimal?
-    static boolean integerp(Object o)   { return o instanceof Long; } // todo Byte, Short, Integer, BigInteger?
+    static boolean floatp(Object o)     { return o instanceof Double; }  // todo float, BigDecimal?
+    static boolean integerp(Object o)   { return o instanceof Long; }    // todo Byte, Short, Integer, BigInteger?
 
     static boolean characterp(Object o) { return o instanceof Character; }
 
-    static boolean vectorp(Object o)    { return stringp(o) || svectorp(o); }
-    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray(); } // todo List, ArrayList & Co?
-    static boolean stringp(Object o)    { return sstringp(o); }
+    static boolean vectorp(Object o)    { return stringp(o) || svectorp(o); }           // todo List, ArrayList & Co?
+    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray(); }
+    static boolean stringp(Object o)    { return sstringp(o); }                         // todo maybe allow CharSequence?
     static boolean sstringp(Object o)   { return o instanceof String; }
 
     final boolean functionp(Object o)   { return o instanceof Primitive
@@ -3073,8 +3079,7 @@ public class LambdaJ {
                                                  || o instanceof MurmelFunction
                                                  || (haveOldLambda() && consp(o) && car(o) == sLambda); }
 
-    static boolean atom(Object o)       { return !(o instanceof ConsCell); }                // ! consp(x)
-    static boolean listp(Object o)      { return o == null || o instanceof ConsCell; }      // null (aka nil) is a list too
+    static boolean listp(Object o)      { return o == null || consp(o); }
 
 
     // these *should* have no usages as these checks would be superfluous.
