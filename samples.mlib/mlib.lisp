@@ -884,23 +884,26 @@
     nil))
 
 
-(defun sequence->list (seq)
+(defun m%sequence->list (seq)
   (cond ((listp seq) seq)
         ((simple-vector-p seq) (simple-vector->list seq))
         ((stringp seq) (string->list seq))
         (t (fatal "not a sequence"))))
 
-(defun sequences->lists (seq)
+(defun m%sequences->lists (seq)
   (let loop ((s seq))
-    (if s (cons (sequence->list (car s))
+    (if s (cons (m%sequence->list (car s))
                 (loop (cdr s)))
       nil)))
 
-(defun list->sequence (lst result-type)
-  (cond ((eq result-type 'list)   lst)
-        ((eq result-type 'vector) (list->simple-vector lst))
-        ((eq result-type 'string) (list->string lst))
-        ((null result-type)       nil)
+(defun m%list->sequence (lst result-type)
+  (cond ((eq result-type 'list)          lst)
+        ((eq result-type 'cons)          (if lst lst (fatal "not of type cons: nil")))
+        ((eq result-type 'vector)        (list->simple-vector lst))
+        ((eq result-type 'simple-vector) (list->simple-vector lst))
+        ((eq result-type 'string)        (list->string lst))
+        ((eq result-type 'simple-string) (list->string lst))
+        ((null result-type)              nil)
         (t (fatal "not a sequence type"))))
 
 
@@ -920,18 +923,18 @@
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func sequence . more-sequences)
-  (list->sequence
+  (m%list->sequence
     (if more-sequences
 
           (labels ((none-nil (lists)
                      (if lists (and (car lists) (none-nil (cdr lists)))
                        t)))
-            (let loop ((l (cons (sequence->list sequence) (sequences->lists more-sequences))))
+            (let loop ((l (cons (m%sequence->list sequence) (m%sequences->lists more-sequences))))
               (if (none-nil l)
                 (cons (apply func (unzip l))
                       (loop (unzip-tails l))))))
 
-      (let loop ((l (sequence->list sequence)))
+      (let loop ((l (m%sequence->list sequence)))
         (if l
           (cons (func (car l))
                 (loop (cdr l))))))
@@ -960,14 +963,14 @@
           (labels ((none-nil (lists)
                      (if lists (and (car lists) (none-nil (cdr lists)))
                        t)))
-            (let loop ((r result) (l (sequences->lists sequences)))
+            (let loop ((r result) (l (m%sequences->lists sequences)))
               (when (and r (none-nil l))
                 (rplaca r (apply func (unzip l)))
                 (loop (cdr r) (unzip-tails l)))))
 
       (if sequences
             ; 1 list given
-            (let loop ((r result) (l (sequence->list (car sequences))))
+            (let loop ((r result) (l (m%sequence->list (car sequences))))
               (when (and r l)
                 (rplaca r (func (car l)))
                 (loop (cdr r) (cdr l))))
