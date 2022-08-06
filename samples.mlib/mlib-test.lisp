@@ -529,6 +529,25 @@
   ))
 
 
+; Test map
+(let ((seq (list #(1) #(2) #(3))))
+  (tests map
+   (map 'string #'(lambda (x y)
+                    (char "01234567890ABCDEF" (mod (+ x y) 16)))
+         '(1 2 3 4)
+         '(10 9 8 7)) =>  "AAAA"
+
+   (map nil (lambda (v) (setf (svref v 0) (1+ (svref v 0)))) seq) => nil
+   ;seq => (#(2) #(3) #(4))
+   (svref (cadr seq) 0) => 3
+
+   (map 'list #'- '(1.0 2.0 3.0 4.0)) =>  (-1.0 -2.0 -3.0 -4.0)
+   (map 'string
+        #'(lambda (x) (if (oddp x) #\1 #\0))
+        '(1 2 3 4)) =>  "1010"
+  ))
+
+
 ; test map-into
 (let ((l (list 0 0 0 0 0)) (k '(one two three)) (n 0))
   (tests map-into
