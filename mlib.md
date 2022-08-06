@@ -33,7 +33,8 @@ mlib provides the following Common Lisp-like functions and macros:
 - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
 - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
 - [member](#function-member), [reverse](#function-reverse)
-- [map-into](#function-map-into), [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+- [map](#function-map), [map-into](#function-map-into)
+- [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
 - [remove-if](#function-remove-if), [remove](#function-remove)
 - [reduce](#function-reduce)
@@ -454,8 +455,24 @@ containing the `cdr`s of each such list.
 
 See also: [unzip](#function-unzip).
 
+### Function: map
+    (map result-type function sequences+) -> result
+
+Since 1.3
+
+Applies function to successive sets of arguments in which one argument
+is obtained from each sequence. The function is called first on all the elements
+with index 0, then on all those with index 1, and so on.
+The result-type specifies the type of the resulting sequence.
+   
+map returns nil if result-type is nil. Otherwise, map returns a sequence
+such that element j is the result of applying function to element j of each
+of the sequences. The result sequence is as long as the shortest of the sequences.
+
+Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
+
 ### Function: map-into
-    (map-into result-list function list*) -> result-list
+    (map-into result-list function sequence*) -> result-list
 
 Since: 1.2
 
@@ -466,7 +483,8 @@ the lists or the result-list) is exhausted.
 
 If `result-list` is `nil`, `map-into` returns `nil`.
 
-Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
+Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
+only lists are supported as result-list, tough.
 
 ### Function: mapcar
     (mapcar function list+) -> list

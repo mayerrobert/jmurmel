@@ -1690,3 +1690,9 @@ Murmel verwendet long->double bei math operatoren und das verwirft genauigkeit:
 (= v1 v2) ; ==> t, sollte nil sein
 -> entweder fixnums auf integer umstellen, oder nur [-2>>52 .. 2>>52] zulassen
    -> fixnum als 32 int wär schlecht, weil das kann get-internal-real-time nicht abbilden. 52 bit reicht aus
+
+http://clhs.lisp.se/Body/f_map.htm:
+map result-type function &rest sequences+ => result
+
+map-into sollte sequence verarbeiten, kann derzeit nur list
+map-into result-sequence function &rest sequences => result-sequence

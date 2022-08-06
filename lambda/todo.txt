@@ -1,5 +1,4 @@
 
-get-decoded-time von list auf values umstellen
 read sollte EOF übernehmen
 
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)

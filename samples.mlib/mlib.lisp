@@ -32,7 +32,8 @@
 ;;; - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
 ;;; - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
 ;;; - [member](#function-member), [reverse](#function-reverse)
-;;; - [map-into](#function-map-into), [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+;;; - [map](#function-map), [map-into](#function-map-into)
+;;; - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 ;;; - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
 ;;; - [remove-if](#function-remove-if), [remove](#function-remove)
 ;;; - [reduce](#function-reduce)
@@ -883,8 +884,65 @@
     nil))
 
 
+(defun sequence->list (seq)
+  (cond ((listp seq) seq)
+        ((simple-vector-p seq) (simple-vector->list seq))
+        ((stringp seq) (string->list seq))
+        (t (fatal "not a sequence"))))
+
+(defun sequences->lists (seq)
+  (let loop ((s seq))
+    (if s (cons (sequence->list (car s))
+                (loop (cdr s)))
+      nil)))
+
+(defun list->sequence (lst result-type)
+  (cond ((eq result-type 'list)   lst)
+        ((eq result-type 'vector) (list->simple-vector lst))
+        ((eq result-type 'string) (list->string lst))
+        (t (fatal "not a sequence type"))))
+
+
+;;; = Function: map
+;;;     (map result-type function sequences+) -> result
+;;;
+;;; Since 1.3
+;;;
+;;; Applies function to successive sets of arguments in which one argument
+;;; is obtained from each sequence. The function is called first on all the elements
+;;; with index 0, then on all those with index 1, and so on.
+;;; The result-type specifies the type of the resulting sequence.
+;;;    
+;;; map returns nil if result-type is nil. Otherwise, map returns a sequence
+;;; such that element j is the result of applying function to element j of each
+;;; of the sequences. The result sequence is as long as the shortest of the sequences.
+;;;
+;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
+(defun map (result-type func sequence . more-sequences)
+  (if result-type
+
+    (list->sequence
+      (if more-sequences
+ 
+            (labels ((none-nil (lists)
+                       (if lists (and (car lists) (none-nil (cdr lists)))
+                         t)))
+              (let loop ((l (cons (sequence->list sequence) (sequences->lists more-sequences))))
+                (if (none-nil l)
+                  (cons (apply func (unzip l))
+                        (loop (unzip-tails l))))))
+ 
+        (let loop ((l (sequence->list sequence)))
+          (if l
+            (cons (func (car l))
+                  (loop (cdr l))))))
+      result-type)
+
+  nil))
+
+
 ;;; = Function: map-into
-;;;     (map-into result-list function list*) -> result-list
+;;;     (map-into result-list function sequence*) -> result-list
 ;;;
 ;;; Since: 1.2
 ;;;
@@ -895,28 +953,29 @@
 ;;;
 ;;; If `result-list` is `nil`, `map-into` returns `nil`.
 ;;;
-;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
-(defun map-into (result func . lists)
+;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
+;;; only lists are supported as result-list, tough.
+(defun map-into (result func . sequences)
   (when result
 
-     (if (cdr lists)
-           ; 2 or more lists given
-           (labels ((none-nil (lists)
-                      (if lists (and (car lists) (none-nil (cdr lists)))
-                        t)))
-             (let loop ((r result) (l lists))
-               (when (and r (none-nil l))
-                 (rplaca r (apply func (unzip l)))
-                 (loop (cdr r) (unzip-tails l)))))
+    (if (cdr sequences)
+          ; 2 or more sequences given
+          (labels ((none-nil (lists)
+                     (if lists (and (car lists) (none-nil (cdr lists)))
+                       t)))
+            (let loop ((r result) (l (sequences->lists sequences)))
+              (when (and r (none-nil l))
+                (rplaca r (apply func (unzip l)))
+                (loop (cdr r) (unzip-tails l)))))
 
-      (if lists
+      (if sequences
             ; 1 list given
-            (let loop ((r result) (l (car lists)))
+            (let loop ((r result) (l (sequence->list (car sequences))))
               (when (and r l)
                 (rplaca r (func (car l)))
                 (loop (cdr r) (cdr l))))
 
-        ; 0 lists given
+        ; 0 sequences given
         (let loop ((r result))
           (when r
             (rplaca r (func))

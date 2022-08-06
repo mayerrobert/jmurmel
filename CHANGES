@@ -18,6 +18,8 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
    * added make-array, vector, vector-length, vectorp, simple-vector-p, svref, svset and svlength
    * added list->simple-vector and simple-vector->list
 
+ * mlib: added function map
+
  * fixed backquote expansion:
    e.g. `(a ,nil) was eval'd to (a); correct expansion is (a nil)
 
