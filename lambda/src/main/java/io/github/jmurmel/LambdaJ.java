@@ -126,7 +126,7 @@ public class LambdaJ {
     }
 
     /** largest positive long that can be represented as a double w/o any loss */
-    public static long MOST_POSITIVE_FIXNUM = +(1L << 53) - 1;
+    public static long MOST_POSITIVE_FIXNUM = (1L << 53) - 1;
 
     /** largest negative long that can be represented as a double w/o any loss */
     public static long MOST_NEGATIVE_FIXNUM = -(1L << 53);
@@ -1452,30 +1452,6 @@ public class LambdaJ {
                 }
             }
         }
-
-
-
-        /*
-        Object expand_backquote(Object form) {
-            if (atom(form))
-                return form;
-
-            final ConsCell formCons = (ConsCell)form;
-            final Object op = car(formCons);
-
-            if (op == sQuote)
-                return form;
-
-            if (op == sUnquote || op == sUnquote_splice) {
-                throw new LambdaJError("comma is not inside a backquote");
-            }
-
-            if (op == sQuasiquote)
-                return qq_expand(cadr(formCons));
-
-            return mapcar(this::expand_backquote, formCons);
-        }
-        */
 
 
 
@@ -3007,23 +2983,6 @@ public class LambdaJ {
         for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
         return list;
     }
-
-    /*private static ConsCell mapcar(UnaryOperator<Object> f, ConsCell l) {
-        final ListBuilder b = new ListBuilder();
-        Object o = l;
-        for (;;) {
-            if (o == null) break;
-            if (consp(o)) {
-                b.append(f.apply(car(o)));
-            }
-            else {
-                b.appendLast(f.apply(o));
-                break;
-            }
-            o = cdr(o);
-        }
-        return (ConsCell) b.first();
-    }*/
 
     static boolean eql(Object o1, Object o2) {
         if (o1 == o2) return true;
@@ -4808,9 +4767,6 @@ public class LambdaJ {
                         if (successJar) System.out.println("compiled stdin to " + outFile);
                         break;
                     case COMPILE_AND_RUN:
-                        //final ObjectWriter outWriter = makeWriter(System.out::print);
-                        //interpreter.setReaderPrinter(parser, outWriter);
-                        //interpreter.environment(null);
                         compileAndRunForms(parser, args, interpreter, false, finalResult);
                         break;
                     default: assert false : "can't happen";
@@ -5051,17 +5007,18 @@ public class LambdaJ {
         ObjectWriter outWriter = null;
         final Reader consoleReader = new InputStreamReader(System.in, consoleCharset);
         final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
+        final ReadSupplier nonechoingSupplier = consoleReader::read;
         if (isInit) {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
             parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
-                                           echo ? echoingSupplier : consoleReader::read, null);
+                                           echo ? echoingSupplier : nonechoingSupplier, null);
             outWriter = interpreter.lispPrinter;
         }
         for (;;) {
             if (!isInit) {
                 interpreter.nCells = 0; interpreter.maxEnvLen = 0;
                 parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
-                                               echo ? echoingSupplier : consoleReader::read, null);
+                                               echo ? echoingSupplier : nonechoingSupplier, null);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
                 interpreter.environment(null);
@@ -5086,7 +5043,7 @@ public class LambdaJ {
                         || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
                     if (exp == cmdHelp)   { showHelp();  continue; }
                     if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null);continue; }
-                    if (exp == cmdNoEcho) { echo = false; parser.setInput(consoleReader::read, null); continue; }
+                    if (exp == cmdNoEcho) { echo = false; parser.setInput(nonechoingSupplier, null); continue; }
                     if (exp == cmdRes)    { isInit = false; history.clear();  continue; }
                     if (exp == cmdList)   { listHistory(history); continue; }
                     if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
@@ -5794,9 +5751,7 @@ public class LambdaJ {
 
         public final ConsCell _assoc   (Object... args) { twoArgs("assoc",       args.length); return assoc(args[0], args[1]); }
         public final ConsCell _assq    (Object... args) { twoArgs("assq",        args.length); return assq(args[0], args[1]); }
-        public final ConsCell _list    (Object... args) {
-            return ListBuilder.list(args);
-        }
+        public final ConsCell _list    (Object... args) { return ListBuilder.list(args); }
         public final Object listStar   (Object... args) {
             varargs1("list*", args.length);
             if (args.length == 1) return args[0];
@@ -5906,11 +5861,11 @@ public class LambdaJ {
         public final double mul     (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret *= toDouble(args[i]); return ret; } return 1.0; }
 
         public final double sub     (Object... args) { varargs1("-", args.length);
-            if (args.length == 1) return 0.0 - toDouble(args[0]);
-            double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret -= toDouble(args[i]); return ret; }
+                                                       if (args.length == 1) return 0.0 - toDouble(args[0]);
+                                                       double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret -= toDouble(args[i]); return ret; }
         public final double quot    (Object... args) { varargs1("/", args.length);
-            if (args.length == 1) return 1.0 / toDouble(args[0]);
-            double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
+                                                       if (args.length == 1) return 1.0 / toDouble(args[0]);
+                                                       double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
 
         public final Object numbereq(Object... args) { return compare("=",  args, (d1, d2) -> d1 == d2); }
         public final Object lt      (Object... args) { return compare("<",  args, (d1, d2) -> d1 <  d2); }
@@ -5932,7 +5887,6 @@ public class LambdaJ {
 
         public final Object format             (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale       (Object... args) { return intp.formatLocale(arraySlice(args)); }
-        //public final Object macroexpand1       (Object... args) { return intp.macroexpand1(arraySlice(args)); }
         public final Object _gensym (Object... args) { return intp.gensym(arraySlice(args)); }
 
         public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(arraySlice(args)); }
@@ -5998,15 +5952,15 @@ public class LambdaJ {
 
         public final Object setPixel           (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return requireFrame("set-pixel",      nth(3, args)).setRGB(toInt(args[0]), toInt(args[1]), toInt(args[2]));  }
         public final Object rgbToPixel         (Object... args) { threeArgs("rgb-to-pixel", args.length);
-            final int r = toInt(args[0]);
-            final int g = toInt(args[1]);
-            final int b = toInt(args[2]);
-            return (long)(int)((r << 16) | (g << 8) | b); }
+                                                                  final int r = toInt(args[0]);
+                                                                  final int g = toInt(args[1]);
+                                                                  final int b = toInt(args[2]);
+                                                                  return (long)(int)((r << 16) | (g << 8) | b); }
         public final Object hsbToPixel         (Object... args) { threeArgs("hsb-to-pixel", args.length);
-            final float hue = toFloat(args[0]);
-            final float sat = toFloat(args[1]);
-            final float bri = toFloat(args[2]);
-            return (long)Color.HSBtoRGB(hue, sat, bri); }
+                                                                  final float hue = toFloat(args[0]);
+                                                                  final float sat = toFloat(args[1]);
+                                                                  final float bri = toFloat(args[2]);
+                                                                  return (long)Color.HSBtoRGB(hue, sat, bri); }
         public final Object _fatal             (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
 
         Object[] values;
@@ -8090,18 +8044,9 @@ public class LambdaJ {
                 }
                 final String init = b.toString();
 
-                if (true) {
-                    // deduplicate quoted lists (list constants), modifying list constants will lead to unexpected behaviour
-                    if (pool) emitReference(sb, init);
-                    else sb.append(init);
-                }
-                else {
-                    // don't deduplicate quoted lists
-                    if (pool) {
-                        sb.append("q").append(qCounter++);
-                        quotedForms.add(init);
-                    } else sb.append(init);
-                }
+                // deduplicate quoted lists (list constants), modifying list constants will lead to unexpected behaviour
+                if (pool) emitReference(sb, init);
+                else sb.append(init);
             }
 
             else throw errorInternal("quote: unexpected form", form);
@@ -8449,49 +8394,6 @@ final class EolUtil {
         return stringBuilder.toString();
     }
 }
-
-/* A wrapping {@link LambdaJ.ReadSupplier} that reads from {@code in} or System.in.
- *  When reading from System.in sun.stdout.encoding will be used.
- *  Various lineendings will all be translated to '\n'.
- *  Optionally echoes input to System.out, various lineendings will be echoed as the system default line separator. */
-/*class AnyToUnixEol implements LambdaJ.ReadSupplier {
-    private static final Charset consoleCharset;
-
-    static {
-        final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
-        consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
-    }
-
-    private final LambdaJ.ReadSupplier in;
-    private int prev = -1;
-
-    AnyToUnixEol() { this(null); }
-    AnyToUnixEol(LambdaJ.ReadSupplier in) { this.in = in == null ? new InputStreamReader(System.in, consoleCharset)::read : in; }
-
-    @Override
-    public int read() throws IOException { return read(false); }
-
-    public int read(boolean echo) throws IOException {
-        final int c = in.read();
-        if (c == '\r') {
-            prev = '\r';
-            if (echo) System.out.print(System.lineSeparator());
-            return '\n';
-        }
-        if (c == '\n' && prev == '\r') {
-            prev = '\n';
-            return read(echo);
-        }
-        if (c == '\n') {
-            prev = '\n';
-            if (echo) System.out.print(System.lineSeparator());
-            return '\n';
-        }
-        prev = c;
-        if (echo && c != -1) System.out.print((char)c);
-        return c;
-    }
-}*/
 
 /** A wrapping {@link LambdaJ.WriteConsumer} that translates '\n' to the given line separator {@code eol}. */
 final class UnixToAnyEol implements LambdaJ.WriteConsumer {
