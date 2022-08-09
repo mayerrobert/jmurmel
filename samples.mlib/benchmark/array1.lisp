@@ -7,10 +7,6 @@
 (require "mlib")
 
 
-#+murmel
-(defun vector-length (v)
-  (svlength v))
-
 #-murmel
 (defun vector-length (v)
   (length v))
