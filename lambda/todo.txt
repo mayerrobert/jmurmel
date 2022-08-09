@@ -1,3 +1,12 @@
+codeerzeugung kann auch ausgemistet werden, v.v. let
+
+für compare vielleicht nicht nach double wandeln sondern nach number? oder zumindest literale nicht wandeln?
+
+gscheite implementierung von char, schar (?) in LambdaJ
+aref in mlib? eher nicht
+elt in mlib? eher schon
+
+make-bitvector, sbit? bitvector vielleicht als boolean[]
 
 read sollte EOF übernehmen
 
@@ -253,12 +262,12 @@ welche gemeinsamen eigenschaften haben list, vector/array, string, hash-table?
 
    (elt     sequence      0) -> element mit index 0
 
-   (gethash 0 hash-table)  -> element mit key 0
-   (nth     0 list)        -> element mit "index" 0
+   (gethash 0 hash-table)    -> element mit key 0
+   (nth     0 list)          -> element mit "index" 0
 
 -> iteration
    mapcar&co, dolist geht nur für lists
-   reduce geht für list, vector/array, string
+   map, reduce geht für list, vector/array, string
 
 
 

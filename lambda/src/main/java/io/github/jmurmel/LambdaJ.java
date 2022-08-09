@@ -773,6 +773,7 @@ public class LambdaJ {
             internWellknown("vectorp");
             internWellknown("vector-length");
             internWellknown("svref");
+            internWellknown("svset");
             internWellknown("svlength");
         }
 
@@ -1631,7 +1632,8 @@ public class LambdaJ {
         sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
-        sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM);
+        sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM),
+        sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM);
 
         private final String sym;
         final WellknownSymbolKind kind;
@@ -2595,10 +2597,11 @@ public class LambdaJ {
         case sListStar: { return listStar(args); }
 
         case sVector:       { return listToArray(args); }
-        case sVectorLength: { oneArg ("vector-length", args);  return vectorLength(car(args)); }
-        case sVectorp:      { oneArg ("vectorp", args);        return boolResult(vectorp(car(args))); }
-        case sSvRef:        { twoArgs("svref", args);          return svref(car(args), toInt("svref", cadr(args))); }
-        case sSvLength:     { oneArg ("svlength", args);       return svlength(car(args)); }
+        case sVectorLength: { oneArg   ("vector-length", args);  return vectorLength(car(args)); }
+        case sVectorp:      { oneArg   ("vectorp", args);        return boolResult(vectorp(car(args))); }
+        case sSvRef:        { twoArgs  ("svref", args);          return svref(car(args), toNonnegInt("svref", cadr(args))); }
+        case sSvSet:        { threeArgs("svset", args);          return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); }
+        case sSvLength:     { oneArg   ("svlength", args);       return svlength(car(args)); }
 
         default:    return NOT_HANDLED;
         }
@@ -5770,8 +5773,13 @@ public class LambdaJ {
         public final Object   vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
 
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
-        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], toNonnegInt(args[1])); }
-        public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], toNonnegInt(args[1]), args[2]); }
+
+        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], args[1]); }
+        public static Object svref(Object v, Object idx) { return LambdaJ.svref(v, toNonnegInt(idx)); }
+
+        public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], args[1], args[2]); }
+        public static Object svset(Object v, Object idx, Object val) { return LambdaJ.svset(v, toNonnegInt(idx), val); }
+
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
         public final Object   makeArray(Object... args) { oneArg("make-array", args.length); return new Object[toNonnegInt(args[0])]; }
@@ -7656,23 +7664,26 @@ public class LambdaJ {
             if (symbolEq(op, "ftruncate")) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
             if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
-                emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
+                                                emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true;
-                emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
+                                                emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true;
-                emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
+                                                emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true;
-                emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
+                                                emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true;
-                emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
+                                                emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true;
-                emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
+                                                emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sCons)       { emitFuncall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
-            if (symbolEq(op, "rplaca")) { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
-            if (symbolEq(op, "rplacd")) { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
+            if (symbolEq(op, "rplaca"))              { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
+            if (symbolEq(op, "rplacd"))              { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
+
+            if (prim == WellknownSymbol.sSvRef)      { emitFuncall2(sb, "svref", "svref", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sSvSet)      { emitFuncall3(sb, "svset", "svset", args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
@@ -7818,6 +7829,11 @@ public class LambdaJ {
         private void emitFuncall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "toDouble");
+        }
+
+        private void emitFuncall3(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+            threeArgs(murmel, args);
+            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
         /** emit a call to the primitive {@code func} without going through the trampoline,
