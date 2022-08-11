@@ -3081,7 +3081,7 @@ public class LambdaJ {
 
     static int vectorLength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
-        if (maybeVector instanceof String) return ((String)maybeVector).length();
+        if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
         throw errorNotAVector("vector-length", maybeVector);
     }
 
@@ -4064,7 +4064,7 @@ public class LambdaJ {
                    ? new JavaConstructor(clazz.getDeclaredConstructor(params), params)
                    : new JavaMethod(clazz.getMethod(methodName, params), params);
         }
-        catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
     }
 
     static final Map<String, Object[]> classByName = new HashMap<>(64);

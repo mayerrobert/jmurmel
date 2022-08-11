@@ -1,14 +1,15 @@
-codeerzeugung kann auch ausgemistet werden, v.v. let
-
-für compare vielleicht nicht nach double wandeln sondern nach number? oder zumindest literale nicht wandeln?
+codeerzeugung kann auch ausgemistet werden, v.a. let
 
 gscheite implementierung von char, schar (?) in LambdaJ
 aref in mlib? eher nicht
 elt in mlib? eher schon
+vielleicht svlength wieder rauskicken? vector-length gibts auch...
 
 make-bitvector, sbit? bitvector vielleicht als boolean[]
 
 read sollte EOF übernehmen
+
+für compare vielleicht nicht nach double wandeln sondern nach number? oder zumindest literale nicht wandeln?
 
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
 -> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert
