@@ -3001,7 +3001,7 @@ public class LambdaJ {
 
     t
         cons
-        atom
+        atom                            ; all Murmel objects except cons cells and all Java Objects are atoms
             symbol
                 null                    ; nil is the only object of type null
             number
@@ -3019,7 +3019,7 @@ public class LambdaJ {
 
     The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
      */
-    static boolean consp(Object o)      { return o instanceof ConsCell; } // todo ggf. redundaten check auf SExpConsCell vorschalten?
+    static boolean consp(Object o)      { return o instanceof ConsCell; }
     static boolean atom(Object o)       { return !consp(o); }
 
     static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; }
@@ -3030,9 +3030,9 @@ public class LambdaJ {
 
     static boolean characterp(Object o) { return o instanceof Character; }
 
-    static boolean vectorp(Object o)    { return stringp(o) || svectorp(o); }           // todo List, ArrayList & Co?
+    static boolean vectorp(Object o)    { return stringp(o) || svectorp(o) || o instanceof List; }
     static boolean svectorp(Object o)   { return o != null && o.getClass().isArray(); }
-    static boolean stringp(Object o)    { return sstringp(o); }                         // todo maybe allow CharSequence?
+    static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)   { return o instanceof String; }
 
     final boolean functionp(Object o)   { return o instanceof Primitive
@@ -5904,7 +5904,7 @@ public class LambdaJ {
         public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
         public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
 
-        public final Object jmethod              (Object... args) { twoArgs("jmethod", args.length); return findMethod(args[0], args[0], arraySlice(args, 2)); }
+        public final Object _jmethod           (Object... args) { varargs2("jmethod", args.length); return findMethod(args[0], args[1], arraySlice(args, 2)); }
         public static Primitive findMethod(Object className, Object methodName, ConsCell paramClasses) {
             return LambdaJ.findMethod(requireString(className), requireString(methodName), paramClasses);
         }
@@ -6204,7 +6204,9 @@ public class LambdaJ {
         /** 1..2 args */
         private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) errorArgCount(expr, 1, 2, argCount); }
         /** one or more arguments */
-        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, 1, 0); }
+        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
+        /** two or more arguments */
+        private static void varargs2(String expr, int argCount)   { if (argCount < 2)                 errorArgCount(expr, 2, -1, argCount); }
 
         private static void varargsMinMax(String expr, int argCount, int min, int max) {
             if (argCount < min || argCount > max)
@@ -6213,7 +6215,7 @@ public class LambdaJ {
 
         private static void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
             if (actual < expectedMin) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            if (actual > expectedMax) throw new LambdaJError(true, "%s: too many arguments", expr);
+            if (expectedMax != -1 && actual > expectedMax) throw new LambdaJError(true, "%s: too many arguments", expr);
         }
 
         private static RuntimeException errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
@@ -6379,7 +6381,7 @@ public class LambdaJ {
             case "sleep": return (CompilerPrimitive)this::sleep;
             case "get-universal-time": return (CompilerPrimitive)this::getUniversalTime;
             case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
-            case "jmethod": return (CompilerPrimitive)this::jmethod;
+            case "jmethod": return (CompilerPrimitive)this::_jmethod;
             case "jproxy": return (CompilerPrimitive)this::_jproxy;
             case "make-frame": return (CompilerPrimitive)this::makeFrame;
             case "open-frame": return (CompilerPrimitive)this::openFrame;

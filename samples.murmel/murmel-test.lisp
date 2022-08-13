@@ -421,24 +421,25 @@
 
 ;;; test all predicates
 (define *predicates*
-  '(("n/a"   "null"    "atom"      "symbolp"   "consp"     "listp"     "numberp"   "integerp"  "floatp"   "characterp" "stringp")
-    (value    null      atom        symbolp     consp       listp       numberp     integerp    floatp     characterp   stringp)
-    (nil      t         t           t           nil         t           nil         nil         nil        nil          nil)
-    ((a . b)  nil       nil         nil         t           t           nil         nil         nil        nil          nil)
+  '(("n/a"   "null"    "atom"      "symbolp"   "consp"     "listp"     "numberp"   "integerp"  "floatp"   "characterp" "vectorp"    "stringp")
+    (value    null      atom        symbolp     consp       listp       numberp     integerp    floatp     characterp   vectorp     stringp)
+    (nil      t         t           t           nil         t           nil         nil         nil        nil          nil         nil)
+    ((a . b)  nil       nil         nil         t           t           nil         nil         nil        nil          nil         nil)
 
-    (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil)
-    (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
-    (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
+    (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
+    (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
     ; sbcl chokes on the next line even when it's prepended with #+murmel
-    ;(1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil)
+    ;(1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
 
-    (0        nil       t           nil         nil         nil         t           t           nil        nil          nil)
-    (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil)
-    (3.2e15   nil       t           nil         nil         nil         t           nil         t          nil          nil)
-    (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil)
-    (\#\a     nil       t           t           nil         nil         nil         nil         nil        nil          nil)
-    (\#a      nil       t           t           nil         nil         nil         nil         nil        nil          nil)
-    ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t)
+    (0        nil       t           nil         nil         nil         t           t           nil        nil          nil         nil)
+    (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil         nil)
+    (3.2e15   nil       t           nil         nil         nil         t           nil         t          nil          nil         nil)
+    (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil         nil)
+    (\#\a     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
+    (\#a      nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
+    ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t           t)
+    (#()      nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil)
 ))
 
 
@@ -617,6 +618,44 @@
   (deftest nan.2 (< nan nan) nil)
   (deftest nan.3 (> nan nan) nil)
   (deftest nan.4 (/= nan nan) t)
+)
+
+
+
+#+murmel
+(let (
+      (byte          ((jmethod "Byte"                    "new" "String") "1"))
+      (short         ((jmethod "Short"                   "new" "String") "1"))
+      (integer       ((jmethod "Integer"                 "new" "String") "1"))
+      (long          ((jmethod "Long"                    "new" "String") "1"))
+      (bigInteger    ((jmethod "java.math.BigInteger"    "new" "String") "1"))
+
+      (float         ((jmethod "Float"                   "new" "String") "1"))
+      (double        ((jmethod "Double"                  "new" "String") "1"))
+      (bigDecimal    ((jmethod "java.math.BigDecimal"    "new" "String") "1"))
+
+      (arrayList     ((jmethod "java.util.ArrayList"     "new")))
+
+      (string        ((jmethod "java.lang.String"        "new")))
+      (stringBuffer  ((jmethod "java.lang.StringBuffer"  "new")))
+      (stringBuilder ((jmethod "java.lang.StringBuilder" "new")))
+     )
+
+  (deftest ffi.number.1 (numberp byte) t)
+  (deftest ffi.number.2 (numberp short) t)
+  (deftest ffi.number.3 (numberp integer) t)
+  (deftest ffi.number.4 (numberp long) t)
+  (deftest ffi.number.5 (numberp bigInteger) t)
+
+  (deftest ffi.number.6 (numberp float) t)
+  (deftest ffi.number.7 (numberp double) t)
+  (deftest ffi.number.8 (numberp bigDecimal) t)
+
+  (deftest ffi.coll.1 (vectorp arrayList) t)
+
+  (deftest ffi.string.1 (vectorp string) t)
+  (deftest ffi.string.2 (vectorp stringBuffer) t)
+  (deftest ffi.string.3 (vectorp stringBuilder) t)
 )
 
 

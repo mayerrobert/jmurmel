@@ -1,3 +1,11 @@
+Typsystem:
+- beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
+- beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t
+- Primitives ggf. nachziehen
+    vector-length akzeptiert CharSequence, vectorp aber nicht
+- Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
+- vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
+
 codeerzeugung kann auch ausgemistet werden, v.a. let
 
 gscheite implementierung von char, schar (?) in LambdaJ
@@ -6,6 +14,8 @@ elt in mlib? eher schon
 vielleicht svlength wieder rauskicken? vector-length gibts auch...
 
 make-bitvector, sbit? bitvector vielleicht als boolean[]
+
+expandForm könnte argcount checken: WellKnownSymbol könnte min/max oder checkmethode bekommen, checks in opencode können entfallen
 
 read sollte EOF übernehmen
 
