@@ -3082,6 +3082,7 @@ public class LambdaJ {
     static int vectorLength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
+        if (maybeVector instanceof List) return ((List)maybeVector).size();
         throw errorNotAVector("vector-length", maybeVector);
     }
 
