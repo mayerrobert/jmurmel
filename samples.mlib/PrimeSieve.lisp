@@ -43,15 +43,17 @@
         (q (floor (sqrt sieve-size))))
        ((>= factor q))
 
-    (do ((num factor))
-        ((or (>= num sieve-size)
-             (= (get-bit rawbits num) 1))
-         (setq factor num))
+    (do* ((num factor))
+         ((or (>= num sieve-size)
+              (= (get-bit rawbits num) 1))
+          (setq factor num))
         (incf num 2))
 
-    (do ((num (* factor 3))
-         (increment (* factor 2)))
-        ((>= num sieve-size))
+    (do* ((num (* factor 3))
+          (increment (* factor 2)))
+         ((>= num sieve-size))
+
+        #-murmel (declare (type fixnum num increment sieve-size factor)) ; approx 2.5x speedup for sbcl
 
         (clear-bit rawbits num)
         (incf num increment))
