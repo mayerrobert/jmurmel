@@ -3329,6 +3329,14 @@ public class LambdaJ {
                 _printSEx(sb, o, o, escapeAtoms);
             }
         }
+        else if (vector instanceof List) {
+            boolean first = true;
+            for (Object o: (List)vector) {
+                if (first) first = false;
+                else sb.print(" ");
+                _printSEx(sb, o, o, escapeAtoms);
+            }
+        }
         else throw errorNotImplemented("printing vectors of class %s is not implemented", vector.getClass().getSimpleName());
         sb.print(")");
     }
