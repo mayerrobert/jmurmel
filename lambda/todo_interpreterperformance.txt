@@ -1,6 +1,10 @@
 Ideen zur Beschleunigung des Interpreters, eigentlich gehts immer um das Vermeiden der linearen Suche in assq beim aufloesen von Symbols
 =========================================
 
+environment() könnte statt ConsCell-Liste eine ArraySlice Liste basteln
+-> weniger speicherverbrauch durch weniger objekte
+-> assq() könnte schneller sein weil mitm iterator über ein array iterieren müsste schneller sein als (cdr-) pointer chasing
+
 der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
 -> oder macroexpand-phase vorgeschaltet
 für opencoded functions argcount check 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen

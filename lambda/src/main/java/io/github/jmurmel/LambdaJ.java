@@ -3142,7 +3142,6 @@ public class LambdaJ {
         throw errorNotASimpleVector("svlength", maybeVector);
     }
 
-    // todo int[], long[], List, ArrayList & Co?
     static Object svref(Object maybeVector, int idx) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
         throw errorNotASimpleVector("svref", maybeVector);

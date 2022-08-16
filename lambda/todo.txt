@@ -8,17 +8,28 @@ Typsystem:
 
 mlib hat m%sequence->list und m%s2l, die machen fast dasselbe
 
+gscheite implementierung von char, schar (?) in LambdaJ
+-> char für CharSequence, schar für String
+aref in mlib? eher nicht
+-> wenn schon dann sollte aref in murmel sein und java.util.List unterstützen
+nth von mlib nach murmel? wg. ArraySlice
+elt in mlib? eher schon
+vielleicht make-array aus murmel rauskicken und in mlib umsetzen
+-> in jmurmel nur make-simple-vector, make-simple-bitvector, ...
 vielleicht statt sbit/bvset
 -> (bvref bv idx) -> boolean, (bvset bv idx), (bvclr bv idx)
+-> sbit in mlib
+java.util.BitSet ist eigentlich ein bitvector, ggf. in jmurmel anbinden
 
-gscheite implementierung von char, schar (?) in LambdaJ
-aref in mlib? eher nicht
-elt in mlib? eher schon
-vielleicht svlength wieder rauskicken? vector-length gibts auch...
--> oder vector-length nach mlib schieben, oder vector-length knicken und mlib length entsprechend umbauen
 
-make-bitvector, sbit? bitvector vielleicht als boolean[]
--> list->bitvector
+vielleicht die cons-zählerei rauskicken? braucht eh niemand
+
+static final members können aus system properties initialisiert werden
+-> evtl. für Tracelevel LambdaJ.trace verwenden, dann würde ggf. JIT das gance tracing wegoptimieren. traceOn & traceFunc wäre ggf auch hinfällig
+
+statt CustomEnvironmentSupplier -> builder pattern
+-> CustomEnvironment bei jedem aufruf von interpretExpressions() mitzugeben ist eh fragwürdig.
+   init() jedesmal aufrufen eigentlich auch, weil das ändert die members topEnv, lispStdin, lispStdout, nicht schön!
 
 expandForm könnte argcount checken: WellKnownSymbol könnte min/max oder checkmethode bekommen, checks in opencode können entfallen
 
