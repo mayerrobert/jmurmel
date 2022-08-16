@@ -7,11 +7,6 @@
 (require "mlib")
 
 
-#-murmel
-(defun vector-length (v)
-  (length v))
-
-
 (defun create-x (n)
   (let ((result (make-array n)))
     (do ((i 0 (1+ i)))
@@ -19,14 +14,14 @@
       (setf (svref result i) i))))
 
 (defun create-y (x)
-  (let* ((n (vector-length x))
+  (let* ((n (length x))
          (result (make-array n)))
     (do ((i (1- n) (1- i)))
         ((< i 0) result)
       (setf (svref result i) (svref x i)))))
 
 (defun my-try (n)
-  (vector-length (create-y (create-x n))))
+  (length (create-y (create-x n))))
 
 (defun run (m n)
   (do ((i 0 (1+ i))
