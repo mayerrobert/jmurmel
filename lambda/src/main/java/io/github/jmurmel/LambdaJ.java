@@ -538,6 +538,20 @@ public class LambdaJ {
             if (offset >= arry.length) return EMPTY_ARRAY;
             return Arrays.copyOfRange(arry, offset, arry.length);
         }
+
+        boolean[] listToBooleanArray() {
+            if (offset >= arry.length) return new boolean[0];
+            final int size = arry.length - offset;
+            final boolean[] ret = new boolean[size];
+            final Long zero = 0L, one = 1L;
+            for (int i = 0, j = offset; i < size; i++, j++) {
+                final Object o = arry[j];
+                if (zero.equals(o)) ret[i] = false;
+                else if (one.equals(o)) ret[i] = true;
+                else throw new LambdaJError(true, "not a valid value for bitvector: %s", o);
+            }
+            return ret;
+        }
     }
 
 
@@ -769,13 +783,21 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
+            sBit = intern("bit");
             internWellknown("vector");
             internWellknown("vectorp");
             internWellknown("vector-length");
+
             internWellknown("svref");
             internWellknown("svset");
             internWellknown("svlength");
+
+            internWellknown("simple-bit-vector-p");
+            internWellknown("sbit");
+            internWellknown("bvset");
+            internWellknown("bvlength");
         }
+        else sBit = null;
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1099,8 +1121,22 @@ public class LambdaJ {
 
             case '(':
                 final Object eof = new Object();
-                final Object o = readList(lineNo, charNo, eof);
-                return listToArray(o);
+                return listToArray(readList(lineNo, charNo, eof));
+
+            case '*':
+                final String bv = readerMacroToken(sub_char);
+                boolean[] ret = new boolean[32];
+                int i = 0;
+                for (char c: bv.toCharArray()) {
+                    if (i == ret.length) ret = Arrays.copyOf(ret, ret.length * 2);
+                    switch (c) {
+                    case '0': break;
+                    case '1': ret[i] = true; break;
+                    default: throw new LambdaJError(true, "not a valid value for bitvector: %c", c);
+                    }
+                    i++;
+                }
+                return Arrays.copyOf(ret, i);
 
             default:
                 look = getchar();
@@ -1614,7 +1650,7 @@ public class LambdaJ {
     private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators */
-    final LambdaJSymbol sT, sDynamic, sLambda, sDefine, sProgn;
+    final LambdaJSymbol sT, sDynamic, sLambda, sDefine, sProgn, sBit;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1633,7 +1669,12 @@ public class LambdaJ {
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
         sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM),
-        sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM);
+        sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM),
+        sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM),
+        sSBit("sbit", WellknownSymbolKind.PRIM),
+        sBvSet("bvset", WellknownSymbolKind.PRIM),
+        sBvLength("bvlength", WellknownSymbolKind.PRIM),
+        ;
 
         private final String sym;
         final WellknownSymbolKind kind;
@@ -2603,6 +2644,10 @@ public class LambdaJ {
         case sSvSet:        { threeArgs("svset", args);          return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); }
         case sSvLength:     { oneArg   ("svlength", args);       return svlength(car(args)); }
 
+        case sSBit:         { twoArgs  ("sbit", args);           return sbit(car(args), toNonnegInt("sbit", cadr(args))); }
+        case sBvSet:        { threeArgs("bvset", args);          return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).intValue()); }
+        case sBvLength:     { oneArg   ("bvlength", args);       return svlength(car(args)); }
+
         default:    return NOT_HANDLED;
         }
     }
@@ -2735,7 +2780,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.applyPrimitive(args); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws exception: %s", e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
     }
 
     /** in case compiled code calls "(eval)" */
@@ -2743,7 +2788,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
         try { return primfn.applyCompilerPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws exception: %s", e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
     }
 
 
@@ -3009,6 +3054,7 @@ public class LambdaJ {
                 integer
             character
             vector
+                simple-bit-vector       ; boolean[]
                 simple-vector
                 string
                     simple-string
@@ -3030,8 +3076,12 @@ public class LambdaJ {
 
     static boolean characterp(Object o) { return o instanceof Character; }
 
-    static boolean vectorp(Object o)    { return stringp(o) || svectorp(o) || o instanceof List; }
-    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray(); }
+    static boolean vectorp(Object o)    { return stringp(o) || sbitvectorp(o) || svectorp(o) || o instanceof List; }
+
+    static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
+
+    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !sbitvectorp(o); }
+
     static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)   { return o instanceof String; }
 
@@ -3081,6 +3131,7 @@ public class LambdaJ {
 
     static int vectorLength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
+        if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
         if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
         if (maybeVector instanceof List) return ((List)maybeVector).size();
         throw errorNotAVector("vector-length", maybeVector);
@@ -3100,6 +3151,28 @@ public class LambdaJ {
     static Object svset(Object maybeVector, int idx, Object newValue) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
         throw errorNotASimpleVector("svset", maybeVector);
+    }
+
+    static long sbit(Object bv, int idx) {
+        if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
+        throw errorNotASimpleBitVector("sbit", bv);
+    }
+
+    static long bvset(Object maybeVector, int idx, int newValue) {
+        if (maybeVector instanceof boolean[]) {
+            final boolean b;
+            if (newValue == 0) b = false;
+            else if (newValue == 1) b = true;
+            else throw new LambdaJError(true, "not a valid value for bitvector: %d", newValue);
+            ((boolean[])maybeVector)[idx] = b;
+            return newValue;
+        }
+        throw errorNotASimpleBitVector("bvset", maybeVector);
+    }
+
+    static int bvlength(Object maybeVector) {
+        if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
+        throw errorNotASimpleBitVector("bvlength", maybeVector);
     }
 
     /** return the cons whose car is eq to {@code atom}
@@ -3232,14 +3305,30 @@ public class LambdaJ {
     /** convert a (possibly empty aka nil/ null) list to a (possibly empty) Object[] */
     static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return EMPTY_ARRAY;
-        if (maybeList instanceof ArraySlice) {
-            return ((ArraySlice)maybeList).listToArray();
-        }
+        if (maybeList instanceof ArraySlice) return ((ArraySlice)maybeList).listToArray();
         if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         //for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
         return ret.toArray();
+    }
+
+    static boolean[] listToBooleanArray(Object maybeList) {
+        if (maybeList == null) return new boolean[0];
+        if (maybeList instanceof ArraySlice) return ((ArraySlice)maybeList).listToBooleanArray();
+        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
+        boolean[] ret = new boolean[32];
+        int i = 0;
+        final Long zero = 0L, one = 1L;
+        for (Object rest = maybeList; rest != null; rest = cdr(rest)) {
+            if (i == ret.length) Arrays.copyOf(ret, ret.length * 2);
+            final Object o = car(rest);
+            if (zero.equals(o)) ret[i] = false;
+            else if (one.equals(o)) ret[i] = true;
+            else throw new LambdaJError(true, "not a valid value for bitvector: %s", o);
+            i++;
+        }
+        return Arrays.copyOf(ret, i);
     }
 
     /** transform {@code obj} into an S-expression, atoms are escaped */
@@ -3321,6 +3410,14 @@ public class LambdaJ {
     }
 
     static void printVector(WriteConsumer sb, Object vector, boolean escapeAtoms) {
+        if (vector instanceof boolean[]) {
+            sb.print("#*");
+            for (boolean b: (boolean[])vector) {
+                sb.print(b ? "1" : "0");
+            }
+            return;
+        }
+
         sb.print("#(");
         if (vector instanceof Object[]) {
             boolean first = true;
@@ -3392,6 +3489,10 @@ public class LambdaJ {
 
     static RuntimeException errorNotASimpleVector(String func, Object n) {
         throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(n));
+    }
+
+    static RuntimeException errorNotASimpleBitVector(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a simple bitvector argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorOverflow(String func, String targetType, Object n) {
@@ -3582,6 +3683,11 @@ public class LambdaJ {
         return (Object[])c;
     }
 
+    private static boolean[] requireSimpleBitVector(String func, Object c) {
+        if (!sbitvectorp(c)) throw new LambdaJError(true, "%s: expected a simple bit vector argument but got %s", func, printSEx(c));
+        return (boolean[])c;
+    }
+
     /** return {@code c} as a String, error if {@code c} is not a string or null (nil) */
     static String requireStringOrNull(String func, Object c) {
         if (c == null) return null;
@@ -3730,13 +3836,21 @@ public class LambdaJ {
     }
 
 
+    private Object makeArray(ConsCell a) {
+        varargs1_2("make-array", a);
+        final Object type = cadr(a);
+        if (type == null) return new Object[toNonnegInt("make-array", car(a))];
+        if (type == sBit) return new boolean[toNonnegInt("make-array", car(a))];
+        throw new LambdaJError(true, "invalid type specification %s", printSEx(type));
+    }
+
     private static Object listToSimpleVector(ConsCell a) {
         oneArg("list->simple-vector", a);
         return listToSimpleVectorImpl(requireList("list->simple-vector", car(a)));
     }
 
     static Object[] listToSimpleVectorImpl(ConsCell l) {
-        if (l == null) return null;
+        if (l == null) return null; // todo oder [0]?
         final ArrayList<Object> ret = new ArrayList<>();
         for (Object o : l) ret.add(o); // todo cyclecheck
         return ret.toArray();
@@ -3750,6 +3864,17 @@ public class LambdaJ {
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length;
         for (int i = 0; i < len; i++) ret.append(s[i]);
+        return ret.first();
+    }
+
+    private Object simpleBitVectorToList(ConsCell a) {
+        oneArg("simple-bit-vector->list", a);
+        final Object maybeVector = car(a);
+        if (maybeVector == null) return null;
+        final boolean[] s = requireSimpleBitVector("simple-vector->list", maybeVector);
+        final CountingListBuilder ret = new CountingListBuilder();
+        final int len = s.length;
+        for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
         return ret.first();
     }
 
@@ -4327,10 +4452,17 @@ public class LambdaJ {
                   addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
                   addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
-                  addBuiltin("make-array",      (Primitive) a -> { oneArg ("make-array", a);      return new Object[toNonnegInt("make-array", car(a))]; },
+                  addBuiltin("make-array",      (Primitive)this::makeArray,
                   addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
                   addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
-                  env))))))))));
+
+                  addBuiltin("simple-bit-vector-p",    (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
+                  addBuiltin("sbit",            (Primitive) a -> { twoArgs("sbit", a);    return sbit(car(a), toNonnegInt("sbit", cadr(a))); },
+                  addBuiltin("bvset",           (Primitive) a -> { threeArgs("bvset", a); return bvset(car(a), toNonnegInt("bvset", cadr(a)), requireIntegralNumber("bvset", caddr(a), 0, 1).intValue()); },
+                  addBuiltin("bvlength",        (Primitive) a -> { oneArg("bvlength", a); return bvlength(car(a)); },
+                  addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
+                  addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
+                  env))))))))))))))));
         }
 
         if (haveUtil()) {
@@ -5791,7 +5923,19 @@ public class LambdaJ {
 
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
-        public final Object   makeArray(Object... args) { oneArg("make-array", args.length); return new Object[toNonnegInt(args[0])]; }
+        public final Object   sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return LambdaJ.sbitvectorp(args[0]) ? _t : null; }
+
+        public final Object   _sbit(Object... args)       { twoArgs("sbit", args.length);               return sbit(args[0], args[1]); }
+        public static Object sbit(Object v, Object idx) { return LambdaJ.sbit(v, toNonnegInt(idx)); }
+
+        public final long   _bvset(Object... args)      { threeArgs("bvset", args.length);            return bvset(args[0], args[1], args[2]); }
+        public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toNonnegInt(idx), requireIntegralNumber("bvset", val, 0, 1).intValue()); }
+
+        public final Object   _bvlength(Object... args)   { oneArg("bvlength", args.length);            return bvlength(args[0]); }
+
+        public final Object   makeArray(Object... args) { varargs1_2("make-array", args.length);
+                                                          if (args.length == 1) return new Object[toNonnegInt(args[0])];
+                                                          return intp.makeArray(arraySlice(args)); }
 
         public final Object   _append  (Object... args) {
             final int nArgs;
@@ -5844,7 +5988,7 @@ public class LambdaJ {
         }
         public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
 
-        public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToSimpleVector(LambdaJ.requireList("list->simple-vector", args[0])); }
+        public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToSimpleVectorImpl(LambdaJ.requireList("list->simple-vector", args[0])); }
 
         public final Object   simpleVectorToList (Object... args) {
             oneArg("simple-vector->list", args.length);
@@ -5854,6 +5998,19 @@ public class LambdaJ {
             final ListBuilder ret = new ListBuilder();
             final int len = s.length;
             for (int i = 0; i < len; i++) ret.append(s[i]);
+            return ret.first();
+        }
+
+        public final boolean[]   listToSimpleBitVector(Object... args) { oneArg("list->simple-bit-vector", args.length); return LambdaJ.listToBooleanArray(LambdaJ.requireList("list->simple-bit-vector", args[0])); }
+
+        public final Object   simpleBitVectorToList (Object... args) {
+            oneArg("simple-bit-vector->list", args.length);
+            final Object maybeVector = args[0];
+            if (maybeVector == null) return null;
+            final boolean[] s = LambdaJ.requireSimpleBitVector("simple-bit-vector->list", maybeVector);
+            final ListBuilder ret = new ListBuilder();
+            final int len = s.length;
+            for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
             return ret.first();
         }
 
@@ -6038,7 +6195,7 @@ public class LambdaJ {
         public static long  toLong(long n) { return n; }
 
         public static int   toInt(Object n)       { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }
-        public static int   toNonnegInt(Object n) { return requireIntegralNumber("toInt", n, 0, Integer.MAX_VALUE).intValue(); }
+        public static int   toNonnegInt(Object n) { return requireIntegralNumber("toNonnegInt", n, 0, Integer.MAX_VALUE).intValue(); }
         public static float toFloat(Object o) {
             final Number n = requireNumber("toFloat", o);
             final double d = n.doubleValue();
@@ -6328,6 +6485,10 @@ public class LambdaJ {
             case "svref": return (CompilerPrimitive)this::_svref;
             case "svset": return (CompilerPrimitive)this::_svset;
             case "svlength": return (CompilerPrimitive)this::_svlength;
+            case "simple-bit-vector-p": return (CompilerPrimitive)this::sbitvectorp;
+            case "sbit": return (CompilerPrimitive)this::_sbit;
+            case "bvset": return (CompilerPrimitive)this::_bvset;
+            case "bvlength": return (CompilerPrimitive)this::_bvlength;
             case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
             case "functionp": return (CompilerPrimitive)this::_functionp;
@@ -6383,6 +6544,8 @@ public class LambdaJ {
             case "list->string": return (CompilerPrimitive)this::listToString;
             case "simple-vector->list": return (CompilerPrimitive)this::simpleVectorToList;
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
+            case "simple-bit-vector->list": return (CompilerPrimitive)this::simpleBitVectorToList;
+            case "list->simple-bit-vector": return (CompilerPrimitive)this::listToSimpleBitVector;
             case "list*": return (CompilerPrimitive)this::listStar;
             case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
             case "get-internal-run-time": return (CompilerPrimitive)this::getInternalRunTime;
@@ -6564,7 +6727,8 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "append", "values",
+        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sbit", "bvset", "bvlength",
+        "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
         "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
@@ -6578,8 +6742,9 @@ public class LambdaJ {
         {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
         {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
+        {"simple-bit-vector->list", "simpleBitVectorToList"}, {"list->simple-bit-vector", "listToSimpleBitVector"},
         {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
-        {"make-array", "makeArray"},
+        {"simple-bit-vector-p", "sbitvectorp"}, {"make-array", "makeArray"},
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
         {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
@@ -6799,16 +6964,16 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                                                                                                  + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+                      + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
-                                                                          + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                                                                                                                                                                                           + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
-                                                                                                                                                                                                                                    + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
-                                                                                                                                                                                                                                                                                                                                       + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                                                                                                                                                                                                                                                                                                                                                                            + "        catch (LambdaJError e) { rterror(e); }\n"
-                                                                                                                                                                                                                                                                                                                                                                            + "        return intern(\"").append(symbol).append("\");\n"
-                                                                                                                                                                                                                                                                                                                                                                                                                                + "    }\n\n");
+                      + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
+                      + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
+                      + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
+                      + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
+                      + "        catch (LambdaJError e) { rterror(e); }\n"
+                      + "        return intern(\"").append(symbol).append("\");\n"
+                      + "    }\n\n");
             return env;
         }
 
@@ -6823,18 +6988,18 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
-                                                                                                                                               + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+                      + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
-                                                                                + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
+                      + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                                                                                                                                                                                                  + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
                                                                                                                                                                                                                                           + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
-                                                           + "        return intern(\"").append(symbol).append("\");\n"
-                                                                                                               + "    }\n\n");
+                      + "        return intern(\"").append(symbol).append("\");\n"
+                      + "    }\n\n");
 
             return env;
         }
@@ -7695,6 +7860,9 @@ public class LambdaJ {
 
             if (prim == WellknownSymbol.sSvRef)      { emitFuncall2(sb, "svref", "svref", args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sSvSet)      { emitFuncall3(sb, "svset", "svset", args, env, topEnv, rsfx); return true; }
+
+            if (prim == WellknownSymbol.sSBit)       { emitFuncall2(sb, "sbit",  "sbit", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sBvSet)      { emitFuncall3(sb, "bvset", "bvset", args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }

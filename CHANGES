@@ -15,8 +15,11 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
  * added functionp
  * added simple-string-p
  * added vector support:
-   * added make-array, vector, vector-length, vectorp, simple-vector-p, svref, svset and svlength
-   * added list->simple-vector and simple-vector->list
+   * make-array, vector, vector-length, vectorp, simple-vector-p, svref, svset and svlength
+   * list->simple-vector and simple-vector->list
+ * added bitvector support:
+   * simple-vector-p, sbit, bvset and bvlength
+   * list->simple-bit-vector and simple-bit-vector->list
 
  * mlib: added function map
 

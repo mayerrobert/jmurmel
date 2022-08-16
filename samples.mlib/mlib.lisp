@@ -236,7 +236,14 @@
                  (svset ,tmp1 ,tmp2 ,read-var)
                  (svref ,tmp1 ,tmp2)))
 
-              (t (fatal "only symbols, car..cdddr, nth and svref are supported for 'place'")))))))
+              ((eq 'sbit op)
+               `((,tmp1 ,tmp2 ,read-var)
+                 (,(car args) ,(cadr args) (sbit ,tmp1 ,tmp2))
+                 (,read-var)
+                 (bvset ,tmp1 ,tmp2 ,read-var)
+                 (sbit ,tmp1 ,tmp2)))
+
+              (t (fatal "only symbols, car..cdddr, nth, svref and sbit are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -846,6 +853,7 @@
           ((consp l) (rev l nil))
           ((stringp l) (list->string (rev (string->list l) nil)))
           ((simple-vector-p l) (list->simple-vector (rev (simple-vector->list l) nil)))
+          ((simple-bit-vector-p l) (list->simple-bit-vector (rev (simple-bit-vector->list l) nil)))
           (t (fatal "not a sequence")))))
 
 
@@ -887,6 +895,7 @@
 (defun m%sequence->list (seq)
   (cond ((listp seq) seq)
         ((simple-vector-p seq) (simple-vector->list seq))
+        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
         ((stringp seq) (string->list seq))
         (t (fatal "not a sequence"))))
 
@@ -897,13 +906,14 @@
       nil)))
 
 (defun m%list->sequence (lst result-type)
-  (cond ((eq result-type 'list)          lst)
-        ((eq result-type 'cons)          (if lst lst (fatal "not of type cons: nil")))
-        ((eq result-type 'vector)        (list->simple-vector lst))
-        ((eq result-type 'simple-vector) (list->simple-vector lst))
-        ((eq result-type 'string)        (list->string lst))
-        ((eq result-type 'simple-string) (list->string lst))
-        ((null result-type)              nil)
+  (cond ((eq result-type 'list)              lst)
+        ((eq result-type 'cons)              (if lst lst (fatal "not of type cons: nil")))
+        ((eq result-type 'vector)            (list->simple-vector lst))
+        ((eq result-type 'simple-vector)     (list->simple-vector lst))
+        ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
+        ((eq result-type 'string)            (list->string lst))
+        ((eq result-type 'simple-string)     (list->string lst))
+        ((null result-type)                  nil)
         (t (fatal "not a sequence type"))))
 
 
@@ -912,13 +922,13 @@
 ;;;
 ;;; Since 1.3
 ;;;
-;;; Applies function to successive sets of arguments in which one argument
+;;; Applies `function` to successive sets of arguments in which one argument
 ;;; is obtained from each sequence. The function is called first on all the elements
 ;;; with index 0, then on all those with index 1, and so on.
 ;;; The result-type specifies the type of the resulting sequence.
 ;;;    
-;;; map returns nil if result-type is nil. Otherwise, map returns a sequence
-;;; such that element j is the result of applying function to element j of each
+;;; `map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
+;;; such that element j is the result of applying `function` to element j of each
 ;;; of the sequences. The result sequence is as long as the shortest of the sequences.
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
@@ -1081,6 +1091,7 @@
         ((consp seq) seq)
         ((stringp seq) (string->list seq))
         ((simple-vector-p seq) (simple-vector->list seq))
+        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
         (t (fatal "not a sequence"))))
 
 ; Helper macro to generate defuns for every and some
@@ -1173,6 +1184,7 @@
           ((consp seq)            (remove-if/list seq))
           ((stringp seq)          (list->string (remove-if/list (string->list seq))))
           ((simple-vector-p seq)  (list->simple-vector (remove-if/list (simple-vector->list seq))))
+          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
           (t (fatal "not a sequence")))))
 
 
@@ -1196,6 +1208,7 @@
           ((consp seq)            (remove/list seq))
           ((stringp seq)          (list->string (remove/list (string->list seq))))
           ((simple-vector-p seq)  (list->simple-vector (remove/list (simple-vector->list seq))))
+          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove/list (simple-bit-vector->list seq))))
           (t (fatal "not a sequence")))))
 
 
@@ -1233,10 +1246,11 @@
                          (f elem (car tail))))
                  (car lst))))
 
-      (cond ((null seq)             (f))
-            ((consp seq)            (reduce/list seq))
-            ((stringp seq)          (reduce/list (string->list seq)))
-            ((simple-vector-p seq)  (reduce/list (simple-vector->list seq)))
+      (cond ((null seq)                (f))
+            ((consp seq)               (reduce/list seq))
+            ((stringp seq)             (reduce/list (string->list seq)))
+            ((simple-vector-p seq)     (reduce/list (simple-vector->list seq)))
+            ((simple-bit-vector-p seq) (reduce/list (simple-bit-vector->list seq)))
             (t (fatal "not a sequence"))))))
 
 

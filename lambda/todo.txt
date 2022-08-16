@@ -6,14 +6,19 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
-codeerzeugung kann auch ausgemistet werden, v.a. let
+mlib hat m%sequence->list und m%s2l, die machen fast dasselbe
+
+vielleicht statt sbit/bvset
+-> (bvref bv idx) -> boolean, (bvset bv idx), (bvclr bv idx)
 
 gscheite implementierung von char, schar (?) in LambdaJ
 aref in mlib? eher nicht
 elt in mlib? eher schon
 vielleicht svlength wieder rauskicken? vector-length gibts auch...
+-> oder vector-length nach mlib schieben, oder vector-length knicken und mlib length entsprechend umbauen
 
 make-bitvector, sbit? bitvector vielleicht als boolean[]
+-> list->bitvector
 
 expandForm könnte argcount checken: WellKnownSymbol könnte min/max oder checkmethode bekommen, checks in opencode können entfallen
 

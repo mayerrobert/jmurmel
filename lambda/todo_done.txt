@@ -1696,3 +1696,5 @@ map result-type function &rest sequences+ => result
 
 map-into sollte sequence verarbeiten, kann derzeit nur list
 map-into result-sequence function &rest sequences => result-sequence
+
+codeerzeugung kann auch ausgemistet werden, v.a. let
