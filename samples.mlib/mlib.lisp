@@ -933,22 +933,25 @@
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func sequence . more-sequences)
-  (m%list->sequence
-    (if more-sequences
+  (let* ((comb (if result-type
+                     cons
+                 (lambda (a b)))))
 
-          (labels ((none-nil (lists)
-                     (if lists (and (car lists) (none-nil (cdr lists)))
-                       t)))
-            (let loop ((l (cons (m%sequence->list sequence) (m%sequences->lists more-sequences))))
-              (if (none-nil l)
-                (cons (apply func (unzip l))
-                      (loop (unzip-tails l))))))
+    (m%list->sequence (if more-sequences
+                      
+                            (labels ((none-nil (lists)
+                                       (if lists (and (car lists) (none-nil (cdr lists)))
+                                         t)))
+                              (let loop ((l (m%sequences->lists (cons sequence more-sequences))))
+                                (if (none-nil l)
+                                  (comb (apply func (unzip l))
+                                        (loop (unzip-tails l))))))
 
-      (let loop ((l (m%sequence->list sequence)))
-        (if l
-          (cons (func (car l))
-                (loop (cdr l))))))
-    result-type))
+                        (let loop ((l (m%sequence->list sequence)))
+                          (if l
+                            (comb (func (car l))
+                                  (loop (cdr l))))))
+                      result-type)))
 
 
 ;;; = Function: map-into
