@@ -304,7 +304,7 @@ public class LambdaJ {
         }
 
         ReturnException(Object tag, Object result, ConsCell values) {
-            this(tag, result, values == NO_VALUES? null : listToArray(values));
+            this(tag, result, values == NO_VALUES ? null : listToArray(values));
         }
 
         ConsCell valuesAsList() {
@@ -3843,23 +3843,12 @@ public class LambdaJ {
         throw new LambdaJError(true, "invalid type specification %s", printSEx(type));
     }
 
-    private static Object listToSimpleVector(ConsCell a) {
-        oneArg("list->simple-vector", a);
-        return listToSimpleVectorImpl(requireList("list->simple-vector", car(a)));
-    }
-
-    static Object[] listToSimpleVectorImpl(ConsCell l) {
-        if (l == null) return null; // todo oder [0]?
-        final ArrayList<Object> ret = new ArrayList<>();
-        for (Object o : l) ret.add(o); // todo cyclecheck
-        return ret.toArray();
-    }
-
     private Object simpleVectorToList(ConsCell a) {
         oneArg("simple-vector->list", a);
         final Object maybeVector = car(a);
-        if (maybeVector == null) return null;
+        //if (maybeVector == null) return null;
         final Object[] s = requireSimpleVector("simple-vector->list", maybeVector);
+        if (s.length == 0) return null;
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length;
         for (int i = 0; i < len; i++) ret.append(s[i]);
@@ -3869,8 +3858,8 @@ public class LambdaJ {
     private Object simpleBitVectorToList(ConsCell a) {
         oneArg("simple-bit-vector->list", a);
         final Object maybeVector = car(a);
-        if (maybeVector == null) return null;
-        final boolean[] s = requireSimpleBitVector("simple-vector->list", maybeVector);
+        //if (maybeVector == null) return null;
+        final boolean[] s = requireSimpleBitVector("simple-bit-vector->list", maybeVector);
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length;
         for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
@@ -3878,13 +3867,8 @@ public class LambdaJ {
     }
 
 
-    private static Object listToString(ConsCell a) {
-        oneArg("list->string", a);
-        return listToStringImpl(requireList("list->string", car(a)));
-    }
-
     static String listToStringImpl(ConsCell l) {
-        if (l == null) return null;
+        if (l == null) return "";
         final StringBuilder ret = new StringBuilder();
         for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
         return ret.toString();
@@ -3893,7 +3877,7 @@ public class LambdaJ {
     private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
         final Object maybeString = car(a);
-        if (maybeString == null) return null;
+        //if (maybeString == null) return null;
         final String s = requireString("string->list", maybeString);
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length();
@@ -4396,7 +4380,7 @@ public class LambdaJ {
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
                   addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
                   addBuiltin("string->list",    (Primitive) this::stringToList,
-                  addBuiltin("list->string",    (Primitive) LambdaJ::listToString,
+                  addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
                   env))))))));
 
             if (haveUtil()) {
@@ -4453,7 +4437,7 @@ public class LambdaJ {
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
                   addBuiltin("make-array",      (Primitive)this::makeArray,
                   addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
-                  addBuiltin("list->simple-vector",    (Primitive) LambdaJ::listToSimpleVector,
+                  addBuiltin("list->simple-vector",    (Primitive) a -> { oneArg("list->simple-vector", a); return listToArray(car(a)); },
 
                   addBuiltin("simple-bit-vector-p",    (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
                   addBuiltin("sbit",            (Primitive) a -> { twoArgs("sbit", a);    return sbit(car(a), toNonnegInt("sbit", cadr(a))); },
@@ -5978,8 +5962,8 @@ public class LambdaJ {
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(requireStringOrNull(args[0]), requireStringOrNull(args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
-            final String s = LambdaJ.requireStringOrNull("string->list", args[0]);
-            if (s == null) return null;
+            final String s = LambdaJ.requireString("string->list", args[0]);
+            //if (s == null) return null;
             final ListBuilder ret = new ListBuilder();
             final int len = s.length();
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
@@ -5987,12 +5971,12 @@ public class LambdaJ {
         }
         public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
 
-        public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToSimpleVectorImpl(LambdaJ.requireList("list->simple-vector", args[0])); }
+        public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
 
         public final Object   simpleVectorToList (Object... args) {
             oneArg("simple-vector->list", args.length);
             final Object maybeVector = args[0];
-            if (maybeVector == null) return null;
+            //if (maybeVector == null) return null;
             final Object[] s = LambdaJ.requireSimpleVector("simple-vector->list", maybeVector);
             final ListBuilder ret = new ListBuilder();
             final int len = s.length;
@@ -6005,7 +5989,7 @@ public class LambdaJ {
         public final Object   simpleBitVectorToList (Object... args) {
             oneArg("simple-bit-vector->list", args.length);
             final Object maybeVector = args[0];
-            if (maybeVector == null) return null;
+            //if (maybeVector == null) return null;
             final boolean[] s = LambdaJ.requireSimpleBitVector("simple-bit-vector->list", maybeVector);
             final ListBuilder ret = new ListBuilder();
             final int len = s.length;

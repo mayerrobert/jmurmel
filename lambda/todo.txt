@@ -6,6 +6,13 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
+string->list, simple-vector->list usw. akzeptieren nil als argument und liefern nil
+-> nil sollte wsl verweigert werden, weil nil ist kein string bzw. simple-vector
+
+#* soll einen bitvector länge 0 geben
+
+(string= "a" #\a) sollte t liefern
+
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
 aref in mlib? eher nicht
