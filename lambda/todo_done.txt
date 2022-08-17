@@ -1701,3 +1701,5 @@ codeerzeugung kann auch ausgemistet werden, v.a. let
 
 make-bitvector, sbit? bitvector vielleicht als boolean[]
 -> list->bitvector
+
+mlib hat m%sequence->list und m%s2l, die machen fast dasselbe

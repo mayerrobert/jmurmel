@@ -6,8 +6,6 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
-mlib hat m%sequence->list und m%s2l, die machen fast dasselbe
-
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
 aref in mlib? eher nicht

@@ -1085,15 +1085,6 @@
 (defmacro m%mapx)
 
 
-; coerce a sequence to a list
-(defun m%s2l (seq)
-  (cond ((null seq) nil)
-        ((consp seq) seq)
-        ((stringp seq) (string->list seq))
-        ((simple-vector-p seq) (simple-vector->list seq))
-        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
-        (t (fatal "not a sequence"))))
-
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
   `(defun ,name (f l . more)
@@ -1101,11 +1092,11 @@
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
                         t)))
-             (let loop ((args (mapcar m%s2l (cons l more))))
+             (let loop ((args (mapcar m%sequence->list (cons l more))))
                (if (none-nil args)
                      (,comb (apply f (unzip args)) (loop (unzip-tails args)))
                  ,lastelem)))
-       (let loop ((l (m%s2l l)))
+       (let loop ((l (m%sequence->list l)))
          (if l (,comb (f (car l)) (loop (cdr l)))
            ,lastelem)))))
 
