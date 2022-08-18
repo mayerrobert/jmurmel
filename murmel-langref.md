@@ -264,7 +264,7 @@ Shorthand for empty list
     nil
 
 Tokens that consist of a sign or digit followed by digits
-are interpreted as 64bit integer numbers (java.lang.Long)
+are interpreted as integer numbers (java.lang.Long)
 
     1
 

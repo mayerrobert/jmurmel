@@ -6,8 +6,6 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
-Murmel liest 0101 als variable, sollte eine zahl sein (101)
-
 (string= "a" #\a) sollte t liefern
 
 gscheite implementierung von char, schar (?) in LambdaJ

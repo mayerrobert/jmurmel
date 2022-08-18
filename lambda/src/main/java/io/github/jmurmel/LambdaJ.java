@@ -881,13 +881,13 @@ public class LambdaJ {
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
-    private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*))");
+    private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?([0-9]|[0-9]+)");
     static boolean isLong(String s) {
         if (s == null || s.isEmpty()) return false;
         return LONG_PATTERN.matcher(s).matches(); // todo handgeschnitzer check statt regex?
     }
 
-    private static final Pattern CL_DECIMAL_LONG_PATTERN = Pattern.compile("[-+]?([0-9]|([1-9][0-9]*\\.))");
+    private static final Pattern CL_DECIMAL_LONG_PATTERN = Pattern.compile("[-+]?([0-9]+\\.)");
     static boolean isCLDecimalLong(String s) {
         if (s == null || s.isEmpty()) return false;
         return CL_DECIMAL_LONG_PATTERN.matcher(s).matches(); // todo handgeschnitzer check statt regex?

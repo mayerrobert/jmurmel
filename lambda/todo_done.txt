@@ -1708,3 +1708,5 @@ string->list, simple-vector->list usw. akzeptieren nil als argument und liefern 
 -> nil sollte wsl verweigert werden, weil nil ist kein string bzw. simple-vector
 
 #* soll einen bitvector länge 0 geben
+
+Murmel liest 0101 als variable, sollte eine zahl sein (101)
