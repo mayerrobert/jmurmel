@@ -1703,3 +1703,8 @@ make-bitvector, sbit? bitvector vielleicht als boolean[]
 -> list->bitvector
 
 mlib hat m%sequence->list und m%s2l, die machen fast dasselbe
+
+string->list, simple-vector->list usw. akzeptieren nil als argument und liefern nil
+-> nil sollte wsl verweigert werden, weil nil ist kein string bzw. simple-vector
+
+#* soll einen bitvector länge 0 geben
