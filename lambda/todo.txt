@@ -17,7 +17,7 @@ elt in mlib? eher schon
 vielleicht make-array aus murmel rauskicken und in mlib umsetzen
 -> in jmurmel nur make-simple-vector, make-simple-bitvector, ...
 vielleicht statt sbit/bvset
--> (bvref bv idx) -> boolean, (bvset bv idx), (bvclr bv idx)
+-> (sbvref bv idx) -> boolean, (sbvset bv idx), (sbvclr bv idx)
 -> sbit in mlib
 java.util.BitSet ist eigentlich ein bitvector, ggf. in jmurmel anbinden
 
@@ -34,6 +34,9 @@ statt CustomEnvironmentSupplier -> builder pattern
 expandForm könnte argcount checken: WellKnownSymbol könnte min/max oder checkmethode bekommen, checks in opencode können entfallen
 
 read sollte EOF übernehmen
+
+clojure hat "named lambda": (fn label [params] forms)
+-> vielleicht "named lambda" in Murmel? label würd aber dasselbe machen
 
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
 -> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert
@@ -285,15 +288,16 @@ nicht aber bei einem loop mittendrin
 vector ist ein 1-dimensionales array, strings sind 1-dimensionale array von character, hash-tables sind "assoziative arrays"
 welche gemeinsamen eigenschaften haben list, vector/array, string, hash-table?
 -> elementzugriff
-   (aref    array         0) -> element mit index 0
-   (svref   simple-vector 0) -> element mit index 0
-   (char    string        0) -> character mit index 0
-   (schar   simple-string 0) -> character mit index 0
+   (aref    array         0)     -> element mit index 0
+   (svref   simple-vector 0)     -> element mit index 0
+   (sbit    simple-bit-vector 0) -> bit mit index 0
+   (char    string        0)     -> character mit index 0
+   (schar   simple-string 0)     -> character mit index 0
 
-   (elt     sequence      0) -> element mit index 0
+   (elt     sequence      0)     -> element mit index 0, (elt nil 0) gibt fehler, (nth 0 nil) geht - gibt nil
 
-   (gethash 0 hash-table)    -> element mit key 0
-   (nth     0 list)          -> element mit "index" 0
+   (gethash 0 hash-table)        -> element mit key 0
+   (nth     0 list)              -> element mit "index" 0
 
 -> iteration
    mapcar&co, dolist geht nur für lists

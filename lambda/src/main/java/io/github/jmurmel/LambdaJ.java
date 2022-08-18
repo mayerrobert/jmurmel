@@ -6076,7 +6076,10 @@ public class LambdaJ {
         public final Object flushFrame         (Object... args) { varargs0_1("flush-frame",   args.length); return requireFrame("flush-frame",    nth(0, args)).flush();   }
 
         // set new current frame, return previous frame
-        public final Object currentFrame       (Object... args) { varargs0_1("current-frame", args.length); final Object prev = intp.current_frame; if (args.length > 0 && args[0] != null) intp.current_frame = requireFrame("current-frame", args[0]); return prev; }
+        public final Object currentFrame       (Object... args) { varargs0_1("current-frame", args.length);
+                                                                  final Object prev = intp.current_frame;
+                                                                  if (args.length > 0 && args[0] != null) intp.current_frame = requireFrame("current-frame", args[0]);
+                                                                  return prev; }
 
         public final Object pushPos            (Object... args) { varargs0_1("push-pos",      args.length); return requireFrame("push-pos",       nth(0, args)).pushPos(); }
         public final Object popPos             (Object... args) { varargs0_1("pop-pos",       args.length); return requireFrame("pop-pos",        nth(0, args)).popPos();  }
@@ -6781,12 +6784,12 @@ public class LambdaJ {
                        + "import java.util.function.Supplier;\n"
                        + "import io.github.jmurmel.LambdaJ.*;\n\n"
                        + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
-                                                                 + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
-                                                                                                            + "    public static void main(String[] args) {\n"
-                                                                                                            + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"
-                                                                                                                                                                                                 + "        program.commandlineArgumentList = arraySlice(args);\n"
-                                                                                                                                                                                                 + "        main(program);\n"
-                                                                                                                                                                                                 + "    }\n\n");
+                       + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
+                                                                  + "    public static void main(String[] args) {\n"
+                                                                  + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"
+                                                                  + "        program.commandlineArgumentList = arraySlice(args);\n"
+                                                                  + "        main(program);\n"
+                                                                  + "    }\n\n");
 
             final ArrayList<Object> bodyForms = new ArrayList<>();
             final StringBuilder globals = new StringBuilder();
@@ -6969,8 +6972,8 @@ public class LambdaJ {
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                                                                                                                                                                                                 + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
-                                                                                                                                                                                                                                          + "        final MurmelFunction func = (args0) -> {\n");
+                      + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
+                      + "        final MurmelFunction func = (args0) -> {\n");
             final ConsCell extenv = params("defun", sb, params, env, 0, javasym, true);
             emitForms(sb, (ConsCell)body, extenv, env, 0, false);
             sb.append("        };\n"
