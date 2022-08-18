@@ -1064,7 +1064,7 @@ public class LambdaJ {
             switch (sub_char) {
             // #\ ... character literal
             case '\\':
-                final String charOrCharactername = readerMacroToken(sub_char);
+                final String charOrCharactername = readerMacroToken();
                 if (charOrCharactername.length() == 1) return charOrCharactername.charAt(0);
                 if (isLong(charOrCharactername)) {
                     try {
@@ -1107,24 +1107,24 @@ public class LambdaJ {
             case 'b':
             case 'B':
                 skipWs();
-                return parseLong(readerMacroToken(sub_char), 2);
+                return parseLong(readerMacroToken(), 2);
 
             case 'o':
             case 'O':
                 skipWs();
-                return parseLong(readerMacroToken(sub_char), 8);
+                return parseLong(readerMacroToken(), 8);
 
             case 'x':
             case 'X':
                 skipWs();
-                return parseLong(readerMacroToken(sub_char), 16);
+                return parseLong(readerMacroToken(), 16);
 
             case '(':
                 final Object eof = new Object();
                 return listToArray(readList(lineNo, charNo, eof));
 
             case '*':
-                final String bv = readerMacroToken(sub_char);
+                final String bv = readerMacroToken();
                 boolean[] ret = new boolean[32];
                 int i = 0;
                 for (char c: bv.toCharArray()) {
@@ -1144,19 +1144,13 @@ public class LambdaJ {
             }
         }
 
-        private String readerMacroToken(int macroChar) {
+        private String readerMacroToken() {
             int index = 0;
-            if (look != EOF) {
-                token[index++] = (char)look;
-                look = getchar(false);
-            }
             while (look != EOF && !isSpace(look) && !isSyntax(look)) {
                 if (index < TOKEN_MAX) token[index++] = (char)look;
                 look = getchar(false);
             }
-            final String ret = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
-            if (ret.isEmpty()) throw new ParseError("EOF after #%c", macroChar);
-            return ret;
+            return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
         }
 
         private final Object sNot;

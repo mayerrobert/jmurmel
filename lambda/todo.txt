@@ -11,6 +11,8 @@ string->list, simple-vector->list usw. akzeptieren nil als argument und liefern 
 
 #* soll einen bitvector länge 0 geben
 
+Murmel liest 0101 als variable, sollte eine zahl sein (101)
+
 (string= "a" #\a) sollte t liefern
 
 gscheite implementierung von char, schar (?) in LambdaJ
