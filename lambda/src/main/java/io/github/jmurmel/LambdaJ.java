@@ -3682,9 +3682,9 @@ public class LambdaJ {
     }
 
     /** return {@code c} as a String, error if {@code c} is not a string or null (nil) */
-    static String requireStringOrCharOrNull(String func, Object c) {
+    static String requireStringOrCharOrSymbolOrNull(String func, Object c) {
         if (c == null) return null;
-        if (c instanceof Character) return ((Character)c).toString();
+        if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
         return requireString(func, c);
     }
 
@@ -4373,7 +4373,7 @@ public class LambdaJ {
                   addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
-                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrNull("string=", car(a)), requireStringOrCharOrNull("string=", cadr(a)))); },
+                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbolOrNull("string=", car(a)), requireStringOrCharOrSymbolOrNull("string=", cadr(a)))); },
                   addBuiltin("string->list",    (Primitive) this::stringToList,
                   addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
                   env))))))));
@@ -5954,7 +5954,7 @@ public class LambdaJ {
 
         public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
-        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(LambdaJ.requireStringOrCharOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrNull("string=", args[1])) ? _t : null; }
+        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final String s = LambdaJ.requireString("string->list", args[0]);
