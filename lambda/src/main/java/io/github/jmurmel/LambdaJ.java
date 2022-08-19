@@ -3682,8 +3682,9 @@ public class LambdaJ {
     }
 
     /** return {@code c} as a String, error if {@code c} is not a string or null (nil) */
-    static String requireStringOrNull(String func, Object c) {
+    static String requireStringOrCharOrNull(String func, Object c) {
         if (c == null) return null;
+        if (c instanceof Character) return ((Character)c).toString();
         return requireString(func, c);
     }
 
@@ -4314,7 +4315,7 @@ public class LambdaJ {
         if (haveGui()) {
             final Primitive makeFrame = a -> {
                 varargsMinMax("make-frame", a, 1, 4);
-                final String title = requireStringOrNull("make-frame", car(a));
+                final String title = requireString("make-frame", car(a));
                 final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
                 current_frame = ret;
                 return ret;
@@ -4372,7 +4373,7 @@ public class LambdaJ {
                   addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
-                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrNull("string=", car(a)), requireStringOrNull("string=", cadr(a)))); },
+                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrNull("string=", car(a)), requireStringOrCharOrNull("string=", cadr(a)))); },
                   addBuiltin("string->list",    (Primitive) this::stringToList,
                   addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
                   env))))))));
@@ -5951,9 +5952,9 @@ public class LambdaJ {
         public static long toFixnum(double d) { return LambdaJ.toFixnum(d); }
         private static double quot12(Object[] args) { return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) requireChar(args[0]); }
+        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
         public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
-        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(requireStringOrNull(args[0]), requireStringOrNull(args[1])) ? _t : null; }
+        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(LambdaJ.requireStringOrCharOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrNull("string=", args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final String s = LambdaJ.requireString("string->list", args[0]);
@@ -6049,10 +6050,10 @@ public class LambdaJ {
 
         public final Object _jmethod           (Object... args) { varargs2("jmethod", args.length); return findMethod(args[0], args[1], arraySlice(args, 2)); }
         public static Primitive findMethod(Object className, Object methodName, ConsCell paramClasses) {
-            return LambdaJ.findMethod(requireString(className), requireString(methodName), paramClasses);
+            return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), paramClasses);
         }
         public static Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
-            return LambdaJ.findMethod(requireString(className), requireString(methodName), arraySlice(paramClasses));
+            return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
         }
 
         public final Object _jproxy            (Object... args) { return intp.makeProxy(arraySlice(args)); }
@@ -6062,8 +6063,8 @@ public class LambdaJ {
 
         public final Object makeFrame          (Object... args) {
             varargsMinMax("make-frame", args.length, 1, 4);
-            final String title = requireStringOrNull(args[0]);
-            final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull(nth(1, args)), requireNumberOrNull(nth(2, args)), requireNumberOrNull(nth(3, args)));
+            final String title = LambdaJ.requireString("make-frame", args[0]);
+            final TurtleFrame ret = new TurtleFrame(title, LambdaJ.requireNumberOrNull("make-frame", nth(1, args)), LambdaJ.requireNumberOrNull("make-frame", nth(2, args)), LambdaJ.requireNumberOrNull("make-frame", nth(3, args)));
             intp.current_frame = ret;
             return ret;
         }
@@ -6186,21 +6187,20 @@ public class LambdaJ {
         public static byte toByte(Object n)  { return requireIntegralNumber("toByte", n, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue(); }
         public static short toShort(Object n) { return requireIntegralNumber("toShort", n, Short.MIN_VALUE, Short.MAX_VALUE).shortValue(); }
 
+        /** used by JFFI */
         public static Character requireChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
             return (Character)o;
         }
 
+        /** used by JFFI */
         public static String requireStringOrNull(Object o) {
             if (o == null) return null;
-            return requireString(o);
-        }
-
-        public static String requireString(Object o) {
             if (!stringp(o)) errorNotAString(o);
             return o.toString();
         }
 
+        /** used by JFFI */
         public static Number requireNumberOrNull(Object o) {
             if (o == null) return null;
             return requireNumber("?", o);
@@ -8139,13 +8139,13 @@ public class LambdaJ {
 
         private void emitVectorLiteral(WrappingWriter sb, Object form) {
             if (form instanceof String) { emitStringLiteral(sb, (String)form); }
-            else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form, true); }
+            else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form); }
             else errorInternal("emitVectorLiteral: vector type %s is not implemented", form.toString());
         }
 
         private static void emitStringLiteral(WrappingWriter sb, String form) { sb.append('"'); stringToJava(sb, form, -1); sb.append('"'); }
 
-        private void emitSimpleVectorLiteral(WrappingWriter sb, Object[] form, boolean pool) {
+        private void emitSimpleVectorLiteral(WrappingWriter sb, Object[] form) {
             final StringWriter b = new StringWriter();
             final WrappingWriter qsb = new WrappingWriter(b);
 
@@ -8154,12 +8154,11 @@ public class LambdaJ {
             for (Object elem: form) {
                 if (first) first = false;
                 else qsb.append(',');
-                emitQuotedForm(qsb, elem, pool);
+                emitQuotedForm(qsb, elem, true);
             }
             qsb.append("}");
 
-            if (pool) emitReference(sb, b.toString());
-            else sb.append(b);
+            emitReference(sb, b.toString());
         }
 
         /** <p>emit a quoted form.
