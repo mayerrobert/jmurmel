@@ -126,10 +126,10 @@ public class LambdaJ {
     }
 
     /** largest positive long that can be represented as a double w/o any loss */
-    public static long MOST_POSITIVE_FIXNUM = (1L << 53) - 1;
+    public static final long MOST_POSITIVE_FIXNUM = (1L << 53) - 1;
 
     /** largest negative long that can be represented as a double w/o any loss */
-    public static long MOST_NEGATIVE_FIXNUM = -(1L << 53);
+    public static final long MOST_NEGATIVE_FIXNUM = -(1L << 53);
 
     /** Max length of symbols*/
     public static final int SYMBOL_MAX = 30;
@@ -4459,7 +4459,7 @@ public class LambdaJ {
                   addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
                   env)))))))))));
 
-            env = addBuiltin("internal-time-units-per-second", 1e9,
+            env = addBuiltin("internal-time-units-per-second", (long)1e9,
                   addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
                   addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
                   addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
@@ -5788,14 +5788,15 @@ public class LambdaJ {
 
         /// predefined global variables
         public final Object _t;
-        public final Object _pi = Math.PI;
-        public final Object mostPositiveFixnum = MOST_POSITIVE_FIXNUM;
-        public final Object mostNegativeFixnum = MOST_NEGATIVE_FIXNUM;
         public final Object _dynamic;
+
+        public static final double _pi = Math.PI;
+        public static final long mostPositiveFixnum = MOST_POSITIVE_FIXNUM;
+        public static final long mostNegativeFixnum = MOST_NEGATIVE_FIXNUM;
 
         /// predefined aliased global variables
         // internal-time-units-per-second: itups doesn't have a leading _ because it is avaliable under an alias name
-        public final Object itups = 1e9;
+        public static final long itups = (long)1e9;
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
 
@@ -5853,8 +5854,9 @@ public class LambdaJ {
         public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
         public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
 
-        public final Object _read      (Object... args) { noArgs("read",         args.length); if (intp.getLispReader() == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-            return intp.getLispReader().readObj(null); } // todo eof parameter
+        public final Object _read      (Object... args) { noArgs("read",         args.length);
+                                                          if (intp.getLispReader() == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
+                                                          return intp.getLispReader().readObj(null); } // todo eof parameter
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
