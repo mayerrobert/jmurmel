@@ -1712,3 +1712,6 @@ string->list, simple-vector->list usw. akzeptieren nil als argument und liefern 
 Murmel liest 0101 als variable, sollte eine zahl sein (101)
 
 (string= "a" #\a) sollte t liefern
+
+sT, sDynamic, ... könnten static final sein
+-> Konstruktor LambdaJ erzeugt keine neuen Objekte mehr, sondern steckt die bestehenden in die symboltabelle

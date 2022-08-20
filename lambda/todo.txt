@@ -10,7 +10,7 @@ gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
 aref in mlib? eher nicht
 -> wenn schon dann sollte aref in murmel sein und java.util.List unterstützen
-nth von mlib nach murmel? wg. ArraySlice
+nth, nthcdr von mlib nach murmel? wg. ArraySlice und string (?)
 elt in mlib? eher schon
 vielleicht make-array aus murmel rauskicken und in mlib umsetzen
 -> in jmurmel nur make-simple-vector, make-simple-bitvector, ...
@@ -20,7 +20,10 @@ vielleicht statt sbit/bvset
 java.util.BitSet ist eigentlich ein bitvector, ggf. in jmurmel anbinden
 
 
+
 vielleicht die cons-zählerei rauskicken? braucht eh niemand
+-> oder zumindest static zähler
+-> evtl auch maxEnvLen, maxEvalStack, maxEvalLevel, oder vielleicht besser diese zähler in ein DTO stecken, das optional allokiert wird
 
 static final members können aus system properties initialisiert werden
 -> evtl. für Tracelevel LambdaJ.trace verwenden, dann würde ggf. JIT das gance tracing wegoptimieren. traceOn & traceFunc wäre ggf auch hinfällig
@@ -29,6 +32,8 @@ statt CustomEnvironmentSupplier -> builder pattern
 -> CustomEnvironment bei jedem aufruf von interpretExpressions() mitzugeben ist eh fragwürdig.
    init() jedesmal aufrufen eigentlich auch, weil das ändert die members topEnv, lispStdin, lispStdout, nicht schön!
 
+
+ 
 expandForm könnte argcount checken: WellKnownSymbol könnte min/max oder checkmethode bekommen, checks in opencode können entfallen
 
 read sollte EOF übernehmen

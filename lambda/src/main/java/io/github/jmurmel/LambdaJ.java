@@ -158,7 +158,7 @@ public class LambdaJ {
     }
 
     /** A murmel symbol name */
-    public static class LambdaJSymbol implements Serializable, Writeable {
+    public static final class LambdaJSymbol implements Serializable, Writeable {
         private static final long serialVersionUID = 1L;
         final String name;
         final WellknownSymbol wellknownSymbol;
@@ -708,9 +708,9 @@ public class LambdaJ {
 
         this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
 
-        sT = haveT() ? internWellknown("t") : intern("t");
+        if (haveT()) this.symtab.intern(sT);
         if (haveNil()) internWellknown("nil");
-        sLambda = internWellknown("lambda");
+        this.symtab.intern(sLambda);
 
         if (haveQuote())  { internWellknown("quote"); }
         if (haveCond())   { internWellknown("cond"); }
@@ -719,7 +719,7 @@ public class LambdaJ {
         if (haveXtra())   {
             sDynamic = internWellknown("dynamic");
 
-            sDefine  = internWellknown("define");
+            this.symtab.intern(sDefine);
             internWellknown("defun");
             internWellknown("defmacro");
             internWellknown("if");
@@ -736,7 +736,7 @@ public class LambdaJ {
 
             internWellknown("setq");
 
-            sProgn   = internWellknown("progn");
+            this.symtab.intern(sProgn);
 
             internWellknown("load");
             internWellknown("require");
@@ -744,7 +744,7 @@ public class LambdaJ {
 
             internWellknown("declaim");
         }
-        else sDynamic = sDefine = sProgn = null;
+        else sDynamic = null;
 
         if (haveUtil()) {
             internWellknown("null");
@@ -1643,8 +1643,10 @@ public class LambdaJ {
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
     private static final Object NOT_HANDLED = "cannot opencode";
 
-    /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators */
-    final LambdaJSymbol sT, sDynamic, sLambda, sDefine, sProgn, sBit;
+    /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
+     *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
+    static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
+    final LambdaJSymbol sDynamic, sBit;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -3314,7 +3316,7 @@ public class LambdaJ {
         int i = 0;
         final Long zero = 0L, one = 1L;
         for (Object rest = maybeList; rest != null; rest = cdr(rest)) {
-            if (i == ret.length) Arrays.copyOf(ret, ret.length * 2);
+            if (i == ret.length) ret = Arrays.copyOf(ret, ret.length * 2);
             final Object o = car(rest);
             if (zero.equals(o)) ret[i] = false;
             else if (one.equals(o)) ret[i] = true;
@@ -3373,7 +3375,7 @@ public class LambdaJ {
         if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
         else if (escapeAtoms && stringp(atom))    { sb.print("\""); sb.print(escapeString(atom.toString())); sb.print("\""); }
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
-        else if (escapeAtoms && vectorp(atom))    { printVector(sb, atom, escapeAtoms); }
+        else if (vectorp(atom) && !stringp(atom)) { printVector(sb, atom, escapeAtoms); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -3833,9 +3835,9 @@ public class LambdaJ {
     private Object makeArray(ConsCell a) {
         varargs1_2("make-array", a);
         final Object type = cadr(a);
-        if (type == null) return new Object[toNonnegInt("make-array", car(a))];
+        if (cdr(a) == null || type == sT) return new Object[toNonnegInt("make-array", car(a))];
         if (type == sBit) return new boolean[toNonnegInt("make-array", car(a))];
-        throw new LambdaJError(true, "invalid type specification %s", printSEx(type));
+        throw new LambdaJError(true, "make-array: unsupported or invalid type specification %s", printSEx(type));
     }
 
     private Object simpleVectorToList(ConsCell a) {
@@ -5032,7 +5034,7 @@ public class LambdaJ {
      *  </ul> */
     private static boolean compileToJava(Charset charset, MurmelJavaCompiler c, ObjectReader history, Object className, Object filename) {
         final String clsName = className == null ? "MurmelProgram" : className.toString();
-        if (filename == c.intp.sT) {
+        if (filename == sT) {
             c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
             return true;
         }
@@ -7244,7 +7246,7 @@ public class LambdaJ {
                         sb.append("((Supplier<Object>)(() -> {\n"
                                   + "        final Object expansion").append(rsfx).append(" = ");
                         emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)), true);
-                        final String expanded = cadr(intp.values) == intp.sT ? "rt()._t" : "null";
+                        final String expanded = cadr(intp.values) == sT ? "rt()._t" : "null";
                         sb.append("; return rt()._values(expansion").append(rsfx).append(", ").append(expanded).append(");\n        })).get()");
                         return;
                     }
@@ -7284,7 +7286,7 @@ public class LambdaJ {
 
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == sNil) sb.append("false");
-            else if (form == intp.sT) sb.append("true");
+            else if (form == sT) sb.append("true");
             else if (consp(form) && car(form) == intp.intern("null")) {
                 // optimize "(null ..."
                 sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))");
@@ -7350,7 +7352,7 @@ public class LambdaJ {
                     if (first) first = false;
                     else sb.append("\n        : ");
                     final Object condExpr = car(clause), condForms = cdr(clause);
-                    if (condExpr == intp.sT) {
+                    if (condExpr == sT) {
                         emitProgn(sb, condForms, env, topEnv, rsfx, isLast);  sb.append(')');
                         if (iterator.hasNext()) System.err.println(condForm.lineInfo() + "forms following default 't' form will be ignored");
                         return;
@@ -7408,7 +7410,7 @@ public class LambdaJ {
             final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
             if (isLast) {
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
-                emitForm(sb, cons(intp.sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false);
+                emitForm(sb, cons(sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false);
                 sb.append("; },\n");
                 sb.append("        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
                 emitForms(sb, cleanupForms, env, topEnv, rsfx, false);
@@ -7417,7 +7419,7 @@ public class LambdaJ {
             }
             else {
                 sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
-                emitForm(sb, cons(intp.sProgn, cons(protectedForm, null)), env, topEnv, rsfx, true);
+                emitForm(sb, cons(sProgn, cons(protectedForm, null)), env, topEnv, rsfx, true);
                 sb.append("; }\n");
                 sb.append("        finally {\n");
                 final String tmp = "tmp" + rsfx;
@@ -8176,7 +8178,7 @@ public class LambdaJ {
             if (form == null || form == sNil) sb.append("(Object)null");
 
             else if (symbolp(form)) {
-                if (form == intp.sT) sb.append("_t");
+                if (form == sT) sb.append("_t");
                 else {
                     final String s = "intern(\"" + escapeString(form.toString()) + "\")";
                     if (pool) emitReference(sb, s);
