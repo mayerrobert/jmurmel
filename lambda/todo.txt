@@ -6,6 +6,13 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
+mlib - scan: weitere helper
+(scan-if generator pred)... filtern
+(scan-mapped generator function)... aufeinanderfolgende calls des erzeugten generators liefern (function (generator))
+-> brauchts das oder ist das (multiple-value-compose function generator) ?
+(scan-range generator first [count])
+(collect generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
+
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
 aref in mlib? eher nicht
@@ -20,6 +27,7 @@ vielleicht statt sbit/bvset
 java.util.BitSet ist eigentlich ein bitvector, ggf. in jmurmel anbinden
 
 
+gensym symbole (beginnend mit #:) sollten beim symbol-printen NICHT in || gesteckt werden
 
 vielleicht die cons-zählerei rauskicken? braucht eh niemand
 -> oder zumindest static zähler
@@ -40,6 +48,8 @@ read sollte EOF übernehmen
 
 clojure hat "named lambda": (fn label [params] forms)
 -> vielleicht "named lambda" in Murmel? label würd aber dasselbe machen
+-> ausser: Clojure generiert für ein named lambda eine wirkliche funktion, gibt dann bessere stacktraces
+   in murmel wäre ggf. der output von JMC besser lesbar (weniger anonyme funktionen). closures gibts dann aber nicht mehr gratis
 
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
 -> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert

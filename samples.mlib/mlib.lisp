@@ -65,6 +65,7 @@
 ;;; - [unzip-tails](#function-unzip-tails)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
+;;; - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [dogenerator](#macro-dogenerator)
 
 
 (provide "mlib")
@@ -735,7 +736,7 @@
              (let ((,var (car ,lst)))
                ,@body
                (,loop (cdr ,lst)))
-           ,(if result `(let ((,var nil)) ,@result) nil)))))
+         ,(if result `(let ((,var nil)) ,@result) nil)))))
 
 
 ;;; = Macro: doplist
@@ -1086,6 +1087,145 @@
 
 ; undef m%mapx
 (defmacro m%mapx)
+
+
+;;; = Function: scan
+;;;     (scan start [step [endincl]]) -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
+;;;     (scan sequence [start-idx])   -> generator-function that returns subsequent elements of the given sequence (list or vector)
+;;;
+;;; Since: 1.3
+;;;
+;;; `scan` creates a generator function that on subsequent calls produces subsequent values.
+;;; A generator function takes no arguments and returns `(values _next-value_ t)`
+;;; or `(values _undefined-value_ nil)` if all values are exhausted.
+(defun scan (arg . more-args)
+  (cond ((numberp arg)
+         (let* ((start arg)
+                (step (if more-args (car more-args) 1))
+                (endincl (cadr more-args)))
+
+           (if endincl
+
+                 (cond ((= step 1)
+                        (lambda ()
+                          (if (<= start endincl)
+                                (values start
+                                        (progn (incf start) t))
+                            (values nil nil))))
+
+                       ((= step -1)
+                        (lambda ()
+                          (if (>= start endincl)
+                                (values start
+                                        (progn (decf start) t))
+                            (values nil nil))))
+
+                       ((= step 0)
+                        (lambda () (values start t)))
+
+                       ((> step 0)
+                        (setq start (* start 1.0))
+                        (lambda ()
+                          (if (<= start endincl)
+                                (values start
+                                        (progn (incf start step) t))
+                            (values nil nil))))
+
+                       (t
+                        (setq start (* start 1.0))
+                        (lambda ()
+                          (if (>= start endincl)
+                                (values start
+                                        (progn (incf start step) t))
+                            (values nil nil)))))
+
+             (cond ((= step 1)
+                    (lambda ()
+                      (values start
+                              (progn (incf start) t))))
+
+                   ((= step -1)
+                    (lambda ()
+                      (values start
+                              (progn (decf start) t))))
+                   ((= step 0)
+                    (lambda () (values start t)))
+
+                   (t
+                    (lambda ()
+                      (values start
+                              (progn (incf start step) t))))))))
+
+        ((consp arg)
+         (when more-args (setq arg (nthcdr (car more-args) arg)))
+         (lambda ()
+           (values (car arg)
+                   (when arg
+                     (setq arg (cdr arg))
+                     t))))
+
+       ((vectorp arg)
+        (let* ((len (vector-length arg))
+               (idx (if more-args (car more-args) 0))
+               (ref (cond ((simple-vector-p arg) svref)
+                          ((simple-bit-vector-p arg) sbit)
+                          ((stringp arg) char))))
+          (lambda ()
+            (if (< idx len)
+                  (values (ref arg idx)
+                          (progn (setq idx (1+ idx)) t))
+              (values nil nil)))))
+
+       ((null arg)
+        (lambda () (values nil nil)))
+
+       (t (fatal "scan: cannot create a generator function from given arguments"))))
+
+
+;;; = Function: scan-multiple
+;;;     (scan-multiple generator+) -> generator function that returns a list with subsequent values of all generators,
+;;;                                   secondary value is nil if any generator returns nil as their secondary value
+;;;
+;;; Since: 1.3
+;;;
+;;; `scan-multiple` combines several generators into a single generator function.
+(defun scan-multiple (generator . more-generators)
+  (if more-generators
+
+        (let ((generators (cons generator more-generators)))
+          (lambda ()
+            (let (list-accum (more-accum t))
+              (dolist (x generators)
+                (multiple-value-bind (result more) (x)
+                  (push result list-accum)
+                  (if (null more) (setq more-accum nil))))
+              (values (reverse list-accum) more-accum))))
+
+    (lambda ()
+      (multiple-value-bind (result more) (generator)
+        (values (list result) more)))))
+
+
+;;; = Macro: dogenerator
+;;;     (dolist (var generator-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.3
+;;;
+;;; `dogenerator` creates a generator by eval'ing `generator-form`
+;;; and iterates over the values yielded by subsequent generator applications.
+(defmacro dogenerator (exp . body)
+  (let ((var (car exp))
+        (more (gensym))
+        (generator (gensym))
+        (loop (gensym))
+        (result (cddr exp)))
+    `(let ((,generator ,(cadr exp)))
+       (labels ((,loop (,var ,more)
+                  (when ,more
+                    ,@body
+                    (multiple-value-call ,loop (,generator)))))
+         (multiple-value-call ,loop (,generator))
+         ,(if result `(let ((,var nil)) ,@result) nil)))))
 
 
 ; Helper macro to generate defuns for every and some

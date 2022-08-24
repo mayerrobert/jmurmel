@@ -66,6 +66,7 @@ as well as the following additional functions and macros:
 - [unzip-tails](#function-unzip-tails)
 - [*f, /f, +f, -f](#macro-f-f)
 - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
+- [scan](#function-scan), [scan-multiple](#function-scan-multiple), [dogenerator](#macro-dogenerator)
 
 ### Function: caar..cdddr
     (c..r lst) -> result
@@ -544,6 +545,32 @@ and will applied to subsequent tails of the given lists.
 
 All function application results will be concatenated to a list
 which is the return value of `mapcon`.
+
+### Function: scan
+    (scan start [step [endincl]]) -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
+    (scan sequence [start-idx])   -> generator-function that returns subsequent elements of the given sequence (list or vector)
+
+Since: 1.3
+
+`scan` creates a generator function that on subsequent calls produces subsequent values.
+A generator function takes no arguments and returns `(values *next-value* t)`
+or `(values _undefined-value_ nil)` if all values are exhausted.
+
+### Function: scan-multiple
+    (scan-multiple generator+) -> generator function that returns a list with subsequent values of all generators,
+                                  secondary value is nil if any generator returns nil as their secondary value
+
+Since: 1.3
+
+`scan-multiple` combines several generators into a single generator function.
+
+### Macro: dogenerator
+    (dolist (var generator-form result-form*) statement*) -> result
+
+Since: 1.3
+
+`dogenerator` creates a generator by eval'ing `generator-form`
+and iterates over the values yielded by subsequent generator applications.
 
 ### Function: every
     (every function sequence+) -> boolean
