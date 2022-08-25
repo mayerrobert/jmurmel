@@ -102,7 +102,7 @@ If no lists are supplied, `nconc` returns `nil`.
 Each argument but the last must be a proper or dotted list.
 
 ### Macro: destructuring-bind
-    (destructuring-bind (vars*) (expressions*) forms*)
+    (destructuring-bind (vars*) expression forms*)
 
 Since: 1.1
 
@@ -111,7 +111,7 @@ trees are not supported, only lists are.
 
 `destructuring-bind` binds the variables specified in `vars`
 to the corresponding values in the list resulting from the evaluation
-of `expressions`; then `destructuring-bind` evaluates `forms`. 
+of `expression`; then `destructuring-bind` evaluates `forms`. 
 
 ### Function: get-setf-expansion
     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
@@ -238,7 +238,7 @@ Return `nil` unless any of the `forms` evaluate to non-nil,
 the result of the first form returning non-nil otherwise.
 
 ### Function: abs
-    (abs n) -> result
+    (abs number) -> result
 
 Since: 1.1
 
@@ -273,11 +273,11 @@ Since: 1.1
 Return `t` if all of the arguments are the same character.
 
 ### Function: char
-    (char string n) -> nth-character
+    (char str n) -> nth-character
 
 Since: 1.1
 
-Return the n-th character of the string `string`, `n` is 0-based.
+Return the n-th character of the string `str`, `n` is 0-based.
 
 ### Function: equal
     (equal a b) -> boolean
@@ -291,8 +291,8 @@ Return `t` if any of the following is true:
 - `a` and `b` are conses whose car and cdr are `equal` respectively
 
 ### Macro: prog1, prog2
-    (prog1 first-form forms*) -> result-1
-    (prog2 first-form second-form forms*) -> result-2
+    (prog1 first-form more-forms*) -> result-1
+    (prog2 first-form second-form more-forms*) -> result-2
 
 Since: 1.1
 
@@ -427,10 +427,10 @@ Since: 1.1
 
 If `sequence` is a list then return a fresh list
 with elements in reversed order, if `sequence`
-is a string then return a fresh reversed string.
+is a vector then return a fresh reversed vector.
 
 ### Function: unzip
-    (unzip lst) -> result-list
+    (unzip lists) -> result-list
 
 Since: 1.2
 
@@ -447,7 +447,7 @@ Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unz
 See also: [unzip-tails](#function-unzip-tails).
 
 ### Function: unzip-tails
-    (unzip-tails lst) -> result-list
+    (unzip-tails lists) -> result-list
 
 Since: 1.2
 
@@ -553,16 +553,17 @@ which is the return value of `mapcon`.
 Since: 1.3
 
 `scan` creates a generator function that on subsequent calls produces subsequent values.
-A generator function takes no arguments and returns `(values *next-value* t)`
-or `(values _undefined-value_ nil)` if all values are exhausted.
+A generator function takes no arguments and returns `(values <next-value> t)`
+or `(values <undefined-value> nil)` if all values are exhausted.
 
-### Function: scan-multiple
-    (scan-multiple generator+) -> generator function that returns a list with subsequent values of all generators,
-                                  secondary value is nil if any generator returns nil as their secondary value
+### Function: scan-parallel
+    (scan-parallel generator+) -> generator
 
 Since: 1.3
 
-`scan-multiple` combines several generators into a single generator function.
+`scan-parallel` combines several generators into a single generator function
+that returns a list with subsequent values of all generators,
+and whose secondary value is nil if any generator returns nil as their secondary value
 
 ### Macro: dogenerator
     (dolist (var generator-form result-form*) statement*) -> result

@@ -77,36 +77,36 @@
 ;;; Since: 1.1
 ;;;
 ;;; `c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
-(defun  caar (l) (car (car l)))
-(defun  cadr (l) (car (cdr l)))
-(defun  cdar (l) (cdr (car l)))
-(defun  cddr (l) (cdr (cdr l)))
+(defun  caar (lst) (car (car lst)))
+(defun  cadr (lst) (car (cdr lst)))
+(defun  cdar (lst) (cdr (car lst)))
+(defun  cddr (lst) (cdr (cdr lst)))
 
-(defun caaar (l) (car (caar l)))
-(defun caadr (l) (car (cadr l)))
-(defun cadar (l) (car (cdar l)))
-(defun caddr (l) (car (cddr l)))
+(defun caaar (lst) (car (caar lst)))
+(defun caadr (lst) (car (cadr lst)))
+(defun cadar (lst) (car (cdar lst)))
+(defun caddr (lst) (car (cddr lst)))
 
-(defun cdaar (l) (cdr (caar l)))
-(defun cdadr (l) (cdr (cadr l)))
-(defun cddar (l) (cdr (cdar l)))
-(defun cdddr (l) (cdr (cddr l)))
+(defun cdaar (lst) (cdr (caar lst)))
+(defun cdadr (lst) (cdr (cadr lst)))
+(defun cddar (lst) (cdr (cdar lst)))
+(defun cdddr (lst) (cdr (cddr lst)))
 
 
-(defmacro caar (l)  `(car (car ,l)))
-(defmacro cadr (l)  `(car (cdr ,l)))
-(defmacro cdar (l)  `(cdr (car ,l)))
-(defmacro cddr (l)  `(cdr (cdr ,l)))
+(defmacro caar (lst)  `(car (car ,lst)))
+(defmacro cadr (lst)  `(car (cdr ,lst)))
+(defmacro cdar (lst)  `(cdr (car ,lst)))
+(defmacro cddr (lst)  `(cdr (cdr ,lst)))
 
-(defmacro caaar (l) `(car (car (car ,l))))
-(defmacro caadr (l) `(car (car (cdr ,l))))
-(defmacro cadar (l) `(car (cdr (car ,l))))
-(defmacro caddr (l) `(car (cdr (cdr ,l))))
+(defmacro caaar (lst) `(car (car (car ,lst))))
+(defmacro caadr (lst) `(car (car (cdr ,lst))))
+(defmacro cadar (lst) `(car (cdr (car ,lst))))
+(defmacro caddr (lst) `(car (cdr (cdr ,lst))))
 
-(defmacro cdaar (l) `(cdr (car (car ,l))))
-(defmacro cdadr (l) `(cdr (car (cdr ,l))))
-(defmacro cddar (l) `(cdr (cdr (car ,l))))
-(defmacro cdddr (l) `(cdr (cdr (cdr ,l))))
+(defmacro cdaar (lst) `(cdr (car (car ,lst))))
+(defmacro cdadr (lst) `(cdr (car (cdr ,lst))))
+(defmacro cddar (lst) `(cdr (cdr (car ,lst))))
+(defmacro cdddr (lst) `(cdr (cdr (cdr ,lst))))
 
 
 ;;; = Function: nthcdr, nth
@@ -117,15 +117,15 @@
 ;;;
 ;;; `nthcdr` applies `cdr` n times and returns the result.
 ;;; `nth` works as if `(car (nthcdr n lst))` was invoked.
-(defun nthcdr (n l)
-  (let loop ((n n) (l l))
-    (if (<= n 0) l
-      (loop (1- n) (cdr l)))))
+(defun nthcdr (n lst)
+  (let loop ((n n) (lst lst))
+    (if (<= n 0) lst
+      (loop (1- n) (cdr lst)))))
 
-(defun nth (n l)
-  (car (nthcdr n l)))
-(defmacro nth (n l)
-  `(car (nthcdr ,n ,l)))
+(defun nth (n lst)
+  (car (nthcdr n lst)))
+(defmacro nth (n lst)
+  `(car (nthcdr ,n ,lst)))
 
 
 ;;; = Function: last
@@ -174,7 +174,7 @@
 ;
 ; Replace the car of `lst` by `value` and return `value` (as opposed to `rplaca` which returns `lst`).
 ; Used in setf-expansions.
-(defun m%rplaca (l v) (rplaca l v) v)
+(defun m%rplaca (lst v) (rplaca lst v) v)
 
 
 ; m%rplacd
@@ -182,11 +182,11 @@
 ;
 ; Replace the cdr of `lst` by `value` and return `value` (as opposed to `rplacd` which returns `lst`).
 ; Used in setf-expansions.
-(defun m%rplacd (l v) (rplacd l v) v)
+(defun m%rplacd (lst value) (rplacd lst value) value)
 
 
 ;;; = Macro: destructuring-bind
-;;;     (destructuring-bind (vars*) (expressions*) forms*)
+;;;     (destructuring-bind (vars*) expression forms*)
 ;;;
 ;;; Since: 1.1
 ;;;
@@ -195,7 +195,7 @@
 ;;;
 ;;; `destructuring-bind` binds the variables specified in `vars`
 ;;; to the corresponding values in the list resulting from the evaluation
-;;; of `expressions`; then `destructuring-bind` evaluates `forms`. 
+;;; of `expression`; then `destructuring-bind` evaluates `forms`. 
 (defmacro destructuring-bind (vars expression . forms)
   `(apply (lambda ,vars ,@forms) ,expression))
 
@@ -418,7 +418,7 @@
 ;;; Since: 1.1
 ;;;
 ;;; Logical not.
-(define not null) ; this should be faster than (defun not (e) (null e))
+(define not null)
 (defmacro not (form)
   `(null ,form))
 
@@ -431,12 +431,12 @@
 ;;; Short-circuiting logical and.
 ;;; Return `t` unless any of the `forms` evaluate to `nil`,
 ;;; `nil` otherwise.
-(defmacro and args
-   (if args
-         (if (cdr args)
-               `(if ,(car args)
-                 (and ,@(cdr args)))
-           (car args))
+(defmacro and forms
+   (if forms
+         (if (cdr forms)
+               `(if ,(car forms)
+                 (and ,@(cdr forms)))
+           (car forms))
      t))
 
 
@@ -448,29 +448,29 @@
 ;;; Short-circuiting logical or.
 ;;; Return `nil` unless any of the `forms` evaluate to non-nil,
 ;;; the result of the first form returning non-nil otherwise.
-(defmacro or args
-  (labels ((m%or (tmp args)
-             (if args
-                   (if (cdr args)
-                         `(if (setq ,tmp ,(car args))
+(defmacro or forms
+  (labels ((m%or (tmp forms)
+             (if forms
+                   (if (cdr forms)
+                         `(if (setq ,tmp ,(car forms))
                                 ,tmp
-                            ,(m%or tmp (cdr args)))
-                     (car args))
+                            ,(m%or tmp (cdr forms)))
+                     (car forms))
                nil)))
 
-    (if args
-          (if (cdr args)
+    (if forms
+          (if (cdr forms)
                 (let ((temp (gensym)))
-                  `(let ((,temp ,(car args)))
+                  `(let ((,temp ,(car forms)))
                       (if ,temp
                             ,temp
-                        ,(m%or temp (cdr args)))))
-            (car args))
+                        ,(m%or temp (cdr forms)))))
+            (car forms))
       nil)))
 
 
 ;;; = Function: abs
-;;;     (abs n) -> result
+;;;     (abs number) -> result
 ;;;
 ;;; Since: 1.1
 ;;;
@@ -524,11 +524,11 @@
 
 
 ;;; = Function: char
-;;;     (char string n) -> nth-character
+;;;     (char str n) -> nth-character
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Return the n-th character of the string `string`, `n` is 0-based.
+;;; Return the n-th character of the string `str`, `n` is 0-based.
 (defun char (str n)
   (nth n str))
 
@@ -550,25 +550,25 @@
 
 
 ;;; = Macro: prog1, prog2
-;;;     (prog1 first-form forms*) -> result-1
-;;;     (prog2 first-form second-form forms*) -> result-2
+;;;     (prog1 first-form more-forms*) -> result-1
+;;;     (prog2 first-form second-form more-forms*) -> result-2
 ;;;
 ;;; Since: 1.1
-(defmacro prog1 (first-form . forms)
-  (if forms
+(defmacro prog1 (first-form . more-forms)
+  (if more-forms
         (let ((result (gensym)))
           `(let ((,result ,first-form))
-             ,@forms
+             ,@more-forms
              ,result))
     `,first-form))
 
-(defmacro prog2 (first-form second-form . forms)
-  (if forms
+(defmacro prog2 (first-form second-form . more-forms)
+  (if more-forms
         (let ((ignore (gensym))
               (result (gensym)))
           `(let ((,ignore ,first-form)
                  (,result ,second-form))
-             ,@forms
+             ,@more-forms
              ,result))
     `(progn ,first-form ,second-form)))
 
@@ -700,12 +700,12 @@
 ;;;     (let (l)
 ;;;       (dotimes (i 10 l)
 ;;;         (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
-(defmacro dotimes (exp . body)
-  (let ((var (car exp))
-        (countform (cadr exp))
+(defmacro dotimes (loop-def . body)
+  (let ((var (car loop-def))
+        (countform (cadr loop-def))
         (count (gensym))
         (loop (gensym))
-        (resultform (cddr exp)))
+        (resultform (cddr loop-def)))
     `(let ((,var 0)
            (,count ,countform))
        (if (<= ,count 0) (progn ,@resultform)
@@ -725,12 +725,12 @@
 ;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
 ;;; Murmel however supports multiple result-forms which will be eval'd in an
 ;;; implicit `progn`, similar to `do` and `do*`;
-(defmacro dolist (exp . body)
-  (let ((var (car exp))
-        (listform (cadr exp))
+(defmacro dolist (loop-def . body)
+  (let ((var (car loop-def))
+        (listform (cadr loop-def))
         (lst (gensym))
         (loop (gensym))
-        (result (cddr exp)))
+        (result (cddr loop-def)))
     `(let ,loop ((,lst ,listform))
        (if ,lst
              (let ((,var (car ,lst)))
@@ -746,13 +746,13 @@
 ;;;
 ;;; Iterates over key-value pairs of `plist-form`.
 ;;; Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
-(defmacro doplist (exp . body)
-  (let ((key-var (car exp))
-        (value-var (cadr exp))
-        (listform (caddr exp))
+(defmacro doplist (loop-def . body)
+  (let ((key-var (car loop-def))
+        (value-var (cadr loop-def))
+        (listform (caddr loop-def))
         (lst (gensym))
         (loop (gensym))
-        (result (cdddr exp)))
+        (result (cdddr loop-def)))
     `(let ,loop ((,lst ,listform))
        (if ,lst
              (if (cdr ,lst)
@@ -777,7 +777,7 @@
 ;;; Since: 1.1
 ;;;
 ;;; `identity` returns its argument `object`.
-(defun identity (x) x)
+(defun identity (value) value)
 
 
 ;;; = Function: constantly
@@ -800,9 +800,9 @@
 ;;; and has the same side-effect behavior as `function`, but returns only
 ;;; a single value: a boolean with the opposite truth value of that
 ;;; which would be returned as the value of `function`.
-(defun complement (f)
+(defun complement (func)
   (lambda arguments
-    (null (apply f arguments))))
+    (null (apply func arguments))))
 
 
 ;;; = Function: member
@@ -828,13 +828,13 @@
 ;;;         ; => (c 1 2 3)
 ;;;     (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
 ;;;         ; => (b c 1 2 3)
-(defun member (obj l . test)
+(defun member (item lst . test)
   (let* ((tst (car test))
          (pred (if tst tst eql)))
-    (if l
-          (if (pred obj (car l))
-                l
-            (member obj (cdr l) pred))
+    (if lst
+          (if (pred item (car lst))
+                lst
+            (member item (cdr lst) pred))
       nil)))
 
 
@@ -845,21 +845,21 @@
 ;;;
 ;;; If `sequence` is a list then return a fresh list
 ;;; with elements in reversed order, if `sequence`
-;;; is a string then return a fresh reversed string.
-(defun reverse (l)
+;;; is a vector then return a fresh reversed vector.
+(defun reverse (sequence)
   (labels ((rev (l lp)
              (if l (rev (cdr l) (cons (car l) lp))
                lp)))
-    (cond ((null l) nil)
-          ((consp l) (rev l nil))
-          ((stringp l) (list->string (rev (string->list l) nil)))
-          ((simple-vector-p l) (list->simple-vector (rev (simple-vector->list l) nil)))
-          ((simple-bit-vector-p l) (list->simple-bit-vector (rev (simple-bit-vector->list l) nil)))
+    (cond ((null sequence) nil)
+          ((consp sequence) (rev sequence nil))
+          ((stringp sequence) (list->string (rev (string->list sequence) nil)))
+          ((simple-vector-p sequence) (list->simple-vector (rev (simple-vector->list sequence) nil)))
+          ((simple-bit-vector-p sequence) (list->simple-bit-vector (rev (simple-bit-vector->list sequence) nil)))
           (t (fatal "not a sequence")))))
 
 
 ;;; = Function: unzip
-;;;     (unzip lst) -> result-list
+;;;     (unzip lists) -> result-list
 ;;;
 ;;; Since: 1.2
 ;;;
@@ -880,7 +880,7 @@
 
 
 ;;; = Function: unzip-tails
-;;;     (unzip-tails lst) -> result-list
+;;;     (unzip-tails lists) -> result-list
 ;;;
 ;;; Since: 1.2
 ;;;
@@ -893,15 +893,15 @@
     nil))
 
 
-(defun m%sequence->list (seq)
-  (cond ((listp seq) seq)
-        ((simple-vector-p seq) (simple-vector->list seq))
-        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
-        ((stringp seq) (string->list seq))
+(defun m%sequence->list (sequence)
+  (cond ((listp sequence) sequence)
+        ((simple-vector-p sequence) (simple-vector->list sequence))
+        ((simple-bit-vector-p sequence) (simple-bit-vector->list sequence))
+        ((stringp sequence) (string->list sequence))
         (t (fatal "not a sequence"))))
 
-(defun m%sequences->lists (seq)
-  (let loop ((s seq))
+(defun m%sequences->lists (sequences)
+  (let loop ((s sequences))
     (if s (cons (m%sequence->list (car s))
                 (loop (cdr s)))
       nil)))
@@ -1096,8 +1096,8 @@
 ;;; Since: 1.3
 ;;;
 ;;; `scan` creates a generator function that on subsequent calls produces subsequent values.
-;;; A generator function takes no arguments and returns `(values _next-value_ t)`
-;;; or `(values _undefined-value_ nil)` if all values are exhausted.
+;;; A generator function takes no arguments and returns `(values <next-value> t)`
+;;; or `(values <undefined-value> nil)` if all values are exhausted.
 (defun scan (arg . more-args)
   (cond ((numberp arg)
          (let* ((start arg)
@@ -1182,14 +1182,15 @@
        (t (fatal "scan: cannot create a generator function from given arguments"))))
 
 
-;;; = Function: scan-multiple
-;;;     (scan-multiple generator+) -> generator function that returns a list with subsequent values of all generators,
-;;;                                   secondary value is nil if any generator returns nil as their secondary value
+;;; = Function: scan-parallel
+;;;     (scan-parallel generator+) -> generator
 ;;;
 ;;; Since: 1.3
 ;;;
-;;; `scan-multiple` combines several generators into a single generator function.
-(defun scan-multiple (generator . more-generators)
+;;; `scan-parallel` combines several generators into a single generator function
+;;; that returns a list with subsequent values of all generators,
+;;; and whose secondary value is nil if any generator returns nil as their secondary value
+(defun scan-parallel (generator . more-generators)
   (if more-generators
 
         (let ((generators (cons generator more-generators)))
