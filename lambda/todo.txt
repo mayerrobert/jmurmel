@@ -6,20 +6,8 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
-mlib: konsequente namensgebung der parameter
 
-lst, more-lists
-alist
-plist
-sequence
-
-pred, test
-func
-
-value, item
-n... number
-str
-
+einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackoverflow geben
 
 mlib - scan: weitere helper
 (scan-if generator pred)... filtern
@@ -29,6 +17,8 @@ mlib - scan: weitere helper
       wär also schon gut. eine function als parameter reicht, weil (scan-mapped generator (compose f3 f2 f1)) geht auch
 (scan-range generator first [count])
 
+(scan alist) liefert automatisch das erwünschte (values '(key . value) more)
+scan-plist dazu?
 (collect generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
 (count generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht?
 

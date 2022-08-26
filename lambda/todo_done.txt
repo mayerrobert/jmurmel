@@ -1715,3 +1715,21 @@ Murmel liest 0101 als variable, sollte eine zahl sein (101)
 
 sT, sDynamic, ... könnten static final sein
 -> Konstruktor LambdaJ erzeugt keine neuen Objekte mehr, sondern steckt die bestehenden in die symboltabelle
+
+
+mlib: konsequente namensgebung der parameter:
+
+lst, lists, more-lists
+alist
+plist
+seq, sequences, more-sequences
+
+pred, test
+func
+
+value, item, obj
+n... number
+str
+
+exp -> loop-spec
+form, forms, body

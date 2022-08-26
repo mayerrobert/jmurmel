@@ -68,9 +68,6 @@
 ;;; - [scan](#function-scan), [scan-parallel](#function-scan-parallel), [dogenerator](#macro-dogenerator)
 
 
-(provide "mlib")
-
-
 ;;; = Function: caar..cdddr
 ;;;     (c..r lst) -> result
 ;;;
@@ -196,8 +193,8 @@
 ;;; `destructuring-bind` binds the variables specified in `vars`
 ;;; to the corresponding values in the list resulting from the evaluation
 ;;; of `expression`; then `destructuring-bind` evaluates `forms`. 
-(defmacro destructuring-bind (vars expression . forms)
-  `(apply (lambda ,vars ,@forms) ,expression))
+(defmacro destructuring-bind (vars expr . forms)
+  `(apply (lambda ,vars ,@forms) ,expr))
 
 
 ;;; = Function: get-setf-expansion
@@ -846,15 +843,15 @@
 ;;; If `sequence` is a list then return a fresh list
 ;;; with elements in reversed order, if `sequence`
 ;;; is a vector then return a fresh reversed vector.
-(defun reverse (sequence)
+(defun reverse (seq)
   (labels ((rev (l lp)
              (if l (rev (cdr l) (cons (car l) lp))
                lp)))
-    (cond ((null sequence) nil)
-          ((consp sequence) (rev sequence nil))
-          ((stringp sequence) (list->string (rev (string->list sequence) nil)))
-          ((simple-vector-p sequence) (list->simple-vector (rev (simple-vector->list sequence) nil)))
-          ((simple-bit-vector-p sequence) (list->simple-bit-vector (rev (simple-bit-vector->list sequence) nil)))
+    (cond ((null seq) nil)
+          ((consp seq) (rev seq nil))
+          ((stringp seq) (list->string (rev (string->list seq) nil)))
+          ((simple-vector-p seq) (list->simple-vector (rev (simple-vector->list seq) nil)))
+          ((simple-bit-vector-p seq) (list->simple-bit-vector (rev (simple-bit-vector->list seq) nil)))
           (t (fatal "not a sequence")))))
 
 
@@ -893,11 +890,11 @@
     nil))
 
 
-(defun m%sequence->list (sequence)
-  (cond ((listp sequence) sequence)
-        ((simple-vector-p sequence) (simple-vector->list sequence))
-        ((simple-bit-vector-p sequence) (simple-bit-vector->list sequence))
-        ((stringp sequence) (string->list sequence))
+(defun m%sequence->list (seq)
+  (cond ((listp seq) seq)
+        ((simple-vector-p seq) (simple-vector->list seq))
+        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
+        ((stringp seq) (string->list seq))
         (t (fatal "not a sequence"))))
 
 (defun m%sequences->lists (sequences)
@@ -933,7 +930,7 @@
 ;;; of the sequences. The result sequence is as long as the shortest of the sequences.
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
-(defun map (result-type func sequence . more-sequences)
+(defun map (result-type func seq . more-sequences)
   (let* ((comb (if result-type
                      cons
                  (lambda (a b)))))
@@ -943,12 +940,12 @@
                             (labels ((none-nil (lists)
                                        (if lists (and (car lists) (none-nil (cdr lists)))
                                          t)))
-                              (let loop ((l (m%sequences->lists (cons sequence more-sequences))))
+                              (let loop ((l (m%sequences->lists (cons seq more-sequences))))
                                 (if (none-nil l)
                                   (comb (apply func (unzip l))
                                         (loop (unzip-tails l))))))
 
-                        (let loop ((l (m%sequence->list sequence)))
+                        (let loop ((l (m%sequence->list seq)))
                           (if l
                             (comb (func (car l))
                                   (loop (cdr l))))))
@@ -1000,19 +997,19 @@
 
 ; Helper macro to generate defuns for the various maxXX functions
 (defmacro m%mapx (name comb acc accn return-list lastelem)
-  `(defun ,name (f l . more)
-     (if more
+  `(defun ,name (func lst . more-lists)
+     (if more-lists
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
                         t)))
-             (let loop ((args (cons l more)))
+             (let loop ((args (cons lst more-lists)))
                (if (none-nil args)
-                     (,comb (apply f ,(if accn (list accn 'args) 'args)) (loop (unzip-tails args)))
+                     (,comb (apply func ,(if accn (list accn 'args) 'args)) (loop (unzip-tails args)))
                  ,lastelem)))
-       (let loop ((l l))
-         (if l (,comb (f ,(if acc (list acc 'l) 'l)) (loop (cdr l)))
+       (let loop ((lst lst))
+         (if lst (,comb (func ,(if acc (list acc 'lst) 'lst)) (loop (cdr lst)))
            ,lastelem)))
-    ,@(when return-list '(l))))
+    ,@(when return-list '(lst))))
 
 
 ;;; = Function: mapcar
@@ -1220,13 +1217,13 @@
 ;;;
 ;;; `dogenerator` creates a generator by eval'ing `generator-form`
 ;;; and iterates over the values yielded by subsequent generator applications.
-(defmacro dogenerator (exp . body)
-  (let ((var (car exp))
+(defmacro dogenerator (loop-def . body)
+  (let ((var (car loop-def))
         (more (gensym))
         (generator (gensym))
         (loop (gensym))
-        (result (cddr exp)))
-    `(let ((,generator ,(cadr exp)))
+        (result (cddr loop-def)))
+    `(let ((,generator ,(cadr loop-def)))
        (labels ((,loop (,var ,more)
                   (when ,more
                     ,@body
@@ -1237,17 +1234,17 @@
 
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
-  `(defun ,name (f l . more)
-     (if more
+  `(defun ,name (func lst . more-lists)
+     (if more-lists
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
                         t)))
-             (let loop ((args (mapcar m%sequence->list (cons l more))))
+             (let loop ((args (mapcar m%sequence->list (cons lst more-lists))))
                (if (none-nil args)
-                     (,comb (apply f (unzip args)) (loop (unzip-tails args)))
+                     (,comb (apply func (unzip args)) (loop (unzip-tails args)))
                  ,lastelem)))
-       (let loop ((l (m%sequence->list l)))
-         (if l (,comb (f (car l)) (loop (cdr l)))
+       (let loop ((lst (m%sequence->list lst)))
+         (if lst (,comb (func (car lst)) (loop (cdr lst)))
            ,lastelem)))))
 
 
@@ -1412,11 +1409,11 @@
 ;;; Since: 1.1
 (defun terpri () (writeln) nil)
 
-(defun prin1 (o) (write o) o)
+(defun prin1 (obj) (write obj) obj)
 
-(defun princ (o) (write o nil) o)
+(defun princ (obj) (write obj nil) obj)
 
-(defun print (o) (lnwrite o) o)
+(defun print (obj) (lnwrite obj) obj)
 
 
 ;;; = Function: pprint
@@ -1426,7 +1423,7 @@
 ;;;
 ;;; Simple pretty printer,
 ;;; based on https://picolisp.com/wiki/?prettyPrint .
-(defun pprint (x)
+(defun pprint (obj)
   (labels
     ((size (l)
        (if l
@@ -1435,32 +1432,32 @@
                1)
          1))
 
-     (pp (x l)
+     (pp (obj l)
         (dotimes (ign (* l 3)) (write-char #\ ))
-        (if (< (size x) 6)
-              (write x)
+        (if (< (size obj) 6)
+              (write obj)
           (progn
             (write-char #\()
             (let loop ()
               (when
                 (and
                    (member
-                      (princ (pop x))
+                      (princ (pop obj))
                       '(lambda let let* letrec defun define defmacro setq setf if when unless dotimes dolist))
-                   (< (size (car x)) 7))
+                   (< (size (car obj)) 7))
                 (write-char #\ )
                 (loop)))
             (let loop ()
-              (when x
+              (when obj
                 (write-char #\Newline)
-                (if (atom x)
-                      (pp x (1+ l)))
-                  (progn (pp (pop x) (1+ l)) (loop))))
+                (if (atom obj)
+                      (pp obj (1+ l)))
+                  (progn (pp (pop obj) (1+ l)) (loop))))
             (write-char #\))
             t))))
 
     (writeln)
-    (pp x 0)))
+    (pp obj 0)))
 
 
 ;;; = Function: list-length
@@ -1472,10 +1469,10 @@
 ;;; Returns `nil` if `list-or-string` is a circular list.
 ;;;
 ;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-(defun list-length (x) 
+(defun list-length (lst) 
   (let loop ((n 0)         ; Counter 
-             (fast x)      ; Fast pointer: leaps by 2 
-             (slow x))     ; Slow pointer: leaps by 1 
+             (fast lst)      ; Fast pointer: leaps by 2 
+             (slow lst))     ; Slow pointer: leaps by 1 
     ;; If fast pointer hits the end, return the count. 
     (if (null fast) n
       (if (null (cdr fast)) (1+ n)
@@ -1503,10 +1500,10 @@
 
 
 ; helper function for time
-(defun call-with-timing (expr . args)
+(defun call-with-timing (func . args)
   (let* ((tstart-real (get-internal-real-time))
          (tstart-run  (get-internal-run-time))
-         (result (apply expr args))
+         (result (apply func args))
          (secs-real (/ (- (get-internal-real-time) tstart-real) internal-time-units-per-second))
          (secs-run  (/ (- (get-internal-run-time)  tstart-run) internal-time-units-per-second)))
     (format t "Evaluation took:%n  %g seconds of real time%n  %g seconds of total run time%n" secs-real secs-run)
@@ -1519,8 +1516,8 @@
 ;;; Since: 1.1
 ;;;
 ;;; `time` evaluates `form` and prints various timing data.
-(defmacro time (expr)
-  `(call-with-timing (lambda () ,expr)))
+(defmacro time (form)
+  `(call-with-timing (lambda () ,form)))
 
 
 ;;; = Function: circular-list
@@ -1552,11 +1549,11 @@
 ;;; of the resulting composition.
 ;;;
 ;;; When exactly one function is given, it is returned.
-(defun compose (f . more)
-  (if more
-        (let ((g (apply compose more)))
-          (lambda args (f (apply g args))))
-    f))
+(defun compose (func . more-functions)
+  (if more-functions
+        (let ((g (apply compose more-functions)))
+          (lambda args (func (apply g args))))
+    func))
 
 
 ;;; = Function: multiple-value-compose
@@ -1572,11 +1569,11 @@
 ;;; of the resulting composition.
 ;;;
 ;;; When exactly one function is given, it is returned.
-(defun multiple-value-compose (f . more)
-  (if more
-        (let ((g (apply multiple-value-compose more)))
-          (lambda args (multiple-value-call f (apply g args))))
-    f))
+(defun multiple-value-compose (func . more-functions)
+  (if more-functions
+        (let ((g (apply multiple-value-compose more-functions)))
+          (lambda args (multiple-value-call func (apply g args))))
+    func))
 
 
 ;;; = Function: conjoin
@@ -1756,8 +1753,7 @@
                                  (list (list (car tail) temp)))
                            (if (cdr tail)
                                  (cons (list 'setq temp (cons (caar tail) (append (cdar tail) (list temp)))) (loop (cdr tail)))
-                             (list (cons (caar tail) (append (cdar tail) (list temp)))))
-                             ))))
+                             (list (cons (caar tail) (append (cdar tail) (list temp)))))))))
           `(let ((,temp ,init))
              (and ,@forms)))
     (car terms)))
@@ -1876,3 +1872,6 @@
   (collecting
     (doplist (k v plist)
       (collect v))))
+
+
+(provide "mlib")
