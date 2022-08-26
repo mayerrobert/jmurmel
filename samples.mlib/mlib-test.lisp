@@ -616,6 +616,64 @@
 )
 
 
+; test generator functions
+#+murmel
+(tests scan
+  (let (result (g (scan 1 1.0 4)))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (4 3 2 1)
+
+  (let (result (g (scan 1.0 1.0 4)))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (4.0 3.0 2.0 1.0)
+
+  (let (result (g (scan 1 2 5)))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (nil 5.0 3.0 1.0)
+
+  (let (result (g (scan '(1 3 5))))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (nil 5 3 1)
+
+  (let (result (g (scan #(-1 1 3 5) 1)))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (nil 5 3 1)
+)
+
+#+murmel
+(tests scan-parallel
+  (let (result (g (scan-parallel (scan 1 1.0 4) (scan '(11 22 33 44 55)) (scan #(111 222 333 444)))))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => ((4 44 444)  (3 33 333) (2 22 222) (1 11 111))
+)
+
+#+murmel
+(tests scan-sequential
+  ; todo
+)
+
+#+murmel
+(tests dogenerator
+  (let (result)
+    (dogenerator (x (multiple-value-compose (lambda (v more) (if more (values (1+ v) more) (values nil nil)))
+                                            (scan 1 1 5)))
+      (push x result))
+    result) => (6 5 4 3 2)
+)
+
+
 ; test every, some, notevery, notany
 (tests predicates
   (every #'characterp "abc") =>  t

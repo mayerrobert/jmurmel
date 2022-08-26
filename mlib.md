@@ -66,7 +66,7 @@ as well as the following additional functions and macros:
 - [unzip-tails](#function-unzip-tails)
 - [*f, /f, +f, -f](#macro-f-f)
 - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
-- [scan](#function-scan), [scan-multiple](#function-scan-multiple), [dogenerator](#macro-dogenerator)
+- [scan](#function-scan), [scan-parallel](#function-scan-parallel), [dogenerator](#macro-dogenerator)
 
 ### Function: caar..cdddr
     (c..r lst) -> result
@@ -553,8 +553,8 @@ which is the return value of `mapcon`.
 Since: 1.3
 
 `scan` creates a generator function that on subsequent calls produces subsequent values.
-A generator function takes no arguments and returns `(values <next-value> t)`
-or `(values <undefined-value> nil)` if all values are exhausted.
+A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
+or `(values <undefined-value> nil)` to indicate "all values are exhausted".
 
 ### Function: scan-parallel
     (scan-parallel generator+) -> generator
@@ -563,7 +563,8 @@ Since: 1.3
 
 `scan-parallel` combines several generators into a single generator function
 that returns a list with subsequent values of all generators,
-and whose secondary value is nil if any generator returns nil as their secondary value
+and whose secondary value is nil if any generator returns nil as their secondary value.
+Once the first generator indicates "at end" for the first time no more generators will be called.
 
 ### Macro: dogenerator
     (dolist (var generator-form result-form*) statement*) -> result

@@ -65,7 +65,7 @@
 ;;; - [unzip-tails](#function-unzip-tails)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
-;;; - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [dogenerator](#macro-dogenerator)
+;;; - [scan](#function-scan), [scan-parallel](#function-scan-parallel), [dogenerator](#macro-dogenerator)
 
 
 (provide "mlib")
@@ -1096,8 +1096,8 @@
 ;;; Since: 1.3
 ;;;
 ;;; `scan` creates a generator function that on subsequent calls produces subsequent values.
-;;; A generator function takes no arguments and returns `(values <next-value> t)`
-;;; or `(values <undefined-value> nil)` if all values are exhausted.
+;;; A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
+;;; or `(values <undefined-value> nil)` to indicate "all values are exhausted".
 (defun scan (arg . more-args)
   (cond ((numberp arg)
          (let* ((start arg)
@@ -1189,22 +1189,28 @@
 ;;;
 ;;; `scan-parallel` combines several generators into a single generator function
 ;;; that returns a list with subsequent values of all generators,
-;;; and whose secondary value is nil if any generator returns nil as their secondary value
+;;; and whose secondary value is nil if any generator returns nil as their secondary value.
+;;; Once the first generator indicates "at end" for the first time no more generators will be called.
 (defun scan-parallel (generator . more-generators)
   (if more-generators
 
-        (let ((generators (cons generator more-generators)))
+        (let ((generators (cons generator more-generators)) (more-accum t))
           (lambda ()
-            (let (list-accum (more-accum t))
+            (let (list-accum (needs-reverse more-accum))
               (dolist (x generators)
-                (multiple-value-bind (result more) (x)
-                  (push result list-accum)
-                  (if (null more) (setq more-accum nil))))
-              (values (reverse list-accum) more-accum))))
+                (if more-accum
+                      (multiple-value-bind (result more) (x)
+                        (push result list-accum)
+                        (if (null more) (setq more-accum nil)))
+                  (push nil list-accum)))
+              (values (if needs-reverse (reverse list-accum) list-accum) more-accum))))
 
     (lambda ()
-      (multiple-value-bind (result more) (generator)
-        (values (list result) more)))))
+      (if generator
+            (multiple-value-bind (result more) (generator)
+              (unless more (setq generator nil))
+              (values (list result) more))
+        (values nil nil)))))
 
 
 ;;; = Macro: dogenerator
