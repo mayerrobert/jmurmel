@@ -931,24 +931,41 @@
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func seq . more-sequences)
-  (let* ((comb (if result-type
-                     cons
-                 (lambda (a b)))))
+  (let ((lists (if more-sequences
+                     (m%sequences->lists (cons seq more-sequences))
+                 (m%sequence->list seq))))
 
     (m%list->sequence (if more-sequences
-                      
+
                             (labels ((none-nil (lists)
                                        (if lists (and (car lists) (none-nil (cdr lists)))
                                          t)))
-                              (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                                (if (none-nil l)
-                                  (comb (apply func (unzip l))
-                                        (loop (unzip-tails l))))))
+                              (if result-type
+                                      (let* ((result (cons nil nil))
+                                             (append-to result))
+                                        (let loop ((l lists))
+                                          (when (none-nil l)
+                                            (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
+                                            (loop (unzip-tails l)))
+                                        (cdr result)))
+                                (let loop ((l lists))
+                                  (when (none-nil l)
+                                    (apply func (unzip l))
+                                    (loop (unzip-tails l))))))
 
-                        (let loop ((l (m%sequence->list seq)))
-                          (if l
-                            (comb (func (car l))
-                                  (loop (cdr l))))))
+                        (if result-type
+                                (let* ((result (cons nil nil))
+                                       (append-to result))
+                                  (let loop ((l lists))
+                                    (when l
+                                      (setq append-to (cdr (rplacd append-to (cons (func (car l)) nil))))
+                                      (loop (cdr l))))
+                                  (cdr result))
+                          (let loop ((l lists))
+                            (when l
+                              (func (car l))
+                              (loop (cdr l))))))
+  
                       result-type)))
 
 

@@ -8,6 +8,13 @@ Typsystem:
 
 
 einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackoverflow geben
+(let ((l (simple-vector->list (make-array 10000))))
+  (tests map-large
+    (let ((n 0)) (map nil (lambda (x) (incf n)) l) n) => 10000
+  ))
+
+(define l (simple-vector->list (make-array 10000))) (let ((n 0)) (map nil (lambda (x) (incf n)) l) n)
+
 
 mlib - scan: weitere helper
 (scan-if generator pred)... filtern
