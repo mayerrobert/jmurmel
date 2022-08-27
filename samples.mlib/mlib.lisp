@@ -1228,7 +1228,7 @@
 
 
 ;;; = Macro: dogenerator
-;;;     (dolist (var generator-form result-form*) statement*) -> result
+;;;     (dogenerator (var generator-form result-form*) statement*) -> result
 ;;;
 ;;; Since: 1.3
 ;;;
@@ -1328,12 +1328,14 @@
 ;;; evaluates to non-nil.
 (defun remove-if (pred seq)
   (labels ((remove-if/list (l)
-              (if l
-                   (let ((obj (car l)))
-                     (if (pred obj)
-                           (remove-if/list (cdr l))
-                       (cons obj (remove-if/list (cdr l)))))
-                nil)))
+              (let* ((result (cons nil nil))
+                     (append-to result))
+                (let loop ((l l))
+                  (when l
+                    (unless (pred (car l))
+                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
+                    (loop (cdr l))))
+                (cdr result))))
 
     (cond ((null seq)             nil)
           ((consp seq)            (remove-if/list seq))
@@ -1352,12 +1354,14 @@
 ;;; An occurrence is determined by `eql`.
 (defun remove (elem seq)
   (labels ((remove/list (l)
-              (if l
-                   (let ((obj (car l)))
-                     (if (eql elem obj)
-                           (remove/list (cdr l))
-                       (cons obj (remove/list (cdr l)))))
-                nil)))
+              (let* ((result (cons nil nil))
+                     (append-to result))
+                (let loop ((l l))
+                  (when l
+                    (unless (eql elem (car l))
+                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
+                    (loop (cdr l))))
+                (cdr result))))
 
     (cond ((null seq)             nil)
           ((consp seq)            (remove/list seq))
