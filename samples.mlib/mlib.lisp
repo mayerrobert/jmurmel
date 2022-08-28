@@ -557,7 +557,7 @@
           `(let ((,result ,first-form))
              ,@more-forms
              ,result))
-    `,first-form))
+    `(values ,first-form)))
 
 (defmacro prog2 (first-form second-form . more-forms)
   (if more-forms
@@ -567,7 +567,7 @@
                  (,result ,second-form))
              ,@more-forms
              ,result))
-    `(progn ,first-form ,second-form)))
+    `(progn ,first-form (values ,second-form))))
 
 
 ;;; = Macro: when

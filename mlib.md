@@ -567,7 +567,7 @@ and whose secondary value is nil if any generator returns nil as their secondary
 Once the first generator indicates "at end" for the first time no more generators will be called.
 
 ### Macro: dogenerator
-    (dolist (var generator-form result-form*) statement*) -> result
+    (dogenerator (var generator-form result-form*) statement*) -> result
 
 Since: 1.3
 
