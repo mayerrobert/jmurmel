@@ -65,7 +65,7 @@
 ;;; - [unzip-tails](#function-unzip-tails)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
-;;; - [scan](#function-scan), [scan-parallel](#function-scan-parallel), [dogenerator](#macro-dogenerator)
+;;; - [scan](#function-scan), [scan-parallel](#function-scan-parallel), [scan-sequential](#function-scan-sequential), [dogenerator](#macro-dogenerator)
 
 
 ;;; = Function: caar..cdddr
@@ -1229,6 +1229,34 @@
                     (values (list result) more)
                 (values (setq generator nil) nil)))
         (values nil nil)))))
+
+
+;;; = Function: scan-sequential
+;;;     (scan-sequential generator+) -> generator
+;;;
+;;; Since: 1.3
+;;;
+;;; `scan-sequential` combines several generators into a single generator function
+;;; that acts as if the given generators were concatenated.
+;;; 
+;;; A single generator would be returned unchanged.
+(defun scan-sequential (generator . more-generators)
+  (if (functionp generator) nil (fatal "not a generator"))
+  (if more-generators
+        (let ((more-generators more-generators))
+          (lambda ()
+            (if generator
+                  (multiple-value-bind (value more) (generator)
+                    (if more
+                          (values value more)
+                      (if more-generators
+                            (progn
+                              (setq generator (car more-generators))
+                              (setq more-generators (cdr more-generators))
+                              (generator))
+                        (values nil nil))))
+              (values nil nil))))
+    generator))
 
 
 ;;; = Macro: dogenerator

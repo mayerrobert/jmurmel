@@ -66,7 +66,7 @@ as well as the following additional functions and macros:
 - [unzip-tails](#function-unzip-tails)
 - [*f, /f, +f, -f](#macro-f-f)
 - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
-- [scan](#function-scan), [scan-parallel](#function-scan-parallel), [dogenerator](#macro-dogenerator)
+- [scan](#function-scan), [scan-parallel](#function-scan-parallel), [scan-sequential](#function-scan-sequential), [dogenerator](#macro-dogenerator)
 
 ### Function: caar..cdddr
     (c..r lst) -> result
@@ -565,6 +565,15 @@ Since: 1.3
 that returns a list with subsequent values of all generators,
 and whose secondary value is nil if any generator returns nil as their secondary value.
 Once the first generator indicates "at end" for the first time no more generators will be called.
+
+### Function: scan-sequential
+    (scan-sequential generator+) -> generator
+
+Since: 1.3
+
+`scan-sequential` combines several generators into a single generator function
+that acts as if the given generators were concatenated.
+A single generator would be returned unchanged.
 
 ### Macro: dogenerator
     (dogenerator (var generator-form result-form*) statement*) -> result
