@@ -1210,20 +1210,24 @@
 
         (let ((generators (cons generator more-generators)) (more-accum t))
           (lambda ()
-            (let (list-accum (needs-reverse more-accum))
-              (dolist (x generators)
-                (if more-accum
-                      (multiple-value-bind (result more) (x)
-                        (push result list-accum)
-                        (if (null more) (setq more-accum nil)))
-                  (push nil list-accum)))
-              (values (if needs-reverse (reverse list-accum) list-accum) more-accum))))
+            (if more-accum
+                  (let* ((list-accum (cons nil nil)) (append-to list-accum))
+                    (let loop ((x generators))
+                      (if x
+                        (if more-accum
+                          (multiple-value-bind (result more) ((car x))
+                            (if more
+                                  (progn (setq append-to (cdr (rplacd append-to (cons result nil)))) (loop (cdr x)))
+                              (setq more-accum nil))))))
+                    (values (cdr list-accum) more-accum))
+              (values nil nil))))
 
     (lambda ()
       (if generator
             (multiple-value-bind (result more) (generator)
-              (unless more (setq generator nil))
-              (values (list result) more))
+              (if more
+                    (values (list result) more)
+                (values (setq generator nil) nil)))
         (values nil nil)))))
 
 

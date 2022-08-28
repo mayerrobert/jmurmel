@@ -36,8 +36,6 @@ scan sequence erweitern:
 (scan sequence [start-idx [n]])
 -> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])
 
-dogenerator refactoren: statt push+reverse -> append-to vgl collect
-
 mlib: XX->list ersetzen durch generators
 
 gscheite implementierung von char, schar (?) in LambdaJ

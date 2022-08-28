@@ -657,6 +657,22 @@
     (push (g) result)
     (push (g) result)
     (push (g) result)) => ((4 44 444)  (3 33 333) (2 22 222) (1 11 111))
+  
+  (let (result (g (scan-parallel (scan '(1 2 3 4)) (scan '(11 22 33)))))
+    (dotimes (i 6 result)
+      (push (g) result))) => (nil nil (4) (3 33) (2 22) (1 11))
+
+  (let (result (g (scan-parallel (scan '(1 2 3)) (scan '(11 22)) (scan '(111 222 333)))))
+    (dotimes (i 6 result)
+      (push (g) result))) => (nil nil nil (3) (2 22 222) (1 11 111))
+
+  (let (result (g (scan-parallel (scan '(1 2 3)) (scan '(11 22 33)) (scan '(111 222 333)))))
+    (dotimes (i 6 result)
+      (push (g) result))) => (nil nil nil (3 33 333) (2 22 222) (1 11 111))
+
+  (let (result (g (scan-parallel (scan 1 1 3))))
+    (dotimes (i 6 result)
+      (push (g) result))) => (nil nil nil (3) (2) (1))
 )
 
 #+murmel

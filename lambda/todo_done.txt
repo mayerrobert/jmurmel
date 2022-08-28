@@ -1733,3 +1733,6 @@ str
 
 exp -> loop-spec
 form, forms, body
+
+
+scan-parallel refactoren: statt push+reverse -> append-to vgl collect
