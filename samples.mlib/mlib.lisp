@@ -1010,21 +1010,62 @@
   result))
 
 
-; Helper macro to generate defuns for the various maxXX functions
-(defmacro m%mapx (name comb acc accn return-list lastelem)
+; Helper macros to generate defuns for the various maxXX functions
+(defmacro m%mapx (name acc accn)
   `(defun ,name (func lst . more-lists)
      (if more-lists
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
                         t)))
              (let loop ((args (cons lst more-lists)))
-               (if (none-nil args)
-                     (,comb (apply func ,(if accn (list accn 'args) 'args)) (loop (unzip-tails args)))
-                 ,lastelem)))
+               (when (none-nil args)
+                 (apply func ,(if accn (list accn 'args) 'args))
+                 (loop (unzip-tails args)))))
        (let loop ((lst lst))
-         (if lst (,comb (func ,(if acc (list acc 'lst) 'lst)) (loop (cdr lst)))
-           ,lastelem)))
-    ,@(when return-list '(lst))))
+         (when lst
+           (func ,(if acc (list acc 'lst) 'lst))
+           (loop (cdr lst)))))
+    lst))
+
+(defmacro m%mapx-cons (name acc accn)
+  `(defun ,name (func lst . more-lists)
+     (let* ((result (cons nil nil)) (append-to result))
+       (if more-lists
+             (labels ((none-nil (lists)
+                        (if lists (and (car lists) (none-nil (cdr lists)))
+                          t)))
+               (let loop ((args (cons lst more-lists)))
+                 (when (none-nil args)
+                   (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) nil))))
+                   (loop (unzip-tails args)))))
+         (let loop ((lst lst))
+           (when lst
+             (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) nil))))
+             (loop (cdr lst)))))
+
+       (cdr result))))
+
+(defmacro m%mapx-nconc (name acc accn)
+  `(defun ,name (func lst . more-lists)
+     (let* ((result (cons nil nil)) (append-to result) tmp)
+       (if more-lists
+             (labels ((none-nil (lists)
+                        (if lists (and (car lists) (none-nil (cdr lists)))
+                          t)))
+               (let loop ((args (cons lst more-lists)))
+                 (when (none-nil args)
+                   (setq tmp (apply func ,(if accn (list accn 'args) 'args)))
+                   (nconc append-to tmp)
+                   (when tmp (setq append-to tmp))
+                   (loop (unzip-tails args)))))
+         (let loop ((lst lst))
+           (when lst
+             (setq tmp (func ,(if acc (list acc 'lst) 'lst)))
+             (nconc append-to tmp)
+             (when tmp (setq append-to tmp))
+             (loop (cdr lst)))))
+
+       (cdr result))))
 
 
 ;;; = Function: mapcar
@@ -1036,7 +1077,7 @@
 ;;; and will applied to subsequent items of the given lists.
 ;;; All `function` application results will be combined into a list
 ;;; which is the return value of `mapcar`.
-(m%mapx mapcar  cons    car unzip nil nil)
+(m%mapx-cons mapcar car unzip)
 
 
 ;;; = Function: maplist
@@ -1049,7 +1090,7 @@
 ;;;
 ;;; All `function` application results will be combined into a list
 ;;; which is the return value of `maplist`.
-(m%mapx maplist cons    nil nil nil nil)
+(m%mapx-cons maplist nil nil)
 
 
 ;;; = Function: mapc
@@ -1059,7 +1100,7 @@
 ;;;
 ;;; `function` must accept as many arguments as lists are given,
 ;;; and will applied to subsequent cars items of the given lists.
-(m%mapx mapc    progn   car unzip t nil)
+(m%mapx mapc car unzip)
 
 
 ;;; = Function: mapl
@@ -1069,7 +1110,7 @@
 ;;;
 ;;; `function` must accept as many arguments as lists are given,
 ;;; and will applied to subsequent tails of the given lists.
-(m%mapx mapl    progn   nil nil t nil)
+(m%mapx mapl nil nil)
 
 
 ;;; = Function: mapcan
@@ -1082,7 +1123,7 @@
 ;;;
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of `mapcan`.
-(m%mapx mapcan  append  car unzip nil nil)
+(m%mapx-nconc mapcan car unzip)
 
 
 ;;; = Function: mapcon
@@ -1095,10 +1136,12 @@
 ;;;
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of `mapcon`.
-(m%mapx mapcon  append  nil nil nil nil)
+(m%mapx-nconc mapcon nil nil)
 
-; undef m%mapx
+; undef m%mapx and friends
 (defmacro m%mapx)
+(defmacro m%mapx-cons)
+(defmacro m%mapx-combine)
 
 
 ;;; = Function: scan

@@ -465,7 +465,7 @@ Applies `function` to successive sets of arguments in which one argument
 is obtained from each sequence. The function is called first on all the elements
 with index 0, then on all those with index 1, and so on.
 The result-type specifies the type of the resulting sequence.
-   
+
 `map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
 such that element j is the result of applying `function` to element j of each
 of the sequences. The result sequence is as long as the shortest of the sequences.

@@ -6,13 +6,10 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
-
 einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackoverflow geben
-(let ((l (simple-vector->list (make-array 10000))))
-  (tests map-large
-    (let ((n 0)) (map nil (lambda (x) (incf n)) l) n) => 10000
-  ))
-
+-> mapc, mapl benutzen progn, sind ok
+   mapcar, maplist benutzen cons, sind nicht ok
+   mapcan, mapcon benutzen append, sind nicht ok
 
 mlib - scan: weitere helper
 (scan-if generator pred)... filtern
@@ -137,6 +134,7 @@ eval-when endlich einbauen
 siehe CLHS "Special Operator EVAL-WHEN" http://clhs.lisp.se/Body/s_eval_w.htm
 siehe CLHS "3.2.3.1 Processing of Top Level Forms" http://www.lispworks.com/documentation/lw60/CLHS/Body/03_bca.htm
 siehe CLtL "5.3.3. Control of Time of Evaluation" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node68.html
+-> vielleicht test dazunehmen? wie?
 
 -> (eval-when (compile | load | compile load) forms...)
    nur toplevel, CL hat noch "eval/ :execute", das brauchts eigentlich nur für non-toplevel eval-when
