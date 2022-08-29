@@ -13,8 +13,6 @@ einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackover
     (let ((n 0)) (map nil (lambda (x) (incf n)) l) n) => 10000
   ))
 
-(define l (simple-vector->list (make-array 10000))) (let ((n 0)) (map nil (lambda (x) (incf n)) l) n)
-
 
 mlib - scan: weitere helper
 (scan-if generator pred)... filtern
@@ -29,14 +27,12 @@ scan-plist dazu?
 (collect generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
 (count generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht?
 
-scan-multiple umbauen dass generators nach dem ersten nil nicht mehr aufgerufen werden
--> und umbenennen nach scan-parallel, zusätzlich (scan-sequential generator . more-generators)... nudelt einen nach dem anderen ab
-
 scan sequence erweitern:
 (scan sequence [start-idx [n]])
 -> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])
 
 mlib: XX->list ersetzen durch generators
+
 
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String

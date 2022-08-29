@@ -904,14 +904,14 @@
       nil)))
 
 (defun m%list->sequence (lst result-type)
-  (cond ((eq result-type 'list)              lst)
+  (cond ((null result-type)                  nil)
+        ((eq result-type 'list)              lst)
         ((eq result-type 'cons)              (if lst lst (fatal "not of type cons: nil")))
         ((eq result-type 'vector)            (list->simple-vector lst))
         ((eq result-type 'simple-vector)     (list->simple-vector lst))
         ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
         ((eq result-type 'string)            (list->string lst))
         ((eq result-type 'simple-string)     (list->string lst))
-        ((null result-type)                  nil)
         (t (fatal "not a sequence type"))))
 
 
@@ -924,49 +924,47 @@
 ;;; is obtained from each sequence. The function is called first on all the elements
 ;;; with index 0, then on all those with index 1, and so on.
 ;;; The result-type specifies the type of the resulting sequence.
-;;;    
+;;;
 ;;; `map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
 ;;; such that element j is the result of applying `function` to element j of each
 ;;; of the sequences. The result sequence is as long as the shortest of the sequences.
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func seq . more-sequences)
-  (let ((lists (if more-sequences
-                     (m%sequences->lists (cons seq more-sequences))
-                 (m%sequence->list seq))))
+  (setq seq (if more-sequences
 
-    (m%list->sequence (if more-sequences
+                  (labels ((none-nil (lists)
+                             (if lists (and (car lists) (none-nil (cdr lists)))
+                               t)))
+                    (if result-type
+                            (let* ((result (cons nil nil))
+                                   (append-to result))
+                              (let loop ((l (m%sequences->lists (cons seq more-sequences))))
+                                (when (none-nil l)
+                                  (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
+                                  (loop (unzip-tails l)))
+                              (cdr result)))
+                      (let loop ((l (m%sequences->lists (cons seq more-sequences))))
+                        (when (none-nil l)
+                          (apply func (unzip l))
+                          (loop (unzip-tails l))))))
 
-                            (labels ((none-nil (lists)
-                                       (if lists (and (car lists) (none-nil (cdr lists)))
-                                         t)))
-                              (if result-type
-                                      (let* ((result (cons nil nil))
-                                             (append-to result))
-                                        (let loop ((l lists))
-                                          (when (none-nil l)
-                                            (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
-                                            (loop (unzip-tails l)))
-                                        (cdr result)))
-                                (let loop ((l lists))
-                                  (when (none-nil l)
-                                    (apply func (unzip l))
-                                    (loop (unzip-tails l))))))
+              (if result-type
+                      (let* ((result (cons nil nil))
+                             (append-to result))
+                        (let loop ((l (m%sequence->list seq)))
+                          (when l
+                            (setq append-to (cdr (rplacd append-to (cons (func (car l)) nil))))
+                            (loop (cdr l))))
+                        (cdr result))
+                (let loop ((l (m%sequence->list seq)))
+                  (when l
+                    (func (car l))
+                    (loop (cdr l)))))))
 
-                        (if result-type
-                                (let* ((result (cons nil nil))
-                                       (append-to result))
-                                  (let loop ((l lists))
-                                    (when l
-                                      (setq append-to (cdr (rplacd append-to (cons (func (car l)) nil))))
-                                      (loop (cdr l))))
-                                  (cdr result))
-                          (let loop ((l lists))
-                            (when l
-                              (func (car l))
-                              (loop (cdr l))))))
-  
-                      result-type)))
+  (cond ((null result-type) nil)
+        ((eq result-type 'list) seq)
+        (t (m%list->sequence seq result-type))))
 
 
 ;;; = Function: map-into
