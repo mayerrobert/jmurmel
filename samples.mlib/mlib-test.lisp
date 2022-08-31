@@ -651,41 +651,41 @@
 )
 
 #+murmel
-(tests scan-parallel
-  (let (result (g (scan-parallel (scan 1 1.0 4) (scan '(11 22 33 44 55)) (scan #(111 222 333 444)))))
+(tests scan-multiple
+  (let (result (g (scan-multiple (scan 1 1.0 4) (scan '(11 22 33 44 55)) (scan #(111 222 333 444)))))
     (push (g) result)
     (push (g) result)
     (push (g) result)
     (push (g) result)) => ((4 44 444)  (3 33 333) (2 22 222) (1 11 111))
   
-  (let (result (g (scan-parallel (scan '(1 2 3 4)) (scan '(11 22 33)))))
+  (let (result (g (scan-multiple (scan '(1 2 3 4)) (scan '(11 22 33)))))
     (dotimes (i 6 result)
       (push (g) result))) => (nil nil (4) (3 33) (2 22) (1 11))
 
-  (let (result (g (scan-parallel (scan '(1 2 3)) (scan '(11 22)) (scan '(111 222 333)))))
+  (let (result (g (scan-multiple (scan '(1 2 3)) (scan '(11 22)) (scan '(111 222 333)))))
     (dotimes (i 6 result)
       (push (g) result))) => (nil nil nil (3) (2 22 222) (1 11 111))
 
-  (let (result (g (scan-parallel (scan '(1 2 3)) (scan '(11 22 33)) (scan '(111 222 333)))))
+  (let (result (g (scan-multiple (scan '(1 2 3)) (scan '(11 22 33)) (scan '(111 222 333)))))
     (dotimes (i 6 result)
       (push (g) result))) => (nil nil nil (3 33 333) (2 22 222) (1 11 111))
 
-  (let (result (g (scan-parallel (scan 1 1 3))))
+  (let (result (g (scan-multiple (scan 1 1 3))))
     (dotimes (i 6 result)
       (push (g) result))) => (nil nil nil (3) (2) (1))
 )
 
 #+murmel
-(tests scan-sequential
-  (let (result (g (scan-sequential (scan #(1 2 3)))))
+(tests scan-concat
+  (let (result (g (scan-concat (scan #(1 2 3)))))
     (dotimes (i 6 result)
       (push (g) result))) => (nil nil nil 3 2 1)
 
-  (let (result (g (scan-sequential (scan #(1 2 3)) (scan #(11 22 33)))))
+  (let (result (g (scan-concat (scan #(1 2 3)) (scan #(11 22 33)))))
     (dotimes (i 10 result)
       (push (g) result))) => (nil nil nil nil 33 22 11 3 2 1)
 
-  (let (result (g (scan-sequential (scan #(1 2 3)) (scan #(11 22 33)) (lambda () (values 111 t)))))
+  (let (result (g (scan-concat (scan #(1 2 3)) (scan #(11 22 33)) (lambda () (values 111 t)))))
     (dotimes (i 10 result)
       (push (g) result))) => (111 111 111 111 33 22 11 3 2 1)
 )

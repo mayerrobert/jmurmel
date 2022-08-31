@@ -6,30 +6,46 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
-einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackoverflow geben
--> mapc, mapl benutzen progn, sind ok
-   mapcar, maplist benutzen cons, sind nicht ok
-   mapcan, mapcon benutzen append, sind nicht ok
+Clojure hat swap!, z.B. (swap! i + 3)
+-> das könnte +f, -f, *f, /f usw. ersetzen
 
 mlib - scan: weitere helper
 (scan-if generator pred)... filtern
+-> oder "filter" ? oder remove-if erweitern?
 (scan-mapped generator function)... aufeinanderfolgende calls des erzeugten generators liefern (function (generator))
 -> brauchts das oder ist das (multiple-value-compose function generator) ?
    -> bei multiple-value-compose muss man selber den secondary value durchreichen, und ggf. bei nil nix machen
       wär also schon gut. eine function als parameter reicht, weil (scan-mapped generator (compose f3 f2 f1)) geht auch
+-> oder "transduce" ?
+
+(limit-if generator pred)
+-> liefert einen generator mit (values v (and more (pred v)))
+
 (scan-range generator first [count])
 
 (scan alist) liefert automatisch das erwünschte (values '(key . value) more)
 scan-plist dazu?
-(collect generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
-(count generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht?
+scan-iterator dazu für JFFI?
+-> oder "jscan" ? vielleicht auch java.sql.ResultSet?
+
+(collect-generator generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
+(count-generator generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht? oder beides? 
 
 scan sequence erweitern:
 (scan sequence [start-idx [n]])
 -> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])
 
+oder überhaupt generator ("lazy sequence") überall zulassen wo sequence erlaubt ist?
+
+
 mlib: XX->list ersetzen durch generators
 
+
+primitive und compilerprimitive könnten dasselbe sein, bzw. die interpreter primitives könnten CompilerPrimitive implementieren
+evalOpencode vervollständigen
+min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann expand 1x argcount checken
+-> und evalOpencode OHNE argcount checks
+-> und environment() könnte alle primitives generieren: loop über WellknownSymbol.values + argcountcheck + evalOpencode
 
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String

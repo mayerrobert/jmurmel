@@ -65,7 +65,7 @@
 ;;; - [unzip-tails](#function-unzip-tails)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
-;;; - [scan](#function-scan), [scan-parallel](#function-scan-parallel), [scan-sequential](#function-scan-sequential), [dogenerator](#macro-dogenerator)
+;;; - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
 
 
 ;;; = Function: caar..cdddr
@@ -1237,16 +1237,16 @@
        (t (fatal "scan: cannot create a generator function from given arguments"))))
 
 
-;;; = Function: scan-parallel
-;;;     (scan-parallel generator+) -> generator
+;;; = Function: scan-multiple
+;;;     (scan-multiple generator+) -> generator
 ;;;
 ;;; Since: 1.3
 ;;;
-;;; `scan-parallel` combines several generators into a single generator function
+;;; `scan-multiple` combines several generators into a single generator function
 ;;; that returns a list with subsequent values of all generators,
 ;;; and whose secondary value is nil if any generator returns nil as their secondary value.
 ;;; Once the first generator indicates "at end" for the first time no more generators will be called.
-(defun scan-parallel (generator . more-generators)
+(defun scan-multiple (generator . more-generators)
   (if more-generators
 
         (let ((generators (cons generator more-generators)) (more-accum t))
@@ -1272,16 +1272,16 @@
         (values nil nil)))))
 
 
-;;; = Function: scan-sequential
-;;;     (scan-sequential generator+) -> generator
+;;; = Function: scan-concat
+;;;     (scan-concat generator+) -> generator
 ;;;
 ;;; Since: 1.3
 ;;;
-;;; `scan-sequential` combines several generators into a single generator function
+;;; `scan-concat` combines several generators into a single generator function
 ;;; that acts as if the given generators were concatenated.
 ;;; 
 ;;; A single generator would be returned unchanged.
-(defun scan-sequential (generator . more-generators)
+(defun scan-concat (generator . more-generators)
   (if (functionp generator) nil (fatal "not a generator"))
   (if more-generators
         (let ((more-generators more-generators))

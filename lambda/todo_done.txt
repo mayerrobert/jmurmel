@@ -1735,7 +1735,12 @@ exp -> loop-spec
 form, forms, body
 
 
-scan-parallel refactoren: statt push+reverse -> append-to vgl collect
+scan-multiple refactoren: statt push+reverse -> append-to vgl collect
 
 scan-multiple umbauen dass generators nach dem ersten nil nicht mehr aufgerufen werden
--> und umbenennen nach scan-parallel, zusätzlich (scan-sequential generator . more-generators)... nudelt einen nach dem anderen ab
+-> und umbenennen nach scan-multiple, zusätzlich (scan-concat generator . more-generators)... nudelt einen nach dem anderen ab
+
+einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackoverflow geben
+-> mapc, mapl benutzen progn, sind ok
+   mapcar, maplist benutzen cons, sind nicht ok
+   mapcan, mapcon benutzen append, sind nicht ok
