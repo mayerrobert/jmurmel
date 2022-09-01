@@ -7,7 +7,8 @@ Typsystem:
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
 Clojure hat swap!, z.B. (swap! i + 3)
--> das könnte +f, -f, *f, /f usw. ersetzen
+-> das könnte +f, -f, *f, /f usw. ersetzen. der name swap! scheint eher ungünstig
+
 
 mlib - scan: weitere helper
 (scan-if generator pred)... filtern
@@ -21,7 +22,13 @@ mlib - scan: weitere helper
 (limit-if generator pred)
 -> liefert einen generator mit (values v (and more (pred v)))
 
-(scan-range generator first [count])
+(scan-range generator first [count])... Java hat skip und limit als getrennte operationen
+-> oder (subsequence skip . maxlength)
+   list: sublist, error falls skip > length, ggf. nils hintendran, vielleicht eine kopie, vielleicht nicht, oder doch kopie garantieren?
+   vector: neuer vector, allenfalls error falls skip+maxlength > originallength
+   generator: neuer generator
+   CL hat (subseq start [endexcl]), geht auch für setf (setf für generator wär problematisch)
+
 
 (scan alist) liefert automatisch das erwünschte (values '(key . value) more)
 scan-plist dazu?
@@ -36,6 +43,8 @@ scan sequence erweitern:
 -> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])
 
 oder überhaupt generator ("lazy sequence") überall zulassen wo sequence erlaubt ist?
+-> map, reduce, remove, remove-if, length könnten generators unterstützen
+-> (scan generator) sollte generator unverändert durchreichen
 
 
 mlib: XX->list ersetzen durch generators

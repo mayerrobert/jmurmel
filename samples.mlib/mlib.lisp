@@ -1324,17 +1324,17 @@
 
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
-  `(defun ,name (func lst . more-lists)
+  `(defun ,name (pred lst . more-lists)
      (if more-lists
            (labels ((none-nil (lists)
                       (if lists (and (car lists) (none-nil (cdr lists)))
                         t)))
              (let loop ((args (mapcar m%sequence->list (cons lst more-lists))))
                (if (none-nil args)
-                     (,comb (apply func (unzip args)) (loop (unzip-tails args)))
+                     (,comb (apply pred (unzip args)) (loop (unzip-tails args)))
                  ,lastelem)))
        (let loop ((lst (m%sequence->list lst)))
-         (if lst (,comb (func (car lst)) (loop (cdr lst)))
+         (if lst (,comb (pred (car lst)) (loop (cdr lst)))
            ,lastelem)))))
 
 
@@ -1375,8 +1375,8 @@
 ;;; and will be applied to subsequent items of the given sequences.
 ;;;
 ;;;     (notevery predicate sequence+) == (not (every predicate sequence+))
-(defun notevery (f seq . more)
-  (null (apply some (cons f (cons seq more)))))
+(defun notevery (pred seq . more-sequences)
+  (null (apply every (cons pred (cons seq more-sequences)))))
 
 
 ;;; = Function: notany
@@ -1388,8 +1388,8 @@
 ;;; and will be applied to subsequent items of the given sequences.
 ;;;
 ;;;     (notany predicate sequence+) == (not (some predicate sequence+))
-(defun notany (f seq . more)
-  (null (apply every (cons f (cons seq more)))))
+(defun notany (pred seq . more-sequences)
+  (null (apply some (cons pred (cons seq more-sequences)))))
 
 
 ;;; = Function: remove-if

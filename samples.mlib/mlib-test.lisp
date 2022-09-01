@@ -704,9 +704,14 @@
 (tests predicates
   (every #'characterp "abc") =>  t
   (every #'char= "abcdefg" '(#\a #\b)) => t
+
   (some     #'= '(1 2 3 4 5) '(5 4 3 2 1)) =>  t
+
   (notevery #'< '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  nil
+  (notevery #'< '(1 2 3 4) '(5 6 7 2) '(9 10 11 12)) =>  t
+
   (notany   #'> '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)) =>  t
+  (notany   #'> '(1 2 3 4) '(5 6 2 8) '(9 10 1 12)) =>  nil
 )
 
 
