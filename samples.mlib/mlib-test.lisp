@@ -637,17 +637,32 @@
     (push (g) result)
     (push (g) result)) => (nil 5.0 3.0 1.0)
 
+
   (let (result (g (scan '(1 3 5))))
     (push (g) result)
     (push (g) result)
     (push (g) result)
     (push (g) result)) => (nil 5 3 1)
 
+
+  (let (result (g (scan '(-1 1 3 5) 1 3)))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (nil nil 3 1)
+
+
   (let (result (g (scan #(-1 1 3 5) 1)))
     (push (g) result)
     (push (g) result)
     (push (g) result)
     (push (g) result)) => (nil 5 3 1)
+
+  (let (result (g (scan #(-1 1 3 5) 1 3)))
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)
+    (push (g) result)) => (nil nil 3 1)
 )
 
 #+murmel

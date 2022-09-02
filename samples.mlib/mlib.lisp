@@ -1145,8 +1145,8 @@
 
 
 ;;; = Function: scan
-;;;     (scan start [step [endincl]]) -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
-;;;     (scan sequence [start-idx])   -> generator-function that returns subsequent elements of the given sequence (list or vector)
+;;;     (scan start [step [endincl]])                -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
+;;;     (scan sequence [start-idx [stop-idx-excl]])  -> generator-function that returns subsequent elements of the given sequence (list or vector)
 ;;;
 ;;; Since: 1.3
 ;;;
@@ -1213,18 +1213,29 @@
 
         ((consp arg)
          (when more-args (setq arg (nthcdr (car more-args) arg)))
-         (lambda ()
-           (values (car arg)
-                   (when arg
-                     (setq arg (cdr arg))
-                     t))))
+         (if (cadr more-args)
+
+               (let* ((n (- (cadr more-args) (car more-args))))
+                 (lambda ()
+                   (if (and arg (> n 0))
+                         (values (prog1 (car arg) (setq arg (cdr arg)) (decf n))
+                                 t)
+                     (values nil nil))))
+
+           (lambda ()
+             (values (car arg)
+                     (when arg
+                       (setq arg (cdr arg))
+                       t)))))
 
        ((vectorp arg)
-        (let* ((len (vector-length arg))
-               (idx (if more-args (car more-args) 0))
-               (ref (cond ((simple-vector-p arg) svref)
+        (let* ((ref (cond ((simple-vector-p arg) svref)
                           ((simple-bit-vector-p arg) sbit)
-                          ((stringp arg) char))))
+                          ((stringp arg) char)))
+               (len (vector-length arg))
+               (idx (if more-args (car more-args) 0)))
+          (when (cdr more-args)
+            (if (< (cadr more-args) len) (setq len (cadr more-args)))) 
           (lambda ()
             (if (< idx len)
                   (values (ref arg idx)

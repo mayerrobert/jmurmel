@@ -547,8 +547,8 @@ All function application results will be concatenated to a list
 which is the return value of `mapcon`.
 
 ### Function: scan
-    (scan start [step [endincl]]) -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
-    (scan sequence [start-idx])   -> generator-function that returns subsequent elements of the given sequence (list or vector)
+    (scan start [step [endincl]])                -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
+    (scan sequence [start-idx [stop-idx-excl]])  -> generator-function that returns subsequent elements of the given sequence (list or vector)
 
 Since: 1.3
 
