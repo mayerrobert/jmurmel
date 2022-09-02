@@ -106,6 +106,19 @@
 (defmacro cdddr (lst) `(cdr (cdr (cdr ,lst))))
 
 
+(defun m%nonneg-integer-number (n)
+  (cond ((integerp n)
+         (if (< n 0) (fatal "must be an integer >= 0"))
+         n)
+
+        ((numberp n)
+         (if (< n 0) (fatal "must be an integer >= 0"))
+         (if (/= n (truncate n)) (fatal "must be an integer >= 0"))
+         (truncate n))
+
+        (t (fatal "must be an integer >= 0"))))
+
+
 ;;; = Function: nthcdr, nth
 ;;;     (nthcdr n lst) -> nth-tail
 ;;;     (nth n lst) -> nth-element
@@ -115,7 +128,7 @@
 ;;; `nthcdr` applies `cdr` n times and returns the result.
 ;;; `nth` works as if `(car (nthcdr n lst))` was invoked.
 (defun nthcdr (n lst)
-  (let loop ((n n) (lst lst))
+  (let loop ((n (m%nonneg-integer-number n)) (lst lst))
     (if (<= n 0) lst
       (loop (1- n) (cdr lst)))))
 
@@ -1151,6 +1164,9 @@
 ;;; Since: 1.3
 ;;;
 ;;; `scan` creates a generator function that on subsequent calls produces subsequent values.
+;;;
+;;; `start-idx` and `stop-idx-excl` if given must be integer numbers >= 0.
+;;;
 ;;; A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
 ;;; or `(values <undefined-value> nil)` to indicate "all values are exhausted".
 (defun scan (arg . more-args)
@@ -1212,15 +1228,16 @@
                               (progn (incf start step) t))))))))
 
         ((consp arg)
-         (when more-args (setq arg (nthcdr (car more-args) arg)))
-         (if (cadr more-args)
+         (when more-args
+           (setq arg (nthcdr (m%nonneg-integer-number (car more-args)) arg)))
 
-               (let* ((n (- (cadr more-args) (car more-args))))
-                 (lambda ()
-                   (if (and arg (> n 0))
-                         (values (prog1 (car arg) (setq arg (cdr arg)) (decf n))
-                                 t)
-                     (values nil nil))))
+         (if (cdr more-args)
+                 (let* ((n (floor (- (m%nonneg-integer-number (cadr more-args)) (car more-args)))))
+                   (lambda ()
+                     (if (and arg (> n 0))
+                           (values (prog1 (car arg) (setq arg (cdr arg)) (decf n))
+                                   t)
+                       (values nil nil))))
 
            (lambda ()
              (values (car arg)
@@ -1233,13 +1250,13 @@
                           ((simple-bit-vector-p arg) sbit)
                           ((stringp arg) char)))
                (len (vector-length arg))
-               (idx (if more-args (car more-args) 0)))
+               (idx (if more-args (m%nonneg-integer-number (car more-args)) 0)))
           (when (cdr more-args)
-            (if (< (cadr more-args) len) (setq len (cadr more-args)))) 
+            (if (< (cadr more-args) len) (setq len (m%nonneg-integer-number (cadr more-args)))))
           (lambda ()
             (if (< idx len)
                   (values (ref arg idx)
-                          (progn (setq idx (1+ idx)) t))
+                          (progn (incf idx) t))
               (values nil nil)))))
 
        ((null arg)

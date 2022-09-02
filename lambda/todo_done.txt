@@ -1744,3 +1744,7 @@ einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackover
 -> mapc, mapl benutzen progn, sind ok
    mapcar, maplist benutzen cons, sind nicht ok
    mapcan, mapcon benutzen append, sind nicht ok
+
+scan sequence erweitern:
+(scan sequence [start-idx [n]])
+-> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])

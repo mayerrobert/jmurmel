@@ -6,6 +6,10 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
+
+wenn in einem defun ein macro benutzt wird das erst später definiert wird, gibts z.B.
+java.lang.AssertionError: c:\robert\jmurmel\samples.mlib\mlib.lisp:118:3..118:60: unexpanded macro call: unless
+
 Clojure hat swap!, z.B. (swap! i + 3)
 -> das könnte +f, -f, *f, /f usw. ersetzen. der name swap! scheint eher ungünstig
 
@@ -29,10 +33,6 @@ mlib - scan: weitere helper
    generator: neuer generator
    CL hat (subseq start [endexcl]), geht auch für setf (setf für generator wär problematisch, für string auch)
 -> wenn scan auch generator unterstützt (und skip und count), brauchts kein scan-range 
-
-scan sequence erweitern:
-(scan sequence [start-idx [n]])
--> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])
 
 
 (scan alist) liefert automatisch das erwünschte (values '(key . value) more)

@@ -553,6 +553,9 @@ which is the return value of `mapcon`.
 Since: 1.3
 
 `scan` creates a generator function that on subsequent calls produces subsequent values.
+
+`start-idx` and `stop-idx-excl` if given must be integer numbers >= 0.
+
 A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
 or `(values <undefined-value> nil)` to indicate "all values are exhausted".
 
