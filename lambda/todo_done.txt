@@ -1748,3 +1748,11 @@ einige mapXX funktionen sind rekursiv aber nicht tail rekursiv -> kann stackover
 scan sequence erweitern:
 (scan sequence [start-idx [n]])
 -> oder (scan sequence [start-idx [every-nth [end-idx-excl]]])
+
+(scan-range generator first [count])... Java hat skip und limit als getrennte operationen
+-> oder (subsequence skip . maxlength)
+   list: sublist, error falls skip > length, ggf. nils hintendran, vielleicht eine kopie, vielleicht nicht, oder doch kopie garantieren?
+   vector: neuer vector, allenfalls error falls skip+maxlength > originallength
+   generator: neuer generator
+   CL hat (subseq start [endexcl]), geht auch für setf (setf für generator wär problematisch, für string auch)
+-> wenn scan auch generator unterstützt (und skip und count), brauchts kein scan-range 

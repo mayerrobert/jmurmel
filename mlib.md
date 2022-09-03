@@ -547,14 +547,14 @@ All function application results will be concatenated to a list
 which is the return value of `mapcon`.
 
 ### Function: scan
-    (scan start [step [endincl]])                -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
-    (scan sequence [start-idx [stop-idx-excl]])  -> generator-function that returns subsequent elements of the given sequence (list or vector)
+    (scan start [step [endincl]])                 -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
+    (scan seq-or-gen [start-idx [stop-idx-excl]]) -> generator-function that returns subsequent elements of the given sequence (list or vector) or generator
 
 Since: 1.3
 
 `scan` creates a generator function that on subsequent calls produces subsequent values.
 
-`start-idx` and `stop-idx-excl` if given must be integer numbers >= 0.
+`start-idx` and `stop-idx-excl` if given must be integer numbers >= 0, both are 0-based.
 
 A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
 or `(values <undefined-value> nil)` to indicate "all values are exhausted".

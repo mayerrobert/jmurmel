@@ -1158,14 +1158,14 @@
 
 
 ;;; = Function: scan
-;;;     (scan start [step [endincl]])                -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
-;;;     (scan sequence [start-idx [stop-idx-excl]])  -> generator-function that returns subsequent elements of the given sequence (list or vector)
+;;;     (scan start [step [endincl]])                 -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
+;;;     (scan seq-or-gen [start-idx [stop-idx-excl]]) -> generator-function that returns subsequent elements of the given sequence (list or vector) or generator
 ;;;
 ;;; Since: 1.3
 ;;;
 ;;; `scan` creates a generator function that on subsequent calls produces subsequent values.
 ;;;
-;;; `start-idx` and `stop-idx-excl` if given must be integer numbers >= 0.
+;;; `start-idx` and `stop-idx-excl` if given must be integer numbers >= 0, both are 0-based.
 ;;;
 ;;; A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
 ;;; or `(values <undefined-value> nil)` to indicate "all values are exhausted".
@@ -1258,6 +1258,32 @@
                   (values (ref arg idx)
                           (progn (incf idx) t))
               (values nil nil)))))
+
+       ((functionp arg) ; assume it's a generator
+        (if more-args
+              (if (cdr more-args)
+
+                    (let* ((skip (m%nonneg-integer-number (car more-args)))
+                           (count (floor (- (m%nonneg-integer-number (cadr more-args)) skip))))
+                      (when (<= count 0) (setq count nil))
+                      (lambda ()
+                        (when skip
+                          (dotimes (ignore skip) (arg))
+                          (setq skip nil))
+                        (if count
+                              (progn
+                                (setq count (if (> count 1) (1- count) nil))
+                                (arg))
+                          (values nil nil))))
+  
+                (let ((skip (m%nonneg-integer-number (car more-args))))
+                  (lambda ()
+                    (when skip
+                      (dotimes (ignore skip) (arg))
+                      (setq skip nil))
+                    (arg))))
+  
+          arg))
 
        ((null arg)
         (lambda () (values nil nil)))

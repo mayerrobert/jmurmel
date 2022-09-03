@@ -663,6 +663,12 @@
     (push (g) result)
     (push (g) result)
     (push (g) result)) => (nil nil 3 1)
+
+  (let (result) (dogenerator (i (scan (scan 0 1 10) 0)) (push i result)) (reverse result))
+    ==> (0 1 2 3 4 5 6 7 8 9 10)
+
+  (let (result) (dogenerator (i (scan (scan 0 1 10) 2 5)) (push i result)) (reverse result))
+    ==> (2 3 4)
 )
 
 #+murmel
