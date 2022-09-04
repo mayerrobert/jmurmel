@@ -19,37 +19,39 @@ and begin your source file with
 
 mlib provides the following Common Lisp-like functions and macros:
 
-- [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last), [nconc](#function-nconc)
+- [not](#function-not), [and](#macro-and), [or](#macro-or)
+- [prog1, prog2](#macro-prog1-prog2)
+- [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
+- [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+- [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [member](#function-member)
+- [acons](#function-acons)
+- [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+- [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
 - [destructuring-bind](#macro-destructuring-bind)
 - [get-setf-expansion](#function-get-setf-expansion)
 - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
 - [push](#macro-push), [pop](#macro-pop)
-- [acons](#function-acons)
-- [not](#function-not), [and](#macro-and), [or](#macro-or)
 - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
 - [char=](#function-char), [char](#function-char-1)
 - [equal](#function-equal)
-- [prog1, prog2](#macro-prog1-prog2)
-- [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
-- [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
-- [member](#function-member), [reverse](#function-reverse)
-- [map](#function-map), [map-into](#function-map-into)
-- [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
-- [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
+- [length](#function-length)
+- [reverse](#function-reverse)
 - [remove-if](#function-remove-if), [remove](#function-remove)
+- [map](#function-map), [map-into](#function-map-into)
 - [reduce](#function-reduce)
+- [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
+- [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
 - [write-char](#function-write-char)
 - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
-- [list-length](#function-list-length), [length](#function-length)
 - [time](#macro-time)
 
 functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 
 - [circular-list](#function-circular-list)
+- [doplist](#macro-doplist)
 - [compose](#function-compose), [multiple-value-compose](#function-multiple-value-compose)
 - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 - [curry](#function-curry), [rcurry](#function-rcurry)
-- [doplist](#macro-doplist)
 - [with-gensyms](#macro-with-gensyms)
 
 functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
@@ -68,6 +70,72 @@ as well as the following additional functions and macros:
 - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
 
+### Function: not
+    (not form) -> boolean
+
+Since: 1.1
+
+Logical not.
+
+### Macro: and
+    (and forms*) -> boolean
+
+Since: 1.1
+
+Short-circuiting logical and.
+Return `t` unless any of the `forms` evaluate to `nil`,
+`nil` otherwise.
+
+### Macro: or
+    (or forms*) -> result
+
+Since: 1.1
+
+Short-circuiting logical or.
+Return `nil` unless any of the `forms` evaluate to non-nil,
+the result of the first form returning non-nil otherwise.
+
+### Macro: prog1, prog2
+    (prog1 first-form more-forms*) -> result-1
+    (prog2 first-form second-form more-forms*) -> result-2
+
+Since: 1.1
+
+### Macro: when
+    (when condition forms*) -> result
+
+Since: 1.1
+
+Execute `forms` if `condition` evaluates to true
+and return the result of the last form if any.
+Otherwise if `condition` evaluates to false,
+the forms are not evaluated and the return value
+of the `when`-form is `nil`.
+
+### Macro: unless
+    (unless condition forms*) -> result
+
+Since: 1.1
+
+Execute `forms` if `condition` evaluates to false
+and return the result of the last form if any.
+Otherwise if `condition` evaluates to true,
+the forms are not evaluated and the return value
+of the `unless`-form is `nil`.
+
+### Macro: case
+     (case keyform (keys forms*)* (t forms*)?) -> result
+
+Since: 1.1
+
+`keys` can be a single key or a list of keys, keys will not be evaluated.
+`keyform` will be matched against `keys` using `eql`, the `forms` of the
+matching clause will be eval'd and the last form determines the result.
+Subsequent clauses will be ignored.
+
+A clause with a key that is a single `t` is used as the default clause
+if no key matches.
+
 ### Function: caar..cdddr
     (c..r lst) -> result
 
@@ -83,6 +151,43 @@ Since: 1.1
 
 `nthcdr` applies `cdr` n times and returns the result.
 `nth` works as if `(car (nthcdr n lst))` was invoked.
+
+### Function: unzip
+    (unzip lists) -> result-list
+
+Since: 1.2
+
+`unzip` takes a list of lists, and returns a list
+containing the initial element of each such list,
+e.g.:
+
+    (unzip '((1 2) (11 22) (111 222))) ; ==> (1 11 111)
+    (unzip '(nil nil nil)) ; ==> (nil nil nil)
+    (unzip nil) ; ==> nil
+
+Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
+
+See also: [unzip-tails](#function-unzip-tails).
+
+### Function: unzip-tails
+    (unzip-tails lists) -> result-list
+
+Since: 1.2
+
+`unzip-tails` takes a list of lists, and returns a list
+containing the `cdr`s of each such list.
+
+See also: [unzip](#function-unzip).
+
+### Function: list-length
+    (list-length list-or-string) -> length
+
+Since: 1.1
+
+Returns the length of `list-or-string` if it is a string or proper list.
+Returns `nil` if `list-or-string` is a circular list.
+
+See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
 
 ### Function: last
     (last lst) -> last-cons-or-nil
@@ -100,6 +205,137 @@ Since: 1.2
 `nconc` concatenates lists, each list but the last is modified.
 If no lists are supplied, `nconc` returns `nil`.
 Each argument but the last must be a proper or dotted list.
+
+### Function: member
+    (member item list [test]) -> tail
+
+Since: 1.1
+
+`member` searches list for `item` or for a top-level element that
+satisfies the `test`.
+
+`test` if given must be a function that takes two arguments.
+If `test` was omitted or `nil` then `eql` will be used.
+
+Example usage:
+
+    (member 2 '(1 2 3))
+        ; => (2 3)
+    (member 'e '(a b c d))
+        ; => NIL
+    (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal)
+        ; => ((1 . 1) (2 . 2) (3 . 3))
+    (member 'c '(a b c 1 2 3) eq)
+        ; => (c 1 2 3)
+    (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
+        ; => (b c 1 2 3)
+
+### Function: acons
+    (acons key datum alist) -> new-alist
+
+Since: 1.1
+
+Prepends `alist` with a new `(key . datum)` tuple
+and returns the modified list.
+
+### Function: mapcar
+    (mapcar function list+) -> list
+
+Since: 1.1
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent items of the given lists.
+All `function` application results will be combined into a list
+which is the return value of `mapcar`.
+
+### Function: maplist
+    (maplist function list+) -> list
+
+Since: 1.1
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent tails of the given lists.
+
+All `function` application results will be combined into a list
+which is the return value of `maplist`.
+
+### Function: mapc
+    (mapc function list+) -> first-arg
+
+Since: 1.1
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent cars items of the given lists.
+
+### Function: mapl
+    (mapl function list+) -> first-arg
+
+Since: 1.1
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent tails of the given lists.
+
+### Function: mapcan
+    (mapcan function list+) -> concatenated-results
+
+Since: 1.1
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent items of the given lists.
+
+All function application results will be concatenated to a list
+which is the return value of `mapcan`.
+
+### Function: mapcon
+    (mapcon function list+) -> concatenated-results
+
+Since: 1.1
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent tails of the given lists.
+
+All function application results will be concatenated to a list
+which is the return value of `mapcon`.
+
+### Macro: do, do*
+    (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+    (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+
+Since: 1.1
+
+`do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
+
+### Macro: dotimes
+    (dotimes (var count-form result-form*) statement*) -> result
+
+Since: 1.1
+
+Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
+Murmel however supports multiple result-forms which will be eval'd in an
+implicit `progn`, similar to `do` and `do*`;
+
+Sample usage:
+
+    (let (l)
+      (dotimes (i 10 l)
+        (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
+
+### Macro: dolist
+    (dolist (var list-form result-form*) statement*) -> result
+
+Since: 1.1
+
+Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+Murmel however supports multiple result-forms which will be eval'd in an
+implicit `progn`, similar to `do` and `do*`;
+
+### Macro: doplist
+    (doplist (key-var value-var plist-form result-form*) statement*) -> result
+
+Since: 1.2
+
+Iterates over key-value pairs of `plist-form`.
+Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
 
 ### Macro: destructuring-bind
     (destructuring-bind (vars*) expression forms*)
@@ -204,39 +440,6 @@ Since: 1.1
 was retrieved, writes the cdr of the list back into the `place`,
 and finally yields the car of the originally retrieved list.
 
-### Function: acons
-    (acons key datum alist) -> new-alist
-
-Since: 1.1
-
-Prepends `alist` with a new `(key . datum)` tuple
-and returns the modified list.
-
-### Function: not
-    (not form) -> boolean
-
-Since: 1.1
-
-Logical not.
-
-### Macro: and
-    (and forms*) -> boolean
-
-Since: 1.1
-
-Short-circuiting logical and.
-Return `t` unless any of the `forms` evaluate to `nil`,
-`nil` otherwise.
-
-### Macro: or
-    (or forms*) -> result
-
-Since: 1.1
-
-Short-circuiting logical or.
-Return `nil` unless any of the `forms` evaluate to non-nil,
-the result of the first form returning non-nil otherwise.
-
 ### Function: abs
     (abs number) -> result
 
@@ -290,262 +493,6 @@ Return `t` if any of the following is true:
 - `a` and `b` are strings, characters or symbols and have the same text value
 - `a` and `b` are conses whose car and cdr are `equal` respectively
 
-### Macro: prog1, prog2
-    (prog1 first-form more-forms*) -> result-1
-    (prog2 first-form second-form more-forms*) -> result-2
-
-Since: 1.1
-
-### Macro: when
-    (when condition forms*) -> result
-
-Since: 1.1
-
-Execute `forms` if `condition` evaluates to true
-and return the result of the last form if any.
-Otherwise if `condition` evaluates to false,
-the forms are not evaluated and the return value
-of the `when`-form is `nil`.
-
-### Macro: unless
-    (unless condition forms*) -> result
-
-Since: 1.1
-
-Execute `forms` if `condition` evaluates to false
-and return the result of the last form if any.
-Otherwise if `condition` evaluates to true,
-the forms are not evaluated and the return value
-of the `unless`-form is `nil`.
-
-### Macro: case
-     (case keyform (keys forms*)* (t forms*)?) -> result
-
-Since: 1.1
-
-`keys` can be a single key or a list of keys, keys will not be evaluated.
-`keyform` will be matched against `keys` using `eql`, the `forms` of the
-matching clause will be eval'd and the last form determines the result.
-Subsequent clauses will be ignored.
-
-A clause with a key that is a single `t` is used as the default clause
-if no key matches.
-
-### Macro: do, do*
-    (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
-    (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
-
-Since: 1.1
-
-`do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
-
-### Macro: dotimes
-    (dotimes (var count-form result-form*) statement*) -> result
-
-Since: 1.1
-
-Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
-Murmel however supports multiple result-forms which will be eval'd in an
-implicit `progn`, similar to `do` and `do*`;
-
-Sample usage:
-
-    (let (l)
-      (dotimes (i 10 l)
-        (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
-
-### Macro: dolist
-    (dolist (var list-form result-form*) statement*) -> result
-
-Since: 1.1
-
-Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
-Murmel however supports multiple result-forms which will be eval'd in an
-implicit `progn`, similar to `do` and `do*`;
-
-### Macro: doplist
-    (doplist (key-var value-var plist-form result-form*) statement*) -> result
-
-Since: 1.2
-
-Iterates over key-value pairs of `plist-form`.
-Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
-
-### Function: identity
-    (identity object) -> object
-
-Since: 1.1
-
-`identity` returns its argument `object`.
-
-### Function: constantly
-    (constantly value) -> function
-
-Since: 1.1
-
-`constantly` returns a function that accepts any number of arguments,
-that has no side-effects, and that always returns `value`.
-
-### Function: complement
-    (complement function) -> complement-function
-
-Since: 1.1
-
-`complement` returns a function that takes the same arguments as `function`,
-and has the same side-effect behavior as `function`, but returns only
-a single value: a boolean with the opposite truth value of that
-which would be returned as the value of `function`.
-
-### Function: member
-    (member item list [test]) -> tail
-
-Since: 1.1
-
-`member` searches list for `item` or for a top-level element that
-satisfies the `test`.
-
-`test` if given must be a function that takes two arguments.
-If `test` was omitted or `nil` then `eql` will be used.
-
-Example usage:
-
-    (member 2 '(1 2 3))
-        ; => (2 3)
-    (member 'e '(a b c d))
-        ; => NIL
-    (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal)
-        ; => ((1 . 1) (2 . 2) (3 . 3))
-    (member 'c '(a b c 1 2 3) eq)
-        ; => (c 1 2 3)
-    (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
-        ; => (b c 1 2 3)
-
-### Function: reverse
-    (reverse sequence) -> reversed-sequence
-
-Since: 1.1
-
-If `sequence` is a list then return a fresh list
-with elements in reversed order, if `sequence`
-is a vector then return a fresh reversed vector.
-
-### Function: unzip
-    (unzip lists) -> result-list
-
-Since: 1.2
-
-`unzip` takes a list of lists, and returns a list
-containing the initial element of each such list,
-e.g.:
-
-    (unzip '((1 2) (11 22) (111 222))) ; ==> (1 11 111)
-    (unzip '(nil nil nil)) ; ==> (nil nil nil)
-    (unzip nil) ; ==> nil
-
-Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
-
-See also: [unzip-tails](#function-unzip-tails).
-
-### Function: unzip-tails
-    (unzip-tails lists) -> result-list
-
-Since: 1.2
-
-`unzip-tails` takes a list of lists, and returns a list
-containing the `cdr`s of each such list.
-
-See also: [unzip](#function-unzip).
-
-### Function: map
-    (map result-type function sequences+) -> result
-
-Since 1.3
-
-Applies `function` to successive sets of arguments in which one argument
-is obtained from each sequence. The function is called first on all the elements
-with index 0, then on all those with index 1, and so on.
-The result-type specifies the type of the resulting sequence.
-
-`map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
-such that element j is the result of applying `function` to element j of each
-of the sequences. The result sequence is as long as the shortest of the sequences.
-
-Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
-
-### Function: map-into
-    (map-into result-list function sequence*) -> result-list
-
-Since: 1.2
-
-Destructively modifies `result-list` to contain the results
-of applying `function` to each element in the argument lists in turn.
-The iteration terminates when the shortest list (of any of
-the lists or the result-list) is exhausted.
-
-If `result-list` is `nil`, `map-into` returns `nil`.
-
-Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
-only lists are supported as result-list, tough.
-
-### Function: mapcar
-    (mapcar function list+) -> list
-
-Since: 1.1
-
-`function` must accept as many arguments as lists are given,
-and will applied to subsequent items of the given lists.
-All `function` application results will be combined into a list
-which is the return value of `mapcar`.
-
-### Function: maplist
-    (maplist function list+) -> list
-
-Since: 1.1
-
-`function` must accept as many arguments as lists are given,
-and will applied to subsequent tails of the given lists.
-
-All `function` application results will be combined into a list
-which is the return value of `maplist`.
-
-### Function: mapc
-    (mapc function list+) -> first-arg
-
-Since: 1.1
-
-`function` must accept as many arguments as lists are given,
-and will applied to subsequent cars items of the given lists.
-
-### Function: mapl
-    (mapl function list+) -> first-arg
-
-Since: 1.1
-
-`function` must accept as many arguments as lists are given,
-and will applied to subsequent tails of the given lists.
-
-### Function: mapcan
-    (mapcan function list+) -> concatenated-results
-
-Since: 1.1
-
-`function` must accept as many arguments as lists are given,
-and will applied to subsequent items of the given lists.
-
-All function application results will be concatenated to a list
-which is the return value of `mapcan`.
-
-### Function: mapcon
-    (mapcon function list+) -> concatenated-results
-
-Since: 1.1
-
-`function` must accept as many arguments as lists are given,
-and will applied to subsequent tails of the given lists.
-
-All function application results will be concatenated to a list
-which is the return value of `mapcon`.
-
 ### Function: scan
     (scan start [step [endincl]])                 -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
     (scan seq-or-gen [start-idx [stop-idx-excl]]) -> generator-function that returns subsequent elements of the given sequence (list or vector) or generator
@@ -585,6 +532,116 @@ Since: 1.3
 
 `dogenerator` creates a generator by eval'ing `generator-form`
 and iterates over the values yielded by subsequent generator applications.
+
+### Function: length
+    (length sequence) -> length
+
+Since: 1.1
+
+Returns the length of `sequence`.
+
+### Function: reverse
+    (reverse sequence) -> reversed-sequence
+
+Since: 1.1
+
+If `sequence` is a list then return a fresh list
+with elements in reversed order, if `sequence`
+is a vector then return a fresh reversed vector.
+
+### Function: remove-if
+    (remove-if pred sequence) -> sequence
+
+Since: 1.1
+
+Return a fresh sequence without the elements for which `pred`
+evaluates to non-nil.
+
+### Function: remove
+    (remove elem sequence) -> sequence
+
+Since: 1.1
+
+Return a fresh sequence without occurrences of `elem`.
+An occurrence is determined by `eql`.
+
+### Function: map
+    (map result-type function sequences+) -> result
+
+Since 1.3
+
+Applies `function` to successive sets of arguments in which one argument
+is obtained from each sequence. The function is called first on all the elements
+with index 0, then on all those with index 1, and so on.
+The result-type specifies the type of the resulting sequence.
+
+`map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
+such that element j is the result of applying `function` to element j of each
+of the sequences. The result sequence is as long as the shortest of the sequences.
+
+Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
+
+### Function: map-into
+    (map-into result-list function sequence*) -> result-list
+
+Since: 1.2
+
+Destructively modifies `result-list` to contain the results
+of applying `function` to each element in the argument lists in turn.
+The iteration terminates when the shortest list (of any of
+the lists or the result-list) is exhausted.
+
+If `result-list` is `nil`, `map-into` returns `nil`.
+
+Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
+only lists are supported as result-list, tough.
+
+### Function: reduce
+    (reduce func sequence [from-end-p]) -> result
+
+Since: 1.1
+
+If `sequence` is empty then `reduce` will return `(func)`.
+
+Otherwise if `sequence` contains one element then `reduce` will
+return this element.
+
+Otherwise if `from-end-p` is omitted or `nil` then
+`func` will be called with the first two elements
+of the `sequence` and subsequently with the previous result
+and the next element, and `reduce` will return the last
+result from `func`.
+
+Otherwise if `from-end-p` is given and non-nil then
+`func` will be called with the last two elements
+of the `sequence` and subsequently with the previous result
+and the previous element, and `reduce` will return the last
+result from `func`.
+
+### Function: identity
+    (identity object) -> object
+
+Since: 1.1
+
+`identity` returns its argument `object`.
+
+### Function: constantly
+    (constantly value) -> function
+
+Since: 1.1
+
+`constantly` returns a function that accepts any number of arguments,
+that has no side-effects, and that always returns `value`.
+
+### Function: complement
+    (complement function) -> complement-function
+
+Since: 1.1
+
+`complement` returns a function that takes the same arguments as `function`,
+and has the same side-effect behavior as `function`, but returns only
+a single value: a boolean with the opposite truth value of that
+which would be returned as the value of `function`.
 
 ### Function: every
     (every function sequence+) -> boolean
@@ -628,44 +685,6 @@ and will be applied to subsequent items of the given sequences.
 
     (notany predicate sequence+) == (not (some predicate sequence+))
 
-### Function: remove-if
-    (remove-if pred sequence) -> sequence
-
-Since: 1.1
-
-Return a fresh sequence without the elements for which `pred`
-evaluates to non-nil.
-
-### Function: remove
-    (remove elem sequence) -> sequence
-
-Since: 1.1
-
-Return a fresh sequence without occurrences of `elem`.
-An occurrence is determined by `eql`.
-
-### Function: reduce
-    (reduce func sequence [from-end-p]) -> result
-
-Since: 1.1
-
-If `sequence` is empty then `reduce` will return `(func)`.
-
-Otherwise if `sequence` contains one element then `reduce` will
-return this element.
-
-Otherwise if `from-end-p` is omitted or `nil` then
-`func` will be called with the first two elements
-of the `sequence` and subsequently with the previous result
-and the next element, and `reduce` will return the last
-result from `func`.
-
-Otherwise if `from-end-p` is given and non-nil then
-`func` will be called with the last two elements
-of the `sequence` and subsequently with the previous result
-and the previous element, and `reduce` will return the last
-result from `func`.
-
 ### Function: write-char
     (write-char c) -> c
 
@@ -684,23 +703,6 @@ Since: 1.1
 
 Simple pretty printer,
 based on https://picolisp.com/wiki/?prettyPrint .
-
-### Function: list-length
-    (list-length list-or-string) -> length
-
-Since: 1.1
-
-Returns the length of `list-or-string` if it is a string or proper list.
-Returns `nil` if `list-or-string` is a circular list.
-
-See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-
-### Function: length
-    (length sequence) -> length
-
-Since: 1.1
-
-Returns the length of `sequence`.
 
 ### Macro: time
     (time form) -> result

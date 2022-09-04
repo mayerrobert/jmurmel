@@ -18,37 +18,56 @@
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
-;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [last](#function-last), [nconc](#function-nconc)
+; logic, program structure
+;;; - [not](#function-not), [and](#macro-and), [or](#macro-or)
+;;; - [prog1, prog2](#macro-prog1-prog2)
+;;; - [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
+
+; conses and lists
+;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+;;; - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [member](#function-member)
+;;; - [acons](#function-acons)
+;;; - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+
+; loops
+;;; - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
+
+; places
 ;;; - [destructuring-bind](#macro-destructuring-bind)
 ;;; - [get-setf-expansion](#function-get-setf-expansion)
 ;;; - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
 ;;; - [push](#macro-push), [pop](#macro-pop)
-;;; - [acons](#function-acons)
-;;; - [not](#function-not), [and](#macro-and), [or](#macro-or)
+
+; numbers, characters
 ;;; - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
 ;;; - [char=](#function-char), [char](#function-char-1)
 ;;; - [equal](#function-equal)
-;;; - [prog1, prog2](#macro-prog1-prog2)
-;;; - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
-;;; - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
-;;; - [member](#function-member), [reverse](#function-reverse)
-;;; - [map](#function-map), [map-into](#function-map-into)
-;;; - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
-;;; - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
+
+; sequences
+;;; - [length](#function-length)
+;;; - [reverse](#function-reverse)
 ;;; - [remove-if](#function-remove-if), [remove](#function-remove)
+;;; - [map](#function-map), [map-into](#function-map-into)
 ;;; - [reduce](#function-reduce)
+
+; higher order
+;;; - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
+;;; - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
+
+; I/O
 ;;; - [write-char](#function-write-char)
 ;;; - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
-;;; - [list-length](#function-list-length), [length](#function-length)
+
+; misc
 ;;; - [time](#macro-time)
 ;;;
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
 ;;; - [circular-list](#function-circular-list)
+;;; - [doplist](#macro-doplist)
 ;;; - [compose](#function-compose), [multiple-value-compose](#function-multiple-value-compose)
 ;;; - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
 ;;; - [curry](#function-curry), [rcurry](#function-rcurry)
-;;; - [doplist](#macro-doplist)
 ;;; - [with-gensyms](#macro-with-gensyms)
 ;;;
 ;;; functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
@@ -65,8 +84,162 @@
 ;;; - [unzip-tails](#function-unzip-tails)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
+; generators
 ;;; - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
 
+
+; logic, program structure ********************************************
+
+;;; = Function: not
+;;;     (not form) -> boolean
+;;;
+;;; Since: 1.1
+;;;
+;;; Logical not.
+(define not null)
+(defmacro not (form)
+  `(null ,form))
+
+
+;;; = Macro: and
+;;;     (and forms*) -> boolean
+;;;
+;;; Since: 1.1
+;;;
+;;; Short-circuiting logical and.
+;;; Return `t` unless any of the `forms` evaluate to `nil`,
+;;; `nil` otherwise.
+(defmacro and forms
+   (if forms
+         (if (cdr forms)
+               `(if ,(car forms)
+                 (and ,@(cdr forms)))
+           (car forms))
+     t))
+
+
+;;; = Macro: or
+;;;     (or forms*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Short-circuiting logical or.
+;;; Return `nil` unless any of the `forms` evaluate to non-nil,
+;;; the result of the first form returning non-nil otherwise.
+(defmacro or forms
+  (labels ((m%or (tmp forms)
+             (if forms
+                   (if (cdr forms)
+                         `(if (setq ,tmp ,(car forms))
+                                ,tmp
+                            ,(m%or tmp (cdr forms)))
+                     (car forms))
+               nil)))
+
+    (if forms
+          (if (cdr forms)
+                (let ((temp (gensym)))
+                  `(let ((,temp ,(car forms)))
+                      (if ,temp
+                            ,temp
+                        ,(m%or temp (cdr forms)))))
+            (car forms))
+      nil)))
+
+
+;;; = Macro: prog1, prog2
+;;;     (prog1 first-form more-forms*) -> result-1
+;;;     (prog2 first-form second-form more-forms*) -> result-2
+;;;
+;;; Since: 1.1
+(defmacro prog1 (first-form . more-forms)
+  (if more-forms
+        (let ((result (gensym)))
+          `(let ((,result ,first-form))
+             ,@more-forms
+             ,result))
+    `(values ,first-form)))
+
+(defmacro prog2 (first-form second-form . more-forms)
+  (if more-forms
+        (let ((ignore (gensym))
+              (result (gensym)))
+          `(let ((,ignore ,first-form)
+                 (,result ,second-form))
+             ,@more-forms
+             ,result))
+    `(progn ,first-form (values ,second-form))))
+
+
+;;; = Macro: when
+;;;     (when condition forms*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Execute `forms` if `condition` evaluates to true
+;;; and return the result of the last form if any.
+;;; Otherwise if `condition` evaluates to false,
+;;; the forms are not evaluated and the return value
+;;; of the `when`-form is `nil`.
+(defmacro when (condition . body)
+  (list 'if
+        condition
+        (if (cdr body)
+              (cons 'progn body)
+          (car body))))
+
+
+;;; = Macro: unless
+;;;     (unless condition forms*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Execute `forms` if `condition` evaluates to false
+;;; and return the result of the last form if any.
+;;; Otherwise if `condition` evaluates to true,
+;;; the forms are not evaluated and the return value
+;;; of the `unless`-form is `nil`.
+(defmacro unless (condition . body)
+  (list 'if
+        condition
+        nil
+        (if (cdr body)
+              (cons 'progn body)
+          (car body))))
+
+
+;;; = Macro: case
+;;;      (case keyform (keys forms*)* (t forms*)?) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; `keys` can be a single key or a list of keys, keys will not be evaluated.
+;;; `keyform` will be matched against `keys` using `eql`, the `forms` of the
+;;; matching clause will be eval'd and the last form determines the result.
+;;; Subsequent clauses will be ignored.
+;;;
+;;; A clause with a key that is a single `t` is used as the default clause
+;;; if no key matches.
+(defmacro case (keyform . clauses)
+  (labels ((do-clause (tmp clause)
+             (let ((keydesignator (car clause))
+                   (forms (cdr clause)))
+               (if keydesignator
+                     (if (consp keydesignator)
+                           (if (cdr keydesignator)
+                                 `((member ,tmp ',keydesignator eql) ,@forms)
+                             `((eql ,tmp ',(car keydesignator)) ,@forms))
+                       (if (eq 't keydesignator)
+                             `(t ,@forms)
+                         `((eql ,tmp ',keydesignator) ,@forms)))))))
+    (if (atom keyform)
+          `(cond ,@(remove nil (mapcar (lambda (clause) (do-clause keyform clause)) clauses)))
+      (let ((tmp (gensym)))
+        `(let ((,tmp ,keyform))
+           (cond ,@(remove nil (mapcar (lambda (clause) (do-clause tmp clause)) clauses))))))))
+
+
+; conses and lists ****************************************************
 
 ;;; = Function: caar..cdddr
 ;;;     (c..r lst) -> result
@@ -138,6 +311,67 @@
   `(car (nthcdr ,n ,lst)))
 
 
+;;; = Function: unzip
+;;;     (unzip lists) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; `unzip` takes a list of lists, and returns a list
+;;; containing the initial element of each such list,
+;;; e.g.:
+;;;
+;;;     (unzip '((1 2) (11 22) (111 222))) ; ==> (1 11 111)
+;;;     (unzip '(nil nil nil)) ; ==> (nil nil nil)
+;;;     (unzip nil) ; ==> nil
+;;;
+;;; Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
+;;;
+;;; See also: [unzip-tails](#function-unzip-tails).
+(defun unzip (lists)
+  (if lists (cons (caar lists) (unzip (cdr lists)))
+    nil))
+
+
+;;; = Function: unzip-tails
+;;;     (unzip-tails lists) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; `unzip-tails` takes a list of lists, and returns a list
+;;; containing the `cdr`s of each such list.
+;;;
+;;; See also: [unzip](#function-unzip).
+(defun unzip-tails (lists)
+  (if lists (cons (cdar lists) (unzip-tails (cdr lists)))
+    nil))
+
+
+;;; = Function: list-length
+;;;     (list-length list-or-string) -> length
+;;;
+;;; Since: 1.1
+;;;
+;;; Returns the length of `list-or-string` if it is a string or proper list.
+;;; Returns `nil` if `list-or-string` is a circular list.
+;;;
+;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
+(defun list-length (lst) 
+  (let loop ((n 0)         ; Counter 
+             (fast lst)      ; Fast pointer: leaps by 2 
+             (slow lst))     ; Slow pointer: leaps by 1 
+    ;; If fast pointer hits the end, return the count. 
+    (if (null fast) n
+      (if (null (cdr fast)) (1+ n)
+        ;; If fast pointer eventually equals slow pointer, 
+        ;;  then we must be stuck in a circular list. 
+        ;; (A deeper property is the converse: if we are 
+        ;;  stuck in a circular list, then eventually the 
+        ;;  fast pointer will equal the slow pointer. 
+        ;;  That fact justifies this implementation.) 
+        (if (and (eq fast slow) (> n 0)) nil
+          (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
+
+
 ;;; = Function: last
 ;;;     (last lst) -> last-cons-or-nil
 ;;;
@@ -178,6 +412,317 @@
           (apply nconc (cdr lists)))
     nil))
 
+
+;;; = Function: member
+;;;     (member item list [test]) -> tail
+;;;
+;;; Since: 1.1
+;;;
+;;; `member` searches list for `item` or for a top-level element that
+;;; satisfies the `test`.
+;;;
+;;; `test` if given must be a function that takes two arguments.
+;;; If `test` was omitted or `nil` then `eql` will be used.
+;;;
+;;; Example usage:
+;;;
+;;;     (member 2 '(1 2 3))
+;;;         ; => (2 3)
+;;;     (member 'e '(a b c d))
+;;;         ; => NIL
+;;;     (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal)
+;;;         ; => ((1 . 1) (2 . 2) (3 . 3))
+;;;     (member 'c '(a b c 1 2 3) eq)
+;;;         ; => (c 1 2 3)
+;;;     (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
+;;;         ; => (b c 1 2 3)
+(defun member (item lst . test)
+  (let* ((tst (car test))
+         (pred (if tst tst eql)))
+    (if lst
+          (if (pred item (car lst))
+                lst
+            (member item (cdr lst) pred))
+      nil)))
+
+
+;;; = Function: acons
+;;;     (acons key datum alist) -> new-alist
+;;;
+;;; Since: 1.1
+;;;
+;;; Prepends `alist` with a new `(key . datum)` tuple
+;;; and returns the modified list.
+(defun acons (key datum alist)
+  (cons (cons key datum) alist))
+
+
+(defmacro m%notany-null (lst)
+  (let ((loop (gensym))
+        (l (gensym)))
+    `(let ,loop ((,l ,lst))
+       (if ,l (and (car ,l) (,loop (cdr ,l)))
+         t))))
+
+
+; Helper macros to generate defuns for the various maxXX functions
+(defmacro m%mapx (name acc accn)
+  `(defun ,name (func lst . more-lists)
+     (if more-lists
+           (let loop ((args (cons lst more-lists)))
+             (when (m%notany-null args)
+               (apply func ,(if accn (list accn 'args) 'args))
+               (loop (unzip-tails args))))
+       (let loop ((lst lst))
+         (when lst
+           (func ,(if acc (list acc 'lst) 'lst))
+           (loop (cdr lst)))))
+    lst))
+
+(defmacro m%mapx-cons (name acc accn)
+  `(defun ,name (func lst . more-lists)
+     (let* ((result (cons nil nil)) (append-to result))
+       (if more-lists
+             (let loop ((args (cons lst more-lists)))
+               (when (m%notany-null args)
+                 (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) nil))))
+                 (loop (unzip-tails args))))
+         (let loop ((lst lst))
+           (when lst
+             (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) nil))))
+             (loop (cdr lst)))))
+
+       (cdr result))))
+
+(defmacro m%mapx-nconc (name acc accn)
+  `(defun ,name (func lst . more-lists)
+     (let* ((result (cons nil nil)) (append-to result) tmp)
+       (if more-lists
+               (let loop ((args (cons lst more-lists)))
+                 (when (m%notany-null args)
+                   (setq tmp (apply func ,(if accn (list accn 'args) 'args)))
+                   (nconc append-to tmp)
+                   (when tmp (setq append-to tmp))
+                   (loop (unzip-tails args))))
+         (let loop ((lst lst))
+           (when lst
+             (setq tmp (func ,(if acc (list acc 'lst) 'lst)))
+             (nconc append-to tmp)
+             (when tmp (setq append-to tmp))
+             (loop (cdr lst)))))
+
+       (cdr result))))
+
+
+;;; = Function: mapcar
+;;;     (mapcar function list+) -> list
+;;;
+;;; Since: 1.1
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent items of the given lists.
+;;; All `function` application results will be combined into a list
+;;; which is the return value of `mapcar`.
+(m%mapx-cons mapcar car unzip)
+
+
+;;; = Function: maplist
+;;;     (maplist function list+) -> list
+;;;
+;;; Since: 1.1
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent tails of the given lists.
+;;;
+;;; All `function` application results will be combined into a list
+;;; which is the return value of `maplist`.
+(m%mapx-cons maplist nil nil)
+
+
+;;; = Function: mapc
+;;;     (mapc function list+) -> first-arg
+;;;
+;;; Since: 1.1
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent cars items of the given lists.
+(m%mapx mapc car unzip)
+
+
+;;; = Function: mapl
+;;;     (mapl function list+) -> first-arg
+;;;
+;;; Since: 1.1
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent tails of the given lists.
+(m%mapx mapl nil nil)
+
+
+;;; = Function: mapcan
+;;;     (mapcan function list+) -> concatenated-results
+;;;
+;;; Since: 1.1
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent items of the given lists.
+;;;
+;;; All function application results will be concatenated to a list
+;;; which is the return value of `mapcan`.
+(m%mapx-nconc mapcan car unzip)
+
+
+;;; = Function: mapcon
+;;;     (mapcon function list+) -> concatenated-results
+;;;
+;;; Since: 1.1
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent tails of the given lists.
+;;;
+;;; All function application results will be concatenated to a list
+;;; which is the return value of `mapcon`.
+(m%mapx-nconc mapcon nil nil)
+
+; undef m%mapx and friends
+(defmacro m%mapx)
+(defmacro m%mapx-cons)
+(defmacro m%mapx-combine)
+
+
+; loops ***************************************************************
+
+;;; = Macro: do, do*
+;;;     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;;     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; `do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
+(defmacro do (var-defs test-and-result . forms)
+  (labels ((init-form (l)
+             (if (symbolp l) (list l nil)
+               (list (car l) (cadr l))))
+
+           (step-form (l)
+             (if (symbolp l) l
+               (if (caddr l) (caddr l)
+                 (car l)))))
+
+    (let ((loop (gensym)))
+      `(let ,loop (,@(mapcar init-form var-defs))
+         (if ,(car test-and-result)
+               (progn ,@(cdr test-and-result))
+           (progn
+             ,@forms
+             (,loop ,@(mapcar step-form var-defs))))))))
+
+(defmacro do* (var-defs test-and-result . forms)
+  (labels ((init-form (l)
+             (if (symbolp l) (list l nil)
+               (list (car l) (cadr l))))
+
+           (step-form (l)
+             (if (symbolp l) nil
+               (if (caddr l) `((setq ,(car l) ,(caddr l)))))))
+
+    (let ((loop (gensym)))
+      `(let* (,@(mapcar init-form var-defs))
+         (let ,loop ()
+           (if ,(car test-and-result)
+                 (progn ,@(cdr test-and-result))
+             (progn
+               ,@forms
+               ,@(mapcan step-form var-defs)
+               (,loop))))))))
+
+
+;;; = Macro: dotimes
+;;;     (dotimes (var count-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
+;;; Murmel however supports multiple result-forms which will be eval'd in an
+;;; implicit `progn`, similar to `do` and `do*`;
+;;;
+;;; Sample usage:
+;;;
+;;;     (let (l)
+;;;       (dotimes (i 10 l)
+;;;         (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
+(defmacro dotimes (loop-def . body)
+  (let ((var (car loop-def))
+        (countform (cadr loop-def))
+        (count (gensym))
+        (loop (gensym))
+        (resultform (cddr loop-def)))
+    `(let ((,var 0)
+           (,count ,countform))
+       (if (<= ,count 0) (progn ,@resultform)
+         (if (>= ,var ,count) (progn ,@resultform)
+           (let ,loop ()
+             ,@body
+             (incf ,var)
+             (if (>= ,var ,count) (progn ,@resultform)
+               (,loop))))))))
+
+
+;;; = Macro: dolist
+;;;     (dolist (var list-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+;;; Murmel however supports multiple result-forms which will be eval'd in an
+;;; implicit `progn`, similar to `do` and `do*`;
+(defmacro dolist (loop-def . body)
+  (let ((var (car loop-def))
+        (listform (cadr loop-def))
+        (lst (gensym))
+        (loop (gensym))
+        (result (cddr loop-def)))
+    `(let ,loop ((,lst ,listform))
+       (if ,lst
+             (let ((,var (car ,lst)))
+               ,@body
+               (,loop (cdr ,lst)))
+         ,(if result `(let ((,var nil)) ,@result) nil)))))
+
+
+;;; = Macro: doplist
+;;;     (doplist (key-var value-var plist-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.2
+;;;
+;;; Iterates over key-value pairs of `plist-form`.
+;;; Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
+(defmacro doplist (loop-def . body)
+  (let ((key-var (car loop-def))
+        (value-var (cadr loop-def))
+        (listform (caddr loop-def))
+        (lst (gensym))
+        (loop (gensym))
+        (result (cdddr loop-def)))
+    `(let ,loop ((,lst ,listform))
+       (if ,lst
+             (if (cdr ,lst)
+                   (let ((,key-var (car ,lst))
+                         (,value-var (cadr ,lst)))
+                     ,@body
+                     (,loop (cddr ,lst)))
+               (fatal "doplist: odd number of elements in plist"))
+         (progn ,@result)))))
+
+
+;(defmacro while (expr . body)
+;  `(let loop ()
+;     (when ,expr
+;        ,@body
+;        (loop))))
+
+
+; places **************************************************************
 
 ; m%rplaca
 ;     (m%rplaca lst value) -> value
@@ -411,73 +956,7 @@
            ,result)))))
 
 
-;;; = Function: acons
-;;;     (acons key datum alist) -> new-alist
-;;;
-;;; Since: 1.1
-;;;
-;;; Prepends `alist` with a new `(key . datum)` tuple
-;;; and returns the modified list.
-(defun acons (key datum alist)
-  (cons (cons key datum) alist))
-
-
-;;; = Function: not
-;;;     (not form) -> boolean
-;;;
-;;; Since: 1.1
-;;;
-;;; Logical not.
-(define not null)
-(defmacro not (form)
-  `(null ,form))
-
-
-;;; = Macro: and
-;;;     (and forms*) -> boolean
-;;;
-;;; Since: 1.1
-;;;
-;;; Short-circuiting logical and.
-;;; Return `t` unless any of the `forms` evaluate to `nil`,
-;;; `nil` otherwise.
-(defmacro and forms
-   (if forms
-         (if (cdr forms)
-               `(if ,(car forms)
-                 (and ,@(cdr forms)))
-           (car forms))
-     t))
-
-
-;;; = Macro: or
-;;;     (or forms*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Short-circuiting logical or.
-;;; Return `nil` unless any of the `forms` evaluate to non-nil,
-;;; the result of the first form returning non-nil otherwise.
-(defmacro or forms
-  (labels ((m%or (tmp forms)
-             (if forms
-                   (if (cdr forms)
-                         `(if (setq ,tmp ,(car forms))
-                                ,tmp
-                            ,(m%or tmp (cdr forms)))
-                     (car forms))
-               nil)))
-
-    (if forms
-          (if (cdr forms)
-                (let ((temp (gensym)))
-                  `(let ((,temp ,(car forms)))
-                      (if ,temp
-                            ,temp
-                        ,(m%or temp (cdr forms)))))
-            (car forms))
-      nil)))
-
+; numbers, characters *************************************************
 
 ;;; = Function: abs
 ;;;     (abs number) -> result
@@ -559,596 +1038,7 @@
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
-;;; = Macro: prog1, prog2
-;;;     (prog1 first-form more-forms*) -> result-1
-;;;     (prog2 first-form second-form more-forms*) -> result-2
-;;;
-;;; Since: 1.1
-(defmacro prog1 (first-form . more-forms)
-  (if more-forms
-        (let ((result (gensym)))
-          `(let ((,result ,first-form))
-             ,@more-forms
-             ,result))
-    `(values ,first-form)))
-
-(defmacro prog2 (first-form second-form . more-forms)
-  (if more-forms
-        (let ((ignore (gensym))
-              (result (gensym)))
-          `(let ((,ignore ,first-form)
-                 (,result ,second-form))
-             ,@more-forms
-             ,result))
-    `(progn ,first-form (values ,second-form))))
-
-
-;;; = Macro: when
-;;;     (when condition forms*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Execute `forms` if `condition` evaluates to true
-;;; and return the result of the last form if any.
-;;; Otherwise if `condition` evaluates to false,
-;;; the forms are not evaluated and the return value
-;;; of the `when`-form is `nil`.
-(defmacro when (condition . body)
-  (list 'if
-        condition
-        (if (cdr body)
-              (cons 'progn body)
-          (car body))))
-
-
-;;; = Macro: unless
-;;;     (unless condition forms*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Execute `forms` if `condition` evaluates to false
-;;; and return the result of the last form if any.
-;;; Otherwise if `condition` evaluates to true,
-;;; the forms are not evaluated and the return value
-;;; of the `unless`-form is `nil`.
-(defmacro unless (condition . body)
-  (list 'if
-        condition
-        nil
-        (if (cdr body)
-              (cons 'progn body)
-          (car body))))
-
-
-;;; = Macro: case
-;;;      (case keyform (keys forms*)* (t forms*)?) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; `keys` can be a single key or a list of keys, keys will not be evaluated.
-;;; `keyform` will be matched against `keys` using `eql`, the `forms` of the
-;;; matching clause will be eval'd and the last form determines the result.
-;;; Subsequent clauses will be ignored.
-;;;
-;;; A clause with a key that is a single `t` is used as the default clause
-;;; if no key matches.
-(defmacro case (keyform . clauses)
-  (labels ((do-clause (tmp clause)
-             (let ((keydesignator (car clause))
-                   (forms (cdr clause)))
-               (if keydesignator
-                     (if (consp keydesignator)
-                           (if (cdr keydesignator)
-                                 `((member ,tmp ',keydesignator eql) ,@forms)
-                             `((eql ,tmp ',(car keydesignator)) ,@forms))
-                       (if (eq 't keydesignator)
-                             `(t ,@forms)
-                         `((eql ,tmp ',keydesignator) ,@forms)))))))
-    (if (atom keyform)
-          `(cond ,@(remove nil (mapcar (lambda (clause) (do-clause keyform clause)) clauses)))
-      (let ((tmp (gensym)))
-        `(let ((,tmp ,keyform))
-           (cond ,@(remove nil (mapcar (lambda (clause) (do-clause tmp clause)) clauses))))))))
-
-
-;;; = Macro: do, do*
-;;;     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
-;;;     (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; `do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
-(defmacro do (var-defs test-and-result . forms)
-  (labels ((init-form (l)
-             (if (symbolp l) (list l nil)
-               (list (car l) (cadr l))))
-
-           (step-form (l)
-             (if (symbolp l) l
-               (if (caddr l) (caddr l)
-                 (car l)))))
-
-    (let ((loop (gensym)))
-      `(let ,loop (,@(mapcar init-form var-defs))
-         (if ,(car test-and-result)
-               (progn ,@(cdr test-and-result))
-           (progn
-             ,@forms
-             (,loop ,@(mapcar step-form var-defs))))))))
-
-(defmacro do* (var-defs test-and-result . forms)
-  (labels ((init-form (l)
-             (if (symbolp l) (list l nil)
-               (list (car l) (cadr l))))
-
-           (step-form (l)
-             (if (symbolp l) nil
-               (if (caddr l) `((setq ,(car l) ,(caddr l)))))))
-
-    (let ((loop (gensym)))
-      `(let* (,@(mapcar init-form var-defs))
-         (let ,loop ()
-           (if ,(car test-and-result)
-                 (progn ,@(cdr test-and-result))
-             (progn
-               ,@forms
-               ,@(mapcan step-form var-defs)
-               (,loop))))))))
-
-
-;;; = Macro: dotimes
-;;;     (dotimes (var count-form result-form*) statement*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
-;;; Murmel however supports multiple result-forms which will be eval'd in an
-;;; implicit `progn`, similar to `do` and `do*`;
-;;;
-;;; Sample usage:
-;;;
-;;;     (let (l)
-;;;       (dotimes (i 10 l)
-;;;         (push i l))) ; ==> (9 8 7 6 5 4 3 2 1 0)
-(defmacro dotimes (loop-def . body)
-  (let ((var (car loop-def))
-        (countform (cadr loop-def))
-        (count (gensym))
-        (loop (gensym))
-        (resultform (cddr loop-def)))
-    `(let ((,var 0)
-           (,count ,countform))
-       (if (<= ,count 0) (progn ,@resultform)
-         (if (>= ,var ,count) (progn ,@resultform)
-           (let ,loop ()
-             ,@body
-             (incf ,var)
-             (if (>= ,var ,count) (progn ,@resultform)
-               (,loop))))))))
-
-
-;;; = Macro: dolist
-;;;     (dolist (var list-form result-form*) statement*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
-;;; Murmel however supports multiple result-forms which will be eval'd in an
-;;; implicit `progn`, similar to `do` and `do*`;
-(defmacro dolist (loop-def . body)
-  (let ((var (car loop-def))
-        (listform (cadr loop-def))
-        (lst (gensym))
-        (loop (gensym))
-        (result (cddr loop-def)))
-    `(let ,loop ((,lst ,listform))
-       (if ,lst
-             (let ((,var (car ,lst)))
-               ,@body
-               (,loop (cdr ,lst)))
-         ,(if result `(let ((,var nil)) ,@result) nil)))))
-
-
-;;; = Macro: doplist
-;;;     (doplist (key-var value-var plist-form result-form*) statement*) -> result
-;;;
-;;; Since: 1.2
-;;;
-;;; Iterates over key-value pairs of `plist-form`.
-;;; Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
-(defmacro doplist (loop-def . body)
-  (let ((key-var (car loop-def))
-        (value-var (cadr loop-def))
-        (listform (caddr loop-def))
-        (lst (gensym))
-        (loop (gensym))
-        (result (cdddr loop-def)))
-    `(let ,loop ((,lst ,listform))
-       (if ,lst
-             (if (cdr ,lst)
-                   (let ((,key-var (car ,lst))
-                         (,value-var (cadr ,lst)))
-                     ,@body
-                     (,loop (cddr ,lst)))
-               (fatal "doplist: odd number of elements in plist"))
-         (progn ,@result)))))
-
-
-;(defmacro while (expr . body)
-;  `(let loop ()
-;     (when ,expr
-;        ,@body
-;        (loop))))
-
-
-;;; = Function: identity
-;;;     (identity object) -> object
-;;;
-;;; Since: 1.1
-;;;
-;;; `identity` returns its argument `object`.
-(defun identity (value) value)
-
-
-;;; = Function: constantly
-;;;     (constantly value) -> function
-;;;
-;;; Since: 1.1
-;;;
-;;; `constantly` returns a function that accepts any number of arguments,
-;;; that has no side-effects, and that always returns `value`.
-(defun constantly (value)
-  (lambda arguments value))
-
-
-;;; = Function: complement
-;;;     (complement function) -> complement-function
-;;;
-;;; Since: 1.1
-;;;
-;;; `complement` returns a function that takes the same arguments as `function`,
-;;; and has the same side-effect behavior as `function`, but returns only
-;;; a single value: a boolean with the opposite truth value of that
-;;; which would be returned as the value of `function`.
-(defun complement (func)
-  (lambda arguments
-    (null (apply func arguments))))
-
-
-;;; = Function: member
-;;;     (member item list [test]) -> tail
-;;;
-;;; Since: 1.1
-;;;
-;;; `member` searches list for `item` or for a top-level element that
-;;; satisfies the `test`.
-;;;
-;;; `test` if given must be a function that takes two arguments.
-;;; If `test` was omitted or `nil` then `eql` will be used.
-;;;
-;;; Example usage:
-;;;
-;;;     (member 2 '(1 2 3))
-;;;         ; => (2 3)
-;;;     (member 'e '(a b c d))
-;;;         ; => NIL
-;;;     (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal)
-;;;         ; => ((1 . 1) (2 . 2) (3 . 3))
-;;;     (member 'c '(a b c 1 2 3) eq)
-;;;         ; => (c 1 2 3)
-;;;     (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
-;;;         ; => (b c 1 2 3)
-(defun member (item lst . test)
-  (let* ((tst (car test))
-         (pred (if tst tst eql)))
-    (if lst
-          (if (pred item (car lst))
-                lst
-            (member item (cdr lst) pred))
-      nil)))
-
-
-;;; = Function: reverse
-;;;     (reverse sequence) -> reversed-sequence
-;;;
-;;; Since: 1.1
-;;;
-;;; If `sequence` is a list then return a fresh list
-;;; with elements in reversed order, if `sequence`
-;;; is a vector then return a fresh reversed vector.
-(defun reverse (seq)
-  (labels ((rev (l lp)
-             (if l (rev (cdr l) (cons (car l) lp))
-               lp)))
-    (cond ((null seq) nil)
-          ((consp seq) (rev seq nil))
-          ((stringp seq) (list->string (rev (string->list seq) nil)))
-          ((simple-vector-p seq) (list->simple-vector (rev (simple-vector->list seq) nil)))
-          ((simple-bit-vector-p seq) (list->simple-bit-vector (rev (simple-bit-vector->list seq) nil)))
-          (t (fatal "not a sequence")))))
-
-
-;;; = Function: unzip
-;;;     (unzip lists) -> result-list
-;;;
-;;; Since: 1.2
-;;;
-;;; `unzip` takes a list of lists, and returns a list
-;;; containing the initial element of each such list,
-;;; e.g.:
-;;;
-;;;     (unzip '((1 2) (11 22) (111 222))) ; ==> (1 11 111)
-;;;     (unzip '(nil nil nil)) ; ==> (nil nil nil)
-;;;     (unzip nil) ; ==> nil
-;;;
-;;; Similar to SRFI-1 `unzip1`, see https://srfi.schemers.org/srfi-1/srfi-1.html#unzip1.
-;;;
-;;; See also: [unzip-tails](#function-unzip-tails).
-(defun unzip (lists)
-  (if lists (cons (caar lists) (unzip (cdr lists)))
-    nil))
-
-
-;;; = Function: unzip-tails
-;;;     (unzip-tails lists) -> result-list
-;;;
-;;; Since: 1.2
-;;;
-;;; `unzip-tails` takes a list of lists, and returns a list
-;;; containing the `cdr`s of each such list.
-;;;
-;;; See also: [unzip](#function-unzip).
-(defun unzip-tails (lists)
-  (if lists (cons (cdar lists) (unzip-tails (cdr lists)))
-    nil))
-
-
-(defun m%sequence->list (seq)
-  (cond ((listp seq) seq)
-        ((simple-vector-p seq) (simple-vector->list seq))
-        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
-        ((stringp seq) (string->list seq))
-        (t (fatal "not a sequence"))))
-
-(defun m%sequences->lists (sequences)
-  (let loop ((s sequences))
-    (if s (cons (m%sequence->list (car s))
-                (loop (cdr s)))
-      nil)))
-
-(defun m%list->sequence (lst result-type)
-  (cond ((null result-type)                  nil)
-        ((eq result-type 'list)              lst)
-        ((eq result-type 'cons)              (if lst lst (fatal "not of type cons: nil")))
-        ((eq result-type 'vector)            (list->simple-vector lst))
-        ((eq result-type 'simple-vector)     (list->simple-vector lst))
-        ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
-        ((eq result-type 'string)            (list->string lst))
-        ((eq result-type 'simple-string)     (list->string lst))
-        (t (fatal "not a sequence type"))))
-
-
-(defmacro m%notany-null (lst)
-  (let ((loop (gensym))
-        (l (gensym)))
-    `(let ,loop ((,l ,lst))
-       (if ,l (and (car ,l) (,loop (cdr ,l)))
-         t))))
-
-
-;;; = Function: map
-;;;     (map result-type function sequences+) -> result
-;;;
-;;; Since 1.3
-;;;
-;;; Applies `function` to successive sets of arguments in which one argument
-;;; is obtained from each sequence. The function is called first on all the elements
-;;; with index 0, then on all those with index 1, and so on.
-;;; The result-type specifies the type of the resulting sequence.
-;;;
-;;; `map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
-;;; such that element j is the result of applying `function` to element j of each
-;;; of the sequences. The result sequence is as long as the shortest of the sequences.
-;;;
-;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
-(defun map (result-type func seq . more-sequences)
-  (setq seq (if more-sequences
-
-                  (if result-type
-                          (let* ((result (cons nil nil))
-                                 (append-to result))
-                            (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                              (when (m%notany-null l)
-                                (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
-                                (loop (unzip-tails l)))
-                            (cdr result)))
-                    (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                      (when (m%notany-null l)
-                        (apply func (unzip l))
-                        (loop (unzip-tails l)))))
-
-              (if result-type
-                      (let* ((result (cons nil nil))
-                             (append-to result))
-                        (let loop ((l (m%sequence->list seq)))
-                          (when l
-                            (setq append-to (cdr (rplacd append-to (cons (func (car l)) nil))))
-                            (loop (cdr l))))
-                        (cdr result))
-                (let loop ((l (m%sequence->list seq)))
-                  (when l
-                    (func (car l))
-                    (loop (cdr l)))))))
-
-  (cond ((null result-type) nil)
-        ((eq result-type 'list) seq)
-        (t (m%list->sequence seq result-type))))
-
-
-;;; = Function: map-into
-;;;     (map-into result-list function sequence*) -> result-list
-;;;
-;;; Since: 1.2
-;;;
-;;; Destructively modifies `result-list` to contain the results
-;;; of applying `function` to each element in the argument lists in turn.
-;;; The iteration terminates when the shortest list (of any of
-;;; the lists or the result-list) is exhausted.
-;;;
-;;; If `result-list` is `nil`, `map-into` returns `nil`.
-;;;
-;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
-;;; only lists are supported as result-list, tough.
-(defun map-into (result func . sequences)
-  (when result
-
-    (if (cdr sequences)
-          ; 2 or more sequences given
-          (let loop ((r result) (l (m%sequences->lists sequences)))
-            (when (and r (m%notany-null l))
-              (rplaca r (apply func (unzip l)))
-              (loop (cdr r) (unzip-tails l))))
-
-      (if sequences
-            ; 1 list given
-            (let loop ((r result) (l (m%sequence->list (car sequences))))
-              (when (and r l)
-                (rplaca r (func (car l)))
-                (loop (cdr r) (cdr l))))
-
-        ; 0 sequences given
-        (let loop ((r result))
-          (when r
-            (rplaca r (func))
-            (loop (cdr r))))))
-
-  result))
-
-
-; Helper macros to generate defuns for the various maxXX functions
-(defmacro m%mapx (name acc accn)
-  `(defun ,name (func lst . more-lists)
-     (if more-lists
-           (let loop ((args (cons lst more-lists)))
-             (when (m%notany-null args)
-               (apply func ,(if accn (list accn 'args) 'args))
-               (loop (unzip-tails args))))
-       (let loop ((lst lst))
-         (when lst
-           (func ,(if acc (list acc 'lst) 'lst))
-           (loop (cdr lst)))))
-    lst))
-
-(defmacro m%mapx-cons (name acc accn)
-  `(defun ,name (func lst . more-lists)
-     (let* ((result (cons nil nil)) (append-to result))
-       (if more-lists
-             (let loop ((args (cons lst more-lists)))
-               (when (m%notany-null args)
-                 (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) nil))))
-                 (loop (unzip-tails args))))
-         (let loop ((lst lst))
-           (when lst
-             (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) nil))))
-             (loop (cdr lst)))))
-
-       (cdr result))))
-
-(defmacro m%mapx-nconc (name acc accn)
-  `(defun ,name (func lst . more-lists)
-     (let* ((result (cons nil nil)) (append-to result) tmp)
-       (if more-lists
-               (let loop ((args (cons lst more-lists)))
-                 (when (m%notany-null args)
-                   (setq tmp (apply func ,(if accn (list accn 'args) 'args)))
-                   (nconc append-to tmp)
-                   (when tmp (setq append-to tmp))
-                   (loop (unzip-tails args))))
-         (let loop ((lst lst))
-           (when lst
-             (setq tmp (func ,(if acc (list acc 'lst) 'lst)))
-             (nconc append-to tmp)
-             (when tmp (setq append-to tmp))
-             (loop (cdr lst)))))
-
-       (cdr result))))
-
-
-;;; = Function: mapcar
-;;;     (mapcar function list+) -> list
-;;;
-;;; Since: 1.1
-;;;
-;;; `function` must accept as many arguments as lists are given,
-;;; and will applied to subsequent items of the given lists.
-;;; All `function` application results will be combined into a list
-;;; which is the return value of `mapcar`.
-(m%mapx-cons mapcar car unzip)
-
-
-;;; = Function: maplist
-;;;     (maplist function list+) -> list
-;;;
-;;; Since: 1.1
-;;;
-;;; `function` must accept as many arguments as lists are given,
-;;; and will applied to subsequent tails of the given lists.
-;;;
-;;; All `function` application results will be combined into a list
-;;; which is the return value of `maplist`.
-(m%mapx-cons maplist nil nil)
-
-
-;;; = Function: mapc
-;;;     (mapc function list+) -> first-arg
-;;;
-;;; Since: 1.1
-;;;
-;;; `function` must accept as many arguments as lists are given,
-;;; and will applied to subsequent cars items of the given lists.
-(m%mapx mapc car unzip)
-
-
-;;; = Function: mapl
-;;;     (mapl function list+) -> first-arg
-;;;
-;;; Since: 1.1
-;;;
-;;; `function` must accept as many arguments as lists are given,
-;;; and will applied to subsequent tails of the given lists.
-(m%mapx mapl nil nil)
-
-
-;;; = Function: mapcan
-;;;     (mapcan function list+) -> concatenated-results
-;;;
-;;; Since: 1.1
-;;;
-;;; `function` must accept as many arguments as lists are given,
-;;; and will applied to subsequent items of the given lists.
-;;;
-;;; All function application results will be concatenated to a list
-;;; which is the return value of `mapcan`.
-(m%mapx-nconc mapcan car unzip)
-
-
-;;; = Function: mapcon
-;;;     (mapcon function list+) -> concatenated-results
-;;;
-;;; Since: 1.1
-;;;
-;;; `function` must accept as many arguments as lists are given,
-;;; and will applied to subsequent tails of the given lists.
-;;;
-;;; All function application results will be concatenated to a list
-;;; which is the return value of `mapcon`.
-(m%mapx-nconc mapcon nil nil)
-
-; undef m%mapx and friends
-(defmacro m%mapx)
-(defmacro m%mapx-cons)
-(defmacro m%mapx-combine)
-
+; generators **********************************************************
 
 ;;; = Function: scan
 ;;;     (scan start [step [endincl]])                 -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
@@ -1369,6 +1259,285 @@
          ,(if result `(let ((,var nil)) ,@result) nil)))))
 
 
+; sequences ***********************************************************
+
+;;; = Function: length
+;;;     (length sequence) -> length
+;;;
+;;; Since: 1.1
+;;;
+;;; Returns the length of `sequence`.
+(defun length (seq)
+  (cond ((null seq) 0)
+        ((listp seq) (list-length seq))
+        ((vectorp seq) (vector-length seq))
+        (t (fatal "not a sequence"))))
+
+
+;;; = Function: reverse
+;;;     (reverse sequence) -> reversed-sequence
+;;;
+;;; Since: 1.1
+;;;
+;;; If `sequence` is a list then return a fresh list
+;;; with elements in reversed order, if `sequence`
+;;; is a vector then return a fresh reversed vector.
+(defun reverse (seq)
+  (labels ((rev (l lp)
+             (if l (rev (cdr l) (cons (car l) lp))
+               lp)))
+    (cond ((null seq) nil)
+          ((consp seq) (rev seq nil))
+          ((stringp seq) (list->string (rev (string->list seq) nil)))
+          ((simple-vector-p seq) (list->simple-vector (rev (simple-vector->list seq) nil)))
+          ((simple-bit-vector-p seq) (list->simple-bit-vector (rev (simple-bit-vector->list seq) nil)))
+          (t (fatal "not a sequence")))))
+
+
+;;; = Function: remove-if
+;;;     (remove-if pred sequence) -> sequence
+;;;
+;;; Since: 1.1
+;;;
+;;; Return a fresh sequence without the elements for which `pred`
+;;; evaluates to non-nil.
+(defun remove-if (pred seq)
+  (labels ((remove-if/list (l)
+              (let* ((result (cons nil nil))
+                     (append-to result))
+                (let loop ((l l))
+                  (when l
+                    (unless (pred (car l))
+                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
+                    (loop (cdr l))))
+                (cdr result))))
+
+    (cond ((null seq)             nil)
+          ((consp seq)            (remove-if/list seq))
+          ((stringp seq)          (list->string (remove-if/list (string->list seq))))
+          ((simple-vector-p seq)  (list->simple-vector (remove-if/list (simple-vector->list seq))))
+          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
+          (t (fatal "not a sequence")))))
+
+
+;;; = Function: remove
+;;;     (remove elem sequence) -> sequence
+;;;
+;;; Since: 1.1
+;;;
+;;; Return a fresh sequence without occurrences of `elem`.
+;;; An occurrence is determined by `eql`.
+(defun remove (elem seq)
+  (labels ((remove/list (l)
+              (let* ((result (cons nil nil))
+                     (append-to result))
+                (let loop ((l l))
+                  (when l
+                    (unless (eql elem (car l))
+                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
+                    (loop (cdr l))))
+                (cdr result))))
+
+    (cond ((null seq)             nil)
+          ((consp seq)            (remove/list seq))
+          ((stringp seq)          (list->string (remove/list (string->list seq))))
+          ((simple-vector-p seq)  (list->simple-vector (remove/list (simple-vector->list seq))))
+          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove/list (simple-bit-vector->list seq))))
+          (t (fatal "not a sequence")))))
+
+
+(defun m%sequence->list (seq)
+  (cond ((listp seq) seq)
+        ((simple-vector-p seq) (simple-vector->list seq))
+        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
+        ((stringp seq) (string->list seq))
+        (t (fatal "not a sequence"))))
+
+(defun m%sequences->lists (sequences)
+  (let loop ((s sequences))
+    (if s (cons (m%sequence->list (car s))
+                (loop (cdr s)))
+      nil)))
+
+(defun m%list->sequence (lst result-type)
+  (cond ((null result-type)                  nil)
+        ((eq result-type 'list)              lst)
+        ((eq result-type 'cons)              (if lst lst (fatal "not of type cons: nil")))
+        ((eq result-type 'vector)            (list->simple-vector lst))
+        ((eq result-type 'simple-vector)     (list->simple-vector lst))
+        ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
+        ((eq result-type 'string)            (list->string lst))
+        ((eq result-type 'simple-string)     (list->string lst))
+        (t (fatal "not a sequence type"))))
+
+
+;;; = Function: map
+;;;     (map result-type function sequences+) -> result
+;;;
+;;; Since 1.3
+;;;
+;;; Applies `function` to successive sets of arguments in which one argument
+;;; is obtained from each sequence. The function is called first on all the elements
+;;; with index 0, then on all those with index 1, and so on.
+;;; The result-type specifies the type of the resulting sequence.
+;;;
+;;; `map` returns `nil` if `result-type` is `nil`. Otherwise, `map` returns a sequence
+;;; such that element j is the result of applying `function` to element j of each
+;;; of the sequences. The result sequence is as long as the shortest of the sequences.
+;;;
+;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
+(defun map (result-type func seq . more-sequences)
+  (setq seq (if more-sequences
+
+                  (if result-type
+                          (let* ((result (cons nil nil))
+                                 (append-to result))
+                            (let loop ((l (m%sequences->lists (cons seq more-sequences))))
+                              (when (m%notany-null l)
+                                (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
+                                (loop (unzip-tails l)))
+                            (cdr result)))
+                    (let loop ((l (m%sequences->lists (cons seq more-sequences))))
+                      (when (m%notany-null l)
+                        (apply func (unzip l))
+                        (loop (unzip-tails l)))))
+
+              (if result-type
+                      (let* ((result (cons nil nil))
+                             (append-to result))
+                        (let loop ((l (m%sequence->list seq)))
+                          (when l
+                            (setq append-to (cdr (rplacd append-to (cons (func (car l)) nil))))
+                            (loop (cdr l))))
+                        (cdr result))
+                (let loop ((l (m%sequence->list seq)))
+                  (when l
+                    (func (car l))
+                    (loop (cdr l)))))))
+
+  (cond ((null result-type) nil)
+        ((eq result-type 'list) seq)
+        (t (m%list->sequence seq result-type))))
+
+
+;;; = Function: map-into
+;;;     (map-into result-list function sequence*) -> result-list
+;;;
+;;; Since: 1.2
+;;;
+;;; Destructively modifies `result-list` to contain the results
+;;; of applying `function` to each element in the argument lists in turn.
+;;; The iteration terminates when the shortest list (of any of
+;;; the lists or the result-list) is exhausted.
+;;;
+;;; If `result-list` is `nil`, `map-into` returns `nil`.
+;;;
+;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
+;;; only lists are supported as result-list, tough.
+(defun map-into (result func . sequences)
+  (when result
+
+    (if (cdr sequences)
+          ; 2 or more sequences given
+          (let loop ((r result) (l (m%sequences->lists sequences)))
+            (when (and r (m%notany-null l))
+              (rplaca r (apply func (unzip l)))
+              (loop (cdr r) (unzip-tails l))))
+
+      (if sequences
+            ; 1 list given
+            (let loop ((r result) (l (m%sequence->list (car sequences))))
+              (when (and r l)
+                (rplaca r (func (car l)))
+                (loop (cdr r) (cdr l))))
+
+        ; 0 sequences given
+        (let loop ((r result))
+          (when r
+            (rplaca r (func))
+            (loop (cdr r))))))
+
+  result))
+
+
+;;; = Function: reduce
+;;;     (reduce func sequence [from-end-p]) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; If `sequence` is empty then `reduce` will return `(func)`.
+;;;
+;;; Otherwise if `sequence` contains one element then `reduce` will
+;;; return this element.
+;;;
+;;; Otherwise if `from-end-p` is omitted or `nil` then
+;;; `func` will be called with the first two elements
+;;; of the `sequence` and subsequently with the previous result
+;;; and the next element, and `reduce` will return the last
+;;; result from `func`.
+;;;
+;;; Otherwise if `from-end-p` is given and non-nil then
+;;; `func` will be called with the last two elements
+;;; of the `sequence` and subsequently with the previous result
+;;; and the previous element, and `reduce` will return the last
+;;; result from `func`.
+(defun reduce (f seq . from-end)
+  (let ((from-end-p (car from-end)))
+    (labels ((reduce/list (lst)
+               (if (cdr lst)
+                     (let loop ((elem (car lst))
+                                (tail (cdr lst)))
+                       (if (cdr tail)
+                             (if from-end-p
+                                   (f elem (loop (car tail) (cdr tail)))
+                               (loop (f elem (car tail)) (cdr tail)))
+                         (f elem (car tail))))
+                 (car lst))))
+
+      (cond ((null seq)                (f))
+            ((consp seq)               (reduce/list seq))
+            ((stringp seq)             (reduce/list (string->list seq)))
+            ((simple-vector-p seq)     (reduce/list (simple-vector->list seq)))
+            ((simple-bit-vector-p seq) (reduce/list (simple-bit-vector->list seq)))
+            (t (fatal "not a sequence"))))))
+
+
+; higher order ********************************************************
+
+;;; = Function: identity
+;;;     (identity object) -> object
+;;;
+;;; Since: 1.1
+;;;
+;;; `identity` returns its argument `object`.
+(defun identity (value) value)
+
+
+;;; = Function: constantly
+;;;     (constantly value) -> function
+;;;
+;;; Since: 1.1
+;;;
+;;; `constantly` returns a function that accepts any number of arguments,
+;;; that has no side-effects, and that always returns `value`.
+(defun constantly (value)
+  (lambda arguments value))
+
+
+;;; = Function: complement
+;;;     (complement function) -> complement-function
+;;;
+;;; Since: 1.1
+;;;
+;;; `complement` returns a function that takes the same arguments as `function`,
+;;; and has the same side-effect behavior as `function`, but returns only
+;;; a single value: a boolean with the opposite truth value of that
+;;; which would be returned as the value of `function`.
+(defun complement (func)
+  (lambda arguments
+    (null (apply func arguments))))
+
+
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
   `(defun ,name (pred sequence . more-sequences)
@@ -1437,100 +1606,7 @@
   (null (apply some (cons pred (cons seq more-sequences)))))
 
 
-;;; = Function: remove-if
-;;;     (remove-if pred sequence) -> sequence
-;;;
-;;; Since: 1.1
-;;;
-;;; Return a fresh sequence without the elements for which `pred`
-;;; evaluates to non-nil.
-(defun remove-if (pred seq)
-  (labels ((remove-if/list (l)
-              (let* ((result (cons nil nil))
-                     (append-to result))
-                (let loop ((l l))
-                  (when l
-                    (unless (pred (car l))
-                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
-                    (loop (cdr l))))
-                (cdr result))))
-
-    (cond ((null seq)             nil)
-          ((consp seq)            (remove-if/list seq))
-          ((stringp seq)          (list->string (remove-if/list (string->list seq))))
-          ((simple-vector-p seq)  (list->simple-vector (remove-if/list (simple-vector->list seq))))
-          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
-          (t (fatal "not a sequence")))))
-
-
-;;; = Function: remove
-;;;     (remove elem sequence) -> sequence
-;;;
-;;; Since: 1.1
-;;;
-;;; Return a fresh sequence without occurrences of `elem`.
-;;; An occurrence is determined by `eql`.
-(defun remove (elem seq)
-  (labels ((remove/list (l)
-              (let* ((result (cons nil nil))
-                     (append-to result))
-                (let loop ((l l))
-                  (when l
-                    (unless (eql elem (car l))
-                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
-                    (loop (cdr l))))
-                (cdr result))))
-
-    (cond ((null seq)             nil)
-          ((consp seq)            (remove/list seq))
-          ((stringp seq)          (list->string (remove/list (string->list seq))))
-          ((simple-vector-p seq)  (list->simple-vector (remove/list (simple-vector->list seq))))
-          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove/list (simple-bit-vector->list seq))))
-          (t (fatal "not a sequence")))))
-
-
-;;; = Function: reduce
-;;;     (reduce func sequence [from-end-p]) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; If `sequence` is empty then `reduce` will return `(func)`.
-;;;
-;;; Otherwise if `sequence` contains one element then `reduce` will
-;;; return this element.
-;;;
-;;; Otherwise if `from-end-p` is omitted or `nil` then
-;;; `func` will be called with the first two elements
-;;; of the `sequence` and subsequently with the previous result
-;;; and the next element, and `reduce` will return the last
-;;; result from `func`.
-;;;
-;;; Otherwise if `from-end-p` is given and non-nil then
-;;; `func` will be called with the last two elements
-;;; of the `sequence` and subsequently with the previous result
-;;; and the previous element, and `reduce` will return the last
-;;; result from `func`.
-(defun reduce (f seq . from-end)
-  (let ((from-end-p (car from-end)))
-    (labels ((reduce/list (lst)
-               (if (cdr lst)
-                     (let loop ((elem (car lst))
-                                (tail (cdr lst)))
-                       (if (cdr tail)
-                             (if from-end-p
-                                   (f elem (loop (car tail) (cdr tail)))
-                               (loop (f elem (car tail)) (cdr tail)))
-                         (f elem (car tail))))
-                 (car lst))))
-
-      (cond ((null seq)                (f))
-            ((consp seq)               (reduce/list seq))
-            ((stringp seq)             (reduce/list (string->list seq)))
-            ((simple-vector-p seq)     (reduce/list (simple-vector->list seq)))
-            ((simple-bit-vector-p seq) (reduce/list (simple-bit-vector->list seq)))
-            (t (fatal "not a sequence"))))))
-
-
+; I/O *****************************************************************
 ;;; = Function: write-char
 ;;;     (write-char c) -> c
 ;;;
@@ -1599,45 +1675,7 @@
     (pp obj 0)))
 
 
-;;; = Function: list-length
-;;;     (list-length list-or-string) -> length
-;;;
-;;; Since: 1.1
-;;;
-;;; Returns the length of `list-or-string` if it is a string or proper list.
-;;; Returns `nil` if `list-or-string` is a circular list.
-;;;
-;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-(defun list-length (lst) 
-  (let loop ((n 0)         ; Counter 
-             (fast lst)      ; Fast pointer: leaps by 2 
-             (slow lst))     ; Slow pointer: leaps by 1 
-    ;; If fast pointer hits the end, return the count. 
-    (if (null fast) n
-      (if (null (cdr fast)) (1+ n)
-        ;; If fast pointer eventually equals slow pointer, 
-        ;;  then we must be stuck in a circular list. 
-        ;; (A deeper property is the converse: if we are 
-        ;;  stuck in a circular list, then eventually the 
-        ;;  fast pointer will equal the slow pointer. 
-        ;;  That fact justifies this implementation.) 
-        (if (and (eq fast slow) (> n 0)) nil
-          (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
-
-
-;;; = Function: length
-;;;     (length sequence) -> length
-;;;
-;;; Since: 1.1
-;;;
-;;; Returns the length of `sequence`.
-(defun length (seq)
-  (cond ((null seq) 0)
-        ((listp seq) (list-length seq))
-        ((vectorp seq) (vector-length seq))
-        (t (fatal "not a sequence"))))
-
-
+; misc ****************************************************************
 ; helper function for time
 (defun call-with-timing (func . args)
   (let* ((tstart-real (get-internal-real-time))
@@ -1659,6 +1697,7 @@
   `(call-with-timing (lambda () ,form)))
 
 
+; Alexandria: conses and lists ****************************************
 ;;; = Function: circular-list
 ;;;     (circular-list elems*) -> circular-list
 ;;;
@@ -1674,6 +1713,8 @@
           start)
    nil))
 
+
+; Alexandria: higher order ********************************************
 
 ;;; = Function: compose
 ;;;     (compose func1 funcs*) -> function
@@ -1776,7 +1817,9 @@
 (defun rcurry (func . args)
   (lambda callargs (apply func (append callargs args))))
 
- 
+
+; Alexandria: misc ****************************************************
+
 ;;; = Macro: with-gensyms
 ;;;     (with-gensyms (names*) forms*) -> result
 ;;;
@@ -1791,6 +1834,8 @@
            (if names (cons (list (car names) '(gensym)) (loop (cdr names)))))
      ,@body))
 
+
+; logic, program structure ********************************************
 
 ;;; = Macro: ->
 ;;;     (-> forms*) -> result
@@ -1897,6 +1942,8 @@
              (and ,@forms)))
     (car terms)))
 
+
+; Serapeum: ***********************************************************
 
 ;;; = Macro: with-accumulator
 ;;;     (with-accumulator accumulator-name accumulator start-value-form forms*) -> result

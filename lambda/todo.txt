@@ -7,6 +7,9 @@ Typsystem:
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
 
+reduce from-end-p=t ist nicht endrekursiv
+dovector
+
 mlib - scan: weitere helper
 
 (scan-if generator pred)... filtern
