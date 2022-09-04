@@ -1988,7 +1988,8 @@ public class LambdaJ {
                     assert !symOperator.specialForm() : ccForm.lineInfo() + "unexpected special form " + symOperator;
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
-                    assert symOperator.macro == null: ccForm.lineInfo() + "unexpanded macro call: " + symOperator;
+                    // macros can be unexpanded if the macro was defined after the defun
+                    if (symOperator.macro != null) throw new LambdaJError(true, "function application: not a primitive or lambda: %s is a macro not a function", symOperator, form);
 
                     if (speed >= 1 && symOperator.primitive()) {
                         // (mostly) respect evaluation order: operator should be eval'd before arguments.

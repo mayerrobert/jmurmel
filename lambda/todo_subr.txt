@@ -1,3 +1,13 @@
+(scan alist) liefert automatisch das erwünschte (values '(key . value) more)
+scan-plist dazu?
+scan-iterator dazu für JFFI?
+-> oder "jscan" ? vielleicht auch java.sql.ResultSet?
+
+(limit-if generator pred)
+-> liefert einen generator mit (values v (and more (pred v)))
+(limit-if generator skip-pred linit-pred)
+
+
 last-n: last mit optionalem parameter N siehe http://clhs.lisp.se/Issues/iss209_w.htm
 
 funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write arg nil) und dann (fatal)

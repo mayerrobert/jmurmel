@@ -7,41 +7,41 @@ Typsystem:
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
 
-wenn in einem defun ein macro benutzt wird das erst später definiert wird, gibts z.B.
-java.lang.AssertionError: c:\robert\jmurmel\samples.mlib\mlib.lisp:118:3..118:60: unexpanded macro call: unless
-
-Clojure hat swap!, z.B. (swap! i + 3)
--> das könnte +f, -f, *f, /f usw. ersetzen. der name swap! scheint eher ungünstig. Clojure swap! scheint ausserdem atomic zu sein
-
-
 mlib - scan: weitere helper
+
 (scan-if generator pred)... filtern
 -> oder "filter" ? oder remove-if erweitern?
-(scan-mapped generator function)... aufeinanderfolgende calls des erzeugten generators liefern (function (generator))
+
+
+(map-generator generator function)... aufeinanderfolgende calls des erzeugten generators liefern (function (generator)),
+                                      ähnlich wie map, return ist aber generator statt sequence
 -> brauchts das oder ist das (multiple-value-compose function generator) ?
    -> bei multiple-value-compose muss man selber den secondary value durchreichen, und ggf. bei nil nix machen
       wär also schon gut. eine function als parameter reicht, weil (scan-mapped generator (compose f3 f2 f1)) geht auch
 -> oder "transduce" ?
+   -> transduce könnte eine funktion value->value,more übernehmen. damit könnte transduce die funktionen map und filter umsetzen
 
-(limit-if generator pred)
--> liefert einen generator mit (values v (and more (pred v)))
-
-
-(scan alist) liefert automatisch das erwünschte (values '(key . value) more)
-scan-plist dazu?
-scan-iterator dazu für JFFI?
--> oder "jscan" ? vielleicht auch java.sql.ResultSet?
+(flatmap-generator func generator . more-generators)
+-> func übernimmt soviele parameter wie generators gegeben sind, liefert einen generator
+   flatmap liefert einen generator, der die concatenation liefert
 
 (collect-generator generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
+-> oder (concatenate-generator result-type generator . more-generators) -> sequence, vgl CL concatenate
 (count-generator generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht? oder beides? 
+(reduce-generator generator func)
 
 oder überhaupt generator ("lazy sequence") überall zulassen wo sequence erlaubt ist?
 -> map, reduce, reverse (?), remove, remove-if, length könnten generators unterstützen
--> (scan generator) sollte generator unverändert durchreichen
+   -> map usw liefert eine sequence, alternative generator-funktionen mit returntyp generator wär sinnvoll
+      -> terminals count/length, collect/concatenate, reduce: CL funktion kann erweitert werden dass generator als parameter zulässig ist
+         nonterminals filter/remove/remove-if, reverse: CL funktionen besser ohne generator support belassen
 
 
 mlib: XX->list ersetzen durch generators
 
+
+Clojure hat swap!, z.B. (swap! i + 3)
+-> das könnte +f, -f, *f, /f usw. ersetzen. der name swap! scheint eher ungünstig. Clojure swap! scheint ausserdem atomic zu sein
 
 Scheme hat case-lambda
 

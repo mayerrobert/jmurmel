@@ -1756,3 +1756,6 @@ scan sequence erweitern:
    generator: neuer generator
    CL hat (subseq start [endexcl]), geht auch für setf (setf für generator wär problematisch, für string auch)
 -> wenn scan auch generator unterstützt (und skip und count), brauchts kein scan-range 
+
+wenn in einem defun ein macro benutzt wird das erst später definiert wird, gibts z.B.
+java.lang.AssertionError: c:\robert\jmurmel\samples.mlib\mlib.lisp:118:3..118:60: unexpanded macro call: unless
