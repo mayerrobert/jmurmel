@@ -11,30 +11,30 @@ mlib - scan: weitere helper
 
 (scan-if generator pred)... filtern
 -> oder "filter" ? oder remove-if erweitern?
+   -> (filter-generator pred generator), vgl. (remove-if-not pred seq)
 
-
-(map-generator generator function)... aufeinanderfolgende calls des erzeugten generators liefern (function (generator)),
-                                      ähnlich wie map, return ist aber generator statt sequence
+(map-generator func generator . more-generators)... aufeinanderfolgende calls des erzeugten generators liefern (function (generator)),
+                                                    ähnlich wie map, return ist aber generator statt sequence
 -> brauchts das oder ist das (multiple-value-compose function generator) ?
    -> bei multiple-value-compose muss man selber den secondary value durchreichen, und ggf. bei nil nix machen
       wär also schon gut. eine function als parameter reicht, weil (scan-mapped generator (compose f3 f2 f1)) geht auch
--> oder "transduce" ?
-   -> transduce könnte eine funktion value->value,more übernehmen. damit könnte transduce die funktionen map und filter umsetzen
+-> oder "transduce-generator" ?
+   -> transduce könnte eine funktion value...->value,more übernehmen. damit könnte transduce die funktionen map und filter umsetzen
 
 (flatmap-generator func generator . more-generators)
 -> func übernimmt soviele parameter wie generators gegeben sind, liefert einen generator
    flatmap liefert einen generator, der die concatenation liefert
 
+(reduce-generator func generator)
+(count-generator generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht? oder beides? 
 (collect-generator generator result-type)... materialisiert in eine liste/ vector/ bitvector/ string
 -> oder (concatenate-generator result-type generator . more-generators) -> sequence, vgl CL concatenate
-(count-generator generator)... liefert ein fixnum. oder soll length erweitert werden dass generator auch geht? oder beides? 
-(reduce-generator generator func)
 
 oder überhaupt generator ("lazy sequence") überall zulassen wo sequence erlaubt ist?
 -> map, reduce, reverse (?), remove, remove-if, length könnten generators unterstützen
-   -> map usw liefert eine sequence, alternative generator-funktionen mit returntyp generator wär sinnvoll
-      -> terminals count/length, collect/concatenate, reduce: CL funktion kann erweitert werden dass generator als parameter zulässig ist
-         nonterminals filter/remove/remove-if, reverse: CL funktionen besser ohne generator support belassen
+   -> map müsste 'generator als zus. returntyp unterstützen, filter/remove/remove-if würde bei input generator einen generator liefern
+      -> terminals count/length, collect/concatenate, reduce: CL funktion kann erweitert werden dass generator als parameter zulässig ist, achtung: from-end-p bei reduce
+         reverse: CL funktionen besser ohne generator support belassen, weil das geht nicht lazy, es müsste zu beginn alles materialisiert werden
 
 
 mlib: XX->list ersetzen durch generators

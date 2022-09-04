@@ -928,6 +928,14 @@
         (t (fatal "not a sequence type"))))
 
 
+(defmacro m%notany-null (lst)
+  (let ((loop (gensym))
+        (l (gensym)))
+    `(let ,loop ((,l ,lst))
+       (if ,l (and (car ,l) (,loop (cdr ,l)))
+         t))))
+
+
 ;;; = Function: map
 ;;;     (map result-type function sequences+) -> result
 ;;;
@@ -946,21 +954,18 @@
 (defun map (result-type func seq . more-sequences)
   (setq seq (if more-sequences
 
-                  (labels ((none-nil (lists)
-                             (if lists (and (car lists) (none-nil (cdr lists)))
-                               t)))
-                    (if result-type
-                            (let* ((result (cons nil nil))
-                                   (append-to result))
-                              (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                                (when (none-nil l)
-                                  (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
-                                  (loop (unzip-tails l)))
-                              (cdr result)))
-                      (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                        (when (none-nil l)
-                          (apply func (unzip l))
-                          (loop (unzip-tails l))))))
+                  (if result-type
+                          (let* ((result (cons nil nil))
+                                 (append-to result))
+                            (let loop ((l (m%sequences->lists (cons seq more-sequences))))
+                              (when (m%notany-null l)
+                                (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
+                                (loop (unzip-tails l)))
+                            (cdr result)))
+                    (let loop ((l (m%sequences->lists (cons seq more-sequences))))
+                      (when (m%notany-null l)
+                        (apply func (unzip l))
+                        (loop (unzip-tails l)))))
 
               (if result-type
                       (let* ((result (cons nil nil))
@@ -999,13 +1004,10 @@
 
     (if (cdr sequences)
           ; 2 or more sequences given
-          (labels ((none-nil (lists)
-                     (if lists (and (car lists) (none-nil (cdr lists)))
-                       t)))
-            (let loop ((r result) (l (m%sequences->lists sequences)))
-              (when (and r (none-nil l))
-                (rplaca r (apply func (unzip l)))
-                (loop (cdr r) (unzip-tails l)))))
+          (let loop ((r result) (l (m%sequences->lists sequences)))
+            (when (and r (m%notany-null l))
+              (rplaca r (apply func (unzip l)))
+              (loop (cdr r) (unzip-tails l))))
 
       (if sequences
             ; 1 list given
@@ -1027,13 +1029,10 @@
 (defmacro m%mapx (name acc accn)
   `(defun ,name (func lst . more-lists)
      (if more-lists
-           (labels ((none-nil (lists)
-                      (if lists (and (car lists) (none-nil (cdr lists)))
-                        t)))
-             (let loop ((args (cons lst more-lists)))
-               (when (none-nil args)
-                 (apply func ,(if accn (list accn 'args) 'args))
-                 (loop (unzip-tails args)))))
+           (let loop ((args (cons lst more-lists)))
+             (when (m%notany-null args)
+               (apply func ,(if accn (list accn 'args) 'args))
+               (loop (unzip-tails args))))
        (let loop ((lst lst))
          (when lst
            (func ,(if acc (list acc 'lst) 'lst))
@@ -1044,13 +1043,10 @@
   `(defun ,name (func lst . more-lists)
      (let* ((result (cons nil nil)) (append-to result))
        (if more-lists
-             (labels ((none-nil (lists)
-                        (if lists (and (car lists) (none-nil (cdr lists)))
-                          t)))
-               (let loop ((args (cons lst more-lists)))
-                 (when (none-nil args)
-                   (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) nil))))
-                   (loop (unzip-tails args)))))
+             (let loop ((args (cons lst more-lists)))
+               (when (m%notany-null args)
+                 (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) nil))))
+                 (loop (unzip-tails args))))
          (let loop ((lst lst))
            (when lst
              (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) nil))))
@@ -1062,15 +1058,12 @@
   `(defun ,name (func lst . more-lists)
      (let* ((result (cons nil nil)) (append-to result) tmp)
        (if more-lists
-             (labels ((none-nil (lists)
-                        (if lists (and (car lists) (none-nil (cdr lists)))
-                          t)))
                (let loop ((args (cons lst more-lists)))
-                 (when (none-nil args)
+                 (when (m%notany-null args)
                    (setq tmp (apply func ,(if accn (list accn 'args) 'args)))
                    (nconc append-to tmp)
                    (when tmp (setq append-to tmp))
-                   (loop (unzip-tails args)))))
+                   (loop (unzip-tails args))))
          (let loop ((lst lst))
            (when lst
              (setq tmp (func ,(if acc (list acc 'lst) 'lst)))
@@ -1378,16 +1371,13 @@
 
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
-  `(defun ,name (pred lst . more-lists)
-     (if more-lists
-           (labels ((none-nil (lists)
-                      (if lists (and (car lists) (none-nil (cdr lists)))
-                        t)))
-             (let loop ((args (mapcar m%sequence->list (cons lst more-lists))))
-               (if (none-nil args)
-                     (,comb (apply pred (unzip args)) (loop (unzip-tails args)))
-                 ,lastelem)))
-       (let loop ((lst (m%sequence->list lst)))
+  `(defun ,name (pred sequence . more-sequences)
+     (if more-sequences
+           (let loop ((args (mapcar m%sequence->list (cons sequence more-sequences))))
+             (if (m%notany-null args)
+                   (,comb (apply pred (unzip args)) (loop (unzip-tails args)))
+               ,lastelem))
+       (let loop ((lst (m%sequence->list sequence)))
          (if lst (,comb (pred (car lst)) (loop (cdr lst)))
            ,lastelem)))))
 
@@ -1418,6 +1408,7 @@
 (m%mapxx some or nil)
 
 (defmacro m%mapxx)
+(defmacro m%notany-null)
 
 
 ;;; = Function: notevery
