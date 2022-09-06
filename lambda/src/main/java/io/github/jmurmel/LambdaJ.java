@@ -453,7 +453,8 @@ public class LambdaJ {
         @Override String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
     }
 
-    private static final class Closure implements Writeable {
+    private static final class Closure implements Serializable, Writeable {
+        private static final long serialVersionUID = 1L;
         final Object params;
         final ConsCell body, closure;
 
