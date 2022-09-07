@@ -1759,3 +1759,6 @@ scan sequence erweitern:
 
 wenn in einem defun ein macro benutzt wird das erst später definiert wird, gibts z.B.
 java.lang.AssertionError: c:\robert\jmurmel\samples.mlib\mlib.lisp:118:3..118:60: unexpanded macro call: unless
+
+gscheite implementierung von char, schar (?) in LambdaJ
+-> char für CharSequence, schar für String

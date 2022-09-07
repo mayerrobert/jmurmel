@@ -694,6 +694,12 @@ pi ; ==> 3.141592653589793
 (svlength *v*) ; ==> 3
 (svref *v* 1) ; ==> 2
 
+; = (char str n) -> nth-character
+;
+; Since: 1.3 (mlib 1.1 and 1.2 contained `char`)
+;
+; Return the n-th character of the string `str`, `n` is 0-based.
+
 ; = list->simple-vector and simple-vector->list
 
 ; = (assoc key alist) -> cons or nil

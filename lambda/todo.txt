@@ -55,8 +55,6 @@ min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann e
 -> und evalOpencode OHNE argcount checks
 -> und environment() könnte alle primitives generieren: loop über WellknownSymbol.values + argcountcheck + evalOpencode
 
-gscheite implementierung von char, schar (?) in LambdaJ
--> char für CharSequence, schar für String
 aref in mlib? eher nicht
 -> wenn schon dann sollte aref in murmel sein und java.util.List unterstützen
 nth, nthcdr von mlib nach murmel? wg. ArraySlice und string (?)

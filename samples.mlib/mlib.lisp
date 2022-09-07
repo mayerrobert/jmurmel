@@ -40,7 +40,7 @@
 
 ; numbers, characters
 ;;; - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-;;; - [char=](#function-char), [char](#function-char-1)
+;;; - [char=](#function-char)
 ;;; - [equal](#function-equal)
 
 ; sequences
@@ -1010,16 +1010,6 @@
                   t)
             nil))
     t))
-
-
-;;; = Function: char
-;;;     (char str n) -> nth-character
-;;;
-;;; Since: 1.1
-;;;
-;;; Return the n-th character of the string `str`, `n` is 0-based.
-(defun char (str n)
-  (nth n str))
 
 
 ;;; = Function: equal
