@@ -12,6 +12,8 @@ dovector
 
 mlib - scan: weitere helper
 
+(scan-tree lst)... liefert einen generator der ein depth first traversal macht und die blaetter liefert
+
 (scan-if generator pred)... filtern
 -> oder "filter" ? oder remove-if erweitern?
    -> (filter-generator pred generator), vgl. (remove-if-not pred seq)

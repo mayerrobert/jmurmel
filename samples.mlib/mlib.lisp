@@ -221,22 +221,37 @@
 ;;; A clause with a key that is a single `t` is used as the default clause
 ;;; if no key matches.
 (defmacro case (keyform . clauses)
-  (labels ((do-clause (tmp clause)
+  (labels ((do-keylist (tmp keylist)
+             (if (cdr keylist)
+                   `(or ,@(mapcar (lambda (k) `(eql ',k ,tmp)) keylist))
+               `(eql ,tmp ',(car keylist))))
+
+           (do-clause (tmp clause)
              (let ((keydesignator (car clause))
                    (forms (cdr clause)))
                (if keydesignator
                      (if (consp keydesignator)
-                           (if (cdr keydesignator)
-                                 `((member ,tmp ',keydesignator eql) ,@forms)
-                             `((eql ,tmp ',(car keydesignator)) ,@forms))
+                           (list* (do-keylist tmp keydesignator) forms)
                        (if (eq 't keydesignator)
                              `(t ,@forms)
-                         `((eql ,tmp ',keydesignator) ,@forms)))))))
+                         `((eql ,tmp ',keydesignator) ,@forms))))))
+
+           (do-clauses (key)
+             (let* ((result (cons nil nil))
+                    (append-to result)
+                    clause)
+               (let loop ((clauses clauses))
+                 (when clauses
+                   (setq clause (do-clause key (car clauses)))
+                   (if clause (setq append-to (cdr (rplacd append-to (cons clause nil)))))
+                   (loop (cdr clauses))))
+             (cdr result))))
+
     (if (atom keyform)
-          `(cond ,@(remove nil (mapcar (lambda (clause) (do-clause keyform clause)) clauses)))
+          `(cond ,@(do-clauses keyform))
       (let ((tmp (gensym)))
         `(let ((,tmp ,keyform))
-           (cond ,@(remove nil (mapcar (lambda (clause) (do-clause tmp clause)) clauses))))))))
+           (cond ,@(do-clauses tmp)))))))
 
 
 ; conses and lists ****************************************************
