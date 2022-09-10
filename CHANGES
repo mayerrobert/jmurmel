@@ -33,8 +33,8 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
    e.g. `(a ,nil) was eval'd to (a); correct expansion is (a nil)
  * fixed compiled jmethod
  * fixed mlib: avoid possible stackoverflows when looping over larger sequences
-   * remove, remove-if
    * mapcar, maplist, mapc, mapl, mapcan, mapcon
+   * remove, remove-if, reduce
  * fixed mlib: fixed notevery, notany
 
 

@@ -530,7 +530,7 @@
 
 
 ; Test map
-(let ((seq (list #(1) #(2) #(3))))
+(let ((seq (list (vector 1) (vector 2) (vector 3))))
   (tests map
    (map 'string #'(lambda (x y)
                     (char "01234567890ABCDEF" (mod (+ x y) 16)))
@@ -772,6 +772,26 @@
   ;(reduce #'list '(1 2 3 4)
   ;     :from-end t :initial-value 'foo) =>  (1 (2 (3 (4 foo))))
   (reduce #'list (append '(1 2 3 4) (list 'foo)) #-murmel :from-end t) =>  (1 (2 (3 (4 foo))))
+
+
+
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) '() #-murmel :from-end t) x))
+    => (0 nil)
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) '(1) #-murmel :from-end t) x))
+    => (1)
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) '(1 2) #-murmel :from-end t) x))
+    => (3 (1 2))
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) '(1 2 3 4 5) #-murmel :from-end t) x))
+    => (15 (1 14) (2 12) (3 9) (4 5))
+
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) #() #-murmel :from-end t) x))
+    => (0 nil)
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) #(1) #-murmel :from-end t) x))
+    => (1)
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) #(1 2) #-murmel :from-end t) x))
+    => (3 (1 2))
+  (let (x) (cons (reduce (lambda #+murmel args #-murmel (&rest args) (push args x) (truncate (apply #'+ args))) #(1 2 3 4 5) #-murmel :from-end t) x))
+    => (15 (1 14) (2 12) (3 9) (4 5))
 )
 
 

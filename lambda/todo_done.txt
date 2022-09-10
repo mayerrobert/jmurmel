@@ -1762,3 +1762,5 @@ java.lang.AssertionError: c:\robert\jmurmel\samples.mlib\mlib.lisp:118:3..118:60
 
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
+
+reduce from-end-p=t ist nicht endrekursiv

@@ -7,8 +7,10 @@ Typsystem:
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
 
-reduce from-end-p=t ist nicht endrekursiv
 dovector
+
+mlib: XX->list ersetzen durch generators
+
 
 mlib - scan: weitere helper
 
@@ -40,9 +42,6 @@ oder überhaupt generator ("lazy sequence") überall zulassen wo sequence erlaub
    -> map müsste 'generator als zus. returntyp unterstützen, filter/remove/remove-if würde bei input generator einen generator liefern
       -> terminals count/length, collect/concatenate, reduce: CL funktion kann erweitert werden dass generator als parameter zulässig ist, achtung: from-end-p bei reduce
          reverse: CL funktionen besser ohne generator support belassen, weil das geht nicht lazy, es müsste zu beginn alles materialisiert werden
-
-
-mlib: XX->list ersetzen durch generators
 
 
 Clojure hat swap!, z.B. (swap! i + 3)
