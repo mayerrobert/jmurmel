@@ -465,6 +465,21 @@
 ) 
 
 
+#+murmel
+(tests dovector
+  (let (x) (list (dovector (elem #(1 2 3 4 5) (push "all done" x) 'done) (push elem x)) x))
+  => (done ("all done" 5 4 3 2 1))
+
+  (let (x) (list (dovector (elem "12345" (push "all done" x) 'done) (push elem x)) x))
+  => (done ("all done" #\5 #\4 #\3 #\2 #\1))
+  (let (x) (list (dovector (elem ((jmethod "java.lang.StringBuilder" "new" "String") "12345") (push "all done" x) 'done) (push elem x)) x))
+  => (done ("all done" #\5 #\4 #\3 #\2 #\1))
+
+  (let (x) (list (dovector (elem #*010101 (push "all done" x) 'done) (push elem x)) x))
+  => (done ("all done" 1 0 1 0 1 0))
+)
+
+
 ; test doplist
 #+murmel
 (tests doplist

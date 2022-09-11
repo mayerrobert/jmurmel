@@ -7,8 +7,8 @@ Typsystem:
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
 
-dovector
-
+nreverse
+revappend, nreconc
 mlib: XX->list ersetzen durch generators
 
 

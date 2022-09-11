@@ -82,6 +82,7 @@
 ;;; as well as the following additional functions and macros:
 ;;;
 ;;; - [unzip-tails](#function-unzip-tails)
+;;; - [dovector](#macro-dovector)
 ;;; - [*f, /f, +f, -f](#macro-f-f)
 ;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 ; generators
@@ -703,6 +704,35 @@
                ,@body
                (,loop (cdr ,lst)))
          ,(if result `(let ((,var nil)) ,@result) nil)))))
+
+
+;;; = Macro: dovector
+;;;     (dovector (var vector-form result-form*) statement*) -> result
+;;;
+;;; Since: 1.3
+;;;
+;;; Just like `dolist`, but with vectors.
+(defmacro dovector (loop-def . body)
+  (let ((var (car loop-def))
+        (vectorform (cadr loop-def))
+        (result (cddr loop-def))
+        (vec (gensym))
+        (acc (gensym))
+        (idx (gensym))
+        (limit (gensym))
+        (loop (gensym)))
+    `(let* ((,vec ,vectorform)
+            (,limit (vector-length ,vec))
+            (,acc (if (simple-vector-p ,vec) svref
+                    (if (stringp ,vec) char
+                      (if (simple-bit-vector-p ,vec) sbit
+                        (fatal "not a vector"))))))
+       (let ,loop ((,idx 0))
+         (if (< ,idx ,limit)
+               (let ((,var (,acc ,vec ,idx)))
+                 ,@body
+                 (,loop (1+ ,idx)))
+           ,(if result `(let ((,var nil)) ,@result) nil))))))
 
 
 ;;; = Macro: doplist

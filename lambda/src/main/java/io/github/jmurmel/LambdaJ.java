@@ -8175,6 +8175,7 @@ public class LambdaJ {
         private void emitVectorLiteral(WrappingWriter sb, Object form) {
             if (form instanceof String) { emitStringLiteral(sb, (String)form); }
             else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form); }
+            else if (form instanceof boolean[]) { emitSimpleBitVectorLiteral(sb, (boolean[])form); }
             else errorInternal("emitVectorLiteral: vector type %s is not implemented", form.toString());
         }
 
@@ -8192,6 +8193,21 @@ public class LambdaJ {
                 emitQuotedForm(qsb, elem, true);
             }
             qsb.append("}");
+
+            emitReference(sb, b.toString());
+        }
+
+        private void emitSimpleBitVectorLiteral(WrappingWriter sb, boolean[] form) {
+            final StringWriter b = new StringWriter();
+
+            b.append("new boolean[] {");
+            boolean first = true;
+            for (boolean elem: form) {
+                if (first) first = false;
+                else b.append(',');
+                b.append(String.valueOf(elem));
+            }
+            b.append("}");
 
             emitReference(sb, b.toString());
         }

@@ -66,6 +66,7 @@ functions and macros inspired by [serapeum](https://github.com/ruricolist/serape
 as well as the following additional functions and macros:
 
 - [unzip-tails](#function-unzip-tails)
+- [dovector](#macro-dovector)
 - [*f, /f, +f, -f](#macro-f-f)
 - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
@@ -328,6 +329,13 @@ Since: 1.1
 Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
 Murmel however supports multiple result-forms which will be eval'd in an
 implicit `progn`, similar to `do` and `do*`;
+
+### Macro: dovector
+    (dovector (var vector-form result-form*) statement*) -> result
+
+Since: 1.3
+
+Just like `dolist`, but with vectors.
 
 ### Macro: doplist
     (doplist (key-var value-var plist-form result-form*) statement*) -> result
