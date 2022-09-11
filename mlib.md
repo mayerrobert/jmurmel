@@ -23,7 +23,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - [prog1, prog2](#macro-prog1-prog2)
 - [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
 - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
-- [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [member](#function-member)
+- [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), (#func[member](#function-member)
 - [acons](#function-acons)
 - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
@@ -206,6 +206,20 @@ Since: 1.2
 `nconc` concatenates lists, each list but the last is modified.
 If no lists are supplied, `nconc` returns `nil`.
 Each argument but the last must be a proper or dotted list.
+
+### Function: revappend, nreconc
+    (revappend list tail) -> result-list
+    (nreconc list tail) -> result-list
+
+Since: 1.3
+
+`revappend` constructs a copy of `list`, but with the elements in reverse order.
+It then appends (as if by `nconc`) the `tail` to that reversed list and returns the result.
+
+`nreconc` reverses the order of elements in list (as if by `nreverse`).
+It then appends (as if by `nconc`) the tail to that reversed list and returns the result.
+
+The resulting list shares list structure with tail.
 
 ### Function: member
     (member item list [test]) -> tail

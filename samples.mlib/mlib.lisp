@@ -25,7 +25,7 @@
 
 ; conses and lists
 ;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
-;;; - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [member](#function-member)
+;;; - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), (#func[member](#function-member)
 ;;; - [acons](#function-acons)
 ;;; - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 
@@ -427,6 +427,45 @@
                 (car lists))
           (apply nconc (cdr lists)))
     nil))
+
+
+;;; = Function: revappend, nreconc
+;;;     (revappend list tail) -> result-list
+;;;     (nreconc list tail) -> result-list
+;;;
+;;; Since: 1.3
+;;;
+;;; `revappend` constructs a copy of `list`, but with the elements in reverse order.
+;;; It then appends (as if by `nconc`) the `tail` to that reversed list and returns the result.
+;;;
+;;; `nreconc` reverses the order of elements in list (as if by `nreverse`).
+;;; It then appends (as if by `nconc`) the tail to that reversed list and returns the result.
+;;;
+;;; The resulting list shares list structure with tail.
+(defun revappend (x y)
+; Return (append (reverse x) y).
+;  (do ((top x (cdr top))
+;       (result y (cons (car top) result)))
+;      ((null top) result))) ; should use endp instead of null
+  (let loop ((top x)
+             (result y))
+    (if top (loop (cdr top) (cons (car top) result))
+      result)))
+
+(defun nreconc (x y)
+;  Return (nconc (nreverse x) y).
+;  (do ((1st (cdr x) (if (null 1st) 1st (cdr 1st))) ; should use endp instead of null
+;       (2nd x 1st)                                 ; 2nd follows first down the list.
+;       (3rd y 2nd))                                ; 3rd follows 2nd down the list.
+;      ((atom 2nd) 3rd)
+;    (rplacd 2nd 3rd)))
+  (let loop ((1st (cdr x))
+             (2nd x)
+             (3rd y))
+    (if (atom 2nd) 3rd
+      (progn
+        (rplacd 2nd 3rd)
+        (loop (if (null 1st) 1st (cdr 1st)) 1st 2nd)))))
 
 
 ;;; = Function: member

@@ -108,6 +108,34 @@
 )
 
 
+;;; test revappend, nreconc
+(setq x nil)
+(tests revappend
+ (let ((list-1 (list 1 2 3))
+       (list-2 (list 'a 'b 'c)))
+   (push (revappend list-1 list-2) x) 
+   (push list-1 x)
+   (push list-2 x)
+   x) => ((a b c) (1 2 3) (3 2 1 A B C))
+
+ (revappend '(1 2 3) '()) =>  (3 2 1)
+ (revappend '(1 2 3) '(a . b)) =>  (3 2 1 A . B)
+ (revappend '() '(a b c)) =>  (A B C)
+ (revappend '(1 2 3) 'a) =>  (3 2 1 . A)
+ (revappend '() 'a) =>  A   ;degenerate case
+)
+
+(setq x nil)
+(tests nreconc
+ (let ((list-1 (list 1 2 3))
+       (list-2 (list 'a 'b 'c)))
+   (push (nreconc list-1 list-2) x)
+   (push (equal list-1 '(1 2 3)) x)
+   (push (equal list-2 '(a b c)) x)
+   (reverse x)) => ((3 2 1 A B C) nil t)
+)
+
+
 ;;; test destructuring-bind
 (tests destructuring-bind
   (destructuring-bind (a b c) '(1.0 2 3) (+ a b c)) => 6.0

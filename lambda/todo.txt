@@ -8,7 +8,6 @@ Typsystem:
 
 
 nreverse
-revappend, nreconc
 mlib: XX->list ersetzen durch generators
 
 
