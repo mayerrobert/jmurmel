@@ -18,76 +18,88 @@
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
-; logic, program structure
-;;; - [not](#function-not), [and](#macro-and), [or](#macro-or)
-;;; - [prog1, prog2](#macro-prog1-prog2)
-;;; - [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
+;;; - logic, program structure
+;;;     - [not](#function-not), [and](#macro-and), [or](#macro-or)
+;;;     - [prog1, prog2](#macro-prog1-prog2)
+;;;     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
 
-; conses and lists
-;;; - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
-;;; - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), (#func[member](#function-member)
-;;; - [acons](#function-acons)
-;;; - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+;;; - conses and lists
+;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+;;;     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
+;;;     - [acons](#function-acons)
+;;;     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 
-; loops
-;;; - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
+;;; - loops
+;;;     - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
 
-; places
-;;; - [destructuring-bind](#macro-destructuring-bind)
-;;; - [get-setf-expansion](#function-get-setf-expansion)
-;;; - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
-;;; - [push](#macro-push), [pop](#macro-pop)
+;;; - places
+;;;     - [destructuring-bind](#macro-destructuring-bind)
+;;;     - [get-setf-expansion](#function-get-setf-expansion)
+;;;     - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
+;;;     - [push](#macro-push), [pop](#macro-pop)
 
-; numbers, characters
-;;; - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-;;; - [char=](#function-char)
-;;; - [equal](#function-equal)
+;;; - numbers, characters
+;;;     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
+;;;     - [char=](#function-char)
+;;;     - [equal](#function-equal)
 
-; sequences
-;;; - [length](#function-length)
-;;; - [reverse](#function-reverse)
-;;; - [remove-if](#function-remove-if), [remove](#function-remove)
-;;; - [map](#function-map), [map-into](#function-map-into)
-;;; - [reduce](#function-reduce)
+;;; - sequences
+;;;     - [length](#function-length)
+;;;     - [reverse](#function-reverse), [nreverse](#function-nreverse)
+;;;     - [remove-if](#function-remove-if), [remove](#function-remove)
+;;;     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
 
-; higher order
-;;; - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
-;;; - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
+;;; - higher order
+;;;     - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
+;;;     - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
 
-; I/O
-;;; - [write-char](#function-write-char)
-;;; - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
+;;; - I/O
+;;;     - [write-char](#function-write-char)
+;;;     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
 
-; misc
-;;; - [time](#macro-time)
+;;; - misc
+;;;     - [time](#macro-time)
 ;;;
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
 ;;;
-;;; - [circular-list](#function-circular-list)
-;;; - [doplist](#macro-doplist)
-;;; - [compose](#function-compose), [multiple-value-compose](#function-multiple-value-compose)
-;;; - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
-;;; - [curry](#function-curry), [rcurry](#function-rcurry)
-;;; - [with-gensyms](#macro-with-gensyms)
+;;; - conses and lists
+;;;     - [circular-list](#function-circular-list)
+;;; - loops
+;;;     - [doplist](#macro-doplist)
+;;; - higher order
+;;;     - [compose](#function-compose), [multiple-value-compose](#function-multiple-value-compose)
+;;;     - [conjoin](#function-conjoin), [disjoin](#function-disjoin)
+;;;     - [curry](#function-curry), [rcurry](#function-rcurry)
+;;; - misc
+;;;     - [with-gensyms](#macro-with-gensyms)
 ;;;
 ;;; functions inspired by [SRFI-1](https://srfi.schemers.org/srfi-1/srfi-1.html)
 ;;;
-;;; - [unzip](#function-unzip)
+;;; - conses and lists
+;;;     - [unzip](#function-unzip)
 ;;;
 ;;; functions and macros inspired by [serapeum](https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md)
 ;;;
-;;; - [with-accumulator](#macro-with-accumulator), [summing](#macro-summing), [collecting](#macro-collecting), [reverse-collecting](#macro-reverse-collecting)
-;;; - [plist-keys](#function-plist-keys), [plist-values](#function-plist-values)
+;;; - conses and lists
+;;;     - [plist-keys](#function-plist-keys), [plist-values](#function-plist-values)
+;;; - misc
+;;;     - [with-accumulator](#macro-with-accumulator), [summing](#macro-summing), [collecting](#macro-collecting), [reverse-collecting](#macro-reverse-collecting)
 ;;;
 ;;; as well as the following additional functions and macros:
 ;;;
-;;; - [unzip-tails](#function-unzip-tails)
-;;; - [dovector](#macro-dovector)
-;;; - [*f, /f, +f, -f](#macro-f-f)
-;;; - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
-; generators
-;;; - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
+;;; - logic and program structure
+;;;     - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
+;;; - conses and lists
+;;;     - [unzip-tails](#function-unzip-tails)
+;;; - loops
+;;;     - [dovector](#macro-dovector)
+;;; - places
+;;;     - [*f, /f, +f, -f](#macro-f-f)
+;;; - generators
+;;;     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
 
+
+;;; == Description of functions and macros
 
 ; logic, program structure ********************************************
 
@@ -642,7 +654,7 @@
 ; undef m%mapx and friends
 (defmacro m%mapx)
 (defmacro m%mapx-cons)
-(defmacro m%mapx-combine)
+(defmacro m%mapx-nconc)
 
 
 ; loops ***************************************************************
@@ -1365,6 +1377,41 @@
           ((stringp seq) (list->string (rev (string->list seq) nil)))
           ((simple-vector-p seq) (list->simple-vector (rev (simple-vector->list seq) nil)))
           ((simple-bit-vector-p seq) (list->simple-bit-vector (rev (simple-bit-vector->list seq) nil)))
+          (t (fatal "not a sequence")))))
+
+
+;;; = Function: nreverse
+;;;     (nreverse sequence) -> reversed-sequence
+;;;
+;;; Since: 1.3
+;;;
+;;; Similar to `reverse` `nreverse` returns a sequence with elements in reversed order.
+;;; `nreverse` however may or may not reuse/ destroy the input sequence.
+(defun nreverse (seq)
+  (labels ((nreverse/list (list)
+             (let loop ((1st (cdr list))
+                        (2nd list)
+                        (3rd nil))
+                 (if (atom 2nd) 3rd
+                   (progn
+                     (rplacd 2nd 3rd)
+                     (loop (cdr 1st) 1st 2nd)))))
+
+           (nreverse/vector (vector getter setter)
+             (let loop ((left-index 0)
+                        (right-index (1- (vector-length vector))))
+               (if (<= right-index left-index) vector
+                 (let ((left (getter vector left-index))
+                       (right (getter vector right-index)))
+                   (setter vector left-index right)
+                   (setter vector right-index left)
+                   (loop (1+ left-index) (1- right-index)))))))
+
+    (cond ((null seq)                nil)
+          ((consp seq)               (nreverse/list seq))
+          ((stringp seq)             (list->string (nreverse/list (string->list seq))))
+          ((simple-vector-p seq)     (nreverse/vector seq svref svset))
+          ((simple-bit-vector-p seq) (nreverse/vector seq sbit bvset))
           (t (fatal "not a sequence")))))
 
 

@@ -6,8 +6,19 @@ Typsystem:
 - Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
+- vielleicht StringBuilder einbauen:
+  "asdf" liefert String
+  (simple-string obj) == obj.toString(), liefert String
+  (string obj) == new StringBuilder(obj.toString())
+  (make-array 5 'character) liefert new StringBuilder(5), also leerstring, initial capacity 5
+  -> in CL liefert das ein simple-array mit fillpointer=false, adjustable=false, inhalt 5 x #\0, StringBuilder würde adjustable=true entsprechen
+  -> #\Nul wird von CL write stillschweigend verschluckt, oder vielleicht verschluckt die Windows console Nul?
+  (char s 0) gibts bereits, sbset dazu
+- oder: (string obj) liefert obj.toString().toCharArray()
+  und:  (make-array 5 'character) liefert new char[5]
+  nur stringliterale bleiben immutable java.lang.String
 
-nreverse
+
 mlib: XX->list ersetzen durch generators
 
 
