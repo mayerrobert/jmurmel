@@ -28,7 +28,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
     - [acons](#function-acons)
     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
-- loops
+- iteration
     - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
 - places
     - [destructuring-bind](#macro-destructuring-bind)
@@ -57,7 +57,7 @@ functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev
 
 - conses and lists
     - [circular-list](#function-circular-list)
-- loops
+- iteration
     - [doplist](#macro-doplist)
 - higher order
     - [compose](#function-compose), [multiple-value-compose](#function-multiple-value-compose)
@@ -84,12 +84,12 @@ as well as the following additional functions and macros:
     - [->](#macro), [->>](#macro-1), [and->](#macro-and-1), [and->>](#macro-and-2)
 - conses and lists
     - [unzip-tails](#function-unzip-tails)
-- loops
-    - [dovector](#macro-dovector)
+- iteration
+    - [dovector](#macro-dovector), [dogenerator](#macro-dogenerator)
 - places
     - [*f, /f, +f, -f](#macro-f-f)
 - generators
-    - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat), [dogenerator](#macro-dogenerator)
+    - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
 
 ## Description of functions and macros
 

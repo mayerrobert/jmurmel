@@ -19,6 +19,10 @@ Typsystem:
   nur stringliterale bleiben immutable java.lang.String
 
 
+mlib:
+(nconc (list* 1 2 3) nil) sollte (1 2) liefern
+nconc ist nicht endrekursiv
+
 mlib: XX->list ersetzen durch generators
 
 
