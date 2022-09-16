@@ -421,24 +421,28 @@
 ;;; If no lists are supplied, `nconc` returns `nil`.
 ;;; Each argument but the last must be a proper or dotted list.
 (defun nconc lists
-  (if lists
-        (if (car lists)
-              (progn
-                (if (cdr lists)
-                      (let loop ((append-to (car lists))
-                                 (lists (cdr lists)))
-                        (if (car lists)
-                              (progn
-                                (if (cdr lists)
-                                      (rplacd (last append-to) (loop (car lists) (cdr lists)))
-                                  (rplacd (last append-to) (car lists)))
-                                append-to)
-                          (if (cdr lists)
-                                (loop append-to (cdr lists))
-                            append-to))))
-                (car lists))
-          (apply nconc (cdr lists)))
-    nil))
+  (let* outer ((outer-lists lists)
+               (result (car outer-lists)))
+    (if outer-lists
+      (cond
+        ((consp result)
+         (let ((splice result))
+           (let* inner ((inner-lists (cdr outer-lists))
+                        (ele (car inner-lists)))
+               (if inner-lists
+                 (cond
+                   ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
+                   ((null ele) (rplacd (last splice) nil)  (inner (cdr inner-lists) (cadr inner-lists)))
+                   ((atom ele) (if (cdr inner-lists)
+                                    (fatal "not a list")
+                                (rplacd (last splice) ele)))))))
+           result)
+
+        ((null result) (outer (cdr outer-lists) (cadr outer-lists)))
+
+        ((atom result) (if (cdr outer-lists)
+                             (fatal "not a list")
+                         result))))))
 
 
 ;;; = Function: revappend, nreconc

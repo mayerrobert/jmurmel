@@ -1764,3 +1764,8 @@ gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
 
 reduce from-end-p=t ist nicht endrekursiv
+
+mlib:
+nconc ist nicht endrekursiv
+(nconc (list* 1 2 3) nil) sollte (1 2) liefern
+-> tests + reparieren

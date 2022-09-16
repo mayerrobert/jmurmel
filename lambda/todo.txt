@@ -1,7 +1,3 @@
-mlib:
-nconc ist nicht endrekursiv
-(nconc (list* 1 2 3) nil) sollte (1 2) liefern
--> tests + reparieren
 
 mlib: XX->list ersetzen durch generators
 
