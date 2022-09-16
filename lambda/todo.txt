@@ -1,3 +1,11 @@
+mlib:
+nconc ist nicht endrekursiv
+(nconc (list* 1 2 3) nil) sollte (1 2) liefern
+-> tests + reparieren
+
+mlib: XX->list ersetzen durch generators
+
+
 Typsystem:
 - beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
 - beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t
@@ -18,12 +26,6 @@ Typsystem:
   und:  (make-array 5 'character) liefert new char[5]
   nur stringliterale bleiben immutable java.lang.String
 
-
-mlib:
-(nconc (list* 1 2 3) nil) sollte (1 2) liefern
-nconc ist nicht endrekursiv
-
-mlib: XX->list ersetzen durch generators
 
 
 mlib - scan: weitere helper

@@ -1846,12 +1846,12 @@
 ;;; Creates a circular list of elements.
 (defun circular-list elems
   (if elems
-        (let ((start (let loop ((elem elems))
-                       (if elem (cons (car elem) (loop (cdr elem)))
-                         nil))))
-          (rplacd (last start) start)
-          start)
-   nil))
+    (let* loop ((result (cons (car elems) nil))
+                (elems (cdr elems))
+                (append-to result))
+      (if elems
+            (loop result (cdr elems) (setq append-to (cdr (rplacd append-to (cons (car elems) nil)))))
+        (cdr (rplacd append-to result))))))
 
 
 ; Alexandria: higher order ********************************************
