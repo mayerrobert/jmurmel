@@ -295,6 +295,9 @@
                (if keydesignator
                  (cond ((eq keydesignator 'null)              `((null ,tmp) ,@forms))
                        ((eq keydesignator 'atom)              `((atom ,tmp) ,@forms))
+                       ((eq keydesignator 'symbol)            `((symbolp ,tmp) ,@forms))
+                       ((eq keydesignator 'function)          `((functionp ,tmp) ,@forms))
+
                        ((eq keydesignator 'list)              `((listp ,tmp) ,@forms))
                        ((eq keydesignator 'cons)              `((consp ,tmp) ,@forms))
 
