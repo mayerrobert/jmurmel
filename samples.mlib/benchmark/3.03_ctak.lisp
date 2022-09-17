@@ -25,4 +25,4 @@
                          x
                          y))))))
 
-(bench "tak" (ctak 18 12 6) *default-duration*)  ; => 7
+(bench "ctak" (ctak 18 12 6) *default-duration*)  ; => 7
