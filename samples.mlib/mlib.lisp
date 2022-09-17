@@ -486,25 +486,25 @@
   (let* outer ((outer-lists lists)
                (result (car outer-lists)))
     (if outer-lists
-      (cond
-        ((consp result)
+      (typecase result
+        (cons
          (let ((splice result))
            (let* inner ((inner-lists (cdr outer-lists))
                         (ele (car inner-lists)))
                (if inner-lists
-                 (cond
-                   ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
-                   ((null ele) (rplacd (last splice) nil)  (inner (cdr inner-lists) (cadr inner-lists)))
-                   ((atom ele) (if (cdr inner-lists)
-                                    (fatal "not a list")
-                                (rplacd (last splice) ele)))))))
+                 (typecase ele
+                   (cons (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
+                   (null (rplacd (last splice) nil)  (inner (cdr inner-lists) (cadr inner-lists)))
+                   (atom (if (cdr inner-lists)
+                               (fatal "not a list")
+                           (rplacd (last splice) ele)))))))
            result)
 
-        ((null result) (outer (cdr outer-lists) (cadr outer-lists)))
+        (null (outer (cdr outer-lists) (cadr outer-lists)))
 
-        ((atom result) (if (cdr outer-lists)
-                             (fatal "not a list")
-                         result))))))
+        (atom (if (cdr outer-lists)
+                    (fatal "not a list")
+                result))))))
 
 
 ;;; = Function: revappend, nreconc
@@ -520,11 +520,10 @@
 ;;; It then appends (as if by `nconc`) the tail to that reversed list and returns the result.
 ;;;
 ;;; The resulting list shares list structure with tail.
+;;;
+;;;     (revappend x y)  ::=  (append (reverse x) y)
+;;;     (nreconc x y)    ::=  (nconc (nreverse x) y)
 (defun revappend (x y)
-; Return (append (reverse x) y).
-;  (do ((top x (cdr top))
-;       (result y (cons (car top) result)))
-;      ((null top) result))) ; should use endp instead of null
   (let loop ((top x)
              (result y))
     (if top (loop (cdr top) (cons (car top) result))

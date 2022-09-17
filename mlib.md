@@ -265,6 +265,9 @@ It then appends (as if by `nconc`) the tail to that reversed list and returns th
 
 The resulting list shares list structure with tail.
 
+    (revappend x y)  ::=  (append (reverse x) y)
+    (nreconc x y)    ::=  (nconc (nreverse x) y)
+
 ### Function: member
     (member item list [test]) -> tail
 
