@@ -22,7 +22,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - logic, program structure
     - [not](#function-not), [and](#macro-and), [or](#macro-or)
     - [prog1, prog2](#macro-prog1-prog2)
-    - [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
+    - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
 - conses and lists
     - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
@@ -158,6 +158,28 @@ Subsequent clauses will be ignored.
 
 A clause with a key that is a single `t` is used as the default clause
 if no key matches.
+
+### Macro: typecase
+     (typecase keyform (type forms*)* (t forms*)?) -> result
+
+Since: 1.3
+
+`typecase` allows the conditional execution of a body of forms in a clause
+that is selected by matching the test-key on the basis of its type.
+
+The keyform is evaluated to produce the test-key.
+
+Each of the normal-clauses is then considered in turn.
+If the test-key is of the type given by the clauses's type,
+the forms in that clause are evaluated as an implicit progn,
+and the values it returns are returned as the value of the typecase form.
+
+If no normal-clause matches, and there is an otherwise-clause,
+then that otherwise-clause automatically matches;
+the forms in that clause are evaluated as an implicit progn,
+and the values it returns are returned as the value of the typecase.
+
+If there is no otherwise-clause, typecase returns nil.
 
 ### Function: caar..cdddr
     (c..r lst) -> result

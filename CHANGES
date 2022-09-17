@@ -23,7 +23,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
    * list->simple-bit-vector and simple-bit-vector->list
  * added char to Murmel (moved from mlib to the core language)
 
- * mlib: added map, dovector, revappend, nreconc, nreverse
+ * mlib: added map, dovector, revappend, nreconc, nreverse, typecase
  * mlib: added generator related functions and macros
    * scan
    * scan-multiple, scan-concat
@@ -32,9 +32,9 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
  * fixed backquote expansion:
    e.g. `(a ,nil) was eval'd to (a); correct expansion is (a nil)
  * fixed compiled jmethod
- * fixed mlib: avoid possible stackoverflows when looping over larger sequences
+ * fixed mlib: avoid possible stackoverflows when using larger sequences
    * mapcar, maplist, mapc, mapl, mapcan, mapcon
-   * remove, remove-if, reduce
+   * nconc, remove, remove-if, reduce
  * fixed mlib: fixed notevery, notany
 
 

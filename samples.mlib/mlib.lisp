@@ -21,7 +21,7 @@
 ;;; - logic, program structure
 ;;;     - [not](#function-not), [and](#macro-and), [or](#macro-or)
 ;;;     - [prog1, prog2](#macro-prog1-prog2)
-;;;     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case)
+;;;     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
 
 ;;; - conses and lists
 ;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
@@ -248,6 +248,68 @@
                        (if (eq 't keydesignator)
                              `(t ,@forms)
                          `((eql ,tmp ',keydesignator) ,@forms))))))
+
+           (do-clauses (key)
+             (let* ((result (cons nil nil))
+                    (append-to result)
+                    clause)
+               (let loop ((clauses clauses))
+                 (when clauses
+                   (setq clause (do-clause key (car clauses)))
+                   (if clause (setq append-to (cdr (rplacd append-to (cons clause nil)))))
+                   (loop (cdr clauses))))
+             (cdr result))))
+
+    (if (atom keyform)
+          `(cond ,@(do-clauses keyform))
+      (let ((tmp (gensym)))
+        `(let ((,tmp ,keyform))
+           (cond ,@(do-clauses tmp)))))))
+
+
+;;; = Macro: typecase
+;;;      (typecase keyform (type forms*)* (t forms*)?) -> result
+;;;
+;;; Since: 1.3
+;;;
+;;; `typecase` allows the conditional execution of a body of forms in a clause
+;;; that is selected by matching the test-key on the basis of its type.
+;;;
+;;; The keyform is evaluated to produce the test-key.
+;;;
+;;; Each of the normal-clauses is then considered in turn.
+;;; If the test-key is of the type given by the clauses's type,
+;;; the forms in that clause are evaluated as an implicit progn,
+;;; and the values it returns are returned as the value of the typecase form.
+;;;
+;;; If no normal-clause matches, and there is an otherwise-clause,
+;;; then that otherwise-clause automatically matches;
+;;; the forms in that clause are evaluated as an implicit progn,
+;;; and the values it returns are returned as the value of the typecase.
+;;;
+;;; If there is no otherwise-clause, typecase returns nil.
+(defmacro typecase (keyform . clauses)
+  (labels ((do-clause (tmp clause)
+             (let ((keydesignator (car clause))
+                   (forms (cdr clause)))
+               (if keydesignator
+                 (cond ((eq keydesignator 'null)              `((null ,tmp) ,@forms))
+                       ((eq keydesignator 'atom)              `((atom ,tmp) ,@forms))
+                       ((eq keydesignator 'list)              `((listp ,tmp) ,@forms))
+                       ((eq keydesignator 'cons)              `((consp ,tmp) ,@forms))
+
+                       ((eq keydesignator 'vector)            `((vectorp ,tmp) ,@forms))
+                       ((eq keydesignator 'simple-vector)     `((simple-vector-p ,tmp) ,@forms))
+                       ((eq keydesignator 'simple-bit-vector) `((simple-bit-vector-p ,tmp) ,@forms))
+                       ((eq keydesignator 'string)            `((stringp ,tmp) ,@forms))
+                       ((eq keydesignator 'simple-string)     `((simple-string-p ,tmp) ,@forms))
+
+                       ((eq keydesignator 'character)         `((characterp ,tmp) ,@forms))
+
+                       ((eq keydesignator 'integer)           `((integerp ,tmp) ,@forms))
+                       ((eq keydesignator 'float)             `((floatp ,tmp) ,@forms))
+                       ((eq keydesignator 'number)            `((numberp ,tmp) ,@forms))
+                       ((eq keydesignator t)                  `(t ,@forms))))))
 
            (do-clauses (key)
              (let* ((result (cons nil nil))
