@@ -1,6 +1,7 @@
 
 mlib: XX->list ersetzen durch generators
 
+langref: bitvector beschreiben
 
 Typsystem:
 - beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden

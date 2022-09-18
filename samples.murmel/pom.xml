@@ -274,6 +274,7 @@
                                 <argument>--verbose</argument>
                                 <argument>fibonacci.lisp</argument>
                                 <argument>fibonacci_simple.lisp</argument>
+                                <argument>fizzbuzz.lisp</argument>
                                 <argument>hanoi.lisp</argument>
                                 <argument>factorize.lisp</argument>
                             </arguments>
@@ -297,6 +298,7 @@
                                 <argument>--run</argument>
                                 <argument>fibonacci.lisp</argument>
                                 <argument>fibonacci_simple.lisp</argument>
+                                <argument>fizzbuzz.lisp</argument>
                                 <argument>hanoi.lisp</argument>
                                 <argument>factorize.lisp</argument>
                             </arguments>
