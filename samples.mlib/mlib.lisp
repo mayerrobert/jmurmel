@@ -527,18 +527,10 @@
 ;;;     (revappend x y)  ::=  (append (reverse x) y)
 ;;;     (nreconc x y)    ::=  (nconc (nreverse x) y)
 (defun revappend (x y)
-  (let loop ((top x)
-             (result y))
-    (if top (loop (cdr top) (cons (car top) result))
-      result)))
+  (if x (revappend (cdr x) (cons (car x) y))
+    y))
 
 (defun nreconc (x y)
-;  Return (nconc (nreverse x) y).
-;  (do ((1st (cdr x) (if (null 1st) 1st (cdr 1st))) ; should use endp instead of null
-;       (2nd x 1st)                                 ; 2nd follows first down the list.
-;       (3rd y 2nd))                                ; 3rd follows 2nd down the list.
-;      ((atom 2nd) 3rd)
-;    (rplacd 2nd 3rd)))
   (let loop ((1st (cdr x))
              (2nd x)
              (3rd y))
