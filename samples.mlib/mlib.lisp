@@ -1177,10 +1177,12 @@
 ;;;
 ;;; - `a` and `b` are `eql`
 ;;; - `a` and `b` are strings, characters or symbols and have the same text value
+;;; - `a` and `b` are bitvectors whose elements are eql
 ;;; - `a` and `b` are conses whose car and cdr are `equal` respectively
 (defun equal (a b)
   (or (eql a b)
       (and (stringp a) (stringp b) (string= a b))
+      (and (simple-bit-vector-p a) (simple-bit-vector-p b) (bv= a b))
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 

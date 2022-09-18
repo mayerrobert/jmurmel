@@ -798,6 +798,7 @@ public class LambdaJ {
             internWellknown("sbit");
             internWellknown("bvset");
             internWellknown("bvlength");
+            internWellknown("bv=");
         }
         else sBit = null;
 
@@ -1667,10 +1668,8 @@ public class LambdaJ {
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
         sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM),
         sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM),
-        sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM),
-        sSBit("sbit", WellknownSymbolKind.PRIM),
-        sBvSet("bvset", WellknownSymbolKind.PRIM),
-        sBvLength("bvlength", WellknownSymbolKind.PRIM),
+        sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM), sSBit("sbit", WellknownSymbolKind.PRIM), sBvSet("bvset", WellknownSymbolKind.PRIM),
+        sBvLength("bvlength", WellknownSymbolKind.PRIM), sBvEq("bv=", WellknownSymbolKind.PRIM),
         ;
 
         private final String sym;
@@ -2644,7 +2643,8 @@ public class LambdaJ {
 
         case sSBit:         { twoArgs  ("sbit", args);           return sbit(car(args), toNonnegInt("sbit", cadr(args))); }
         case sBvSet:        { threeArgs("bvset", args);          return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).intValue()); }
-        case sBvLength:     { oneArg   ("bvlength", args);       return svlength(car(args)); }
+        case sBvLength:     { oneArg   ("bvlength", args);       return bvlength(car(args)); }
+        case sBvEq:         { twoArgs  ("bv=", args);            return boolResult(bvEq(car(args), cadr(args))); }
 
         default:    return NOT_HANDLED;
         }
@@ -3176,6 +3176,12 @@ public class LambdaJ {
     static int bvlength(Object maybeVector) {
         if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
         throw errorNotASimpleBitVector("bvlength", maybeVector);
+    }
+
+    static boolean bvEq(Object maybeVector1, Object maybeVector2) {
+        if (!(maybeVector1 instanceof boolean[])) throw errorNotASimpleBitVector("bv=", maybeVector1);
+        if (!(maybeVector2 instanceof boolean[])) throw errorNotASimpleBitVector("bv=", maybeVector2);
+        return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
     }
 
     /** return the cons whose car is eq to {@code atom}
@@ -4454,9 +4460,10 @@ public class LambdaJ {
                   addBuiltin("sbit",            (Primitive) a -> { twoArgs("sbit", a);    return sbit(car(a), toNonnegInt("sbit", cadr(a))); },
                   addBuiltin("bvset",           (Primitive) a -> { threeArgs("bvset", a); return bvset(car(a), toNonnegInt("bvset", cadr(a)), requireIntegralNumber("bvset", caddr(a), 0, 1).intValue()); },
                   addBuiltin("bvlength",        (Primitive) a -> { oneArg("bvlength", a); return bvlength(car(a)); },
+                  addBuiltin("bv=",             (Primitive) a -> { twoArgs("bv=", a);     return boolResult(bvEq(car(a), cadr(a))); },
                   addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
                   addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
-                  env))))))))))))))));
+                  env)))))))))))))))));
         }
 
         if (haveUtil()) {
@@ -5935,6 +5942,7 @@ public class LambdaJ {
         public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toNonnegInt(idx), requireIntegralNumber("bvset", val, 0, 1).intValue()); }
 
         public final Object   _bvlength(Object... args)   { oneArg("bvlength", args.length);            return bvlength(args[0]); }
+        public final Object   bvEq     (Object... args)   { twoArgs("bv=", args.length);                return LambdaJ.bvEq(args[0], args[1]) ? _t : null; }
 
         public final Character _char(Object... args) { twoArgs("char", args.length); return requireCharsequence("char", args[0]).charAt(requireIntegralNumber("char", args[1], 0, Integer.MAX_VALUE).intValue()); }
 
@@ -6496,6 +6504,7 @@ public class LambdaJ {
             case "sbit": return (CompilerPrimitive)this::_sbit;
             case "bvset": return (CompilerPrimitive)this::_bvset;
             case "bvlength": return (CompilerPrimitive)this::_bvlength;
+            case "bv=": return (CompilerPrimitive)this::bvEq;
             case "char": return (CompilerPrimitive)this::_char;
             case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
@@ -6752,7 +6761,7 @@ public class LambdaJ {
         {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"simple-bit-vector->list", "simpleBitVectorToList"}, {"list->simple-bit-vector", "listToSimpleBitVector"},
         {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
-        {"simple-bit-vector-p", "sbitvectorp"}, {"make-array", "makeArray"},
+        {"simple-bit-vector-p", "sbitvectorp"}, {"bv=", "bvEq"}, {"make-array", "makeArray"},
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
         {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },

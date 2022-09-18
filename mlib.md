@@ -553,6 +553,7 @@ Return `t` if any of the following is true:
 
 - `a` and `b` are `eql`
 - `a` and `b` are strings, characters or symbols and have the same text value
+- `a` and `b` are bitvectors whose elements are eql
 - `a` and `b` are conses whose car and cdr are `equal` respectively
 
 ### Function: scan
