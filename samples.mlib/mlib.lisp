@@ -1431,15 +1431,24 @@
 ;;; with elements in reversed order, if `sequence`
 ;;; is a vector then return a fresh reversed vector.
 (defun reverse (seq)
-  (labels ((rev (l lp)
-             (if l (rev (cdr l) (cons (car l) lp))
-               lp)))
-    (cond ((null seq) nil)
-          ((consp seq) (rev seq nil))
-          ((stringp seq) (list->string (rev (string->list seq) nil)))
-          ((simple-vector-p seq) (list->simple-vector (rev (simple-vector->list seq) nil)))
-          ((simple-bit-vector-p seq) (list->simple-bit-vector (rev (simple-bit-vector->list seq) nil)))
-          (t (fatal "not a sequence")))))
+  (labels ((reverse/list (l lp)
+             (if l (reverse/list (cdr l) (cons (car l) lp))
+               lp))
+
+           (reverse/vector (from to get set)
+             (let loop ((from-idx 0) (to-idx (1- (vector-length to))))
+               (when (>= to-idx 0)
+                 (set to to-idx (get from from-idx))
+                 (loop (1+ from-idx) (1- to-idx))))
+             to))
+
+    (typecase seq
+      (null)
+      (cons              (reverse/list seq nil))
+      (string            (list->string (reverse/list (string->list seq) nil)))
+      (simple-vector     (reverse/vector seq (make-array (vector-length seq)     ) svref svset))
+      (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbit bvset))
+      (t                 (fatal "not a sequence")))))
 
 
 ;;; = Function: nreverse
@@ -1469,12 +1478,13 @@
                    (setter vector right-index left)
                    (loop (1+ left-index) (1- right-index)))))))
 
-    (cond ((null seq)                nil)
-          ((consp seq)               (nreverse/list seq))
-          ((stringp seq)             (list->string (nreverse/list (string->list seq))))
-          ((simple-vector-p seq)     (nreverse/vector seq svref svset))
-          ((simple-bit-vector-p seq) (nreverse/vector seq sbit bvset))
-          (t (fatal "not a sequence")))))
+    (typecase seq
+      (null)
+      (cons              (nreverse/list seq))
+      (string            (list->string (nreverse/list (string->list seq))))
+      (simple-vector     (nreverse/vector seq svref svset))
+      (simple-bit-vector (nreverse/vector seq sbit bvset))
+      (t (fatal "not a sequence")))))
 
 
 ;;; = Function: remove-if
