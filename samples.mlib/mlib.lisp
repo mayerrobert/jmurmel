@@ -312,7 +312,9 @@
                        ((eq keydesignator 'integer)           `((integerp ,tmp) ,@forms))
                        ((eq keydesignator 'float)             `((floatp ,tmp) ,@forms))
                        ((eq keydesignator 'number)            `((numberp ,tmp) ,@forms))
-                       ((eq keydesignator t)                  `(t ,@forms))))))
+                       ((eq keydesignator t)                  `(t ,@forms))
+                       
+                       (t (fatal "typecase: type not implemented"))))))
 
            (do-clauses (key)
              (let* ((result (cons nil nil))

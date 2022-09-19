@@ -1,5 +1,8 @@
 
-mlib: XX->list ersetzen durch generators
+mlib:
+map-into sollte sequence unterstützen, nicht nur list
+remove ist fast eine kopie von remove-if, ersetzen durch (remove-if (lambda (x) (eql elem x)) seq)
+XX->list ersetzen durch generators
 
 langref: bitvector beschreiben
 
@@ -55,6 +58,11 @@ oder überhaupt generator ("lazy sequence") überall zulassen wo sequence erlaub
    -> map müsste 'generator als zus. returntyp unterstützen, filter/remove/remove-if würde bei input generator einen generator liefern
       -> terminals count/length, collect/concatenate, reduce: CL funktion kann erweitert werden dass generator als parameter zulässig ist, achtung: from-end-p bei reduce
          reverse: CL funktionen besser ohne generator support belassen, weil das geht nicht lazy, es müsste zu beginn alles materialisiert werden
+
+oder: filter, foldl, foldr (wie Scheme): übernehmen list, vector, bitvector, string und generator
+-> (foldl (lambda (l r) (cons r l) nil gen) würde eine liste ergeben
+   (foldr cons nil gen) eine verkehrte liste
+
 
 
 Clojure hat swap!, z.B. (swap! i + 3)
