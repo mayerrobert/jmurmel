@@ -26,6 +26,13 @@ Typsystem:
   und:  (make-array 5 'character) liefert new char[5]
   nur stringliterale bleiben immutable java.lang.String
 
+- vielleicht deque integrieren (java.util.ArrayDeque)?
+  von vector erben, oder alleinstehender typ?
+- splice integrieren?
+
+
+fatal könnte mehrere argumente übernehmen, werden alle aneinandergrhängt
+
 
 
 mlib - scan: weitere helper

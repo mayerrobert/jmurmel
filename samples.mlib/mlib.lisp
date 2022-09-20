@@ -307,13 +307,17 @@
                        ((eq keydesignator 'string)            `((stringp ,tmp) ,@forms))
                        ((eq keydesignator 'simple-string)     `((simple-string-p ,tmp) ,@forms))
 
+                       ((eq keydesignator 'sequence)          `((if (listp ,tmp) t (if (vectorp ,tmp) t)) ,@forms))
+
                        ((eq keydesignator 'character)         `((characterp ,tmp) ,@forms))
 
+                       ((eq keydesignator 'bit)               `((if (eql ,tmp 0) t (if (eql ,tmp 1) t)) ,@forms))
                        ((eq keydesignator 'integer)           `((integerp ,tmp) ,@forms))
                        ((eq keydesignator 'float)             `((floatp ,tmp) ,@forms))
                        ((eq keydesignator 'number)            `((numberp ,tmp) ,@forms))
+
                        ((eq keydesignator t)                  `(t ,@forms))
-                       
+
                        (t (fatal "typecase: type not implemented"))))))
 
            (do-clauses (key)
@@ -1523,22 +1527,7 @@
 ;;; Return a fresh sequence without occurrences of `elem`.
 ;;; An occurrence is determined by `eql`.
 (defun remove (elem seq)
-  (labels ((remove/list (l)
-              (let* ((result (cons nil nil))
-                     (append-to result))
-                (let loop ((l l))
-                  (when l
-                    (unless (eql elem (car l))
-                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
-                    (loop (cdr l))))
-                (cdr result))))
-
-    (cond ((null seq)             nil)
-          ((consp seq)            (remove/list seq))
-          ((stringp seq)          (list->string (remove/list (string->list seq))))
-          ((simple-vector-p seq)  (list->simple-vector (remove/list (simple-vector->list seq))))
-          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove/list (simple-bit-vector->list seq))))
-          (t (fatal "not a sequence")))))
+  (remove-if (lambda (x) (eql x elem)) seq))
 
 
 (defun m%sequence->list (seq)
