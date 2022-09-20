@@ -1,7 +1,6 @@
 
 mlib:
 map-into sollte sequence unterstützen, nicht nur list
-remove ist fast eine kopie von remove-if, ersetzen durch (remove-if (lambda (x) (eql elem x)) seq)
 XX->list ersetzen durch generators
 
 langref: bitvector beschreiben
