@@ -6931,7 +6931,7 @@ public class LambdaJ {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(ccForm));
                     oneArg("load", ccArgs);
                     if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path; } // todo unschoener hack 
-                    globalEnv = loadFile(true, "load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
+                    globalEnv = loadFile("load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
                 }
 
                 else if (isOperator(op, WellknownSymbol.sRequire)) {
@@ -6943,7 +6943,7 @@ public class LambdaJ {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
                         if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path; } // todo unschoener hack 
-                        globalEnv = loadFile(true, "require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
+                        globalEnv = loadFile("require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
                         if (!intp.modules.contains(modName)) errorMalformedFmt("require", "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
                 }
@@ -7247,7 +7247,7 @@ public class LambdaJ {
                     if (isOperator(op, WellknownSymbol.sLoad)) {
                         varargs1("load", ccArguments);
                         // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
-                        loadFile(false, "load", sb, car(ccArguments), env, topEnv, rsfx-1, isLast, null, null);
+                        loadFile("load", sb, car(ccArguments), env, topEnv, rsfx-1, isLast, null, null);
                         return;
                     }
 
@@ -7778,7 +7778,8 @@ public class LambdaJ {
             return env;
         }
 
-        private ConsCell loadFile(boolean pass1, String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
+        private ConsCell loadFile(String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
+            final boolean pass1 = !passTwo;
             final LambdaJ intp = this.intp;
             final Path prev = intp.currentSource;
             final Path p = intp.findFile(func, argument);
