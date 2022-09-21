@@ -4,6 +4,7 @@ map-into sollte sequence unterstützen, nicht nur list
 XX->list ersetzen durch generators
 
 langref: bitvector beschreiben
+mlib: error beschreiben
 
 Typsystem:
 - beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
@@ -30,7 +31,6 @@ Typsystem:
 - splice integrieren?
 
 
-fatal könnte mehrere argumente übernehmen, werden alle aneinandergrhängt
 
 
 

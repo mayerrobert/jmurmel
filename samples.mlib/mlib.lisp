@@ -312,13 +312,14 @@
                        ((eq keydesignator 'character)         `((characterp ,tmp) ,@forms))
 
                        ((eq keydesignator 'bit)               `((if (eql ,tmp 0) t (if (eql ,tmp 1) t)) ,@forms))
+                       ((eq keydesignator 'fixnum)            `((and (integerp ,tmp) (<= most-negative-fixnum ,tmp most-positive-fixnum)) ,@forms))
                        ((eq keydesignator 'integer)           `((integerp ,tmp) ,@forms))
                        ((eq keydesignator 'float)             `((floatp ,tmp) ,@forms))
                        ((eq keydesignator 'number)            `((numberp ,tmp) ,@forms))
 
                        ((eq keydesignator t)                  `(t ,@forms))
 
-                       (t (fatal "typecase: type not implemented"))))))
+                       (t (error "typecase - type %s is not implemented" keydesignator))))))
 
            (do-clauses (key)
              (let* ((result (cons nil nil))
@@ -336,6 +337,10 @@
       (let ((tmp (gensym)))
         `(let ((,tmp ,keyform))
            (cond ,@(do-clauses tmp)))))))
+
+
+(defun error (msg . args)
+  (fatal (apply format (cons nil (cons (format nil "%n%nError: %s%n" msg) args)))))
 
 
 ; conses and lists ****************************************************
@@ -380,15 +385,15 @@
 
 (defun m%nonneg-integer-number (n)
   (cond ((integerp n)
-         (if (< n 0) (fatal "must be an integer >= 0"))
+         (if (< n 0) (error "must be an integer >= 0: %s" n))
          n)
 
         ((numberp n)
-         (if (< n 0) (fatal "must be an integer >= 0"))
-         (if (/= n (truncate n)) (fatal "must be an integer >= 0"))
+         (if (< n 0) (error "must be an integer >= 0: %s" n))
+         (if (/= n (truncate n)) (error "must be an integer >= 0: %s" n))
          (truncate n))
 
-        (t (fatal "must be an integer >= 0"))))
+        (t (error "must be an integer >= 0: %s" n))))
 
 
 ;;; = Function: nthcdr, nth
@@ -505,14 +510,14 @@
                    (cons (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
                    (null (rplacd (last splice) nil)  (inner (cdr inner-lists) (cadr inner-lists)))
                    (atom (if (cdr inner-lists)
-                               (fatal "not a list")
+                               (error "nconc - not a list: %s" ele)
                            (rplacd (last splice) ele)))))))
            result)
 
         (null (outer (cdr outer-lists) (cadr outer-lists)))
 
         (atom (if (cdr outer-lists)
-                    (fatal "not a list")
+                    (error "nconc - not a list: %s" result)
                 result))))))
 
 
@@ -839,11 +844,11 @@
         (limit (gensym))
         (loop (gensym)))
     `(let* ((,vec ,vectorform)
-            (,limit (vector-length ,vec))
             (,acc (if (simple-vector-p ,vec) svref
                     (if (stringp ,vec) char
                       (if (simple-bit-vector-p ,vec) sbit
-                        (fatal "not a vector"))))))
+                        (error "dovector - not a vector: %s" ,vec)))))
+            (,limit (vector-length ,vec)))
        (let ,loop ((,idx 0))
          (if (< ,idx ,limit)
                (let ((,var (,acc ,vec ,idx)))
@@ -873,7 +878,7 @@
                          (,value-var (cadr ,lst)))
                      ,@body
                      (,loop (cddr ,lst)))
-               (fatal "doplist: odd number of elements in plist"))
+               (error "doplist - odd number of elements in plist"))
          (progn ,@result)))))
 
 
@@ -961,7 +966,7 @@
                  (bvset ,tmp1 ,tmp2 ,read-var)
                  (sbit ,tmp1 ,tmp2)))
 
-              (t (fatal "only symbols, car..cdddr, nth, svref and sbit are supported for 'place'")))))))
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref and sbit are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -988,7 +993,7 @@
                               (cons `(setf ,(car args) ,(cadr args))
                                     (if (cddr args)
                                           (loop (cddr args))))
-                          (fatal "odd number of arguments to setf"))))
+                          (error "odd number of arguments to setf"))))
 
                 (if (symbolp (car args))
                       `(setq ,(car args) ,(cadr args))
@@ -998,7 +1003,7 @@
                       `(let* (,@(mapcar list vars vals)
                               (,(car store-vars) ,@(cdr args)))
                          ,writer-form)))))
-          (fatal "odd number of arguments to setf"))))
+          (error "odd number of arguments to setf"))))
 
 
 ; Helper macro to generate defmacro's for inplace modification macros.
@@ -1325,7 +1330,7 @@
        ((null arg)
         (lambda () (values nil nil)))
 
-       (t (fatal "scan: cannot create a generator function from given arguments"))))
+       (t (error "scan: cannot create a generator function from given arguments"))))
 
 
 ;;; = Function: scan-multiple
@@ -1373,7 +1378,7 @@
 ;;; 
 ;;; A single generator would be returned unchanged.
 (defun scan-concat (generator . more-generators)
-  (if (functionp generator) nil (fatal "not a generator"))
+  (if (functionp generator) nil (error "not a generator"))
   (if more-generators
         (let ((more-generators more-generators))
           (lambda ()
@@ -1425,7 +1430,7 @@
   (cond ((null seq) 0)
         ((listp seq) (list-length seq))
         ((vectorp seq) (vector-length seq))
-        (t (fatal "not a sequence"))))
+        (t (error "length - %s is not a sequence" seq))))
 
 
 ;;; = Function: reverse
@@ -1454,7 +1459,7 @@
       (string            (list->string (reverse/list (string->list seq) nil)))
       (simple-vector     (reverse/vector seq (make-array (vector-length seq)     ) svref svset))
       (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbit bvset))
-      (t                 (fatal "not a sequence")))))
+      (t                 (error "reverse - %s is not a sequence" seq)))))
 
 
 ;;; = Function: nreverse
@@ -1490,7 +1495,7 @@
       (string            (list->string (nreverse/list (string->list seq))))
       (simple-vector     (nreverse/vector seq svref svset))
       (simple-bit-vector (nreverse/vector seq sbit bvset))
-      (t (fatal "not a sequence")))))
+      (t (error "nreverse - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove-if
@@ -1511,12 +1516,13 @@
                     (loop (cdr l))))
                 (cdr result))))
 
-    (cond ((null seq)             nil)
-          ((consp seq)            (remove-if/list seq))
-          ((stringp seq)          (list->string (remove-if/list (string->list seq))))
-          ((simple-vector-p seq)  (list->simple-vector (remove-if/list (simple-vector->list seq))))
-          ((simple-bit-vector-p seq)  (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
-          (t (fatal "not a sequence")))))
+    (typecase seq
+          (null)
+          (cons              (remove-if/list seq))
+          (string            (list->string (remove-if/list (string->list seq))))
+          (simple-vector     (list->simple-vector (remove-if/list (simple-vector->list seq))))
+          (simple-bit-vector (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
+          (t (error "remove-if - % is not a sequence" seq)))))
 
 
 ;;; = Function: remove
@@ -1535,7 +1541,7 @@
         ((simple-vector-p seq) (simple-vector->list seq))
         ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
         ((stringp seq) (string->list seq))
-        (t (fatal "not a sequence"))))
+        (t (error "%s is not a sequence" seq))))
 
 (defun m%sequences->lists (sequences)
   (let loop ((s sequences))
@@ -1546,13 +1552,13 @@
 (defun m%list->sequence (lst result-type)
   (cond ((null result-type)                  nil)
         ((eq result-type 'list)              lst)
-        ((eq result-type 'cons)              (if lst lst (fatal "not of type cons: nil")))
+        ((eq result-type 'cons)              lst)
         ((eq result-type 'vector)            (list->simple-vector lst))
         ((eq result-type 'simple-vector)     (list->simple-vector lst))
         ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
         ((eq result-type 'string)            (list->string lst))
         ((eq result-type 'simple-string)     (list->string lst))
-        (t (fatal "not a sequence type"))))
+        (t (error "%s is not a sequence" lst))))
 
 
 ;;; = Function: map
@@ -1702,7 +1708,7 @@
             ((stringp seq)             (reduce/vector seq char))
             ((simple-vector-p seq)     (reduce/vector seq svref))
             ((simple-bit-vector-p seq) (reduce/vector seq sbit))
-            (t (fatal "not a sequence"))))))
+            (t (error "reduce - %s is not a sequence" seq))))))
 
 
 ; higher order ********************************************************
@@ -1819,7 +1825,8 @@
 (defun write-char (c)
   (if (characterp c)
         (write c nil)
-    (fatal "not a character")) c)
+    (error "write-char - %s is not a character" c))
+  c)
 
 
 ;;; = Function: terpri, prin1, princ, print
