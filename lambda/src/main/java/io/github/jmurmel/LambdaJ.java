@@ -6676,7 +6676,9 @@ public class LambdaJ {
 
 
         private boolean passTwo;
-        private Set<String> implicitDecl;
+        private Set<Object> implicitDecl;
+        private Set<LambdaJSymbol> globalDecl;
+
         /** return {@code form} as a Java expression */
         private String javasym(Object form, ConsCell env) {
             if (form == null || form == sNil) return "(Object)null";
@@ -6684,10 +6686,10 @@ public class LambdaJ {
             if (symentry == null) {
                 if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
                 System.err.println("implicit declaration of " + form); // todo lineinfo of containing form
-                implicitDecl.add(form.toString());
+                implicitDecl.add(form);
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
-            else if (!passTwo) implicitDecl.remove(form.toString());
+            else if (!passTwo && globalDecl.contains(form)) implicitDecl.remove(form);
 
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
@@ -6835,6 +6837,7 @@ public class LambdaJ {
             final int prevSpeed = intp.speed;
             passTwo = false;
             implicitDecl = new HashSet<>();
+            globalDecl = new HashSet<>();
             ConsCell globalEnv = predefinedEnv;
             final Object eof = "EOF";
             Object form;
@@ -6854,6 +6857,7 @@ public class LambdaJ {
                 errorMalformedFmt("compilation unit", "undefined symbols: %s", implicitDecl);
             }
             implicitDecl = null;
+            globalDecl = null;
 
             intp.clearMacros(); // on pass2 macros will be re-interpreted at the right place so that illegal macro forward-refences are caught
 
@@ -6978,6 +6982,7 @@ public class LambdaJ {
             varargs1_2("toplevel define", listOrMalformed("toplevel define", cdr(form)));
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("define", cadr(form));
             notDefined("define", symbol, env);
+            globalDecl.add(symbol);
 
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
@@ -7002,6 +7007,7 @@ public class LambdaJ {
             final Object params = caddr(form);
             final Object body = cdddr(form);
             notDefined("defun", symbol, env);
+            globalDecl.add(symbol);
 
             final String javasym = mangle(symbol.toString(), 0);
             env = extenvIntern(symbol, javasym + ".get()", env);

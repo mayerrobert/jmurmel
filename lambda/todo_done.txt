@@ -1769,3 +1769,16 @@ mlib:
 nconc ist nicht endrekursiv
 (nconc (list* 1 2 3) nil) sollte (1 2) liefern
 -> tests + reparieren
+
+
+gibts erst eine undefinierte lokale variable, und dann eine gleichnamige korrekte lokale variable,
+dann wird der fehler nicht erkannt und es kommt zu einem Java compile fehler,
+weil javasym() findet die zweite variable und putzt sie aus implicitDecl weg
+-> es sollten nur gefundene globals aus implicitDecl weggeputzt werden, ggf. ein set mit define/defun symbolen mitführen
+
+JMurmel> (defun f() seq)
+JMurmel> (defun f2 (seq) seq)
+JMurmel> :r
+implicit declaration of seq
+/MurmelProgram.java:21: error: cannot find symbol
+        return _seq.get();
