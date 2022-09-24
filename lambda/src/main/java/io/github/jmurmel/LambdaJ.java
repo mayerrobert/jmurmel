@@ -3658,7 +3658,7 @@ public class LambdaJ {
     }
 
     static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
-        if (n == null) errorNotANumber(func, null);
+        if (n == null) errorNotAnIntegralNumber(func, null);
         if (n instanceof Long)    { return requireIntegralNumber(func, (Long) n, n, minIncl, maxIncl); }
         if (n instanceof Double)  { return requireIntegralNumber(func, (Double) n, n, minIncl, maxIncl); }
         if (n instanceof Byte)    { return requireIntegralNumber(func, (Byte) n, n, minIncl, maxIncl); }
@@ -3666,7 +3666,7 @@ public class LambdaJ {
         if (n instanceof Integer) { return requireIntegralNumber(func, (Integer) n, n, minIncl, maxIncl); }
         if (n instanceof Float)   { return requireIntegralNumber(func, (double) (Float) n, n, minIncl, maxIncl); }
         if (n instanceof Number)  { return requireIntegralNumber(func, toDouble(func, n), n, minIncl, maxIncl); }
-        throw errorNotANumber(func, n);
+        throw errorNotAnIntegralNumber(func, n);
     }
 
     private static Number requireIntegralNumber(String func, double d, Object originalValue, long minIncl, long maxIncl) {
@@ -5926,20 +5926,20 @@ public class LambdaJ {
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
 
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], args[1]); }
-        public static Object svref(Object v, Object idx) { return LambdaJ.svref(v, toNonnegInt(idx)); }
+        public static Object svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
 
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], args[1], args[2]); }
-        public static Object svset(Object v, Object idx, Object val) { return LambdaJ.svset(v, toNonnegInt(idx), val); }
+        public static Object svset(Object v, Object idx, Object val) { return LambdaJ.svset(v, toArrayIndex(idx), val); }
 
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
         public final Object   sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return LambdaJ.sbitvectorp(args[0]) ? _t : null; }
 
         public final Object   _sbit(Object... args)       { twoArgs("sbit", args.length);               return sbit(args[0], args[1]); }
-        public static Object sbit(Object v, Object idx) { return LambdaJ.sbit(v, toNonnegInt(idx)); }
+        public static Object sbit(Object v, Object idx) { return LambdaJ.sbit(v, toArrayIndex(idx)); }
 
         public final long   _bvset(Object... args)      { threeArgs("bvset", args.length);            return bvset(args[0], args[1], args[2]); }
-        public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toNonnegInt(idx), requireIntegralNumber("bvset", val, 0, 1).intValue()); }
+        public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toArrayIndex(idx), requireIntegralNumber("bvset", val, 0, 1).intValue()); }
 
         public final Object   _bvlength(Object... args)   { oneArg("bvlength", args.length);            return bvlength(args[0]); }
         public final Object   bvEq     (Object... args)   { twoArgs("bv=", args.length);                return LambdaJ.bvEq(args[0], args[1]) ? _t : null; }
@@ -5947,7 +5947,7 @@ public class LambdaJ {
         public final Character _char(Object... args) { twoArgs("char", args.length); return requireCharsequence("char", args[0]).charAt(requireIntegralNumber("char", args[1], 0, Integer.MAX_VALUE).intValue()); }
 
         public final Object   makeArray(Object... args) { varargs1_2("make-array", args.length);
-                                                          if (args.length == 1) return new Object[toNonnegInt(args[0])];
+                                                          if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return intp.makeArray(arraySlice(args)); }
 
         public final Object   _append  (Object... args) {
@@ -6185,6 +6185,13 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
+        public static int toArrayIndex(Object o) {
+            if (o instanceof Long)   { final long l   = (Long)o;   final int i = Math.abs((int)l);       if (l == i)      return i; errorNotAnArrayIndex(o); }
+            if (o instanceof Double) { final double d = (Double)o; final int i = Math.abs((int)d);       if (d == i)      return i; errorNotAnArrayIndex(o); }
+            if (o instanceof Number) { final Number n = (Number)o; final int i = Math.abs(n.intValue()); if (n.equals(i)) return i; errorNotAnArrayIndex(o); }
+            throw errorNotAnArrayIndex(o);
+        }
+
         public static double toDouble(Object n) {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
             if (n instanceof Long)    return ((Long)n).doubleValue();
@@ -6211,7 +6218,6 @@ public class LambdaJ {
         public static long  toLong(long n) { return n; }
 
         public static int   toInt(Object n)       { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }
-        public static int   toNonnegInt(Object n) { return requireIntegralNumber("toNonnegInt", n, 0, Integer.MAX_VALUE).intValue(); }
         public static float toFloat(Object o) {
             final Number n = requireNumber("toFloat", o);
             final double d = n.doubleValue();
@@ -6400,6 +6406,7 @@ public class LambdaJ {
         }
 
         private static RuntimeException errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
+        private static RuntimeException errorNotAnArrayIndex(Object n) { throw new LambdaJError(true, "invalid array index/ size: %s", printSEx(n)); }
         private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new LambdaJError(true, "not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new LambdaJError(true, "not a string: %s", printSEx(s)); }
