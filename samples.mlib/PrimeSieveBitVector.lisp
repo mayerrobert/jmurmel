@@ -66,19 +66,19 @@
 
 
 (define *passes* 0)
-(define *start* (get-internal-real-time))
+(define *start* 0)
 
 
-(do ((runtime (* internal-time-units-per-second 5)))
-    ((> (- (get-internal-real-time) *start*) runtime))
+;; two runs: warmup and timed run
+(dotimes (i 2)
+  (setq *passes* 0)
+  (setq *start*  (get-internal-real-time))
 
-  (prime-sieve 1000000)
-  (run-sieve)
-  (incf *passes*))
-
-
-(define *duration* (/ (- (get-internal-real-time) *start*) internal-time-units-per-second))
-(define *avg* (/ *duration* *passes*))
+  (do ((runtime (* internal-time-units-per-second 5)))
+      ((> (- (get-internal-real-time) *start*) runtime))
+    (prime-sieve 1000000)
+    (run-sieve)
+    (incf *passes*)))
 
 
 ;#|
@@ -92,8 +92,11 @@
 ;|#
 
 
-#+murmel (format t "passes: %d, count: %d, avg: %f%n" *passes* (floor (count-primes)) *avg*)
-#+murmel (format t "murmel;%d;%f;1;algorithm=base,faithful=no,bits=unknown%n" *passes* *duration*)
+(let* ((duration (/ (- (get-internal-real-time) *start*) internal-time-units-per-second))
+       (avg (/ duration *passes*)))
+  #+murmel (format t "passes: %d, count: %d, avg: %f%n" *passes* (floor (count-primes)) avg)
+  #+murmel (format t "murmel;%d;%f;1;algorithm=base,faithful=no,bits=unknown%n" *passes* duration)
 
-#-murmel (format t "passes: ~d, count: ~d, avg: ~f~%" *passes* (count-primes) *avg*)
-#-murmel (format t "sbcl;~d;~f;1;algorithm=base,faithful=no,bits=unknown~%" *passes* *duration*)
+  #-murmel (format t "passes: ~d, count: ~d, avg: ~f~%" *passes* (count-primes) avg)
+  #-murmel (format t "sbcl;~d;~f;1;algorithm=base,faithful=no,bits=unknown~%" *passes* duration)
+  )
