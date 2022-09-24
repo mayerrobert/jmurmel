@@ -2642,7 +2642,7 @@ public class LambdaJ {
         case sSvLength:     { oneArg   ("svlength", args);       return svlength(car(args)); }
 
         case sSBit:         { twoArgs  ("sbit", args);           return sbit(car(args), toNonnegInt("sbit", cadr(args))); }
-        case sBvSet:        { threeArgs("bvset", args);          return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).intValue()); }
+        case sBvSet:        { threeArgs("bvset", args);          return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); }
         case sBvLength:     { oneArg   ("bvlength", args);       return bvlength(car(args)); }
         case sBvEq:         { twoArgs  ("bv=", args);            return boolResult(bvEq(car(args), cadr(args))); }
 
@@ -3161,7 +3161,7 @@ public class LambdaJ {
         throw errorNotASimpleBitVector("sbit", bv);
     }
 
-    static long bvset(Object maybeVector, int idx, int newValue) {
+    static long bvset(Object maybeVector, int idx, long newValue) {
         if (maybeVector instanceof boolean[]) {
             final boolean b;
             if (newValue == 0) b = false;
@@ -4458,7 +4458,7 @@ public class LambdaJ {
 
                   addBuiltin("simple-bit-vector-p",    (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
                   addBuiltin("sbit",            (Primitive) a -> { twoArgs("sbit", a);    return sbit(car(a), toNonnegInt("sbit", cadr(a))); },
-                  addBuiltin("bvset",           (Primitive) a -> { threeArgs("bvset", a); return bvset(car(a), toNonnegInt("bvset", cadr(a)), requireIntegralNumber("bvset", caddr(a), 0, 1).intValue()); },
+                  addBuiltin("bvset",           (Primitive) a -> { threeArgs("bvset", a); return bvset(car(a), toNonnegInt("bvset", cadr(a)), requireIntegralNumber("bvset", caddr(a), 0, 1).longValue()); },
                   addBuiltin("bvlength",        (Primitive) a -> { oneArg("bvlength", a); return bvlength(car(a)); },
                   addBuiltin("bv=",             (Primitive) a -> { twoArgs("bv=", a);     return boolResult(bvEq(car(a), cadr(a))); },
                   addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
@@ -5935,11 +5935,14 @@ public class LambdaJ {
 
         public final Object   sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return LambdaJ.sbitvectorp(args[0]) ? _t : null; }
 
-        public final Object   _sbit(Object... args)       { twoArgs("sbit", args.length);               return sbit(args[0], args[1]); }
-        public static Object sbit(Object v, Object idx) { return LambdaJ.sbit(v, toArrayIndex(idx)); }
+        public final long   _sbit(Object... args)       { twoArgs("sbit", args.length);               return sbit(args[0], args[1]); }
+        public static long sbit(Object v, Object idx)   { return LambdaJ.sbit(v, toArrayIndex(idx)); }
+        public static long sbit(Object v, long idx)     { return LambdaJ.sbit(v, toArrayIndex(idx)); }
 
         public final long   _bvset(Object... args)      { threeArgs("bvset", args.length);            return bvset(args[0], args[1], args[2]); }
-        public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toArrayIndex(idx), requireIntegralNumber("bvset", val, 0, 1).intValue()); }
+        public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long bvset(Object v, Object idx, long val)   { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long bvset(Object v, long idx, long val)     { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
 
         public final Object   _bvlength(Object... args)   { oneArg("bvlength", args.length);            return bvlength(args[0]); }
         public final Object   bvEq     (Object... args)   { twoArgs("bv=", args.length);                return LambdaJ.bvEq(args[0], args[1]) ? _t : null; }
@@ -6185,11 +6188,27 @@ public class LambdaJ {
             return (ConsCell)lst;
         }
 
-        public static int toArrayIndex(Object o) {
+        private static int toArrayIndex(Object o) {
             if (o instanceof Long)   { final long l   = (Long)o;   final int i = Math.abs((int)l);       if (l == i)      return i; errorNotAnArrayIndex(o); }
             if (o instanceof Double) { final double d = (Double)o; final int i = Math.abs((int)d);       if (d == i)      return i; errorNotAnArrayIndex(o); }
             if (o instanceof Number) { final Number n = (Number)o; final int i = Math.abs(n.intValue()); if (n.equals(i)) return i; errorNotAnArrayIndex(o); }
             throw errorNotAnArrayIndex(o);
+        }
+        private static int toArrayIndex(long l) {
+            final int i = Math.abs((int)l);
+            if (l == i) return i;
+            throw errorNotAnArrayIndex(l);
+        }
+
+        private static long toBit(Object o) {
+            if (o instanceof Long)   { final long l   = (Long)o;   if (l == 0 || l == 1)      return l; errorNotABit(o); }
+            if (o instanceof Double) { final double d = (Double)o; final long l = (int)d;       if (d == l && (l == 0 || l == 1))      return l; errorNotABit(o); }
+            if (o instanceof Number) { final Number n = (Number)o; final long l = n.longValue(); if (n.equals(l) && (l == 0 || l == 1)) return l; errorNotABit(o); }
+            throw errorNotABit(o);
+        }
+        private static long toBit(long l) {
+            if (l == 0 || l == 1) return l;
+            throw errorNotABit(l);
         }
 
         public static double toDouble(Object n) {
@@ -6406,6 +6425,7 @@ public class LambdaJ {
         }
 
         private static RuntimeException errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
+        private static RuntimeException errorNotABit(Object n) { throw new LambdaJError(true, "not a bit: %s", printSEx(n)); }
         private static RuntimeException errorNotAnArrayIndex(Object n) { throw new LambdaJError(true, "invalid array index/ size: %s", printSEx(n)); }
         private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new LambdaJError(true, "not a character: %s", printSEx(s)); }
