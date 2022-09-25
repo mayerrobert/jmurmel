@@ -795,10 +795,10 @@ public class LambdaJ {
             internWellknown("svlength");
 
             internWellknown("simple-bit-vector-p");
-            internWellknown("sbit");
-            internWellknown("bvset");
-            internWellknown("bvlength");
-            internWellknown("bv=");
+            internWellknown("sbvref");
+            internWellknown("sbvset");
+            internWellknown("sbvlength");
+            internWellknown("sbv=");
         }
         else sBit = null;
 
@@ -1668,8 +1668,8 @@ public class LambdaJ {
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
         sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM),
         sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM),
-        sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM), sSBit("sbit", WellknownSymbolKind.PRIM), sBvSet("bvset", WellknownSymbolKind.PRIM),
-        sBvLength("bvlength", WellknownSymbolKind.PRIM), sBvEq("bv=", WellknownSymbolKind.PRIM),
+        sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM), sSBvRef("sbvref", WellknownSymbolKind.PRIM), sSBvSet("sbvset", WellknownSymbolKind.PRIM),
+        sSBvLength("sbvlength", WellknownSymbolKind.PRIM), sSBvEq("sbv=", WellknownSymbolKind.PRIM),
         ;
 
         private final String sym;
@@ -2641,10 +2641,10 @@ public class LambdaJ {
         case sSvSet:        { threeArgs("svset", args);          return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); }
         case sSvLength:     { oneArg   ("svlength", args);       return svlength(car(args)); }
 
-        case sSBit:         { twoArgs  ("sbit", args);           return sbit(car(args), toNonnegInt("sbit", cadr(args))); }
-        case sBvSet:        { threeArgs("bvset", args);          return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); }
-        case sBvLength:     { oneArg   ("bvlength", args);       return bvlength(car(args)); }
-        case sBvEq:         { twoArgs  ("bv=", args);            return boolResult(bvEq(car(args), cadr(args))); }
+        case sSBvRef:       { twoArgs  ("sbvref", args);         return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
+        case sSBvSet:       { threeArgs("sbvset", args);         return sbvset(car(args), toNonnegInt("sbvset", cadr(args)), requireIntegralNumber("sbvset", caddr(args), 0, 1).longValue()); }
+        case sSBvLength:    { oneArg   ("sbvlength", args);      return sbvlength(car(args)); }
+        case sSBvEq:        { twoArgs  ("sbv=", args);           return boolResult(sbvEq(car(args), cadr(args))); }
 
         default:    return NOT_HANDLED;
         }
@@ -3161,12 +3161,12 @@ public class LambdaJ {
         return requireCharsequence("sref", maybeString).charAt(idx);
     }
 
-    static long sbit(Object bv, int idx) {
+    static long sbvref(Object bv, int idx) {
         if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
-        throw errorNotASimpleBitVector("sbit", bv);
+        throw errorNotASimpleBitVector("sbvref", bv);
     }
 
-    static long bvset(Object maybeVector, int idx, long newValue) {
+    static long sbvset(Object maybeVector, int idx, long newValue) {
         if (maybeVector instanceof boolean[]) {
             final boolean b;
             if (newValue == 0) b = false;
@@ -3175,17 +3175,17 @@ public class LambdaJ {
             ((boolean[])maybeVector)[idx] = b;
             return newValue;
         }
-        throw errorNotASimpleBitVector("bvset", maybeVector);
+        throw errorNotASimpleBitVector("sbvset", maybeVector);
     }
 
-    static int bvlength(Object maybeVector) {
+    static int sbvlength(Object maybeVector) {
         if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
-        throw errorNotASimpleBitVector("bvlength", maybeVector);
+        throw errorNotASimpleBitVector("sbvlength", maybeVector);
     }
 
-    static boolean bvEq(Object maybeVector1, Object maybeVector2) {
-        if (!(maybeVector1 instanceof boolean[])) throw errorNotASimpleBitVector("bv=", maybeVector1);
-        if (!(maybeVector2 instanceof boolean[])) throw errorNotASimpleBitVector("bv=", maybeVector2);
+    static boolean sbvEq(Object maybeVector1, Object maybeVector2) {
+        if (!(maybeVector1 instanceof boolean[])) throw errorNotASimpleBitVector("sbv=", maybeVector1);
+        if (!(maybeVector2 instanceof boolean[])) throw errorNotASimpleBitVector("sbv=", maybeVector2);
         return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
     }
 
@@ -4462,10 +4462,10 @@ public class LambdaJ {
                   addBuiltin("list->simple-vector",    (Primitive) a -> { oneArg("list->simple-vector", a); return listToArray(car(a)); },
 
                   addBuiltin("simple-bit-vector-p",    (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
-                  addBuiltin("sbit",            (Primitive) a -> { twoArgs("sbit", a);    return sbit(car(a), toNonnegInt("sbit", cadr(a))); },
-                  addBuiltin("bvset",           (Primitive) a -> { threeArgs("bvset", a); return bvset(car(a), toNonnegInt("bvset", cadr(a)), requireIntegralNumber("bvset", caddr(a), 0, 1).longValue()); },
-                  addBuiltin("bvlength",        (Primitive) a -> { oneArg("bvlength", a); return bvlength(car(a)); },
-                  addBuiltin("bv=",             (Primitive) a -> { twoArgs("bv=", a);     return boolResult(bvEq(car(a), cadr(a))); },
+                  addBuiltin("sbvref",          (Primitive) a -> { twoArgs("sbvref", a);   return sbvref(car(a), toNonnegInt("sbvref", cadr(a))); },
+                  addBuiltin("sbvset",          (Primitive) a -> { threeArgs("sbvset", a); return sbvset(car(a), toNonnegInt("sbvset", cadr(a)), requireIntegralNumber("sbvset", caddr(a), 0, 1).longValue()); },
+                  addBuiltin("sbvlength",       (Primitive) a -> { oneArg("sbvlength", a); return sbvlength(car(a)); },
+                  addBuiltin("sbv=",            (Primitive) a -> { twoArgs("sbv=", a);      return boolResult(sbvEq(car(a), cadr(a))); },
                   addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
                   addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
                   env)))))))))))))))));
@@ -5940,17 +5940,17 @@ public class LambdaJ {
 
         public final Object   sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return LambdaJ.sbitvectorp(args[0]) ? _t : null; }
 
-        public final long   _sbit(Object... args)       { twoArgs("sbit", args.length);               return sbit(args[0], args[1]); }
-        public static long sbit(Object v, Object idx)   { return LambdaJ.sbit(v, toArrayIndex(idx)); }
-        public static long sbit(Object v, long idx)     { return LambdaJ.sbit(v, toArrayIndex(idx)); }
+        public final long   _sbvref(Object... args)     { twoArgs("sbvref", args.length); return sbvref(args[0], args[1]); }
+        public static long sbvref(Object v, Object idx)   { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
+        public static long sbvref(Object v, long idx)     { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
 
-        public final long   _bvset(Object... args)      { threeArgs("bvset", args.length);            return bvset(args[0], args[1], args[2]); }
-        public static long bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public static long bvset(Object v, Object idx, long val)   { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public static long bvset(Object v, long idx, long val)     { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final long   _sbvset(Object... args)      { threeArgs("sbvset", args.length);            return sbvset(args[0], args[1], args[2]); }
+        public static long sbvset(Object v, Object idx, Object val) { return LambdaJ.sbvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long sbvset(Object v, Object idx, long val)   { return LambdaJ.sbvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long sbvset(Object v, long idx, long val)     { return LambdaJ.sbvset(v, toArrayIndex(idx), toBit(val)); }
 
-        public final Object   _bvlength(Object... args)   { oneArg("bvlength", args.length);            return bvlength(args[0]); }
-        public final Object   bvEq     (Object... args)   { twoArgs("bv=", args.length);                return LambdaJ.bvEq(args[0], args[1]) ? _t : null; }
+        public final Object  _sbvlength(Object... args)   { oneArg("sbvlength", args.length);           return sbvlength(args[0]); }
+        public final Object sbvEq(Object... args)         { twoArgs("sbv=", args.length);               return LambdaJ.sbvEq(args[0], args[1]) ? _t : null; }
 
         public final Character _sref(Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
 
@@ -6533,10 +6533,10 @@ public class LambdaJ {
             case "svset": return (CompilerPrimitive)this::_svset;
             case "svlength": return (CompilerPrimitive)this::_svlength;
             case "simple-bit-vector-p": return (CompilerPrimitive)this::sbitvectorp;
-            case "sbit": return (CompilerPrimitive)this::_sbit;
-            case "bvset": return (CompilerPrimitive)this::_bvset;
-            case "bvlength": return (CompilerPrimitive)this::_bvlength;
-            case "bv=": return (CompilerPrimitive)this::bvEq;
+            case "sbvref": return (CompilerPrimitive)this::_sbvref;
+            case "sbvset": return (CompilerPrimitive)this::_sbvset;
+            case "sbvlength": return (CompilerPrimitive)this::_sbvlength;
+            case "sbv=": return (CompilerPrimitive)this::sbvEq;
             case "sref": return (CompilerPrimitive)this::_sref;
             case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
@@ -6778,7 +6778,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sbit", "bvset", "sref", "bvlength",
+        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sbvref", "sbvset", "sref", "sbvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
@@ -6795,7 +6795,7 @@ public class LambdaJ {
         {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"simple-bit-vector->list", "simpleBitVectorToList"}, {"list->simple-bit-vector", "listToSimpleBitVector"},
         {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
-        {"simple-bit-vector-p", "sbitvectorp"}, {"bv=", "bvEq"}, {"make-array", "makeArray"},
+        {"simple-bit-vector-p", "sbitvectorp"}, {"sbv=", "sbvEq"}, {"make-array", "makeArray"},
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
         {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
@@ -7924,8 +7924,8 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sSvRef)      { emitFuncall2(sb, "svref", "svref", args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sSvSet)      { emitFuncall3(sb, "svset", "svset", args, env, topEnv, rsfx); return true; }
 
-            if (prim == WellknownSymbol.sSBit)       { emitFuncall2(sb, "sbit",  "sbit", args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sBvSet)      { emitFuncall3(sb, "bvset", "bvset", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sSBvRef)     { emitFuncall2(sb, "sbvref", "sbvref", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sSBvSet)     { emitFuncall3(sb, "sbvset", "sbvset", args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }

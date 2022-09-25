@@ -40,7 +40,7 @@
 
 ;;; - numbers, characters
 ;;;     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-;;;     - [char=](#function-char), [char](#function-char-1)
+;;;     - [char=](#function-char), [char](#function-char-1), [sbit](#function-sbit)
 ;;;     - [equal](#function-equal)
 
 ;;; - sequences
@@ -846,7 +846,7 @@
     `(let* ((,vec ,vectorform)
             (,acc (if (simple-vector-p ,vec) svref
                     (if (stringp ,vec) char
-                      (if (simple-bit-vector-p ,vec) sbit
+                      (if (simple-bit-vector-p ,vec) sbvref
                         (error "dovector - not a vector: %s" ,vec)))))
             (,limit (vector-length ,vec)))
        (let ,loop ((,idx 0))
@@ -959,14 +959,14 @@
                  (svset ,tmp1 ,tmp2 ,read-var)
                  (svref ,tmp1 ,tmp2)))
 
-              ((eq 'sbit op)
+              ((or (eq 'sbit op) (eq 'sbvref op))
                `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (sbit ,tmp1 ,tmp2))
+                 (,(car args) ,(cadr args) (sbvref ,tmp1 ,tmp2))
                  (,read-var)
-                 (bvset ,tmp1 ,tmp2 ,read-var)
-                 (sbit ,tmp1 ,tmp2)))
+                 (sbvset ,tmp1 ,tmp2 ,read-var)
+                 (sbvref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref and sbit are supported for 'place'")))))))
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref, sbvref and sbit are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -1185,10 +1185,20 @@
 ;;; Since: 1.1
 ;;;
 ;;; Return the n-th character of the string `str`, `n` is 0-based.
-(defun char (str n)
-  (sref str n))
+(define char sref)
 (defmacro char (str n)
   `(sref ,str ,n))
+
+
+;;; = Function: sbit
+;;;     (sbit sbv n) -> nth bit
+;;;
+;;; Since: 1.3
+;;;
+;;; Return the n-th bit of the simple bitvector `sbv`, `n` is 0-based.
+(define sbit sbvref)
+(defmacro sbit (sbv n)
+  `(sbvref ,sbv ,n))
 
 
 ;;; = Function: equal
@@ -1205,7 +1215,7 @@
 (defun equal (a b)
   (or (eql a b)
       (and (stringp a) (stringp b) (string= a b))
-      (and (simple-bit-vector-p a) (simple-bit-vector-p b) (bv= a b))
+      (and (simple-bit-vector-p a) (simple-bit-vector-p b) (sbv= a b))
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
@@ -1301,7 +1311,7 @@
 
        ((vectorp arg)
         (let* ((ref (cond ((simple-vector-p arg) svref)
-                          ((simple-bit-vector-p arg) sbit)
+                          ((simple-bit-vector-p arg) sbvref)
                           ((stringp arg) char)))
                (len (vector-length arg))
                (idx (if more-args (m%nonneg-integer-number (car more-args)) 0)))
@@ -1470,7 +1480,7 @@
       (cons              (reverse/list seq nil))
       (string            (list->string (reverse/list (string->list seq) nil)))
       (simple-vector     (reverse/vector seq (make-array (vector-length seq)     ) svref svset))
-      (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbit bvset))
+      (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbvref sbvset))
       (t                 (error "reverse - %s is not a sequence" seq)))))
 
 
@@ -1506,7 +1516,7 @@
       (cons              (nreverse/list seq))
       (string            (list->string (nreverse/list (string->list seq))))
       (simple-vector     (nreverse/vector seq svref svset))
-      (simple-bit-vector (nreverse/vector seq sbit bvset))
+      (simple-bit-vector (nreverse/vector seq sbvref sbvset))
       (t (error "nreverse - %s is not a sequence" seq)))))
 
 
@@ -1719,7 +1729,7 @@
             ((consp seq)               (reduce/list seq))
             ((stringp seq)             (reduce/vector seq char))
             ((simple-vector-p seq)     (reduce/vector seq svref))
-            ((simple-bit-vector-p seq) (reduce/vector seq sbit))
+            ((simple-bit-vector-p seq) (reduce/vector seq sbvref))
             (t (error "reduce - %s is not a sequence" seq))))))
 
 
