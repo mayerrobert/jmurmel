@@ -40,7 +40,7 @@
 
 ;;; - numbers, characters
 ;;;     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-;;;     - [char=](#function-char)
+;;;     - [char=](#function-char), [char](#function-char-1)
 ;;;     - [equal](#function-equal)
 
 ;;; - sequences
@@ -1177,6 +1177,18 @@
                   t)
             nil))
     t))
+
+
+;;; = Function: char
+;;;     (char str n) -> nth-character
+;;;
+;;; Since: 1.1
+;;;
+;;; Return the n-th character of the string `str`, `n` is 0-based.
+(defun char (str n)
+  (sref str n))
+(defmacro char (str n)
+  `(sref ,str ,n))
 
 
 ;;; = Function: equal

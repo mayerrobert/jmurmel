@@ -679,9 +679,9 @@ pi ; ==> 3.141592653589793
 ; - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 ; - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
-; = (make-array length) -> simple-vector
+; = (make-array length [t | 'bit]) -> simple-vector
 ;
-; Only one-dimensional simple arrays of element-type T are supported
+; Only one-dimensional simple arrays of element-type T or 'bit are supported
 
 ; = vector, vector-length, vectorp, simple-vector-p, svref, svset, svlength
 ;
@@ -694,11 +694,12 @@ pi ; ==> 3.141592653589793
 (svlength *v*) ; ==> 3
 (svref *v* 1) ; ==> 2
 
-; = (char str n) -> nth-character
+; = (sref str n) -> nth-character
 ;
-; Since: 1.3 (mlib 1.1 and 1.2 contained `char`)
+; Since: 1.3
 ;
 ; Return the n-th character of the string `str`, `n` is 0-based.
+; Similar to CL `char`.
 
 ; = list->simple-vector and simple-vector->list
 

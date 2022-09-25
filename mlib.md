@@ -37,7 +37,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [push](#macro-push), [pop](#macro-pop)
 - numbers, characters
     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-    - [char=](#function-char)
+    - [char=](#function-char), [char](#function-char-1)
     - [equal](#function-equal)
 - sequences
     - [length](#function-length)
@@ -543,6 +543,13 @@ Is this number odd?
 Since: 1.1
 
 Return `t` if all of the arguments are the same character.
+
+### Function: char
+    (char str n) -> nth-character
+
+Since: 1.1
+
+Return the n-th character of the string `str`, `n` is 0-based.
 
 ### Function: equal
     (equal a b) -> boolean

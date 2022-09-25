@@ -1,3 +1,6 @@
+svset, bvset, ...: parameter sollten sein: sequence, newvalue, index
+-> wenn index der letzte parameter ist, dann kann man leicht auf mehrere arraydimensionen erweitern,
+   bzw. ein allenfalls kommendes aset wäre (aset array newvalue index1 index2...)
 
 mlib:
 map-into sollte sequence unterstützen, nicht nur list
@@ -22,9 +25,19 @@ Typsystem:
   -> in CL liefert das ein simple-array mit fillpointer=false, adjustable=false, inhalt 5 x #\0, StringBuilder würde adjustable=true entsprechen
   -> #\Nul wird von CL write stillschweigend verschluckt, oder vielleicht verschluckt die Windows console Nul?
   (char s 0) gibts bereits, sbset dazu
+
 - oder: (string obj) liefert obj.toString().toCharArray()
   und:  (make-array 5 'character) liefert new char[5]
   nur stringliterale bleiben immutable java.lang.String
+
+- oder:
+  t                                 Murmel prädikat
+    vector                          vectorp
+      string                        stringp             r/w und adjustable      CharSequence, StringBuilder() 
+        simple-string               simple-string-p     r/w, nicht adjustable   char[]
+          immutable-simple-string                       ro                      String
+  -> (make-array size [type [adjustablep]])
+
 
 - vielleicht deque integrieren (java.util.ArrayDeque)?
   von vector erben, oder alleinstehender typ?

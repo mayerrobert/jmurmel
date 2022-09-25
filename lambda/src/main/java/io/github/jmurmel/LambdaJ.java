@@ -3156,6 +3156,11 @@ public class LambdaJ {
         throw errorNotASimpleVector("svset", maybeVector);
     }
 
+    static char sref(Object maybeString, int idx) {
+        if (maybeString instanceof char[]) return ((char[])maybeString)[idx];
+        return requireCharsequence("sref", maybeString).charAt(idx);
+    }
+
     static long sbit(Object bv, int idx) {
         if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
         throw errorNotASimpleBitVector("sbit", bv);
@@ -4392,7 +4397,7 @@ public class LambdaJ {
             env = addBuiltin("stringp",         (Primitive) a -> { oneArg("stringp", a);         return boolResult(stringp(car(a))); },
                   addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
                   addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
-                  addBuiltin("char",            (Primitive) a -> { twoArgs("char", a);           return requireCharsequence("char", car(a)).charAt(requireIntegralNumber("char", cadr(a), 0, Integer.MAX_VALUE).intValue()); },
+                  addBuiltin("sref",            (Primitive) a -> { twoArgs("sref", a);           return sref(car(a), toNonnegInt("sref", cadr(a))); },
                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
                   addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbolOrNull("string=", car(a)), requireStringOrCharOrSymbolOrNull("string=", cadr(a)))); },
@@ -5947,7 +5952,7 @@ public class LambdaJ {
         public final Object   _bvlength(Object... args)   { oneArg("bvlength", args.length);            return bvlength(args[0]); }
         public final Object   bvEq     (Object... args)   { twoArgs("bv=", args.length);                return LambdaJ.bvEq(args[0], args[1]) ? _t : null; }
 
-        public final Character _char(Object... args) { twoArgs("char", args.length); return requireCharsequence("char", args[0]).charAt(requireIntegralNumber("char", args[1], 0, Integer.MAX_VALUE).intValue()); }
+        public final Character _sref(Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
 
         public final Object   makeArray(Object... args) { varargs1_2("make-array", args.length);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
@@ -6532,7 +6537,7 @@ public class LambdaJ {
             case "bvset": return (CompilerPrimitive)this::_bvset;
             case "bvlength": return (CompilerPrimitive)this::_bvlength;
             case "bv=": return (CompilerPrimitive)this::bvEq;
-            case "char": return (CompilerPrimitive)this::_char;
+            case "sref": return (CompilerPrimitive)this::_sref;
             case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
             case "functionp": return (CompilerPrimitive)this::_functionp;
@@ -6773,7 +6778,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sbit", "bvset", "char", "bvlength",
+        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sbit", "bvset", "sref", "bvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
