@@ -956,14 +956,14 @@
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (svref ,tmp1 ,tmp2))
                  (,read-var)
-                 (svset ,tmp1 ,tmp2 ,read-var)
+                 (svset ,read-var ,tmp1 ,tmp2)
                  (svref ,tmp1 ,tmp2)))
 
               ((or (eq 'sbit op) (eq 'sbvref op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (sbvref ,tmp1 ,tmp2))
                  (,read-var)
-                 (sbvset ,tmp1 ,tmp2 ,read-var)
+                 (sbvset ,read-var ,tmp1 ,tmp2)
                  (sbvref ,tmp1 ,tmp2)))
 
               (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref, sbvref and sbit are supported for 'place'")))))))
@@ -995,14 +995,20 @@
                                           (loop (cddr args))))
                           (error "odd number of arguments to setf"))))
 
-                (if (symbolp (car args))
-                      `(setq ,(car args) ,(cadr args))
-                  (if (eq 'svref (caar args))
-                        `(svset ,@(cdar args) ,(cadr args))
-                    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
-                      `(let* (,@(mapcar list vars vals)
-                              (,(car store-vars) ,@(cdr args)))
-                         ,writer-form)))))
+                (cond ((symbolp (car args))
+                       `(setq   ,(car args)  ,@(cdr args)))
+
+                      ((eq 'svref (caar args))
+                       `(svset  ,(cadr args) ,@(cdar args)))
+
+                      ((or (eq 'sbit (caar args)) (eq 'sbvref (caar args)))
+                       `(sbvset ,(cadr args) ,@(cdar args)))
+
+                      (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
+                           `(let* (,@(mapcar list vars vals)
+                                   (,(car store-vars) ,@(cdr args)))
+                              ,writer-form)))))
+
           (error "odd number of arguments to setf"))))
 
 
@@ -1471,7 +1477,7 @@
            (reverse/vector (from to get set)
              (let loop ((from-idx 0) (to-idx (1- (vector-length to))))
                (when (>= to-idx 0)
-                 (set to to-idx (get from from-idx))
+                 (set (get from from-idx) to to-idx)
                  (loop (1+ from-idx) (1- to-idx))))
              to))
 
@@ -1507,8 +1513,8 @@
                (if (<= right-index left-index) vector
                  (let ((left (getter vector left-index))
                        (right (getter vector right-index)))
-                   (setter vector left-index right)
-                   (setter vector right-index left)
+                   (setter right vector left-index)
+                   (setter left vector right-index)
                    (loop (1+ left-index) (1- right-index)))))))
 
     (typecase seq

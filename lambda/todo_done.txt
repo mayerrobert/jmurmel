@@ -1782,3 +1782,13 @@ JMurmel> :r
 implicit declaration of seq
 /MurmelProgram.java:21: error: cannot find symbol
         return _seq.get();
+
+
+svset, sbvset: parameter sollten sein: sequence, newvalue, index
+-> wenn index der letzte parameter ist, dann kann man leicht auf mehrere arraydimensionen erweitern,
+   bzw. ein allenfalls kommendes aset wäre (aset array newvalue index1 index2...)
+-> oder an sbcl (SETF AREF) anlehnen:
+(SETF AREF) names a compiled function:
+  Lambda-list: (NEW-VALUE ARRAY &REST SUBSCRIPTS)
+(SETF SVREF) names a compiled function:
+  Lambda-list: (NEWVAL SIMPLE-VECTOR INDEX)

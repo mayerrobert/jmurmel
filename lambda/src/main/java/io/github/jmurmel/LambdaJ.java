@@ -2638,11 +2638,11 @@ public class LambdaJ {
         case sVectorLength: { oneArg   ("vector-length", args);  return vectorLength(car(args)); }
         case sVectorp:      { oneArg   ("vectorp", args);        return boolResult(vectorp(car(args))); }
         case sSvRef:        { twoArgs  ("svref", args);          return svref(car(args), toNonnegInt("svref", cadr(args))); }
-        case sSvSet:        { threeArgs("svset", args);          return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); }
+        case sSvSet:        { threeArgs("svset", args);          return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); }
         case sSvLength:     { oneArg   ("svlength", args);       return svlength(car(args)); }
 
         case sSBvRef:       { twoArgs  ("sbvref", args);         return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
-        case sSBvSet:       { threeArgs("sbvset", args);         return sbvset(car(args), toNonnegInt("sbvset", cadr(args)), requireIntegralNumber("sbvset", caddr(args), 0, 1).longValue()); }
+        case sSBvSet:       { threeArgs("sbvset", args);         return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
         case sSBvLength:    { oneArg   ("sbvlength", args);      return sbvlength(car(args)); }
         case sSBvEq:        { twoArgs  ("sbv=", args);           return boolResult(sbvEq(car(args), cadr(args))); }
 
@@ -3151,7 +3151,7 @@ public class LambdaJ {
         throw errorNotASimpleVector("svref", maybeVector);
     }
 
-    static Object svset(Object maybeVector, int idx, Object newValue) {
+    static Object svset(Object newValue, Object maybeVector, int idx) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
         throw errorNotASimpleVector("svset", maybeVector);
     }
@@ -3166,7 +3166,7 @@ public class LambdaJ {
         throw errorNotASimpleBitVector("sbvref", bv);
     }
 
-    static long sbvset(Object maybeVector, int idx, long newValue) {
+    static long sbvset(long newValue, Object maybeVector, int idx) {
         if (maybeVector instanceof boolean[]) {
             final boolean b;
             if (newValue == 0) b = false;
@@ -4455,7 +4455,7 @@ public class LambdaJ {
                   addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
                   addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
                   addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
-                  addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), toNonnegInt("svref", cadr(a)), caddr(a)); },
+                  addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), cadr(a), toNonnegInt("svref", caddr(a))); },
                   addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
                   addBuiltin("make-array",      (Primitive)this::makeArray,
                   addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
@@ -4463,7 +4463,7 @@ public class LambdaJ {
 
                   addBuiltin("simple-bit-vector-p",    (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
                   addBuiltin("sbvref",          (Primitive) a -> { twoArgs("sbvref", a);   return sbvref(car(a), toNonnegInt("sbvref", cadr(a))); },
-                  addBuiltin("sbvset",          (Primitive) a -> { threeArgs("sbvset", a); return sbvset(car(a), toNonnegInt("sbvset", cadr(a)), requireIntegralNumber("sbvset", caddr(a), 0, 1).longValue()); },
+                  addBuiltin("sbvset",          (Primitive) a -> { threeArgs("sbvset", a); return sbvset(requireIntegralNumber("sbvset", car(a), 0, 1).longValue(), cadr(a), toNonnegInt("sbvset", caddr(a))); },
                   addBuiltin("sbvlength",       (Primitive) a -> { oneArg("sbvlength", a); return sbvlength(car(a)); },
                   addBuiltin("sbv=",            (Primitive) a -> { twoArgs("sbv=", a);      return boolResult(sbvEq(car(a), cadr(a))); },
                   addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
@@ -5934,7 +5934,7 @@ public class LambdaJ {
         public static Object svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
 
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], args[1], args[2]); }
-        public static Object svset(Object v, Object idx, Object val) { return LambdaJ.svset(v, toArrayIndex(idx), val); }
+        public static Object svset(Object val, Object v, Object idx) { return LambdaJ.svset(val, v, toArrayIndex(idx)); }
 
         public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
 
@@ -5945,9 +5945,9 @@ public class LambdaJ {
         public static long sbvref(Object v, long idx)     { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
 
         public final long   _sbvset(Object... args)      { threeArgs("sbvset", args.length);            return sbvset(args[0], args[1], args[2]); }
-        public static long sbvset(Object v, Object idx, Object val) { return LambdaJ.sbvset(v, toArrayIndex(idx), toBit(val)); }
-        public static long sbvset(Object v, Object idx, long val)   { return LambdaJ.sbvset(v, toArrayIndex(idx), toBit(val)); }
-        public static long sbvset(Object v, long idx, long val)     { return LambdaJ.sbvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long sbvset(Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public static long sbvset(long val, Object v, Object idx)   { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public static long sbvset(long val, Object v, long idx)     { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
 
         public final Object  _sbvlength(Object... args)   { oneArg("sbvlength", args.length);           return sbvlength(args[0]); }
         public final Object sbvEq(Object... args)         { twoArgs("sbv=", args.length);               return LambdaJ.sbvEq(args[0], args[1]) ? _t : null; }
