@@ -1,8 +1,4 @@
 
-mlib:
-map-into sollte sequence unterstützen, nicht nur list
-XX->list ersetzen durch generators
-
 langref: bitvector beschreiben
 mlib: error beschreiben
 
@@ -43,6 +39,10 @@ Typsystem:
 
 
 
+
+mlib:
+map-into sollte sequence unterstützen, nicht nur list
+XX->list ersetzen durch generators
 
 mlib - scan: weitere helper
 

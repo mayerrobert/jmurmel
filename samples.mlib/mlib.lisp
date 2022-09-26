@@ -966,6 +966,13 @@
                  (sbvset ,read-var ,tmp1 ,tmp2)
                  (sbvref ,tmp1 ,tmp2)))
 
+              ((or (eq 'char op) (eq 'sref op))
+               `((,tmp1 ,tmp2 ,read-var)
+                 (,(car args) ,(cadr args) (sbvref ,tmp1 ,tmp2))
+                 (,read-var)
+                 (sset ,read-var ,tmp1 ,tmp2)
+                 (sref ,tmp1 ,tmp2)))
+
               (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref, sbvref and sbit are supported for 'place'")))))))
 
 
@@ -1003,6 +1010,9 @@
 
                       ((or (eq 'sbit (caar args)) (eq 'sbvref (caar args)))
                        `(sbvset ,(cadr args) ,@(cdar args)))
+
+                      ((or (eq 'char (caar args)) (eq 'sref (caar args)))
+                       `(sset ,(cadr args) ,@(cdar args)))
 
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* (,@(mapcar list vars vals)
@@ -1484,8 +1494,8 @@
     (typecase seq
       (null)
       (cons              (reverse/list seq nil))
-      (string            (list->string (reverse/list (string->list seq) nil)))
-      (simple-vector     (reverse/vector seq (make-array (vector-length seq)     ) svref svset))
+      (string            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
+      (simple-vector     (reverse/vector seq (make-array (vector-length seq)) svref svset))
       (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbvref sbvset))
       (t                 (error "reverse - %s is not a sequence" seq)))))
 
@@ -1520,7 +1530,7 @@
     (typecase seq
       (null)
       (cons              (nreverse/list seq))
-      (string            (list->string (nreverse/list (string->list seq))))
+      (string            (nreverse/vector seq sref sset))
       (simple-vector     (nreverse/vector seq svref svset))
       (simple-bit-vector (nreverse/vector seq sbvref sbvset))
       (t (error "nreverse - %s is not a sequence" seq)))))

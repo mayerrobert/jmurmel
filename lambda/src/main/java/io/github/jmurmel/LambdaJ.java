@@ -786,6 +786,7 @@ public class LambdaJ {
 
         if (haveVector()) {
             sBit = intern("bit");
+            sCharacter = intern("character");
             internWellknown("vector");
             internWellknown("vectorp");
             internWellknown("vector-length");
@@ -800,7 +801,7 @@ public class LambdaJ {
             internWellknown("sbvlength");
             internWellknown("sbv=");
         }
-        else sBit = null;
+        else sBit = sCharacter = null;
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1648,7 +1649,7 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
     static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
-    final LambdaJSymbol sDynamic, sBit;
+    final LambdaJSymbol sDynamic, sBit, sCharacter;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -3087,7 +3088,7 @@ public class LambdaJ {
     static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !sbitvectorp(o); }
 
     static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
-    static boolean sstringp(Object o)   { return o instanceof String; }
+    static boolean sstringp(Object o)   { return o instanceof String || o instanceof char[]; }
 
     final boolean functionp(Object o)   { return o instanceof Primitive
                                                  || o instanceof Closure
@@ -3136,8 +3137,9 @@ public class LambdaJ {
     static int vectorLength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
+        if (maybeVector instanceof char[]) return ((char[])maybeVector).length;
         if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
-        if (maybeVector instanceof List) return ((List)maybeVector).size();
+        if (maybeVector instanceof List) return ((List<?>)maybeVector).size();
         throw errorNotAVector("vector-length", maybeVector);
     }
 
@@ -3159,6 +3161,14 @@ public class LambdaJ {
     static char sref(Object maybeString, int idx) {
         if (maybeString instanceof char[]) return ((char[])maybeString)[idx];
         return requireCharsequence("sref", maybeString).charAt(idx);
+    }
+
+    static char sset(char newValue, Object maybeString, int idx) {
+        if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
+        if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
+        if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
+        if (maybeString instanceof String) { throw new LambdaJError(true, "%s: cannot modify readonly string", "sset"); }
+        throw new LambdaJError(true, "%s: expected a string argument but got %s", "sset", printSEx(maybeString));
     }
 
     static long sbvref(Object bv, int idx) {
@@ -3392,9 +3402,8 @@ public class LambdaJ {
 
     private static void printAtom(WriteConsumer sb, Object atom, boolean escapeAtoms) {
         if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
-        else if (escapeAtoms && stringp(atom))    { sb.print("\""); sb.print(escapeString(atom.toString())); sb.print("\""); }
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
-        else if (vectorp(atom) && !stringp(atom)) { printVector(sb, atom, escapeAtoms); }
+        else if (vectorp(atom))                   { printVector(sb, atom, escapeAtoms); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -3406,9 +3415,9 @@ public class LambdaJ {
     }
 
     /** prepend " and \ by a \ */
-    static String escapeString(String s) {
+    static String escapeString(CharSequence s) {
         if (s == null) return null;
-        if (s.isEmpty()) return "";
+        if (s.length() == 0) return "";
 
         final StringBuilder ret = new StringBuilder();
         final int len = s.length();
@@ -3429,6 +3438,16 @@ public class LambdaJ {
             for (boolean b: (boolean[])vector) {
                 sb.print(b ? "1" : "0");
             }
+            return;
+        }
+        if (vector instanceof char[]) {
+            if (escapeAtoms) sb.print("\"" + escapeString(new String(((char[])vector))) + "\"");
+            else             sb.print(new String(((char[])vector)));
+            return;
+        }
+        if (vector instanceof CharSequence) {
+            if (escapeAtoms) sb.print("\"" + escapeString(((CharSequence)vector)) + "\"");
+            else             sb.print(((CharSequence)vector).toString());
             return;
         }
 
@@ -3710,7 +3729,8 @@ public class LambdaJ {
     }
 
     private static String requireString(String func, Object c) {
-        if (!(c instanceof String)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
+        if (!stringp(c)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
+        if (c instanceof char[]) return String.valueOf((char[])c);
         return c.toString();
     }
 
@@ -3861,6 +3881,7 @@ public class LambdaJ {
         final Object type = cadr(a);
         if (cdr(a) == null || type == sT) return new Object[toNonnegInt("make-array", car(a))];
         if (type == sBit) return new boolean[toNonnegInt("make-array", car(a))];
+        if (type == sCharacter) return new char[toNonnegInt("make-array", car(a))];
         throw new LambdaJError(true, "make-array: unsupported or invalid type specification %s", printSEx(type));
     }
 
@@ -4398,12 +4419,13 @@ public class LambdaJ {
                   addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
                   addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
                   addBuiltin("sref",            (Primitive) a -> { twoArgs("sref", a);           return sref(car(a), toNonnegInt("sref", cadr(a))); },
+                  addBuiltin("sset",            (Primitive) a -> { threeArgs("sset", a);         return sset(requireChar("sset", car(a)), cadr(a), toNonnegInt("sref", caddr(a))); },
                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
                   addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbolOrNull("string=", car(a)), requireStringOrCharOrSymbolOrNull("string=", cadr(a)))); },
                   addBuiltin("string->list",    (Primitive) this::stringToList,
                   addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
-                  env)))))))));
+                  env))))))))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
@@ -5953,6 +5975,7 @@ public class LambdaJ {
         public final Object sbvEq(Object... args)         { twoArgs("sbv=", args.length);               return LambdaJ.sbvEq(args[0], args[1]) ? _t : null; }
 
         public final Character _sref(Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
+        public final Character _sset(Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(requireChar(args[0]), args[1], toArrayIndex(args[2])); }
 
         public final Object   makeArray(Object... args) { varargs1_2("make-array", args.length);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
@@ -6538,6 +6561,7 @@ public class LambdaJ {
             case "sbvlength": return (CompilerPrimitive)this::_sbvlength;
             case "sbv=": return (CompilerPrimitive)this::sbvEq;
             case "sref": return (CompilerPrimitive)this::_sref;
+            case "sset": return (CompilerPrimitive)this::_sset;
             case "make-array": return (CompilerPrimitive)this::makeArray;
             case "listp": return (CompilerPrimitive)this::_listp;
             case "functionp": return (CompilerPrimitive)this::_functionp;
@@ -6778,7 +6802,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sbvref", "sbvset", "sref", "sbvlength",
+        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sref", "sset", "sbvref", "sbvset", "sbvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",

@@ -21,7 +21,8 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
  * added bitvector support:
    * simple-bit-vector-p, sbvref (similar to CL sbit), sbvset, sbvlength and sbv=
    * list->simple-bit-vector and simple-bit-vector->list
- * added sref (identical to CL char)
+ * added writable strings
+   * sref (identical to CL char), sset
 
  * mlib: added sbit
  * mlib: added map, dovector, revappend, nreconc, nreverse, typecase
@@ -29,6 +30,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
    * scan
    * scan-multiple, scan-concat
    * dogenerator
+ * mlib: setf now supports strings, e.g.: (setf (char str) #\a)
 
  * fixed backquote expansion:
    e.g. `(a ,nil) was eval'd to (a); correct expansion is (a nil)
