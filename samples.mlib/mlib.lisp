@@ -58,6 +58,7 @@
 ;;;     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
 
 ;;; - misc
+;;;     - [error](#function-error)
 ;;;     - [time](#macro-time)
 ;;;
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
@@ -339,6 +340,12 @@
            (cond ,@(do-clauses tmp)))))))
 
 
+;;; = Function: error
+;;;     (error formatstring args*) -> no return value
+;;;
+;;; Since: 1.3
+;;;
+;;; `error` aborts the current program.
 (defun error (msg . args)
   (fatal (apply format (cons nil (cons (format nil "%n%nError: %s%n" msg) args)))))
 
@@ -973,7 +980,7 @@
                  (sset ,read-var ,tmp1 ,tmp2)
                  (sref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref, sbvref and sbit are supported for 'place'")))))))
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref, sbvref, sbit, sref and char are supported for 'place'")))))))
 
 
 ;;; = Macro: setf

@@ -421,25 +421,26 @@
 
 ;;; test all predicates
 (define *predicates*
-  '(("n/a"   "null"    "atom"      "symbolp"   "consp"     "listp"     "numberp"   "integerp"  "floatp"   "characterp" "vectorp"    "stringp")
-    (value    null      atom        symbolp     consp       listp       numberp     integerp    floatp     characterp   vectorp     stringp)
-    (nil      t         t           t           nil         t           nil         nil         nil        nil          nil         nil)
-    ((a . b)  nil       nil         nil         t           t           nil         nil         nil        nil          nil         nil)
+  '(("n/a"   "null"    "atom"      "symbolp"   "consp"     "listp"     "numberp"   "integerp"  "floatp"   "characterp" "vectorp"    "stringp"   "simple-bit-vector-p")
+    (value    null      atom        symbolp     consp       listp       numberp     integerp    floatp     characterp   vectorp     stringp     simple-bit-vector-p)
+    (nil      t         t           t           nil         t           nil         nil         nil        nil          nil         nil         nil)
+    ((a . b)  nil       nil         nil         t           t           nil         nil         nil        nil          nil         nil         nil)
 
-    (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
-    (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
-    (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
+    (a        nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil         nil)
+    (\123     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil         nil)
+    (1\23     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil         nil)
     ; sbcl chokes on the next line even when it's prepended with #+murmel
-    ;(1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
+    ;(1\23"    nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil        nil)
 
-    (0        nil       t           nil         nil         nil         t           t           nil        nil          nil         nil)
-    (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil         nil)
-    (3.2e15   nil       t           nil         nil         nil         t           nil         t          nil          nil         nil)
-    (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil         nil)
-    (\#\a     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
-    (\#a      nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil)
-    ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t           t)
-    (#()      nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil)
+    (0        nil       t           nil         nil         nil         t           t           nil        nil          nil         nil         nil)
+    (2.3      nil       t           nil         nil         nil         t           nil         t          nil          nil         nil         nil)
+    (3.2e15   nil       t           nil         nil         nil         t           nil         t          nil          nil         nil         nil)
+    (#\a      nil       t           nil         nil         nil         nil         nil         nil        t            nil         nil         nil)
+    (\#\a     nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil         nil)
+    (\#a      nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil         nil)
+    ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t           t           nil)
+    (#()      nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil)
+    (#*       nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         t)
 ))
 
 
@@ -635,6 +636,7 @@
       (bigDecimal    ((jmethod "java.math.BigDecimal"    "new" "String") "1"))
 
       (arrayList     ((jmethod "java.util.ArrayList"     "new")))
+      (bitSet        ((jmethod "java.util.BitSet"        "new")))
 
       (string        ((jmethod "java.lang.String"        "new")))
       (stringBuffer  ((jmethod "java.lang.StringBuffer"  "new")))
@@ -652,6 +654,7 @@
   (deftest ffi.number.8 (numberp bigDecimal) t)
 
   (deftest ffi.coll.1 (vectorp arrayList) t)
+  ; todo (deftest ffi.coll.2 (vectorp bitSet) t)
 
   (deftest ffi.string.1 (vectorp string) t)
   (deftest ffi.string.2 (vectorp stringBuffer) t)

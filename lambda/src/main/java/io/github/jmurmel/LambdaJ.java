@@ -3058,11 +3058,12 @@ public class LambdaJ {
                 float
                 integer
             character
-            vector
-                simple-bit-vector       ; boolean[]
-                simple-vector
-                string
-                    simple-string
+            vector                      ; (make-array NN t t)            -> ArrayList
+                simple-vector           ; (make-array NN t nil)          -> Object[]
+                string                  ; (make-array NN 'character t)   -> StringBuilder
+                    simple-string       ; (make-array NN 'character nil) -> char[]
+                (bit-vector)            ; (make-array NN 'bit t)         -> java.util.BitSet  ; todo gibts noch nicht, wird mit fehler abgewiesen
+                    simple-bit-vector   ; (make-array NN 'bit t)         -> boolean[]
             function
 
             (list ::= cons | null)
@@ -3081,14 +3082,12 @@ public class LambdaJ {
 
     static boolean characterp(Object o) { return o instanceof Character; }
 
-    static boolean vectorp(Object o)    { return stringp(o) || sbitvectorp(o) || svectorp(o) || o instanceof List; }
-
-    static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
-
+    static boolean vectorp(Object o)    { return stringp(o) || sbitvectorp(o) || svectorp(o) || o instanceof List /*|| bitvectorp(o)*/; }
     static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !sbitvectorp(o); }
-
     static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)   { return o instanceof String || o instanceof char[]; }
+    static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof BitSet; } // todo in Murmel anbinden + bref & bset
+    static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
     final boolean functionp(Object o)   { return o instanceof Primitive
                                                  || o instanceof Closure
@@ -3877,11 +3876,26 @@ public class LambdaJ {
 
 
     private Object makeArray(ConsCell a) {
-        varargs1_2("make-array", a);
+        varargsMinMax("make-array", a, 1, 3);
+        final int size = toNonnegInt("make-array", car(a));
         final Object type = cadr(a);
-        if (cdr(a) == null || type == sT) return new Object[toNonnegInt("make-array", car(a))];
-        if (type == sBit) return new boolean[toNonnegInt("make-array", car(a))];
-        if (type == sCharacter) return new char[toNonnegInt("make-array", car(a))];
+        final boolean adjustable = caddr(a) == sT;
+
+        if (cdr(a) == null || type == sT) {
+            if (adjustable) { final List<Object> ret = new ArrayList<>(); for (int i = 0; i < size; i++) ret.add(null); return ret; }
+            return new Object[size];
+        }
+
+        if (type == sBit) {
+            if (adjustable) throw new LambdaJError("adjustable is not yet supported with bit vectors");
+            return new boolean[size];
+        }
+
+        if (type == sCharacter) {
+            if (adjustable) { final StringBuilder ret = new StringBuilder(size); for (int i = 0; i < size; i++) ret.append('\0'); return ret; }
+            return new char[size];
+        }
+
         throw new LambdaJError(true, "make-array: unsupported or invalid type specification %s", printSEx(type));
     }
 
@@ -5977,7 +5991,7 @@ public class LambdaJ {
         public final Character _sref(Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final Character _sset(Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(requireChar(args[0]), args[1], toArrayIndex(args[2])); }
 
-        public final Object   makeArray(Object... args) { varargs1_2("make-array", args.length);
+        public final Object   makeArray(Object... args) { varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return intp.makeArray(arraySlice(args)); }
 

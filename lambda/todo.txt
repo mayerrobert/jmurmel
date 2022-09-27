@@ -1,42 +1,41 @@
 
-langref: bitvector beschreiben
-mlib: error beschreiben
-
 Typsystem:
 - beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
-- beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t
-- Primitives ggf. nachziehen
-    vector-length akzeptiert CharSequence, vectorp aber nicht
-- Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
-- vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
+- beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t (steht in murmel-langref eh schon unter "numberp, integerp, floatp" beschrieben)
 
-- vielleicht StringBuilder einbauen:
-  "asdf" liefert String
-  (simple-string obj) == obj.toString(), liefert String
-  (string obj) == new StringBuilder(obj.toString())
-  (make-array 5 'character) liefert new StringBuilder(5), also leerstring, initial capacity 5
-  -> in CL liefert das ein simple-array mit fillpointer=false, adjustable=false, inhalt 5 x #\0, StringBuilder würde adjustable=true entsprechen
-  -> #\Nul wird von CL write stillschweigend verschluckt, oder vielleicht verschluckt die Windows console Nul?
-  (char s 0) gibts bereits, sbset dazu
 
-- oder: (string obj) liefert obj.toString().toCharArray()
-  und:  (make-array 5 'character) liefert new char[5]
-  nur stringliterale bleiben immutable java.lang.String
-
-- oder:
+- ArrayList, StringBuilder, BitSet integrieren als "nicht simple-":
   t                                 Murmel prädikat
     vector                          vectorp
       string                        stringp             r/w und adjustable      CharSequence, StringBuilder() 
         simple-string               simple-string-p     r/w, nicht adjustable   char[]
-          immutable-simple-string                       ro                      String
+          (immutable-simple-string)                     ro                      String, wird nur mit stringliteralen erzeugt
+      
   -> (make-array size [type [adjustablep]])
+  -> vector-push-extend
 
+vielleicht sequence-ref in core Murmel, macht dasselbe wie elt
+und sequence-set
+-> damit brauchts kein gesondertes aref, in mlib könnten typecases wegfallen, hätte auch einen fastpath für nth, insb. für arrayslice
+
+
+JMurmel> (list->simple-vector '(1 2 3))
+==> #(1 2 3)
+JMurmel> (apply vector '(1 2 3))
+==> #(1 2 3)
+
+-> list->simple-vector ist unnötig
+   wenns constructor funktionen für die anderen vectortypen gäbe, wäre z.B. list->string auch unnötig
+
+
+
+
+
+- vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
 - vielleicht deque integrieren (java.util.ArrayDeque)?
   von vector erben, oder alleinstehender typ?
 - splice integrieren?
-
-
 
 
 

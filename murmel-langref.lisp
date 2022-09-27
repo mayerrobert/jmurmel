@@ -671,7 +671,7 @@ pi ; ==> 3.141592653589793
 (eql #\a (car "aaa")) ; ==> t
 (eql -0.0 0.0) ; ==> nil
 
-; = null, atom, consp, listp, symbolp, stringp, simple-string-p, characterp, functionp
+; = null, atom, consp, listp, symbolp, characterp, functionp
 
 ; = numberp, integerp, floatp
 ;
@@ -679,13 +679,13 @@ pi ; ==> 3.141592653589793
 ; - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 ; - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
-; = (make-array length [t | 'bit]) -> simple-vector
+; = (make-array length [element-type [adjustable-p]]) -> vector
 ;
-; Only one-dimensional simple arrays of element-type T or 'bit are supported
+; Only one-dimensional simple arrays of element-type t, 'bit or 'character are supported.
 
-; = vector, vector-length, vectorp, simple-vector-p, svref, svset, svlength
+; = vector, vectorp, simple-vector-p, svref, svset, vector-length, svlength
 ;
-; Vectors are on-dimensional arrays (which internally are Object[]).
+; Vectors are one-dimensional arrays.
 ;
 ; Example usage:
 
@@ -694,12 +694,27 @@ pi ; ==> 3.141592653589793
 (svlength *v*) ; ==> 3
 (svref *v* 1) ; ==> 2
 
-; = (sref str n) -> nth-character
+; = stringp, simple-string-p, sref, sset
+;     (sref str n) -> nth-character
+;     (sset new-char str n) -> new-char
 ;
 ; Since: 1.3
 ;
-; Return the n-th character of the string `str`, `n` is 0-based.
+; `sref` returns the n-th character of the string `str`, `n` is 0-based.
 ; Similar to CL `char`.
+;
+; `sset` sets the n-th character of `str` to `new-char`.
+
+; = simple-bit-vector-p, sbvref, sbvset, sbvlength, sbv=
+;     (sbvref bv n) -> nth-bit
+;     (sbvset new-bit bv n) -> new-bit
+;
+; Since: 1.3
+;
+; `sbvref` returns the n-th bit of the bitvector `bv`, `n` is 0-based.
+; Similar to CL `sbit`.
+;
+; `sbvset` sets the n-th bit of `bv` to `new-bit`.
 
 ; = list->simple-vector and simple-vector->list
 

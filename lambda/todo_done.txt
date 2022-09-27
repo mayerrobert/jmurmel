@@ -1784,6 +1784,11 @@ implicit declaration of seq
         return _seq.get();
 
 
+- Primitives ggf. nachziehen
+    vector-length akzeptiert CharSequence, vectorp aber nicht
+- Java FFI Tests erstellen, z.B. (deftest xxx (vectorp ((jmethod "java.lang.StringBuilder" "new" "String") "123")) t)
+
+
 svset, sbvset: parameter sollten sein: sequence, newvalue, index
 -> wenn index der letzte parameter ist, dann kann man leicht auf mehrere arraydimensionen erweitern,
    bzw. ein allenfalls kommendes aset wäre (aset array newvalue index1 index2...)
@@ -1792,3 +1797,22 @@ svset, sbvset: parameter sollten sein: sequence, newvalue, index
   Lambda-list: (NEW-VALUE ARRAY &REST SUBSCRIPTS)
 (SETF SVREF) names a compiled function:
   Lambda-list: (NEWVAL SIMPLE-VECTOR INDEX)
+
+
+- vielleicht StringBuilder einbauen:
+  "asdf" liefert String
+  (simple-string obj) == obj.toString(), liefert String
+  (string obj) == new StringBuilder(obj.toString())
+  (make-array 5 'character) liefert new StringBuilder(5), also leerstring, initial capacity 5
+  -> in CL liefert das ein simple-array mit fillpointer=false, adjustable=false, inhalt 5 x #\0, StringBuilder würde adjustable=true entsprechen
+  -> #\Nul wird von CL write stillschweigend verschluckt, oder vielleicht verschluckt die Windows console Nul?
+  (char s 0) gibts bereits, sbset dazu
+
+- oder: (string obj) liefert obj.toString().toCharArray()
+  und:  (make-array 5 'character) liefert new char[5]
+  nur stringliterale bleiben immutable java.lang.String
+
+
+mlib: error beschreiben
+
+langref: bitvector beschreiben
