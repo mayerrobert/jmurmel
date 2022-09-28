@@ -506,6 +506,21 @@ public class LambdaJ {
 
         @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
 
+        public Object elt(long idx) {
+            if (idx < 0) throw new LambdaJError("elt: index must be >= 0");
+            if (idx >= length()) throw new LambdaJError(true, "elt: index %d is too large for a list of length %d", idx, length());
+            return arry[(int)idx];
+        }
+
+        public Object eltset(Object newValue, long idx) {
+            if (idx < 0) throw new LambdaJError("eltset: index must be >= 0");
+            if (idx >= length()) throw new LambdaJError(true, "eltset: index %d is too large for a list of length %d", idx, length());
+            arry[(int)idx] = newValue;
+            return newValue;
+        }
+
+        private int length() { return arry == null ? 0 : arry.length - offset; }
+
         @Override public String toString() { return printSEx(true, false); }
         @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
 
@@ -3139,6 +3154,49 @@ public class LambdaJ {
         return n;
     }
 
+    static Object seqref(Object maybeSeq, long idx) {
+        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
+        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
+        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
+        if (maybeSeq instanceof ConsCell) {
+            long _idx = 0;
+            for (Object o: (ConsCell)maybeSeq) {
+                if (_idx == idx) return o;
+                _idx++;
+            }
+            throw errorIndexTooLarge(idx, _idx);
+        }
+        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
+        if (maybeSeq instanceof List)         { final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
+        if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
+        throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
+    }
+
+    static Object seqset(Object newValue, Object maybeSeq, long idx) {
+        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
+        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
+        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
+        if (maybeSeq instanceof ConsCell) {
+            long _idx = 0;
+            for (ConsCell lst = (ConsCell)maybeSeq; lst != null;  lst = requireList("seqset", cdr(lst))) {
+                if (_idx == idx) { lst.rplaca(newValue); return newValue; }
+                _idx++;
+            }
+            throw errorIndexTooLarge(idx, _idx);
+        }
+        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
+        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
+        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
+                                                if (newValue.equals(0L)) { arry[(int)idx] = false; return 0L; }
+                                                if (newValue.equals(1L)) { arry[(int)idx] = true;  return 1L; }
+                                                throw errorNotABit("seqset", newValue); }
+        if (maybeSeq instanceof List)         { final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.set((int)idx, newValue); }
+        if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length()); final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c); }
+        throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
+    }
+
     static long vectorPushExtend(Object newValue, Object maybeVector) {
         if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
         if (maybeVector instanceof List) { final List<Object> l = (List<Object>)maybeVector; l.add(newValue); return l.size() - 1; }
@@ -3529,6 +3587,10 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: expected an integral number argument but got %s", func, printSEx(n));
     }
 
+    static RuntimeException errorNotABit(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a bit argument but got %s", func, printSEx(n));
+    }
+
     static RuntimeException errorNotAVector(String func, Object n) {
         throw new LambdaJError(true, "%s: expected a vector argument but got %s", func, printSEx(n));
     }
@@ -3543,6 +3605,10 @@ public class LambdaJ {
 
     static RuntimeException errorOverflow(String func, String targetType, Object n) {
         throw new LambdaJError(true, "%s: value cannot be represented as a %s: %s", func, targetType, String.valueOf(n));
+    }
+
+    static RuntimeException errorIndexTooLarge(long idx, long actualLength) {
+        throw new LambdaJError(true, "index %d is too large for a sequence of length %d", idx, actualLength);
     }
 
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
@@ -4537,7 +4603,9 @@ public class LambdaJ {
                   addBuiltin("list*",     (Primitive) this::listStar,
                   addBuiltin("append",    (Primitive) this::append,
                   addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
-                  env)))))))))));
+                  addBuiltin("seqref",    (Primitive) a -> { twoArgs("seqref",   a);  return seqref(car(a), toNonnegInt("seqref", cadr(a))); }, // todo nicht auf int begrenzen wg. list
+                  addBuiltin("seqset",    (Primitive) a -> { threeArgs("seqset", a);  return seqset(car(a), cadr(a), toNonnegInt("seqref", caddr(a))); }, // todo nicht auf int begrenzen wg. list
+                  env)))))))))))));
 
             env = addBuiltin("internal-time-units-per-second", (long)1e9,
                   addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
@@ -5983,6 +6051,9 @@ public class LambdaJ {
 
         public final Object   vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
 
+        public final Object   _seqref  (Object... args) { twoArgs("seqref",   args.length); return LambdaJ.seqref(args[0], toArrayIndex(args[1])); }
+        public final Object   _seqset  (Object... args) { threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], args[1], toArrayIndex(args[2])); }
+
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
 
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], args[1]); }
@@ -6582,6 +6653,8 @@ public class LambdaJ {
             case "atom": return (CompilerPrimitive)this::_atom;
             case "consp": return (CompilerPrimitive)this::_consp;
             case "vector": return (CompilerPrimitive)this::_vector;
+            case "seqref": return (CompilerPrimitive)this::_seqref;
+            case "seqset": return (CompilerPrimitive)this::_seqset;
             case "adjustable-array-p": return (CompilerPrimitive)this::adjustableArrayP;
             case "vector-push-extend": return (CompilerPrimitive)this::vectorPushExtend;
             case "vector-length": return (CompilerPrimitive)this::vectorLength;
@@ -6837,7 +6910,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-        "assoc", "assq", "list", "vector", "svref", "svset", "svlength", "sref", "sset", "sbvref", "sbvset", "sbvlength",
+        "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "sref", "sset", "sbvref", "sbvset", "sbvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",

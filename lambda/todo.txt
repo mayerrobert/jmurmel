@@ -7,6 +7,10 @@ Typsystem:
 vielleicht sequence-ref in core Murmel, macht dasselbe wie elt
 und sequence-set
 -> damit brauchts kein gesondertes aref, in mlib könnten typecases wegfallen, hätte auch einen fastpath für nth, insb. für arrayslice
+-> elt gibt fehler beim lesen des letzten elements einer dotted list
+   seqref gibt keinen fehler, seqset schon
+-> seqref, seqset dokumentieren
+-> elt + setf elt in mlib
 
 
 JMurmel> (list->simple-vector '(1 2 3))

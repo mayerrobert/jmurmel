@@ -24,6 +24,8 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
    * list->simple-bit-vector and simple-bit-vector->list
  * added writable strings
    * sref (identical to CL char), sset
+ * added seqref, seqset
+   seqref is similar to CL elt, seqset is similar to CL (setf elt)
 
  * mlib: added sbit
  * mlib: added map, dovector, revappend, nreconc, nreverse, typecase
