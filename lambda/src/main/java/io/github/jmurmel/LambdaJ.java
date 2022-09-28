@@ -3089,6 +3089,12 @@ public class LambdaJ {
     static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof BitSet; } // todo in Murmel anbinden + bref & bset
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
+    static boolean adjustableArrayP(Object o) {
+        if (o instanceof List || o instanceof StringBuilder || o instanceof StringBuffer) return true;
+        if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
+        return false;
+    }
+
     final boolean functionp(Object o)   { return o instanceof Primitive
                                                  || o instanceof Closure
                                                  || o instanceof MurmelJavaProgram.CompilerPrimitive
@@ -3131,6 +3137,14 @@ public class LambdaJ {
         int n = 0;
         for (Object ignored: (ConsCell)list) n++;
         return n;
+    }
+
+    static long vectorPushExtend(Object newValue, Object maybeVector) {
+        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
+        if (maybeVector instanceof List) { final List<Object> l = (List<Object>)maybeVector; l.add(newValue); return l.size() - 1; }
+        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(newValue); return sb.length() - 1; }
+        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(newValue); return sb.length() - 1; }
+        throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
     }
 
     static int vectorLength(Object maybeVector) {
@@ -4486,25 +4500,27 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
-            env = addBuiltin("vector",          (Primitive)LambdaJ::listToArray,
-                  addBuiltin("vector-length",   (Primitive) a -> { oneArg ("vector-length", a);   return vectorLength(car(a)); },
-                  addBuiltin("vectorp",         (Primitive) a -> { oneArg ("vectorp", a);         return boolResult(vectorp  (car(a))); },
-                  addBuiltin("simple-vector-p", (Primitive) a -> { oneArg ("simple-vector-p", a); return boolResult(svectorp(car(a))); },
-                  addBuiltin("svref",           (Primitive) a -> { twoArgs("svref", a);           return svref(car(a), toNonnegInt("svref", cadr(a))); },
-                  addBuiltin("svset",           (Primitive) a -> { threeArgs("svset", a);         return svset(car(a), cadr(a), toNonnegInt("svref", caddr(a))); },
-                  addBuiltin("svlength",        (Primitive) a -> { oneArg ("svlength", a);        return svlength(car(a)); },
-                  addBuiltin("make-array",      (Primitive)this::makeArray,
-                  addBuiltin("simple-vector->list",    (Primitive) this::simpleVectorToList,
-                  addBuiltin("list->simple-vector",    (Primitive) a -> { oneArg("list->simple-vector", a); return listToArray(car(a)); },
+            env = addBuiltin("vector",                  (Primitive)LambdaJ::listToArray,
+                  addBuiltin("vector-push-extend",      (Primitive) a -> { twoArgs("vector-push-extend", a); return vectorPushExtend(car(a), cadr(a)); },
+                  addBuiltin("vector-length",           (Primitive) a -> { oneArg ("vector-length", a);      return vectorLength(car(a)); },
+                  addBuiltin("vectorp",                 (Primitive) a -> { oneArg ("vectorp", a);            return boolResult(vectorp  (car(a))); },
+                  addBuiltin("adjustable-array-p",      (Primitive) a -> { oneArg ("adjustable-array-p", a); return adjustableArrayP(car(a)); },
+                  addBuiltin("simple-vector-p",         (Primitive) a -> { oneArg ("simple-vector-p", a);    return boolResult(svectorp(car(a))); },
+                  addBuiltin("svref",                   (Primitive) a -> { twoArgs("svref", a);              return svref(car(a), toNonnegInt("svref", cadr(a))); },
+                  addBuiltin("svset",                   (Primitive) a -> { threeArgs("svset", a);            return svset(car(a), cadr(a), toNonnegInt("svref", caddr(a))); },
+                  addBuiltin("svlength",                (Primitive) a -> { oneArg ("svlength", a);           return svlength(car(a)); },
+                  addBuiltin("make-array",              (Primitive)this::makeArray,
+                  addBuiltin("simple-vector->list",     (Primitive)this::simpleVectorToList,
+                  addBuiltin("list->simple-vector",     (Primitive) a -> { oneArg("list->simple-vector", a); return listToArray(car(a)); },
 
-                  addBuiltin("simple-bit-vector-p",    (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
-                  addBuiltin("sbvref",          (Primitive) a -> { twoArgs("sbvref", a);   return sbvref(car(a), toNonnegInt("sbvref", cadr(a))); },
-                  addBuiltin("sbvset",          (Primitive) a -> { threeArgs("sbvset", a); return sbvset(requireIntegralNumber("sbvset", car(a), 0, 1).longValue(), cadr(a), toNonnegInt("sbvset", caddr(a))); },
-                  addBuiltin("sbvlength",       (Primitive) a -> { oneArg("sbvlength", a); return sbvlength(car(a)); },
-                  addBuiltin("sbv=",            (Primitive) a -> { twoArgs("sbv=", a);      return boolResult(sbvEq(car(a), cadr(a))); },
+                  addBuiltin("simple-bit-vector-p",     (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
+                  addBuiltin("sbvref",                  (Primitive) a -> { twoArgs("sbvref", a);    return sbvref(car(a), toNonnegInt("sbvref", cadr(a))); },
+                  addBuiltin("sbvset",                  (Primitive) a -> { threeArgs("sbvset", a);  return sbvset(requireIntegralNumber("sbvset", car(a), 0, 1).longValue(), cadr(a), toNonnegInt("sbvset", caddr(a))); },
+                  addBuiltin("sbvlength",               (Primitive) a -> { oneArg("sbvlength", a);  return sbvlength(car(a)); },
+                  addBuiltin("sbv=",                    (Primitive) a -> { twoArgs("sbv=", a);      return boolResult(sbvEq(car(a), cadr(a))); },
                   addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
                   addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
-                  env)))))))))))))))));
+                  env)))))))))))))))))));
         }
 
         if (haveUtil()) {
@@ -5963,6 +5979,9 @@ public class LambdaJ {
         public final Object   _vector  (Object... args) { return args; }
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
         public final Object   vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
+        public final Object   adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return LambdaJ.adjustableArrayP(args[0]); }
+
+        public final Object   vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
 
         public final Object   svectorp (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
 
@@ -6563,6 +6582,8 @@ public class LambdaJ {
             case "atom": return (CompilerPrimitive)this::_atom;
             case "consp": return (CompilerPrimitive)this::_consp;
             case "vector": return (CompilerPrimitive)this::_vector;
+            case "adjustable-array-p": return (CompilerPrimitive)this::adjustableArrayP;
+            case "vector-push-extend": return (CompilerPrimitive)this::vectorPushExtend;
             case "vector-length": return (CompilerPrimitive)this::vectorLength;
             case "vectorp": return (CompilerPrimitive)this::_vectorp;
             case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
@@ -6830,6 +6851,7 @@ public class LambdaJ {
         {"1+", "inc"}, {"1-", "dec"},
         {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
+        {"adjustable-array-p", "adjustableArrayP"}, {"vector-push-extend", "vectorPushExtend"},
         {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"simple-bit-vector->list", "simpleBitVectorToList"}, {"list->simple-bit-vector", "listToSimpleBitVector"},
         {"vector-length", "vectorLength"}, {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
