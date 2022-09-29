@@ -1,14 +1,4 @@
 
-Typsystem:
-- beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
-- beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t (steht in murmel-langref eh schon unter "numberp, integerp, floatp" beschrieben)
-
--> seqref, seqset dokumentieren (dotted lists!)
-
-
-
-
-
 JMurmel> (list->simple-vector '(1 2 3))
 ==> #(1 2 3)
 JMurmel> (apply vector '(1 2 3))

@@ -238,6 +238,33 @@ These other atoms are double precision floating point numbers,
 64bit integer numbers, vectors, strings and characters. Custom primitives
 may support additional atoms.
 
+Murmel's type system (and the corresponding host types) look like so:
+
+    ;; Murmel type               ; description or "Murmel form    -> Java class"
+    t
+       cons                      ; (cons 1 2)                     -> ConsCell
+       atom                      ; all Murmel objects except cons cells
+                                 ; and all Java Objects are atoms
+          symbol                 ; 'sym                           -> LambdaJSymbol
+             null                ; nil is the only object of type null
+          number                 ; java.lang.Number is accepted for reading
+             float               ; java.lang.Double
+             integer             ; java.lang.Long, only 54 bits are used
+          character              ; java.lang.Character
+          vector                 ; (make-array NN t t)            -> ArrayList
+                                 ; java.util.List is accepted for reading
+             simple-vector       ; (make-array NN t nil)          -> Object[]
+             string              ; (make-array NN 'character t)   -> StringBuilder
+                                 ; java.lang.CharSequence is accepted for reading
+                simple-string    ; (make-array NN 'character nil) -> char[], or "abc" -> String
+             simple-bit-vector   ; (make-array NN 'bit t)         -> boolean[]
+          function
+
+          (list ::= cons | null)
+          (sequence ::= list | vector)
+
+The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
+
 Murmel treats symbols case-insensitive.
 Symbol names are of arbitrary length, however only the
 first 30 chars are significant.
@@ -469,9 +496,13 @@ That way a let-bound variable could be a recursive lambda.
 
 ### (catch tagform forms...) -> result
 
+Since: 1.3
+
 `catch` is used as the destination of a non-local control transfer by `throw`.
 
 ### (throw tagform resultform) -> |
+
+Since: 1.3
 
 `throw` causes a non-local control transfer to a `catch` whose tag is `eq` to tag.
 TODO: If there is no outstanding catch tag that matches the throw tag,
@@ -479,12 +510,16 @@ no unwinding of the stack is performed, and an error of type control-error is si
 
 ### (unwind-protect protected-form cleanupforms...) -> result
 
+Since: 1.3
+
 `unwind-protect` evaluates `protected-form` and guarantees that `cleanup-forms`
 are executed before unwind-protect exits, whether it terminates normally or is aborted
 by a control transfer of some kind.
 
 
 ### (multiple-value-call function-form values-form*) -> result
+
+Since: 1.2
 
 `multiple-value-call` first evaluates the `function-form` to obtain function,
 and then evaluates each `values-form`. All the values of each form
@@ -494,6 +529,8 @@ to the function.
     (multiple-value-call + 0.0 (values 1 2) 3) ; ==> 6.0
 
 ### (multiple-value-bind (symbols...) values-form bodyforms...) -> result
+
+Since: 1.2
 
 `values-form` is evaluated, and each of the `symbols` is bound
 to the respective value returned by that form.
@@ -508,6 +545,8 @@ which make up an implicit progn.
 
 
 ### (load filespec) -> result
+
+Since: 1.1
 
 Eval the contents of the given file, return value
 is the value returned by the last form or nil
@@ -533,6 +572,8 @@ in the directory that contains jmurmel.jar.
 
 ### (require module-name optional-file-path)
 
+Since: 1.1
+
 Load the given file once. Murmel maintains an internal
 set of loaded modules, and `require` will ignore
 loading files that were already loaded by comparing
@@ -551,6 +592,8 @@ and must be strings.
                      ; unless the module "mlib" was already loaded
 
 ### (provide module-name)
+
+Since: 1.1
 
 Set a file's modulename so that `require` won't
 load it twice.
@@ -634,7 +677,9 @@ Replace the value of the CAR or CDR slot of a cons cell.
     (rplaca l 11) ; ==> (11 2)
     (rplacd l 22) ; ==> (11 . 22)
 
-### (values object*) -> mutliple-values
+### (values object*) -> multiple-values
+
+Since: 1.2
 
 `values` returns the objects as multiple values.
 
@@ -669,7 +714,11 @@ Examples:
     (eql #\a (car "aaa")) ; ==> t
     (eql -0.0 0.0) ; ==> nil
 
-### null, atom, consp, listp, symbolp, characterp, functionp
+### null, atom, consp, listp, symbolp, characterp
+
+### functionp
+
+Since: 1.3
 
 ### numberp, integerp, floatp
 
@@ -679,9 +728,28 @@ Examples:
 
 ### (make-array length [element-type [adjustablep]]) -> vector
 
+Since: 1.3
+
 Only one-dimensional simple arrays of element-type t, 'bit or 'character are supported.
 
+### seqref, seqset
+
+Since: 1.3
+
+`seqref` is similar to CL `elt`, and `seqset` is similar to CL `(setf elt)` function.
+Murmel's `seqref` will handle dotted lists, though.
+
+    (seqref "abc" 2) ; ==> #\c
+    (seqref #(0 1 2 3) 3)  ; ==> 3
+    (seqref '(0 1 2 . 3) 3) ; ==> 3
+
+    (let ((l (list* 0 1 2)))
+      (seqset 22 l 2) l)
+      ; ==> (0 1 . 22)
+
 ### vector, vectorp, simple-vector-p, svref, svset, vector-length, svlength
+
+Since: 1.3
 
 Vectors are one-dimensional arrays.
 
@@ -692,7 +760,9 @@ Example usage:
     (svlength *v*) ; ==> 3
     (svref *v* 1) ; ==> 2
 
-### stringp, simple-string-p, sref, sset
+### stringp
+
+### simple-string-p, sref, sset
     (sref str n) -> nth-character
     (sset new-char str n) -> new-char
 
@@ -716,6 +786,8 @@ Similar to CL `sbit`.
 
 ### list->simple-vector and simple-vector->list
 
+Since: 1.3
+
 ### (assoc key alist) -> cons or nil
 
 `assoc` takes a key and a list of key/value tupels (lists or conses).
@@ -735,6 +807,8 @@ Examples:
     (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ; ==> (nil 2)
 
 ### (assq key alist) -> cons or nil
+
+Since: 1.2
 
 `assq` is similar to `assoc` except `assq` compares keys using `eq`.
 
@@ -1157,6 +1231,8 @@ invoke method on an object
 
 
 ### (jproxy interfacename javamethodname symbol-or-lambda...) -> Java-object
+
+Since: 1.2
 
 The primitive `jproxy` takes a Java interface name and zero or more
 methodname/ murmelcode tupels, and returns a Java object that implements

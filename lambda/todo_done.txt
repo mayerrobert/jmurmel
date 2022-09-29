@@ -1833,3 +1833,9 @@ und sequence-set
 -> damit brauchts kein gesondertes aref, in mlib könnten typecases wegfallen, hätte auch einen fastpath für nth, insb. für arrayslice
 -> elt gibt fehler beim lesen des letzten elements einer dotted list
    seqref gibt keinen fehler, seqset schon
+
+-> seqref, seqset dokumentieren (dotted lists!)
+
+Typsystem:
+- beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
+- beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t (steht in murmel-langref eh schon unter "numberp, integerp, floatp" beschrieben)
