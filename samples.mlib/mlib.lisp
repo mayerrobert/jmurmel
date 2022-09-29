@@ -44,7 +44,7 @@
 ;;;     - [equal](#function-equal)
 
 ;;; - sequences
-;;;     - [length](#function-length)
+;;;     - [elt](#function-elt), [length](#function-length)
 ;;;     - [reverse](#function-reverse), [nreverse](#function-nreverse)
 ;;;     - [remove-if](#function-remove-if), [remove](#function-remove)
 ;;;     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
@@ -975,12 +975,19 @@
 
               ((or (eq 'char op) (eq 'sref op))
                `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (sbvref ,tmp1 ,tmp2))
+                 (,(car args) ,(cadr args) (sref ,tmp1 ,tmp2))
                  (,read-var)
                  (sset ,read-var ,tmp1 ,tmp2)
                  (sref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, svref, sbvref, sbit, sref and char are supported for 'place'")))))))
+              ((or (eq 'elt op) (eq 'seqref op))
+               `((,tmp1 ,tmp2 ,read-var)
+                 (,(car args) ,(cadr args) (seqref ,tmp1 ,tmp2))
+                 (,read-var)
+                 (seqset ,read-var ,tmp1 ,tmp2)
+                 (seqref ,tmp1 ,tmp2)))
+
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, svref, sbvref, sbit, sref and char are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -1020,6 +1027,9 @@
 
                       ((or (eq 'char (caar args)) (eq 'sref (caar args)))
                        `(sset ,(cadr args) ,@(cdar args)))
+
+                      ((or (eq 'elt (caar args)) (eq 'seqref (caar args)))
+                       `(seqset ,(cadr args) ,@(cdar args)))
 
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* (,@(mapcar list vars vals)
@@ -1464,6 +1474,17 @@
 
 
 ; sequences ***********************************************************
+
+;;; = Function: elt
+;;;     (elt sequence n) -> nth-element
+;;;
+;;; Since: 1.3
+;;;
+;;; Similar to CL `elt`, Murmel's `elt` handles dotted lists, though.
+(define elt seqref)
+(defmacro elt (seq idx)
+  `(seqref ,seq ,idx))
+
 
 ;;; = Function: length
 ;;;     (length sequence) -> length

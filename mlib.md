@@ -40,7 +40,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [char=](#function-char), [char](#function-char-1), [sbit](#function-sbit)
     - [equal](#function-equal)
 - sequences
-    - [length](#function-length)
+    - [elt](#function-elt), [length](#function-length)
     - [reverse](#function-reverse), [nreverse](#function-nreverse)
     - [remove-if](#function-remove-if), [remove](#function-remove)
     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
@@ -617,6 +617,13 @@ Since: 1.3
 
 `dogenerator` creates a generator by eval'ing `generator-form`
 and iterates over the values yielded by subsequent generator applications.
+
+### Function: elt
+    (elt sequence n) -> nth-element
+
+Since: 1.3
+
+Similar to CL `elt`, Murmel's `elt` handles dotted lists, though.
 
 ### Function: length
     (length sequence) -> length

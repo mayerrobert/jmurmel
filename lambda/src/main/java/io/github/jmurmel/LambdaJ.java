@@ -3180,11 +3180,15 @@ public class LambdaJ {
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
         if (maybeSeq instanceof ConsCell) {
             long _idx = 0;
-            for (ConsCell lst = (ConsCell)maybeSeq; lst != null;  lst = requireList("seqset", cdr(lst))) {
+            ConsCell lst = (ConsCell)maybeSeq;
+            Object cdr = maybeSeq;
+            for (; consp(cdr); cdr = cdr((ConsCell)cdr)) {
+                lst = (ConsCell)cdr;
                 if (_idx == idx) { lst.rplaca(newValue); return newValue; }
                 _idx++;
             }
-            throw errorIndexTooLarge(idx, _idx);
+            if (_idx == idx && cdr != null) { lst.rplacd(newValue); return newValue; }
+            throw errorIndexTooLarge(idx, cdr == null ? _idx : _idx + 1);
         }
         if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
         if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
