@@ -20,10 +20,16 @@ or transformed to Markdown:
 Murmel is WIP, please note the section
 [Known issues](#known-issues) at the end of this file.
 
-## Quick links 
+## Murmel Reference 
 
+- [S-expressions](#s-expressions)
+- [Comments](#comments)
 - [Predefined Symbols](#predefined-symbols)
 - [Basic Special Forms](#basic-special-forms)
+- [Function application](#function-application)
+- [Data types](#data-types)
+- [Reserved words](#reserved-words)
+- [Variables and scope](#variables-and-scope)
 - [Additional Special Forms](#additional-special-forms)
 - [Backquote - fill-in templates](#backquote)
 - [Predefined Primitives](#predefined-primitives)
