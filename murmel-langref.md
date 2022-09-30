@@ -254,26 +254,38 @@ may support additional atoms.
 
 Murmel's type system (and the corresponding host types) look like so:
 
-    ;; Murmel type               ; description or "Murmel form    -> Java class"
+    ;; Murmel type               ; description or "Murmel form    -> Java class used in JMurmel"
     t
+
        cons                      ; (cons 1 2)                     -> ConsCell
+
        atom                      ; all Murmel objects except cons cells
                                  ; and all Java Objects are atoms
+
           symbol                 ; 'sym                           -> LambdaJSymbol
-             null                ; nil is the only object of type null
+             null                ; nil                            -> null
+                                 ; nil is the only object of type null
+
           number                 ; java.lang.Number is accepted for reading
              float               ; 2.3                            -> java.lang.Double
              integer             ; 42                             -> java.lang.Long
                                  ; only 54 bits are used
+
           character              ; #\A                            -> java.lang.Character
-          vector                 ; (make-array NN t t)            -> ArrayList
-                                 ; java.util.List is accepted for reading
+
+          vector                 ; (make-array NN t t)            -> java.util.ArrayList
+                                 ; java.util.List is acceptable for seqref and seqset
              simple-vector       ; (make-array NN t nil)          -> Object[]
-             string              ; (make-array NN 'character t)   -> StringBuilder
-                                 ; java.lang.CharSequence is accepted for reading
-                simple-string    ; (make-array NN 'character nil) -> char[], or "abc" -> String
+                                 ; #(1 2 3)                       -> Object[]
+             string              ; (make-array NN 'character t)   -> java.lang.StringBuilder
+                                 ; java.lang.StringBuffer is acceptable for sref and sset
+                                 ; java.lang.CharSequence is accepted for sref
+                simple-string    ; (make-array NN 'character nil) -> char[]
+                                 ; "abc"                          -> java.lang.String
              simple-bit-vector   ; (make-array NN 'bit t)         -> boolean[]
-          function
+                                 : #*0101                         -> boolean[]
+
+          function               ; (lambda (param) param)         -> Closure or MurmelFunction
 
           (list ::= cons | null)
           (sequence ::= list | vector)

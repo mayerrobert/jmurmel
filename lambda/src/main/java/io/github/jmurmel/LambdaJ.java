@@ -3069,31 +3069,7 @@ public class LambdaJ {
 
 
 
-    /*
-    the following predicates more or less implement Murmel's type system which looks like so:
-
-    t
-        cons
-        atom                            ; all Murmel objects except cons cells and all Java Objects are atoms
-            symbol
-                null                    ; nil is the only object of type null
-            number
-                float
-                integer
-            character
-            vector                      ; (make-array NN t t)            -> ArrayList
-                simple-vector           ; (make-array NN t nil)          -> Object[]
-                string                  ; (make-array NN 'character t)   -> StringBuilder
-                    simple-string       ; (make-array NN 'character nil) -> char[]
-                (bit-vector)            ; (make-array NN 'bit t)         -> java.util.BitSet  ; todo gibts noch nicht, wird mit fehler abgewiesen
-                    simple-bit-vector   ; (make-array NN 'bit t)         -> boolean[]
-            function
-
-            (list ::= cons | null)
-            (sequence ::= list | vector)
-
-    The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
-     */
+    /* the following predicates more or less implement Murmel's type system */
     static boolean consp(Object o)      { return o instanceof ConsCell; }
     static boolean atom(Object o)       { return !consp(o); }
 
