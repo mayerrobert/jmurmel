@@ -196,7 +196,7 @@ internal-time-units-per-second ; ==> 1.0E9
 pi ; ==> 3.141592653589793
 
 
-; = *command-line-argument-list*
+; = \*command-line-argument-list\*
 ; `*command-line-argument-list*` contains all command line arguments
 ; to the Murmel program. Below example illustrates this:
 ;
@@ -206,6 +206,10 @@ pi ; ==> 3.141592653589793
 ;     
 ;     ==> ("a" "b" "c")
 ;     JMurmel>
+
+
+; = most-positive-fixnum, most-negative-fixnum
+; These global variables contain the smallest and largest fixnum value.
 
 
 ;;; == Basic Special Forms ============
