@@ -238,10 +238,10 @@ pi ; ==> 3.141592653589793
 
 ;;; == Data types =====================
 ;;;
-;;; Murmel supports symbols and lists as well as other atoms
-;;; that are not symbols.
+;;; Murmel supports symbols and cons cells (and lists built from cons cells)
+;;; as well as other atoms that are not symbols.
 ;;; These other atoms are double precision floating point numbers,
-;;; 64bit integer numbers, vectors, strings and characters. Custom primitives
+;;; integer numbers, vectors, strings, characters and bits. Custom primitives
 ;;; may support additional atoms.
 ;
 ; Murmel's type system (and the corresponding host types) look like so:
@@ -254,9 +254,10 @@ pi ; ==> 3.141592653589793
 ;           symbol                 ; 'sym                           -> LambdaJSymbol
 ;              null                ; nil is the only object of type null
 ;           number                 ; java.lang.Number is accepted for reading
-;              float               ; java.lang.Double
-;              integer             ; java.lang.Long, only 54 bits are used
-;           character              ; java.lang.Character
+;              float               ; 2.3                            -> java.lang.Double
+;              integer             ; 42                             -> java.lang.Long
+;                                  ; only 54 bits are used
+;           character              ; #\A                            -> java.lang.Character
 ;           vector                 ; (make-array NN t t)            -> ArrayList
 ;                                  ; java.util.List is accepted for reading
 ;              simple-vector       ; (make-array NN t nil)          -> Object[]
@@ -451,6 +452,8 @@ pi ; ==> 3.141592653589793
 ; bound to the given value, and the previous value is restored when
 ; leaving the scope of the `let` form.
 ; I.e. `let dynamic` treats globals as "special".
+;
+; Example:
 
 (setq a 1)
 (define b 2)
@@ -460,7 +463,7 @@ pi ; ==> 3.141592653589793
 (let dynamic ((a 11) (b a))
   (f))
 (f)
-; will print (1 . 2)(11 . 1)(1 . 2)
+; will print `(1 . 2)(11 . 1)(1 . 2)`.
 
 ;;; = (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> result
 ;
@@ -567,14 +570,14 @@ pi ; ==> 3.141592653589793
 ; If filespec is an absolute path then it will be used as is.
 ; Otherwise the file will be searched in the same directory
 ; as the file that contains the `load` and after that
-; in "libdir" (set with `--libdir`, libdir defaults to the
+; in "libdir" (set with `--libdir`, "libdir" defaults to the
 ; directory containing jmurmel.jar).
 ; If `load` is entered into the REPL then the file
 ; will be searched in the current directory and then
-; in the directory that contains jmurmel.jar.
+; in the "libdir".
 
 ;     (load "nul") ; ==> nil, NUL is Windows specific
-;     (load "lib") ; will search for lib.lisp
+;     (load "lib") ; will search for lib.lisp and eval it's contents
 
 ;;; = (require module-name optional-file-path)
 ;

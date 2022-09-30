@@ -3101,7 +3101,7 @@ public class LambdaJ {
     static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !sbitvectorp(o); }
     static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)   { return o instanceof String || o instanceof char[]; }
-    static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof BitSet; } // todo in Murmel anbinden + bref & bset
+    //static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof BitSet; } // todo in Murmel anbinden + bref & bset
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
     static boolean adjustableArrayP(Object o) {
@@ -3110,10 +3110,8 @@ public class LambdaJ {
         return false;
     }
 
-    final boolean functionp(Object o)   { return o instanceof Primitive
-                                                 || o instanceof Closure
-                                                 || o instanceof MurmelJavaProgram.CompilerPrimitive
-                                                 || o instanceof MurmelFunction
+    final boolean functionp(Object o)   { return o instanceof Primitive || o instanceof Closure
+                                                 || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction
                                                  || (haveOldLambda() && consp(o) && car(o) == sLambda); }
 
     static boolean listp(Object o)      { return o == null || consp(o); }
