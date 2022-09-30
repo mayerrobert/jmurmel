@@ -208,6 +208,10 @@ to the Murmel program. Below example illustrates this:
     JMurmel>
 
 
+### array-dimension-limit
+Largest acceptable vector index.
+
+
 ### most-positive-fixnum, most-negative-fixnum
 These global variables contain the smallest and largest fixnum value.
 

@@ -131,6 +131,14 @@ public class LambdaJ {
     /** largest negative long that can be represented as a double w/o any loss */
     public static final long MOST_NEGATIVE_FIXNUM = -(1L << 53);
 
+    /** Copied from java.util.ArrayList which says:
+     * The maximum size of array to allocate.
+     * Some VMs reserve some header words in an array.
+     * Attempts to allocate larger arrays may result in
+     * OutOfMemoryError: Requested array size exceeds VM limit
+     */
+    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     /** Max length of symbols*/
     public static final int SYMBOL_MAX = 30;
 
@@ -4568,7 +4576,8 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
-            env = addBuiltin("vector",                  (Primitive)LambdaJ::listToArray,
+            env = addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE,
+                  addBuiltin("vector",                  (Primitive)LambdaJ::listToArray,
                   addBuiltin("vector-push-extend",      (Primitive) a -> { twoArgs("vector-push-extend", a); return vectorPushExtend(car(a), cadr(a)); },
                   addBuiltin("vector-length",           (Primitive) a -> { oneArg ("vector-length", a);      return vectorLength(car(a)); },
                   addBuiltin("vectorp",                 (Primitive) a -> { oneArg ("vectorp", a);            return boolResult(vectorp  (car(a))); },
@@ -4588,7 +4597,7 @@ public class LambdaJ {
                   addBuiltin("sbv=",                    (Primitive) a -> { twoArgs("sbv=", a);      return boolResult(sbvEq(car(a), cadr(a))); },
                   addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
                   addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
-                  env)))))))))))))))))));
+                  env))))))))))))))))))));
         }
 
         if (haveUtil()) {
@@ -5948,6 +5957,7 @@ public class LambdaJ {
         public final Object _dynamic;
 
         public static final double _pi = Math.PI;
+        public static final int arrayDimensionLimit = MAX_ARRAY_SIZE;
         public static final long mostPositiveFixnum = MOST_POSITIVE_FIXNUM;
         public static final long mostNegativeFixnum = MOST_NEGATIVE_FIXNUM;
 
@@ -6633,6 +6643,7 @@ public class LambdaJ {
             case "nil": return null;
             case "t": return _t;
             case "pi": return _pi;
+            case "array-dimension-limit": return arrayDimensionLimit;
             case "most-positive-fixnum": return mostPositiveFixnum;
             case "most-negative-fixnum": return mostNegativeFixnum;
             case "internal-time-units-per-second": return itups;
@@ -6903,6 +6914,7 @@ public class LambdaJ {
         ///
         private static final String[] globalvars = { "nil", "t", "pi", "dynamic" };
         private static final String[][] aliasedGlobals = {
+        { "array-dimension-limit", "arrayDimensionLimit" },
         { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
         { "internal-time-units-per-second", "itups" },
         { "*command-line-argument-list*", "commandlineArgumentList" },

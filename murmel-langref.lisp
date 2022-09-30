@@ -208,6 +208,10 @@ pi ; ==> 3.141592653589793
 ;     JMurmel>
 
 
+; = array-dimension-limit
+; Largest acceptable vector index.
+
+
 ; = most-positive-fixnum, most-negative-fixnum
 ; These global variables contain the smallest and largest fixnum value.
 

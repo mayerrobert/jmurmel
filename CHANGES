@@ -16,6 +16,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
  * added functionp
  * added simple-string-p
  * added vector support:
+   * array-dimension-limit
    * make-array, vector, vector-length, vectorp, adjustable-array-p, vector-push-extend
    * simple-vector-p, svref, svset and svlength
    * list->simple-vector and simple-vector->list
