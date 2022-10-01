@@ -21,7 +21,7 @@
 ;;;   for CL compatibility, #' is ignored by murmel.
 ;;; - may contain some mutation of quoted forms which will break some tests
 ;;;   when compiling with SBCL (and mutating quoted forms i.e. constants
-;;;   is bad style...), I think I fixed all, though
+;;;   is bad style...), I think I fixed all, though.
 
 #+murmel (require "mlib")
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
@@ -594,6 +594,31 @@
     (dotimes (i n)
       (setf (elt arry i) i))
     arry))
+
+
+;; test elt
+(tests elt
+  (elt '(0 1 2) 1) => 1
+  (elt #(0 1 2) 1) => 1
+  (elt "012" 1)    => #\1
+  (elt #*0101 3)   => 1
+  
+  (elt (cp (make-array 3 #-murmel :element-type t #-murmel :adjustable t) '(0 1 2)) 1) => 1
+  (elt (cp (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) '(#\0 #\1 #\2)) 1) => #\1
+)
+
+;; test setf elt
+(let (v)
+  (tests setf-elt
+    (null (setq v (make-array 3 #-murmel :element-type t #-murmel :adjustable t #-murmel :initial-contents #-murmel '(nil nil nil)))) => nil
+    (setf (elt v 1) 11)   => 11
+    (elt v 0) => nil
+    (elt v 1) => 11
+
+    (null (setq v (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t))) => nil
+    (setf (elt v 1) #\A)  => #\A
+    (elt v 1) => #\A
+  ))
 
 
 ;; test reverse

@@ -3178,9 +3178,12 @@ public class LambdaJ {
                                                 if (newValue.equals(0L)) { arry[(int)idx] = false; return 0L; }
                                                 if (newValue.equals(1L)) { arry[(int)idx] = true;  return 1L; }
                                                 throw errorNotABit("seqset", newValue); }
-        if (maybeSeq instanceof List)         { final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.set((int)idx, newValue); }
-        if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length()); final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c); }
-        throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
+        if (maybeSeq instanceof List)         { final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+                                                return newValue; }
+        if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                 return newValue; }
+        throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
 
     static long vectorPushExtend(Object newValue, Object maybeVector) {
