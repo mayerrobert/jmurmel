@@ -3191,7 +3191,7 @@ public class LambdaJ {
         throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
     }
 
-    static int vectorLength(Object maybeVector) {
+    static long vectorLength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
         if (maybeVector instanceof char[]) return ((char[])maybeVector).length;
@@ -3200,7 +3200,7 @@ public class LambdaJ {
         throw errorNotAVector("vector-length", maybeVector);
     }
 
-    static int svlength(Object maybeVector) {
+    static long svlength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
         throw errorNotASimpleVector("svlength", maybeVector);
     }
@@ -3245,7 +3245,7 @@ public class LambdaJ {
         throw errorNotASimpleBitVector("sbvset", maybeVector);
     }
 
-    static int sbvlength(Object maybeVector) {
+    static long sbvlength(Object maybeVector) {
         if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
         throw errorNotASimpleBitVector("sbvlength", maybeVector);
     }
@@ -6049,8 +6049,8 @@ public class LambdaJ {
 
         public final Object   _vector  (Object... args) { return args; }
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
-        public final Object   vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
-        public final Object   adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return LambdaJ.adjustableArrayP(args[0]); }
+        public final long     vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
+        public final Object   adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return LambdaJ.adjustableArrayP(args[0]) ? _t : null; }
 
         public final Object   vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
 
@@ -6078,7 +6078,7 @@ public class LambdaJ {
         public static long sbvset(long val, Object v, Object idx)   { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public static long sbvset(long val, Object v, long idx)     { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
 
-        public final Object  _sbvlength(Object... args)   { oneArg("sbvlength", args.length);           return sbvlength(args[0]); }
+        public final long   _sbvlength(Object... args)   { oneArg("sbvlength", args.length);           return sbvlength(args[0]); }
         public final Object sbvEq(Object... args)         { twoArgs("sbv=", args.length);               return LambdaJ.sbvEq(args[0], args[1]) ? _t : null; }
 
         public final Character _sref(Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }

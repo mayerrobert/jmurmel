@@ -528,11 +528,24 @@
 
 
 ;; sequences
-(define *seq*)
+(define *seq* nil)
 (defun cp (seq-to lst-from)
   (do ((i 0 (1+ i)) (from lst-from (cdr from)))
       ((null from) seq-to)
-    (seqset (car from) seq-to i)))
+    (setf (elt seq-to i) (car from))))
+
+(defun mkarry (n)
+  (let ((arry (make-array n #-murmel :element-type t #-murmel :adjustable t)))
+    (dotimes (i n)
+      (setf (elt arry i) i))
+    arry))
+
+
+; test remove
+(tests remove
+  (length (remove 1 (mkarry 5))) => 4
+)
+
 
 ; test reduce
 (tests reduce
@@ -552,7 +565,7 @@
   (reduce #'list '(1 2 3 4)) =>  (((1 2) 3) 4)
   (reduce #'list '(1 2 3 4) #-murmel :from-end t) =>  (1 (2 (3 4)))
 
-  (reduce #'* (cp (make-array 5 t t) '(1.0 2 3 4 5))) => 120.0
+  (reduce #'* (cp (make-array 5 #-murmel :element-type t #-murmel :adjustable t) '(1.0 2 3 4 5))) => 120.0
 )
 
 
@@ -579,7 +592,7 @@
 
   (map 'string
        #'(lambda (x) (if (oddp x) #\1 #\0))
-       (cp (make-array 4 t t) '(1 2 3 4))) =>  "1010"
+       (cp (make-array 4 #-murmel :element-type t #-murmel :adjustable t) '(1 2 3 4))) =>  "1010"
 )
 
 

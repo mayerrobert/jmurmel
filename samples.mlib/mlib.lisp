@@ -347,7 +347,7 @@
 ;;;
 ;;; `error` aborts the current program.
 (defun error (msg . args)
-  (fatal (apply format (cons nil (cons (format nil "%n%nError: %s%n" msg) args)))))
+  (fatal (format nil "%n%nError: %s%n" (apply format (list* nil msg args)))))
 
 
 ; conses and lists ****************************************************
@@ -1588,7 +1588,8 @@
           (string            (list->string (remove-if/list (string->list seq))))
           (simple-vector     (list->simple-vector (remove-if/list (simple-vector->list seq))))
           (simple-bit-vector (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
-          (t (error "remove-if - % is not a sequence" seq)))))
+          (vector            (list->simple-vector (remove-if/list (vector->list seq))))
+          (t (error "remove-if - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove
