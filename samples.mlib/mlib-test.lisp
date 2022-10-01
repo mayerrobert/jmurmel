@@ -527,6 +527,36 @@
 )
 
 
+;; sequences
+(define *seq*)
+(defun cp (seq-to lst-from)
+  (do ((i 0 (1+ i)) (from lst-from (cdr from)))
+      ((null from) seq-to)
+    (seqset (car from) seq-to i)))
+
+; test reduce
+(tests reduce
+  (reduce #'* '(1.0 2 3 4 5)) =>  120.0
+
+  (reduce #'- '(1.0 2 3 4))
+  ;; ==  (- (- (- 1 2) 3) 4)
+  =>  -8.0
+
+  (reduce #'- '(1.0 2 3 4) #-murmel :from-end t)    ; Alternating sum.
+  ;; ==  (- 1.0 (- 2 (- 3 4)))
+  =>  -2.0
+ 
+  (reduce #'+ '()) =>  #+murmel 0.0 #-murmel 0
+  (reduce #'+ '(3)) =>  3
+  (reduce #'+ '(foo)) =>  FOO
+  (reduce #'list '(1 2 3 4)) =>  (((1 2) 3) 4)
+  (reduce #'list '(1 2 3 4) #-murmel :from-end t) =>  (1 (2 (3 4)))
+
+  (reduce #'* (cp (make-array 5 t t) '(1.0 2 3 4 5))) => 120.0
+)
+
+
+;; higher order
 ; test identity
 (tests identity
   (identity 101) =>  101

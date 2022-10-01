@@ -1774,6 +1774,7 @@
             ((stringp seq)             (reduce/vector seq char))
             ((simple-vector-p seq)     (reduce/vector seq svref))
             ((simple-bit-vector-p seq) (reduce/vector seq sbvref))
+            ((vectorp seq)             (reduce/vector seq seqref))
             (t (error "reduce - %s is not a sequence" seq))))))
 
 
