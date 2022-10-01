@@ -556,6 +556,33 @@
 )
 
 
+; test map
+(tests map
+  (map 'string #'(lambda (x y)
+                   (char "01234567890ABCDEF" (mod (+ x y) 16)))
+       '(1 2 3 4)
+       '(10 9 8 7)) =>  "AAAA"
+
+  ;(setq *seq* '("lower" "UPPER" "" "123")) =>  ("lower" "UPPER" "" "123")
+  ;(map nil #'nstring-upcase *seq*) =>  NIL
+  ;*seq* =>  ("LOWER" "UPPER" "" "123")
+
+  (map 'list #'- '(1.0 2.0 3.0 4.0)) =>  (-1.0 -2.0 -3.0 -4.0)
+
+  (map 'string
+       #'(lambda (x) (if (oddp x) #\1 #\0))
+       '(1 2 3 4)) =>  "1010"
+
+  (map 'string
+       #'(lambda (x) (if (oddp x) #\1 #\0))
+       #(1 2 3 4)) =>  "1010"
+
+  (map 'string
+       #'(lambda (x) (if (oddp x) #\1 #\0))
+       (cp (make-array 4 t t) '(1 2 3 4))) =>  "1010"
+)
+
+
 ;; higher order
 ; test identity
 (tests identity

@@ -1603,10 +1603,11 @@
 
 
 (defun m%sequence->list (seq)
-  (cond ((listp seq) seq)
-        ((simple-vector-p seq) (simple-vector->list seq))
+  (cond ((listp seq)               seq)
+        ((simple-vector-p seq)     (simple-vector->list seq))
         ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
-        ((stringp seq) (string->list seq))
+        ((stringp seq)             (string->list seq))
+        ((vectorp seq)             (vector->list seq))
         (t (error "%s is not a sequence" seq))))
 
 (defun m%sequences->lists (sequences)

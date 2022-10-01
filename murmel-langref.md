@@ -776,7 +776,7 @@ Murmel's `seqref` will handle dotted lists, though.
       (seqset 22 l 2) l)
       ; ==> (0 1 . 22)
 
-### vector, vectorp, simple-vector-p, svref, svset, vector-length, svlength
+### vector, vectorp, vector->list, simple-vector-p, svref, svset, vector-length, svlength
 
 Since: 1.3
 
