@@ -7677,8 +7677,7 @@ public class LambdaJ {
                 final String symName = mangle(symbol.toString(), 0);
                 sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
             } else {
-                sb.append(javaName).append(" = ");
-                emitForm(sb, valueForm, env, topEnv, rsfx, false);
+                sb.append(javaName).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);
             }
             return javaName;
         }
