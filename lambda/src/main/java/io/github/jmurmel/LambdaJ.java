@@ -3151,11 +3151,12 @@ public class LambdaJ {
         if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
         if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
         if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
-        if (maybeSeq instanceof List)         { final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
+        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
         if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
         throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
     }
 
+    @SuppressWarnings("unchecked")
     static Object seqset(Object newValue, Object maybeSeq, long idx) {
         if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
@@ -3178,7 +3179,7 @@ public class LambdaJ {
                                                 if (newValue.equals(0L)) { arry[(int)idx] = false; return 0L; }
                                                 if (newValue.equals(1L)) { arry[(int)idx] = true;  return 1L; }
                                                 throw errorNotABit("seqset", newValue); }
-        if (maybeSeq instanceof List)         { final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
                                                 return newValue; }
         if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
                                                  final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
@@ -3186,9 +3187,10 @@ public class LambdaJ {
         throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
 
+    @SuppressWarnings("unchecked")
     static long vectorPushExtend(Object newValue, Object maybeVector) {
         if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
-        if (maybeVector instanceof List) { final List<Object> l = (List<Object>)maybeVector; l.add(newValue); return l.size() - 1; }
+        if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
         if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(newValue); return sb.length() - 1; }
         if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(newValue); return sb.length() - 1; }
         throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
@@ -3492,6 +3494,7 @@ public class LambdaJ {
         return ret.toString();
     }
 
+    @SuppressWarnings("rawtypes")
     static void printVector(WriteConsumer sb, Object vector, boolean escapeAtoms) {
         if (vector instanceof boolean[]) {
             sb.print("#*");
@@ -3976,7 +3979,7 @@ public class LambdaJ {
         if (sbitvectorp(maybeVector)) return simpleBitVectorToList(a);
         
         if (maybeVector instanceof List) {
-            final List l = (List)maybeVector;
+            @SuppressWarnings("rawtypes") final List l = (List)maybeVector;
             if (l.isEmpty()) return null;
             final CountingListBuilder ret = new CountingListBuilder();
             for (final Object o: l) ret.append(o);
@@ -6150,7 +6153,7 @@ public class LambdaJ {
             if (LambdaJ.sbitvectorp(maybeVector)) return simpleBitVectorToList(args);
 
             if (maybeVector instanceof List) {
-                final List l = (List)maybeVector;
+                final List<?> l = (List<?>)maybeVector;
                 if (l.isEmpty()) return null;
                 final ListBuilder ret = new ListBuilder();
                 for (final Object o: l) ret.append(o);
@@ -7463,7 +7466,7 @@ public class LambdaJ {
                         return;
                     }
 
-                    /// * macro expansion
+                    /// * macro expansion todo das kann eigentlich nicht mehr passieren ?!?
                     final Closure macroClosure;
                     if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
                         final Object expansion = intp.evalMacro(op, macroClosure, ccArguments);
