@@ -206,6 +206,21 @@
 
 ;;; - conses and lists
 
+;; test list-length
+#-murmel (defun circular-list (&rest elements)
+  (let ((cycle (copy-list elements))) 
+    (nconc cycle cycle)))
+(tests list-length
+  (list-length '(a b c d)) =>  4
+  (list-length '(a (b c) d)) =>  3
+  (list-length '()) =>  0
+  (list-length nil) =>  0
+  (list-length (circular-list 'a 'b)) =>  NIL
+  (list-length (circular-list 'a)) =>  NIL
+  (list-length (circular-list)) =>  0
+)
+
+
 ;; test last
 (tests last
   (last nil) => nil
@@ -589,12 +604,20 @@
       ((null from) seq-to)
     (setf (elt seq-to i) (car from))))
 
-(defun mkarry (n)
-  (let ((arry (make-array n #-murmel :element-type t #-murmel :adjustable t)))
+(defun mkarry (n element-type)
+  (let ((arry (make-array n #-murmel :element-type element-type #-murmel :adjustable t)))
     (dotimes (i n)
       (setf (elt arry i) i))
     arry))
 
+(defun copy-vec (from)
+  (let ((arry (make-array (length from)
+                          #-murmel :element-type (typecase from
+                                                   (string 'character)
+                                                   (bit 'bit)
+                                                   (t t)))))
+    (dotimes (i (length from) arry)
+      (setf (elt arry i) (elt from i)))))
 
 ;; test elt
 (tests elt
@@ -606,6 +629,7 @@
   (elt (cp (make-array 3 #-murmel :element-type t #-murmel :adjustable t) '(0 1 2)) 1) => 1
   (elt (cp (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) '(#\0 #\1 #\2)) 1) => #\1
 )
+
 
 ;; test setf elt
 (let (v)
@@ -621,23 +645,48 @@
   ))
 
 
-;; test reverse
+;; test length
+(tests length
+  (length nil) => 0
+  (length (list)) => 0
+  (length (list 1 2 3)) => 3
+  (length (vector)) => 0
+  (length (vector 1 2 3)) => 3
+  (length "abc") => 3
+  (length #*010) => 3
+
+  (length (make-array 3 #-murmel :element-type t #-murmel :adjustable t)) => 3
+  (length (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t)) => 3
+  ;(length (make-array 3 #-murmel :element-type 'bit #-murmel :adjustable t)) => 3
+)
+
+
+;; test reverse, nreverse
 (let ((str nil) (l nil))
-  (tests reverse
+  (tests reverse-nreverse
     (setq str "abc") =>  "abc"
     (reverse str) => "cba"
     str =>  "abc"
+
+    (setq str (copy-vec str)) => "abc"
+    (nreverse str) => "cba"
+    ; str => implementation-dependant
+
+    (setq l (list 1 2 3)) =>  (1 2 3)
+    (nreverse l) =>  (3 2 1)
+    ; l => implementation-dependant
+
     (setq l (list 1 2 3)) =>  (1 2 3)
     (reverse l) =>  (3 2 1)
     l => (1 2 3)
-    
+
     (setq l #*0101) => #*0101
     (reverse l) => #*1010
     l => #*0101
   ))
 
 
-;; test remove-if, remove-if-not, remove
+;; test remove-if, remove
 (tests remove
   (remove-if #'oddp '(1 2 4 1 3 4 5)) => (2 4 4)
   (remove-if (complement #'evenp) '(1 2 4 1 3 4 5)) => (2 4 4)
@@ -646,7 +695,7 @@
   (remove 4 '(1 2 4 1 3 4 5)) => (1 2 1 3 5)
 
 
-  (length (remove 1 (mkarry 5))) => 4
+  (length (remove 1 (mkarry 5 t))) => 4
 )
 
 
@@ -794,7 +843,7 @@
 
 ;;; tests for Alexandria inspired functions and macros
 
-;;; - conses and lists
+;;; - Alexandria: conses and lists
 
 ;; test circular-list
 #+murmel
@@ -806,7 +855,7 @@
 
 
 
-;;; - iteration
+;;; - Alexandria: iteration
 
 ;; test doplist
 #+murmel
@@ -824,7 +873,7 @@
 
 
 
-;;; - higher order
+;;; - Alexandria: higher order
 
 ;; test compose
 #+murmel
@@ -891,7 +940,7 @@
 )
 
 
-;;; - misc
+;;; - Alexandria: misc
 
 ;; test with-gensyms
 ;; define a "non-shortcircuiting logical and" as a macro
@@ -911,6 +960,20 @@
   (logical-and-3 result 2 3) => t
   result => 1 ; global variable is not affected by the macro
 ))
+
+
+
+;;; tests for SRFI-1 inspired functions and macros
+#+murmel
+(tests srfi-1
+  (unzip '((1 2) (11 22) (111 222 333))) => (1 11 111)
+  (unzip '(nil nil nil)) => (nil nil nil)
+  (unzip nil) => nil
+
+  (unzip-tails '((1 2) (11 22) (111 222 333))) => ((2) (22) (222 333))
+  (unzip-tails '(nil nil nil)) => (nil nil nil)
+  (unzip-tails nil) => nil
+)
 
 
 

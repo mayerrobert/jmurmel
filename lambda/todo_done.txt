@@ -1852,3 +1852,9 @@ Typsystem:
         return (((Object)args2[0] = 1L == (Object)null) ? _t : null);
                                        ^
 2 errors
+
+
+
+checken ob mlib funktionen ArrayList usw. verarbeiten können
+-> tests mit (make-array N t t) als argumente
+-> checken ob in den typecase clauses was fehlt

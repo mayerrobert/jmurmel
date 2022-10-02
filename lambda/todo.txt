@@ -3,10 +3,6 @@ mlib:
 map-into sollte sequence unterstützen, nicht nur list
 XX->list ersetzen durch generators
 
-checken ob mlib funktionen ArrayList usw. verarbeiten können
--> tests mit (make-array N t t) als argumente
--> checken ob in den typecase clauses was fehlt
-
 
 checken was alles serializable sein sollte, Closure wsl. nicht
 
