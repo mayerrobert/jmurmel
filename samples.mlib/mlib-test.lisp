@@ -608,7 +608,6 @@
 )
 
 ;; test setf elt
-#+(or) ; todo 
 (let (v)
   (tests setf-elt
     (null (setq v (make-array 3 #-murmel :element-type t #-murmel :adjustable t #-murmel :initial-contents #-murmel '(nil nil nil)))) => nil

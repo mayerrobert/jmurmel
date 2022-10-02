@@ -8161,7 +8161,7 @@ public class LambdaJ {
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargs1_2(murmel, args);
             if (asLong) sb.append("toFixnum(");
-            sb.append(javaOp).append("(toDouble(");
+            sb.append(javaOp).append("(toDouble("); // todo emitFormAsDouble?
             if (cdr(args) == null) {
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
             }
@@ -8176,11 +8176,11 @@ public class LambdaJ {
 
         /** emit "==" operator */
         private void emitEq(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append("(((Object)");
+            sb.append("(((Object)(");
             emitForm(sb, lhs, env, topEnv, rsfx, false);
-            sb.append(" == (Object)");
+            sb.append(") == (Object)(");
             if (rhs == null) sb.append("null"); else emitForm(sb, rhs, env, topEnv, rsfx, false);
-            sb.append(") ? _t : null)");
+            sb.append(")) ? _t : null)");
         }
 
         /** emit double operator for zero or more number args */

@@ -1839,3 +1839,16 @@ und sequence-set
 Typsystem:
 - beschreiben, welche Murmel Typen als welche Java Datentypen implementiert werden
 - beschreiben, welche Java Typen auch als Murmeltyp akzeptiert werden, z.B. numberp Number -> t (steht in murmel-langref eh schon unter "numberp, integerp, floatp" beschrieben)
+
+
+(let (x) (null (setq x 1)))
+-> compile fehler
+/MurmelProgram.java:23: error: unexpected type
+        return (((Object)args2[0] = 1L == (Object)null) ? _t : null);
+                 ^
+  required: variable
+  found:    value
+/MurmelProgram.java:23: error: incomparable types: long and Object
+        return (((Object)args2[0] = 1L == (Object)null) ? _t : null);
+                                       ^
+2 errors
