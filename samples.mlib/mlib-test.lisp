@@ -130,12 +130,12 @@
   =>  1
   (prog1 temp (setq temp nil)) =>  2
   temp =>  NIL
-  (prog1 (values 1 2 3) 4) =>  1 
+  (prog1 (values 1 2 3) 4) =>  1
   (setq temp (list 'a 'b 'c)) => (a b c)
   (prog1 (car temp) (setf (car temp) 'alpha)) =>  A
   temp =>  (ALPHA B C)
   ;(flet ((swap-symbol-values (x y)
-  ;         (setf (symbol-value x) 
+  ;         (setf (symbol-value x)
   ;               (prog1 (symbol-value y)
   ;                      (setf (symbol-value y) (symbol-value x))))))
   ;  (let ((*foo* 1) (*bar* 2))
@@ -207,8 +207,9 @@
 ;;; - conses and lists
 
 ;; test list-length
-#-murmel (defun circular-list (&rest elements)
-  (let ((cycle (copy-list elements))) 
+#-murmel
+(defun circular-list (&rest elements)
+  (let ((cycle (copy-list elements)))
     (nconc cycle cycle)))
 (tests list-length
   (list-length '(a b c d)) =>  4
@@ -253,13 +254,13 @@
   (setq foo (list 'a 'b 'c 'd 'e)
         bar (list 'f 'g 'h 'i 'j)
         baz (list 'k 'l 'm)) =>  (K L M)
-  (setq foo (nconc nil foo bar nil baz)) =>  (A B C D E F G H I J K L M) 
+  (setq foo (nconc nil foo bar nil baz)) =>  (A B C D E F G H I J K L M)
   foo =>  (A B C D E F G H I J K L M)
   bar =>  (F G H I J K L M)
   baz =>  (K L M)
-  
+
   (nconc nil (list 1 2 3) nil) => (1 2 3)
-  
+
   (nconc '(1 2 . 3) '(11 22 . 33)) => (1 2 11 22 . 33)
   (nconc (list* 1 2 3) (list* 11 22 33)) => (1 2 11 22 . 33)
 
@@ -274,7 +275,7 @@
 (tests revappend
  (let ((list-1 (list 1 2 3))
        (list-2 (list 'a 'b 'c)))
-   (push (revappend list-1 list-2) x) 
+   (push (revappend list-1 list-2) x)
    (push list-1 x)
    (push list-2 x)
    x) => ((a b c) (1 2 3) (3 2 1 A B C))
@@ -361,7 +362,7 @@
   (mapcan (lambda (x y) (if (null x) nil (list x y)))
           '(nil nil nil d e)
           '(1 2 3 4 5 6))
-    =>  (D 4 E 5) 
+    =>  (D 4 E 5)
   (mapcan (lambda (x) (and (numberp x) (list x)))
           '(a 1 b c 3 4 d 5))
     =>  (1 3 4 5)
@@ -382,7 +383,7 @@
   (do ((temp-one 1 (1+ temp-one))
        (temp-two 0 (1- temp-two)))
       ((> (- temp-one temp-two) 5) temp-one)) =>  4
- 
+
   (do ((temp-one 1 (1+ temp-one))
        (temp-two 0 (1+ temp-one)))
       ((= 3 temp-two) temp-one)) =>  3
@@ -419,7 +420,7 @@
   temp-two => 4
 
   (dolist (x '(a b c d)) (write x) (format t " ")) => nil ; >>  A B C D , => NIL
-  
+
   (dolist (x '(1 2 3)) 'last-form)         => nil
   (dolist (x '(1 2 3) 'result) 'last-form) => result
   (dolist (x '(1 2 3) x) 'last-form)       => nil
@@ -430,7 +431,7 @@
   (let ((n 0))
     (dolist (x '(1 2 3 4 5) (incf n) n)
       (incf n))) => 6
-) 
+)
 
 
 
@@ -447,11 +448,11 @@
 
 ;; test setf
 (tests setf
-  (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
-  (setf (car x) 'x (cadr y) (car x) (cdr x) y) =>  (1 X 3) 
-  x =>  (X 1 X 3) 
-  y =>  (1 X 3) 
-  (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3) 
+  (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3)
+  (setf (car x) 'x (cadr y) (car x) (cdr x) y) =>  (1 X 3)
+  x =>  (X 1 X 3)
+  y =>  (1 X 3)
+  (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3)
 
   (setq x (list 1 2 3)) => (1 2 3)
   (setf (car x) 11) => 11
@@ -476,7 +477,7 @@
   (incf n 0.5) =>  2.5
   (decf n) =>  1.5
   n =>  1.5
-  
+
   (setq x '(0)) => (0)
   (setq ctr 0) => 0
   (incf (car (place x))) => 1
@@ -498,7 +499,7 @@
   (push 1 (car llst)) =>  (1 1)
   llst =>  ((1 1))
   (setq x '(a (b c) d)) =>  (A (B C) D)
-  (push 5 (cadr x)) =>  (5 B C)  
+  (push 5 (cadr x)) =>  (5 B C)
   x =>  (A (5 B C) D)
 
   (setq llst (list 1 2 3)) => (1 2 3)
@@ -625,7 +626,7 @@
   (elt #(0 1 2) 1) => 1
   (elt "012" 1)    => #\1
   (elt #*0101 3)   => 1
-  
+
   (elt (cp (make-array 3 #-murmel :element-type t #-murmel :adjustable t) '(0 1 2)) 1) => 1
   (elt (cp (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) '(#\0 #\1 #\2)) 1) => #\1
 )
@@ -744,8 +745,8 @@
   ))
 
 (tests map-into.vector
-  (map-into (make-array 5 'character) (lambda () #\A)) => "AAAAA"
-  (map-into (make-array 5 'bit) (let ((x 0)) (lambda () (setq x (- 1 x)) x))) => #*10101
+  (map-into (make-array 5 #-murmel :element-type 'character) (lambda () #\A)) => "AAAAA"
+  (map-into (make-array 5 #-murmel :element-type 'bit) (let ((b 0)) (lambda () (setq b (- 1 b)) b))) => #*10101
 )
 
 
@@ -756,8 +757,8 @@
   ;(reduce append '((1) (2)) :initial-value '(i n i t)) =>  (I N I T 1 2)
   (reduce #'append (cons '(i n i t) '((1) (2)))) =>  (I N I T 1 2)
 
-  ;(reduce append '((1) (2)) :from-end t :initial-value '(i n i t)) =>  (1 2 I N I T) 
-  (reduce #'append (append '((1) (2)) (list '(i n i t))) #-murmel :from-end t) =>  (1 2 I N I T) 
+  ;(reduce append '((1) (2)) :from-end t :initial-value '(i n i t)) =>  (1 2 I N I T)
+  (reduce #'append (append '((1) (2)) (list '(i n i t))) #-murmel :from-end t) =>  (1 2 I N I T)
 
   (reduce #'- '(1.0 2 3 4)) ;==  (- (- (- 1 2) 3) 4)
     =>  -8.0
@@ -1200,7 +1201,7 @@
     (push (g) result)
     (push (g) result)
     (push (g) result)) => ((4 44 444)  (3 33 333) (2 22 222) (1 11 111))
-  
+
   (let (result (g (scan-multiple (scan '(1 2 3 4)) (scan '(11 22 33)))))
     (dotimes (i 6 result)
       (push (g) result))) => (nil nil (4) (3 33) (2 22) (1 11))
