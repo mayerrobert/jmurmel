@@ -7118,7 +7118,7 @@ public class LambdaJ {
                     }
                 }
 
-                final Closure macroClosure;
+                final Closure macroClosure; // todo sollte eigentlich nicht mehr vorkommen ?!?
                 if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
                     final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(ccForm));
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
@@ -7705,7 +7705,7 @@ public class LambdaJ {
             final Object localFuncs = car(args);
             if (localFuncs == null || cddr(args) == null && atom(cadr(args))) {
                 // no local functions or body is one single atom (the latter can't use the functions so skip them
-                emitProgn(sb, cdr(args), env, topEnv, rsfx, isLast); // todo warum nicht emitAtom?
+                emitProgn(sb, cdr(args), env, topEnv, rsfx, isLast);
                 return;
             }
 

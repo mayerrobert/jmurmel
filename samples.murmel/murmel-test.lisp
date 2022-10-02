@@ -277,6 +277,10 @@
 )
 
 
+(deftest labels
+  (labels () 1) 1)
+
+
 ;;; catch, throw
 (deftest catch.1 (catch 'dummy-tag 1 2 (throw 'dummy-tag 3) 4)  3)
 (deftest catch.2 (catch 'dummy-tag 1 2 3 4)                     4)
@@ -440,7 +444,9 @@
     (\#a      nil       t           t           nil         nil         nil         nil         nil        nil          nil         nil         nil)
     ("hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t           t           nil)
     (#()      nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil)
+    (#(0 1)   nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil)
     (#*       nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         t)
+    (#*01     nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         t)
 ))
 
 
