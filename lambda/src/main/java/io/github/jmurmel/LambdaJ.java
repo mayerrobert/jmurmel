@@ -3176,8 +3176,9 @@ public class LambdaJ {
         if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
         if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
         if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
-                                                if (newValue.equals(0L)) { arry[(int)idx] = false; return 0L; }
-                                                if (newValue.equals(1L)) { arry[(int)idx] = true;  return 1L; }
+                                                final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
+                                                if (newBit == 0) { arry[(int)idx] = false; return 0L; }
+                                                if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
                                                 throw errorNotABit("seqset", newValue); }
         if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
                                                 return newValue; }

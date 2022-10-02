@@ -1690,32 +1690,41 @@
 ;;;
 ;;; If `result-list` is `nil`, `map-into` returns `nil`.
 ;;;
-;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
-;;; only lists are supported as result-list, tough.
+;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 (defun map-into (result func . sequences)
   (when result
+    (let* (cursor set has-next len)
+      (typecase result
+        (cons (setq cursor result)
+              (setq set (lambda (elem) (rplaca cursor elem) (setq cursor (cdr cursor))))
+              (setq has-next (lambda () cursor)))
+        (vector (setq cursor 0)
+                (setq set (lambda (elem) (seqset elem result cursor) (setq cursor (1+ cursor))))
+                (setq has-next (lambda () (< cursor len)))
+                (setq len (vector-length result)))
+        (t (error "map-into: not a sequence: %s" result)))
 
-    (if (cdr sequences)
-          ; 2 or more sequences given
-          (let loop ((r result) (l (m%sequences->lists sequences)))
-            (when (and r (m%notany-null l))
-              (rplaca r (apply func (unzip l)))
-              (loop (cdr r) (unzip-tails l))))
+      (if (cdr sequences)
+            ; 2 or more sequences given
+            (let loop ((l (m%sequences->lists sequences)))
+              (when (and (has-next) (m%notany-null l))
+                (set (apply func (unzip l)))
+                (loop (unzip-tails l))))
 
-      (if sequences
-            ; 1 list given
-            (let loop ((r result) (l (m%sequence->list (car sequences))))
-              (when (and r l)
-                (rplaca r (func (car l)))
-                (loop (cdr r) (cdr l))))
+        (if sequences
+              ; 1 list given
+              (let loop ((l (m%sequence->list (car sequences))))
+               (when (and (has-next) l)
+                 (set (func (car l)))
+                 (loop (cdr l))))
 
-        ; 0 sequences given
-        (let loop ((r result))
-          (when r
-            (rplaca r (func))
-            (loop (cdr r))))))
+          ; 0 sequences given
+          (let loop ()
+            (when (has-next)
+              (set (func))
+              (loop))))))
 
-  result))
+    result))
 
 
 ;;; = Function: reduce

@@ -693,8 +693,7 @@ the lists or the result-list) is exhausted.
 
 If `result-list` is `nil`, `map-into` returns `nil`.
 
-Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm,
-only lists are supported as result-list, tough.
+Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 
 ### Function: reduce
     (reduce func sequence [from-end-p]) -> result

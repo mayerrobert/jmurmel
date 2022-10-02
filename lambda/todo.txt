@@ -1,6 +1,5 @@
 
 mlib:
-map-into sollte sequence unterstützen, nicht nur list
 XX->list ersetzen durch generators
 
 

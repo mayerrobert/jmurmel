@@ -743,6 +743,11 @@
     n => 5
   ))
 
+(tests map-into.vector
+  (map-into (make-array 5 'character) (lambda () #\A)) => "AAAAA"
+  (map-into (make-array 5 'bit) (let ((x 0)) (lambda () (setq x (- 1 x)) x))) => #*10101
+)
+
 
 ;; test reduce
 (tests reduce
