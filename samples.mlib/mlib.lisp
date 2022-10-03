@@ -1693,35 +1693,45 @@
 ;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 (defun map-into (result func . sequences)
   (when result
-    (let* (cursor set has-next len)
+    (let* (result-cursor set-result has-next-result result-length seq len)
       (typecase result
-        (cons (setq cursor result)
-              (setq set (lambda (elem) (rplaca cursor elem) (setq cursor (cdr cursor))))
-              (setq has-next (lambda () cursor)))
-        (vector (setq cursor 0)
-                (setq set (lambda (elem) (seqset elem result cursor) (setq cursor (1+ cursor))))
-                (setq has-next (lambda () (< cursor len)))
-                (setq len (vector-length result)))
+        (cons (setq result-cursor result)
+              (setq set-result (lambda (elem) (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
+              (setq has-next-result (lambda () result-cursor)))
+        (vector (setq result-cursor 0)
+                (setq set-result (lambda (elem) (seqset elem result result-cursor) (setq result-cursor (1+ result-cursor))))
+                (setq has-next-result (lambda () (< result-cursor result-length)))
+                (setq result-length (vector-length result)))
         (t (error "map-into: not a sequence: %s" result)))
 
       (if (cdr sequences)
             ; 2 or more sequences given
-            (let loop ((l (m%sequences->lists sequences)))
-              (when (and (has-next) (m%notany-null l))
-                (set (apply func (unzip l)))
-                (loop (unzip-tails l))))
+            (labels ((into (next-values more)
+                       (when (and (has-next-result) more)
+                         (set-result (apply func next-values))
+                         (multiple-value-call into (seq)))))
+              (setq seq (apply scan-multiple (mapcar scan sequences)))
+              (multiple-value-call into (seq)))
 
         (if sequences
-              ; 1 list given
-              (let loop ((l (m%sequence->list (car sequences))))
-               (when (and (has-next) l)
-                 (set (func (car l)))
-                 (loop (cdr l))))
+              ; 1 sequence given
+              (typecase (car sequences)
+                (null)
+                (cons (let loop ((l (car sequences)))
+                           (when (and (has-next-result) l)
+                             (set-result (func (car l)))
+                             (loop (cdr l)))))
+                (vector (setq seq (car sequences) len (vector-length seq))
+                        (let loop ((i 0))
+                          (when (and (has-next-result) (< i len))
+                            (set-result (func (seqref seq i)))
+                            (loop (1+ i)))))
+                (t (error "map-into: not a sequence: %s" (car sequences))))
 
           ; 0 sequences given
           (let loop ()
-            (when (has-next)
-              (set (func))
+            (when (has-next-result)
+              (set-result (func))
               (loop))))))
 
     result))

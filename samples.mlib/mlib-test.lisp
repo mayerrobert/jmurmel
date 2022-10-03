@@ -742,6 +742,10 @@
     k => (one two three)
     (map-into l (lambda () (setq n (1+ n)))) => (1 2 3 4 5)
     n => 5
+    
+    (map-into l (lambda #+murmel ignore #-murmel (&rest ignore) (setq n (1+ n))) nil) => (1 2 3 4 5)
+    n => 5
+    (map-into l #'+ l #(10.0 20.0 30.0)) => (11.0 22.0 33.0 4 5)
   ))
 
 (tests map-into.vector
