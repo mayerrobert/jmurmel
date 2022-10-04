@@ -466,19 +466,19 @@
 ;;; Returns `nil` if `list-or-string` is a circular list.
 ;;;
 ;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-(defun list-length (lst) 
-  (let loop ((n 0)         ; Counter 
-             (fast lst)      ; Fast pointer: leaps by 2 
-             (slow lst))     ; Slow pointer: leaps by 1 
-    ;; If fast pointer hits the end, return the count. 
+(defun list-length (lst)
+  (let loop ((n 0)         ; Counter
+             (fast lst)      ; Fast pointer: leaps by 2
+             (slow lst))     ; Slow pointer: leaps by 1
+    ;; If fast pointer hits the end, return the count.
     (if (null fast) n
       (if (null (cdr fast)) (1+ n)
-        ;; If fast pointer eventually equals slow pointer, 
-        ;;  then we must be stuck in a circular list. 
-        ;; (A deeper property is the converse: if we are 
-        ;;  stuck in a circular list, then eventually the 
-        ;;  fast pointer will equal the slow pointer. 
-        ;;  That fact justifies this implementation.) 
+        ;; If fast pointer eventually equals slow pointer,
+        ;;  then we must be stuck in a circular list.
+        ;; (A deeper property is the converse: if we are
+        ;;  stuck in a circular list, then eventually the
+        ;;  fast pointer will equal the slow pointer.
+        ;;  That fact justifies this implementation.)
         (if (and (eq fast slow) (> n 0)) nil
           (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
 
@@ -924,7 +924,7 @@
 ;;;
 ;;; `destructuring-bind` binds the variables specified in `vars`
 ;;; to the corresponding values in the list resulting from the evaluation
-;;; of `expression`; then `destructuring-bind` evaluates `forms`. 
+;;; of `expression`; then `destructuring-bind` evaluates `forms`.
 (defmacro destructuring-bind (vars expr . forms)
   `(apply (lambda ,vars ,@forms) ,expr))
 
@@ -1345,7 +1345,8 @@
        ((vectorp arg)
         (let* ((ref (cond ((simple-vector-p arg) svref)
                           ((simple-bit-vector-p arg) sbvref)
-                          ((stringp arg) char)))
+                          ((stringp arg) char)
+                          ((vectorp arg) seqref)))
                (len (vector-length arg))
                (idx (if more-args (m%nonneg-integer-number (car more-args)) 0)))
           (when (cdr more-args)
@@ -1372,14 +1373,14 @@
                                 (setq count (if (> count 1) (1- count) nil))
                                 (arg))
                           (values nil nil))))
-  
+
                 (let ((skip (m%nonneg-integer-number (car more-args))))
                   (lambda ()
                     (when skip
                       (dotimes (ignore skip) (arg))
                       (setq skip nil))
                     (arg))))
-  
+
           arg))
 
        ((null arg)
@@ -1398,6 +1399,7 @@
 ;;; and whose secondary value is nil if any generator returns nil as their secondary value.
 ;;; Once the first generator indicates "at end" for the first time no more generators will be called.
 (defun scan-multiple (generator . more-generators)
+  (if (functionp generator) nil (error "not a generator"))
   (if more-generators
 
         (let ((generators (cons generator more-generators)) (more-accum t))
@@ -1430,7 +1432,7 @@
 ;;;
 ;;; `scan-concat` combines several generators into a single generator function
 ;;; that acts as if the given generators were concatenated.
-;;; 
+;;;
 ;;; A single generator would be returned unchanged.
 (defun scan-concat (generator . more-generators)
   (if (functionp generator) nil (error "not a generator"))
@@ -1620,13 +1622,13 @@
 (defun m%list->sequence (lst result-type)
   (cond ((null result-type)                  nil)
         ((eq result-type 'list)              lst)
-        ((eq result-type 'cons)              lst)
+        ((eq result-type 'cons)              (or lst (error "nil is not a sequence of type cons")))
         ((eq result-type 'vector)            (list->simple-vector lst))
         ((eq result-type 'simple-vector)     (list->simple-vector lst))
         ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
         ((eq result-type 'string)            (list->string lst))
         ((eq result-type 'simple-string)     (list->string lst))
-        (t (error "%s is not a sequence" lst))))
+        (t (error "type %s is not implemented" result-type))))
 
 
 ;;; = Function: map
@@ -1645,37 +1647,21 @@
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func seq . more-sequences)
-  (setq seq (if more-sequences
-
-                  (if result-type
-                          (let* ((result (cons nil nil))
-                                 (append-to result))
-                            (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                              (when (m%notany-null l)
-                                (setq append-to (cdr (rplacd append-to (cons (apply func (unzip l)) nil))))
-                                (loop (unzip-tails l)))
-                            (cdr result)))
-                    (let loop ((l (m%sequences->lists (cons seq more-sequences))))
-                      (when (m%notany-null l)
-                        (apply func (unzip l))
-                        (loop (unzip-tails l)))))
-
-              (if result-type
-                      (let* ((result (cons nil nil))
-                             (append-to result))
-                        (let loop ((l (m%sequence->list seq)))
-                          (when l
-                            (setq append-to (cdr (rplacd append-to (cons (func (car l)) nil))))
-                            (loop (cdr l))))
-                        (cdr result))
-                (let loop ((l (m%sequence->list seq)))
-                  (when l
-                    (func (car l))
-                    (loop (cdr l)))))))
-
-  (cond ((null result-type) nil)
-        ((eq result-type 'list) seq)
-        (t (m%list->sequence seq result-type))))
+  (setq seq (apply scan-multiple (mapcar scan (cons seq more-sequences))))
+  (if result-type
+        (let* ((result (cons nil nil))
+               (append-to result))
+          (labels ((collect (val more)
+                     (when more
+                       (setq append-to (cdr (rplacd append-to (cons (apply func val) nil))))
+                       (multiple-value-call collect (seq)))))
+            (multiple-value-call collect (seq))
+            (m%list->sequence (cdr result) result-type)))
+    (labels ((collect (val more)
+               (when more
+                 (apply func val)
+                 (multiple-value-call collect (seq)))))
+      (multiple-value-call collect (seq)))))
 
 
 ;;; = Function: map-into
@@ -2105,7 +2091,7 @@
 (defun curry (func . args)
   (lambda callargs (apply func (append args callargs))))
 
- 
+
 ;;; = Function: rcurry
 ;;;     (rcurry func args*) -> function
 ;;;
@@ -2155,7 +2141,7 @@
              (if partials
                    (if (symbolp (car partials))
                          (list (car partials) (apply-partials (cdr partials) expr))
-                     ; if it's a list with other parameters, insert expr (recursive call) 
+                     ; if it's a list with other parameters, insert expr (recursive call)
                      ; as second parameter into partial (note need to use cons to ensure same list for func args)
                      (cons (caar partials) (cons (apply-partials (cdr partials) expr) (cdar partials))))
                expr)))
@@ -2182,8 +2168,8 @@
              (if partials
                    (if (symbolp (car partials))
                          (list (car partials) (apply-partials (cdr partials) expr))
-                     ; if it's a list with other parameters, insert expr (recursive call) 
-                     ; as last form 
+                     ; if it's a list with other parameters, insert expr (recursive call)
+                     ; as last form
                      (cons (caar partials) (append (cdar partials) (list (apply-partials (cdr partials) expr)))))
                expr)))
     (apply-partials (reverse (cdr terms)) (car terms))))

@@ -424,7 +424,7 @@ trees are not supported, only lists are.
 
 `destructuring-bind` binds the variables specified in `vars`
 to the corresponding values in the list resulting from the evaluation
-of `expression`; then `destructuring-bind` evaluates `forms`. 
+of `expression`; then `destructuring-bind` evaluates `forms`.
 
 ### Function: get-setf-expansion
     (get-setf-expansion place) -> vars, vals, store-vars, writer-form, reader-form
@@ -608,6 +608,7 @@ Since: 1.3
 
 `scan-concat` combines several generators into a single generator function
 that acts as if the given generators were concatenated.
+
 A single generator would be returned unchanged.
 
 ### Macro: dogenerator
