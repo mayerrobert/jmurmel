@@ -1,7 +1,7 @@
 
 mlib:
 XX->list ersetzen durch generators
-
+scan-multiple brauchts eig. nur bei mehreren sequences, bei einer sequence wär scan effizienter
 
 checken was alles serializable sein sollte, Closure wsl. nicht
 

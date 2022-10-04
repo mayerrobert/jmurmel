@@ -1605,20 +1605,6 @@
   (remove-if (lambda (x) (eql x elem)) seq))
 
 
-(defun m%sequence->list (seq)
-  (cond ((listp seq)               seq)
-        ((simple-vector-p seq)     (simple-vector->list seq))
-        ((simple-bit-vector-p seq) (simple-bit-vector->list seq))
-        ((stringp seq)             (string->list seq))
-        ((vectorp seq)             (vector->list seq))
-        (t (error "%s is not a sequence" seq))))
-
-(defun m%sequences->lists (sequences)
-  (let loop ((s sequences))
-    (if s (cons (m%sequence->list (car s))
-                (loop (cdr s)))
-      nil)))
-
 (defun m%list->sequence (lst result-type)
   (cond ((null result-type)                  nil)
         ((eq result-type 'list)              lst)
@@ -1823,15 +1809,13 @@
 
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
-  `(defun ,name (pred sequence . more-sequences)
-     (if more-sequences
-           (let loop ((args (mapcar m%sequence->list (cons sequence more-sequences))))
-             (if (m%notany-null args)
-                   (,comb (apply pred (unzip args)) (loop (unzip-tails args)))
-               ,lastelem))
-       (let loop ((lst (m%sequence->list sequence)))
-         (if lst (,comb (pred (car lst)) (loop (cdr lst)))
-           ,lastelem)))))
+  `(defun ,name (pred seq . more-sequences)
+     (setq seq (apply scan-multiple (mapcar scan (cons seq more-sequences))))
+     (labels ((do-step (val more)
+                (if more
+                      (,comb (apply pred val) (multiple-value-call do-step (seq)))
+                 ,lastelem)))
+       (multiple-value-call do-step (seq)))))
 
 
 ;;; = Function: every
