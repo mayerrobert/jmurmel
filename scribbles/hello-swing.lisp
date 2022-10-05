@@ -7,14 +7,30 @@
 
 ;;; AWT stuff
 
-; (add-component container component-to-add) -> component-to-add
-(define add-component
-  (jmethod "java.awt.Container" "add" "java.awt.Component"))
+; (set-component-size component width height) -> void
+(define set-component-size
+  (jmethod "java.awt.Component" "setSize" "int" "int"))
 
 ; (set-component-visible frame) -> void
 (define set-component-visible
   (jmethod "java.awt.Component" "setVisible" "boolean"))
 
+
+; (add-component container component-to-add) -> component-to-add
+(define add-component
+  (jmethod "java.awt.Container" "add" "java.awt.Component"))
+
+(define set-layout
+  (jmethod "java.awt.Container" "setLayout" "java.awt.LayoutManager"))
+
+
+(define make-gridbag-layout
+  (jmethod "java.awt.GridBagLayout" "new"))
+
+
+; (make-font name style points) -> java.awt.Font
+(define make-font
+  (jmethod "java.awt.Font" "new" "String" "int" "int"))
 
 
 ;;; Swing stuff
@@ -34,6 +50,9 @@
 
 (stringarg-constructor make-jframe "JFrame")
 (stringarg-constructor make-jlabel "JLabel")
+
+(define set-font
+  (jmethod "javax.swing.JComponent" "setFont" "java.awt.Font"))
 
 
 ; (get-content-pane frame) -> content-pane-component
@@ -62,8 +81,14 @@
          (content-pane (get-content-pane frame)))
 
     ((jmethod "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
+
+    (set-font label (make-font nil 0 24))
     (add-component content-pane label)
+
+    (set-layout frame (make-gridbag-layout))
     (pack-frame frame)
+    (set-component-size frame 600 400)
+    ((jmethod "java.awt.Window" "setLocationRelativeTo" "java.awt.Component") frame nil)
     (set-component-visible frame t)))
 
 ;;; static void main(String[] args)

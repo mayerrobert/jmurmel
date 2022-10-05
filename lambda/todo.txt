@@ -72,10 +72,18 @@ Scheme hat case-lambda
 
 primitive und compilerprimitive könnten dasselbe sein, bzw. die interpreter primitives könnten CompilerPrimitive implementieren
 -> ausser: apply (und eval?)
+-> aber: der interpreter hat die liste mit argumenten bereits (vom reader), das müsste bei jedem call in ein array verwandelt werden
+   -> besser primitive und compilerprimitive beide beibehalten
 evalOpencode vervollständigen
 min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann expand 1x argcount checken
 -> und evalOpencode OHNE argcount checks
 -> und environment() könnte alle primitives generieren: loop über WellknownSymbol.values + argcountcheck + evalOpencode
+-> evtl ALLES an die WellknowSymbols dranhängen?
+   argcount min/max, max wäre Integer.MAX_VALUE bei variadic
+   code für Primitive
+   code für CompilerPrimitive: für getValue() in MurmelJavaProgram benutzen
+   zuordnung name/ compiler-javaname für emitOpencode im compiler
+
 
 aref in mlib? eher nicht
 -> wenn schon dann sollte aref in murmel sein und java.util.List unterstützen
@@ -116,9 +124,7 @@ statt CustomEnvironmentSupplier -> builder pattern
 -> CustomEnvironment bei jedem aufruf von interpretExpressions() mitzugeben ist eh fragwürdig.
    init() jedesmal aufrufen eigentlich auch, weil das ändert die members topEnv, lispStdin, lispStdout, nicht schön!
 
-
  
-expandForm könnte argcount checken: WellKnownSymbol könnte min/max oder checkmethode bekommen, checks in opencode können entfallen
 
 read sollte EOF übernehmen
 
