@@ -376,11 +376,11 @@
 ; when running compiled murmel `eval` starts the embedded interpreter,
 ; and e.g. `(eval '(lambda () ...` returns an interpreted closure.
 ; So these tests additionally check if compiled code can run interpreted lambdas.
-(define x (eval '(lambda () '|hello from interpreter|)))
+(define intp (eval '(lambda () '|hello from interpreter|)))
 
 #+murmel
-(deftest eval.1 (x) '|hello from interpreter|)
-(deftest eval.2 (#-murmel funcall x) '|hello from interpreter|)
+(deftest eval.1 (intp) '|hello from interpreter|)
+(deftest eval.2 (#-murmel funcall intp) '|hello from interpreter|)
 
 #+murmel
 (deftest eval.3 ((eval '(lambda (x) (format nil "%s" x))) '|interpreted format|) "interpreted format")
@@ -388,7 +388,7 @@
 
 ; invoke x in the tailposition. This used to break the compiler.
 (deftest eval.5
-  (let (a) (#-murmel funcall x)) '|hello from interpreter|)
+  (let (a) (#-murmel funcall intp)) '|hello from interpreter|)
 
 
 ;;; test apply
@@ -495,8 +495,9 @@
 #+(or)
 (deftest eql.10 (eql '(a . b) '(a . b))  nil)
 
-(deftest eql.11 (progn (setq x (cons 'a 'b)) (eql x x))  t)
-(deftest eql.12 (progn (setq x '(a . b)) (eql x x))  t)
+(define *x* nil)
+(deftest eql.11 (progn (setq *x* (cons 'a 'b)) (eql *x* *x*))  t)
+(deftest eql.12 (progn (setq *x* '(a . b)) (eql *x* *x*))  t)
 (deftest eql.13 (eql #\A #\A)  t)
 #+murmel (deftest eql.14 (eql "Foo" "Foo")  t) ; sbcl murmel-test.lisp -> nil, sbcl murmel-test.fasl -> t
 ;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  nil)
