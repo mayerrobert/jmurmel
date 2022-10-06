@@ -74,6 +74,7 @@ primitive und compilerprimitive könnten dasselbe sein, bzw. die interpreter pri
 -> ausser: apply (und eval?)
 -> aber: der interpreter hat die liste mit argumenten bereits (vom reader), das müsste bei jedem call in ein array verwandelt werden
    -> besser primitive und compilerprimitive beide beibehalten
+   -> aber: der interpreter hat NICHT die liste mit argumenten, die wird von evlis erzeugt, und evlis (oder ein zusätzliches evlis) könnte auch ein array erzeugen
 evalOpencode vervollständigen
 min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann expand 1x argcount checken
 -> und evalOpencode OHNE argcount checks

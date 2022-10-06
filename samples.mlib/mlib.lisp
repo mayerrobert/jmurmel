@@ -1575,22 +1575,31 @@
 ;;; evaluates to non-nil.
 (defun remove-if (pred seq)
   (labels ((remove-if/list (l)
-              (let* ((result (cons nil nil))
-                     (append-to result))
-                (let loop ((l l))
-                  (when l
-                    (unless (pred (car l))
-                      (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
-                    (loop (cdr l))))
-                (cdr result))))
+             (let* ((result (cons nil nil))
+                    (append-to result))
+               (let loop ((l l))
+                 (when l
+                   (unless (pred (car l))
+                     (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
+                   (loop (cdr l))))
+               (cdr result)))
+
+           (remove-if/vector (vec)
+             (let* ((len (vector-length vec))
+                    (result (cons nil nil))
+                    (append-to result)
+                    tmp)
+               (dotimes (i len (cdr result))
+                 (unless (pred (setq tmp (seqref vec i)))
+                   (setq append-to (cdr (rplacd append-to (cons tmp nil)))))))))
 
     (typecase seq
           (null)
           (cons              (remove-if/list seq))
-          (string            (list->string (remove-if/list (string->list seq))))
-          (simple-vector     (list->simple-vector (remove-if/list (simple-vector->list seq))))
-          (simple-bit-vector (list->simple-bit-vector (remove-if/list (simple-bit-vector->list seq))))
-          (vector            (list->simple-vector (remove-if/list (vector->list seq))))
+          (string            (list->string            (remove-if/vector seq)))
+          (simple-vector     (list->simple-vector     (remove-if/vector seq)))
+          (simple-bit-vector (list->simple-bit-vector (remove-if/vector seq)))
+          (vector            (list->simple-vector     (remove-if/vector seq)))
           (t (error "remove-if - %s is not a sequence" seq)))))
 
 
