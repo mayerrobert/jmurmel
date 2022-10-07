@@ -1527,6 +1527,7 @@
       (string            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
       (simple-vector     (reverse/vector seq (make-array (vector-length seq)) svref svset))
       (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbvref sbvset))
+      (vector            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
       (t                 (error "reverse - %s is not a sequence" seq)))))
 
 
@@ -1563,6 +1564,7 @@
       (string            (nreverse/vector seq sref sset))
       (simple-vector     (nreverse/vector seq svref svset))
       (simple-bit-vector (nreverse/vector seq sbvref sbvset))
+      (vector            (nreverse/vector seq seqref seqset))
       (t (error "nreverse - %s is not a sequence" seq)))))
 
 

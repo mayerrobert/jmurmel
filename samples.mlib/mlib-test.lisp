@@ -684,6 +684,9 @@
     (setq l #*0101) => #*0101
     (reverse l) => #*1010
     l => #*0101
+
+    (elt (reverse (cp (make-array 3 #-murmel :element-type t #-murmel :adjustable t) '(1 2 3))) 0)  => 3
+    (elt (nreverse (cp (make-array 3 #-murmel :element-type t #-murmel :adjustable t) '(1 2 3))) 0) => 3
   ))
 
 
