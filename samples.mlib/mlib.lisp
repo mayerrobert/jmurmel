@@ -1648,19 +1648,24 @@
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func seq . more-sequences)
-  (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences))))
+  (if more-sequences
+        (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
+              func (let ((original func))
+                     (lambda (val) (apply original val))))
+    (setq seq (scan seq)))
+
   (if result-type
         (let* ((result (cons nil nil))
                (append-to result))
           (labels ((collect (val more)
                      (when more
-                       (setq append-to (cdr (rplacd append-to (cons (apply func val) nil))))
+                       (setq append-to (cdr (rplacd append-to (cons (func val) nil))))
                        (multiple-value-call collect (seq)))))
             (multiple-value-call collect (seq))
             (m%list->sequence (cdr result) result-type)))
     (labels ((collect (val more)
                (when more
-                 (apply func val)
+                 (func val)
                  (multiple-value-call collect (seq)))))
       (multiple-value-call collect (seq)))))
 
@@ -1680,7 +1685,7 @@
 ;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
 (defun map-into (result func . sequences)
   (when result
-    (let* (result-cursor set-result has-next-result result-length seq len)
+    (let (result-cursor set-result has-next-result result-length seq len)
       (typecase result
         (cons (setq result-cursor result)
               (setq set-result (lambda (elem) (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
@@ -1702,18 +1707,18 @@
 
         (if sequences
               ; 1 sequence given
-              (typecase (car sequences)
+              (typecase (setq seq (car sequences))
                 (null)
-                (cons (let loop ((l (car sequences)))
+                (cons (let loop ((l seq))
                            (when (and (has-next-result) l)
                              (set-result (func (car l)))
                              (loop (cdr l)))))
-                (vector (setq seq (car sequences) len (vector-length seq))
+                (vector (setq len (vector-length seq))
                         (let loop ((i 0))
                           (when (and (has-next-result) (< i len))
                             (set-result (func (seqref seq i)))
                             (loop (1+ i)))))
-                (t (error "map-into: not a sequence: %s" (car sequences))))
+                (t (error "map-into: not a sequence: %s" seq)))
 
           ; 0 sequences given
           (let loop ()
@@ -1825,10 +1830,15 @@
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
   `(defun ,name (pred seq . more-sequences)
-     (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences))))
+     (if more-sequences
+           (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
+                 pred (let ((original pred))
+                        (lambda (val) (apply original val))))
+       (setq seq (scan seq)))
+
      (labels ((do-step (val more)
                 (if more
-                      (,comb (apply pred val) (multiple-value-call do-step (seq)))
+                      (,comb (pred val) (multiple-value-call do-step (seq)))
                  ,lastelem)))
        (multiple-value-call do-step (seq)))))
 

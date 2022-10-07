@@ -1877,3 +1877,6 @@ manche funktionen die sequences nehmen sollten (map?) schlucken generators, ande
 !   1 seq     kein generator
     2+ seq
 ! reduce      kein generator
+
+
+scan-multiple brauchts eig. nur bei mehreren sequences, bei einer sequence wär scan effizienter

@@ -1,7 +1,6 @@
 
 mlib:
 XX->list ersetzen durch generators
-scan-multiple brauchts eig. nur bei mehreren sequences, bei einer sequence wär scan effizienter
 
 vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adjustable arrays simple-vector/ simple-string/ simple-bit-vector
 -> könnte in mlib verwendet werden statt collect list und list->xxx, und vector-push-extend verwenden
