@@ -1860,3 +1860,20 @@ checken ob mlib funktionen ArrayList usw. verarbeiten können
 -> checken ob in den typecase clauses was fehlt
 
 map-into sollte sequence unterstützen, nicht nur list
+
+
+manche funktionen die sequences nehmen sollten (map?) schlucken generators, andere nicht, kann auch von der anzahl argumente abhängen
+-> vielleicht neue funktion m%scan einführen und verwenden
+-> reverse kann nicht mal adjustable-arrays, nreverse detto
+
+  elt         kein generator
+  length      kein generator
+! reverse     kein generator
+! nreverse    kein generator
+! remove-if   kein generator
+  remove      kein generator (nutzt remove-if)
+  map
+  map-into
+!   1 seq     kein generator
+    2+ seq
+! reduce      kein generator

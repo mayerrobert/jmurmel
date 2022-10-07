@@ -1266,7 +1266,7 @@
 ;;;
 ;;; A generator function takes no arguments and on subsequent applications returns `(values <next-value> t)`
 ;;; or `(values <undefined-value> nil)` to indicate "all values are exhausted".
-(defun scan (arg . more-args)
+(defun m%scan (arg . more-args)
   (cond ((numberp arg)
          (let* ((start arg)
                 (step (if more-args (car more-args) 1))
@@ -1357,36 +1357,40 @@
                           (progn (incf idx) t))
               (values nil nil)))))
 
-       ((functionp arg) ; assume it's a generator
-        (if more-args
-              (if (cdr more-args)
-
-                    (let* ((skip (m%nonneg-integer-number (car more-args)))
-                           (count (floor (- (m%nonneg-integer-number (cadr more-args)) skip))))
-                      (when (<= count 0) (setq count nil))
-                      (lambda ()
-                        (when skip
-                          (dotimes (ignore skip) (arg))
-                          (setq skip nil))
-                        (if count
-                              (progn
-                                (setq count (if (> count 1) (1- count) nil))
-                                (arg))
-                          (values nil nil))))
-
-                (let ((skip (m%nonneg-integer-number (car more-args))))
-                  (lambda ()
-                    (when skip
-                      (dotimes (ignore skip) (arg))
-                      (setq skip nil))
-                    (arg))))
-
-          arg))
-
        ((null arg)
         (lambda () (values nil nil)))
 
        (t (error "scan: cannot create a generator function from given arguments"))))
+
+
+(defun scan (arg . more-args)
+  (cond ((functionp arg) ; assume it's a generator
+         (if more-args
+               (if (cdr more-args)
+ 
+                     (let* ((skip (m%nonneg-integer-number (car more-args)))
+                            (count (floor (- (m%nonneg-integer-number (cadr more-args)) skip))))
+                       (when (<= count 0) (setq count nil))
+                       (lambda ()
+                         (when skip
+                           (dotimes (ignore skip) (arg))
+                           (setq skip nil))
+                         (if count
+                               (progn
+                                 (setq count (if (> count 1) (1- count) nil))
+                                 (arg))
+                           (values nil nil))))
+ 
+                 (let ((skip (m%nonneg-integer-number (car more-args))))
+                   (lambda ()
+                     (when skip
+                       (dotimes (ignore skip) (arg))
+                       (setq skip nil))
+                     (arg))))
+
+           arg))
+
+        (t (apply m%scan (cons arg more-args)))))
 
 
 ;;; = Function: scan-multiple
@@ -1644,7 +1648,7 @@
 ;;;
 ;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
 (defun map (result-type func seq . more-sequences)
-  (setq seq (apply scan-multiple (mapcar scan (cons seq more-sequences))))
+  (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences))))
   (if result-type
         (let* ((result (cons nil nil))
                (append-to result))
@@ -1693,7 +1697,7 @@
                        (when (and (has-next-result) more)
                          (set-result (apply func next-values))
                          (multiple-value-call into (seq)))))
-              (setq seq (apply scan-multiple (mapcar scan sequences)))
+              (setq seq (apply scan-multiple (mapcar m%scan sequences)))
               (multiple-value-call into (seq)))
 
         (if sequences
@@ -1821,7 +1825,7 @@
 ; Helper macro to generate defuns for every and some
 (defmacro m%mapxx (name comb lastelem)
   `(defun ,name (pred seq . more-sequences)
-     (setq seq (apply scan-multiple (mapcar scan (cons seq more-sequences))))
+     (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences))))
      (labels ((do-step (val more)
                 (if more
                       (,comb (apply pred val) (multiple-value-call do-step (seq)))
