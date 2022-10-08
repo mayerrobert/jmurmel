@@ -8164,12 +8164,14 @@ public class LambdaJ {
          */
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargs1_2(murmel, args);
+            checkNonNumber(murmel, car(args));
             if (asLong) sb.append("toFixnum(");
-            sb.append(javaOp).append("(toDouble("); // todo emitFormAsDouble?
+            sb.append(javaOp).append("(toDouble(");
             if (cdr(args) == null) {
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
             }
             else {
+                checkNonNumber(murmel, cadr(args));
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
                 sb.append(") / toDouble(");
                 emitForm(sb, cadr(args), env, topEnv, rsfx, false);
@@ -8271,10 +8273,15 @@ public class LambdaJ {
 
         /** eval form and change to double */
         private void emitFormAsDouble(WrappingWriter sb, String func, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (form == null || form instanceof Character || vectorp(form) || (consp(form) && symbolEq(car(form), "quote"))) errorNotANumber(func, form);
+            checkNonNumber(func, form);
             if (form instanceof Long) sb.append(form.toString()).append(".0");
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("toDouble("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }
+        }
+
+        /** barf if form cannot eval to a number */
+        private void checkNonNumber(String func, Object form) {
+            if (form == null || form instanceof Character || vectorp(form) || (consp(form) && symbolEq(car(form), "quote"))) errorNotANumber(func, form);
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
