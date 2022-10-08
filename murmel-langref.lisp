@@ -763,6 +763,10 @@ pi ; ==> 3.141592653589793
 ;
 ; Only one-dimensional simple arrays of element-type t, 'bit or 'character are supported.
 
+; = (adjustable-array-p vector) -> boolean
+;
+; Since: 1.3
+
 ; = seqref, seqset
 ;
 ; Since: 1.3

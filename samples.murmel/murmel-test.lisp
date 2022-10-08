@@ -449,26 +449,48 @@
     (#*01     nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         t)
 ))
 
+(define *predicates-for-vector*
+  (list
+    (list "n/a"   "null"    "atom"      "symbolp"   "consp"     "listp"     "numberp"   "integerp"  "floatp"   "characterp" "vectorp"    "stringp"   "simple-bit-vector-p"   "adjustable-array-p")
+    (list 'value   #'null   #'atom      #'symbolp   #'consp     #'listp     #'numberp   #'integerp  #'floatp   #'characterp #'vectorp    #'stringp   #'simple-bit-vector-p   #'adjustable-array-p)
+    (list "hi"     nil       t           nil         nil         nil         nil         nil         nil        nil          t           t           nil                     nil)
+    (list #()      nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil                     nil)
+    (list #(0 1)   nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil                     nil)
+    (list #*       nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         t                       nil)
+    (list #*01     nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         t                       nil)
 
-(let ((predicate-names (car *predicates*))
-      (predicates (car (cdr *predicates*))))
-  (labels ((do-one-test (predicate-names predicates value expected-results)
-             (let* ((name (car predicate-names))
-                    (predicate (car predicates))
-                    (expected (car expected-results))
-                    (actual (apply predicate (list value))))
-               #+murmel (assert-equal expected actual (format nil "(%s %s)" name value))
+    (list (make-array 3)
+                   nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil                     nil)
+    (list (make-array 3 #-murmel :element-type t #-murmel :adjustable t)
+                   nil       t           nil         nil         nil         nil         nil         nil        nil          t           nil         nil                     t)
+))
 
-               #-murmel (assert-equal expected actual (format nil "(~A ~A)" name value))
+(defun test-predicates (preds)
+  (let ((predicate-names (car preds))
+        (predicates (car (cdr preds))))
+    (labels ((do-one-test (predicate-names predicates value expected-results)
+               (let* ((name (car predicate-names))
+                      (predicate (car predicates))
+                      (expected (car expected-results))
+                      (actual (apply predicate (list value))))
+                 #+murmel (assert-equal expected actual (format nil "(%s %s)" name value))
+  
+                 #-murmel (assert-equal expected actual (format nil "(~A ~A)" name value))
+  
+                 (if (cdr predicate-names)
+                   (do-one-test (cdr predicate-names) (cdr predicates) value (cdr expected-results)))))
+  
+             (do-all-tests (test-descriptors)
+               (do-one-test (cdr predicate-names) (cdr predicates) (car (car test-descriptors)) (cdr (car test-descriptors)))
+               (if (cdr test-descriptors)
+                 (do-all-tests (cdr test-descriptors)))))
+      (do-all-tests (cdr (cdr preds))))))
 
-               (if (cdr predicate-names)
-                 (do-one-test (cdr predicate-names) (cdr predicates) value (cdr expected-results)))))
+(test-predicates *predicates*)
+(test-predicates *predicates-for-vector*)
 
-           (do-all-tests (test-descriptors)
-             (do-one-test (cdr predicate-names) (cdr predicates) (car (car test-descriptors)) (cdr (car test-descriptors)))
-             (if (cdr test-descriptors)
-               (do-all-tests (cdr test-descriptors)))))
-    (do-all-tests (cdr (cdr *predicates*)))))
+(deftest functionp.1 (functionp #'write) t)
+(deftest functionp.1 (functionp 1) nil)
 
 
 ;;; test eq
@@ -666,6 +688,8 @@
   (deftest ffi.string.1 (vectorp string) t)
   (deftest ffi.string.2 (vectorp stringBuffer) t)
   (deftest ffi.string.3 (vectorp stringBuilder) t)
+  (deftest ffi.string.4 (adjustable-array-p stringBuffer) t)
+  (deftest ffi.string.5 (adjustable-array-p stringBuilder) t)
 )
 
 

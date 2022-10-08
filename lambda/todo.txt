@@ -1,7 +1,12 @@
 
 checken was alles serializable sein sollte, Closure wsl. nicht
 
+adjustable-array-p ist das einzige prädikat, das nicht T als parametertyp hat, (adjustable-array-p 1) gibt fehler.
+in CL gibts viele prädikate für arrays, da kann das sinn machen
+-> vielleicht in Murmel zulassen? anders als CL
+
 fill in Murmel einbauen: fill sequence item &key start end => sequence http://clhs.lisp.se/Body/f_fill.htm
+-> oder fill-vector in murmel
 
 vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adjustable arrays simple-vector/ simple-string/ simple-bit-vector
 -> könnte in mlib verwendet werden statt collect list und list->xxx, und vector-push-extend verwenden
@@ -12,6 +17,10 @@ vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adj
 
 
 
+
+toplevel let/let*/letrec (nicht named) gesondert behandeln: {} block mit normalen Java variablen
+-> damit würden defuns und lambdas mit nur einem toplevel letXX effizienter
+-> ggf doch topelevel named letXX in einen loop kompilieren?
 
 vielleicht loc aufteilen: String filename, int linepos int colpos, String info
 -> bei (declaim (optimize (debug 0))) bleibt info leer, würde eine menge stringliterale einsparen
