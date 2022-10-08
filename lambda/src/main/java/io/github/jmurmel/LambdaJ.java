@@ -8160,23 +8160,23 @@ public class LambdaJ {
 
         /** 2 args: divide 2 numbers and apply {@code javaOp} to the result,
          *  1 arg: apply {@code javaOp} to the number,
-         *  in both cases if {@code asLong == true} then the result is converted to {@code long}
+         *  in both cases if {@code asLong == true} then the result is converted to a fixnum
          */
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             varargs1_2(murmel, args);
             checkNonNumber(murmel, car(args));
             if (asLong) sb.append("toFixnum(");
-            sb.append(javaOp).append("(toDouble(");
+            sb.append(javaOp).append("(");
             if (cdr(args) == null) {
-                emitForm(sb, car(args), env, topEnv, rsfx, false);
+                emitFormAsDouble(sb, murmel, car(args), env, topEnv, rsfx);
             }
             else {
                 checkNonNumber(murmel, cadr(args));
-                emitForm(sb, car(args), env, topEnv, rsfx, false);
-                sb.append(") / toDouble(");
-                emitForm(sb, cadr(args), env, topEnv, rsfx, false);
+                emitFormAsDouble(sb, murmel, car(args), env, topEnv, rsfx);
+                sb.append(" / ");
+                emitFormAsDouble(sb, murmel, cadr(args), env, topEnv, rsfx);
             }
-            sb.append("))");
+            sb.append(")");
             if (asLong) sb.append(')');
         }
 
