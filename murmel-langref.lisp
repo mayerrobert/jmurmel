@@ -783,7 +783,7 @@ pi ; ==> 3.141592653589793
   (seqset 22 l 2) l)
   ; ==> (0 1 . 22)
 
-; = vector, vectorp, vector->list, simple-vector-p, svref, svset, vector-length, svlength
+; = vector, vectorp, vector-length, vector-copy, vector-fill, vector->list, simple-vector-p, svref, svset, svlength
 ;
 ; Since: 1.3
 ;

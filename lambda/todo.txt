@@ -1,22 +1,18 @@
 
-checken was alles serializable sein sollte, Closure wsl. nicht
+(eql 1 ((jmethod "Integer" "valueOf" "String") "1")) -> nil
+-> weil eql mit Object.equals() implementiert ist
+   kein problem für murmel, solange alles in long oder double berechnet wird und solange integerp nur für long t ergibt
+   schlecht für Java interop
 
 adjustable-array-p ist das einzige prädikat, das nicht T als parametertyp hat, (adjustable-array-p 1) gibt fehler.
 in CL gibts viele prädikate für arrays, da kann das sinn machen
 -> vielleicht in Murmel zulassen? anders als CL
 
-fill in Murmel einbauen: fill sequence item &key start end => sequence http://clhs.lisp.se/Body/f_fill.htm
--> oder fill-vector in murmel
-
-vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adjustable arrays simple-vector/ simple-string/ simple-bit-vector
--> könnte in mlib verwendet werden statt collect list und list->xxx, und vector-push-extend verwenden
--> würde coerce dasselbe machen?
--> copy-seq kopiert einen vector in einen neuen simple-vector (und list in list)
-   -> vielleicht copy-vector in murmel, und ggf. copy-seq in mlib
 
 
 
 
+checken was alles serializable sein sollte, Closure wsl. nicht
 
 toplevel let/let*/letrec (nicht named) gesondert behandeln: {} block mit normalen Java variablen
 -> damit würden defuns und lambdas mit nur einem toplevel letXX effizienter
