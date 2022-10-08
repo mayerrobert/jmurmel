@@ -1,10 +1,13 @@
 
-mlib:
-XX->list ersetzen durch generators
+checken was alles serializable sein sollte, Closure wsl. nicht
+
+fill in Murmel einbauen: fill sequence item &key start end => sequence http://clhs.lisp.se/Body/f_fill.htm
 
 vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adjustable arrays simple-vector/ simple-string/ simple-bit-vector
 -> könnte in mlib verwendet werden statt collect list und list->xxx, und vector-push-extend verwenden
-checken was alles serializable sein sollte, Closure wsl. nicht
+-> würde coerce dasselbe machen?
+-> copy-seq kopiert einen vector in einen neuen simple-vector (und list in list)
+   -> vielleicht copy-vector in murmel, und ggf. copy-seq in mlib
 
 
 

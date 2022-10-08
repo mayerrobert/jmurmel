@@ -8271,7 +8271,7 @@ public class LambdaJ {
 
         /** eval form and change to double */
         private void emitFormAsDouble(WrappingWriter sb, String func, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (form == null || form instanceof Character || form instanceof String) errorNotANumber(func, form); // todo weitere literale zur compilezeit abfangen, z.B. instanceof Object[]
+            if (form == null || form instanceof Character || vectorp(form) || (consp(form) && symbolEq(car(form), "quote"))) errorNotANumber(func, form);
             if (form instanceof Long) sb.append(form.toString()).append(".0");
             else if (form instanceof Double) sb.append(form.toString());
             else { sb.append("toDouble("); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(')'); }

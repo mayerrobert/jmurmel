@@ -1880,3 +1880,6 @@ manche funktionen die sequences nehmen sollten (map?) schlucken generators, ande
 
 
 scan-multiple brauchts eig. nur bei mehreren sequences, bei einer sequence wär scan effizienter
+
+mlib:
+XX->list ersetzen durch generators
