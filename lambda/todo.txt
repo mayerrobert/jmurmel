@@ -1,8 +1,4 @@
 
-adjustable-array-p ist das einzige prädikat, das nicht T als parametertyp hat, (adjustable-array-p 1) gibt fehler.
-in CL gibts viele prädikate für arrays, da kann das sinn machen
--> vielleicht in Murmel zulassen? anders als CL
-
 
 
 

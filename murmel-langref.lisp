@@ -763,9 +763,14 @@ pi ; ==> 3.141592653589793
 ;
 ; Only one-dimensional simple arrays of element-type t, 'bit or 'character are supported.
 
-; = (adjustable-array-p vector) -> boolean
+; = (adjustable-array-p obj) -> boolean
 ;
 ; Since: 1.3
+;
+; `adjustable-array-p` returns `t` if `obj` is an adjustable vector.
+;
+; Note that in Murmel `(adjustable-array-p 1)` returns nil
+; while in Common Lisp that would signal a `type-error`. 
 
 ; = seqref, seqset
 ;

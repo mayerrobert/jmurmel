@@ -3107,7 +3107,7 @@ public class LambdaJ {
 
     static boolean adjustableArrayP(Object o) {
         if (o instanceof List || o instanceof StringBuilder || o instanceof StringBuffer) return true;
-        if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
+        //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
         return false;
     }
 

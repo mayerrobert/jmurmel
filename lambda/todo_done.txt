@@ -1897,3 +1897,7 @@ vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adj
 -> weil eql mit Object.equals() implementiert ist
    kein problem für murmel, solange alles in long oder double berechnet wird und solange integerp nur für long t ergibt
    schlecht für Java interop
+
+adjustable-array-p ist das einzige prädikat, das nicht T als parametertyp hat, (adjustable-array-p 1) gibt fehler.
+in CL gibts viele prädikate für arrays, da kann das sinn machen
+-> vielleicht in Murmel zulassen? anders als CL
