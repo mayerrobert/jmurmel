@@ -326,16 +326,16 @@ Tail calls including tail recursive calls are optimized.
 Lambdas can be dynamic or lexical, this can be selected via a keyword parameter to `lambda`.
 
 Variables and functions share one namespace.
-Symbols names must not start with a digit, only the first 2000 characters are significant.
 
-Numbers must start with a digit, a `+` or a `-`.
+Math operators (except `1+, 1-`) are implemented using Java operators for double.
+This is probably different to Common Lisp
+esp. around +/-NaN, +/-Infinity, division by zero and so on.
 E.g. the S-expression `(/ 1 -0)` is valid and will yield `-Infinity`.
 
-Math operators are implemented using Java operators for double. This is probably different to Common Lisp
-esp. around +/-NaN, +/-Infinity, division by zero and so on.
-
-The only data types currently supported are symbols, pairs (i.e. lists), numbers (represented as Java Double or Long),
-characters and strings. String literals are 2000 chars max length.
+The data types currently supported are symbols, pairs (i.e. lists),
+numbers (represented as Java Double or Long),
+characters and vectors (character vectors aka strings, bitvectors and vectors that can contain any data).
+String literals are 2000 chars max length.
 
 Most of these features can be disabled using commandline arguments.
 You can disable pretty much everything except S-expressions, symbols, cons cells and lambda.
