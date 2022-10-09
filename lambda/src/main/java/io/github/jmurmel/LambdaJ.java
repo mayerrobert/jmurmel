@@ -250,7 +250,7 @@ public class LambdaJ {
     @FunctionalInterface public interface ObjectReader {
         Object readObj(Object eof);
 
-        /** if {@code recordPos == true} then it would be desirable to reconrd file/line positions inside the objects */
+        /** if {@code recordPos == true} then it would be desirable to record file/line positions inside the objects */
         default Object readObj(boolean recordPos, Object eof) { return readObj(eof); }
         default void setInput(ReadSupplier input, Path filePath) { throw new UnsupportedOperationException("this ObjectReader does not support changing input"); }
     }
@@ -3223,6 +3223,7 @@ public class LambdaJ {
         throw errorNotAVector("vector-length", maybeVector);
     }
 
+    @SuppressWarnings("unchecked")
     static Object vectorFill(Object vector, Object value, Object _start, Object _end) {
         final int start, end;
         final int length = (int)vectorLength(vector);
@@ -3231,7 +3232,7 @@ public class LambdaJ {
             if (_end != null) {
                 end = requireIntegralNumber("vector-fill", _end, start+1, length-1).intValue();
             }
-            else end = (int)length;
+            else end = length;
         }
         else { start = 0; end = length; }
 
@@ -3240,7 +3241,7 @@ public class LambdaJ {
         if (vector instanceof char[])        { Arrays.fill(((char[])vector), start, end, requireChar("vector-fill", value)); return vector; }
         if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
         if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
-        if (vector instanceof List)          { final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
+        if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
         throw errorNotAVector("vector-fill", vector);
     }
 

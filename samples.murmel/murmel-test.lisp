@@ -51,7 +51,12 @@
                         (tequal (cdr a) (cdr b))
                     nil)
               nil)
-        nil))))
+        (if (simple-bit-vector-p a)
+              (if (simple-bit-vector-p b)
+                    #+murmel (sbv= a b)
+                    #-murmel (equal a b)
+                nil)
+          nil)))))
 
 
 (defun assert-equal (expected-result result msg)
@@ -127,6 +132,25 @@
 
 
 ;;; Tests for core Murmel w/o mlib
+
+#|
+This is a
+multiline comment
+|#
+
+(deftest read.binary #b0101 5)
+(deftest read.octal  #o0101 65)
+(deftest read.hex    #xcafebabe 3405691582)
+(deftest read.bitvector #*0101
+                        #+murmel (list->simple-bit-vector '(0 1 0 1))
+                        #-murmel (make-array 4 :element-type 'bit :initial-contents '(0 1 0 1))
+)
+
+(deftest backquote
+  (let ((a "A") (c "C") (d '("D" "DD")))
+    `((,a b) ,c ,@d))
+  '(("A" b) "C" "D" "DD"))
+
 
 
 ;;; basic special forms: quote, lambda
@@ -590,13 +614,29 @@
 (deftest test-numbereq.13 (= 1)  t)
 (deftest test-numbereq.14 (= -0.0)  t)
 
-(deftest test-ne.1  (/= 1 2 3)  t)
-(deftest test-ne.2  (/= 1 2 2)  nil)
-(deftest test-ne.2  (/= 1 2 2.0)  nil)
+(deftest test-ne.1  (/= 1 2 3)    t)
+(deftest test-ne.2  (/= 1 2 2)    nil)
+(deftest test-ne.3  (/= 1 2 2.0)  nil)
+
+(deftest test-lt.1  (< 1 2 3)    t)
+(deftest test-lt.2  (< 1 2 2)    nil)
+(deftest test-lt.3  (< 1 2 2.0)  nil)
+
+(deftest test-le.1  (<= 1 2 3)   t)
+(deftest test-le.2  (<= 1 2 2)   t)
+(deftest test-le.3  (<= 1 2 2.0) t)
+(deftest test-le.4  (<= 1 2 1.9) nil)
+
+(deftest test-ge.1  (>= 3 2 1)  t)
+(deftest test-ge.2  (>= 3 2 2)  t)
+(deftest test-ge.3  (>= 3 2 3)  nil)
 
 
-;;; test +
+;;; test +, *
 (deftest test-add-minus-zero (+ -0.0 -0.0)  -0.0)
+#+murmel (deftest test-mul.1 (*)          1.0)
+#+murmel (deftest test-mul.2 (* 1)        1.0)
+#+murmel (deftest test-mul.2 (* 1 2 3.0)  6.0)
 
 
 ;;; test mod, rem
@@ -681,18 +721,43 @@
   (deftest ffi.number.4 (numberp long) t)
   (deftest ffi.number.5 (numberp bigInteger) t)
 
+  (deftest ffi.integerp.1 (integerp byte) t)
+  (deftest ffi.integerp.2 (integerp short) t)
+  (deftest ffi.integerp.3 (integerp integer) t)
+  (deftest ffi.integerp.4 (integerp long) t)
+  (deftest ffi.integerp.5 (integerp bigInteger) t)
+
+  (deftest ffi.eql.1 (eql 1 byte) t)
+  (deftest ffi.eql.2 (eql 1 short) t)
+  (deftest ffi.eql.3 (eql 1 integer) t)
+  (deftest ffi.eql.4 (eql 1 long) t)
+  (deftest ffi.eql.5 (eql 1 bigInteger) t)
+
+
   (deftest ffi.number.6 (numberp float) t)
   (deftest ffi.number.7 (numberp double) t)
   (deftest ffi.number.8 (numberp bigDecimal) t)
 
+  (deftest ffi.floatp.6 (floatp float) t)
+  (deftest ffi.floatp.7 (floatp double) t)
+  (deftest ffi.floatp.8 (floatp bigDecimal) t)
+
+  (deftest ffi.eql.6 (eql 1 float) nil)
+  (deftest ffi.eql.7 (eql 1 double) nil)
+  (deftest ffi.eql.8 (eql 1 bigDecimal) nil)
+
+
   (deftest ffi.coll.1 (vectorp arrayList) t)
   ; todo (deftest ffi.coll.2 (vectorp bitSet) t)
+
 
   (deftest ffi.string.1 (vectorp string) t)
   (deftest ffi.string.2 (vectorp stringBuffer) t)
   (deftest ffi.string.3 (vectorp stringBuilder) t)
-  (deftest ffi.string.4 (adjustable-array-p stringBuffer) t)
-  (deftest ffi.string.5 (adjustable-array-p stringBuilder) t)
+
+  (deftest ffi.string.4 (adjustable-array-p string) nil)
+  (deftest ffi.string.5 (adjustable-array-p stringBuffer) t)
+  (deftest ffi.string.6 (adjustable-array-p stringBuilder) t)
 )
 
 

@@ -16,14 +16,6 @@ toplevel let/let*/letrec (nicht named) gesondert behandeln: {} block mit normale
 vielleicht loc aufteilen: String filename, int linepos int colpos, String info
 -> bei (declaim (optimize (debug 0))) bleibt info leer, würde eine menge stringliterale einsparen
 
-JMurmel> (list->simple-vector '(1 2 3))
-==> #(1 2 3)
-JMurmel> (apply vector '(1 2 3))
-==> #(1 2 3)
-
--> list->simple-vector ist unnötig
-   wenns constructor funktionen für die anderen vectortypen gäbe, wäre z.B. list->string auch unnötig
-
 
 - vielleicht Callable, Runnable, Supplier, Consumer, ... ins Murmel Typsystem einhängen? functionp + eval + compiler-runtime
 
