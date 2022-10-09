@@ -527,10 +527,13 @@
 
 (deftest eql.17 (eql -0 -0) t)
 (deftest eql.18 (eql -0 0) t)
-(deftest eql.18 (eql -0.0 -0) nil)
+(deftest eql.19 (eql -0.0 -0) nil)
 
-(deftest eql.17 (eql -0.0 -0.0) t)
-(deftest eql.18 (eql -0.0 0.0) nil)
+(deftest eql.20 (eql -0.0 -0.0) t)
+(deftest eql.21 (eql -0.0 0.0) nil)
+
+#+murmel (deftest eql.22 (eql 1 ((jmethod "Integer" "valueOf" "String") "1")) t)
+#+murmel (deftest eql.23 (eql 1 ((jmethod "java.math.BigInteger" "new" "String") "1")) t)
 
 
 ;;; test list

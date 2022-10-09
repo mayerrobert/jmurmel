@@ -3062,8 +3062,25 @@ public class LambdaJ {
 
     static boolean eql(Object o1, Object o2) {
         if (o1 == o2) return true;
-        if (numberp(o1) && numberp(o2) || characterp(o1) && characterp(o2))
-            return Objects.equals(o1, o2);
+        if (characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
+        if (numberp(o1) && numberp(o2)) {
+            if (Objects.equals(o1, o2)) return true;
+
+            if (o1 instanceof BigInteger)
+                return !(o2 instanceof BigInteger) && integerp(o2) && ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue()))) == 0;
+            if (o2 instanceof BigInteger)
+                return integerp(o1) && ((BigInteger)o2).compareTo(new BigInteger(String.valueOf(((Number)o1).longValue()))) == 0;
+
+            /*if (o1 instanceof BigDecimal)
+                return !(o2 instanceof BigDecimal) && floatp(o2) && ((BigDecimal)o1).compareTo(new BigDecimal(String.valueOf(((Number)o2).doubleValue()))) == 0;
+            if (o2 instanceof BigDecimal)
+                return floatp(o1) && ((BigDecimal)o2).compareTo(new BigDecimal(String.valueOf(((Number)o1).doubleValue()))) == 0;*/
+
+            if (integerp(o1) && integerp(o2))
+                return ((Number)o1).longValue() == ((Number)o2).longValue();
+            /*if (floatp(o1) && floatp(o2))
+                return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue()) == 0;*/
+        }
         return false;
     }
 
@@ -3076,8 +3093,8 @@ public class LambdaJ {
     static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; }
 
     static boolean numberp(Object o)    { return integerp(o) || floatp(o) || o instanceof Number; }
-    static boolean floatp(Object o)     { return o instanceof Double; }  // todo float, BigDecimal?
-    static boolean integerp(Object o)   { return o instanceof Long; }    // todo Byte, Short, Integer, BigInteger?
+    static boolean floatp(Object o)     { return o instanceof Double || o instanceof Float || o instanceof BigDecimal; }
+    static boolean integerp(Object o)   { return o instanceof Long || o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof BigInteger; }
 
     static boolean characterp(Object o) { return o instanceof Character; }
 

@@ -1892,3 +1892,8 @@ vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adj
 -> würde coerce dasselbe machen?
 -> copy-seq kopiert einen vector in einen neuen simple-vector (und list in list)
    -> vielleicht copy-vector in murmel, und ggf. copy-seq in mlib
+
+(eql 1 ((jmethod "Integer" "valueOf" "String") "1")) -> nil
+-> weil eql mit Object.equals() implementiert ist
+   kein problem für murmel, solange alles in long oder double berechnet wird und solange integerp nur für long t ergibt
+   schlecht für Java interop
