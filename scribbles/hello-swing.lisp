@@ -1,8 +1,5 @@
 ;;;; Preliminary attempt at the Swing "Hello, World!" in Murmel
 ;;;  see https://docs.oracle.com/javase/tutorial/uiswing/examples/start/HelloWorldSwingProject/src/start/HelloWorldSwing.java
-;;;
-;;; Currently only works in the interpreter due to issues with compiling Java FFI,
-;;; e.g. calls to Java void functions are not handled correctly by the Murmel compiler.
 
 
 ;;; AWT stuff
@@ -33,6 +30,10 @@
   (jmethod "java.awt.Font" "new" "String" "int" "int"))
 
 
+(define set-location-relative-to
+  (jmethod "java.awt.Window" "setLocationRelativeTo" "java.awt.Component"))
+
+
 ;;; Swing stuff
 
 ; dispose the window when clicking X. If all windows are disposed the JVM may end.
@@ -40,6 +41,10 @@
 
 ; call exit(0) when clicking X
 (define +exit-on-close+ 3)
+
+; see +dispose-on-close+ and +exit-on-close+
+(define set-default-close-operation
+  (jmethod "javax.swing.JFrame" "setDefaultCloseOperation" "int"))
 
 
 ; helper macro to emit constructor-functions for Swing components.
@@ -80,15 +85,24 @@
          (label (make-jlabel "Hello, World!"))
          (content-pane (get-content-pane frame)))
 
-    ((jmethod "javax.swing.JFrame" "setDefaultCloseOperation" "int") frame +dispose-on-close+)
+    (set-default-close-operation frame +dispose-on-close+)
 
     (set-font label (make-font nil 0 24))
     (add-component content-pane label)
 
+    (labels ((nop (event)))
+      ((jmethod "java.awt.Component" "addMouseListener" "java.awt.event.MouseListener")
+         frame
+         (jproxy "java.awt.event.MouseListener" "mouseClicked"  (lambda (e) (writeln "Mouse event" nil))
+                                                "mousePressed"  nop
+                                                "mouseReleased" nop
+                                                "mouseEntered"  nop
+                                                "mouseExited"   nop)))
+
     (set-layout frame (make-gridbag-layout))
-    (pack-frame frame)
+    ;(pack-frame frame) ; use either pack-frame or set-component-size
     (set-component-size frame 600 400)
-    ((jmethod "java.awt.Window" "setLocationRelativeTo" "java.awt.Component") frame nil)
+    (set-location-relative-to frame nil)
     (set-component-visible frame t)))
 
 ;;; static void main(String[] args)
