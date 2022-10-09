@@ -206,6 +206,29 @@
 
 ;;; - conses and lists
 
+;; test copy-list
+(let (lst slst clst)
+  (tests copy-list
+    (setq lst (list 1 (list 2 3))) =>  (1 (2 3))
+    (setq slst lst) =>  (1 (2 3))
+    (setq clst (copy-list lst)) =>  (1 (2 3))
+    (eq slst lst) =>  t
+    (eq clst lst) =>  nil
+    (equal clst lst) =>  t
+    (rplaca lst "one") =>  ("one" (2 3))
+    slst =>  ("one" (2 3))
+    clst =>  (1 (2 3))
+    (setf (caadr lst) "two") =>  "two"
+    lst =>  ("one" ("two" 3))
+    slst =>  ("one" ("two" 3))
+    clst =>  (1 ("two" 3))
+    
+    (setq lst '(1 2 . 3)) => (1 2 . 3)
+    (setq clst (copy-list lst)) => (1 2 . 3)
+    (eq lst clst) => nil
+))
+
+
 ;; test list-length
 #-murmel
 (defun circular-list (&rest elements)
@@ -619,6 +642,16 @@
                                                    (t t)))))
     (dotimes (i (length from) arry)
       (setf (elt arry i) (elt from i)))))
+
+
+;; test copy-seq
+(let (str)
+  (tests copy-seq
+    (setq str "a string")      => "a string"
+    (equal str (copy-seq str)) => t
+    (eql str (copy-seq str))   => nil
+))
+
 
 ;; test elt
 (tests elt

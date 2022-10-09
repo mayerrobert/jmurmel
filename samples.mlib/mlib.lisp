@@ -24,7 +24,7 @@
 ;;;     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
 
 ;;; - conses and lists
-;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth)
+;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [copy-list](#function-copy-list)
 ;;;     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
 ;;;     - [acons](#function-acons)
 ;;;     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
@@ -44,7 +44,7 @@
 ;;;     - [equal](#function-equal)
 
 ;;; - sequences
-;;;     - [elt](#function-elt), [length](#function-length)
+;;;     - [elt](#function-elt), [copy-seq](#function-copy-seq), [length](#function-length)
 ;;;     - [reverse](#function-reverse), [nreverse](#function-nreverse)
 ;;;     - [remove-if](#function-remove-if), [remove](#function-remove)
 ;;;     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
@@ -420,6 +420,29 @@
   (car (nthcdr n lst)))
 (defmacro nth (n lst)
   `(car (nthcdr ,n ,lst)))
+
+
+;;; = Function: copy-list
+;;;
+;;;     (copy-list lst) -> copy
+;;;
+;;; Since: 1.3
+;;;
+;;; Returns a copy of `lst`. If `lst` is a dotted list,
+;;; the resulting list will also be a dotted list.
+;;;
+;;; Only the list structure of `lst` is copied;
+;;; the elements of the resulting list are the same
+;;; as the corresponding elements of the given list.
+(defun copy-list (lst)
+  (let* loop ((lst lst)
+              (result (cons nil nil))
+              (append-to result))
+    (if (consp lst)
+          (loop (cdr lst) result (cdr (rplacd append-to (cons (car lst) nil))))
+      (progn
+        (if lst (rplacd append-to lst))
+        (cdr result)))))
 
 
 ;;; = Function: unzip
@@ -1490,6 +1513,25 @@
 (define elt seqref)
 (defmacro elt (seq idx)
   `(seqref ,seq ,idx))
+
+
+;;; = Function: copy-seq
+;;;     (copy-seq sequence) -> copied-sequence
+;;;
+;;; Since: 1.3
+;;;
+;;; Creates a copy of `sequence`.
+;;; The elements of the new sequence are the same as the corresponding elements of the given sequence.
+;;;
+;;; If `sequence` is a vector, the result is a fresh simple vector
+;;; that has the same actual array element type as `sequence`.
+;;; If `sequence` is a list, the result is a fresh list.
+(defun copy-seq (seq)
+  (typecase seq
+    (null)
+    (cons   (copy-list seq))
+    (vector (vector-copy seq))
+    (t      (error "copy-seq - %s is not a sequence" seq))))
 
 
 ;;; = Function: length

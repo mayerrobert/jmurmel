@@ -3,6 +3,8 @@
 
 
 
+mlib: foldl, foldr, vielleicht foreach, filter
+
 checken was alles serializable sein sollte, Closure wsl. nicht
 
 toplevel let/let*/letrec (nicht named) gesondert behandeln: {} block mit normalen Java variablen
