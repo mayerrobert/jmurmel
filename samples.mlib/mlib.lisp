@@ -1694,7 +1694,7 @@
         (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
               func (let ((original func))
                      (lambda (val) (apply original val))))
-    (setq seq (scan seq)))
+    (setq seq (m%scan seq)))
 
   (if result-type
         (let* ((result (cons nil nil))
@@ -1876,7 +1876,7 @@
            (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
                  pred (let ((original pred))
                         (lambda (val) (apply original val))))
-       (setq seq (scan seq)))
+       (setq seq (m%scan seq)))
 
      (labels ((do-step (val more)
                 (if more
