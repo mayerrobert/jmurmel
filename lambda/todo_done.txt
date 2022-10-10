@@ -1879,6 +1879,14 @@ manche funktionen die sequences nehmen sollten (map?) schlucken generators, ande
 ! reduce      kein generator
 
 
+aref in mlib? eher nicht
+-> wenn schon dann sollte aref in murmel sein und java.util.List unterstützen
+elt in mlib? eher schon
+vielleicht statt sbit/bvset
+-> (sbvref bv idx) -> boolean, (sbvset bv idx), (sbvclr bv idx)
+-> sbit in mlib
+java.util.BitSet ist eigentlich ein bitvector, ggf. in jmurmel anbinden
+
 scan-multiple brauchts eig. nur bei mehreren sequences, bei einer sequence wär scan effizienter
 
 mlib:

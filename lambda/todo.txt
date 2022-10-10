@@ -80,16 +80,9 @@ min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann e
    zuordnung name/ compiler-javaname für emitOpencode im compiler
 
 
-aref in mlib? eher nicht
--> wenn schon dann sollte aref in murmel sein und java.util.List unterstützen
 nth, nthcdr von mlib nach murmel? wg. ArraySlice und string (?)
-elt in mlib? eher schon
 vielleicht make-array aus murmel rauskicken und in mlib umsetzen
 -> in jmurmel nur make-simple-vector, make-simple-bitvector, ...
-vielleicht statt sbit/bvset
--> (sbvref bv idx) -> boolean, (sbvset bv idx), (sbvclr bv idx)
--> sbit in mlib
-java.util.BitSet ist eigentlich ein bitvector, ggf. in jmurmel anbinden
 
 
 gensym symbole (beginnend mit #:) sollten beim symbol-printen NICHT in || gesteckt werden
@@ -115,7 +108,7 @@ vielleicht die cons-zählerei rauskicken? braucht eh niemand
 static final members können aus system properties initialisiert werden
 -> evtl. für Tracelevel LambdaJ.trace verwenden, dann würde ggf. JIT das gance tracing wegoptimieren. traceOn & traceFunc wäre ggf auch hinfällig
 
-statt CustomEnvironmentSupplier -> builder pattern
+statt CustomEnvironmentSupplier -> builder pattern, siehe todo_dont.txt
 -> CustomEnvironment bei jedem aufruf von interpretExpressions() mitzugeben ist eh fragwürdig.
    init() jedesmal aufrufen eigentlich auch, weil das ändert die members topEnv, lispStdin, lispStdout, nicht schön!
 
