@@ -592,13 +592,15 @@ multiline comment
 
 
 ;;; test assq
-(deftest assq.1 (assq 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))  '(a-key 3))
-(deftest assq.2 (assq nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
+(deftest assq.1 (assq 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))     '(a-key 3))
+(deftest assq.2 (assq nil    '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
+(deftest assq.3 (assq 'key-5 '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   nil)
 
 
 ;;; test assoc
-(deftest assoc.1 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))  '(a-key 3))
-(deftest assoc.2 (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
+(deftest assoc.1 (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))     '(a-key 3))
+(deftest assoc.2 (assoc nil    '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
+(deftest assoc.3 (assoc 'key-5 '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   nil)
 
 
 ;;; test number comparison operators
@@ -766,6 +768,18 @@ multiline comment
   (deftest ffi.string.5 (adjustable-array-p stringBuffer) t)
   (deftest ffi.string.6 (adjustable-array-p stringBuilder) t)
 )
+
+
+#+murmel
+(deftest ffi.jproxy
+  (let* (value
+         (apply-runnable (jmethod "java.lang.Runnable" "run"))
+         (runnable (jproxy "java.lang.Runnable" "run" (lambda () (setq value 123)))))
+  
+        (apply-runnable runnable)
+        value)
+  123)
+
 
 
 ;;; Print summary
