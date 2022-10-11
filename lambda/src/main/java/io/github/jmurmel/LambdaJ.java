@@ -3365,8 +3365,8 @@ public class LambdaJ {
         return null;
     }
 
-    /** append args non destructively, all args except the last are shallow copied, all args except the last must be a list */
-    // todo CL macht deep copy bei allen args ausser dem letzten, alle args ausser dem letzten muessen proper lists sein (murmel behandelt dotted und proper lists gleich)
+    /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
+     *  all args except the last must be a list */
     private Object append(ConsCell args) {
         if (args == null) return null;
         if (cdr(args) == null) return car(args);
@@ -3414,8 +3414,8 @@ public class LambdaJ {
         if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
         if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
         if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
-        //if (n instanceof BigInteger) { return ((BigInteger)n).signum(); }
-        //if (n instanceof BigDecimal) { return ((BigDecimal)n).signum(); }
+        if (n instanceof BigInteger) { return ((BigInteger)n).signum(); }
+        if (n instanceof BigDecimal) { return (double)((BigDecimal)n).signum(); }
 
         return Math.signum(toDouble("signum", n));
     }
@@ -3436,12 +3436,22 @@ public class LambdaJ {
         if (n instanceof Double) return ((Double)n) + 1;
         if (n instanceof Long) {
             final long l;
-            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow");
+            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
             return l + 1;
         }
         if (n instanceof Byte) return ((Byte)n).longValue() + 1;
         if (n instanceof Short) return ((Short)n).longValue() + 1;
         if (n instanceof Integer) return ((Integer)n).longValue() + 1;
+        if (n instanceof BigInteger) {
+            try {
+                final long l;
+                if ((l = ((BigInteger)n).longValueExact()) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
+                return l + 1;
+            }
+            catch (ArithmeticException e) {
+                throw new LambdaJError("1+: overflow, BigInteger argument does not fit in a fixnum");
+            }
+        }
         return toDouble("1+", n) + 1;
     }
 
@@ -3449,12 +3459,22 @@ public class LambdaJ {
         if (n instanceof Double) return ((Double)n) - 1;
         if (n instanceof Long) {
             final long l;
-            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow");
+            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
             return l - 1;
         }
         if (n instanceof Byte) return ((Byte)n).longValue() - 1;
         if (n instanceof Short) return ((Short)n).longValue() - 1;
         if (n instanceof Integer) return ((Integer)n).longValue() - 1;
+        if (n instanceof BigInteger) {
+            try {
+                final long l;
+                if ((l = ((BigInteger)n).longValueExact()) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
+                return l - 1;
+            }
+            catch (ArithmeticException e) {
+                throw new LambdaJError("1-: underflow, BigInteger argument does not fit in a fixnum");
+            }
+        }
         return toDouble("1-", n) - 1;
     }
 
@@ -4240,8 +4260,8 @@ public class LambdaJ {
         final double offset = -rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
         //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
         return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
-                                                            cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
-                                                                                                                                   cons(boolResult(daylightSavings), cons(offset, null)))))))));
+                    cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
+                    cons(boolResult(daylightSavings), cons(offset, null)))))))));
     }
 
     /** expand a single macro call */
@@ -4479,7 +4499,7 @@ public class LambdaJ {
             final String asString = "#<Java proxy: " + clazz.getName() + ">";
             methodToMurmelFunction.put(nameToMethod.get("toString"), a -> asString);
             methodToMurmelFunction.put(Writeable.class.getMethod("printSEx", WriteConsumer.class, boolean.class),
-                                       a -> {final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null;});
+                                       a -> { final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null; });
 
             for (ConsCell lst = requireList("jproxy", cdr(args)); lst != null; ) {
                 if (cdr(lst) == null) throw new LambdaJError(false, "jproxy: odd number of method/functions");
