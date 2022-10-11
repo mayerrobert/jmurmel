@@ -28,4 +28,4 @@
              (shorterp (cdr x)
                        (cdr y)))))
 
-(bench "takL" (mas 18l 12l 6l) *default-duration*)  ; => 7
+(bench "takL" (mas 18l 12l 6l) *default-duration*)  ; => (7 6 5 4 3 2 1)
