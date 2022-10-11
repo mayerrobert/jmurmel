@@ -286,8 +286,6 @@ safety könnte werden:
 nthcdr und nth sollten ggf. von mlib nach murmel wg. ArraySlice, und wg. Strings
 -> besser (elt sequence index), http://www.lispworks.com/documentation/HyperSpec/Body/f_elt.htm
 
-(read) sollte einen parameter eof bekommen
-
 funktion die den awt frame eines turtleframe liefert, für java interop
 
 :: könnte statt nur strings auch symbols schlucken:
@@ -642,8 +640,6 @@ compiler: tests für verschachtelte let dynamic
 ggf. bei let dynamic als endcall zumindest warnen dass TCO nicht gemacht wird
 ggf. für let dynamic statt try/finally eine restore liste basteln, und die wird irgendwie von tailcall abgearbeitet
 
-options --pool-all-quoted-symbols, --pool-quoted-lists, --pool-quoted-lists-in-lists
-
 
 
 (declaim (inline... implementieren
@@ -651,17 +647,19 @@ options --pool-all-quoted-symbols, --pool-quoted-lists, --pool-quoted-lists-in-l
 
 vielleicht tagbody/go/return from/return? könnte für schnellere loops verwendet werden:
   new MurmelFunction(Object... args) {
+    Object ret = null;
     label:
     do {
       try {
         forms... // return-from auf gleicher ebene macht "ret=...; break label;", verschachteltes return-from macht "throw new ReturnException(...);"
       }
-      catch (GoException e) { continue label; }
-      catch (ReturnException e) { ret = e.getRet(); break label; }
+      catch (GoException e)     { if (e.getLabel() == label) continue label; else throw e; }
+      catch (ReturnException e) { if (e.getLabel() == label) return e.getRet(); else throw e; }
     } while (false);
+    return ret;
   }.apply(NOARGS);
 -> problem wird wieder sein, wenn das go/ return-from eine expression sein muss, wenns in einem if steht das als ?: geschrieben wird.
-
+   -> java funktionen go() und returnFrom() schreiben, die haben formal einen returnvalue, machen aber nur throw
 
 
 
@@ -755,8 +753,6 @@ oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))"
 
 
 
-
-der reader könnte die erste zeile fressen wenn sie mit #! beginnt, siehe auch https://srfi.schemers.org/srfi-22/
 
 mit -Djava.awt.headless=true gibt (make-frame) eine HeadlessException
 -> ggf. eine funktion um einen frame in eine datei zu schreiben? und headlessp
@@ -928,9 +924,6 @@ JMurmel> (mapcar (lambda (n) (prog1 (-> n princ (->> 1+ 1+) princ (expt 2) round
 ==> (4 9 16 25 36 49)
 
 
-
-globals koennten eine hashmap sein?!?
--> hashmap nicht aber ggf multimap
 
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
 vgl. Graham, Paul "On Lisp"  Prentice-Hall, New Jersey, 1994, pp. 348-379, available online at http://www.paulgraham.com/onlisptext.html.
@@ -1176,15 +1169,6 @@ assoc sucht erst im aktuellen namespace, dann in topenv (wie spielt das mit den 
 
 
 
-Vielleicht in define den Lisp Code nach Java uebersetzen und mit tools.jar uebersetzen? Und aus dem erzeugten class file
-ein neues primitive basteln?
--> denkbar waere ein aeusserer und ein innerer compiler. der aeussere uebersetzt nach java/c/..., der innere nach bytecode
--> vor dem compiler koennten transformationen laufen wie z.b. let->lambda, dann brauchte der compiler und eine allfaellige vm
-   nicht so viele features haben
-   -> oder der (bytecode) compiler erzeugt code der nur weniger vm features braucht
-
-
-
 neuen parser: (evtl while, for (list) umsetzen?)
 program ::= stmt*
 
@@ -1240,9 +1224,6 @@ ObjectReader -> LispReader, #readObj -> #read
 ObjectWriter -> LispPrinter, #printObj -> #print
 
 
-synchronized ueberlegen
-
-
 
 
 
@@ -1269,8 +1250,6 @@ switch (code[ip++]) {
 case car: extendenv(...; continue top;
 case cons: extendenv(new ConsCell(...; continue top;
 }
-
-ggf. auch in den interpreter einige funktionen wie +/- "inlinen"
 
 
 
@@ -1331,49 +1310,11 @@ flag fuer symbols:
 --symbols=ci ... symbole werden nicht umgestellt, aber case insensitive verglichen
 --symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
 
-Vielleicht doch set/setf/setq, vgl ABOUT LISP https://graham.main.nc.us/~bhammel/graham/lisp.html
-rplaca, rplacd
-Vielleicht ein "Imperative Paket" mit flags ein/ausschalten?
-
-        if(car(exp) == s_define)                        // "define"
-          return(extend_top(car(cdr(exp)),
-                            eval(car(cdr(cdr(exp))), env)));
-        if(car(exp) == s_setb) {                        // "set!"
-          obj *pair   = assoc(car(cdr(exp)), env);
-          obj *newval = eval(car(cdr(cdr(exp))), env);
-          setcdr(pair, newval);
-          return newval;
-        }
-
-am besten setf weglassen, weil das macht serious magic
--> set ... belegt den ersten gefundenen wert im environment neu. dynamic, lexical, global, halt dort, wos assoc zuerst findet
-           beide argumente werden evaluiert
--> setq ... wie set aber das erste argument wird nicht evaluiert
--> rplaca, rplacd http://clhs.lisp.se/Body/f_rplaca.htm
-   rplaca cons object => cons
-   rplacd cons object => cons
-
 
 
 
 
 Generic S-Expression reader/ writer: (<n>:<octets>)
-
-// Files can be loaded into the REPL
-scala> :load /sites/repl-test.scala
-Loading /sites/repl-test.scala...
-res2: Int = 4
-res3: Int = 6
-
--> vielleicht :save und (load <string>)
-
-
-builtin oder special form fuer try/catch:
-try = (lambda (func catch-handler finally) (
-  try { return func(); }
-  catch (Exception e) { return catch-handler(e); }
-  finally { finally(); }
-)
 
 
 
@@ -1397,7 +1338,6 @@ cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eva
    cdr/cdar -> cddar
    cdr/cddr -> cdddr
 
-beispiel, wie man einen logger einhaengen kann.
 
 LambdaJError extends RuntimeException   ... abstract
 Syntaxerror extends LambdaJError        ... nur eval
@@ -1424,10 +1364,6 @@ class ConsCell extends Value {
 Value car(Value v) { return v.car(); }
 Value cdr(Value v) { return v.cdr(); }
 ConsCell cons(Value car, Value cdr) { return new ConsCell(car, cdr); }
-
-
-nice to have: apply mit zuviel/ zuwenig args fuer ein lambda: ueberschuessige args koennten gemeinsam mit dem letzten als liste uebergeben werden,
-fehlende als null.
 
 
 Doku: ein Custom Parser koennte statt parsen eine Liste liefern (koennte z.B. hardcodiert
