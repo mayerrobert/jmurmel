@@ -140,10 +140,6 @@ https://docs.oracle.com/en/java/javase/17/vm/class-data-sharing.html
 
 performance impact von assert: https://stackoverflow.com/questions/4624919/performance-drag-of-java-assertions-when-disabled/40919125#40919125
 
-rekursive aufrufe sind derzeit late-bound
--> compiler könnte das ändern, indem defuns eine (final) variable "recur" bekommen, und das geht ins environment
-   -> aufpassen: das ändert die semantik von setq: (defun f...  (setq f... würd dann ggf. nicht mehr gehen?!?
-
 (let loop ((n 10)) (writeln n) (if (= n 3) (setq loop (lambda (n) (writeln (quote done))))) (loop (1- n)))
 -> geht im interpreter, gibt java compile fehler im compiler (cannot assign a value to final variable _loop2)
 (labels ((l () (writeln 'vorher) (setq l (lambda () (writeln 'nachher))))) (l) (l))

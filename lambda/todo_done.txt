@@ -1909,3 +1909,7 @@ vielleicht primitive "simplify" oder besser "simplify-vector", die macht aus adj
 adjustable-array-p ist das einzige prädikat, das nicht T als parametertyp hat, (adjustable-array-p 1) gibt fehler.
 in CL gibts viele prädikate für arrays, da kann das sinn machen
 -> vielleicht in Murmel zulassen? anders als CL
+
+rekursive aufrufe sind derzeit late-bound
+-> compiler könnte das ändern, indem defuns eine (final) variable "recur" bekommen, und das geht ins environment
+   -> aufpassen: das ändert die semantik von setq: (defun f...  (setq f... würd dann ggf. nicht mehr gehen?!?

@@ -414,6 +414,13 @@ multiline comment
 (deftest eval.5
   (let (a) (#-murmel funcall intp)) '|hello from interpreter|)
 
+(defun eval-helper ()
+  (values 1 2))
+
+#+murmel
+(deftest eval.6
+  (eval '(multiple-value-bind (a b) (f) (list a b)) (cons (cons 'f eval-helper) nil)) '(1 2))
+
 
 ;;; test apply
 #+murmel

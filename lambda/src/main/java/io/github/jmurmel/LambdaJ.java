@@ -2103,8 +2103,13 @@ public class LambdaJ {
                     }
 
                     else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
-                        // compiled function or compiler runtime func
+                        // compiler runtime func
                         return result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);
+                    }
+
+                    else if (func instanceof MurmelFunction) {
+                        // compiled function
+                        return result = applyCompiledFunction((MurmelFunction) func, argList, stack, level);
                     }
 
                     /* something like
@@ -2807,8 +2812,26 @@ public class LambdaJ {
 
     /** in case compiled code calls "(eval)" */
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
-        if (traceFunc) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
+        if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
         try { return primfn.applyCompilerPrimitive(listToArray(args)); }
+        catch (LambdaJError e) { throw e; }
+        catch (Exception e) { throw new LambdaJError(true, "#<compiler primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+    }
+
+    MurmelJavaProgram compiledProgram = null;
+    private Object applyCompiledFunction(MurmelFunction fn, ConsCell args, int stack, int level) {
+        if (traceFunc) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
+        try {
+            final Object ret = fn.apply(listToArray(args));
+            assert compiledProgram != null;
+            if (compiledProgram.values != null) {
+                values = list(compiledProgram.values);
+            }
+            else {
+                values = NO_VALUES;
+            }
+            return ret;
+        }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
     }
@@ -5206,7 +5229,15 @@ public class LambdaJ {
             interpreter.traceJavaStats(tEnd - tStart);
             if (repl || finalResult && result != null) {
                 System.out.println();
-                System.out.print("==> ");  prg.getLispPrinter().printObj(result, true);  System.out.println();
+
+                if (repl && ((MurmelJavaProgram)prg).values != null) {
+                    for (Object value : ((MurmelJavaProgram)prg).values) {
+                        System.out.print(" -> ");
+                        prg.getLispPrinter().printObj(value, true);
+                        System.out.println();
+                    }
+                }
+                else { System.out.print("==> ");  prg.getLispPrinter().printObj(result, true);  System.out.println(); }
             }
 
             return result;
@@ -5961,6 +5992,7 @@ public class LambdaJ {
         protected MurmelJavaProgram() {
             intp.init(() -> -1, System.out::print);
             intp.setReaderPrinter(intp.makeReader(System.in::read, null), intp.getLispPrinter());
+            intp.compiledProgram = this;
             _t = intern("t");
             _dynamic = intern("dynamic");
             features = (ConsCell)cdr(intp.featuresEnvEntry); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
