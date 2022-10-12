@@ -717,7 +717,6 @@ multiline comment
       (bigDecimal    ((jmethod "java.math.BigDecimal"    "new" "String") "1"))
 
       (arrayList     ((jmethod "java.util.ArrayList"     "new")))
-      (bitSet        ((jmethod "java.util.BitSet"        "new")))
 
       (string        ((jmethod "java.lang.String"        "new" "String") "stringvalue"))
       (stringBuffer  ((jmethod "java.lang.StringBuffer"  "new" "String") "stringvalue"))
@@ -769,14 +768,14 @@ multiline comment
   (deftest ffi.floatp.7 (floatp double) t)
   (deftest ffi.floatp.8 (floatp bigDecimal) t)
 
-  (deftest ffi.int.1 (1+ byte) 2)
-  (deftest ffi.int.2 (1+ short) 2)
-  (deftest ffi.int.3 (1+ integer) 2)
-  (deftest ffi.int.4 (1+ long) 2)
-  (deftest ffi.int.5 (1+ bigInteger) 2)
-  (deftest ffi.int.6 (1+ float) 2.0)
-  (deftest ffi.int.7 (1+ double) 2.0)
-  (deftest ffi.int.8 (1+ bigDecimal) 2.0)
+  (deftest ffi.inc.1 (1+ byte) 2)
+  (deftest ffi.inc.2 (1+ short) 2)
+  (deftest ffi.inc.3 (1+ integer) 2)
+  (deftest ffi.inc.4 (1+ long) 2)
+  (deftest ffi.inc.5 (1+ bigInteger) 2)
+  (deftest ffi.inc.6 (1+ float) 2.0)
+  (deftest ffi.inc.7 (1+ double) 2.0)
+  (deftest ffi.inc.8 (1+ bigDecimal) 2.0)
 
   (deftest ffi.dec.1 (1- byte) 0)
   (deftest ffi.dec.2 (1- short) 0)
@@ -797,25 +796,36 @@ multiline comment
   (deftest ffi.signum.8 (signum bigDecimal) 1.0)
 
 
-  (deftest ffi.coll.1 (vectorp arrayList) t)
-  ; todo (deftest ffi.coll.2 (vectorp bitSet) t)
+  (deftest ffi.vectorp.1 (vectorp arrayList)     t)
+  (deftest ffi.vectorp.2 (vectorp string)        t)
+  (deftest ffi.vectorp.3 (vectorp stringBuffer)  t)
+  (deftest ffi.vectorp.4 (vectorp stringBuilder) t)
+
+  (deftest ffi.len.1 (vector-length arrayList)     0)
+  (deftest ffi.len.2 (vector-length string)        11)
+  (deftest ffi.len.3 (vector-length stringBuffer)  11)
+  (deftest ffi.len.4 (vector-length stringBuilder) 11)
 
 
-  (deftest ffi.string.1 (vectorp string)        t)
-  (deftest ffi.string.2 (vectorp stringBuffer)  t)
-  (deftest ffi.string.3 (vectorp stringBuilder) t)
+  (let loop ((i 0))
+    (if (< i 10)
+      (progn (vector-push-extend i arrayList)
+             (loop (1+ i)))))
 
-  (deftest ffi.string-len.1 (vector-length string)        11)
-  (deftest ffi.string-len.2 (vector-length stringBuffer)  11)
-  (deftest ffi.string-len.3 (vector-length stringBuilder) 11)
+  (deftest ffi.adjustable.1 (adjustable-array-p arrayList)     t)
+  (deftest ffi.adjustable.2 (adjustable-array-p string)        nil)
+  (deftest ffi.adjustable.3 (adjustable-array-p stringBuffer)  t)
+  (deftest ffi.adjustable.4 (adjustable-array-p stringBuilder) t)
 
-  (deftest ffi.string.4 (adjustable-array-p string)        nil)
-  (deftest ffi.string.5 (adjustable-array-p stringBuffer)  t)
-  (deftest ffi.string.6 (adjustable-array-p stringBuilder) t)
+  (deftest ffi.seqref.1 (seqref arrayList 6)     6)
+  (deftest ffi.seqref.2 (seqref string 6)        #\v)
+  (deftest ffi.seqref.3 (seqref stringBuffer 6)  #\v)
+  (deftest ffi.seqref.4 (seqref stringBuilder 6) #\v)
 
-  (deftest ffi.string-seqref.4 (seqref string 6)        #\v)
-  (deftest ffi.string-seqref.5 (seqref stringBuffer 6)  #\v)
-  (deftest ffi.string-seqref.6 (seqref stringBuilder 6) #\v)
+
+  (deftest ffi.seqset.1 (list (seqset 66 arrayList 6) (seqref arrayList 6))  '(66 66))
+  (deftest ffi.seqset.1 (list (seqset #\a stringBuffer 6) stringBuffer)  '(#\a "stringaalue"))
+  (deftest ffi.seqset.2 (list (seqset #\a stringBuilder 6) stringBuilder)  '(#\a "stringaalue"))
 )
 
 

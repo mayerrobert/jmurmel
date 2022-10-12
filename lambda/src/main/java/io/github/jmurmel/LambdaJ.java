@@ -3225,6 +3225,9 @@ public class LambdaJ {
         if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
                                                  final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
                                                  return newValue; }
+        if (maybeSeq instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                return newValue; }
         throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
 
