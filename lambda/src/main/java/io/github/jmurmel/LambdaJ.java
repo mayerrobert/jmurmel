@@ -3254,9 +3254,9 @@ public class LambdaJ {
         final int start, end;
         final int length = (int)vectorLength(vector);
         if (_start != null) {
-            start = requireIntegralNumber("vector-fill", _start, 0, length-1).intValue();
+            start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
             if (_end != null) {
-                end = requireIntegralNumber("vector-fill", _end, start+1, length-1).intValue();
+                end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
             }
             else end = length;
         }
@@ -4677,7 +4677,10 @@ public class LambdaJ {
                   addBuiltin("vector-push-extend",      (Primitive) a -> { twoArgs("vector-push-extend", a); return vectorPushExtend(car(a), cadr(a)); },
                   addBuiltin("vector-length",           (Primitive) a -> { oneArg ("vector-length", a);      return vectorLength(car(a)); },
                   addBuiltin("vector-copy",             (Primitive) a -> { oneArg ("vector-copy", a);        return vectorCopy(car(a)); },
-                  addBuiltin("vector-fill",             (Primitive) a -> { varargsMinMax("vector-fill", a, 2, 4); return vectorFill(car(a), cadr(a), caddr(a), cadddr(a)); },
+                  addBuiltin("vector-fill",             (Primitive) a -> { varargsMinMax("vector-fill", a, 2, 4);
+                                                                           return vectorFill(car(a), cadr(a),
+                                                                                             cddr(a)  == null ? null : requireIntegralNumber("vector-fill", caddr(a), 0, Long.MAX_VALUE),
+                                                                                             cdddr(a) == null ? null : requireIntegralNumber("vector-fill", cadddr(a), 0, Long.MAX_VALUE)); },
                   addBuiltin("vectorp",                 (Primitive) a -> { oneArg ("vectorp", a);            return boolResult(vectorp  (car(a))); },
                   addBuiltin("adjustable-array-p",      (Primitive) a -> { oneArg ("adjustable-array-p", a); return boolResult(adjustableArrayP(car(a))); },
                   addBuiltin("simple-vector-p",         (Primitive) a -> { oneArg ("simple-vector-p", a);    return boolResult(svectorp(car(a))); },
@@ -6168,7 +6171,10 @@ public class LambdaJ {
         public final Object   _vectorp (Object... args) { oneArg("vectorp",  args.length); return vectorp(args[0]) ? _t : null; }
         public final long      vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
         public final Object   vectorCopy  (Object... args) { oneArg("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0]); }
-        public final Object   vectorFill  (Object... args) { varargsMinMax("vector-length", args.length, 2, 4); return LambdaJ.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
+        public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
+                                                             return LambdaJ.vectorFill(args[0], args[1],
+                                                                                       args.length <= 2 ? null : LambdaJ.requireIntegralNumber("vector-fill", args[2], 0, Long.MAX_VALUE),
+                                                                                       args.length <= 3 ? null : LambdaJ.requireIntegralNumber("vector-fill", args[3], 0, Long.MAX_VALUE)); }
         public final Object   adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return LambdaJ.adjustableArrayP(args[0]) ? _t : null; }
 
         public final Object   vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }

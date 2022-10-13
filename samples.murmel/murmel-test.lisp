@@ -19,9 +19,53 @@
 ;;;     java -jar jmurmel.jar --run murmel-test.lisp
 ;;;
 
-#-murmel (defun writeln () (terpri))
-#-murmel (defmacro define (n v) `(defparameter ,n ,v))
-#-murmel (defun assq (key alist) (assoc key alist :test #'eq))
+#-murmel (progn
+
+(defmacro define (n v) `(defparameter ,n ,v))
+(defun assq (key alist) (assoc key alist :test #'eq))
+(defun writeln () (terpri))
+
+(defun seqref (seq idx)
+  (typecase seq
+    (cons
+     (if (> idx 0)
+           (let ((c (nthcdr (1- idx) seq)))
+             (cond ((consp (cdr c)) (cadr c))
+                   (c (cdr c))))
+       (if (= idx 0)
+             (car seq)
+         (error "idx must be >= 0")))) 
+
+    (vector
+     (elt seq idx))
+    
+    (t (error "not a nonempty sequence"))))
+
+(defun seqset (val seq idx)
+  (typecase seq
+    (cons
+     (if (> idx 0)
+           (let ((c (nthcdr (1- idx) seq)))
+             (cond ((consp (cdr c)) (cadr c))
+                   (c (rplacd c val))))
+       (if (= idx 0)
+             (rplaca seq val)
+         (error "idx must be >= 0")))) 
+    (vector
+     (setf (elt seq idx) val)))
+     
+  val)
+
+(defun vector-copy (vec)
+  (check-type vec vector)
+  (copy-seq vec))
+
+(defun vector-fill (vec item &optional start end)
+  (check-type vec vector)
+  (if end (fill vec item :start start :end end)
+    (if start (fill vec item :start start)
+      (fill vec item))))
+)
 
 
 ;;; Test "framework":
@@ -56,13 +100,25 @@
                     #+murmel (sbv= a b)
                     #-murmel (equal a b)
                 nil)
-          nil)))))
+          (if (vectorp a)
+                (if (vectorp b)
+                      #+murmel (let ((lena (vector-length a)) (lenb (vector-length b)))
+                                 (let loop ((i 0))
+                                   (cond ((= i lena lenb) t)
+                                         ((= i lena) nil)
+                                         ((= i lenb) nil)
+                                         ((null (tequal (seqref a i) (seqref b i))) nil)
+                                         (t (loop (1+ i)))))) 
+                                   
+                      #-murmel (equalp a b)
+                  nil)
+            nil))))))
 
 
 (defun assert-equal (expected-result result msg)
   (inc-count)
   #-murmel
-  (if (equal result expected-result) nil
+  (if (equalp result expected-result) nil
     (progn
       (write msg)
       (format t " equal test failed, expected '~A', got unexpected result '~A'~%" expected-result result)))
@@ -703,7 +759,43 @@ multiline comment
 )
 
 
+;;; test seqref, seqset
+(deftest seqref.1 (seqref '(0 1 2 3) 2) 2)
+(deftest seqref.2 (seqref '(0 1 2 3) 3) 3)
+(deftest seqref.3 (seqref #(0 1 2 3) 2) 2)
+(deftest seqref.4 (seqref #(0 1 2 3) 3) 3)
+(deftest seqref.5 (seqref "0123"     2) #\2)
+(deftest seqref.6 (seqref "0123"     3) #\3)
+(deftest seqref.7 (seqref #*0101     2) 0)
+(deftest seqref.8 (seqref #*0101     3) 1)
 
+(deftest seqref.9 (seqref '(0 1 2 . 3) 3) 3)
+
+(deftest seqset.1 (seqset 22  (list 0 1 2 3)       2) 22)
+(deftest seqset.2 (seqset 33  (list 0 1 2 3)       3) 33)
+(deftest seqset.3 (seqset 22  (vector 0 1 2 3)     2) 22)
+(deftest seqset.4 (seqset 33  (vector 0 1 2 3)     3) 33)
+(deftest seqset.5 (seqset #\a (vector-copy "0123") 2) #\a)
+(deftest seqset.6 (seqset #\b (vector-copy "0123") 3) #\b)
+(deftest seqset.7 (seqset 0   (vector-copy #*0101) 2) 0)
+(deftest seqset.8 (seqset 0   (vector-copy #*0101) 3) 0)
+
+(deftest seqset.9 (seqset 22 (list* 0 1 2 3)  2) 22)
+
+
+;;; test vector-fill
+(deftest vector-fill.1 (vector-fill (vector 0 0 0) 1) #(1 1 1))
+(deftest vector-fill.2 (vector-fill (make-array 3 #-murmel :element-type 'bit) 1) #*111)
+(deftest vector-fill.3 (vector-fill (make-array 3 #-murmel :element-type 'character) #\1) "111")
+
+(deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1) #(1 1 1))
+(deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1) "111")
+
+(deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1 #-murmel :start 0 #-murmel :end 3) #(1 1 1))
+(deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1 #-murmel :start 0 #-murmel :end 3) "111")
+
+
+;;; tests some functions with objects Java classes that are not normally used in Murmel
 #+murmel
 (let (
       (byte          ((jmethod "Byte"                    "new" "String") "1"))
