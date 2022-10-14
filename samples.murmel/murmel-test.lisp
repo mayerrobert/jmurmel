@@ -438,7 +438,22 @@ multiline comment
 ;;; Primitives
 ;;; todo remaining primitives
 
-;;; test rplaca
+;;; test car, cdr
+#+murmel (progn
+(deftest car.string (car "123") #\1)
+(deftest cdr.string (cdr "123") "23")
+)
+
+
+;;; test rplaca, rplacd
+(define *some-list* (list* 'one 'two 'three 'four)) ; =>  *some-list*
+(deftest rplac.1 *some-list*                             '(ONE TWO THREE . FOUR))
+(deftest rplac.2 (rplaca *some-list* 'uno)               '(UNO TWO THREE . FOUR))
+(deftest rplac.3 *some-list*                             '(UNO TWO THREE . FOUR))
+(deftest rplac.4 (rplacd (cdr (cdr *some-list*))
+                         (list 'IV))                     '(THREE IV))
+(deftest rplac.5 *some-list*                             '(UNO TWO THREE IV))
+
 #+murmel (progn  ; sbcl stackoverflows on these
 (define *l* (list 1 2 3 4 5))
 (deftest rplaca.1 (format nil "%s" (rplaca (cdr *l*) *l*)) "((1 #<this list> 3 4 5) 3 4 5)")
@@ -791,8 +806,17 @@ multiline comment
 (deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1) #(1 1 1))
 (deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1) "111")
 
-(deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1 #-murmel :start 0 #-murmel :end 3) #(1 1 1))
-(deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1 #-murmel :start 0 #-murmel :end 3) "111")
+(deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1 0 3) #(1 1 1))
+(deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1 0 3) "111")
+
+
+;;; test vector->list
+#+murmel (progn
+(deftest vector->list.1 (vector->list #(0 1 2))  '(0 1 2))
+(deftest vector->list.2 (vector->list (vector-fill (make-array 3 t t) 1))  '(1 1 1))
+(deftest vector->list.3 (vector->list "012")     '(#\0 #\1 #\2))
+(deftest vector->list.4 (vector->list #*0101)    '(0 1 0 1))
+)
 
 
 ;;; tests some functions with objects Java classes that are not normally used in Murmel
@@ -887,6 +911,11 @@ multiline comment
   (deftest ffi.signum.7 (signum double) 1.0)
   (deftest ffi.signum.8 (signum bigDecimal) 1.0)
 
+  (deftest ffi.compare.1 (= 1 bigInteger) t)
+  (deftest ffi.compare.2 (eql 1 bigInteger) t)
+  (deftest ffi.compare.3 (eql byte bigInteger) t)
+  (deftest ffi.compare.4 (= bigInteger bigDecimal) t)
+  (deftest ffi.compare.5 (eql bigInteger bigDecimal) nil)
 
   (deftest ffi.vectorp.1 (vectorp arrayList)     t)
   (deftest ffi.vectorp.2 (vectorp string)        t)

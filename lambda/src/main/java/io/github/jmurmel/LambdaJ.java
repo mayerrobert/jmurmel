@@ -3153,6 +3153,8 @@ public class LambdaJ {
         return new ArraySlice(elems, 0);
     }
 
+    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
+
     private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
         ConsCell ret = null, insertPos = null;
@@ -3176,167 +3178,6 @@ public class LambdaJ {
         return n;
     }
 
-    static Object seqref(Object maybeSeq, long idx) {
-        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
-        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
-        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
-        if (maybeSeq instanceof ConsCell) {
-            long _idx = 0;
-            for (Object o: (ConsCell)maybeSeq) {
-                if (_idx == idx) return o;
-                _idx++;
-            }
-            throw errorIndexTooLarge(idx, _idx);
-        }
-        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
-        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
-        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
-        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
-        if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
-        throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
-    }
-
-    @SuppressWarnings("unchecked")
-    static Object seqset(Object newValue, Object maybeSeq, long idx) {
-        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
-        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
-        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
-        if (maybeSeq instanceof ConsCell) {
-            long _idx = 0;
-            ConsCell lst = (ConsCell)maybeSeq;
-            Object cdr = maybeSeq;
-            for (; consp(cdr); cdr = cdr((ConsCell)cdr)) {
-                lst = (ConsCell)cdr;
-                if (_idx == idx) { lst.rplaca(newValue); return newValue; }
-                _idx++;
-            }
-            if (_idx == idx && cdr != null) { lst.rplacd(newValue); return newValue; }
-            throw errorIndexTooLarge(idx, cdr == null ? _idx : _idx + 1);
-        }
-        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
-        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
-        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
-                                                final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
-                                                if (newBit == 0) { arry[(int)idx] = false; return 0L; }
-                                                if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
-                                                throw errorNotABit("seqset", newValue); }
-        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
-                                                return newValue; }
-        if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
-                                                 return newValue; }
-        if (maybeSeq instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
-                                                return newValue; }
-        throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
-    }
-
-    @SuppressWarnings("unchecked")
-    static long vectorPushExtend(Object newValue, Object maybeVector) {
-        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
-        if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
-        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(newValue); return sb.length() - 1; }
-        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(newValue); return sb.length() - 1; }
-        throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
-    }
-
-    static long vectorLength(Object maybeVector) {
-        if (maybeVector instanceof Object[])     return ((Object[])maybeVector).length;
-        if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
-        if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
-        if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
-        if (maybeVector instanceof List)         return ((List<?>)maybeVector).size();
-        throw errorNotAVector("vector-length", maybeVector);
-    }
-
-    @SuppressWarnings("unchecked")
-    static Object vectorFill(Object vector, Object value, Object _start, Object _end) {
-        final int start, end;
-        final int length = (int)vectorLength(vector);
-        if (_start != null) {
-            start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
-            if (_end != null) {
-                end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
-            }
-            else end = length;
-        }
-        else { start = 0; end = length; }
-
-        if (vector instanceof Object[])      { Arrays.fill(((Object[])vector), start, end, value); return vector; }
-        if (vector instanceof boolean[])     { Arrays.fill(((boolean[])vector), start, end, requireBit("vector-fill", value)); return vector; }
-        if (vector instanceof char[])        { Arrays.fill(((char[])vector), start, end, requireChar("vector-fill", value)); return vector; }
-        if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
-        if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
-        if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
-        throw errorNotAVector("vector-fill", vector);
-    }
-
-    static Object vectorCopy(Object vector) {
-        final int length = (int)vectorLength(vector);
-        if (vector instanceof Object[])     return Arrays.copyOf((Object[])vector, length);
-        if (vector instanceof boolean[])    return Arrays.copyOf((boolean[])vector, length);
-        if (vector instanceof char[])       return Arrays.copyOf((char[])vector, length);
-        if (vector instanceof CharSequence) return vector.toString().toCharArray();
-        if (vector instanceof List<?>)      return new ArrayList<>((List<?>)vector);
-        throw errorNotAVector("vector-copy", vector);
-    }
-
-    static long svlength(Object maybeVector) {
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
-        throw errorNotASimpleVector("svlength", maybeVector);
-    }
-
-    static Object svref(Object maybeVector, int idx) {
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
-        throw errorNotASimpleVector("svref", maybeVector);
-    }
-
-    static Object svset(Object newValue, Object maybeVector, int idx) {
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
-        throw errorNotASimpleVector("svset", maybeVector);
-    }
-
-    static char sref(Object maybeString, int idx) {
-        if (maybeString instanceof char[]) return ((char[])maybeString)[idx];
-        return requireCharsequence("sref", maybeString).charAt(idx);
-    }
-
-    static char sset(char newValue, Object maybeString, int idx) {
-        if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
-        if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
-        if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
-        if (maybeString instanceof String) { throw new LambdaJError(true, "%s: cannot modify readonly string", "sset"); }
-        throw new LambdaJError(true, "%s: expected a string argument but got %s", "sset", printSEx(maybeString));
-    }
-
-    static long sbvref(Object bv, int idx) {
-        if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
-        throw errorNotASimpleBitVector("sbvref", bv);
-    }
-
-    static long sbvset(long newValue, Object maybeVector, int idx) {
-        if (maybeVector instanceof boolean[]) {
-            final boolean b;
-            if (newValue == 0) b = false;
-            else if (newValue == 1) b = true;
-            else throw new LambdaJError(true, "not a valid value for bitvector: %d", newValue);
-            ((boolean[])maybeVector)[idx] = b;
-            return newValue;
-        }
-        throw errorNotASimpleBitVector("sbvset", maybeVector);
-    }
-
-    static long sbvlength(Object maybeVector) {
-        if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
-        throw errorNotASimpleBitVector("sbvlength", maybeVector);
-    }
-
-    static boolean sbvEq(Object maybeVector1, Object maybeVector2) {
-        if (!(maybeVector1 instanceof boolean[])) throw errorNotASimpleBitVector("sbv=", maybeVector1);
-        if (!(maybeVector2 instanceof boolean[])) throw errorNotASimpleBitVector("sbv=", maybeVector2);
-        return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
-    }
-
     /** return the cons whose car is eq to {@code atom}
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object maybeList) {
@@ -3353,42 +3194,6 @@ public class LambdaJ {
             }
         }
         return null;
-    }
-
-    /** return the cons whose car is eql to {@code atom} */
-    static ConsCell assoc(Object atom, Object maybeList) {
-        if (maybeList == null) return null;
-        final ConsCell ccList = requireCons("assoc", maybeList);
-        for (Object entry: ccList) {
-            if (entry != null) { // ignore null items
-                final ConsCell ccEntry = (ConsCell) entry;
-                if (eql(atom, car(ccEntry))) return ccEntry;
-            }
-        }
-        return null;
-    }
-
-    /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
-     *  all args except the last must be a list */
-    private Object append(ConsCell args) {
-        if (args == null) return null;
-        if (cdr(args) == null) return car(args);
-        if (!listp(car(args))) throw new LambdaJError(true, "append: first argument %s is not a list", car(args));
-
-        while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
-
-        ConsCell current = args;
-        CountingListBuilder lb = null;
-        for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
-            final Object o = car(current);
-            if (o == null) continue;
-            if (!consp(o)) throw new LambdaJError(true, "append: argument is not a list: %s", printSEx(o));
-            if (lb == null) lb = new CountingListBuilder();
-            for (Object obj: (ConsCell)o) lb.append(obj);
-        }
-        if (lb == null) return car(args);
-        lb.appendLast(car(current));
-        return lb.first();
     }
 
     /** Create a new list by copying lhs and appending rhs. Faster (?) 2 argument version of {@link #append(ConsCell)} for internal use. */
@@ -3409,76 +3214,6 @@ public class LambdaJ {
         }
         insertPos.rplacd(rhs);
         return ret;
-    }
-
-    static Number cl_signum(Object n) {
-        if (n instanceof Double) return Math.signum((Double)n);
-        if (n instanceof Long)       { return (long)Long.signum((Long)n); }
-        if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
-        if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
-        if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
-        if (n instanceof BigInteger) { return ((BigInteger)n).signum(); }
-        if (n instanceof BigDecimal) { return (double)((BigDecimal)n).signum(); }
-
-        return Math.signum(toDouble("signum", n));
-    }
-
-    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
-     *  of the same sign as the mathematical quotient,
-     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
-    static double cl_truncate(double d) {
-        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
-    }
-
-    /** note that the Java modulo operator {@code %} works differently */
-    static double cl_mod(double x, double y) {
-        return x - Math.floor(x / y) * y;
-    }
-
-    static Number inc(Object n) {
-        if (n instanceof Double) return ((Double)n) + 1;
-        if (n instanceof Long) {
-            final long l;
-            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
-            return l + 1;
-        }
-        if (n instanceof Byte) return ((Byte)n).longValue() + 1;
-        if (n instanceof Short) return ((Short)n).longValue() + 1;
-        if (n instanceof Integer) return ((Integer)n).longValue() + 1;
-        if (n instanceof BigInteger) {
-            try {
-                final long l;
-                if ((l = ((BigInteger)n).longValueExact()) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
-                return l + 1;
-            }
-            catch (ArithmeticException e) {
-                throw new LambdaJError("1+: overflow, BigInteger argument does not fit in a fixnum");
-            }
-        }
-        return toDouble("1+", n) + 1;
-    }
-
-    static Number dec(Object n) {
-        if (n instanceof Double) return ((Double)n) - 1;
-        if (n instanceof Long) {
-            final long l;
-            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
-            return l - 1;
-        }
-        if (n instanceof Byte) return ((Byte)n).longValue() - 1;
-        if (n instanceof Short) return ((Short)n).longValue() - 1;
-        if (n instanceof Integer) return ((Integer)n).longValue() - 1;
-        if (n instanceof BigInteger) {
-            try {
-                final long l;
-                if ((l = ((BigInteger)n).longValueExact()) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
-                return l - 1;
-            }
-            catch (ArithmeticException e) {
-                throw new LambdaJError("1-: underflow, BigInteger argument does not fit in a fixnum");
-            }
-        }
-        return toDouble("1-", n) - 1;
     }
 
 
@@ -3813,7 +3548,6 @@ public class LambdaJ {
 
     /// Additional error checking functions used by primitives only.
 
-
     /** at least one arg, the first arg must be a non-nil string */
     private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
@@ -3975,7 +3709,71 @@ public class LambdaJ {
 
     /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
 
-    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
+
+    /// conses and lists
+
+    private static ConsCell cl_rplaca(ConsCell args) {
+        twoArgs("rplaca", args);
+        return requireCons("rplaca", car(args)).rplaca(cadr(args));
+    }
+
+    private static ConsCell cl_rplacd(ConsCell args) {
+        twoArgs("rplacd", args);
+        return requireCons("rplacd", car(args)).rplacd(cadr(args));
+    }
+
+    private Object listStar(ConsCell args) {
+        varargs1("list*", args);
+        if (cdr(args) == null) return car(args);
+        if (cddr(args) == null) return cons(car(args), cadr(args));
+        final CountingListBuilder b = new CountingListBuilder();
+        for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
+            b.append(car(args));
+        }
+        b.appendLast(car(args));
+        return b.first();
+    }
+
+    /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
+     *  all args except the last must be a list */
+    private Object append(ConsCell args) {
+        if (args == null) return null;
+        if (cdr(args) == null) return car(args);
+        if (!listp(car(args))) throw new LambdaJError(true, "append: first argument %s is not a list", car(args));
+
+        while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
+
+        ConsCell current = args;
+        CountingListBuilder lb = null;
+        for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
+            final Object o = car(current);
+            if (o == null) continue;
+            if (!consp(o)) throw new LambdaJError(true, "append: argument is not a list: %s", printSEx(o));
+            if (lb == null) lb = new CountingListBuilder();
+            for (Object obj: (ConsCell)o) lb.append(obj);
+        }
+        if (lb == null) return car(args);
+        lb.appendLast(car(current));
+        return lb.first();
+    }
+
+    /** return the cons whose car is eql to {@code atom}
+     * @see #assq
+     */
+    static ConsCell assoc(Object atom, Object maybeList) {
+        if (maybeList == null) return null;
+        final ConsCell ccList = requireCons("assoc", maybeList);
+        for (Object entry: ccList) {
+            if (entry != null) { // ignore null items
+                final ConsCell ccEntry = (ConsCell) entry;
+                if (eql(atom, car(ccEntry))) return ccEntry;
+            }
+        }
+        return null;
+    }
+
+
+    /// numbers
 
     interface DoubleBiPred {
         boolean test(double d1, double d2);
@@ -4034,18 +3832,78 @@ public class LambdaJ {
         return cdr(args) == null ? lhs : lhs / toDouble(func, cadr(args));
     }
 
+    static Number cl_signum(Object n) {
+        if (n instanceof Double)     { return Math.signum((Double)n); }
+        if (n instanceof Long)       { return (long)Long.signum((Long)n); }
+        if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
+        if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
+        if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
+        if (n instanceof BigInteger) { return (long)((BigInteger)n).signum(); }
+        if (n instanceof BigDecimal) { return (double)((BigDecimal)n).signum(); }
 
-
-    private static ConsCell cl_rplaca(ConsCell args) {
-        twoArgs("rplaca", args);
-        return requireCons("rplaca", car(args)).rplaca(cadr(args));
+        return Math.signum(toDouble("signum", n));
     }
 
-    private static ConsCell cl_rplacd(ConsCell args) {
-        twoArgs("rplacd", args);
-        return requireCons("rplacd", car(args)).rplacd(cadr(args));
+    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
+     *  of the same sign as the mathematical quotient,
+     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
+    static double cl_truncate(double d) {
+        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
     }
 
+    /** note that the Java modulo operator {@code %} works differently */
+    static double cl_mod(double x, double y) {
+        return x - Math.floor(x / y) * y;
+    }
+
+    static Number inc(Object n) {
+        if (n instanceof Double) return ((Double)n) + 1;
+        if (n instanceof Long) {
+            final long l;
+            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
+            return l + 1;
+        }
+        if (n instanceof Byte) return ((Byte)n).longValue() + 1;
+        if (n instanceof Short) return ((Short)n).longValue() + 1;
+        if (n instanceof Integer) return ((Integer)n).longValue() + 1;
+        if (n instanceof BigInteger) {
+            try {
+                final long l;
+                if ((l = ((BigInteger)n).longValueExact()) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
+                return l + 1;
+            }
+            catch (ArithmeticException e) {
+                throw new LambdaJError("1+: overflow, BigInteger argument does not fit in a fixnum");
+            }
+        }
+        return toDouble("1+", n) + 1;
+    }
+
+    static Number dec(Object n) {
+        if (n instanceof Double) return ((Double)n) - 1;
+        if (n instanceof Long) {
+            final long l;
+            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
+            return l - 1;
+        }
+        if (n instanceof Byte) return ((Byte)n).longValue() - 1;
+        if (n instanceof Short) return ((Short)n).longValue() - 1;
+        if (n instanceof Integer) return ((Integer)n).longValue() - 1;
+        if (n instanceof BigInteger) {
+            try {
+                final long l;
+                if ((l = ((BigInteger)n).longValueExact()) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
+                return l - 1;
+            }
+            catch (ArithmeticException e) {
+                throw new LambdaJError("1-: underflow, BigInteger argument does not fit in a fixnum");
+            }
+        }
+        return toDouble("1-", n) - 1;
+    }
+
+
+    /// vectors
 
     private Object makeArray(ConsCell a) {
         varargsMinMax("make-array", a, 1, 3);
@@ -4069,6 +3927,103 @@ public class LambdaJ {
         }
 
         throw new LambdaJError(true, "make-array: unsupported or invalid type specification %s", printSEx(type));
+    }
+
+    static long vectorLength(Object maybeVector) {
+        if (maybeVector instanceof Object[])     return ((Object[])maybeVector).length;
+        if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
+        if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
+        if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
+        if (maybeVector instanceof List)         return ((List<?>)maybeVector).size();
+        throw errorNotAVector("vector-length", maybeVector);
+    }
+
+    @SuppressWarnings("unchecked")
+    static Object vectorFill(Object vector, Object value, Object _start, Object _end) {
+        final int start, end;
+        final int length = (int)vectorLength(vector);
+        if (_start != null) {
+            start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
+            if (_end != null) {
+                end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
+            }
+            else end = length;
+        }
+        else { start = 0; end = length; }
+
+        if (vector instanceof Object[])      { Arrays.fill(((Object[])vector), start, end, value); return vector; }
+        if (vector instanceof boolean[])     { Arrays.fill(((boolean[])vector), start, end, requireBit("vector-fill", value)); return vector; }
+        if (vector instanceof char[])        { Arrays.fill(((char[])vector), start, end, requireChar("vector-fill", value)); return vector; }
+        if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
+        if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
+        if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
+        throw errorNotAVector("vector-fill", vector);
+    }
+
+    static Object vectorCopy(Object vector) {
+        final int length = (int)vectorLength(vector);
+        if (vector instanceof Object[])     return Arrays.copyOf((Object[])vector, length);
+        if (vector instanceof boolean[])    return Arrays.copyOf((boolean[])vector, length);
+        if (vector instanceof char[])       return Arrays.copyOf((char[])vector, length);
+        if (vector instanceof CharSequence) return vector.toString().toCharArray();
+        if (vector instanceof List<?>)      return new ArrayList<>((List<?>)vector);
+        throw errorNotAVector("vector-copy", vector);
+    }
+
+    static long svlength(Object maybeVector) {
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
+        throw errorNotASimpleVector("svlength", maybeVector);
+    }
+
+    static Object svref(Object maybeVector, int idx) {
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
+        throw errorNotASimpleVector("svref", maybeVector);
+    }
+
+    static Object svset(Object newValue, Object maybeVector, int idx) {
+        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
+        throw errorNotASimpleVector("svset", maybeVector);
+    }
+
+    static char sref(Object maybeString, int idx) {
+        if (maybeString instanceof char[]) return ((char[])maybeString)[idx];
+        return requireCharsequence("sref", maybeString).charAt(idx);
+    }
+
+    static char sset(char newValue, Object maybeString, int idx) {
+        if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
+        if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
+        if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
+        if (maybeString instanceof String) { throw new LambdaJError(true, "%s: cannot modify readonly string", "sset"); }
+        throw new LambdaJError(true, "%s: expected a string argument but got %s", "sset", printSEx(maybeString));
+    }
+
+    static long sbvref(Object bv, int idx) {
+        if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
+        throw errorNotASimpleBitVector("sbvref", bv);
+    }
+
+    static long sbvset(long newValue, Object maybeVector, int idx) {
+        if (maybeVector instanceof boolean[]) {
+            final boolean b;
+            if (newValue == 0) b = false;
+            else if (newValue == 1) b = true;
+            else throw new LambdaJError(true, "not a valid value for bitvector: %d", newValue);
+            ((boolean[])maybeVector)[idx] = b;
+            return newValue;
+        }
+        throw errorNotASimpleBitVector("sbvset", maybeVector);
+    }
+
+    static long sbvlength(Object maybeVector) {
+        if (maybeVector instanceof boolean[]) return ((boolean[])maybeVector).length;
+        throw errorNotASimpleBitVector("sbvlength", maybeVector);
+    }
+
+    static boolean sbvEq(Object maybeVector1, Object maybeVector2) {
+        if (!(maybeVector1 instanceof boolean[])) throw errorNotASimpleBitVector("sbv=", maybeVector1);
+        if (!(maybeVector2 instanceof boolean[])) throw errorNotASimpleBitVector("sbv=", maybeVector2);
+        return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
     }
 
     private Object vectorToList(ConsCell a) {
@@ -4109,7 +4064,6 @@ public class LambdaJ {
         return ret.first();
     }
 
-
     static String listToStringImpl(ConsCell l) {
         if (l == null) return "";
         final StringBuilder ret = new StringBuilder();
@@ -4127,20 +4081,75 @@ public class LambdaJ {
         return ret.first();
     }
 
-
-    private Object listStar(ConsCell args) {
-        varargs1("list*", args);
-        if (cdr(args) == null) return car(args);
-        if (cddr(args) == null) return cons(car(args), cadr(args));
-        final CountingListBuilder b = new CountingListBuilder();
-        for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
-            b.append(car(args));
-        }
-        b.appendLast(car(args));
-        return b.first();
+    @SuppressWarnings("unchecked")
+    static long vectorPushExtend(Object newValue, Object maybeVector) {
+        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
+        if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
+        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(newValue); return sb.length() - 1; }
+        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(newValue); return sb.length() - 1; }
+        throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
     }
 
 
+    /// sequences
+
+    static Object seqref(Object maybeSeq, long idx) {
+        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
+        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
+        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
+        if (maybeSeq instanceof ConsCell) {
+            long _idx = 0;
+            for (Object o: (ConsCell)maybeSeq) {
+                if (_idx == idx) return o;
+                _idx++;
+            }
+            throw errorIndexTooLarge(idx, _idx);
+        }
+        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
+        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
+        if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
+        throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
+    }
+
+    @SuppressWarnings("unchecked")
+    static Object seqset(Object newValue, Object maybeSeq, long idx) {
+        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
+        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
+        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
+        if (maybeSeq instanceof ConsCell) {
+            long _idx = 0;
+            ConsCell lst = (ConsCell)maybeSeq;
+            Object cdr = maybeSeq;
+            for (; consp(cdr); cdr = cdr((ConsCell)cdr)) {
+                lst = (ConsCell)cdr;
+                if (_idx == idx) { lst.rplaca(newValue); return newValue; }
+                _idx++;
+            }
+            if (_idx == idx && cdr != null) { lst.rplacd(newValue); return newValue; }
+            throw errorIndexTooLarge(idx, cdr == null ? _idx : _idx + 1);
+        }
+        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
+        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
+        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
+                                                final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
+                                                if (newBit == 0) { arry[(int)idx] = false; return 0L; }
+                                                if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
+                                                throw errorNotABit("seqset", newValue); }
+        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+                                                return newValue; }
+        if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                 return newValue; }
+        if (maybeSeq instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                return newValue; }
+        throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
+    }
+
+
+    /// I/O
 
     final void write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
@@ -4210,6 +4219,7 @@ public class LambdaJ {
     }
 
 
+    /// misc
 
     static long getInternalRealTime(ConsCell a) {
         noArgs("get-internal-real-time", a);
