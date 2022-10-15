@@ -3909,10 +3909,14 @@ public class LambdaJ {
         varargsMinMax("make-array", a, 1, 3);
         final int size = toNonnegInt("make-array", car(a));
         final Object type = cadr(a);
-        final boolean adjustable = caddr(a) == sT;
+        final Object cap = caddr(a);
+        final boolean adjustable = cap != null;
+        final int capacity;
+        if (adjustable && cap != sT) capacity = requireIntegralNumber("make-array", cap, size, MAX_ARRAY_SIZE).intValue();
+        else capacity = size;
 
         if (cdr(a) == null || type == sT) {
-            if (adjustable) { final List<Object> ret = new ArrayList<>(); for (int i = 0; i < size; i++) ret.add(null); return ret; }
+            if (adjustable) { final List<Object> ret = new ArrayList<>(capacity); for (int i = 0; i < size; i++) ret.add(null); return ret; }
             return new Object[size];
         }
 
@@ -3922,7 +3926,7 @@ public class LambdaJ {
         }
 
         if (type == sCharacter) {
-            if (adjustable) { final StringBuilder ret = new StringBuilder(size); for (int i = 0; i < size; i++) ret.append('\0'); return ret; }
+            if (adjustable) { final StringBuilder ret = new StringBuilder(capacity); for (int i = 0; i < size; i++) ret.append('\0'); return ret; }
             return new char[size];
         }
 
@@ -3966,7 +3970,7 @@ public class LambdaJ {
         if (vector instanceof boolean[])    return Arrays.copyOf((boolean[])vector, length);
         if (vector instanceof char[])       return Arrays.copyOf((char[])vector, length);
         if (vector instanceof CharSequence) return vector.toString().toCharArray();
-        if (vector instanceof List<?>)      return ((List<?>)vector).toArray();
+        if (vector instanceof List<?>)      return ((List<?>)vector).toArray(new Object[0]);
         throw errorNotAVector("vector-copy", vector);
     }
 

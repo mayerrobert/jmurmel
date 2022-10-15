@@ -757,7 +757,7 @@ pi ; ==> 3.141592653589793
 ; - `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
 ; - `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
 
-; = (make-array length [element-type [adjustablep]]) -> vector
+; = (make-array length [element-type [adjustablep-or-capacity]]) -> vector
 ;
 ; Since: 1.3
 ;

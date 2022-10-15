@@ -3,6 +3,12 @@
 
 
 
+vector-ensure-capacity, vector-trim-to-size
+-> fehler für simple vectors
+
+vector-capacity: gibt length für simple vector, capacity für stringbuffer/builder
+-> geht nicht weil arraylist gibt capacity nicht her
+
 mlib: foldl, foldr, vielleicht foreach, filter
 
 checken was alles serializable sein sollte, Closure wsl. nicht
