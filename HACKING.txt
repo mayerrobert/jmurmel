@@ -96,29 +96,31 @@ alias jm="rlwrap -C jm -i -q'\"' -b '\(\)' -f $JMURMEL/murmel.completions java -
     (Ruthlessly stolen from https://github.com/elahtrebor/RLWRAP-SBCL-LISP-COMPLETIONS)
 
 jm samples.murmel/murmel-test.lisp
-    run the tests in murmel-test.lisp
+    interpret the tests in murmel-test.lisp
 
-sbcl samples.murmel/murmel-test.lisp
+sbcl --script samples.murmel/murmel-test.lisp
     run the tests in murmel-test.lisp using sbcl, useful after adding tests to murmel-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
 
 
 jm samples.mlib/mlib-test.lisp
-    run the tests in mlib-test.lisp, useful after making changes/ additions in mlib.lisp
+    interpret the tests in mlib-test.lisp, useful after making changes/ additions in mlib.lisp
 
-sbcl samples.mlib/mlib-test.lisp
+sbcl --script samples.mlib/mlib-test.lisp
     run the tests in mlib-test.lisp using sbcl, useful after adding tests to mlib-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
 
 
 jm --run samples.murmel/julia.lisp
     compile and run the Julia sample
 
-cd samples.mlib/benchmark
-jm 3.01_tak.lisp
-    run the single benchmark "TAK" in interpreted mode
+jm samples.mlib/benchmark/3.01_tak.lisp
+    interpret the single benchmark "TAK"
+
+jm --run samples.mlib/benchmark/3.01_tak.lisp
+    compile and run the single benchmark "TAK"
 
 cd samples.mlib/benchmark
-jm --run 3.01_tak.lisp
-    compile and run the single benchmark "TAK" as compiled Murmel
+sbcl --script 3.01_tak.lisp
+    run the single benchmark "TAK" using sbcl
 
 
 sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
