@@ -725,9 +725,16 @@ multiline comment
     '(-1.0 -1.0 -1.0 1.0))
 
 
-;;; test floor
-(deftest floor.1 (floor 5.3) 5)
-(deftest floor.2 (floor 5.3 2) 2)
+;;; test floor, truncate
+(deftest floor.1 (floor    5.3) 5)
+(deftest trunc.1 (truncate 5.3) 5)
+(deftest floor.2 (floor    5.3 2) 2)
+(deftest trunc.2 (truncate 5.3 2) 2)
+
+(deftest floor.3 (floor -5.3)      -6)
+(deftest trunc.3 (truncate -5.3)   -5)
+(deftest floor.4 (floor -5.3 2)    -3)
+(deftest trunc.4 (truncate -5.3 2) -2)
 
 
 ;;; Murmel-only tests for various not-a-numbers.
@@ -796,6 +803,13 @@ multiline comment
 (deftest seqset.8 (seqset 0   (vector-copy #*0101) 3) 0)
 
 (deftest seqset.9 (seqset 22 (list* 0 1 2 3)  2) 22)
+
+
+;;; test vector-copy
+(let* ((vec (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1))
+       (copy (vector-copy vec)))
+  (deftest vector-copy.1 (adjustable-array-p vec) t)
+  (deftest vector-copy.2 (adjustable-array-p copy) nil))
 
 
 ;;; test vector-fill

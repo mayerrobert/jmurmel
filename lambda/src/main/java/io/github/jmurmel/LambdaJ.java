@@ -3966,7 +3966,7 @@ public class LambdaJ {
         if (vector instanceof boolean[])    return Arrays.copyOf((boolean[])vector, length);
         if (vector instanceof char[])       return Arrays.copyOf((char[])vector, length);
         if (vector instanceof CharSequence) return vector.toString().toCharArray();
-        if (vector instanceof List<?>)      return new ArrayList<>((List<?>)vector);
+        if (vector instanceof List<?>)      return ((List<?>)vector).toArray();
         throw errorNotAVector("vector-copy", vector);
     }
 
