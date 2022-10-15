@@ -1533,11 +1533,10 @@ public class LambdaJ {
                 (t `',x)))
         */
         private Object qq_expand(Object x) {
-            if (x == null) return null;
-            if (symbolp(x))
-                return quote(x);
+            if (x == null)
+                return null;
             if (atom(x))
-                return x;
+                return quote(x);
 
             final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
@@ -1551,7 +1550,8 @@ public class LambdaJ {
             if (op == sQuasiquote)
                 return qq_expand(qq_expand(cadr(xCons)));
 
-            if (cdr(xCons) == null) return qq_expand_list(op);
+            if (cdr(xCons) == null)
+                return qq_expand_list(op);
 
             //return list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons)));
             return optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
@@ -1574,11 +1574,10 @@ public class LambdaJ {
                 (t `'(,x))))
         */
         private Object qq_expand_list(Object x) {
-            if (x == null) return list(sList, sNil);
-            if (symbolp(x))
-                return list(sList, quote(x));
+            if (x == null)
+                return list(sList, sNil);
             if (atom(x))
-                return list(sList, x);
+                return list(sList, quote(x));
 
             final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
@@ -1592,7 +1591,8 @@ public class LambdaJ {
             if (op == sQuasiquote)
                 return qq_expand_list(qq_expand(cadr(xCons)));
 
-            if (cdr(xCons) == null) return list(sList, qq_expand_list(op));
+            if (cdr(xCons) == null)
+                return list(sList, qq_expand_list(op));
 
             //return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
             return list(sList, optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons))));

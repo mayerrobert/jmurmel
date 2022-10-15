@@ -211,18 +211,24 @@ multiline comment
                         #-murmel (make-array 4 :element-type 'bit :initial-contents '(0 1 0 1))
 )
 
-(deftest backquote.1  `1 1)
-(deftest backquote.2  ``1 1)
-(deftest backquote.3  `x 'x)
-(deftest backquote.4  (let ((x 1)) `,x) 1)
+;; some of the tests "fail" on sbcl: jmurmel expands backquoted forms all at once
+;; sbcl apparently defers (part of) the expansion to when it's actually needed
+;; and/ or does double backticks in a different way
+(deftest backquote.1  `nil nil)
+(deftest backquote.2  `1 1)
+#+murmel
+(deftest backquote.3  ``1 ''1)
+(deftest backquote.4  `x 'x)
+(deftest backquote.5  (let ((x 1)) `,x) 1)
 
-(deftest backquote.5  `(1) '(1))
-(deftest backquote.6  `(x) '(x))
-(deftest backquote.7  (let* ((x 1)) `(,x) ) '(1)) 
-(deftest backquote.8  (let* ((x '(1))) `(,@x) ) '(1)) 
-(deftest backquote.8  (let* ((x '(1))) `(`,,@x) ) '(1)) 
-(deftest backquote.9  (let* ((x '(1)) (y '(2))) `(`,,@x ,@y) ) '(1 2)) 
-(deftest backquote.10 (let* ((x '(1)) (y '(2))) `(`,,@x ,y) ) '(1 (2))) 
+(deftest backquote.6  `(nil) '(nil))
+(deftest backquote.6  `(1) '(1))
+(deftest backquote.7  `(x) '(x))
+(deftest backquote.8  (let* ((x 1)) `(,x) ) '(1)) 
+(deftest backquote.9  (let* ((x '(1))) `(,@x) ) '(1)) 
+#+murmel (deftest backquote.10  (let* ((x '(1))) `(`,,@x) ) '(1)) 
+#+murmel (deftest backquote.11  (let* ((x '(1)) (y '(2))) `(`,,@x ,@y) ) '(1 2)) 
+#+murmel (deftest backquote.12 (let* ((x '(1)) (y '(2))) `(`,,@x ,y) ) '(1 (2))) 
 
 (deftest backquote
   (let ((a "A") (c "C") (d '("D" "DD")))
