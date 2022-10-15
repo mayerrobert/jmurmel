@@ -19,6 +19,10 @@
 ;;;     java -jar jmurmel.jar --run murmel-test.lisp
 ;;;
 
+
+; *******************************************************************
+;;; Emulate some stuff so that this file can be run with e.g. sbcl
+
 #-murmel (progn
 
 (defmacro define (n v) `(defparameter ,n ,v))
@@ -68,6 +72,7 @@
 )
 
 
+; *******************************************************************
 ;;; Test "framework":
 ;;;
 ;;; - Global variables to hold test count and failure count.
@@ -144,6 +149,7 @@
   x)
 
 
+; *******************************************************************
 ;;; Test the test-framework
 
 (deftest tequal.1 0 0)
@@ -183,12 +189,15 @@
 
 #+murmel
 (deftest feature.1 #+(and murmel jvm) 'murmel-jvm 'murmel-jvm)
-(deftest feature.2 #+(or sbcl (and murmel jvm)) 'sbcl-or-murmel-jvm 'sbcl-or-murmel-jvm)
+(deftest feature.2 #+(or sbcl abcl (and murmel jvm)) 'sbcl-or-abcl-or-murmel-jvm 'sbcl-or-abcl-or-murmel-jvm)
 (deftest feature.3 #+(not (or abcl sbcl murmel (not murmel))) 'should-ignore 'abcl-sbcl-or-murmel-or-notmurmel 'abcl-sbcl-or-murmel-or-notmurmel)
 
 
+; *******************************************************************
 ;;; Tests for core Murmel w/o mlib
 
+; *******************************************************************
+;;; S-Expressions, reader
 #|
 This is a
 multiline comment
@@ -208,15 +217,30 @@ multiline comment
   '(("A" b) "C" "D" "DD"))
 
 
-
+; *******************************************************************
 ;;; basic special forms: quote, lambda
 
 ;;; test lambda
 (deftest lambda.1 (#-murmel funcall (lambda nil)) nil)
 
+;;; test higher order functions
+; from https://norvig.com/lispy2.html
+(defun combine (f)
+  (lambda (x y)
+    (if (null x) nil
+      (#-murmel funcall f (list (car x) (car y))
+         (#-murmel funcall (combine f) (cdr x) (cdr y))))))
 
-;;; Additional special forms: define, defun, defmacro, setq, let, multiple-value-bind, multiple-value-call, if, progn, cond, labels, load, require, provide
-;;; todo labels, load, require, provide
+#+murmel (define zip (combine cons))
+#-murmel (setf (symbol-function 'zip) (combine #'cons))
+
+(deftest higher-order.1
+  (zip (list 1 2 3 4) (list 5 6 7 8))   '((1 5) (2 6) (3 7) (4 8)))
+
+
+; *******************************************************************
+;;; Additional special forms: define, defun, defmacro, setq, let, multiple-value-bind, multiple-value-call, if, progn, cond, labels, catch, throw, load, require, provide
+;;; todo load, require, provide
 
 ;;; test define
 (define *a* nil)
@@ -420,52 +444,9 @@ multiline comment
 (deftest mvc.6 (multiple-value-call #'+ 1.0 2 3 (values) 4) 10.0)
 
 
-;;; test higher order functions
-; from https://norvig.com/lispy2.html
-(defun combine (f)
-  (lambda (x y)
-    (if (null x) nil
-      (#-murmel funcall f (list (car x) (car y))
-         (#-murmel funcall (combine f) (cdr x) (cdr y))))))
-
-#+murmel (define zip (combine cons))
-#-murmel (setf (symbol-function 'zip) (combine #'cons))
-
-(deftest higher-order.1
-  (zip (list 1 2 3 4) (list 5 6 7 8))   '((1 5) (2 6) (3 7) (4 8)))
-
-
+; *******************************************************************
 ;;; Primitives
-;;; todo remaining primitives
-
-;;; test car, cdr
-#+murmel (progn
-(deftest car.string (car "123") #\1)
-(deftest cdr.string (cdr "123") "23")
-)
-
-
-;;; test rplaca, rplacd
-(define *some-list* (list* 'one 'two 'three 'four)) ; =>  *some-list*
-(deftest rplac.1 *some-list*                             '(ONE TWO THREE . FOUR))
-(deftest rplac.2 (rplaca *some-list* 'uno)               '(UNO TWO THREE . FOUR))
-(deftest rplac.3 *some-list*                             '(UNO TWO THREE . FOUR))
-(deftest rplac.4 (rplacd (cdr (cdr *some-list*))
-                         (list 'IV))                     '(THREE IV))
-(deftest rplac.5 *some-list*                             '(UNO TWO THREE IV))
-
-#+murmel (progn  ; sbcl stackoverflows on these
-(define *l* (list 1 2 3 4 5))
-(deftest rplaca.1 (format nil "%s" (rplaca (cdr *l*) *l*)) "((1 #<this list> 3 4 5) 3 4 5)")
-(deftest rplaca.2 (format nil "%s" *l*) "(1 #<this list> 3 4 5)")
-
-; test modifying the varargs parameter which in compiled code is different from a regular ConsCell based list
-(defun func l
-  (rplaca (cdr l) l)
-  (format nil "%s" l))
-(deftest rplaca.3 (func 11 22 33 44 55) "(11 #<this list> 33 44 55)")
-)
-
+;;; - basic primitives: apply and eval
 
 ;;; test eval
 ; when running compiled murmel `eval` starts the embedded interpreter,
@@ -514,15 +495,57 @@ multiline comment
 (deftest apply.11 (apply ((lambda () '+)) '(1.0 2.0))   3.0)
 (deftest apply.12 (apply ((lambda () #'+)) '(1.0 2.0))    3.0)
 
-; the following not valid CL, doesn't work in Murmel either
-;(setq *a* 1.0 *b* 2.0 *c* '(*a* *b*))
-;(deftest apply.13 (apply '+ *c*)   3.0)
 
+; *******************************************************************
+;;; - logic, predicates, program structure
 
 ;;; test null
 (deftest null.1 (null nil) t)
 (deftest null.2 (null 'a-symbol) nil)
 (deftest null.3 (null 3) nil)
+
+
+;;; test eq
+(deftest eq.1 (eq 'a 'a)   t)
+(deftest eq.2 (eq nil nil) t)
+(deftest eq.3 (eq 'a 1)    nil)
+(deftest eq.3 (eq 1 1.0)   nil)
+
+
+;;; test eql
+(deftest eql.1 (eql 'a 'b)  nil)
+(deftest eql.2 (eql 'a 'a)  t)
+(deftest eql.3 (eql 3 3)  t)
+(deftest eql.4 (eql 3 3.0)  nil)
+(deftest eql.5 (eql 3.0 3.0)  t)
+;(deftest eql.6 (eql #c(3 -4) #c(3 -4))  t)
+;(deftest eql.7 (eql #c(3 -4.0) #c(3 -4))  nil)
+(deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
+(deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
+
+;;; Murmel: interpreted eql.10 is nil, compiled eql.10 is t because quoted cons cells are coalesced
+;;; SBCL: in the repl eql.10 is nil, when compiled eql.10 is t
+;;; See: "Issue QUOTE-SEMANTICS Writeup" http://www.lispworks.com/documentation/HyperSpec/Issues/iss282_w.htm
+#+(or)
+(deftest eql.10 (eql '(a . b) '(a . b))  nil)
+
+(define *x* nil)
+(deftest eql.11 (progn (setq *x* (cons 'a 'b)) (eql *x* *x*))  t)
+(deftest eql.12 (progn (setq *x* '(a . b)) (eql *x* *x*))  t)
+(deftest eql.13 (eql #\A #\A)  t)
+#+murmel (deftest eql.14 (eql "Foo" "Foo")  t) ; sbcl murmel-test.lisp -> nil, sbcl murmel-test.fasl -> t
+;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  nil)
+(deftest eql.16 (eql "FOO" "foo")  nil)
+
+(deftest eql.17 (eql -0 -0) t)
+(deftest eql.18 (eql -0 0) t)
+(deftest eql.19 (eql -0.0 -0) nil)
+
+(deftest eql.20 (eql -0.0 -0.0) t)
+(deftest eql.21 (eql -0.0 0.0) nil)
+
+#+murmel (deftest eql.22 (eql 1 ((jmethod "Integer" "valueOf" "String") "1")) t)
+#+murmel (deftest eql.23 (eql 1 ((jmethod "java.math.BigInteger" "new" "String") "1")) t)
 
 
 ;;; test all predicates
@@ -595,47 +618,36 @@ multiline comment
 (deftest functionp.1 (functionp 1) nil)
 
 
-;;; test eq
-(deftest eq.1 (eq 'a 'a)   t)
-(deftest eq.2 (eq nil nil) t)
-(deftest eq.3 (eq 'a 1)    nil)
-(deftest eq.3 (eq 1 1.0)   nil)
+; *******************************************************************
+;;; - conses and lists
+
+;;; test car, cdr
+#+murmel (progn
+(deftest car.string (car "123") #\1)
+(deftest cdr.string (cdr "123") "23")
+)
 
 
-;;; test eql
-(deftest eql.1 (eql 'a 'b)  nil)
-(deftest eql.2 (eql 'a 'a)  t)
-(deftest eql.3 (eql 3 3)  t)
-(deftest eql.4 (eql 3 3.0)  nil)
-(deftest eql.5 (eql 3.0 3.0)  t)
-;(deftest eql.6 (eql #c(3 -4) #c(3 -4))  t)
-;(deftest eql.7 (eql #c(3 -4.0) #c(3 -4))  nil)
-(deftest eql.8 (eql (cons 'a 'b) (cons 'a 'c))  nil)
-(deftest eql.9 (eql (cons 'a 'b) (cons 'a 'b))  nil)
+;;; test rplaca, rplacd
+(define *some-list* (list* 'one 'two 'three 'four)) ; =>  *some-list*
+(deftest rplac.1 *some-list*                             '(ONE TWO THREE . FOUR))
+(deftest rplac.2 (rplaca *some-list* 'uno)               '(UNO TWO THREE . FOUR))
+(deftest rplac.3 *some-list*                             '(UNO TWO THREE . FOUR))
+(deftest rplac.4 (rplacd (cdr (cdr *some-list*))
+                         (list 'IV))                     '(THREE IV))
+(deftest rplac.5 *some-list*                             '(UNO TWO THREE IV))
 
-;;; Murmel: interpreted eql.10 is nil, compiled eql.10 is t because quoted cons cells are coalesced
-;;; SBCL: in the repl eql.10 is nil, when compiled eql.10 is t
-;;; See: "Issue QUOTE-SEMANTICS Writeup" http://www.lispworks.com/documentation/HyperSpec/Issues/iss282_w.htm
-#+(or)
-(deftest eql.10 (eql '(a . b) '(a . b))  nil)
+#+murmel (progn  ; sbcl stackoverflows on these
+(define *l* (list 1 2 3 4 5))
+(deftest rplaca.1 (format nil "%s" (rplaca (cdr *l*) *l*)) "((1 #<this list> 3 4 5) 3 4 5)")
+(deftest rplaca.2 (format nil "%s" *l*) "(1 #<this list> 3 4 5)")
 
-(define *x* nil)
-(deftest eql.11 (progn (setq *x* (cons 'a 'b)) (eql *x* *x*))  t)
-(deftest eql.12 (progn (setq *x* '(a . b)) (eql *x* *x*))  t)
-(deftest eql.13 (eql #\A #\A)  t)
-#+murmel (deftest eql.14 (eql "Foo" "Foo")  t) ; sbcl murmel-test.lisp -> nil, sbcl murmel-test.fasl -> t
-;(deftest eql.15 (eql "Foo" (copy-seq "Foo"))  nil)
-(deftest eql.16 (eql "FOO" "foo")  nil)
-
-(deftest eql.17 (eql -0 -0) t)
-(deftest eql.18 (eql -0 0) t)
-(deftest eql.19 (eql -0.0 -0) nil)
-
-(deftest eql.20 (eql -0.0 -0.0) t)
-(deftest eql.21 (eql -0.0 0.0) nil)
-
-#+murmel (deftest eql.22 (eql 1 ((jmethod "Integer" "valueOf" "String") "1")) t)
-#+murmel (deftest eql.23 (eql 1 ((jmethod "java.math.BigInteger" "new" "String") "1")) t)
+; test modifying the varargs parameter which in compiled code is different from a regular ConsCell based list
+(defun func l
+  (rplaca (cdr l) l)
+  (format nil "%s" l))
+(deftest rplaca.3 (func 11 22 33 44 55) "(11 #<this list> 33 44 55)")
+)
 
 
 ;;; test list
@@ -673,6 +685,17 @@ multiline comment
 (deftest assoc.2 (assoc nil    '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   '(nil 2))
 (deftest assoc.3 (assoc 'key-5 '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))   nil)
 
+
+; *******************************************************************
+;;; - iteration: n/a
+
+
+; *******************************************************************
+;;; - places: n/a
+
+
+; *******************************************************************
+;;; - numbers, characters
 
 ;;; test number comparison operators
 (deftest test-numbereq.1  (= 2 2)       t)
@@ -781,29 +804,8 @@ multiline comment
 )
 
 
-;;; test seqref, seqset
-(deftest seqref.1 (seqref '(0 1 2 3) 2) 2)
-(deftest seqref.2 (seqref '(0 1 2 3) 3) 3)
-(deftest seqref.3 (seqref #(0 1 2 3) 2) 2)
-(deftest seqref.4 (seqref #(0 1 2 3) 3) 3)
-(deftest seqref.5 (seqref "0123"     2) #\2)
-(deftest seqref.6 (seqref "0123"     3) #\3)
-(deftest seqref.7 (seqref #*0101     2) 0)
-(deftest seqref.8 (seqref #*0101     3) 1)
-
-(deftest seqref.9 (seqref '(0 1 2 . 3) 3) 3)
-
-(deftest seqset.1 (seqset 22  (list 0 1 2 3)       2) 22)
-(deftest seqset.2 (seqset 33  (list 0 1 2 3)       3) 33)
-(deftest seqset.3 (seqset 22  (vector 0 1 2 3)     2) 22)
-(deftest seqset.4 (seqset 33  (vector 0 1 2 3)     3) 33)
-(deftest seqset.5 (seqset #\a (vector-copy "0123") 2) #\a)
-(deftest seqset.6 (seqset #\b (vector-copy "0123") 3) #\b)
-(deftest seqset.7 (seqset 0   (vector-copy #*0101) 2) 0)
-(deftest seqset.8 (seqset 0   (vector-copy #*0101) 3) 0)
-
-(deftest seqset.9 (seqset 22 (list* 0 1 2 3)  2) 22)
-
+; *******************************************************************
+;;; - vectors, sequences
 
 ;;; test vector-copy
 (let* ((vec (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1))
@@ -833,7 +835,42 @@ multiline comment
 )
 
 
-;;; tests some functions with objects Java classes that are not normally used in Murmel
+;;; test seqref, seqset
+(deftest seqref.1 (seqref '(0 1 2 3) 2) 2)
+(deftest seqref.2 (seqref '(0 1 2 3) 3) 3)
+(deftest seqref.3 (seqref #(0 1 2 3) 2) 2)
+(deftest seqref.4 (seqref #(0 1 2 3) 3) 3)
+(deftest seqref.5 (seqref "0123"     2) #\2)
+(deftest seqref.6 (seqref "0123"     3) #\3)
+(deftest seqref.7 (seqref #*0101     2) 0)
+(deftest seqref.8 (seqref #*0101     3) 1)
+
+(deftest seqref.9 (seqref '(0 1 2 . 3) 3) 3)
+
+(deftest seqset.1 (seqset 22  (list 0 1 2 3)       2) 22)
+(deftest seqset.2 (seqset 33  (list 0 1 2 3)       3) 33)
+(deftest seqset.3 (seqset 22  (vector 0 1 2 3)     2) 22)
+(deftest seqset.4 (seqset 33  (vector 0 1 2 3)     3) 33)
+(deftest seqset.5 (seqset #\a (vector-copy "0123") 2) #\a)
+(deftest seqset.6 (seqset #\b (vector-copy "0123") 3) #\b)
+(deftest seqset.7 (seqset 0   (vector-copy #*0101) 2) 0)
+(deftest seqset.8 (seqset 0   (vector-copy #*0101) 3) 0)
+
+(deftest seqset.9 (seqset 22 (list* 0 1 2 3)  2) 22)
+
+
+; *******************************************************************
+;;; - higher order: n/a
+
+
+; *******************************************************************
+;;; - I/O
+
+
+; *******************************************************************
+;;; - misc
+
+;;; Java FFI: tests some functions with objects Java classes that are not normally used in Murmel
 #+murmel
 (let (
       (byte          ((jmethod "Byte"                    "new" "String") "1"))
@@ -964,6 +1001,7 @@ multiline comment
 )
 
 
+;;; test jmethod, jproxy
 #+murmel
 (deftest ffi.jproxy
   (let* (value
@@ -975,8 +1013,8 @@ multiline comment
   123)
 
 
-
-;;; Print summary
+; *******************************************************************
+;;; Print tests summary
 (write *failed*) (format t "/") (write *count*) (format t " test(s) failed")
 (writeln)
 (if (= 0 *failed*)
