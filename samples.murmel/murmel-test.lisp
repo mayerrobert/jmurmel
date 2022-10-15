@@ -170,6 +170,16 @@
 (deftest test-echo.3 (echo 1 2 3) '(1 2 3))
 
 
+; *******************************************************************
+;;; Tests for core Murmel w/o mlib
+
+; *******************************************************************
+;;; S-Expressions, reader
+#|
+This is a
+multiline comment
+|#
+
 ;;; test reader
 (deftest reader.1 1 1)
 (deftest reader.2 '(1 . 2) '(1 . 2))
@@ -192,16 +202,6 @@
 (deftest feature.2 #+(or sbcl abcl (and murmel jvm)) 'sbcl-or-abcl-or-murmel-jvm 'sbcl-or-abcl-or-murmel-jvm)
 (deftest feature.3 #+(not (or abcl sbcl murmel (not murmel))) 'should-ignore 'abcl-sbcl-or-murmel-or-notmurmel 'abcl-sbcl-or-murmel-or-notmurmel)
 
-
-; *******************************************************************
-;;; Tests for core Murmel w/o mlib
-
-; *******************************************************************
-;;; S-Expressions, reader
-#|
-This is a
-multiline comment
-|#
 
 (deftest read.binary #b0101 5)
 (deftest read.octal  #o0101 65)
