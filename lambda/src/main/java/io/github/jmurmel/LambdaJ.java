@@ -3083,30 +3083,6 @@ public class LambdaJ {
         return list;
     }
 
-    static boolean eql(Object o1, Object o2) {
-        if (o1 == o2) return true;
-        if (characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
-        if (numberp(o1) && numberp(o2)) {
-            if (Objects.equals(o1, o2)) return true;
-
-            if (o1 instanceof BigInteger)
-                return !(o2 instanceof BigInteger) && integerp(o2) && ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue()))) == 0;
-            if (o2 instanceof BigInteger)
-                return integerp(o1) && ((BigInteger)o2).compareTo(new BigInteger(String.valueOf(((Number)o1).longValue()))) == 0;
-
-            /*if (o1 instanceof BigDecimal)
-                return !(o2 instanceof BigDecimal) && floatp(o2) && ((BigDecimal)o1).compareTo(new BigDecimal(String.valueOf(((Number)o2).doubleValue()))) == 0;
-            if (o2 instanceof BigDecimal)
-                return floatp(o1) && ((BigDecimal)o2).compareTo(new BigDecimal(String.valueOf(((Number)o1).doubleValue()))) == 0;*/
-
-            if (integerp(o1) && integerp(o2))
-                return ((Number)o1).longValue() == ((Number)o2).longValue();
-            /*if (floatp(o1) && floatp(o2))
-                return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue()) == 0;*/
-        }
-        return false;
-    }
-
 
 
     /* the following predicates more or less implement Murmel's type system */
@@ -3164,8 +3140,9 @@ public class LambdaJ {
                 insertPos = ret;
             }
             else {
-                insertPos.rplacd(cons(o, null));
-                insertPos = (ConsCell) insertPos.cdr();
+                final ListConsCell cons = cons(o, null);
+                insertPos.rplacd(cons);
+                insertPos = cons;
             }
         }
         return ret;
@@ -3708,6 +3685,30 @@ public class LambdaJ {
 
 
     /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
+
+    static boolean eql(Object o1, Object o2) {
+        if (o1 == o2) return true;
+        if (characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
+        if (numberp(o1) && numberp(o2)) {
+            if (Objects.equals(o1, o2)) return true;
+
+            if (o1 instanceof BigInteger)
+                return !(o2 instanceof BigInteger) && integerp(o2) && ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue()))) == 0;
+            if (o2 instanceof BigInteger)
+                return integerp(o1) && ((BigInteger)o2).compareTo(new BigInteger(String.valueOf(((Number)o1).longValue()))) == 0;
+
+            /*if (o1 instanceof BigDecimal)
+                return !(o2 instanceof BigDecimal) && floatp(o2) && ((BigDecimal)o1).compareTo(new BigDecimal(String.valueOf(((Number)o2).doubleValue()))) == 0;
+            if (o2 instanceof BigDecimal)
+                return floatp(o1) && ((BigDecimal)o2).compareTo(new BigDecimal(String.valueOf(((Number)o1).doubleValue()))) == 0;*/
+
+            if (integerp(o1) && integerp(o2))
+                return ((Number)o1).longValue() == ((Number)o2).longValue();
+            /*if (floatp(o1) && floatp(o2))
+                return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue()) == 0;*/
+        }
+        return false;
+    }
 
 
     /// conses and lists
