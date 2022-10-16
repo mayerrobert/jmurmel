@@ -3098,10 +3098,10 @@ public class LambdaJ {
     static boolean characterp(Object o) { return o instanceof Character; }
 
     static boolean vectorp(Object o)    { return stringp(o) || bitvectorp(o) || svectorp(o) || o instanceof List; }
-    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !sbitvectorp(o); }
+    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !bitvectorp(o) && !stringp(o); }
     static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)   { return o instanceof String || o instanceof char[]; }
-    static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; } // todo in Murmel anbinden + bref & bset
+    static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; }
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
     static boolean adjustableArrayP(Object o) {
@@ -4107,7 +4107,7 @@ public class LambdaJ {
             for (int i = 0; i < bv.size(); i++) ret.append(bv.get(i));
             return ret.first();
         }
-        
+
         if (maybeVector instanceof List) {
             @SuppressWarnings("rawtypes") final List l = (List)maybeVector;
             if (l.isEmpty()) return null;
@@ -4139,18 +4139,24 @@ public class LambdaJ {
         return ret.first();
     }
 
-    static String listToStringImpl(ConsCell l) {
-        if (l == null) return "";
+    static char[] listToStringImpl(ConsCell l) {
+        if (l == null) return new char[0];
         final StringBuilder ret = new StringBuilder();
         for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
-        return ret.toString();
+        return ret.toString().toCharArray();
     }
 
     private Object stringToList(ConsCell a) {
         oneArg("string->list", a);
         final Object maybeString = car(a);
-        final CharSequence s = requireCharsequence("string->list", maybeString);
         final CountingListBuilder ret = new CountingListBuilder();
+        if (maybeString instanceof char[]) {
+            final char[] carry = (char[])maybeString;
+            final int len = carry.length;
+            for (int i = 0; i < len; i++) ret.append(carry[i]);
+            return ret.first();
+        }
+        final CharSequence s = requireCharsequence("string->list", maybeString);
         final int len = s.length();
         for (int i = 0; i < len; i++) ret.append(s.charAt(i));
         return ret.first();
@@ -4223,7 +4229,7 @@ public class LambdaJ {
                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
                                                 return newValue; }
         if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
-            return newValue; }
+                                                return newValue; }
         throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
 
@@ -6353,8 +6359,15 @@ public class LambdaJ {
         public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1])) ? _t : null; }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
-            final CharSequence s = LambdaJ.requireCharsequence("string->list", args[0]);
+            final Object maybeString = args[0];
             final ListBuilder ret = new ListBuilder();
+            if (maybeString instanceof char[]) {
+                final char[] carry = (char[])maybeString;
+                final int len = carry.length;
+                for (int i = 0; i < len; i++) ret.append(carry[i]);
+                return ret.first();
+            }
+            final CharSequence s = LambdaJ.requireCharsequence("string->list", maybeString);
             final int len = s.length();
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
@@ -6368,6 +6381,14 @@ public class LambdaJ {
             if (LambdaJ.svectorp(maybeVector))    return simpleVectorToList(args);
             if (stringp(maybeVector))             return stringToList(args);
             if (LambdaJ.sbitvectorp(maybeVector)) return simpleBitVectorToList(args);
+
+            if (maybeVector instanceof Bitvector) {
+                final Bitvector bv = (Bitvector)maybeVector;
+                if (bv.size() == 0) return null;
+                final ListBuilder ret = new ListBuilder();
+                for (int i = 0; i < bv.size(); i++) ret.append(bv.get(i));
+                return ret.first();
+            }
 
             if (maybeVector instanceof List) {
                 final List<?> l = (List<?>)maybeVector;

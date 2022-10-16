@@ -833,7 +833,7 @@ multiline comment
   (deftest vector-copy.2 (adjustable-array-p copy) nil))
 
 
-;;; test vector-fill
+;;; test make-array, vector-fill
 (deftest vector-fill.1  (vector-fill (vector 0 0 0) 1) #(1 1 1))
 (deftest vector-fill.2  (vector-fill (make-array 3) 1) #(1 1 1))
 (deftest vector-fill.3  (vector-fill (make-array 3 #-murmel :element-type 'bit) 1) #*111)
@@ -848,12 +848,99 @@ multiline comment
 (deftest vector-fill.10 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1 0 3) "111")
 
 
-;;; test vector->list
-#+murmel (progn
-(deftest vector->list.1 (vector->list #(0 1 2))  '(0 1 2))
-(deftest vector->list.2 (vector->list (vector-fill (make-array 3 t t) 1))  '(1 1 1))
-(deftest vector->list.3 (vector->list "012")     '(#\0 #\1 #\2))
-(deftest vector->list.4 (vector->list #*0101)    '(0 1 0 1))
+;;; test operations on simple-vector
+#+murmel
+(let ((sv (vector-copy #(0 1 2))))
+  (deftest simple-vector.1 (simple-vector-p sv)      t)
+  (deftest simple-vector.2 (vectorp sv)              t)
+  (deftest simple-vector.3 (svref sv 0)              0)
+  (deftest simple-vector.4 (svset 1 sv 0)            1)
+  (deftest simple-vector.5 sv                        #(1 1 2))
+  (deftest simple-vector.6 (svlength sv)             3)
+  (deftest simple-vector.7 (vector-length sv)        3)
+  (deftest simple-vector.8 (simple-vector->list sv)  '(1 1 2))
+  (deftest simple-vector.9 (vector->list sv)         '(1 1 2))
+)
+
+
+;;; test operations on adjustable vector
+#+murmel
+(let ((av (vector-fill (make-array 3 t t) 1)))
+  (deftest adjustable-vector.1  (simple-vector-p av)      nil)
+  (deftest adjustable-vector.2  (vectorp av)              t)
+  (deftest adjustable-vector.3  (seqref av 0)             1)
+  (deftest adjustable-vector.4  (seqset 0 av 0)           0)
+  (deftest adjustable-vector.5  av                        #(0 1 1))
+  (deftest adjustable-vector.6  (vector-length av)        3)
+  ;(deftest adjustable-vector.7  (simple-vector->list av)  '(0 1 1))
+  (deftest adjustable-vector.8  (vector->list av)         '(0 1 1))
+  (deftest adjustable-vector.9  (vector-push-extend 2 av) 3)
+  (deftest adjustable-vector.10 av                        #(0 1 1 2))
+)
+
+
+;;; test operations on simple bitvector
+#+murmel
+(let ((sbv (vector-copy #*0101)))
+  (deftest simple-bit-vector.1 (simple-bit-vector-p sbv)      t)
+  (deftest simple-bit-vector.2 (bit-vector-p sbv)             t)
+  (deftest simple-bit-vector.3 (sbvref sbv 0)                 0)
+  (deftest simple-bit-vector.4 (sbvset 1 sbv 0)               1)
+  (deftest simple-bit-vector.5 sbv                            #*1101)
+  (deftest simple-bit-vector.6 (sbvlength sbv)                4)
+  (deftest simple-bit-vector.7 (vector-length sbv)            4)
+  (deftest simple-bit-vector.8 (sbv= sbv #*1101)              t)
+  (deftest simple-bit-vector.9 (simple-bit-vector->list sbv) '(1 1 0 1))
+  (deftest simple-bit-vector.10 (vector->list sbv)            '(1 1 0 1))
+)
+
+
+;;; test operations on adjustable bitvector
+#+murmel
+(let ((abv (vector-fill (make-array 3 'bit t) 1)))
+  (deftest adjustable-bit-vector.1  (simple-bit-vector-p abv)      nil)
+  (deftest adjustable-bit-vector.2  (bit-vector-p abv)             t)
+  (deftest adjustable-bit-vector.3  (seqref abv 0)                 1)
+  (deftest adjustable-bit-vector.4  (seqset 0 abv 1)               0)
+  (deftest adjustable-bit-vector.5  abv                            #*101)
+  (deftest adjustable-bit-vector.6  (vector-length abv)            3)
+  (deftest adjustable-bit-vector.7  (bv= abv #*101)                t)
+  ;(deftest adjustable-bit-vector.8  (bit-vector->list abv)        '(1 0 1))
+  (deftest adjustable-bit-vector.9  (vector->list abv)             '(1 0 1))
+  (deftest adjustable-bit-vector.10 (vector-push-extend 0 abv)     3)
+  (deftest adjustable-bit-vector.11 abv                            #*1010)
+)
+
+
+;;; test operations on simple string
+#+murmel
+(let ((sstring (vector-copy "123")))
+  (deftest simple-string.1 (simple-string-p sstring)  t)
+  (deftest simple-string.2 (stringp sstring)          t)
+  (deftest simple-string.3 (sref sstring 0)           #\1)
+  (deftest simple-string.4 (sset #\a sstring 0)       #\a)
+  (deftest simple-string.5 sstring                    "a23")
+  (deftest simple-string.6 (vector-length sstring)    3)
+  (deftest simple-string.7 (string= sstring "a23")    t)
+  (deftest simple-string.8 (string->list sstring)     '(#\a #\2 #\3))
+  (deftest simple-string.9 (vector->list sstring)     '(#\a #\2 #\3))
+)
+
+
+;;; test operations on adjustable string
+#+murmel
+(let ((astring (vector-fill (make-array 3 'character t) #\1)))
+  (deftest adjustable-string.2  (simple-string-p astring)         nil)
+  (deftest adjustable-string.1  (stringp astring)                 t)
+  (deftest adjustable-string.3  (sref astring 0)                  #\1)
+  (deftest adjustable-string.4  (sset #\a astring 0)              #\a)
+  (deftest adjustable-string.5  astring                           "a11")
+  (deftest adjustable-string.6  (vector-length astring)           3)
+  (deftest adjustable-string.7  (string= astring "a11")           t)
+  (deftest adjustable-string.8  (string->list astring)            '(#\a #\1 #\1))
+  (deftest adjustable-string.9  (vector->list astring)            '(#\a #\1 #\1))
+  (deftest adjustable-string.10 (vector-push-extend #\b astring)  3)
+  (deftest adjustable-string.11 astring                           "a11b")
 )
 
 
