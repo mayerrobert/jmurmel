@@ -3097,15 +3097,15 @@ public class LambdaJ {
 
     static boolean characterp(Object o) { return o instanceof Character; }
 
-    static boolean vectorp(Object o)    { return stringp(o) || sbitvectorp(o) || svectorp(o) || o instanceof List /*|| bitvectorp(o)*/; }
+    static boolean vectorp(Object o)    { return stringp(o) || bitvectorp(o) || svectorp(o) || o instanceof List; }
     static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !sbitvectorp(o); }
     static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)   { return o instanceof String || o instanceof char[]; }
-    //static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof BitSet; } // todo in Murmel anbinden + bref & bset
+    static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; } // todo in Murmel anbinden + bref & bset
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
     static boolean adjustableArrayP(Object o) {
-        if (o instanceof List || o instanceof StringBuilder || o instanceof StringBuffer) return true;
+        if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
         //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
         return false;
     }
@@ -3906,7 +3906,50 @@ public class LambdaJ {
 
     /// vectors
 
-    private Object makeArray(ConsCell a) {
+    static final class Bitvector implements Serializable, Writeable {
+        private static final long serialVersionUID = 1L;
+        private final BitSet bitSet;
+        private int size;
+
+        Bitvector(int capacity, int size) {
+            bitSet = new BitSet(capacity);
+            this.size = size;
+        }
+        
+        int size() { return size; }
+        
+        void fill(boolean value) {
+            if (value) bitSet.set(0, size);
+            else bitSet.clear();
+        }
+
+        boolean[] toBooleanArray() {
+            final boolean[] ret = new boolean[size];
+            if (size == 0) return ret;
+
+            final BitSet bitSet = this.bitSet;
+            final int limit = bitSet.length();
+            for (int idx = 0; idx < limit; idx++) {
+                ret[idx] = bitSet.get(idx);
+            }
+            return ret;
+        }
+
+        long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
+        void set(int idx, boolean val) { bitSet.set(idx, val); }
+
+        void add(boolean value) { if (value) bitSet.set(size); size++; }
+
+        @Override
+        public void printSEx(WriteConsumer sb, boolean escapeAtoms) {
+            sb.print("#*");
+            int idx = 0;
+            for (; idx < bitSet.length(); idx++) sb.print(bitSet.get(idx) ? "1" : "0");
+            for (; idx < size; idx++) sb.print("0");
+        }
+    }
+
+    Object makeArray(ConsCell a) {
         varargsMinMax("make-array", a, 1, 3);
         final int size = toNonnegInt("make-array", car(a));
         final Object type = cadr(a);
@@ -3922,7 +3965,7 @@ public class LambdaJ {
         }
 
         if (type == sBit) {
-            if (adjustable) throw new LambdaJError("adjustable is not yet supported with bit vectors");
+            if (adjustable) return new Bitvector(capacity, size);
             return new boolean[size];
         }
 
@@ -3937,6 +3980,7 @@ public class LambdaJ {
     static long vectorLength(Object maybeVector) {
         if (maybeVector instanceof Object[])     return ((Object[])maybeVector).length;
         if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
+        if (maybeVector instanceof Bitvector)    return ((Bitvector)maybeVector).size();
         if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
         if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
         if (maybeVector instanceof List)         return ((List<?>)maybeVector).size();
@@ -3958,6 +4002,7 @@ public class LambdaJ {
 
         if (vector instanceof Object[])      { Arrays.fill(((Object[])vector), start, end, value); return vector; }
         if (vector instanceof boolean[])     { Arrays.fill(((boolean[])vector), start, end, requireBit("vector-fill", value)); return vector; }
+        if (vector instanceof Bitvector)     { ((Bitvector)vector).fill(requireBit("vector-fill", value)); return vector; }
         if (vector instanceof char[])        { Arrays.fill(((char[])vector), start, end, requireChar("vector-fill", value)); return vector; }
         if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
         if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
@@ -3969,6 +4014,7 @@ public class LambdaJ {
         final int length = (int)vectorLength(vector);
         if (vector instanceof Object[])     return Arrays.copyOf((Object[])vector, length);
         if (vector instanceof boolean[])    return Arrays.copyOf((boolean[])vector, length);
+        if (vector instanceof Bitvector)    return ((Bitvector)vector).toBooleanArray();
         if (vector instanceof char[])       return Arrays.copyOf((char[])vector, length);
         if (vector instanceof CharSequence) return vector.toString().toCharArray();
         if (vector instanceof List<?>)      return ((List<?>)vector).toArray(new Object[0]);
@@ -4037,6 +4083,14 @@ public class LambdaJ {
         if (svectorp(maybeVector)) return simpleVectorToList(a);
         if (stringp(maybeVector)) return stringToList(a);
         if (sbitvectorp(maybeVector)) return simpleBitVectorToList(a);
+
+        if (maybeVector instanceof Bitvector) {
+            final Bitvector bv = (Bitvector)maybeVector;
+            if (bv.size() == 0) return null;
+            final CountingListBuilder ret = new CountingListBuilder();
+            for (int i = 0; i < bv.size(); i++) ret.append(bv.get(i));
+            return ret.first();
+        }
         
         if (maybeVector instanceof List) {
             @SuppressWarnings("rawtypes") final List l = (List)maybeVector;
@@ -4089,9 +4143,10 @@ public class LambdaJ {
     @SuppressWarnings("unchecked")
     static long vectorPushExtend(Object newValue, Object maybeVector) {
         if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
+        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
+        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
+        if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; bv.add(requireBit("vector-push-extend", newValue)); return bv.size() - 1; }
         if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
-        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(newValue); return sb.length() - 1; }
-        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(newValue); return sb.length() - 1; }
         throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
     }
 
@@ -4113,6 +4168,7 @@ public class LambdaJ {
         if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
         if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
         if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
+        if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq;   if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); return bv.get((int)idx); }
         if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
         if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
         throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
@@ -4142,7 +4198,7 @@ public class LambdaJ {
                                                 if (newBit == 0) { arry[(int)idx] = false; return 0L; }
                                                 if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
                                                 throw errorNotABit("seqset", newValue); }
-        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+        if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit("seqset", newValue));
                                                 return newValue; }
         if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
                                                  final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
@@ -4150,6 +4206,8 @@ public class LambdaJ {
         if (maybeSeq instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
                                                 return newValue; }
+        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+            return newValue; }
         throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
 
@@ -6308,12 +6366,14 @@ public class LambdaJ {
             return ret.first();
         }
 
-        public final boolean[]   listToSimpleBitVector(Object... args) { oneArg("list->simple-bit-vector", args.length); return LambdaJ.listToBooleanArray(LambdaJ.requireList("list->simple-bit-vector", args[0])); }
+        public final boolean[]   listToSimpleBitVector(Object... args) {
+            oneArg("list->simple-bit-vector", args.length);
+            return LambdaJ.listToBooleanArray(LambdaJ.requireList("list->simple-bit-vector", args[0]));
+        }
 
         public final Object   simpleBitVectorToList (Object... args) {
             oneArg("simple-bit-vector->list", args.length);
             final Object maybeVector = args[0];
-            //if (maybeVector == null) return null;
             final boolean[] s = LambdaJ.requireSimpleBitVector("simple-bit-vector->list", maybeVector);
             final ListBuilder ret = new ListBuilder();
             final int len = s.length;

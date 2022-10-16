@@ -759,7 +759,7 @@ Since: 1.3
 
 Since: 1.3
 
-Only one-dimensional simple arrays of element-type t, 'bit or 'character are supported.
+Only one-dimensional arrays of element-type t, 'bit or 'character are supported.
 
 ### (adjustable-array-p obj) -> boolean
 
@@ -775,7 +775,7 @@ while in Common Lisp that would signal a `type-error`.
 Since: 1.3
 
 `seqref` is similar to CL `elt`, and `seqset` is similar to CL `(setf elt)` function.
-Murmel's `seqref` will handle dotted lists, though.
+Murmel's `seqref` and `seqset` will handle dotted lists, though.
 
     (seqref "abc" 2) ; ==> #\c
     (seqref #(0 1 2 3) 3)  ; ==> 3

@@ -834,15 +834,18 @@ multiline comment
 
 
 ;;; test vector-fill
-(deftest vector-fill.1 (vector-fill (vector 0 0 0) 1) #(1 1 1))
-(deftest vector-fill.2 (vector-fill (make-array 3 #-murmel :element-type 'bit) 1) #*111)
-(deftest vector-fill.3 (vector-fill (make-array 3 #-murmel :element-type 'character) #\1) "111")
+(deftest vector-fill.1  (vector-fill (vector 0 0 0) 1) #(1 1 1))
+(deftest vector-fill.2  (vector-fill (make-array 3) 1) #(1 1 1))
+(deftest vector-fill.3  (vector-fill (make-array 3 #-murmel :element-type 'bit) 1) #*111)
+(deftest vector-fill.4  (vector-fill (make-array 3 #-murmel :element-type 'character) #\1) "111")
 
-(deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1) #(1 1 1))
-(deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1) "111")
+(deftest vector-fill.5  (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1) #(1 1 1))
+(deftest vector-fill.6  (vector-fill (make-array 3 #-murmel :element-type 'bit #-murmel :adjustable t) 1) #*111)
+(deftest vector-fill.7  (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1) "111")
 
-(deftest vector-fill.4 (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1 0 3) #(1 1 1))
-(deftest vector-fill.5 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1 0 3) "111")
+(deftest vector-fill.8  (vector-fill (make-array 3 #-murmel :element-type t #-murmel :adjustable t) 1 0 3) #(1 1 1))
+(deftest vector-fill.9  (vector-fill (make-array 3 #-murmel :element-type 'bit #-murmel :adjustable t) 1 0 3) #*111)
+(deftest vector-fill.10 (vector-fill (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t) #\1 0 3) "111")
 
 
 ;;; test vector->list
