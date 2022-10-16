@@ -304,6 +304,7 @@
 
                        ((eq keydesignator 'vector)            `((vectorp ,tmp) ,@forms))
                        ((eq keydesignator 'simple-vector)     `((simple-vector-p ,tmp) ,@forms))
+                       ((eq keydesignator 'bit-vector)        `((bit-vector-p ,tmp) ,@forms))
                        ((eq keydesignator 'simple-bit-vector) `((simple-bit-vector-p ,tmp) ,@forms))
                        ((eq keydesignator 'string)            `((stringp ,tmp) ,@forms))
                        ((eq keydesignator 'simple-string)     `((simple-string-p ,tmp) ,@forms))
@@ -874,10 +875,12 @@
         (limit (gensym))
         (loop (gensym)))
     `(let* ((,vec ,vectorform)
-            (,acc (if (simple-vector-p ,vec) svref
-                    (if (stringp ,vec) char
-                      (if (simple-bit-vector-p ,vec) sbvref
-                        (error "dovector - not a vector: %s" ,vec)))))
+            (,acc (typecase ,vec
+                    (simple-vector svref)
+                    (string sref)
+                    (simple-bit-vector sbvref)
+                    (vector seqref)
+                    (t (error "dovector - not a vector: %s" ,vec))))
             (,limit (vector-length ,vec)))
        (let ,loop ((,idx 0))
          (if (< ,idx ,limit)
@@ -1272,6 +1275,7 @@
   (or (eql a b)
       (and (stringp a) (stringp b) (string= a b))
       (and (simple-bit-vector-p a) (simple-bit-vector-p b) (sbv= a b))
+      (and (bit-vector-p a) (bit-vector-p b) (bv= a b))
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
@@ -1669,6 +1673,7 @@
         ((eq result-type 'vector)            (list->simple-vector lst))
         ((eq result-type 'simple-vector)     (list->simple-vector lst))
         ((eq result-type 'simple-bit-vector) (list->simple-bit-vector lst))
+        ((eq result-type 'bit-vector)        (list->simple-bit-vector lst))
         ((eq result-type 'string)            (list->string lst))
         ((eq result-type 'simple-string)     (list->string lst))
         (t (error "type %s is not implemented" result-type))))

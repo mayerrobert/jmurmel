@@ -811,7 +811,7 @@ Similar to CL `char`.
 
 `sset` sets the n-th character of `str` to `new-char`.
 
-### simple-bit-vector-p, sbvref, sbvset, sbvlength, sbv=
+### bit-vector-p, simple-bit-vector-p, sbvref, sbvset, sbvlength, bv=, sbv=
     (sbvref bv n) -> nth-bit
     (sbvset new-bit bv n) -> new-bit
 
