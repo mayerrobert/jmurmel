@@ -691,7 +691,7 @@
 
   (length (make-array 3 #-murmel :element-type t #-murmel :adjustable t)) => 3
   (length (make-array 3 #-murmel :element-type 'character #-murmel :adjustable t)) => 3
-  ;(length (make-array 3 #-murmel :element-type 'bit #-murmel :adjustable t)) => 3
+  (length (make-array 3 #-murmel :element-type 'bit #-murmel :adjustable t)) => 3
 )
 
 
