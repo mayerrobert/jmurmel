@@ -1,5 +1,3 @@
-gibt wieder jede menge .access$ methoden
--> requireXX in MurmelJavaProgram aufräumen
 
 
 
@@ -10,6 +8,7 @@ vector-ensure-capacity, vector-trim-to-size
 
 vector-capacity: gibt length für simple vector, capacity für stringbuffer/builder
 -> geht nicht weil arraylist gibt capacity nicht her
+   -> geht evtl mit reflection, k.a. obs da add-opens braucht
 
 mlib: foldl, foldr, vielleicht foreach, filter
 

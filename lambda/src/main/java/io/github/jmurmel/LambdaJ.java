@@ -3550,7 +3550,7 @@ public class LambdaJ {
     }
 
 
-    private static Number requireNumberOrNull(String func, Object a) {
+    static Number requireNumberOrNull(String func, Object a) {
         if (a == null) return null;
         return requireNumber(func, a);
     }
@@ -3588,7 +3588,7 @@ public class LambdaJ {
 
 
     /** Return {@code c} as a Character, error if {@code c} is not a Character. */
-    private static Character requireChar(String func, Object c) {
+    static Character requireChar(String func, Object c) {
         if (!(c instanceof Character)) throw new LambdaJError(true, "%s: expected a character argument but got %s", func, printSEx(c));
         return (Character)c;
     }
@@ -3597,12 +3597,12 @@ public class LambdaJ {
         return requireIntegralNumber(func, value, 0, 1).intValue() != 0;
     }
 
-    private static Object[] requireSimpleVector(String func, Object c) {
+    static Object[] requireSimpleVector(String func, Object c) {
         if (!svectorp(c)) throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(c));
         return (Object[])c;
     }
 
-    private static boolean[] requireSimpleBitVector(String func, Object c) {
+    static boolean[] requireSimpleBitVector(String func, Object c) {
         if (!sbitvectorp(c)) throw new LambdaJError(true, "%s: expected a simple bit vector argument but got %s", func, printSEx(c));
         return (boolean[])c;
     }
@@ -3614,13 +3614,13 @@ public class LambdaJ {
         return requireString(func, c);
     }
 
-    private static String requireString(String func, Object c) {
+    static String requireString(String func, Object c) {
         if (!stringp(c)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
         if (c instanceof char[]) return String.valueOf((char[])c);
         return c.toString();
     }
 
-    private static CharSequence requireCharsequence(String func, Object c) {
+    static CharSequence requireCharsequence(String func, Object c) {
         if (!(c instanceof CharSequence)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
         return (CharSequence)c;
     }
@@ -6206,11 +6206,11 @@ public class LambdaJ {
         public static ConsCell cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
 
         public final ConsCell _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        public static ConsCell rplaca(Object l, Object newCar) { return requireList(l).rplaca(newCar); }
+        public static ConsCell rplaca(Object l, Object newCar) { return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
         public static ConsCell rplaca(ConsCell l, Object newCar) { return l.rplaca(newCar); }
 
         public final ConsCell _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        public static ConsCell rplacd(Object l, Object newCdr) { return requireList(l).rplacd(newCdr); }
+        public static ConsCell rplacd(Object l, Object newCdr) { return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
         public static ConsCell rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
 
         public final Object _apply (Object... args) {
@@ -6224,7 +6224,7 @@ public class LambdaJ {
             if (symbolp(fn)) fn = getValue(fn.toString());
             return applyTailcallHelper(fn, args[1]);
         }
-        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.expandAndEval(args[0], args.length == 2 ? requireList(args[1]) : null); }
+        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null); }
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
         public final Object eql     (Object o1, Object o2) { return LambdaJ.eql(o1, o2) ? _t : null; }
@@ -6306,7 +6306,7 @@ public class LambdaJ {
         public final Object sbvEq(Object... args)        { twoArgs("sbv=", args.length);               return LambdaJ.sbvEq(args[0], args[1]) ? _t : null; }
 
         public final Character _sref(Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
-        public final Character _sset(Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(requireChar(args[0]), args[1], toArrayIndex(args[2])); }
+        public final Character _sset(Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
 
         public final Object   makeArray(Object... args) { varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
@@ -6574,12 +6574,6 @@ public class LambdaJ {
             return listToArray(o);
         }
 
-        public static ConsCell requireList(Object lst) {
-            if (lst == null) return null;
-            if (!consp(lst)) errorNotAList(lst);
-            return (ConsCell)lst;
-        }
-
         private static int toArrayIndex(Object o) {
             if (o instanceof Long)   { final long l   = (Long)o;   final int i = Math.abs((int)l);       if (l == i)      return i; errorNotAnArrayIndex(o); }
             if (o instanceof Double) { final double d = (Double)o; final int i = Math.abs((int)d);       if (d == i)      return i; errorNotAnArrayIndex(o); }
@@ -6639,20 +6633,28 @@ public class LambdaJ {
         public static byte toByte(Object n)  { return requireIntegralNumber("toByte", n, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue(); }
         public static short toShort(Object n) { return requireIntegralNumber("toShort", n, Short.MIN_VALUE, Short.MAX_VALUE).shortValue(); }
 
-        /** used by JFFI */
+        
+        /** used by generated Java code */
+        public static ConsCell requireList(Object lst) {
+            if (lst == null) return null;
+            if (!consp(lst)) errorNotAList(lst);
+            return (ConsCell)lst;
+        }
+
+        /** used by JFFI and generated inline JFFI */
         public static Character requireChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
             return (Character)o;
         }
 
-        /** used by JFFI */
+        /** used by JFFI and generated inline JFFI */
         public static String requireStringOrNull(Object o) {
             if (o == null) return null;
             if (!stringp(o)) errorNotAString(o);
             return o.toString();
         }
 
-        /** used by JFFI */
+        /** used by JFFI and generated inline JFFI */
         public static Number requireNumberOrNull(Object o) {
             if (o == null) return null;
             return requireNumber("?", o);
