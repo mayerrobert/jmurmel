@@ -1000,22 +1000,28 @@ multiline comment
 (defmacro beta (x y) `(gamma ,x ,y))   ; =>  BETA
 (defmacro delta (x y) `(gamma ,x ,y))  ; =>  EPSILON
 
-;;; note: (macroexpand-1 form) only works in the interpreter
-#+(or)
-(progn
-(defun macroexpand (form)
-  (format t "macroexpand-all: %s%n" form)
-  (let loop ((form form) (x nil))
+;; Murmel doesn't have macroexpand, only macroexpand-1, so we emulate it here.
+;; Note: (macroexpand-1 form) only works in the interpreter, so we can't
+;;       (defun macroexpand...) but implement macroexpand as a macro
+;;       (and as a local function inside "(defmacro expand...")
+#+murmel
+(defmacro macroexpand (form)
+  (let loop ((form (eval form)) (x nil))
     (multiple-value-bind (expanded expanded-p) (macroexpand-1 form)
       (if expanded-p (loop expanded t)
-        (values form x)))))
-)
+        `(values ',form ,x)))))
 
-#-murmel
 (defmacro expand (form #|&environment env|#)
-  (multiple-value-bind (expansion expanded-p)
-      (macroexpand form #|env|#)
-    `(values ',expansion ',expanded-p)))       ; =>  EXPAND
+  (labels (#-murmel (macroexp (form) (macroexpand form))
+           #+murmel (macroexp (form)
+                      (let loop ((form form) (x nil))
+                        (multiple-value-bind (expanded expanded-p) (macroexpand-1 form)
+                          (if expanded-p (loop expanded t)
+                            (values form x))))))
+
+    (multiple-value-bind (expansion expanded-p)
+        (macroexp form #|env|#)
+      `(values ',expansion ',expanded-p))))       ; =>  EXPAND
 
 (defmacro expand-1 (form #|&environment env|#)
   (multiple-value-bind (expansion expanded-p)
@@ -1026,12 +1032,12 @@ multiline comment
 (deftest macroexpand-1.0 (macroexpand-1 '(nil))            '(nil))
 (deftest macroexpand-1.1 (macroexpand-1 '(alpha a b))      '(BETA A B))         ; =>  (BETA A B), true
 (deftest macroexpand-1.2 (expand-1 (alpha a b))            '(BETA A B))         ; =>  (BETA A B), true
-#-murmel (deftest macroexpand-1.3 (macroexpand '(alpha a b))        '(GAMMA A B))        ; =>  (GAMMA A B), true
-#-murmel (deftest macroexpand-1.4 (expand (alpha a b))              '(GAMMA A B))        ; =>  (GAMMA A B), true
+(deftest macroexpand-1.3 (macroexpand '(alpha a b))        '(GAMMA A B))        ; =>  (GAMMA A B), true
+(deftest macroexpand-1.4 (expand (alpha a b))              '(GAMMA A B))        ; =>  (GAMMA A B), true
 (deftest macroexpand-1.5 (macroexpand-1 'not-a-macro)      'NOT-A-MACRO)        ; =>  NOT-A-MACRO, false
 (deftest macroexpand-1.6 (expand-1 not-a-macro)            'NOT-A-MACRO)        ; =>  NOT-A-MACRO, false
-#-murmel (deftest macroexpand-1.7 (macroexpand '(not-a-macro a b))  '(NOT-A-MACRO A B))  ; =>  (NOT-A-MACRO A B), false
-#-murmel (deftest macroexpand-1.8 (expand (not-a-macro a b))        '(NOT-A-MACRO A B))  ; =>  (NOT-A-MACRO A B), false
+(deftest macroexpand-1.7 (macroexpand '(not-a-macro a b))  '(NOT-A-MACRO A B))  ; =>  (NOT-A-MACRO A B), false
+(deftest macroexpand-1.8 (expand (not-a-macro a b))        '(NOT-A-MACRO A B))  ; =>  (NOT-A-MACRO A B), false
 
 
 ;;; test time functions

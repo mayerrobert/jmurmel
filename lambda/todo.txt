@@ -1,3 +1,5 @@
+jm --jar gibt NPE
+
 gibt wieder jede menge .access$ methoden
 -> requireXX in MurmelJavaProgram aufräumen
 
