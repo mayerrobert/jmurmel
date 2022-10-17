@@ -5310,7 +5310,7 @@ public class LambdaJ {
 
     private static boolean compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
         final SymbolTable symtab = new ListSymbolTable();
-        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, null);
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, getTmpDir());
 
         final ObjectReader program = parseFiles(files, c.intp, true);
         final String outFile;
