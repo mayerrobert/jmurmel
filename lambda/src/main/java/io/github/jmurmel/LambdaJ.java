@@ -6211,31 +6211,34 @@ public class LambdaJ {
 
 
         // logic, predicates
-        public final Object _eq        (Object... args) { twoArgs("eq",          args.length); return args[0] == args[1] ? _t : null; }
-        public final Object _eql       (Object... args) { twoArgs("eql",         args.length); return LambdaJ.eql(args[0], args[1]) ? _t : null; }
-        public final Object eql(Object o1, Object o2)   { return LambdaJ.eql(o1, o2) ? _t : null; }
+        private Object bool(boolean result) { return result ? _t : null; }
 
-        public final Object _consp     (Object... args) { oneArg("consp",        args.length); return consp     (args[0]) ? _t : null; }
-        public final Object _atom      (Object... args) { oneArg("atom",         args.length); return atom      (args[0]) ? _t : null; }
-        public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length); return symbolp   (args[0]) ? _t : null; }
-        public final Object _null      (Object... args) { oneArg("null",         args.length); return args[0] == null ? _t : null; }
-        public final Object _numberp   (Object... args) { oneArg("numberp",      args.length); return numberp   (args[0]) ? _t : null; }
-        public final Object _floatp    (Object... args) { oneArg("floatp",       args.length); return floatp    (args[0]) ? _t : null; }
-        public final Object _integerp  (Object... args) { oneArg("integerp",     args.length); return integerp  (args[0]) ? _t : null; }
-        public final Object _characterp(Object... args) { oneArg("characterp",   args.length); return characterp(args[0]) ? _t : null; }
+        public final Object _eq        (Object... args) { twoArgs("eq",          args.length);        return bool(args[0] == args[1]); }
 
-        public final Object _vectorp   (Object... args) { oneArg("vectorp",      args.length); return vectorp(args[0]) ? _t : null; }
-        public final Object svectorp   (Object... args) { oneArg("simple-vector-p", args.length); return LambdaJ.svectorp(args[0]) ? _t : null; }
-        public final Object _stringp   (Object... args) { oneArg("stringp",      args.length); return stringp   (args[0]) ? _t : null; }
-        public final Object sstringp   (Object... args) { oneArg("simple-string-p", args.length); return LambdaJ.sstringp(args[0]) ? _t : null; }
-        public final Object bitvectorp (Object... args) { oneArg("bit-vector-p", args.length); return LambdaJ.bitvectorp(args[0]) ? _t : null; }
-        public final Object sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return LambdaJ.sbitvectorp(args[0]) ? _t : null; }
+        public final Object _eql       (Object... args) { twoArgs("eql",         args.length);        return bool(LambdaJ.eql(args[0], args[1])); }
+        public final Object eql(Object o1, Object o2)   { return bool(LambdaJ.eql(o1, o2)); }
+
+        public final Object _consp     (Object... args) { oneArg("consp",        args.length);        return bool(consp(args[0])); }
+        public final Object _atom      (Object... args) { oneArg("atom",         args.length);        return bool(atom(args[0])); }
+        public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length);        return bool(symbolp(args[0])); }
+        public final Object _null      (Object... args) { oneArg("null",         args.length);        return bool(args[0] == null); }
+        public final Object _numberp   (Object... args) { oneArg("numberp",      args.length);        return bool(numberp(args[0])); }
+        public final Object _floatp    (Object... args) { oneArg("floatp",       args.length);        return bool(floatp(args[0])); }
+        public final Object _integerp  (Object... args) { oneArg("integerp",     args.length);        return bool(integerp(args[0])); }
+        public final Object _characterp(Object... args) { oneArg("characterp",   args.length);        return bool(characterp(args[0])); }
+
+        public final Object _vectorp   (Object... args) { oneArg("vectorp",      args.length);        return bool(vectorp(args[0])); }
+        public final Object svectorp   (Object... args) { oneArg("simple-vector-p", args.length);     return bool(LambdaJ.svectorp(args[0])); }
+        public final Object _stringp   (Object... args) { oneArg("stringp",      args.length);        return bool(stringp(args[0])); }
+        public final Object sstringp   (Object... args) { oneArg("simple-string-p", args.length);     return bool(LambdaJ.sstringp(args[0])); }
+        public final Object bitvectorp (Object... args) { oneArg("bit-vector-p", args.length);        return bool(LambdaJ.bitvectorp(args[0])); }
+        public final Object sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
 
 
-        public final Object _functionp (Object... args) { oneArg("functionp",    args.length); return intp.functionp(args[0]) ? _t : null; }
+        public final Object _functionp (Object... args) { oneArg("functionp",    args.length);        return bool(intp.functionp(args[0])); }
 
-        public final Object _listp     (Object... args) { oneArg("listp",        args.length); return listp     (args[0]) ? _t : null; }
-        public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return LambdaJ.adjustableArrayP(args[0]) ? _t : null; }
+        public final Object _listp     (Object... args) { oneArg("listp",        args.length);        return bool(listp(args[0])); }
+        public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.adjustableArrayP(args[0])); }
 
 
         // conses and lists
@@ -6260,28 +6263,29 @@ public class LambdaJ {
 
         public final ConsCell _list    (Object... args) { return ListBuilder.list(args); }
         public final Object listStar   (Object... args) {
-            varargs1("list*", args.length);
-            if (args.length == 1) return args[0];
-            if (args.length == 2) return cons(args[0], args[1]);
+            int nArgs;
+            varargs1("list*", nArgs = args.length);
+            if (nArgs == 1) return args[0];
+            if (nArgs == 2) return cons(args[0], args[1]);
             final ListBuilder b = new ListBuilder();
             int i = 0;
-            for (; i < args.length-1; i++) {
-                b.append(nth(i, args));
-            }
+            nArgs--;
+            for (; i < nArgs; i++) b.append(nth(i, args));
             b.appendLast(nth(i, args));
             return b.first();
         }
         public final Object   _append  (Object... args) {
-            final int nArgs;
+            int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
             if (nArgs == 1) return args[0];
             if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
 
+            nArgs--;
             int first = 0;
-            while (first < nArgs-1 && args[first] == null) first++; // skip leading nil args if any
+            while (first < nArgs && args[first] == null) first++; // skip leading nil args if any
 
             ListBuilder lb = null;
-            for (int i = first; i < nArgs - 1; i++) {
+            for (int i = first; i < nArgs; i++) {
                 final Object o = args[i];
                 if (o == null) continue;
                 if (!consp(o)) throw new LambdaJError(true, "append: argument %d is not a list: %s", i+1, printSEx(o));
@@ -6289,7 +6293,7 @@ public class LambdaJ {
                 for (Object obj: (ConsCell)o) lb.append(obj);
             }
             if (lb == null) return args[first];
-            lb.appendLast(args[nArgs-1]);
+            lb.appendLast(args[nArgs]);
             return lb.first();
         }
         public final ConsCell _assq    (Object... args) { twoArgs("assq",        args.length); return assq(args[0], args[1]); }
@@ -6414,7 +6418,7 @@ public class LambdaJ {
         }
         public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
 
-        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1])) ? _t : null; }
+        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1]))); }
         public final Character _sref   (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final Character _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
         public final Object   stringToList (Object... args) {
@@ -6432,19 +6436,19 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object   listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
+        public final Object listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
 
-        public final Object   bvEq(Object... args)        { twoArgs("bv=", args.length);         return LambdaJ.bvEq(args[0], args[1]) ? _t : null; }
+        public final Object bvEq       (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
 
-        public final  long  _sbvlength(Object... args)   { oneArg("sbvlength", args.length);           return sbvlength(args[0]); }
-        public final  long  _sbvref(Object... args)      { twoArgs("sbvref", args.length); return sbvref(args[0], args[1]); }
+        public final  long  _sbvlength (Object... args) { oneArg("sbvlength", args.length);     return sbvlength(args[0]); }
+        public final  long  _sbvref    (Object... args) { twoArgs("sbvref", args.length); return sbvref(args[0], args[1]); }
         public static long  sbvref(Object v, Object idx) { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
         public static long  sbvref(Object v, long idx)   { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
-        public final  long  _sbvset(Object... args)      { threeArgs("sbvset", args.length);            return sbvset(args[0], args[1], args[2]); }
-        public static long  sbvset(Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public final  long  _sbvset    (Object... args) { threeArgs("sbvset", args.length);     return sbvset(args[0], args[1], args[2]); }
+        public static long  sbvset     (Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public static long  sbvset(long val, Object v, Object idx)   { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public static long  sbvset(long val, Object v, long idx)     { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
-        public final Object sbvEq(Object... args)        { twoArgs("sbv=", args.length);               return LambdaJ.sbvEq(args[0], args[1]) ? _t : null; }
+        public final Object sbvEq      (Object... args) { twoArgs("sbv=", args.length);         return bool(LambdaJ.sbvEq(args[0], args[1])); }
         public final Object simpleBitVectorToList(Object... args) {
             oneArg("simple-bit-vector->list", args.length);
             final Object maybeVector = args[0];
