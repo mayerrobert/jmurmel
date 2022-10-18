@@ -6890,87 +6890,63 @@ public class LambdaJ {
 
         @Override public Object getValue(String symbol) {
             switch (symbol) {
+
+            // constants and variables
             case "nil": return null;
             case "t": return _t;
             case "pi": return _pi;
+
             case "array-dimension-limit": return arrayDimensionLimit;
             case "most-positive-fixnum": return mostPositiveFixnum;
             case "most-negative-fixnum": return mostNegativeFixnum;
             case "internal-time-units-per-second": return itups;
+
             case "*command-line-argument-list*": return commandlineArgumentList; // this will be assigned by genereted code at runtime
             case "*features*": return features;
+
+            // basic primitives
+            case "apply": return (CompilerPrimitive)this::_apply;
+            case "eval": return (CompilerPrimitive)this::_eval;
+
+            // logic, predicates
+            case "eq": return (CompilerPrimitive)this::_eq;
+            case "eql": return (CompilerPrimitive)this::_eql;
+
+            case "consp": return (CompilerPrimitive)this::_consp;
+            case "atom": return (CompilerPrimitive)this::_atom;
+            case "symbolp": return (CompilerPrimitive)this::_symbolp;
+            case "null": return (CompilerPrimitive)this::_null;
+            case "numberp": return (CompilerPrimitive)this::_numberp;
+            case "floatp": return (CompilerPrimitive)this::_floatp;
+            case "integerp": return (CompilerPrimitive)this::_integerp;
+            case "characterp": return (CompilerPrimitive)this::_characterp;
+
+            case "vectorp": return (CompilerPrimitive)this::_vectorp;
+            case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
+            case "stringp": return (CompilerPrimitive)this::_stringp;
+            case "simple-string-p": return (CompilerPrimitive)this::sstringp;
+            case "bit-vector-p": return (CompilerPrimitive)this::bitvectorp;
+            case "simple-bit-vector-p": return (CompilerPrimitive)this::sbitvectorp;
+
+            case "functionp": return (CompilerPrimitive)this::_functionp;
+
+            case "listp": return (CompilerPrimitive)this::_listp;
+            case "adjustable-array-p": return (CompilerPrimitive)this::adjustableArrayP;
+
+            // conses and lists
             case "car": return (CompilerPrimitive)this::_car;
             case "cdr": return (CompilerPrimitive)this::_cdr;
             case "cons": return (CompilerPrimitive)this::_cons;
             case "rplaca": return (CompilerPrimitive)this::_rplaca;
             case "rplacd": return (CompilerPrimitive)this::_rplacd;
-            case "apply": return (CompilerPrimitive)this::_apply;
-            case "eval": return (CompilerPrimitive)this::_eval;
-            case "eq": return (CompilerPrimitive)this::_eq;
-            case "eql": return (CompilerPrimitive)this::_eql;
-            case "null": return (CompilerPrimitive)this::_null;
-            case "read": return (CompilerPrimitive)this::_read;
-            case "write": return (CompilerPrimitive)this::_write;
-            case "writeln": return (CompilerPrimitive)this::_writeln;
-            case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
-            case "atom": return (CompilerPrimitive)this::_atom;
-            case "consp": return (CompilerPrimitive)this::_consp;
-            case "vector": return (CompilerPrimitive)this::_vector;
-            case "seqref": return (CompilerPrimitive)this::_seqref;
-            case "seqset": return (CompilerPrimitive)this::_seqset;
-            case "adjustable-array-p": return (CompilerPrimitive)this::adjustableArrayP;
-            case "vector-push-extend": return (CompilerPrimitive)this::vectorPushExtend;
-            case "vector-length": return (CompilerPrimitive)this::vectorLength;
-            case "vector-copy": return (CompilerPrimitive)this::vectorCopy;
-            case "vector-fill": return (CompilerPrimitive)this::vectorFill;
-            case "vectorp": return (CompilerPrimitive)this::_vectorp;
-            case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
-            case "svref": return (CompilerPrimitive)this::_svref;
-            case "svset": return (CompilerPrimitive)this::_svset;
-            case "svlength": return (CompilerPrimitive)this::_svlength;
-            case "bit-vector-p": return (CompilerPrimitive)this::bitvectorp;
-            case "bv=": return (CompilerPrimitive)this::bvEq;
-            case "simple-bit-vector-p": return (CompilerPrimitive)this::sbitvectorp;
-            case "sbvref": return (CompilerPrimitive)this::_sbvref;
-            case "sbvset": return (CompilerPrimitive)this::_sbvset;
-            case "sbvlength": return (CompilerPrimitive)this::_sbvlength;
-            case "sbv=": return (CompilerPrimitive)this::sbvEq;
-            case "sref": return (CompilerPrimitive)this::_sref;
-            case "sset": return (CompilerPrimitive)this::_sset;
-            case "make-array": return (CompilerPrimitive)this::makeArray;
-            case "listp": return (CompilerPrimitive)this::_listp;
-            case "functionp": return (CompilerPrimitive)this::_functionp;
-            case "symbolp": return (CompilerPrimitive)this::_symbolp;
-            case "numberp": return (CompilerPrimitive)this::_numberp;
-            case "stringp": return (CompilerPrimitive)this::_stringp;
-            case "simple-string-p": return (CompilerPrimitive)this::sstringp;
-            case "characterp": return (CompilerPrimitive)this::_characterp;
-            case "integerp": return (CompilerPrimitive)this::_integerp;
-            case "floatp": return (CompilerPrimitive)this::_floatp;
-            case "assoc": return (CompilerPrimitive)this::_assoc;
-            case "assq": return (CompilerPrimitive)this::_assq;
+
             case "list": return (CompilerPrimitive)this::_list;
+            case "list*": return (CompilerPrimitive)this::listStar;
             case "append": return (CompilerPrimitive)this::_append;
-            case "round": return (CompilerPrimitive)this::_round;
-            case "floor": return (CompilerPrimitive)this::_floor;
-            case "ceiling": return (CompilerPrimitive)this::_ceiling;
-            case "truncate": return (CompilerPrimitive)this::_truncate;
-            case "fround": return (CompilerPrimitive)this::_fround;
-            case "ffloor": return (CompilerPrimitive)this::_ffloor;
-            case "fceiling": return (CompilerPrimitive)this::_fceiling;
-            case "ftruncate": return (CompilerPrimitive)this::_ftruncate;
-            case "sqrt": return (CompilerPrimitive)this::_sqrt;
-            case "log": return (CompilerPrimitive)this::_log;
-            case "log10": return (CompilerPrimitive)this::_log10;
-            case "exp": return (CompilerPrimitive)this::_exp;
-            case "expt": return (CompilerPrimitive)this::_expt;
-            case "mod": return (CompilerPrimitive)this::_mod;
-            case "rem": return (CompilerPrimitive)this::_rem;
-            case "signum": return (CompilerPrimitive)this::_signum;
-            case "gensym": return (CompilerPrimitive)this::_gensym;
-            case "trace": return (CompilerPrimitive)this::_trace;
-            case "untrace": return (CompilerPrimitive)this::_untrace;
-            case "fatal": return (CompilerPrimitive)this::_fatal;
+            case "assq": return (CompilerPrimitive)this::_assq;
+            case "assoc": return (CompilerPrimitive)this::_assoc;
+
+            // numbers, characters
             case "+": return (CompilerPrimitive)this::add;
             case "*": return (CompilerPrimitive)this::mul;
             case "-": return (CompilerPrimitive)this::sub;
@@ -6981,29 +6957,95 @@ public class LambdaJ {
             case ">=": return (CompilerPrimitive)this::ge;
             case ">": return (CompilerPrimitive)this::gt;
             case "/=": return (CompilerPrimitive)this::ne;
+
             case "1+": return (CompilerPrimitive)this::inc;
             case "1-": return (CompilerPrimitive)this::dec;
-            case "format": return (CompilerPrimitive)this::format;
-            case "format-locale": return (CompilerPrimitive)this::formatLocale;
+
+            case "signum": return (CompilerPrimitive)this::_signum;
+
+            case "round": return (CompilerPrimitive)this::_round;
+            case "floor": return (CompilerPrimitive)this::_floor;
+            case "ceiling": return (CompilerPrimitive)this::_ceiling;
+            case "truncate": return (CompilerPrimitive)this::_truncate;
+
+            case "fround": return (CompilerPrimitive)this::_fround;
+            case "ffloor": return (CompilerPrimitive)this::_ffloor;
+            case "fceiling": return (CompilerPrimitive)this::_fceiling;
+            case "ftruncate": return (CompilerPrimitive)this::_ftruncate;
+
+            case "sqrt": return (CompilerPrimitive)this::_sqrt;
+            case "log": return (CompilerPrimitive)this::_log;
+            case "log10": return (CompilerPrimitive)this::_log10;
+            case "exp": return (CompilerPrimitive)this::_exp;
+            case "expt": return (CompilerPrimitive)this::_expt;
+            case "mod": return (CompilerPrimitive)this::_mod;
+            case "rem": return (CompilerPrimitive)this::_rem;
+
             case "char-code": return (CompilerPrimitive)this::charInt;
             case "code-char": return (CompilerPrimitive)this::intChar;
-            case "string=": return (CompilerPrimitive)this::stringeq;
-            case "string->list": return (CompilerPrimitive)this::stringToList;
-            case "list->string": return (CompilerPrimitive)this::listToString;
+
+            // vectors, sequences
+            case "make-array": return (CompilerPrimitive)this::makeArray;
+            case "vector": return (CompilerPrimitive)this::_vector;
+            case "vector-length": return (CompilerPrimitive)this::vectorLength;
+            case "vector-copy": return (CompilerPrimitive)this::vectorCopy;
+            case "vector-fill": return (CompilerPrimitive)this::vectorFill;
+            case "vector-push-extend": return (CompilerPrimitive)this::vectorPushExtend;
             case "vector->list": return (CompilerPrimitive)this::vectorToList;
+
+            case "svlength": return (CompilerPrimitive)this::_svlength;
+            case "svref": return (CompilerPrimitive)this::_svref;
+            case "svset": return (CompilerPrimitive)this::_svset;
             case "simple-vector->list": return (CompilerPrimitive)this::simpleVectorToList;
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
+
+            case "string=": return (CompilerPrimitive)this::stringeq;
+            case "sref": return (CompilerPrimitive)this::_sref;
+            case "sset": return (CompilerPrimitive)this::_sset;
+            case "string->list": return (CompilerPrimitive)this::stringToList;
+            case "list->string": return (CompilerPrimitive)this::listToString;
+
+            case "bv=": return (CompilerPrimitive)this::bvEq;
+
+            case "sbvlength": return (CompilerPrimitive)this::_sbvlength;
+            case "sbvref": return (CompilerPrimitive)this::_sbvref;
+            case "sbvset": return (CompilerPrimitive)this::_sbvset;
+            case "sbv=": return (CompilerPrimitive)this::sbvEq;
             case "simple-bit-vector->list": return (CompilerPrimitive)this::simpleBitVectorToList;
             case "list->simple-bit-vector": return (CompilerPrimitive)this::listToSimpleBitVector;
-            case "list*": return (CompilerPrimitive)this::listStar;
+
+            case "seqref": return (CompilerPrimitive)this::_seqref;
+            case "seqset": return (CompilerPrimitive)this::_seqset;
+
+            // I/O
+            case "read": return (CompilerPrimitive)this::_read;
+            case "write": return (CompilerPrimitive)this::_write;
+            case "writeln": return (CompilerPrimitive)this::_writeln;
+            case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
+
+            case "format": return (CompilerPrimitive)this::format;
+            case "format-locale": return (CompilerPrimitive)this::formatLocale;
+
+            // misc
+            case "values": return (CompilerPrimitive)this::_values;
+            case "gensym": return (CompilerPrimitive)this::_gensym;
+            case "trace": return (CompilerPrimitive)this::_trace;
+            case "untrace": return (CompilerPrimitive)this::_untrace;
+            case "fatal": return (CompilerPrimitive)this::_fatal;
+
+            // time
             case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
             case "get-internal-run-time": return (CompilerPrimitive)this::getInternalRunTime;
             case "get-internal-cpu-time": return (CompilerPrimitive)this::getInternalCpuTime;
             case "sleep": return (CompilerPrimitive)this::sleep;
             case "get-universal-time": return (CompilerPrimitive)this::getUniversalTime;
             case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
+
+            // Java FFI
             case "jmethod": return (CompilerPrimitive)this::_jmethod;
             case "jproxy": return (CompilerPrimitive)this::_jproxy;
+
+            // graphics
             case "make-frame": return (CompilerPrimitive)this::makeFrame;
             case "open-frame": return (CompilerPrimitive)this::openFrame;
             case "close-frame": return (CompilerPrimitive)this::closeFrame;
@@ -7012,13 +7054,10 @@ public class LambdaJ {
             case "repaint-frame": return (CompilerPrimitive)this::repaintFrame;
             case "flush-frame": return (CompilerPrimitive)this::flushFrame;
             case "current-frame": return (CompilerPrimitive)this::currentFrame;
-            case "push-pos": return (CompilerPrimitive)this::pushPos;
-            case "pop-pos": return (CompilerPrimitive)this::popPos;
-            case "pen-up": return (CompilerPrimitive)this::penUp;
-            case "pen-down": return (CompilerPrimitive)this::penDown;
+
             case "color": return (CompilerPrimitive)this::color;
             case "bgcolor": return (CompilerPrimitive)this::bgColor;
-            case "text": return (CompilerPrimitive)this::text;
+
             case "right": return (CompilerPrimitive)this::right;
             case "left": return (CompilerPrimitive)this::left;
             case "forward": return (CompilerPrimitive)this::forward;
@@ -7026,12 +7065,20 @@ public class LambdaJ {
             case "line-to": return (CompilerPrimitive)this::lineTo;
             case "move-rel": return (CompilerPrimitive)this::moveRel;
             case "line-rel": return (CompilerPrimitive)this::lineRel;
+
+            case "push-pos": return (CompilerPrimitive)this::pushPos;
+            case "pop-pos": return (CompilerPrimitive)this::popPos;
+            case "pen-up": return (CompilerPrimitive)this::penUp;
+            case "pen-down": return (CompilerPrimitive)this::penDown;
+
+            case "text": return (CompilerPrimitive)this::text;
+
             case "make-bitmap": return (CompilerPrimitive)this::makeBitmap;
             case "discard-bitmap": return (CompilerPrimitive)this::discardBitmap;
             case "set-pixel": return (CompilerPrimitive)this::setPixel;
             case "rgb-to-pixel": return (CompilerPrimitive)this::rgbToPixel;
             case "hsb-to-pixel": return (CompilerPrimitive)this::hsbToPixel;
-            case "values": return (CompilerPrimitive)this::_values;
+
             default: throw new LambdaJError(true, "%s: '%s' not bound", "getValue", symbol);
             }
         }
