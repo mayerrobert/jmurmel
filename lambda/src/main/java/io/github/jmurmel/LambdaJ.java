@@ -768,11 +768,16 @@ public class LambdaJ {
             internWellknown("provide");
 
             internWellknown("declaim");
+            
+            internWellknown("rplaca");
+            internWellknown("rplacd");
         }
         else sDynamic = null;
 
         if (haveUtil()) {
+            internWellknown("consp");
             internWellknown("null");
+
             internWellknown("list");
             internWellknown("list*");
             internWellknown("append");
@@ -780,12 +785,12 @@ public class LambdaJ {
         }
 
         if (haveNumbers()) {
+
             internWellknown("1+");
             internWellknown("1-");
 
             internWellknown("mod");
             internWellknown("rem");
-
             internWellknown("=");
             internWellknown("<");
             internWellknown("<=");
@@ -805,6 +810,10 @@ public class LambdaJ {
             internWellknown("car");
             internWellknown("cdr");
             internWellknown("cons");
+        }
+
+        if (haveAtom()) {
+            internWellknown("atom");
         }
 
         if (haveVector()) {
@@ -1696,11 +1705,12 @@ public class LambdaJ {
         // logic, predicates
         sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM),
 
-        sNull("null", WellknownSymbolKind.PRIM),
+        sAtom("atom", WellknownSymbolKind.PRIM), sConsp("consp", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
         sVectorp("vectorp", WellknownSymbolKind.PRIM), sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM),
 
         // conses and lists
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM),
+        sRplaca("rplaca", WellknownSymbolKind.PRIM), sRplacd("rplacd", WellknownSymbolKind.PRIM),
         sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM),
 
         // numbers, characters
@@ -2662,6 +2672,8 @@ public class LambdaJ {
         // logic, predicates
         case sEq:       { twoArgs("eq",   args);    return boolResult(car(args) == cadr(args)); }
         case sEql:      { twoArgs("eql",  args);    return boolResult(eql(car(args), cadr(args))); }
+        case sAtom:     { oneArg ("atom",args);     return boolResult(atom(car(args))); }
+        case sConsp:    { oneArg ("consp",args);    return boolResult(consp(car(args))); }
         case sNull:     { oneArg ("null", args);    return boolResult(car(args) == null); }
         case sVectorp:  { oneArg ("vectorp", args); return boolResult(vectorp(car(args))); }
 
@@ -2669,6 +2681,8 @@ public class LambdaJ {
         case sCar:      { oneArg ("car",  args);    return caar(args); }
         case sCdr:      { oneArg ("cdr",  args);    return cdar(args); }
         case sCons:     { twoArgs("cons", args);    return cons(car(args), cadr(args)); }
+        case sRplaca:   { return cl_rplaca(args); }
+        case sRplacd:   { return cl_rplacd(args); }
 
         case sList:     { return args; }
         case sListStar: { return listStar(args); }
