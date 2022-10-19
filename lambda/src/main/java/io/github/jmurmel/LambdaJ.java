@@ -1677,23 +1677,48 @@ public class LambdaJ {
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
         none("", null),
-        sT("t", WellknownSymbolKind.SYMBOL), sNil("nil", WellknownSymbolKind.SYMBOL), sLambda("lambda", WellknownSymbolKind.SF), sDynamic("dynamic", WellknownSymbolKind.SYMBOL),
-        sQuote("quote", WellknownSymbolKind.SF), sCond("cond", WellknownSymbolKind.SF), sLabels("labels", WellknownSymbolKind.SF), sIf("if", WellknownSymbolKind.SF),
-        sDefine("define", WellknownSymbolKind.SF), sDefun("defun", WellknownSymbolKind.SF), sDefmacro("defmacro", WellknownSymbolKind.SF),
+        // basic special forms
+        sQuote("quote", WellknownSymbolKind.SF), sLambda("lambda", WellknownSymbolKind.SF),
+
+        // additional special forms
+        sCond("cond", WellknownSymbolKind.SF), sLabels("labels", WellknownSymbolKind.SF), sIf("if", WellknownSymbolKind.SF),
         sLet("let", WellknownSymbolKind.SF), sLetStar("let*", WellknownSymbolKind.SF), sLetrec("letrec", WellknownSymbolKind.SF),
+        sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF),
+        sDefine("define", WellknownSymbolKind.SF), sDefun("defun", WellknownSymbolKind.SF), sDefmacro("defmacro", WellknownSymbolKind.SF),
         sMultipleValueBind("multiple-value-bind", WellknownSymbolKind.SF), sMultipleValueCall("multiple-value-call", WellknownSymbolKind.SF),
         sUnwindProtect("unwind-protect", WellknownSymbolKind.SF), sCatch("catch", WellknownSymbolKind.SF), sThrow("throw", WellknownSymbolKind.SF),
-        sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF), sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
+        sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
         sDeclaim("declaim", WellknownSymbolKind.SF),
 
-        sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM), sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
-        sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
-        sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM), sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
-        sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM), sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM),
-        sVector("vector", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM), sVectorp("vectorp", WellknownSymbolKind.PRIM),
-        sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM), sSvLength("svlength", WellknownSymbolKind.PRIM),
-        sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM), sSBvRef("sbvref", WellknownSymbolKind.PRIM), sSBvSet("sbvset", WellknownSymbolKind.PRIM),
-        sSBvLength("sbvlength", WellknownSymbolKind.PRIM), sSBvEq("sbv=", WellknownSymbolKind.PRIM),
+        // predefined global variables
+        sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL), sDynamic("dynamic", WellknownSymbolKind.SYMBOL),
+
+        // logic, predicates
+        sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM),
+
+        sNull("null", WellknownSymbolKind.PRIM),
+        sVectorp("vectorp", WellknownSymbolKind.PRIM), sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM),
+
+        // conses and lists
+        sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM),
+        sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM),
+
+        // numbers, characters
+        sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM),
+        sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM),
+        sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
+        sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM),
+
+        sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
+
+        // vectors, sequences
+        sVectorLength("vector-length", WellknownSymbolKind.PRIM),
+
+        sSvLength("svlength", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM),
+        sVector("vector", WellknownSymbolKind.PRIM),
+
+        sSBvLength("sbvlength", WellknownSymbolKind.PRIM), sSBvRef("sbvref", WellknownSymbolKind.PRIM), sSBvSet("sbvset", WellknownSymbolKind.PRIM),
+        sSBvEq("sbv=", WellknownSymbolKind.PRIM),
         ;
 
         private final String sym;
