@@ -1,4 +1,3 @@
-compilierter code mit catch + eval throw funktioniert wsl nicht
 
 
 

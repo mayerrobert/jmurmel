@@ -2633,49 +2633,55 @@ public class LambdaJ {
         if (op == null || !op.primitive()) return NOT_HANDLED;
 
         switch (op.wellknownSymbol) {
-        case sAdd:  { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
-        case sMul:  { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
-        case sSub:  { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
-        case sDiv:  { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
 
-        case sMod:  { twoArgs("mod", args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
-        case sRem:  { twoArgs("rem", args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
+        // logic, predicates
+        case sEq:       { twoArgs("eq",   args);    return boolResult(car(args) == cadr(args)); }
+        case sEql:      { twoArgs("eql",  args);    return boolResult(eql(car(args), cadr(args))); }
+        case sNull:     { oneArg ("null", args);    return boolResult(car(args) == null); }
+        case sVectorp:  { oneArg ("vectorp", args); return boolResult(vectorp(car(args))); }
 
-        case sNeq:  { return compare(args, "=",  (d1, d2) -> d1 == d2); }
-        case sNe:   { return compare(args, "/=", (d1, d2) -> d1 != d2); }
-        case sLt:   { return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
-        case sLe:   { return compare(args, "<=", (d1, d2) -> d1 <= d2); }
-        case sGe:   { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
-        case sGt:   { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
+        // conses and lists
+        case sCar:      { oneArg ("car",  args);    return caar(args); }
+        case sCdr:      { oneArg ("cdr",  args);    return cdar(args); }
+        case sCons:     { twoArgs("cons", args);    return cons(car(args), cadr(args)); }
 
-        case sCar:  { oneArg ("car",  args);  return caar(args); }
-        case sCdr:  { oneArg ("cdr",  args);  return cdar(args); }
-        case sCons: { twoArgs("cons", args);  return cons(car(args), cadr(args)); }
-
-        case sEq:   { twoArgs("eq",   args);  return boolResult(car(args) == cadr(args)); }
-        case sEql:  { twoArgs("eql",  args);  return boolResult(eql(car(args), cadr(args))); }
-        case sNull: { oneArg ("null", args);  return boolResult(car(args) == null); }
-
-        case sInc:  { oneArg("1+", args);  return inc(car(args)); }
-        case sDec:  { oneArg("1-", args);  return dec(car(args)); }
-
-        case sAppend:   { return append(args); }
         case sList:     { return args; }
         case sListStar: { return listStar(args); }
+        case sAppend:   { return append(args); }
 
-        case sVector:       { return listToArray(args); }
-        case sVectorLength: { oneArg   ("vector-length", args);  return vectorLength(car(args)); }
-        case sVectorp:      { oneArg   ("vectorp", args);        return boolResult(vectorp(car(args))); }
-        case sSvRef:        { twoArgs  ("svref", args);          return svref(car(args), toNonnegInt("svref", cadr(args))); }
-        case sSvSet:        { threeArgs("svset", args);          return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); }
-        case sSvLength:     { oneArg   ("svlength", args);       return svlength(car(args)); }
+        // numbers, characters
+        case sAdd:      { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
+        case sMul:      { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
+        case sSub:      { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
+        case sDiv:      { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
 
-        case sSBvRef:       { twoArgs  ("sbvref", args);         return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
-        case sSBvSet:       { threeArgs("sbvset", args);         return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
-        case sSBvLength:    { oneArg   ("sbvlength", args);      return sbvlength(car(args)); }
-        case sSBvEq:        { twoArgs  ("sbv=", args);           return boolResult(sbvEq(car(args), cadr(args))); }
+        case sNeq:      { return compare(args, "=",  (d1, d2) -> d1 == d2); }
+        case sNe:       { return compare(args, "/=", (d1, d2) -> d1 != d2); }
+        case sLt:       { return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
+        case sLe:       { return compare(args, "<=", (d1, d2) -> d1 <= d2); }
+        case sGe:       { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
+        case sGt:       { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
 
-        default:    return NOT_HANDLED;
+        case sInc:      { oneArg("1+", args);       return inc(car(args)); }
+        case sDec:      { oneArg("1-", args);       return dec(car(args)); }
+
+        case sMod:      { twoArgs("mod", args);     return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
+        case sRem:      { twoArgs("rem", args);     return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
+
+        // vectors, sequences
+        case sVectorLength: { oneArg("vector-length", args);  return vectorLength(car(args)); }
+
+        case sSvLength: { oneArg   ("svlength", args);  return svlength(car(args)); }
+        case sSvRef:    { twoArgs  ("svref", args);     return svref(car(args), toNonnegInt("svref", cadr(args))); }
+        case sSvSet:    { threeArgs("svset", args);     return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); }
+        case sVector:   { return listToArray(args); }
+
+        case sSBvLength:{ oneArg   ("sbvlength", args); return sbvlength(car(args)); }
+        case sSBvRef:   { twoArgs  ("sbvref", args);    return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
+        case sSBvSet:   { threeArgs("sbvset", args);    return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
+        case sSBvEq:    { twoArgs  ("sbv=", args);      return boolResult(sbvEq(car(args), cadr(args))); }
+
+        default: return NOT_HANDLED;
         }
     }
 
@@ -6313,11 +6319,11 @@ public class LambdaJ {
                                                           double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
 
         public final Object numbereq   (Object... args) { return compare("=",  args, (d1, d2) -> d1 == d2); }
+        public final Object ne         (Object... args) { return compare("/=", args, (d1, d2) -> d1 != d2); }
         public final Object lt         (Object... args) { return compare("<",  args, (d1, d2) -> d1 <  d2); }
         public final Object le         (Object... args) { return compare("<=", args, (d1, d2) -> d1 <= d2); }
         public final Object ge         (Object... args) { return compare(">=", args, (d1, d2) -> d1 >= d2); }
         public final Object gt         (Object... args) { return compare(">",  args, (d1, d2) -> d1 >  d2); }
-        public final Object ne         (Object... args) { return compare("/=", args, (d1, d2) -> d1 != d2); }
         private Object compare(String op, Object[] args, DoubleBiPred pred) {
             final int length = args.length;
             varargs1(op, length);
@@ -6370,7 +6376,6 @@ public class LambdaJ {
         public final Object   makeArray(Object... args) { varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return intp.makeArray(arraySlice(args)); }
-        public final Object   _vector  (Object... args) { return args; }
         public final long      vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
         public final Object   vectorCopy  (Object... args) { oneArg("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0]); }
         public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
@@ -6417,10 +6422,11 @@ public class LambdaJ {
             return ret.first();
         }
         public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
+        public final Object   _vector  (Object... args) { return args; }
 
-        public final Object   stringeq (Object... args) { twoArgs("string=",      args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1]))); }
         public final Character _sref   (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final Character _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
+        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final Object maybeString = args[0];
@@ -6436,7 +6442,7 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object listToString (Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
+        public final Object listToString(Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
 
         public final Object bvEq       (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
 
@@ -6510,7 +6516,7 @@ public class LambdaJ {
 
 
         // graphics
-        public final Object makeFrame          (Object... args) {
+        public final Object makeFrame  (Object... args) {
             varargsMinMax("make-frame", args.length, 1, 4);
             final String title = LambdaJ.requireString("make-frame", args[0]);
             final TurtleFrame ret = new TurtleFrame(title, LambdaJ.requireNumberOrNull("make-frame", nth(1, args)), LambdaJ.requireNumberOrNull("make-frame", nth(2, args)), LambdaJ.requireNumberOrNull("make-frame", nth(3, args)));
@@ -6967,12 +6973,13 @@ public class LambdaJ {
             case "*": return (CompilerPrimitive)this::mul;
             case "-": return (CompilerPrimitive)this::sub;
             case "/": return (CompilerPrimitive)this::quot;
+
             case "=": return (CompilerPrimitive)this::numbereq;
-            case "<=": return (CompilerPrimitive)this::le;
+            case "/=": return (CompilerPrimitive)this::ne;
             case "<": return (CompilerPrimitive)this::lt;
+            case "<=": return (CompilerPrimitive)this::le;
             case ">=": return (CompilerPrimitive)this::ge;
             case ">": return (CompilerPrimitive)this::gt;
-            case "/=": return (CompilerPrimitive)this::ne;
 
             case "1+": return (CompilerPrimitive)this::inc;
             case "1-": return (CompilerPrimitive)this::dec;
@@ -7002,7 +7009,7 @@ public class LambdaJ {
 
             // vectors, sequences
             case "make-array": return (CompilerPrimitive)this::makeArray;
-            case "vector": return (CompilerPrimitive)this::_vector;
+
             case "vector-length": return (CompilerPrimitive)this::vectorLength;
             case "vector-copy": return (CompilerPrimitive)this::vectorCopy;
             case "vector-fill": return (CompilerPrimitive)this::vectorFill;
@@ -7014,10 +7021,11 @@ public class LambdaJ {
             case "svset": return (CompilerPrimitive)this::_svset;
             case "simple-vector->list": return (CompilerPrimitive)this::simpleVectorToList;
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
+            case "vector": return (CompilerPrimitive)this::_vector;
 
-            case "string=": return (CompilerPrimitive)this::stringeq;
             case "sref": return (CompilerPrimitive)this::_sref;
             case "sset": return (CompilerPrimitive)this::_sset;
+            case "string=": return (CompilerPrimitive)this::stringeq;
             case "string->list": return (CompilerPrimitive)this::stringToList;
             case "list->string": return (CompilerPrimitive)this::listToString;
 
