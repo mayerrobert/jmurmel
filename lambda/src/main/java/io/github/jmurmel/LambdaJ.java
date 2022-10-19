@@ -6200,12 +6200,12 @@ public class LambdaJ {
             twoArgs("apply", args.length);
             Object fn = args[0];
             if (symbolp(fn)) fn = getValue(fn.toString());
-            return applyTailcallHelper(fn, args[1]);
+            return tailcall(fn, listToArray(args[1]));
         }
         public final Object apply(Object... args) {
             Object fn = args[0];
             if (symbolp(fn)) fn = getValue(fn.toString());
-            return applyTailcallHelper(fn, args[1]);
+            return tailcall(fn, listToArray(args[1]));
         }
         public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null); }
 
