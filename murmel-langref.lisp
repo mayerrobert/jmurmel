@@ -894,6 +894,19 @@ pi ; ==> 3.141592653589793
 ;     (writeln obj? print-escape-p?) -> t
 ;     (lnwrite obj? print-escape-p?) -> t
 
+; `read` w/o an argument will throw an error when encountering EOF.
+; If an optional argument was given then EOF does not throw an error
+; but the given argument is returned, e.g.:
+;
+;     C:\> echo (read)| java -jar lambda\target\jmurmel.jar
+;     Error: read: EOF
+;     error occurred in line 1:1..1:5: (read)
+;
+; but
+;
+;     C:\robert\jmurmel>echo (read 'xyxxy)| java -jar lambda\target\jmurmel.jar
+;     ==> xyxxy
+;
 ; `write` accepts an optional boolean argument `print-escape-p`.
 ; `writeln` and `lnwrite` accept an optional argument `obj`
 ; and an optional boolean argument `print-escape-p`.

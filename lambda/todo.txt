@@ -3,8 +3,6 @@
 
 
 
-write & co könnten auch nil liefern statt t
--> oder das argument wie CL, 
 http://cs-www.cs.yale.edu/homes/dvm/format-stinks.html
 -> macro "out" als alternative zu format
 
@@ -125,8 +123,6 @@ statt CustomEnvironmentSupplier -> builder pattern, siehe todo_dont.txt
    init() jedesmal aufrufen eigentlich auch, weil das ändert die members topEnv, lispStdin, lispStdout, nicht schön!
 
  
-
-read sollte EOF übernehmen
 
 clojure hat "named lambda": (fn label [params] forms)
 -> vielleicht "named lambda" in Murmel? label würd aber dasselbe machen

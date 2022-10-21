@@ -4290,6 +4290,20 @@ public class LambdaJ {
 
     /// I/O
 
+    final Object read(ConsCell a) {
+        varargs0_1("read", a);
+        if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
+        if (a == null) {
+            final Object eof = new Object();
+            final Object ret = lispReader.readObj(eof);
+            if (ret == eof) throw new LambdaJError("read: EOF");
+            return ret;
+        }
+        else {
+            return lispReader.readObj(car(a));
+        }
+    }
+
     final Object write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
         lispPrinter.printObj(arg, printEscape);
@@ -4699,12 +4713,7 @@ public class LambdaJ {
      *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
     private void environment(ConsCell env) {
         if (haveIO()) {
-            final Primitive freadobj =  a -> {
-                noArgs("read", a);
-                if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-                return lispReader.readObj(null); // todo eof als parameter
-            };
-            env = addBuiltin("read",    freadobj,
+            env = addBuiltin("read",    (Primitive) this::read,
                   addBuiltin("write",   (Primitive) a -> { varargs1_2("write",   a);  return write  (car(a), cdr(a) == null || cadr(a) != null); },
                   addBuiltin("writeln", (Primitive) a -> { varargs0_2("writeln", a);  return writeln(a,      cdr(a) == null || cadr(a) != null); },
                   addBuiltin("lnwrite", (Primitive) a -> { varargs0_2("lnwrite", a);  return lnwrite(a,      cdr(a) == null || cadr(a) != null); },
@@ -6532,9 +6541,7 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read      (Object... args) { noArgs("read",         args.length);
-                                                          if (intp.getLispReader() == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-                                                          return intp.getLispReader().readObj(null); } // todo eof parameter
+        public final Object _read      (Object... args) { return intp.read(arraySlice(args)); }
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); return intp.write(args[0], args.length < 2 || args[1] != null); }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); }

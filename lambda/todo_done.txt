@@ -1919,3 +1919,8 @@ make-array: statt adjustable=t sollte auch capacity erlaubt sein
 gibt wieder jede menge access$ methoden
 -> requireXX in MurmelJavaProgram aufräumen
 -> MurmelJavaProgram.requireXXX sollten nur von generiertem JFFI code benutzt werden, sonst sollte LambdaJ.requireXXX benutzt werden
+
+write & co könnten auch nil liefern statt t
+-> oder das argument wie CL, 
+
+read sollte EOF übernehmen
