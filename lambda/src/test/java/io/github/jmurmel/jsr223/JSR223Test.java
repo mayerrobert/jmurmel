@@ -47,7 +47,7 @@ public class JSR223Test {
         Object result = engine.eval("(writeln \"Hello, World!\")");
 
         // result is a LambdaJSymbol, invoke toString() to get the symbol name
-        assertEquals("t", result.toString());
+        assertEquals("Hello, World!", result.toString());
     }
 
     @Test
@@ -59,7 +59,7 @@ public class JSR223Test {
         Object result = engine.eval("(writeln \"Hello, World!\") (writeln \"Hello again, World!\")");
 
         // result is a LambdaJSymbol, invoke toString() to get the symbol name
-        assertEquals("t", result.toString());
+        assertEquals("Hello again, World!", result.toString());
     }
 
     @Test

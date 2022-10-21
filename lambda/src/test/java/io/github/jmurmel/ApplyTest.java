@@ -82,7 +82,7 @@ public class ApplyTest {
 
     @Test
     public void lambdaZeroArgs() {
-        LambdaJTest.runTest("lambdaZeroArgs", "(write (apply ((lambda () (lambda () (quote (a b c))))) ()))", "t", "(a b c)");
+        LambdaJTest.runTest("lambdaZeroArgs", "(write (apply ((lambda () (lambda () (quote (a b c))))) ()))", "(a b c)", "(a b c)");
         LambdaJTest.runTest("lambdaZeroArgs", "(apply ((lambda () (lambda () (quote (a b c))))) ())", "(a b c)", null);
     }
 
@@ -95,22 +95,22 @@ public class ApplyTest {
 
     @Test
     public void hello() {
-        LambdaJTest.runTest("String", "(write (quote HELLO))", "t", "HELLO");
+        LambdaJTest.runTest("String", "(write (quote HELLO))", "HELLO", "HELLO");
     }
 
     @Test
     public void helloApply() {
-        LambdaJTest.runTest("String", "(apply write (cons (quote HELLO) nil))", "t", "HELLO");
+        LambdaJTest.runTest("String", "(apply write (cons (quote HELLO) nil))", "HELLO", "HELLO");
     }
 
     @Test
     public void helloApply2() {
-        LambdaJTest.runTest("String", "(apply write (cons 'HELLO nil))", "t", "HELLO");
+        LambdaJTest.runTest("String", "(apply write (cons 'HELLO nil))", "HELLO", "HELLO");
     }
 
     @Test
     public void helloApply3() {
-        LambdaJTest.runTest("String", "(apply write (cons 1 nil))", "t", "1.0");
+        LambdaJTest.runTest("String", "(apply write (cons 1 nil))", "1.0", "1.0");
     }
 
 

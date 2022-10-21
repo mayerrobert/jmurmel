@@ -1,7 +1,7 @@
 ; A tail recursive list-reverse function
 ;
 ; output: ((a) (b) (c) (d) (e))((e) (d) (c) (b) (a))
-; result: t
+; result: ((e) (d) (c) (b) (a))
 
 (labels
   ((R^ (L Lp)

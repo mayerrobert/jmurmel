@@ -1,7 +1,7 @@
 ; from https://github.com/carld/micro-lisp/blob/master/examples/reverse.lisp
 
 ; output: (fn (a b c d))
-; result: t
+; result: (fn (a b c d))
 
 ((lambda (exp)
    ((lambda (expa)

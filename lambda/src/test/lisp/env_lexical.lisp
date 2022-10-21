@@ -1,7 +1,7 @@
 ;;; this would fail in --dyn mode with "eval: 'a' is undefined"
 
 ; output: onetwo
-; result: t
+; result: two
 
 (((lambda (a)
        (lambda (b)

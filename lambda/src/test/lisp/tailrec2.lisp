@@ -1,7 +1,7 @@
 ; very simple tailrecursive program
 
 ; output: 9.0
-; result: t
+; result: 9.0
 
 (labels ((print-last (list)
               (if (null (cdr list))

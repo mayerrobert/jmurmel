@@ -1,5 +1,5 @@
 ; output: onetwo
-; result: t
+; result: two
 
 (if t
     (if nil

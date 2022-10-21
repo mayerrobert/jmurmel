@@ -1,7 +1,7 @@
 ; Extension (not part of the language): the interpreter supports "lambda dynamic" for experimentaion purposes
 
 ; output: "in dynamic-lambda""param""dynamic variable"
-; result: t
+; result: "dynamic variable"
 
 
 (define dynamic-lambda

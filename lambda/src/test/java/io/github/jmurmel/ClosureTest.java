@@ -14,6 +14,6 @@ public class ClosureTest {
     @Test
     public void defineAndInvokeClosure() {
         LambdaJTest.runTest("defineLambda.lisp", "(define x (lambda (p1 p2) (write 1) (write 2))) (x 3 4)",
-                "t", "1.02.0");
+                "2.0", "1.02.0");
     }
 }

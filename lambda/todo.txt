@@ -3,6 +3,11 @@
 
 
 
+write & co könnten auch nil liefern statt t
+-> oder das argument wie CL, 
+http://cs-www.cs.yale.edu/homes/dvm/format-stinks.html
+-> macro "out" als alternative zu format
+
 vector-ensure-capacity, vector-trim-to-size
 -> fehler für simple vectors
 

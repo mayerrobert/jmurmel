@@ -1955,20 +1955,19 @@
 (defun write-char (c)
   (if (characterp c)
         (write c nil)
-    (error "write-char - %s is not a character" c))
-  c)
+    (error "write-char - %s is not a character" c)))
 
 
 ;;; = Function: terpri, prin1, princ, print
 ;;;
 ;;; Since: 1.1
-(defun terpri () (writeln) nil)
+(defun terpri () (writeln))
 
-(defun prin1 (obj) (write obj) obj)
+(defun prin1 (obj) (write obj))
 
-(defun princ (obj) (write obj nil) obj)
+(defun princ (obj) (write obj nil))
 
-(defun print (obj) (lnwrite obj) obj)
+(defun print (obj) (lnwrite obj))
 
 
 ;;; = Function: pprint

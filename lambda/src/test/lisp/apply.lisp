@@ -1,5 +1,5 @@
 ; output: (a b c)
-; result: t
+; result: (a b c)
 
 ;(write (lambda () (lambda () (quote (a b c))))) ; geht
 

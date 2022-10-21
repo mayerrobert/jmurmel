@@ -1,7 +1,7 @@
 ;;; based on https://gitlab.com/emacsomancer/ycombinator-codex
 ;;; the Y-combinator below is an applicative version also known as the Z-combinator
 
-; result: t
+; result: (1 2 6 24 120 720 5040 40320 362880)
 ; output: (1 1 2 3 5 8 13 21 34)\n(1 2 6 24 120 720 5040 40320 362880)\n
 
 ; mapcar for Murmel

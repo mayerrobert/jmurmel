@@ -4290,26 +4290,29 @@ public class LambdaJ {
 
     /// I/O
 
-    final void write(final Object arg, boolean printEscape) {
+    final Object write(final Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
         lispPrinter.printObj(arg, printEscape);
+        return arg;
     }
 
-    final void writeln(final ConsCell arg, boolean printEscape) {
+    final Object writeln(final ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
         if (arg != null) {
             lispPrinter.printObj(car(arg), printEscape);
         }
         lispPrinter.printEol();
+        return car(arg);
     }
 
-    final void lnwrite(final ConsCell arg, boolean printEscape) {
+    final Object lnwrite(final ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
         lispPrinter.printEol();
-        if (arg != null) {
-            lispPrinter.printObj(car(arg), printEscape);
-            lispPrinter.printString(" ");
-        }
+        if (arg == null) return null;
+        final Object o;
+        lispPrinter.printObj(o = car(arg), printEscape);
+        lispPrinter.printString(" ");
+        return o;
     }
 
     final String format(ConsCell a) {
@@ -4702,9 +4705,9 @@ public class LambdaJ {
                 return lispReader.readObj(null); // todo eof als parameter
             };
             env = addBuiltin("read",    freadobj,
-                  addBuiltin("write",   (Primitive) a -> { varargs1_2("write",   a);  write  (car(a), cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  addBuiltin("writeln", (Primitive) a -> { varargs0_2("writeln", a);  writeln(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
-                  addBuiltin("lnwrite", (Primitive) a -> { varargs0_2("lnwrite", a);  lnwrite(a,      cdr(a) == null || cadr(a) != null);  return expTrue.get(); },
+                  addBuiltin("write",   (Primitive) a -> { varargs1_2("write",   a);  return write  (car(a), cdr(a) == null || cadr(a) != null); },
+                  addBuiltin("writeln", (Primitive) a -> { varargs0_2("writeln", a);  return writeln(a,      cdr(a) == null || cadr(a) != null); },
+                  addBuiltin("lnwrite", (Primitive) a -> { varargs0_2("lnwrite", a);  return lnwrite(a,      cdr(a) == null || cadr(a) != null); },
                   env))));
         }
 
@@ -6532,9 +6535,9 @@ public class LambdaJ {
         public final Object _read      (Object... args) { noArgs("read",         args.length);
                                                           if (intp.getLispReader() == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
                                                           return intp.getLispReader().readObj(null); } // todo eof parameter
-        public final Object _write     (Object... args) { varargs1_2("write",    args.length); intp.write(args[0], args.length < 2 || args[1] != null); return _t; }
-        public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
-        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); return _t; }
+        public final Object _write     (Object... args) { varargs1_2("write",    args.length); return intp.write(args[0], args.length < 2 || args[1] != null); }
+        public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); }
 
         public final Object format     (Object... args) { return intp.format(arraySlice(args)); }
         public final Object formatLocale(Object... args) { return intp.formatLocale(arraySlice(args)); }

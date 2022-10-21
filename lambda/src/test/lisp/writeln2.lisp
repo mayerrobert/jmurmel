@@ -1,4 +1,4 @@
-; result: t
+; result: nil
 ; output: \n
 
 ((lambda () (writeln)))

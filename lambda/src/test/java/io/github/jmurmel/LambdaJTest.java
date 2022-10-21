@@ -18,46 +18,46 @@ public class LambdaJTest {
         /*  0 */ { "write", "#<primitive>", null },
 
         // application of builtins
-        /*  1 */ { "(write (quote (Hello\\, world!)))", "t", "(|Hello,| world!)" },
-        /*  2 */ { "(write (quote HELLO))", "t", "HELLO" },
+        /*  1 */ { "(write (quote (Hello\\, world!)))", "(|Hello,| world!)", "(|Hello,| world!)" },
+        /*  2 */ { "(write (quote HELLO))", "HELLO", "HELLO" },
         /*  3 */ { "(cons (quote HELLO) (quote HELLO))", "(HELLO . HELLO)", null },
         /*  4 */ { "(assoc (quote write) ())", "nil", null },
         /*  5 */ { "(assoc (quote b) (cons (cons (quote a) (quote a1)) (cons (cons (quote b) (quote b2)) (cons (cons (quote c) (quote c3)) ()))))", "(b . b2)", null },
-        /*  6 */ { "(write (car (quote (v1 v2))))", "t", "v1" },
-        /*  7 */ { "(write (cdr (quote (v1 v2))))", "t", "(v2)" },
-        /*  8 */ { "(write (car (cons (quote v1) (quote v2))))", "t", "v1" },
-        /*  9 */ { "(write (cdr (cons (quote v1) (quote v2))))", "t", "v2" },
+        /*  6 */ { "(write (car (quote (v1 v2))))", "v1", "v1" },
+        /*  7 */ { "(write (cdr (quote (v1 v2))))", "(v2)", "(v2)" },
+        /*  8 */ { "(write (car (cons (quote v1) (quote v2))))", "v1", "v1" },
+        /*  9 */ { "(write (cdr (cons (quote v1) (quote v2))))", "v2", "v2" },
 
         // comments
-        /* 10 */ { "; comment\n(write (quote HELLO))", "t", "HELLO" },
-        /* 11 */ { "; comment\n(write (quote HELLO)) ; comment", "t", "HELLO" },
+        /* 10 */ { "; comment\n(write (quote HELLO))", "HELLO", "HELLO" },
+        /* 11 */ { "; comment\n(write (quote HELLO)) ; comment", "HELLO", "HELLO" },
 
         // quoted chars
-        /* 12 */ { "(write (quote HELLO\\ ))", "t", "|HELLO |" },
-        /* 13 */ { "(write (quote HELLO\\\\))", "t", "|HELLO\\\\|" },
-        /* 14 */ { "(write (quote HELLO\\)))", "t", "|HELLO)|" },
-        /* 15 */ { "(write (quote HELLO\\;))", "t", "HELLO;" },
+        /* 12 */ { "(write (quote HELLO\\ ))", "|HELLO |", "|HELLO |" },
+        /* 13 */ { "(write (quote HELLO\\\\))", "|HELLO\\\\|", "|HELLO\\\\|" },
+        /* 14 */ { "(write (quote HELLO\\)))", "|HELLO)|", "|HELLO)|" },
+        /* 15 */ { "(write (quote HELLO\\;))", "HELLO;", "HELLO;" },
 
         // apply
-        /* 16 */ { "(apply write (cons (quote HELLO) nil))", "t", "HELLO" },
-        /* 17 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "t", "(HELLO HELLO)" },
-        /* 18 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "t", "(HELLO HELLO)" },
-        /* 19 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "t", "(HELLO . HELLO)" },
+        /* 16 */ { "(apply write (cons (quote HELLO) nil))", "HELLO", "HELLO" },
+        /* 17 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) nil)) nil))", "(HELLO HELLO)", "(HELLO HELLO)" },
+        /* 18 */ { "(apply write (cons (cons (quote HELLO) (cons (quote HELLO) ())) ()))", "(HELLO HELLO)", "(HELLO HELLO)" },
+        /* 19 */ { "(apply write (cons (cons (quote HELLO) (quote HELLO)) nil))", "(HELLO . HELLO)", "(HELLO . HELLO)" },
 
         // lambda
         /* 20 */ { "(lambda () (write (quote noparam)))", "#<interpreted closure>", null },
-        /* 21 */ { "(write (lambda () (write (quote noparam))))", "t", "#<interpreted closure>" },
-        /* 22 */ { "((lambda () (write (quote noparam))))", "t", "noparam" },
-        /* 23 */ { "((lambda (x) (write x)) (quote hello))", "t", "hello" },
-        /* 24 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "t", "(p1 . p2)" },
-        /* 25 */ { "(write ((lambda () (write (quote s1)) (write (quote s2)))))", "t", "s1s2t" },
+        /* 21 */ { "(write (lambda () (write (quote noparam))))", "#<interpreted closure>", "#<interpreted closure>" },
+        /* 22 */ { "((lambda () (write (quote noparam))))", "noparam", "noparam" },
+        /* 23 */ { "((lambda (x) (write x)) (quote hello))", "hello", "hello" },
+        /* 24 */ { "((lambda (x y) (write (cons x y))) (quote p1) (quote p2))", "(p1 . p2)", "(p1 . p2)" },
+        /* 25 */ { "(write ((lambda () (write (quote s1)) (write (quote s2)))))", "s2", "s1s2s2" },
 
         // eq
-        /* 26 */ { "(write ((lambda () (eq (quote s1) (quote s2)))))", "t", "nil" },
+        /* 26 */ { "(write ((lambda () (eq (quote s1) (quote s2)))))", "nil", "nil" },
         /* 27 */ { "(write ((lambda () (eq (quote s1) (quote s1)))))", "t", "t" },
 
         // cond
-        /* 28 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s3))", "t", "s3" },
+        /* 28 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s3))", "s3", "s3" },
         /* 29 */ { "((lambda (x) (cond ((eq x (quote s1)) (write (quote s1))) ((eq x (quote s2)) (write (quote s2))) ((eq x (quote s3)) (write (quote s3))))) (quote s4))", "nil", null },
 
         /* 30 */ { "(if (eq (quote a) (quote b)) (quote a))", "nil", null },
@@ -66,12 +66,12 @@ public class LambdaJTest {
         /* 33 */ { "(if (eq (quote a) (quote a)) (quote a) (quote b))", "a", null },
 
         // labels
-        /* 34 */ { "(labels () (write (quote s1)) (write (quote s2)))", "t", "s1s2" },
-        /* 35 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "t", "(s1 . s3)(s2 . s4)" },
+        /* 34 */ { "(labels () (write (quote s1)) (write (quote s2)))", "s2", "s1s2" },
+        /* 35 */ { "(labels ((w1 (x) (write (cons (quote s1) x))) (w2 (x) (write (cons (quote s2) x)))) (w1 (quote s3)) (w2 (quote s4)))", "(s2 . s4)", "(s1 . s3)(s2 . s4)" },
 
         // numbers, numeric operators
         /* 36 */ { "1", "1.0", null },
-        /* 37 */ { "(write 1)", "t", "1.0" },
+        /* 37 */ { "(write 1)", "1.0", "1.0" },
 
         /* 38 */ { "(= 2 2)", "t", null },
         /* 39 */ { "(= 2 3)", "nil", null },

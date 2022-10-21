@@ -1,4 +1,4 @@
-; result: t
+; result: "42"
 ; output: "42"
 
 (define *answer* 42)

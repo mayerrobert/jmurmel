@@ -1,5 +1,5 @@
 ; output: ab(a b)
-; result: t
+; result: (a b)
 
 (write 'a)
 (write 'b)

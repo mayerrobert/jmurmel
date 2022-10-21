@@ -46,11 +46,11 @@ public class MurmelJavaCompilerTest {
 
         MurmelProgram instance = murmelClass.getDeclaredConstructor().newInstance();
         Object result = instance.body();
-        assertEquals("wrong result", "t", TestUtils.sexp(result));
+        assertEquals("wrong result", "\"World!\"", TestUtils.sexp(result));
 
         MurmelFunction f = instance.getFunction("f");
         result = f.apply("The answer is: ", 42);
-        assertEquals("wrong result", "t", TestUtils.sexp(result));
+        assertEquals("wrong result", "42", TestUtils.sexp(result));
     }
 
     // murmel compiler should throw error "reserved word"
@@ -273,14 +273,14 @@ public class MurmelJavaCompilerTest {
     public void testEval3() throws Exception {
         MurmelProgram program = compile("(eval '(f v) (list (cons 'f write) (cons 'v 1)))");
         assertNotNull("failed to compile eval3 to class", program);
-        assertEquals("eval3 produced wrong result", "t", TestUtils.sexp(program.body()));
+        assertEquals("eval3 produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testEval4() throws Exception {
         MurmelProgram program = compile("(apply (eval 'write) '(1))");
         assertNotNull("failed to compile eval4 to class", program);
-        assertEquals("eval4 produced wrong result", "t", TestUtils.sexp(program.body()));
+        assertEquals("eval4 produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
@@ -518,7 +518,7 @@ public class MurmelJavaCompilerTest {
         MurmelProgram program = compile("(define my-hash ((jmethod \"java.util.HashMap\" \"new\")))"
                                       + "(write ((jmethod \"java.util.HashMap\" \"toString\") my-hash))");
         assertNotNull("failed to compile javainstance to class", program);
-        assertEquals("javainstance produced wrong result", "t", TestUtils.sexp(program.body()));
+        assertEquals("javainstance produced wrong result", "\"{}\"", TestUtils.sexp(program.body()));
     }
 
     @Test

@@ -37,16 +37,16 @@ public class CmdlineTest {
             { "load invalid", new String[] {}, "(load \"invalid\")", 255, "", STDERR_ERROR },
             { "add 1+2", new String[] {}, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
 
-            { "one file", new String[] { "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
-            { "two files", new String[] { "./src/test/lisp/empty.lisp", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
+            { "one file", new String[] { "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> |Hello, World!|\n"), "" },
+            { "two files", new String[] { "./src/test/lisp/empty.lisp", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> |Hello, World!|\n"), "" },
 
-            { "run one file", new String[] { "--run", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
-            { "run two files", new String[] { "--run", "./src/test/lisp/empty.lisp", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> t\n"), "" },
+            { "run one file", new String[] { "--run", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> |Hello, World!|\n"), "" },
+            { "run two files", new String[] { "--run", "./src/test/lisp/empty.lisp", "./src/test/lisp/hello.lisp" }, "", 0, re("|Hello, World!|", "==> |Hello, World!|\n"), "" },
             { "run add 1+2", new String[] { "--run" }, "(+ 1 2)", 0, "\n==> 3.0\n", "" },
 
             { "nulltest --repl", new String[] { "--repl" }, ":q", 0, STDOUT_WELCOME_OUTPUT_BYE, ""},
             { "error --repl",    new String[] { "--repl" }, "errorform", 255, STDOUT_WELCOME_OUTPUT, STDERR_ERROR },
-            { "runform --repl",  new String[] { "--repl" }, "(write 'hello)\n:r\n", 0, re("Enter a Murmel form", "hello\n==> t\nJMurmel> hello\n==> t\n", "bye.\n\n"), "" },
+            { "runform --repl",  new String[] { "--repl" }, "(write 'hello)\n:r\n", 0, re("Enter a Murmel form", "hello\n==> hello\nJMurmel> hello\n==> hello\n", "bye.\n\n"), "" },
 
             { "nulltest --tty", new String[] { "--tty" },  "",   0, STDOUT_WELCOME_OUTPUT_BYE, ""},
             { "error --tty", new String[] { "--tty" }, "errorform\n:q", 0, STDOUT_WELCOME_OUTPUT_ERROR_BYE, "" },
@@ -56,8 +56,8 @@ public class CmdlineTest {
             { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from ", "Built by", "Usage:\n\n", "\n"), "" },
             { "--help-features", new String[] { "--help-features" }, null, 0, re("Version", "Built from ", "Built by", "Feature flags:\n\n", "\n"), "" },
             
-            { "cmdline args", new String[] {          "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> t\n", "" },
-            { "cmdline args", new String[] { "--run", "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> t\n", "" },
+            { "cmdline args", new String[] {          "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> \"arg1\"\n", "" },
+            { "cmdline args", new String[] { "--run", "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> \"arg1\"\n", "" },
         };
     }
 
