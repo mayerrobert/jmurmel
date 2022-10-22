@@ -771,6 +771,9 @@ public class LambdaJ {
             
             internWellknown("rplaca");
             internWellknown("rplacd");
+
+            internWellknown("values");
+            internWellknown("gensym");
         }
         else sDynamic = null;
 
@@ -1736,6 +1739,9 @@ public class LambdaJ {
 
         sSBvLength("sbvlength", WellknownSymbolKind.PRIM), sSBvRef("sbvref", WellknownSymbolKind.PRIM), sSBvSet("sbvset", WellknownSymbolKind.PRIM),
         sSBvEq("sbv=", WellknownSymbolKind.PRIM),
+
+        // misc
+        sValues("values", WellknownSymbolKind.PRIM), sGensym("gensym", WellknownSymbolKind.PRIM)
         ;
 
         private final String sym;
@@ -2741,6 +2747,10 @@ public class LambdaJ {
         case sSBvRef:   { twoArgs  ("sbvref", args);    return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
         case sSBvSet:   { threeArgs("sbvset", args);    return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
         case sSBvEq:    { twoArgs  ("sbv=", args);      return boolResult(sbvEq(car(args), cadr(args))); }
+
+        // misc
+        case sValues:   { values = args;                return car(args); }
+        case sGensym:   { noArgs("gensym", args);       return gensym(args); }
 
         default: return NOT_HANDLED;
         }
@@ -4838,7 +4848,7 @@ public class LambdaJ {
                   addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
                   env));
 
-            env = addBuiltin("values", (Primitive) a -> { values = a; return car(values); }, env);
+            env = addBuiltin("values", (Primitive) a -> { values = a; return car(a); }, env);
         }
 
         if (haveT()) {
