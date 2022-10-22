@@ -147,8 +147,7 @@
                          `(if (setq ,tmp ,(car forms))
                                 ,tmp
                             ,(m%or tmp (cdr forms)))
-                     (car forms))
-               nil)))
+                     (car forms)))))
 
     (if forms
           (if (cdr forms)
@@ -157,8 +156,7 @@
                       (if ,temp
                             ,temp
                         ,(m%or temp (cdr forms)))))
-            (car forms))
-      nil)))
+            (car forms)))))
 
 
 ;;; = Macro: prog1, prog2
@@ -463,8 +461,7 @@
 ;;;
 ;;; See also: [unzip-tails](#function-unzip-tails).
 (defun unzip (lists)
-  (if lists (cons (caar lists) (unzip (cdr lists)))
-    nil))
+  (if lists (cons (caar lists) (unzip (cdr lists)))))
 
 
 ;;; = Function: unzip-tails
@@ -477,8 +474,7 @@
 ;;;
 ;;; See also: [unzip](#function-unzip).
 (defun unzip-tails (lists)
-  (if lists (cons (cdar lists) (unzip-tails (cdr lists)))
-    nil))
+  (if lists (cons (cdar lists) (unzip-tails (cdr lists)))))
 
 
 ;;; = Function: list-length
@@ -611,8 +607,7 @@
     (if lst
           (if (pred item (car lst))
                 lst
-            (member item (cdr lst) pred))
-      nil)))
+            (member item (cdr lst) pred)))))
 
 
 ;;; = Function: acons
@@ -856,7 +851,7 @@
              (let ((,var (car ,lst)))
                ,@body
                (,loop (cdr ,lst)))
-         ,(if result `(let ((,var nil)) ,@result) nil)))))
+         ,(if result `(let ((,var nil)) ,@result) )))))
 
 
 ;;; = Macro: dovector
@@ -887,7 +882,7 @@
                (let ((,var (,acc ,vec ,idx)))
                  ,@body
                  (,loop (1+ ,idx)))
-           ,(if result `(let ((,var nil)) ,@result) nil))))))
+           ,(if result `(let ((,var nil)) ,@result)))))))
 
 
 ;;; = Macro: doplist
@@ -1234,8 +1229,7 @@
           (if (= code (char-code (car l)))
                 (if (cdr l)
                       (loop code (cdr l))
-                  t)
-            nil))
+                  t)))
     t))
 
 
@@ -1504,7 +1498,7 @@
                     ,@body
                     (multiple-value-call ,loop (,generator)))))
          (multiple-value-call ,loop (,generator))
-         ,(if result `(let ((,var nil)) ,@result) nil)))))
+         ,(if result `(let ((,var nil)) ,@result))))))
 
 
 ; sequences ***********************************************************
@@ -1668,7 +1662,7 @@
 
 
 (defun m%list->sequence (lst result-type)
-  (cond ((null result-type)                  nil)
+  (cond ((null result-type)                  )
         ((eq result-type 'list)              lst)
         ((eq result-type 'cons)              (or lst (error "nil is not a sequence of type cons")))
         ((eq result-type 'vector)            (list->simple-vector lst))
@@ -2114,8 +2108,7 @@
                           (head (car more-predicates)))
                  (if tail
                        (if (apply head arguments)
-                             (loop (cdr tail) (car tail))
-                         nil)
+                             (loop (cdr tail) (car tail)))
                    (apply head arguments)))))
 
     predicate))
