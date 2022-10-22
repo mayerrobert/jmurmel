@@ -15,7 +15,7 @@ The file `murmel-langref.lisp` can be read as-is or run with:
 
 or transformed to Markdown:
 
-    $ sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
+    $ sed -nf scripts/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 
 Murmel is WIP, please note the section
 [Known issues](#known-issues) at the end of this file.
@@ -32,9 +32,16 @@ Murmel is WIP, please note the section
 - [Variables and scope](#variables-and-scope)
 - [Additional Special Forms](#additional-special-forms)
 - [Backquote - fill-in templates](#backquote)
-- [Predefined Primitives](#predefined-primitives)
+- [Basic Primitives](#basic-primitives)
+- [Logic, Predicates](#logic-predicates)
+- [Conses and lists](#conses-and-lists)
+- [Vectors, Sequences](#vectors-sequences)
+- [I/O](#io)
+- [Misc](#misc)
+- [Time](#time)
 - [Predefined Numeric Primitives](#predefined-numeric-primitives)
 - [Predefined Graphics Primitives](#predefined-graphics-primitives)
+- [Java FFI](#java-ffi)
 
 Additional functions that can be loaded with `(require "mlib")`
 - [Mlib - Default library for Murmel](mlib.md)
@@ -667,7 +674,7 @@ except: comma-dot is not supported.
     `(normal= ,x fakesplicing= . ,x) ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
 
 
-## Predefined Primitives 
+## Basic Primitives 
 
 ### (apply form argform) -> result
 
@@ -688,46 +695,8 @@ else it is the concatenation of `env` and all predefined globals
     (eval '(+ x y) (list '(x . 2) '(y . 3))) ; ==> 5.0
     (eval '(+ x y) (list (cons 'x 2) (cons 'y 3))) ; ==> 5.0
 
-### (cons e1 e2) -> conscell
 
-    (cons 'a 'b) ; ==> (a . b)
-
-### (car list) -> 1st element of list
-
-    (car '(a b c)) ; ==> a
-    (car "abc") ; ==> #\a
-
-### (cdr list) -> rest of list
-
-    (cdr '(a b c)) ; ==> (b c)
-    (cdr "abc") ; ==> "bc"
-
-### rplaca, rplacd
-
-Replace the value of the CAR or CDR slot of a cons cell.
-
-    (setq l '(1 2))
-    (rplaca l 11) ; ==> (11 2)
-    (rplacd l 22) ; ==> (11 . 22)
-
-### (values object*) -> multiple-values
-
-Since: 1.2
-
-`values` returns the objects as multiple values.
-
-
-### (list elems*) -> list<br/>(list* elems+) -> atom-or-dotted-list
-
-`list` will create a list consisting of it's arguments,
-`list*` will create a dotted list.
-
-    (list) ; ==> nil
-    (list 1) ; ==> (1)
-    (list 1 2 3) ; ==> (1 2 3)
-
-    (list* 1) ; ==> 1
-    (list* 1 2 3) ; ==> (1 2 . 3)
+## Logic, predicates
 
 ### (eq x y) -> boolean
 
@@ -747,23 +716,29 @@ Examples:
     (eql #\a (car "aaa")) ; ==> t
     (eql -0.0 0.0) ; ==> nil
 
-### null, atom, consp, listp, symbolp, characterp
+### consp, atom, symbolp, null, listp
+
+### numberp, integerp, floatp
+
+- `numberp` returns `t` for all Murmel and Java number types.
+- `integerp` returns `t` for all Murmel and Java integral number types.
+- `floatp` returns `t` for Murmel and Java decimal number types.
+
+### characterp
 
 ### functionp
 
 Since: 1.3
 
-### numberp, integerp, floatp
-
-- `numberp` returns `t` for all Java Number types.
-- `integerp` returns `t` for Murmel's integral number type (which internally is a `Long`).
-- `floatp` returns `t` for Murmel's decimal number type (which internally is a `Double`).
-
-### (make-array length [element-type [adjustablep-or-capacity]]) -> vector
-
+### vectorp, simple-vector-p
 Since: 1.3
 
-Only one-dimensional arrays of element-type t, 'bit or 'character are supported.
+### stringp
+
+Return `t` for Murmel strings and all Java Objects implementing java.lang.CharSequence
+
+### simple-string-p, bit-vector-p, simple-bit-vector-p,
+Since: 1.3
 
 ### (adjustable-array-p obj) -> boolean
 
@@ -773,6 +748,149 @@ Since: 1.3
 
 Note that in Murmel `(adjustable-array-p 1)` returns nil
 while in Common Lisp that would signal a `type-error`. 
+
+
+## Conses and lists
+
+### (car list) -> 1st element of list
+
+    (car '(a b c)) ; ==> a
+    (car "abc") ; ==> #\a
+
+### (cdr list) -> rest of list
+
+    (cdr '(a b c)) ; ==> (b c)
+    (cdr "abc") ; ==> "bc"
+
+### (cons e1 e2) -> conscell
+
+    (cons 'a 'b) ; ==> (a . b)
+
+### rplaca, rplacd
+
+Replace the value of the CAR or CDR slot of a cons cell.
+
+    (setq l '(1 2))
+    (rplaca l 11) ; ==> (11 2)
+    (rplacd l 22) ; ==> (11 . 22)
+
+### (list elems*) -> list<br/>(list* elems+) -> atom-or-dotted-list
+
+`list` will create a list consisting of it's arguments,
+`list*` will create a dotted list.
+
+    (list) ; ==> nil
+    (list 1) ; ==> (1)
+    (list 1 2 3) ; ==> (1 2 3)
+
+    (list* 1) ; ==> 1
+    (list* 1 2 3) ; ==> (1 2 . 3)
+
+### (append lists...) -> list
+
+`append` nondestructively append it's arguments. All arguments except the last
+are shallow copied, all arguments except the last must be lists.
+
+    (append)                    ; ==> nil
+    (append 'a)                 ; ==> a
+    (append '(a b) 'c)          ; ==> (a b . c)
+    (append '(a b) '(c d))      ; ==> (a b c d)
+    (append '(a . b) '(c d))    ; ==> (a b c d)
+    (append '(a . b) '(c . d))  ; ==> (a b c . d)
+
+### (assq key alist) -> cons or nil
+
+Since: 1.2
+
+`assq` is similar to `assoc` except `assq` compares keys using `eq`.
+
+### (assoc key alist) -> cons or nil
+
+`assoc` takes a key and a list of key/value tupels (lists or conses).
+The return value is the first cons whose car is equal(*) to `key`
+or `nil` if no such cons was found. `nil`-elements in `alist` are ignored.
+
+(*) `assoc` compares two items as if `eql` was used.
+    `assoc` considers two items as "equal" if
+
+- Both are `eq` (are the same object)
+- Both are integers or floats or characters respectively and have the same value
+
+Examples:
+
+    (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
+    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
+    (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ; ==> (nil 2)
+
+
+## Vectors, Sequences
+
+
+### (make-array length [element-type [adjustablep-or-capacity]]) -> vector
+
+Since: 1.3
+
+Only one-dimensional arrays of element-type t, 'bit or 'character are supported.
+
+### vector-length, vector-copy, vector-fill, vector-push-extend, vector->list
+
+Since: 1.3
+
+### svlength, svref, svset, vector
+
+Since: 1.3
+
+Simple vectors are one-dimensional arrays
+(implementation note: or objects of class java.lang.String in case of string literals).
+
+Example usage:
+
+    (define *v* (vector 1 2 3))
+    (vectorp *v*) ; ==> t
+    (svlength *v*) ; ==> 3
+    (svref *v* 1) ; ==> 2
+
+### list->simple-vector and simple-vector->list
+
+Since: 1.3
+
+### sref, sset
+    (sref str n) -> nth-character
+    (sset new-char str n) -> new-char
+
+Since: 1.3
+
+`sref` returns the n-th character of the string `str`, `n` is 0-based.
+Similar to CL `char`.
+
+`sset` sets the n-th character of `str` to `new-char`.
+Using `sset` with a string literal is an error.
+
+### (string= s1 s2) -> boolean
+
+### (string->list str) -> list-of-characters
+
+### (list->string list-of-characters) -> string
+
+
+### bv=
+
+Since: 1.3
+
+### sbvlength, sbvref, sbvset, sbv=
+    (sbvref sbv n) -> nth-bit
+    (sbvset new-bit sbv n) -> new-bit
+
+Since: 1.3
+
+`sbvref` returns the n-th bit of the bitvector `sbv`, `n` is 0-based.
+Similar to CL `sbit`.
+
+`sbvset` sets the n-th bit of `sbv` to `new-bit`.
+
+### simple-bit-vector->list, list->simple-bit-vector
+
+Since: 1.3
 
 ### seqref, seqset
 
@@ -789,100 +907,8 @@ Murmel's `seqref` and `seqset` will handle dotted lists, though.
       (seqset 22 l 2) l)
       ; ==> (0 1 . 22)
 
-### vector, vectorp, vector-length, vector-copy, vector-fill, vector->list, simple-vector-p, svref, svset, svlength
 
-Since: 1.3
-
-Vectors are one-dimensional arrays.
-
-Example usage:
-
-    (define *v* (vector 1 2 3))
-    (vectorp *v*) ; ==> t
-    (svlength *v*) ; ==> 3
-    (svref *v* 1) ; ==> 2
-
-### stringp
-
-### simple-string-p, sref, sset
-    (sref str n) -> nth-character
-    (sset new-char str n) -> new-char
-
-Since: 1.3
-
-`sref` returns the n-th character of the string `str`, `n` is 0-based.
-Similar to CL `char`.
-
-`sset` sets the n-th character of `str` to `new-char`.
-
-### bit-vector-p, simple-bit-vector-p, sbvref, sbvset, sbvlength, bv=, sbv=
-    (sbvref bv n) -> nth-bit
-    (sbvset new-bit bv n) -> new-bit
-
-Since: 1.3
-
-`sbvref` returns the n-th bit of the bitvector `bv`, `n` is 0-based.
-Similar to CL `sbit`.
-
-`sbvset` sets the n-th bit of `bv` to `new-bit`.
-
-### list->simple-vector and simple-vector->list
-
-Since: 1.3
-
-### (assoc key alist) -> cons or nil
-
-`assoc` takes a key and a list of key/value tupels (lists or conses).
-The return value is the first cons whose car is equal(*) to `key`
-or `nil` if no such cons was found. `nil`-elements in `alist` are ignored.
-
-(*) `assoc` compares two items as if eql was used.
-    `assoc` considers two items as "equal" if
-
-- Both are `eq` (are the same object)
-- Both are integers or floats or characters respectively and have the same value
-
-Examples:
-
-    (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
-    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
-    (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ; ==> (nil 2)
-
-### (assq key alist) -> cons or nil
-
-Since: 1.2
-
-`assq` is similar to `assoc` except `assq` compares keys using `eq`.
-
-### (append lists...) -> list
-
-`append` nondestructively append it's arguments. All arguments except the last
-are shallow copied, all arguments except the last must be lists.
-
-    (append)                    ; ==> nil
-    (append 'a)                 ; ==> a
-    (append '(a b) 'c)          ; ==> (a b . c)
-    (append '(a b) '(c d))      ; ==> (a b c d)
-    (append '(a . b) '(c d))    ; ==> (a b c d)
-    (append '(a . b) '(c . d))  ; ==> (a b c . d)
-
-### (macroexpand-1 quoted-form) -> expanded-form, boolean
-
-`macroexpand-1` is a simplified version of CL's `macroexpand-1`.
-It is only fully supported in interpreted code,
-in compiled code `macroexpand-1` does quoted forms only.
-If the operator of the list `quoted-form` is a macroname then
-the macrocall will be expanded, and the secondary return value
-will be `t`, e.g.:
-
-    (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
-    (macroexpand-1 '(add2 3))      ; --> (+ 3 2)
-                                   ; --> t
-
-### (gensym) -> uninterned symbol
-
-Return a new unique symbol.
-    (gensym)
+## I/O
 
 ### read, write, writeln, lnwrite
 
@@ -890,6 +916,19 @@ Return a new unique symbol.
     (write   obj  print-escape-p?) -> t
     (writeln obj? print-escape-p?) -> t
     (lnwrite obj? print-escape-p?) -> t
+
+`read` w/o an argument will throw an error when encountering EOF.
+If an optional argument was given then EOF does not throw an error
+but the given argument is returned, e.g.:
+
+    C:\> echo (read)| java -jar lambda\target\jmurmel.jar
+    Error: read: EOF
+    error occurred in line 1:1..1:5: (read)
+
+but
+
+    C:\> echo (read 'xyxxy)| java -jar lambda\target\jmurmel.jar
+    ==> xyxxy
 
 `write` accepts an optional boolean argument `print-escape-p`.
 `writeln` and `lnwrite` accept an optional argument `obj`
@@ -904,8 +943,60 @@ followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
     (writeln "World!")
 
 `write`, `writeln` and `lnwrite` will escape atoms by default,
-the optioal parameter `print-escape-p` can be used to turn off escaping.
+the optioal parameter `print-escape-p` can be used to turn off escaping:
+
     (writeln "Hello, World!" nil)
+
+### format, format-locale
+
+`format t` writes a formatted string to stdout and returns `nil`.
+format's parameters work as java.lang.String.format().
+
+    (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+`format-locale` works similar to format except it has an additional
+first string parameter that should be a locale, `nil` means use Java's
+default locale.
+
+    (format-locale t
+       "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+`format nil` and `format-locale nil` work similar
+to `format` and `format-locale` except they don't write to stdout
+but return the string
+
+    (format-locale nil
+       "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+
+
+### Misc
+
+### (values object*) -> multiple-values
+
+Since: 1.2
+
+`values` returns the objects as multiple values.
+
+### (gensym) -> uninterned symbol
+
+Return a new unique symbol.
+    (gensym)
+
+### (macroexpand-1 quoted-form) -> expanded-form, boolean
+
+`macroexpand-1` is a simplified version of CL's `macroexpand-1`.
+It is only fully supported in interpreted code,
+in compiled code `macroexpand-1` does quoted forms only.
+If the operator of the list `quoted-form` is a macroname then
+the macrocall will be expanded, and the secondary return value
+will be `t`, e.g.:
+
+    (defmacro add2 (a) `(+ ,a 2))  ; ==> add2
+    (macroexpand-1 '(add2 3))      ; --> (+ 3 2)
+                                   ; --> t
+
+
+## Time
 
 ### (get-internal-real-time) -> number
 
@@ -947,37 +1038,6 @@ NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
       while CL's returns an ordered sequence.
 
     (get-decoded-time)
-
-### format, format-locale
-
-`format t` writes a formatted string to stdout and returns `nil`.
-format's parameters work as java.lang.String.format().
-
-    (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-
-`format-locale` works similar to format except it has an additional
-first string parameter that should be a locale, `nil` means use Java's
-default locale.
-
-    (format-locale t
-       "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-
-`format nil` and `format-locale nil` work similar
-to `format` and `format-locale` except they don't write to stdout
-but return the string
-
-    (format-locale nil
-       "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
-
-### (code-char integer) -> character
-
-### (char-code character) -> integer
-
-### (string= s1 s2) -> boolean
-
-### (string->list str) -> list-of-characters
-
-### (list->string list-of-characters) -> string
 
 
 ## Predefined Numeric Primitives 
@@ -1055,6 +1115,10 @@ The numeric comparison operators take one or more number arguments.
     (= 1 1.0)         ; ==> t
     (< 1 2 3.0 4 5.0) ; ==> t
     (< 1 2 3 3 4 5)   ; ==> nil
+
+### (code-char integer) -> character
+
+### (char-code character) -> integer
 
 
 ## Predefined Graphics Primitives 
@@ -1246,6 +1310,8 @@ interpreter primities).
     (untrace)
 
 
+## Java FFI
+
 ### (jmethod classname methodname paramclass...) -> primitive
 
 The primitive `jmethod` will return a newly created primitive
@@ -1285,8 +1351,7 @@ methodname/ murmelcode tupels, and returns a Java object that implements
 
 Murmel language:
 
-- needs some means of catching and processing runtime errors,
-  e.g. unwind-potect and catch/ throw
+- runtime errors should be wellknown so that can runtime errors can be handled
 - file i/o
 
 Compiler issues:
