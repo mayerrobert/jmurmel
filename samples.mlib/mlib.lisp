@@ -1201,6 +1201,7 @@
 ;;;
 ;;; Is this number zero?
 (defun zerop (n) (= n 0))
+(defmacro zerop (n) `(= 0 ,n))
 
 
 ;;; = Function: evenp
