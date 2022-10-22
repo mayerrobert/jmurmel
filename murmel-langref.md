@@ -4,7 +4,7 @@
 The file `murmel-langref.lisp`
 is an executable language reference manual
 for Murmel, a single-namespace Lisp dialect
-insipred by Common Lisp.
+inspired by Common Lisp.
 
 See also Murmel's default library [Mlib](mlib.md) 
 which contains additional functions and macros.
@@ -1042,7 +1042,7 @@ NOTE: In Common Lisp zone is given as a a rational multiple of 1/3600 of hours
 
 ## Predefined Numeric Primitives 
 
-Murmel's two numeric datatypes are implemented as `long` (64 bit signed integer)
+Murmel's two numeric datatypes are implemented as `long` (54 bit signed integer)
 and `double` (64 bit floating point).
 Other Java datatypes (which may occur when using Java FFI) will be automatically converted
 (with null-, lost-precision- and over/underflow checks) as appropriate.
@@ -1052,7 +1052,7 @@ Murmel does most maths in double precision:
 - Except with `1+, 1-, ceiling, floor, round, truncate and signum`,
   arguments to numeric functions will be converted to `double`,
   and the result will be `double`.  
-  Over/underflow during argument conversion will be signalled as an error.
+  Integer over/underflow during argument conversion will be signalled as an error.
   Results for large numbers (i.e. over/ underflow) will go towards +/- Infinity.
 - `1+, 1-`: Byte, Short, Integer and Long arguments will be converted to long,
   in that case the result type is long. Over/ underflow of the result will be signalled as an error.
