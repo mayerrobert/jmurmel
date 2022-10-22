@@ -775,13 +775,17 @@ public class LambdaJ {
         else sDynamic = null;
 
         if (haveUtil()) {
+            internWellknown("eql");
+
             internWellknown("consp");
+            internWellknown("symbolp");
             internWellknown("null");
+
+            internWellknown("listp");
 
             internWellknown("list");
             internWellknown("list*");
             internWellknown("append");
-            internWellknown("eql");
         }
 
         if (haveNumbers()) {
@@ -789,6 +793,7 @@ public class LambdaJ {
             internWellknown("1+");
             internWellknown("1-");
 
+            internWellknown("floor");
             internWellknown("mod");
             internWellknown("rem");
             internWellknown("=");
@@ -1705,8 +1710,10 @@ public class LambdaJ {
         // logic, predicates
         sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM),
 
-        sAtom("atom", WellknownSymbolKind.PRIM), sConsp("consp", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
+        sConsp("consp", WellknownSymbolKind.PRIM), sAtom("atom", WellknownSymbolKind.PRIM), sSymbolp("symbolp", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
         sVectorp("vectorp", WellknownSymbolKind.PRIM), sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM),
+
+        sListp("listp", WellknownSymbolKind.PRIM),
 
         // conses and lists
         sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM),
@@ -1719,7 +1726,7 @@ public class LambdaJ {
         sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM),
 
-        sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
+        sFloor("floor", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
 
         // vectors, sequences
         sVectorLength("vector-length", WellknownSymbolKind.PRIM),
@@ -1832,6 +1839,7 @@ public class LambdaJ {
                 /// eval - lookup symbols in the current environment
                 if (form == null) return result = null;
                 if (symbolp(form)) {
+                    if (haveT() && form == sT) return sT;
                     final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
@@ -2681,10 +2689,14 @@ public class LambdaJ {
         // logic, predicates
         case sEq:       { twoArgs("eq",   args);    return boolResult(car(args) == cadr(args)); }
         case sEql:      { twoArgs("eql",  args);    return boolResult(eql(car(args), cadr(args))); }
-        case sAtom:     { oneArg ("atom",args);     return boolResult(atom(car(args))); }
+
         case sConsp:    { oneArg ("consp",args);    return boolResult(consp(car(args))); }
+        case sAtom:     { oneArg ("atom",args);     return boolResult(atom(car(args))); }
+        case sSymbolp:  { oneArg ("symbolp",args);  return boolResult(symbolp(car(args))); }
         case sNull:     { oneArg ("null", args);    return boolResult(car(args) == null); }
         case sVectorp:  { oneArg ("vectorp", args); return boolResult(vectorp(car(args))); }
+
+        case sListp:    { oneArg ("listp", args);   return boolResult(listp(car(args))); }
 
         // conses and lists
         case sCar:      { oneArg ("car",  args);    return caar(args); }
@@ -2713,6 +2725,7 @@ public class LambdaJ {
         case sInc:      { oneArg("1+", args);       return inc(car(args)); }
         case sDec:      { oneArg("1-", args);       return dec(car(args)); }
 
+        case sFloor:    { varargs1_2("floor", args);return toFixnum(Math.floor (quot12("floor", args))); }
         case sMod:      { twoArgs("mod", args);     return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
         case sRem:      { twoArgs("rem", args);     return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
 
@@ -3218,10 +3231,15 @@ public class LambdaJ {
 
     static ConsCell assq(Object atom, ConsCell ccList) {
         if (ccList == null) return null;
+        //int n = 0;
         for (Object entry: ccList) {
+            //n++;
             if (entry != null) {
                 final ConsCell ccEntry = (ConsCell) entry;
-                if (atom == car(ccEntry)) return ccEntry;
+                if (atom == car(ccEntry)) {
+                    //if (n >= 20) System.out.printf("assq: %s %d%n", atom, n);
+                    return ccEntry;
+                }
             }
         }
         return null;

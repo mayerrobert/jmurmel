@@ -3,6 +3,16 @@
 
 
 
+mangle könnte einfachere namen generieren, wenn häufige buchstaben nicht durch zahlen ersetzt werden
+  -     _dash_
+  %     _pc_
+
+assq und assoc: checken ob branchless was bringt: nullcheck & car-vergleich
+
+kompilierte defuns vielleicht anders ausspucken:
+  statt define_... mit einem lambda -> java methode + zuweisung zur globalen variable inline emittieren
+  dann würden zumindest für die toplevel defuns lesbare namen im JFR stehen
+
 http://cs-www.cs.yale.edu/homes/dvm/format-stinks.html
 -> macro "out" als alternative zu format
 
