@@ -3226,7 +3226,7 @@ public class LambdaJ {
      *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object maybeList) {
         if (maybeList == null) return null;
-        return assq(atom, requireCons("assq", maybeList));
+        return assq(atom, requireList("assq", maybeList));
     }
 
     static ConsCell assq(Object atom, ConsCell ccList) {
@@ -3839,7 +3839,7 @@ public class LambdaJ {
      */
     static ConsCell assoc(Object atom, Object maybeList) {
         if (maybeList == null) return null;
-        final ConsCell ccList = requireCons("assoc", maybeList);
+        final ConsCell ccList = requireList("assoc", maybeList);
         for (Object entry: ccList) {
             if (entry != null) { // ignore null items
                 final ConsCell ccEntry = (ConsCell) entry;
