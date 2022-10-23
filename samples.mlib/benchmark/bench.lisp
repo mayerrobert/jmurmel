@@ -6,7 +6,6 @@
 ;;;
 ;;; Timing results are based on wall time only.
 
-;;; run the benchmark this many seconds
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
 
 ;;; run benchmark for this many seconds
@@ -14,7 +13,9 @@
 
 ;;; if > 0 then run the form this many seconds before the timed benchmark
 ;;; 0 for sbcl because sbcl doesn't need warmup
-(define *warmup-duration* #-sbcl 5 #+sbcl 0)
+(define *warmup-duration*
+        #-sbcl 5
+        #+sbcl 0)
 
 
 ;;; run the form under test this many times inside a progn to reduce benchmark overhead

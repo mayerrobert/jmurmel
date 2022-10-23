@@ -7,13 +7,13 @@ e.g. jdk8u322-b06 from https://adoptium.net does, as do other builds.
 (jdk.jfr.* is only needed to build, running an already built jmurmel.jar doesn't
 require these).
 
-JMurmel builds and runs with Java8, 17, 18 and 19-ea.
+JMurmel builds and runs with Java8 through 19.
 Regardless of the Java version used to build,
 by default jmurmel.jar will be built to be Java8 compatible.
 
 Users of Java versions higher than 8 (e.g. 18) will probably do something like
 
-    mvn  install -Djavac.target=18
+    mvn install -Djavac.target=18
 
 
 
@@ -128,3 +128,7 @@ sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
 
 sed -nf doc/mlib-to-md.sed samples.mlib/mlib.lisp > mlib.md
     transform the Mlib reference to markdown.  (This is automatically done by "mvn install".)
+
+
+java -Xms1G -Xmx2G -XX:+PrintFlagsFinal -version | grep -e "Use.*GC " -e "Active" -e "[lnx]HeapSize"
+    display some memory and GC related settings of the currently used JVM

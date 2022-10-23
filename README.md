@@ -8,7 +8,7 @@ interpreter/ compiler written in Java8 that can be used standalone as well as em
 
 Currently weighing in at ~222kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
-or one single Java source file, compatible with Java 8 through Java 19.
+or one single Java source file, compatible with Java 8 through Java 20-ea.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
@@ -191,7 +191,7 @@ to get a command history and TAB-completion at the JMurmel REPL.
 
 JMurmel can also be used embedded in another Java program.
 JMurmel uses Java8 only, but should run on higher versions as well
-(Java 17 is lightly tested, and Github CI builds and tests 8, 17, 18-ea and 19-ea).
+(Github CI builds and tests 8, 17, 19 and 20-ea).
 It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
