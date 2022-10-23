@@ -1986,7 +1986,7 @@
          1))
 
      (pp (obj l)
-        (dotimes (ign (* l 3)) (write-char #\ ))
+        (dotimes (ign l) (write "   " nil))
         (if (< (size obj) 6)
               (write obj)
           (progn
@@ -1995,7 +1995,7 @@
               (when
                 (and
                    (member
-                      (princ (pop obj))
+                      (write (pop obj))
                       '(lambda let let* letrec defun define defmacro setq setf if when unless dotimes dolist))
                    (< (size (car obj)) 7))
                 (write-char #\ )
