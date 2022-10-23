@@ -726,16 +726,17 @@ public class LambdaJ {
         traceFunc = trace.ge(TraceLevel.TRC_FUNC);
 
         this.tracer = tracer != null ? tracer : System.err::println;
-        this.symtab = symtab == null ? new ListSymbolTable() : symtab;
+        if (symtab == null) symtab = new ListSymbolTable();
+        this.symtab = symtab;
         if (libDir != null) this.libDir = libDir;
         else this.libDir = murmelDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
         this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
 
-        if (haveT()) this.symtab.intern(sT);
-        if (haveNil()) this.symtab.intern(sNil);
-        this.symtab.intern(sLambda);
+        if (haveT()) symtab.intern(sT);
+        if (haveNil()) symtab.intern(sNil);
+        symtab.intern(sLambda);
 
         if (haveQuote())  { internWellknown("quote"); }
         if (haveCond())   { internWellknown("cond"); }
@@ -748,9 +749,9 @@ public class LambdaJ {
         }
 
         if (haveXtra())   {
-            sDynamic = internWellknown("dynamic");
+            symtab.intern(sDynamic);
 
-            this.symtab.intern(sDefine);
+            symtab.intern(sDefine);
             internWellknown("defun");
             internWellknown("defmacro");
             internWellknown("if");
@@ -767,7 +768,7 @@ public class LambdaJ {
 
             internWellknown("setq");
 
-            this.symtab.intern(sProgn);
+            symtab.intern(sProgn);
 
             internWellknown("load");
             internWellknown("require");
@@ -781,7 +782,6 @@ public class LambdaJ {
             internWellknown("values");
             internWellknown("gensym");
         }
-        else sDynamic = null;
 
         if (haveUtil()) {
             internWellknown("eql");
@@ -837,8 +837,8 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
-            sBit = intern("bit");
-            sCharacter = intern("character");
+            symtab.intern(sBit);
+            symtab.intern(sCharacter);
 
             internWellknown("make-array");
             internWellknown("vector");
@@ -855,7 +855,6 @@ public class LambdaJ {
             internWellknown("sbvlength");
             internWellknown("sbv=");
         }
-        else sBit = sCharacter = null;
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1703,8 +1702,8 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
     static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sNil = new LambdaJSymbol("nil", true),
-                               sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
-    final LambdaJSymbol sDynamic, sBit, sCharacter;
+                               sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true),
+                               sDynamic = new LambdaJSymbol("dynamic", false), sBit = new LambdaJSymbol("bit", false), sCharacter = new LambdaJSymbol("character", false);
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1723,7 +1722,7 @@ public class LambdaJ {
         sDeclaim("declaim", WellknownSymbolKind.SF),
 
         // predefined global variables
-        sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL), sDynamic("dynamic", WellknownSymbolKind.SYMBOL),
+        sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
         sEq("eq", WellknownSymbolKind.PRIM, 2), sEql("eql", WellknownSymbolKind.PRIM, 2),
@@ -1893,10 +1892,9 @@ public class LambdaJ {
                 if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
                 /// eval - lookup symbols in the current environment
-                if (form == null) return result = null;
                 if (symbolp(form)) {
+                    if (form == null || form == sNil) return result = null;
                     if (form == sT) return result = sT;
-                    if (form == sNil) return result = null;
                     final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
@@ -7851,7 +7849,7 @@ public class LambdaJ {
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
                     if (isOperator(op, WellknownSymbol.sLet)) {
-                        if (car(ccArguments) == intp.sDynamic)
+                        if (car(ccArguments) == sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
                         else
                             emitLet(sb, ccArguments, env, topEnv, rsfx, isLast);
@@ -7861,7 +7859,7 @@ public class LambdaJ {
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
                     if (isOperator(op, WellknownSymbol.sLetStar)) {
-                        if (car(ccArguments) == intp.sDynamic)
+                        if (car(ccArguments) == sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
                         else
                             emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, false, isLast);
@@ -8242,7 +8240,7 @@ public class LambdaJ {
             final String op;
             if (named) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
-                if (loopLabel == intp.sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
+                if (loopLabel == sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
                 op = letrec ? "named letrec" : "named let*";
                 if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
             }
