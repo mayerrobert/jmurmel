@@ -3,6 +3,22 @@
 
 
 
+gensym symbole (beginnend mit #:) sollten beim symbol-printen NICHT in || gesteckt werden
+derzeit wird irgendwie gemischt, es gibt mit und ohne ||:
+JMurmel> (pprint (macroexpand-1 '(dogenerator (x (scan-multiple (scan '(11 22 33 44)) (scan #(111 222 333)) (scan 1 1 5)) 1 2 3 'done) (writeln x))))
+(let
+   ((#:g25 (scan-multiple (scan (quote (11 22 33 44))) (scan #(111 222 333)) (scan 1 1 5))))
+   (labels
+      ((#:g26 (x #:g24) (when #:g24 (writeln x) (multiple-value-call #:g26 (#:g25)))))
+      (multiple-value-call |#:g26| (|#:g25|))
+      (let ((x nil))
+         1
+         2
+         3
+         (quote done))))
+==> t
+
+
 im else zweig kann man nil weglassen. sollte man auch weglassen weil sonst gibts umsonst den environment lookup von nil
 -> oder in expand wegoptimieren
 
@@ -103,12 +119,11 @@ primitive und compilerprimitive könnten dasselbe sein, bzw. die interpreter pri
 -> aber: der interpreter hat die liste mit argumenten bereits (vom reader), das müsste bei jedem call in ein array verwandelt werden
    -> besser primitive und compilerprimitive beide beibehalten
    -> aber: der interpreter hat NICHT die liste mit argumenten, die wird von evlis erzeugt, und evlis (oder ein zusätzliches evlis) könnte auch ein array erzeugen
+
 evalOpencode vervollständigen
-min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann expand 1x argcount checken
--> und evalOpencode OHNE argcount checks
 -> und environment() könnte alle primitives generieren: loop über WellknownSymbol.values + argcountcheck + evalOpencode
--> evtl ALLES an die WellknowSymbols dranhängen?
-   argcount min/max, max wäre Integer.MAX_VALUE bei variadic
+-> evtl ALLES an die WellknownSymbols dranhängen?
+   argcount min/max
    code für Primitive
    code für CompilerPrimitive: für getValue() in MurmelJavaProgram benutzen
    zuordnung name/ compiler-javaname für emitOpencode im compiler
@@ -117,22 +132,6 @@ min/max argcount der primitives in die WellknownSymbols reinstecken, dann kann e
 nth, nthcdr von mlib nach murmel? wg. ArraySlice und string (?)
 vielleicht make-array aus murmel rauskicken und in mlib umsetzen
 -> in jmurmel nur make-simple-vector, make-simple-bitvector, ...
-
-
-gensym symbole (beginnend mit #:) sollten beim symbol-printen NICHT in || gesteckt werden
-derzeit wird irgendwie gemischt, es gibt mit und ohne ||:
-JMurmel> (pprint (macroexpand-1 '(dogenerator (x (scan-multiple (scan '(11 22 33 44)) (scan #(111 222 333)) (scan 1 1 5)) 1 2 3 'done) (writeln x))))
-(let
-   ((#:g25 (scan-multiple (scan (quote (11 22 33 44))) (scan #(111 222 333)) (scan 1 1 5))))
-   (labels
-      ((#:g26 (x #:g24) (when #:g24 (writeln x) (multiple-value-call #:g26 (#:g25)))))
-      (multiple-value-call |#:g26| (|#:g25|))
-      (let ((x nil))
-         1
-         2
-         3
-         (quote done))))
-==> t
 
 
 vielleicht die cons-zählerei rauskicken? braucht eh niemand

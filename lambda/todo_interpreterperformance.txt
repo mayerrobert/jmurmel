@@ -5,17 +5,6 @@ environment() könnte statt ConsCell-Liste eine ArraySlice Liste basteln
 -> weniger speicherverbrauch durch weniger objekte
 -> assq() könnte schneller sein weil mitm iterator über ein array iterieren müsste schneller sein als (cdr-) pointer chasing
 
-der interpreter könnte macros 1x expandieren und in den AST reinpatchen, und argcheck
--> oder macroexpand-phase vorgeschaltet
-für opencoded functions argcount check 1x machen und dann eine alternative funktion OHNE argcheck in den AST reinpatchen
-
-evalOpencode sollte eigentlich nicht symbols vergleichen, sondern direkt die primitives
--> im compiler kann man nur die symbole vergleichen, was da drin steht, weiss man erst zur laufzeit
-
-die ganzen havXXX() in eval sollten unnoetig sein: wenn die special forms abgedreht sind, sind die sXXX == null,
-und dann trifft das ganze if(sXXX) nicht zu
-ausserdem kann dann die elseif kette auf switch umgestellt werden?
-
 eigentlich könnte man in einer funktion alle symbole auflösen (symbole entweder durch den wert oder den env entry ersetzen),
 entweder (compile f) ersetzt f im environment mit einer version die statt symbolen die environment einträge enthält,
 oder defun macht das gleich.
@@ -142,5 +131,3 @@ Zugriff nur mit assoc und extend, extend schmeisst eine Excpeption, falls es das
 sogar set! muesste gehen?!
 -> nein, geht auch nicht. beim aufruf von funktionen gibts schon duplikate, und nach dem return der funktion
    muss das environment wieder abgeraeumt werden, s.o.
-
-

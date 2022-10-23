@@ -1725,46 +1725,77 @@ public class LambdaJ {
         sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL), sDynamic("dynamic", WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq("eq", WellknownSymbolKind.PRIM), sEql("eql", WellknownSymbolKind.PRIM),
+        sEq("eq", WellknownSymbolKind.PRIM, 2), sEql("eql", WellknownSymbolKind.PRIM, 2),
 
-        sConsp("consp", WellknownSymbolKind.PRIM), sAtom("atom", WellknownSymbolKind.PRIM), sSymbolp("symbolp", WellknownSymbolKind.PRIM), sNull("null", WellknownSymbolKind.PRIM),
-        sVectorp("vectorp", WellknownSymbolKind.PRIM), sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM),
+        sConsp("consp", WellknownSymbolKind.PRIM, 1), sAtom("atom", WellknownSymbolKind.PRIM, 1), sSymbolp("symbolp", WellknownSymbolKind.PRIM, 1), sNull("null", WellknownSymbolKind.PRIM, 1),
+        sVectorp("vectorp", WellknownSymbolKind.PRIM, 1), sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM, 1),
 
-        sListp("listp", WellknownSymbolKind.PRIM),
+        sListp("listp", WellknownSymbolKind.PRIM, 1),
 
         // conses and lists
-        sCar("car", WellknownSymbolKind.PRIM), sCdr("cdr", WellknownSymbolKind.PRIM), sCons("cons", WellknownSymbolKind.PRIM),
-        sRplaca("rplaca", WellknownSymbolKind.PRIM), sRplacd("rplacd", WellknownSymbolKind.PRIM),
-        sList("list", WellknownSymbolKind.PRIM), sListStar("list*", WellknownSymbolKind.PRIM), sAppend("append", WellknownSymbolKind.PRIM),
+        sCar("car", WellknownSymbolKind.PRIM, 1), sCdr("cdr", WellknownSymbolKind.PRIM, 1), sCons("cons", WellknownSymbolKind.PRIM, 2),
+        sRplaca("rplaca", WellknownSymbolKind.PRIM, 2), sRplacd("rplacd", WellknownSymbolKind.PRIM, 2),
+        sList("list", WellknownSymbolKind.PRIM, -1), sListStar("list*", WellknownSymbolKind.PRIM, 1, -1), sAppend("append", WellknownSymbolKind.PRIM, -1),
 
         // numbers, characters
-        sAdd("+", WellknownSymbolKind.PRIM), sMul("*", WellknownSymbolKind.PRIM), sSub("-", WellknownSymbolKind.PRIM), sDiv("/", WellknownSymbolKind.PRIM),
-        sNeq("=", WellknownSymbolKind.PRIM), sNe("/=", WellknownSymbolKind.PRIM),
-        sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
-        sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM),
+        sAdd("+", WellknownSymbolKind.PRIM, -1), sMul("*", WellknownSymbolKind.PRIM, -1), sSub("-", WellknownSymbolKind.PRIM, 1, -1), sDiv("/", WellknownSymbolKind.PRIM, 1, -1),
+        sNeq("=", WellknownSymbolKind.PRIM, 1, -1), sNe("/=", WellknownSymbolKind.PRIM, 1, -1),
+        sLt("<", WellknownSymbolKind.PRIM, 1, -1), sLe("<=", WellknownSymbolKind.PRIM, 1, -1), sGe(">=", WellknownSymbolKind.PRIM, 1, -1), sGt(">", WellknownSymbolKind.PRIM, 1, -1),
+        sInc("1+", WellknownSymbolKind.PRIM, 1), sDec("1-", WellknownSymbolKind.PRIM, 1),
 
-        sRound("round", WellknownSymbolKind.PRIM), sFloor("floor", WellknownSymbolKind.PRIM), sCeiling("ceiling", WellknownSymbolKind.PRIM), sTruncate("truncate", WellknownSymbolKind.PRIM),
-        sSqrt("sqrt", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
+        sRound("round", WellknownSymbolKind.PRIM, 1, 2), sFloor("floor", WellknownSymbolKind.PRIM, 1, 2), sCeiling("ceiling", WellknownSymbolKind.PRIM, 1, 2), sTruncate("truncate", WellknownSymbolKind.PRIM, 1, 2),
+        sSqrt("sqrt", WellknownSymbolKind.PRIM, 1), sMod("mod", WellknownSymbolKind.PRIM, 2), sRem("rem", WellknownSymbolKind.PRIM, 2),
 
         // vectors, sequences
-        sMakeArray("make-array", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM),
+        sMakeArray("make-array", WellknownSymbolKind.PRIM, 1, 3), sVectorLength("vector-length", WellknownSymbolKind.PRIM, 1),
 
-        sSvLength("svlength", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM),
-        sVector("vector", WellknownSymbolKind.PRIM),
+        sSvLength("svlength", WellknownSymbolKind.PRIM, 1), sSvRef("svref", WellknownSymbolKind.PRIM, 2), sSvSet("svset", WellknownSymbolKind.PRIM, 3),
+        sVector("vector", WellknownSymbolKind.PRIM, -1),
 
-        sSBvLength("sbvlength", WellknownSymbolKind.PRIM), sSBvRef("sbvref", WellknownSymbolKind.PRIM), sSBvSet("sbvset", WellknownSymbolKind.PRIM),
-        sSBvEq("sbv=", WellknownSymbolKind.PRIM),
+        sSBvLength("sbvlength", WellknownSymbolKind.PRIM, 1), sSBvRef("sbvref", WellknownSymbolKind.PRIM, 2), sSBvSet("sbvset", WellknownSymbolKind.PRIM, 3),
+        sSBvEq("sbv=", WellknownSymbolKind.PRIM, 2),
 
         // I/O
-        sWrite("write", WellknownSymbolKind.PRIM), sWriteln("writeln", WellknownSymbolKind.PRIM), sLnwrite("lnwrite", WellknownSymbolKind.PRIM),
+        sWrite("write", WellknownSymbolKind.PRIM, 1, 2), sWriteln("writeln", WellknownSymbolKind.PRIM, 0, 2), sLnwrite("lnwrite", WellknownSymbolKind.PRIM, 0, 2),
 
         // misc
-        sValues("values", WellknownSymbolKind.PRIM), sGensym("gensym", WellknownSymbolKind.PRIM)
+        sValues("values", WellknownSymbolKind.PRIM, -1), sGensym("gensym", WellknownSymbolKind.PRIM, 0)
         ;
 
-        private final String sym;
         final WellknownSymbolKind kind;
-        WellknownSymbol(String sym, WellknownSymbolKind kind) { this.sym = sym; this.kind = kind; }
+        private final String sym;
+        private final int min, max;
+
+        WellknownSymbol(String sym, WellknownSymbolKind kind) {
+            assert kind != WellknownSymbolKind.PRIM;
+            this.sym = sym; this.kind = kind; min = max = -2;
+        }
+
+        WellknownSymbol(String sym, WellknownSymbolKind kind, int nArgs) {
+            assert nArgs >= -1 && nArgs <= 3;
+            this.sym = sym; this.kind = kind; min = max = nArgs;
+        }
+
+        WellknownSymbol(String sym, WellknownSymbolKind kind, int minArgs, int maxArgs) {
+            assert minArgs >= 0;
+            this.sym = sym; this.kind = kind; min = minArgs; max = maxArgs;
+        }
+
+        void argCheck(ConsCell args) {
+            assert kind == WellknownSymbolKind.PRIM;
+            final String sym = this.sym;
+            if (min == max) {
+                switch (min) {
+                case -1: return;
+                case 0: noArgs(sym, args); return;
+                case 1: oneArg(sym, args); return;
+                case 2: twoArgs(sym, args); return;
+                case 3: threeArgs(sym, args); return;
+                }
+            }
+            if (max == -1) { varargsMin(sym, args, min); return; }
+            varargsMinMax(sym, args, min, max);
+        }
 
         static WellknownSymbol of(String name) {
             for (WellknownSymbol s: values()) {
@@ -2487,6 +2518,8 @@ public class LambdaJ {
                     values = NO_VALUES;
                     return expandForm(expansion);
                 }
+                if (symOp.primitive())
+                    symOp.wellknownSymbol.argCheck(ccArgs);
             }
             expandForms("function application", ccForm);
             return ccForm;
@@ -2696,8 +2729,6 @@ public class LambdaJ {
 
     private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
         // bringt ein bisserl performance: 1x weniger eval und environment lookup mit assq()
-        // wenn in einem eigenen pass 1x arg checks gemacht wuerden,
-        // koennten die argchecks hier wegfallen und muessten nicht ggf. immer wieder in einer schleife wiederholt werden.
 
         if (op == null || !op.primitive()) {
             //Integer prev = notOpencoded.get(op);
@@ -2711,21 +2742,21 @@ public class LambdaJ {
         switch (op.wellknownSymbol) {
 
         // logic, predicates
-        case sEq:       { twoArgs("eq",   args);    return boolResult(car(args) == cadr(args)); }
-        case sEql:      { twoArgs("eql",  args);    return boolResult(eql(car(args), cadr(args))); }
+        case sEq:       { return boolResult(car(args) == cadr(args)); }
+        case sEql:      { return boolResult(eql(car(args), cadr(args))); }
 
-        case sConsp:    { oneArg ("consp",args);    return boolResult(consp(car(args))); }
-        case sAtom:     { oneArg ("atom",args);     return boolResult(atom(car(args))); }
-        case sSymbolp:  { oneArg ("symbolp",args);  return boolResult(symbolp(car(args))); }
-        case sNull:     { oneArg ("null", args);    return boolResult(car(args) == null); }
-        case sVectorp:  { oneArg ("vectorp", args); return boolResult(vectorp(car(args))); }
+        case sConsp:    { return boolResult(consp(car(args))); }
+        case sAtom:     { return boolResult(atom(car(args))); }
+        case sSymbolp:  { return boolResult(symbolp(car(args))); }
+        case sNull:     { return boolResult(car(args) == null); }
+        case sVectorp:  { return boolResult(vectorp(car(args))); }
 
-        case sListp:    { oneArg ("listp", args);   return boolResult(listp(car(args))); }
+        case sListp:    { return boolResult(listp(car(args))); }
 
         // conses and lists
-        case sCar:      { oneArg ("car",  args);    return caar(args); }
-        case sCdr:      { oneArg ("cdr",  args);    return cdar(args); }
-        case sCons:     { twoArgs("cons", args);    return cons(car(args), cadr(args)); }
+        case sCar:      { return caar(args); }
+        case sCdr:      { return cdar(args); }
+        case sCons:     { return cons(car(args), cadr(args)); }
         case sRplaca:   { return cl_rplaca(args); }
         case sRplacd:   { return cl_rplacd(args); }
 
@@ -2746,40 +2777,40 @@ public class LambdaJ {
         case sGe:       { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
         case sGt:       { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
 
-        case sInc:      { oneArg("1+", args);       return inc(car(args)); }
-        case sDec:      { oneArg("1-", args);       return dec(car(args)); }
+        case sInc:      { return inc(car(args)); }
+        case sDec:      { return dec(car(args)); }
 
-        case sRound:    { varargs1_2("round",    args); return toFixnum(Math.rint  (quot12("round", args))); }
-        case sFloor:    { varargs1_2("floor",    args); return toFixnum(Math.floor (quot12("floor", args))); }
-        case sCeiling:  { varargs1_2("ceiling",  args); return toFixnum(Math.ceil  (quot12("ceiling", args))); }
-        case sTruncate: { varargs1_2("truncate", args); return toFixnum(cl_truncate(quot12("truncate", args))); }
+        case sRound:    { return toFixnum(Math.rint  (quot12("round", args))); }
+        case sFloor:    { return toFixnum(Math.floor (quot12("floor", args))); }
+        case sCeiling:  { return toFixnum(Math.ceil  (quot12("ceiling", args))); }
+        case sTruncate: { return toFixnum(cl_truncate(quot12("truncate", args))); }
 
-        case sSqrt:     { oneArg ("sqrt", args);        return Math.sqrt (toDouble("sqrt", car(args))); }
-        case sMod:      { twoArgs("mod",  args);        return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
-        case sRem:      { twoArgs("rem",  args);        return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
+        case sSqrt:     { return Math.sqrt (toDouble("sqrt", car(args))); }
+        case sMod:      { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
+        case sRem:      { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
 
         // vectors, sequences
         case sMakeArray:    { return makeArray(args); }
-        case sVectorLength: { oneArg("vector-length", args);  return vectorLength(car(args)); }
+        case sVectorLength: { return vectorLength(car(args)); }
 
-        case sSvLength: { oneArg   ("svlength", args);  return svlength(car(args)); }
-        case sSvRef:    { twoArgs  ("svref", args);     return svref(car(args), toNonnegInt("svref", cadr(args))); }
-        case sSvSet:    { threeArgs("svset", args);     return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); }
+        case sSvLength: { return svlength(car(args)); }
+        case sSvRef:    { return svref(car(args), toNonnegInt("svref", cadr(args))); }
+        case sSvSet:    { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); }
         case sVector:   { return listToArray(args); }
 
-        case sSBvLength:{ oneArg   ("sbvlength", args); return sbvlength(car(args)); }
-        case sSBvRef:   { twoArgs  ("sbvref", args);    return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
-        case sSBvSet:   { threeArgs("sbvset", args);    return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
-        case sSBvEq:    { twoArgs  ("sbv=", args);      return boolResult(sbvEq(car(args), cadr(args))); }
+        case sSBvLength:{ return sbvlength(car(args)); }
+        case sSBvRef:   { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
+        case sSBvSet:   { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
+        case sSBvEq:    { return boolResult(sbvEq(car(args), cadr(args))); }
 
         // I/O
-        case sWrite:    { varargs1_2("write",   args);  return write  (car(args), cdr(args) == null || cadr(args) != null); }
-        case sWriteln:  { varargs0_2("writeln", args);  return writeln(args,      cdr(args) == null || cadr(args) != null); }
-        case sLnwrite:  { varargs0_2("lnwrite", args);  return lnwrite(args,      cdr(args) == null || cadr(args) != null); }
+        case sWrite:    { return write  (car(args), cdr(args) == null || cadr(args) != null); }
+        case sWriteln:  { return writeln(args,      cdr(args) == null || cadr(args) != null); }
+        case sLnwrite:  { return lnwrite(args,      cdr(args) == null || cadr(args) != null); }
 
         // misc
-        case sValues:   { values = args;                return car(args); }
-        case sGensym:   { noArgs("gensym", args);       return gensym(args); }
+        case sValues:   { values = args; return car(args); }
+        case sGensym:   { return gensym(args); }
 
         default: return NOT_HANDLED;
         }
