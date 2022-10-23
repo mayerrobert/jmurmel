@@ -1895,7 +1895,7 @@ public class LambdaJ {
                 if (symbolp(form)) {
                     if (form == null || form == sNil) return result = null;
                     if (form == sT) return result = sT;
-                    final ConsCell envEntry = assq(form, env);
+                    final ConsCell envEntry = fastassq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
                         if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
@@ -1950,7 +1950,7 @@ public class LambdaJ {
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
                     final LambdaJSymbol symbol = (LambdaJSymbol)car(ccArguments);
-                    final ConsCell envEntry = assq(symbol, topEnv);
+                    final ConsCell envEntry = fastassq(symbol, topEnv);
 
                     // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
                     //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
@@ -2123,7 +2123,7 @@ public class LambdaJ {
                         result = evalOpencode(symOperator, argList);
                         if (result != NOT_HANDLED) return result;
 
-                        func = cdr(assq(symOperator, env));
+                        func = cdr(fastassq(symOperator, env));
                     }
 
                     else {
@@ -2567,7 +2567,7 @@ public class LambdaJ {
         Object res = null;
         while (pairs != null) {
             final LambdaJSymbol symbol = (LambdaJSymbol)car(pairs);
-            final ConsCell envEntry = assq(symbol, env);
+            final ConsCell envEntry = fastassq(symbol, env);
 
             pairs = (ConsCell) cdr(pairs);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
@@ -2605,7 +2605,7 @@ public class LambdaJ {
         if (level != 1) errorMalformed("declaim", "must be a toplevel form");
         if (caar(arguments) == intern("optimize")) {
             final Object rest = cdar(arguments);
-            final ConsCell speedCons = assq(intern("speed"), rest);
+            final Object speedCons = assq(intern("speed"), rest);
             if (speedCons != null) {
                 final Object speed = cadr(speedCons);
                 if (!numberp(speed)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speed);
@@ -2650,7 +2650,7 @@ public class LambdaJ {
                 final Object bindingForm = cadr(binding);
 
                 ConsCell newBinding = null;
-                if (letDynamic) newBinding = assq(sym, topEnv);
+                if (letDynamic) newBinding = fastassq(sym, topEnv);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
@@ -3025,7 +3025,7 @@ public class LambdaJ {
             if (((LambdaJSymbol)sym).specialForm()) {
                 throw new LambdaJError(true, "trace: can't trace %s: it is a special form", printSEx(sym));
             }
-            final ConsCell envEntry = assq(sym, topEnv);
+            final ConsCell envEntry = fastassq(sym, topEnv);
             if (envEntry == null) throw new LambdaJError(true, "trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
@@ -3038,7 +3038,7 @@ public class LambdaJ {
         if (traced != null) {
             for (Object sym: symbols) {
                 if (symbolp(sym)) {
-                    final ConsCell envEntry = assq(sym, topEnv);
+                    final ConsCell envEntry = fastassq(sym, topEnv);
                     if (envEntry != null) {
                         final boolean wasTraced = traced.remove(cdr(envEntry)) != null;
                         if (wasTraced) ret = cons(sym, ret);
@@ -3055,7 +3055,7 @@ public class LambdaJ {
         if (traced == null) return traceStack;
         if (op instanceof LambdaJSymbol) {
             if (((LambdaJSymbol)op).specialForm()) return traceStack;
-            final ConsCell entry = assq(op, topEnv);
+            final ConsCell entry = fastassq(op, topEnv);
             if (entry == null) return traceStack;
             op = cdr(entry);
         }
@@ -3292,11 +3292,11 @@ public class LambdaJ {
         return n;
     }
 
-    /** return the cons whose car is eq to {@code atom}
-     *  note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
-    static ConsCell assq(Object atom, Object maybeList) {
-        if (maybeList == null) return null;
-        return assq(atom, requireList("assq", maybeList));
+    /** return the cons whose car is eq to {@code atom}.
+     *  Note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
+    static ConsCell assq(Object atom, Object lst) {
+        if (lst == null) return null;
+        return assq(atom, requireList("assq", lst));
     }
 
     static ConsCell assq(Object atom, ConsCell ccList) {
@@ -3305,11 +3305,25 @@ public class LambdaJ {
         for (Object entry: ccList) {
             //n++;
             if (entry != null) {
-                final ConsCell ccEntry = (ConsCell) entry;
-                if (atom == car(ccEntry)) {
+                if (atom == car(entry)) {
                     //if (n >= 20) System.out.printf("assq: %s %d%n", atom, n);
-                    return ccEntry;
+                    return (ConsCell)entry; // cast can't fail if car() succeeded
                 }
+            }
+        }
+        return null;
+    }
+
+    /** faster assq for internal use for environment lookup. ccList must be a proper list that only contains cons cells. */
+    static ConsCell fastassq(Object atom, ConsCell ccList) {
+        if (ccList == null) return null;
+        //int n = 0;
+        for (ConsCell rest = ccList; rest != null; rest = (ConsCell)rest.cdr()) {
+            //n++;
+            final ConsCell ccEntry = (ConsCell)rest.car();
+            if (atom == ccEntry.car()) {
+                //if (n >= 20) System.out.printf("assq: %s %d%n", atom, n);
+                return ccEntry;
             }
         }
         return null;
@@ -3912,8 +3926,7 @@ public class LambdaJ {
         final ConsCell ccList = requireList("assoc", maybeList);
         for (Object entry: ccList) {
             if (entry != null) { // ignore null items
-                final ConsCell ccEntry = (ConsCell) entry;
-                if (eql(atom, car(ccEntry))) return ccEntry;
+                if (eql(atom, car(entry))) return (ConsCell)entry;
             }
         }
         return null;
@@ -5082,7 +5095,7 @@ public class LambdaJ {
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
-        final ConsCell envEntry = assq(intern(globalSymbol), topEnv);
+        final ConsCell envEntry = fastassq(intern(globalSymbol), topEnv);
         if (envEntry != null) return cdr(envEntry);
         throw new LambdaJError(true, "%s: '%s' is not bound", "getValue", globalSymbol);
     }
@@ -7336,7 +7349,7 @@ public class LambdaJ {
         /** return {@code form} as a Java expression */
         private String javasym(Object form, ConsCell env) {
             if (form == null || form == sNil) return "(Object)null";
-            final ConsCell symentry = assq(form, env);
+            final ConsCell symentry = fastassq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
                 System.err.println("implicit declaration of " + form); // todo lineinfo of containing form
@@ -7352,7 +7365,7 @@ public class LambdaJ {
         }
 
         private static void notDefined(String func, Object sym, ConsCell env) {
-            final ConsCell prevEntry = assq(sym, env);
+            final ConsCell prevEntry = fastassq(sym, env);
             if (prevEntry != null) {
                 LambdaJ.notReserved(func, (LambdaJSymbol)car(prevEntry));
                 errorMalformedFmt(func, "can't redefine symbol %s", sym);
@@ -7361,7 +7374,7 @@ public class LambdaJ {
 
         private static void defined(String func, Object sym, ConsCell env) {
             if (sym == null) return; // nil is always defined
-            final ConsCell symentry = assq(sym, env);
+            final ConsCell symentry = fastassq(sym, env);
             if (symentry == null) errorMalformedFmt(func, "undefined symbol %s", sym.toString());
         }
 
@@ -8142,7 +8155,7 @@ public class LambdaJ {
             final Object valueForm = cadr(pairs);
 
             notAPrimitive("setq", symbol, javaName);
-            if (assq(symbol, env) == assq(symbol, topEnv)) {
+            if (fastassq(symbol, env) == fastassq(symbol, topEnv)) {
                 final String symName = mangle(symbol.toString(), 0);
                 sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
             } else {
@@ -8310,7 +8323,7 @@ public class LambdaJ {
                         else javaName = "args" + (rsfx + 1) + "[" + n++ + "]";
 
                         final String globalName;
-                        final ConsCell maybeGlobal = assq(sym, topEnv);
+                        final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
                             notAPrimitive("let* dynamic", sym, cdr(maybeGlobal).toString());
                             globalName = mangle(sym.toString(), 0);
@@ -8333,7 +8346,7 @@ public class LambdaJ {
                 else {
                     _env = params("let dynamic", sb, params, env, rsfx + 1, null, false);
                     for (final Object sym: params) {
-                        final ConsCell maybeGlobal = assq(sym, topEnv);
+                        final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
                             notAPrimitive("let dynamic", sym, cdr(maybeGlobal).toString());
                             final String globalName = mangle(sym.toString(), 0);
