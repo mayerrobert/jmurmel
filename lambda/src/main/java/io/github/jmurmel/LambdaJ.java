@@ -741,6 +741,12 @@ public class LambdaJ {
         if (haveCond())   { internWellknown("cond"); }
         if (haveLabels()) { internWellknown("labels"); }
 
+        if (haveIO()) {
+            internWellknown("write");
+            internWellknown("writeln");
+            internWellknown("lnwrite");
+        }
+
         if (haveXtra())   {
             sDynamic = internWellknown("dynamic");
 
@@ -796,9 +802,15 @@ public class LambdaJ {
             internWellknown("1+");
             internWellknown("1-");
 
+            internWellknown("round");
             internWellknown("floor");
+            internWellknown("ceiling");
+            internWellknown("truncate");
+
+            internWellknown("sqrt");
             internWellknown("mod");
             internWellknown("rem");
+
             internWellknown("=");
             internWellknown("<");
             internWellknown("<=");
@@ -827,6 +839,8 @@ public class LambdaJ {
         if (haveVector()) {
             sBit = intern("bit");
             sCharacter = intern("character");
+
+            internWellknown("make-array");
             internWellknown("vector");
             internWellknown("vectorp");
             internWellknown("vector-length");
@@ -1729,16 +1743,20 @@ public class LambdaJ {
         sLt("<", WellknownSymbolKind.PRIM), sLe("<=", WellknownSymbolKind.PRIM), sGe(">=", WellknownSymbolKind.PRIM), sGt(">", WellknownSymbolKind.PRIM),
         sInc("1+", WellknownSymbolKind.PRIM), sDec("1-", WellknownSymbolKind.PRIM),
 
-        sFloor("floor", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
+        sRound("round", WellknownSymbolKind.PRIM), sFloor("floor", WellknownSymbolKind.PRIM), sCeiling("ceiling", WellknownSymbolKind.PRIM), sTruncate("truncate", WellknownSymbolKind.PRIM),
+        sSqrt("sqrt", WellknownSymbolKind.PRIM), sMod("mod", WellknownSymbolKind.PRIM), sRem("rem", WellknownSymbolKind.PRIM),
 
         // vectors, sequences
-        sVectorLength("vector-length", WellknownSymbolKind.PRIM),
+        sMakeArray("make-array", WellknownSymbolKind.PRIM), sVectorLength("vector-length", WellknownSymbolKind.PRIM),
 
         sSvLength("svlength", WellknownSymbolKind.PRIM), sSvRef("svref", WellknownSymbolKind.PRIM), sSvSet("svset", WellknownSymbolKind.PRIM),
         sVector("vector", WellknownSymbolKind.PRIM),
 
         sSBvLength("sbvlength", WellknownSymbolKind.PRIM), sSBvRef("sbvref", WellknownSymbolKind.PRIM), sSBvSet("sbvset", WellknownSymbolKind.PRIM),
         sSBvEq("sbv=", WellknownSymbolKind.PRIM),
+
+        // I/O
+        sWrite("write", WellknownSymbolKind.PRIM), sWriteln("writeln", WellknownSymbolKind.PRIM), sLnwrite("lnwrite", WellknownSymbolKind.PRIM),
 
         // misc
         sValues("values", WellknownSymbolKind.PRIM), sGensym("gensym", WellknownSymbolKind.PRIM)
@@ -2731,11 +2749,17 @@ public class LambdaJ {
         case sInc:      { oneArg("1+", args);       return inc(car(args)); }
         case sDec:      { oneArg("1-", args);       return dec(car(args)); }
 
-        case sFloor:    { varargs1_2("floor", args);return toFixnum(Math.floor (quot12("floor", args))); }
-        case sMod:      { twoArgs("mod", args);     return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
-        case sRem:      { twoArgs("rem", args);     return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
+        case sRound:    { varargs1_2("round",    args); return toFixnum(Math.rint  (quot12("round", args))); }
+        case sFloor:    { varargs1_2("floor",    args); return toFixnum(Math.floor (quot12("floor", args))); }
+        case sCeiling:  { varargs1_2("ceiling",  args); return toFixnum(Math.ceil  (quot12("ceiling", args))); }
+        case sTruncate: { varargs1_2("truncate", args); return toFixnum(cl_truncate(quot12("truncate", args))); }
+
+        case sSqrt:     { oneArg ("sqrt", args);        return Math.sqrt (toDouble("sqrt", car(args))); }
+        case sMod:      { twoArgs("mod",  args);        return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
+        case sRem:      { twoArgs("rem",  args);        return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
 
         // vectors, sequences
+        case sMakeArray:    { return makeArray(args); }
         case sVectorLength: { oneArg("vector-length", args);  return vectorLength(car(args)); }
 
         case sSvLength: { oneArg   ("svlength", args);  return svlength(car(args)); }
@@ -2747,6 +2771,11 @@ public class LambdaJ {
         case sSBvRef:   { twoArgs  ("sbvref", args);    return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
         case sSBvSet:   { threeArgs("sbvset", args);    return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
         case sSBvEq:    { twoArgs  ("sbv=", args);      return boolResult(sbvEq(car(args), cadr(args))); }
+
+        // I/O
+        case sWrite:    { varargs1_2("write",   args);  return write  (car(args), cdr(args) == null || cadr(args) != null); }
+        case sWriteln:  { varargs0_2("writeln", args);  return writeln(args,      cdr(args) == null || cadr(args) != null); }
+        case sLnwrite:  { varargs0_2("lnwrite", args);  return lnwrite(args,      cdr(args) == null || cadr(args) != null); }
 
         // misc
         case sValues:   { values = args;                return car(args); }
