@@ -734,7 +734,7 @@ public class LambdaJ {
         this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
 
         if (haveT()) this.symtab.intern(sT);
-        if (haveNil()) internWellknown("nil");
+        if (haveNil()) this.symtab.intern(sNil);
         this.symtab.intern(sLambda);
 
         if (haveQuote())  { internWellknown("quote"); }
@@ -1702,7 +1702,8 @@ public class LambdaJ {
 
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
-    static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
+    static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sNil = new LambdaJSymbol("nil", true),
+                               sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
     final LambdaJSymbol sDynamic, sBit, sCharacter;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
@@ -1894,7 +1895,8 @@ public class LambdaJ {
                 /// eval - lookup symbols in the current environment
                 if (form == null) return result = null;
                 if (symbolp(form)) {
-                    if (haveT() && form == sT) return sT;
+                    if (form == sT) return result = sT;
+                    if (form == sNil) return result = null;
                     final ConsCell envEntry = assq(form, env);
                     if (envEntry != null) {
                         final Object value = cdr(envEntry);
@@ -7270,13 +7272,11 @@ public class LambdaJ {
     public static class MurmelJavaCompiler {
         private final JavaCompilerHelper javaCompiler;
         final LambdaJ intp;
-        private final LambdaJSymbol sNil;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, libDir);
             intp.init(() -> -1, System.out::print);
             this.intp = intp;
-            sNil = intp.intern("nil");
 
             this.javaCompiler = new JavaCompilerHelper(outPath);
         }
