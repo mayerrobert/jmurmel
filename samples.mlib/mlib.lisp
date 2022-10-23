@@ -1957,12 +1957,16 @@
 ;;;
 ;;; Since: 1.1
 (defun terpri () (writeln))
+(defmacro terpri () '(writeln))
 
 (defun prin1 (obj) (write obj))
+(defmacro prin1 (obj) `(write ,obj))
 
 (defun princ (obj) (write obj nil))
+(defmacro princ (obj) `(write ,obj nil))
 
 (defun print (obj) (lnwrite obj))
+(defmacro print (obj) `(lnwrite ,obj))
 
 
 ;;; = Function: pprint
