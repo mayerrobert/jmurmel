@@ -1742,18 +1742,29 @@ public class LambdaJ {
         sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq("eq", 2), sEql("eql", 2),
+        sEq("eq", 2)                                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
+        sEql("eql", 2)                               { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
 
-        sConsp("consp", 1), sAtom("atom", 1), sSymbolp("symbolp", 1), sNull("null", 1),
-        sNumberp("numberp", 1), sFloatp("floatp", 1), sIntegerp("integerp", 1), sCharacterp("characterp", 1),
+        sConsp("consp", 1)                           { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
+        sAtom("atom", 1)                             { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
+        sSymbolp("symbolp", 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
+        sNull("null", 1)                             { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
+        sNumberp("numberp", 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
+        sFloatp("floatp", 1)                         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
+        sIntegerp("integerp", 1)                     { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
+        sCharacterp("characterp", 1)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
 
-        sVectorp("vectorp", 1), sSimpleVectorP("simple-vector-p", 1),
-        sStringp("stringp", 1), sSimpleStringP("simple-string-p", 1),
-        sBitVectorP("bit-vector-p", 1), sSimpleBitVectorP("simple-bit-vector-p", 1),
+        sVectorp("vectorp", 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
+        sSimpleVectorP("simple-vector-p", 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
 
-        sFunctionp("functionp", 1),
+        sStringp("stringp", 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
+        sSimpleStringP("simple-string-p", 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
 
-        sListp("listp", 1),
+        sBitVectorP("bit-vector-p", 1)               { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
+        sSimpleBitVectorP("simple-bit-vector-p", 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
+
+        sFunctionp("functionp", 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
+        sListp("listp", 1)                           { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
         // conses and lists
         sCar("car", 1), sCdr("cdr", 1), sCons("cons", 2),
@@ -1783,7 +1794,7 @@ public class LambdaJ {
         sWrite("write", 1, 2), sWriteln("writeln", 0, 2), sLnwrite("lnwrite", 0, 2),
 
         // misc
-        sValues("values", -1), sGensym("gensym", 0)
+        sValues("values", -1), sGensym("gensym", 0),
         ;
 
         final WellknownSymbolKind kind;
@@ -1803,6 +1814,13 @@ public class LambdaJ {
         WellknownSymbol(String sym, int minArgs, int maxArgs) {
             assert minArgs >= 0;
             this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = minArgs; max = maxArgs;
+        }
+
+        Object apply(LambdaJ intp, ConsCell args) { assert false: "apply is not implemented for " + sym; return null; }
+
+        Object applyPrimitive(LambdaJ intp, ConsCell args) {
+            argCheck(args);
+            return apply(intp, args);
         }
 
         void argCheck(ConsCell args) {
@@ -2766,29 +2784,30 @@ public class LambdaJ {
         switch (op.wellknownSymbol) {
 
         // logic, predicates
-        case sEq:       { return boolResult(car(args) == cadr(args)); }
-        case sEql:      { return boolResult(eql(car(args), cadr(args))); }
+        case sEq:
+        case sEql:
 
-        case sConsp:    { return boolResult(consp(car(args))); }
-        case sAtom:     { return boolResult(atom(car(args))); }
-        case sSymbolp:  { return boolResult(symbolp(car(args))); }
-        case sNull:     { return boolResult(car(args) == null); }
-        case sNumberp:  { return boolResult(numberp(car(args))); }
-        case sFloatp:   { return boolResult(floatp(car(args))); }
-        case sIntegerp: { return boolResult(integerp(car(args))); }
-        case sCharacterp: { return boolResult(characterp(car(args))); }
+        case sConsp:
+        case sAtom:
+        case sSymbolp:
+        case sNull:
+        case sNumberp:
+        case sFloatp:
+        case sIntegerp:
+        case sCharacterp:
 
-        case sVectorp:  { return boolResult(vectorp(car(args))); }
-        case sSimpleVectorP:  { return boolResult(svectorp(car(args))); }
+        case sVectorp:
+        case sSimpleVectorP:
 
-        case sStringp:  { return boolResult(stringp(car(args))); }
-        case sSimpleStringP:  { return boolResult(sstringp(car(args))); }
+        case sStringp:
+        case sSimpleStringP:
 
-        case sBitVectorP:  { return boolResult(bitvectorp(car(args))); }
-        case sSimpleBitVectorP:  { return boolResult(sbitvectorp(car(args))); }
+        case sBitVectorP:
+        case sSimpleBitVectorP:
 
-        case sFunctionp:{ return boolResult(functionp(car(args))); }
-        case sListp:    { return boolResult(listp(car(args))); }
+        case sFunctionp:
+        case sListp:
+          return op.wellknownSymbol.apply(this, args);
 
         // conses and lists
         case sCar:      { return caar(args); }
@@ -8575,15 +8594,15 @@ public class LambdaJ {
                 return true;
             }
 
-            if (symbolEq(op, "round"))     { emitDivision(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
-            if (symbolEq(op, "floor"))     { emitDivision(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
-            if (symbolEq(op, "ceiling"))   { emitDivision(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
-            if (symbolEq(op, "truncate"))  { emitDivision(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
+            if (prim == WellknownSymbol.sRound)     { emitDivision(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
+            if (prim == WellknownSymbol.sFloor)     { emitDivision(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
+            if (prim == WellknownSymbol.sCeiling)   { emitDivision(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
+            if (prim == WellknownSymbol.sTruncate)  { emitDivision(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
 
-            if (symbolEq(op, "fround"))    { emitDivision(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
-            if (symbolEq(op, "ffloor"))    { emitDivision(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
-            if (symbolEq(op, "fceiling"))  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
-            if (symbolEq(op, "ftruncate")) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
+            if (prim == WellknownSymbol.sFRound)    { emitDivision(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
+            if (prim == WellknownSymbol.sFFloor)    { emitDivision(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
+            if (prim == WellknownSymbol.sFCeiling)  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
+            if (prim == WellknownSymbol.sFTruncate) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
             if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
                                                 emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
@@ -8601,8 +8620,8 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sCons)       { emitFuncall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
-            if (symbolEq(op, "rplaca"))              { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
-            if (symbolEq(op, "rplacd"))              { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sRplaca)     { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sRplacd)     { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sSvRef)      { emitFuncall2(sb, "svref", "svref", args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sSvSet)      { emitFuncall3(sb, "svset", "svset", args, env, topEnv, rsfx); return true; }
