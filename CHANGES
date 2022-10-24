@@ -8,10 +8,11 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
      (apply '(lambda (a b) (+ a b)) '(1 2))
    no longer works but gives an error.
    Old behaviour can be restored by the commandline flag '--XX-oldlambda' (interpreter only).
+ * changed self-recursive invocations from late binding to early binding
  * changed fixnums from 64 bit to 54 bit (53 bits + 1 sign bit)
  * changed internal-time-units-per-second to integer
  * changed write, writeln, lnwrite to return the first argument (was: t)
- * read throws an error on EOF unless a new optional argument was given
+ * changed read to throw an error on EOF unless a new optional argument was given
 
  * added the global variables "most-positive-fixnum" and "most-negative-fixnum"
  * added the special operators catch, throw and unwind-protect

@@ -2019,15 +2019,12 @@ public class LambdaJ {
 
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
-                    final LambdaJSymbol symbol = (LambdaJSymbol)car(ccArguments);
-                    final ConsCell envEntry = fastassq(symbol, topEnv);
-
-                    // immutable globals: "if (envEntry...)" entkommentieren, dann kann man globals nicht mehrfach neu zuweisen
-                    //if (envEntry != null) throw new LambdaJError(true, "%s: '%s' was already defined, current value: %s", "define", symbol, printSEx(cdr(envEntry)));
-
+                    final Object symbol = car(ccArguments);
                     final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    if (envEntry == null) insertFrontTopEnv(symbol, value);
-                    else envEntry.rplacd(value);
+
+                    final ConsCell prevEnvEntry = fastassq(symbol, topEnv);
+                    if (prevEnvEntry == null) insertFrontTopEnv(symbol, value);
+                    else prevEnvEntry.rplacd(value);
 
                     return result = symbol;
                 }
@@ -2035,8 +2032,16 @@ public class LambdaJ {
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                 // shortcut for (define symbol (lambda (params...) forms...))
                 case sDefun: {
-                    form = list(sDefine, car(ccArguments), cons(sLambda, cons(cadr(ccArguments), cddr(ccArguments))));
-                    isTc = true; continue tailcall;
+                    final Object symbol = car(ccArguments);
+                    final ConsCell selfEnvEntry = cons(symbol, null);
+                    final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
+                    selfEnvEntry.rplacd(closure);
+
+                    final ConsCell prevEnvEntry = fastassq(symbol, topEnv);
+                    if (prevEnvEntry == null) insertFrontTopEnv(symbol, closure);
+                    else prevEnvEntry.rplacd(closure);
+
+                    return result = symbol;
                 }
 
 

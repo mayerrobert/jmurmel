@@ -1924,3 +1924,6 @@ write & co könnten auch nil liefern statt t
 -> oder das argument wie CL, 
 
 read sollte EOF übernehmen
+
+der compiler macht selbstrekursive aufrufe early bound, der interpreter late bound
+-> angleichen, defun soll das funktionssymbol in die closure stecken, nicht nur ins topEnv
