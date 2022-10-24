@@ -1767,34 +1767,66 @@ public class LambdaJ {
         sListp("listp", 1)                           { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
         // conses and lists
-        sCar("car", 1), sCdr("cdr", 1), sCons("cons", 2),
-        sRplaca("rplaca", 2), sRplacd("rplacd", 2),
-        sList("list", -1), sListStar("list*", 1, -1), sAppend("append", -1),
+        sCar("car", 1)            { Object apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
+        sCdr("cdr", 1)            { Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
+        sCons("cons", 2)          { Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
+        sRplaca("rplaca", 2)      { Object apply(LambdaJ intp, ConsCell args) { return cl_rplaca(args); } },
+        sRplacd("rplacd", 2)      { Object apply(LambdaJ intp, ConsCell args) { return cl_rplacd(args); } },
+
+        sList("list", -1)         { Object apply(LambdaJ intp, ConsCell args) { return args; } },
+        sListStar("list*", 1, -1) { Object apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
+        sAppend("append", -1)     { Object apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
 
         // numbers, characters
-        sAdd("+", -1), sMul("*", -1), sSub("-", 1, -1), sDiv("/", 1, -1),
-        sNeq("=", 1, -1), sNe("/=", 1, -1),
-        sLt("<", 1, -1), sLe("<=", 1, -1), sGe(">=", 1, -1), sGt(">", 1, -1),
-        sInc("1+", 1), sDec("1-", 1),
+        sAdd("+", -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
+        sMul("*", -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
+        sSub("-", 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
+        sDiv("/", 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
 
-        sRound("round", 1, 2), sFloor("floor", 1, 2), sCeiling("ceiling", 1, 2), sTruncate("truncate", 1, 2),
-        sFRound("fround", 1, 2), sFFloor("ffloor", 1, 2), sFCeiling("fceiling", 1, 2), sFTruncate("ftruncate", 1, 2),
-        sSqrt("sqrt", 1), sMod("mod", 2), sRem("rem", 2),
+        sNeq("=", 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
+        sNe("/=", 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
+        sLt("<", 1, -1)               { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<",  (d1, d2) -> d1 <  d2); } },
+        sLe("<=", 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<=", (d1, d2) -> d1 <= d2); } },
+        sGe(">=", 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
+        sGt(">", 1, -1)               { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
+
+        sInc("1+", 1)                 { Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
+        sDec("1-", 1)                 { Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
+
+        sRound("round", 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
+        sFloor("floor", 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
+        sCeiling("ceiling", 1, 2)     { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
+        sTruncate("truncate", 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
+
+        sFRound("fround", 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
+        sFFloor("ffloor", 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
+        sFCeiling("fceiling", 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
+        sFTruncate("ftruncate", 1, 2) { Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
+
+        sSqrt("sqrt", 1)              { Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt", car(args))); } },
+        sMod("mod", 2)                { Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
+        sRem("rem", 2)                { Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
 
         // vectors, sequences
-        sMakeArray("make-array", 1, 3), sVectorLength("vector-length", 1),
-
-        sSvLength("svlength", 1), sSvRef("svref", 2), sSvSet("svset", 3),
-        sVector("vector", -1),
-
-        sSBvLength("sbvlength", 1), sSBvRef("sbvref", 2), sSBvSet("sbvset", 3),
-        sSBvEq("sbv=", 2),
+        sMakeArray("make-array", 1, 3)    { Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
+        sVectorLength("vector-length", 1) { Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
+        sSvLength("svlength", 1)          { Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
+        sSvRef("svref", 2)                { Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
+        sSvSet("svset", 3)                { Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
+        sVector("vector", -1)             { Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+        sSBvLength("sbvlength", 1)        { Object apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
+        sSBvRef("sbvref", 2)              { Object apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
+        sSBvSet("sbvset", 3)              { Object apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
+        sSBvEq("sbv=", 2)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbvEq(car(args), cadr(args))); } },
 
         // I/O
-        sWrite("write", 1, 2), sWriteln("writeln", 0, 2), sLnwrite("lnwrite", 0, 2),
+        sWrite("write", 1, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", 0, 2)         { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", 0, 2)         { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
 
         // misc
-        sValues("values", -1), sGensym("gensym", 0),
+        sValues("values", -1)             { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sGensym("gensym", 0)              { Object apply(LambdaJ intp, ConsCell args) { return intp.gensym(args); }             },
         ;
 
         final WellknownSymbolKind kind;
@@ -1816,12 +1848,8 @@ public class LambdaJ {
             this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = minArgs; max = maxArgs;
         }
 
-        Object apply(LambdaJ intp, ConsCell args) { assert false: "apply is not implemented for " + sym; return null; }
-
-        Object applyPrimitive(LambdaJ intp, ConsCell args) {
-            argCheck(args);
-            return apply(intp, args);
-        }
+        Object apply(LambdaJ intp, ConsCell args) { assert false: "apply is not implemented for " + sym; return NOT_HANDLED; }
+        Object applyPrimitive(LambdaJ intp, ConsCell args) { argCheck(args); return apply(intp, args); }
 
         void argCheck(ConsCell args) {
             assert kind == WellknownSymbolKind.PRIM;
@@ -2767,116 +2795,14 @@ public class LambdaJ {
         return expansion;
     }
 
-    //final Map<LambdaJSymbol, Integer> notOpencoded = new HashMap<>();
-
     private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
         // bringt ein bisserl performance: 1x weniger eval und environment lookup mit assq()
 
         if (op == null || !op.primitive()) {
-            //Integer prev = notOpencoded.get(op);
-            //if (prev != null) prev = prev + 1;
-            //else prev = 1;
-            //notOpencoded.put(op, prev);
-            
             return NOT_HANDLED;
         }
 
-        switch (op.wellknownSymbol) {
-
-        // logic, predicates
-        case sEq:
-        case sEql:
-
-        case sConsp:
-        case sAtom:
-        case sSymbolp:
-        case sNull:
-        case sNumberp:
-        case sFloatp:
-        case sIntegerp:
-        case sCharacterp:
-
-        case sVectorp:
-        case sSimpleVectorP:
-
-        case sStringp:
-        case sSimpleStringP:
-
-        case sBitVectorP:
-        case sSimpleBitVectorP:
-
-        case sFunctionp:
-        case sListp:
-          return op.wellknownSymbol.apply(this, args);
-
-        // conses and lists
-        case sCar:      { return caar(args); }
-        case sCdr:      { return cdar(args); }
-        case sCons:     { return cons(car(args), cadr(args)); }
-        case sRplaca:   { return cl_rplaca(args); }
-        case sRplacd:   { return cl_rplacd(args); }
-
-        case sList:     { return args; }
-        case sListStar: { return listStar(args); }
-        case sAppend:   { return append(args); }
-
-        // numbers, characters
-        case sAdd:      { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); }
-        case sMul:      { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); }
-        case sSub:      { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); }
-        case sDiv:      { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); }
-
-        case sNeq:      { return compare(args, "=",  (d1, d2) -> d1 == d2); }
-        case sNe:       { return compare(args, "/=", (d1, d2) -> d1 != d2); }
-        case sLt:       { return compare(args, "<",  (d1, d2) -> d1 <  d2);  }
-        case sLe:       { return compare(args, "<=", (d1, d2) -> d1 <= d2); }
-        case sGe:       { return compare(args, ">=", (d1, d2) -> d1 >= d2); }
-        case sGt:       { return compare(args, ">",  (d1, d2) -> d1 >  d2);  }
-
-        case sInc:      { return inc(car(args)); }
-        case sDec:      { return dec(car(args)); }
-
-        case sRound:    { return toFixnum(Math.rint  (quot12("round", args))); }
-        case sFloor:    { return toFixnum(Math.floor (quot12("floor", args))); }
-        case sCeiling:  { return toFixnum(Math.ceil  (quot12("ceiling", args))); }
-        case sTruncate: { return toFixnum(cl_truncate(quot12("truncate", args))); }
-
-        case sFRound:    { return Math.rint  (quot12("round", args)); }
-        case sFFloor:    { return Math.floor (quot12("floor", args)); }
-        case sFCeiling:  { return Math.ceil  (quot12("ceiling", args)); }
-        case sFTruncate: { return cl_truncate(quot12("truncate", args)); }
-
-        case sSqrt:     { return Math.sqrt (toDouble("sqrt", car(args))); }
-        case sMod:      { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
-        case sRem:      { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
-
-        // vectors, sequences
-        case sMakeArray:    { return makeArray(args); }
-        case sVectorLength: { return vectorLength(car(args)); }
-
-        case sSvLength: { return svlength(car(args)); }
-        case sSvRef:    { return svref(car(args), toNonnegInt("svref", cadr(args))); }
-        case sSvSet:    { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); }
-        case sVector:   { return listToArray(args); }
-
-        case sSBvLength:{ return sbvlength(car(args)); }
-        case sSBvRef:   { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); }
-        case sSBvSet:   { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); }
-        case sSBvEq:    { return boolResult(sbvEq(car(args), cadr(args))); }
-
-        // I/O
-        case sWrite:    { return write  (car(args), cdr(args) == null || cadr(args) != null); }
-        case sWriteln:  { return writeln(args,      cdr(args) == null || cadr(args) != null); }
-        case sLnwrite:  { return lnwrite(args,      cdr(args) == null || cadr(args) != null); }
-
-        // misc
-        case sValues:   { values = args; return car(args); }
-        case sGensym:   { return gensym(args); }
-
-        default:
-            assert false: "primitive " + op + " is not handled in evalOpencode()";
-            return NOT_HANDLED;
-        }
+        return op.wellknownSymbol.apply(this, args);
     }
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
