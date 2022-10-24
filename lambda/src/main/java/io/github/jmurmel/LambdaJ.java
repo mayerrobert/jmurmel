@@ -2184,18 +2184,9 @@ public class LambdaJ {
                     if (symOperator.macro != null) throw new LambdaJError(true, "function application: not a primitive or lambda: %s is a macro not a function", symOperator, form);
 
                     if (speed >= 1 && symOperator.primitive()) {
-                        // (mostly) respect evaluation order: operator should be eval'd before arguments.
-                        // Generally the operator could be an undefined symbol, and we want that to fail before evaluation the arguments,
-                        // e.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
-                        // Cheat here to gain performance: wellknown symbols are known to exist and will be looked up later out of order if needed
-                        // skip eval with an expensive assq call for now.
                         argList = evlis(ccArguments, env, stack, level, traceLvl);
-                        result = evalOpencode(symOperator, argList);
-                        if (result != NOT_HANDLED) return result;
-
-                        func = cdr(fastassq(symOperator, env));
+                        return result = symOperator.wellknownSymbol.apply(this, argList);
                     }
-
                     else {
                         func = eval(operator, env, stack, level, traceLvl);
                         argList = evlis(ccArguments, env, stack, level, traceLvl);
