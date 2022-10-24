@@ -766,6 +766,15 @@ multiline comment
   (list (mod -3.0 -2) (rem -3 -2.0) (mod 3.0 -2) (rem 3 -2.0))
     '(-1.0 -1.0 -1.0 1.0))
 
+(deftest test-mod-rem.1 (* 1.0 (mod 13 4))       1.0)
+(deftest test-mod-rem.2 (* 1.0 (rem 13 4))       1.0)
+(deftest test-mod-rem.3 (* 1.0 (mod -13 4))      3.0)
+(deftest test-mod-rem.4 (* 1.0 (rem -13 4))     -1.0)
+(deftest test-mod-rem.5 (* 1.0 (mod 13 -4))     -3.0)
+(deftest test-mod-rem.6 (* 1.0 (rem 13 -4))      1.0)
+(deftest test-mod-rem.7 (* 1.0 (mod -13 -4))    -1.0)
+(deftest test-mod-rem.8 (* 1.0 (rem -13 -4))    -1.0)
+
 
 ;;; test floor, truncate
 (deftest floor.1 (floor    5.3) 5)

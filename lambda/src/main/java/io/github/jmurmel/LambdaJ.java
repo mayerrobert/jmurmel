@@ -4074,7 +4074,7 @@ public class LambdaJ {
         return d < 0.0 ? Math.ceil(d) : Math.floor(d);
     }
 
-    /** note that the Java modulo operator {@code %} works differently */
+    /** note that the Java modulo operator {@code %} works differently, see also https://en.wikipedia.org/wiki/Modulo_operation */
     static double cl_mod(double x, double y) {
         return x - Math.floor(x / y) * y;
     }
