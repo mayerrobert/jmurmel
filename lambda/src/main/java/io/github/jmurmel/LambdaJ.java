@@ -783,12 +783,20 @@ public class LambdaJ {
             internWellknown("gensym");
         }
 
+        if (haveString()) {
+            internWellknown("characterp");
+            internWellknown("stringp");
+            internWellknown("simple-string-p");
+        }
+
         if (haveUtil()) {
             internWellknown("eql");
 
             internWellknown("consp");
             internWellknown("symbolp");
             internWellknown("null");
+
+            internWellknown("functionp");
 
             internWellknown("listp");
 
@@ -798,6 +806,9 @@ public class LambdaJ {
         }
 
         if (haveNumbers()) {
+            internWellknown("numberp");
+            internWellknown("floatp");
+            internWellknown("integerp");
 
             internWellknown("1+");
             internWellknown("1-");
@@ -806,6 +817,10 @@ public class LambdaJ {
             internWellknown("floor");
             internWellknown("ceiling");
             internWellknown("truncate");
+            internWellknown("fround");
+            internWellknown("ffloor");
+            internWellknown("fceiling");
+            internWellknown("ftruncate");
 
             internWellknown("sqrt");
             internWellknown("mod");
@@ -845,10 +860,12 @@ public class LambdaJ {
             internWellknown("vectorp");
             internWellknown("vector-length");
 
+            internWellknown("simple-vector-p");
             internWellknown("svref");
             internWellknown("svset");
             internWellknown("svlength");
 
+            internWellknown("bit-vector-p");
             internWellknown("simple-bit-vector-p");
             internWellknown("sbvref");
             internWellknown("sbvset");
@@ -1725,41 +1742,48 @@ public class LambdaJ {
         sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq("eq", WellknownSymbolKind.PRIM, 2), sEql("eql", WellknownSymbolKind.PRIM, 2),
+        sEq("eq", 2), sEql("eql", 2),
 
-        sConsp("consp", WellknownSymbolKind.PRIM, 1), sAtom("atom", WellknownSymbolKind.PRIM, 1), sSymbolp("symbolp", WellknownSymbolKind.PRIM, 1), sNull("null", WellknownSymbolKind.PRIM, 1),
-        sVectorp("vectorp", WellknownSymbolKind.PRIM, 1), sSimpleBitVectorP("simple-bit-vector-p", WellknownSymbolKind.PRIM, 1),
+        sConsp("consp", 1), sAtom("atom", 1), sSymbolp("symbolp", 1), sNull("null", 1),
+        sNumberp("numberp", 1), sFloatp("floatp", 1), sIntegerp("integerp", 1), sCharacterp("characterp", 1),
 
-        sListp("listp", WellknownSymbolKind.PRIM, 1),
+        sVectorp("vectorp", 1), sSimpleVectorP("simple-vector-p", 1),
+        sStringp("stringp", 1), sSimpleStringP("simple-string-p", 1),
+        sBitVectorP("bit-vector-p", 1), sSimpleBitVectorP("simple-bit-vector-p", 1),
+
+        sFunctionp("functionp", 1),
+
+        sListp("listp", 1),
 
         // conses and lists
-        sCar("car", WellknownSymbolKind.PRIM, 1), sCdr("cdr", WellknownSymbolKind.PRIM, 1), sCons("cons", WellknownSymbolKind.PRIM, 2),
-        sRplaca("rplaca", WellknownSymbolKind.PRIM, 2), sRplacd("rplacd", WellknownSymbolKind.PRIM, 2),
-        sList("list", WellknownSymbolKind.PRIM, -1), sListStar("list*", WellknownSymbolKind.PRIM, 1, -1), sAppend("append", WellknownSymbolKind.PRIM, -1),
+        sCar("car", 1), sCdr("cdr", 1), sCons("cons", 2),
+        sRplaca("rplaca", 2), sRplacd("rplacd", 2),
+        sList("list", -1), sListStar("list*", 1, -1), sAppend("append", -1),
 
         // numbers, characters
-        sAdd("+", WellknownSymbolKind.PRIM, -1), sMul("*", WellknownSymbolKind.PRIM, -1), sSub("-", WellknownSymbolKind.PRIM, 1, -1), sDiv("/", WellknownSymbolKind.PRIM, 1, -1),
-        sNeq("=", WellknownSymbolKind.PRIM, 1, -1), sNe("/=", WellknownSymbolKind.PRIM, 1, -1),
-        sLt("<", WellknownSymbolKind.PRIM, 1, -1), sLe("<=", WellknownSymbolKind.PRIM, 1, -1), sGe(">=", WellknownSymbolKind.PRIM, 1, -1), sGt(">", WellknownSymbolKind.PRIM, 1, -1),
-        sInc("1+", WellknownSymbolKind.PRIM, 1), sDec("1-", WellknownSymbolKind.PRIM, 1),
+        sAdd("+", -1), sMul("*", -1), sSub("-", 1, -1), sDiv("/", 1, -1),
+        sNeq("=", 1, -1), sNe("/=", 1, -1),
+        sLt("<", 1, -1), sLe("<=", 1, -1), sGe(">=", 1, -1), sGt(">", 1, -1),
+        sInc("1+", 1), sDec("1-", 1),
 
-        sRound("round", WellknownSymbolKind.PRIM, 1, 2), sFloor("floor", WellknownSymbolKind.PRIM, 1, 2), sCeiling("ceiling", WellknownSymbolKind.PRIM, 1, 2), sTruncate("truncate", WellknownSymbolKind.PRIM, 1, 2),
-        sSqrt("sqrt", WellknownSymbolKind.PRIM, 1), sMod("mod", WellknownSymbolKind.PRIM, 2), sRem("rem", WellknownSymbolKind.PRIM, 2),
+        sRound("round", 1, 2), sFloor("floor", 1, 2), sCeiling("ceiling", 1, 2), sTruncate("truncate", 1, 2),
+        sFRound("fround", 1, 2), sFFloor("ffloor", 1, 2), sFCeiling("fceiling", 1, 2), sFTruncate("ftruncate", 1, 2),
+        sSqrt("sqrt", 1), sMod("mod", 2), sRem("rem", 2),
 
         // vectors, sequences
-        sMakeArray("make-array", WellknownSymbolKind.PRIM, 1, 3), sVectorLength("vector-length", WellknownSymbolKind.PRIM, 1),
+        sMakeArray("make-array", 1, 3), sVectorLength("vector-length", 1),
 
-        sSvLength("svlength", WellknownSymbolKind.PRIM, 1), sSvRef("svref", WellknownSymbolKind.PRIM, 2), sSvSet("svset", WellknownSymbolKind.PRIM, 3),
-        sVector("vector", WellknownSymbolKind.PRIM, -1),
+        sSvLength("svlength", 1), sSvRef("svref", 2), sSvSet("svset", 3),
+        sVector("vector", -1),
 
-        sSBvLength("sbvlength", WellknownSymbolKind.PRIM, 1), sSBvRef("sbvref", WellknownSymbolKind.PRIM, 2), sSBvSet("sbvset", WellknownSymbolKind.PRIM, 3),
-        sSBvEq("sbv=", WellknownSymbolKind.PRIM, 2),
+        sSBvLength("sbvlength", 1), sSBvRef("sbvref", 2), sSBvSet("sbvset", 3),
+        sSBvEq("sbv=", 2),
 
         // I/O
-        sWrite("write", WellknownSymbolKind.PRIM, 1, 2), sWriteln("writeln", WellknownSymbolKind.PRIM, 0, 2), sLnwrite("lnwrite", WellknownSymbolKind.PRIM, 0, 2),
+        sWrite("write", 1, 2), sWriteln("writeln", 0, 2), sLnwrite("lnwrite", 0, 2),
 
         // misc
-        sValues("values", WellknownSymbolKind.PRIM, -1), sGensym("gensym", WellknownSymbolKind.PRIM, 0)
+        sValues("values", -1), sGensym("gensym", 0)
         ;
 
         final WellknownSymbolKind kind;
@@ -1771,14 +1795,14 @@ public class LambdaJ {
             this.sym = sym; this.kind = kind; min = max = -2;
         }
 
-        WellknownSymbol(String sym, WellknownSymbolKind kind, int nArgs) {
+        WellknownSymbol(String sym, int nArgs) {
             assert nArgs >= -1 && nArgs <= 3;
-            this.sym = sym; this.kind = kind; min = max = nArgs;
+            this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = max = nArgs;
         }
 
-        WellknownSymbol(String sym, WellknownSymbolKind kind, int minArgs, int maxArgs) {
+        WellknownSymbol(String sym, int minArgs, int maxArgs) {
             assert minArgs >= 0;
-            this.sym = sym; this.kind = kind; min = minArgs; max = maxArgs;
+            this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = minArgs; max = maxArgs;
         }
 
         void argCheck(ConsCell args) {
@@ -2749,8 +2773,21 @@ public class LambdaJ {
         case sAtom:     { return boolResult(atom(car(args))); }
         case sSymbolp:  { return boolResult(symbolp(car(args))); }
         case sNull:     { return boolResult(car(args) == null); }
-        case sVectorp:  { return boolResult(vectorp(car(args))); }
+        case sNumberp:  { return boolResult(numberp(car(args))); }
+        case sFloatp:   { return boolResult(floatp(car(args))); }
+        case sIntegerp: { return boolResult(integerp(car(args))); }
+        case sCharacterp: { return boolResult(characterp(car(args))); }
 
+        case sVectorp:  { return boolResult(vectorp(car(args))); }
+        case sSimpleVectorP:  { return boolResult(svectorp(car(args))); }
+
+        case sStringp:  { return boolResult(stringp(car(args))); }
+        case sSimpleStringP:  { return boolResult(sstringp(car(args))); }
+
+        case sBitVectorP:  { return boolResult(bitvectorp(car(args))); }
+        case sSimpleBitVectorP:  { return boolResult(sbitvectorp(car(args))); }
+
+        case sFunctionp:{ return boolResult(functionp(car(args))); }
         case sListp:    { return boolResult(listp(car(args))); }
 
         // conses and lists
@@ -2785,6 +2822,11 @@ public class LambdaJ {
         case sCeiling:  { return toFixnum(Math.ceil  (quot12("ceiling", args))); }
         case sTruncate: { return toFixnum(cl_truncate(quot12("truncate", args))); }
 
+        case sFRound:    { return Math.rint  (quot12("round", args)); }
+        case sFFloor:    { return Math.floor (quot12("floor", args)); }
+        case sFCeiling:  { return Math.ceil  (quot12("ceiling", args)); }
+        case sFTruncate: { return cl_truncate(quot12("truncate", args)); }
+
         case sSqrt:     { return Math.sqrt (toDouble("sqrt", car(args))); }
         case sMod:      { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); }
         case sRem:      { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); }
@@ -2812,7 +2854,9 @@ public class LambdaJ {
         case sValues:   { values = args; return car(args); }
         case sGensym:   { return gensym(args); }
 
-        default: return NOT_HANDLED;
+        default:
+            assert false: "primitive " + op + " is not handled in evalOpencode()";
+            return NOT_HANDLED;
         }
     }
 
