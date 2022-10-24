@@ -2218,7 +2218,7 @@ public class LambdaJ {
                         else {
                             final Object additionalEnv = cadr(ccArguments);
                             if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
-                            env = (ConsCell) append2(additionalEnv, topEnv);
+                            env = append2((ConsCell)additionalEnv, topEnv);
                         }
                         isTc = true; continue tailcall;
                     }
@@ -2348,7 +2348,7 @@ public class LambdaJ {
     }
 
     final Object eval(Object form, ConsCell env) {
-        return eval(form, env != null ? (ConsCell) append2(env, topEnv) : topEnv, 0, 0, 0);
+        return eval(form, env != null ? append2(env, topEnv) : topEnv, 0, 0, 0);
     }
 
     final Object expandAndEval(Object form, ConsCell env) {
@@ -3310,12 +3310,11 @@ public class LambdaJ {
     }
 
     /** Create a new list by copying lhs and appending rhs. Faster (?) 2 argument version of {@link #append(ConsCell)} for internal use. */
-    private Object append2(Object lhs, Object rhs) {
+    private ConsCell append2(ConsCell lhs, ConsCell rhs) {
         if (lhs == null) return rhs;
-        if (!consp(lhs)) throw new LambdaJError(true, "append2: first argument %s is not a list", lhs);
         if (rhs == null) return lhs;
         ConsCell ret = null, insertPos = null;
-        for (Object o: (ConsCell)lhs) {
+        for (Object o: lhs) {
             if (ret == null) {
                 ret = cons(o, null);
                 insertPos = ret;
@@ -3325,6 +3324,7 @@ public class LambdaJ {
                 insertPos = (ConsCell) insertPos.cdr();
             }
         }
+        // insertPos cannot be null because lhs is either null or a nonempty list which means the loop body runs at least once
         insertPos.rplacd(rhs);
         return ret;
     }
