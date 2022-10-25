@@ -1932,3 +1932,5 @@ WellknownSymbol.apply() ruft methoden auf, die die argumentanzahl nochmal checke
 -> nur 1x checken. wenns in environment() keinen argcheck gibt, gibts änderungsbedarf
 
 --no-vector
+
+vielleicht doch slength (string-length) dazunehmen?

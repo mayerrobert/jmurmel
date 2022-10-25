@@ -1,4 +1,3 @@
-vielleicht doch slength (string-length) dazunehmen?
 
 
 

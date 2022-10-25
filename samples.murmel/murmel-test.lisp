@@ -952,12 +952,12 @@ multiline comment
   (deftest simple-string.7 (seqset #\a (vector-copy "0123") 2)  #\a)
   (deftest simple-string.8 (seqset #\b (vector-copy "0123") 3)  #\b)
 
-  (deftest simple-string.10 (sref sstring 0)      #\1)
-  (deftest simple-string.11 (sset #\a sstring 0)  #\a)
-  (deftest simple-string.12 sstring               "a23")
-
-  (deftest simple-string.13 (string= sstring "a23")  t)
-  (deftest simple-string.14 (string->list sstring)   '(#\a #\2 #\3))
+  (deftest simple-string.10 (sref sstring 0)          #\1)
+  (deftest simple-string.11 (sset #\a sstring 0)      #\a)
+  (deftest simple-string.12 sstring                   "a23")
+  (deftest simple-string.13 (slength sstring)         3)
+  (deftest simple-string.14 (string= sstring "a23")   t)
+  (deftest simple-string.15 (string->list sstring)    '(#\a #\2 #\3))
 )
 
 
@@ -973,12 +973,12 @@ multiline comment
   (deftest adjustable-string.6  (sref astring 0)                  #\1)
   (deftest adjustable-string.7  (sset #\a astring 0)              #\a)
   (deftest adjustable-string.8  astring                           "a11")
+  (deftest adjustable-string.9  (slength astring)                 3)
+  (deftest adjustable-string.10 (string= astring "a11")           t)
+  (deftest adjustable-string.11 (string->list astring)            '(#\a #\1 #\1))
 
-  (deftest adjustable-string.9  (string= astring "a11")           t)
-  (deftest adjustable-string.10 (string->list astring)            '(#\a #\1 #\1))
-
-  (deftest adjustable-string.11 (vector-push-extend #\b astring)  3)
-  (deftest adjustable-string.12 astring                           "a11b")
+  (deftest adjustable-string.12 (vector-push-extend #\b astring)  3)
+  (deftest adjustable-string.13 astring                           "a11b")
 )
 
 

@@ -1736,6 +1736,7 @@ public class LambdaJ {
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
+        sSLength("slength", Features.HAVE_STRING, 1)            { Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
         sSRef("sref", Features.HAVE_STRING, 2)                  { Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
         sSSet("sset", Features.HAVE_STRING, 3)                  { Object apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
         sSEq("string=", Features.HAVE_STRING, 2)                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
@@ -3489,6 +3490,10 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(n));
     }
 
+    static RuntimeException errorNotAString(String func, Object n) {
+        throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(n));
+    }
+
     static RuntimeException errorNotABitVector(String func, Object n) {
         throw new LambdaJError(true, "%s: expected a bitvector argument but got %s", func, printSEx(n));
     }
@@ -4123,6 +4128,12 @@ public class LambdaJ {
     static Object svset(Object newValue, Object maybeVector, int idx) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
         throw errorNotASimpleVector("svset", maybeVector);
+    }
+
+    static long slength(Object maybeVector) {
+        if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
+        if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
+        throw errorNotAString("slength", maybeVector);
     }
 
     static char sref(Object maybeString, int idx) {
@@ -4801,14 +4812,15 @@ public class LambdaJ {
             env = addBuiltin("stringp",         (Primitive) a -> { oneArg("stringp", a);         return boolResult(stringp(car(a))); },
                   addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
                   addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
+                  addBuiltin("slength",         (Primitive) a -> { oneArg("slength", a);         return slength(car(a)); },
                   addBuiltin("sref",            (Primitive) a -> { twoArgs("sref", a);           return sref(car(a), toNonnegInt("sref", cadr(a))); },
-                  addBuiltin("sset",            (Primitive) a -> { threeArgs("sset", a);         return sset(requireChar("sset", car(a)), cadr(a), toNonnegInt("sref", caddr(a))); },
+                  addBuiltin("sset",            (Primitive) a -> { threeArgs("sset", a);         return sset(requireChar("sset", car(a)), cadr(a), toNonnegInt("sset", caddr(a))); },
                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
                   addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(a)), requireStringOrCharOrSymbol("string=", cadr(a)))); },
                   addBuiltin("string->list",    (Primitive) a -> { oneArg("string->list", a);    return stringToList(car(a)); },
                   addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
-                  env))))))))));
+                  env)))))))))));
 
             if (haveUtil()) {
                 env = addBuiltin("format",        (Primitive) this::format,
@@ -6515,9 +6527,10 @@ public class LambdaJ {
         public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
         public final Object   _vector  (Object... args) { return args; }
 
-        public final Character _sref   (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
-        public final Character _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
-        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
+        public final long      _slength (Object... args) { oneArg("slength", args.length); return slength(args[0]); }
+        public final Character _sref    (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
+        public final Character _sset    (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
+        public final Object   stringeq  (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final Object maybeString = args[0];
@@ -7112,6 +7125,7 @@ public class LambdaJ {
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
             case "vector": return (CompilerPrimitive)this::_vector;
 
+            case "slength": return (CompilerPrimitive)this::_slength;
             case "sref": return (CompilerPrimitive)this::_sref;
             case "sset": return (CompilerPrimitive)this::_sset;
             case "string=": return (CompilerPrimitive)this::stringeq;
@@ -7337,7 +7351,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
-        "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "sref", "sset", "sbvref", "sbvset", "sbvlength",
+        "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "slength", "sref", "sset", "sbvref", "sbvset", "sbvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",

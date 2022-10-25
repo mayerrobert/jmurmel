@@ -854,7 +854,8 @@ Example usage:
 
 Since: 1.3
 
-### sref, sset
+### slength, sref, sset
+    (slength str) -> length
     (sref str n) -> nth-character
     (sset new-char str n) -> new-char
 
