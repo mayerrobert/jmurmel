@@ -1925,6 +1925,7 @@ public class LambdaJ {
 
     /// ###  eval - the heart of most if not all Lisp interpreters
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
+        final boolean doOpencode = speed >= 1;
         Object func = null;
         Object result = null;  /* should be assigned even if followed by a "return" because it will be used in the "finally" clause*/
         Deque<Object> traceStack = null;
@@ -1936,29 +1937,19 @@ public class LambdaJ {
 
             tailcall:
             while (true) {
-                if (Thread.interrupted()) throw new InterruptedException("got interrupted");
-
-                level++;
-                if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
-
                 /// eval - lookup symbols in the current environment
-                if (symbolp(form)) {
-                    if (form == null || form == sNil) return result = null;
-                    if (form == sT) return result = sT;
-                    final ConsCell envEntry = fastassq(form, env);
-                    if (envEntry != null) {
-                        final Object value = cdr(envEntry);
-                        if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
-                        return result = value;
-                    }
-                    throw new LambdaJError(true, "%s: '%s' is not bound", "eval", printSEx(form));
-                }
+                if (symbolp(form)) return result = evalSymbol(form, env);
 
                 /// eval - atoms that are not symbols eval to themselves
                 if (atom(form)) return result = form;
 
                 /// eval - form is not an atom - must be a cons (nonempty list) containing either a special form or a function application
                 final ConsCell ccForm = (ConsCell)form;
+
+                if (Thread.interrupted()) throw new InterruptedException("got interrupted");
+
+                level++;
+                if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
 
                 final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
                 if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
@@ -2150,9 +2141,8 @@ public class LambdaJ {
                         if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
                     }
                     argList = allArgs;
-                    if (speed >= 1 && symbolp(funcOrSymbol)) {
-                        result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
-                        if (result != NOT_HANDLED) return result;
+                    if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
+                        return result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);
                     }
                     funcall = true;
                     break; // fall through to "actually perform..."
@@ -2168,12 +2158,11 @@ public class LambdaJ {
                     // macros can be unexpanded if the macro was defined after the defun
                     if (symOperator.macro != null) throw new LambdaJError(true, "function application: not a primitive or lambda: %s is a macro not a function", symOperator, form);
 
-                    if (speed >= 1 && symOperator.primitive()) {
-                        argList = evlis(ccArguments, env, stack, level, traceLvl);
-                        return result = symOperator.wellknownSymbol.apply(this, argList);
+                    if (doOpencode && symOperator.primitive()) {
+                        return result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));
                     }
                     else {
-                        func = eval(operator, env, stack, level, traceLvl);
+                        func = evalSymbol(symOperator, env);
                         argList = evlis(ccArguments, env, stack, level, traceLvl);
                     }
 
@@ -2186,11 +2175,10 @@ public class LambdaJ {
                     if (operator == ocApply) {
                         twoArgs("apply", ccArguments);
                         final Object funcOrSymbol = car(ccArguments);
-                        func = symbolp(funcOrSymbol) ? eval(funcOrSymbol, env, stack, level, traceLvl) : funcOrSymbol; // could add the same performance cheat as in function call above
+                        func = symbolp(funcOrSymbol) ? evalSymbol(funcOrSymbol, env) : funcOrSymbol; // could add the same performance cheat as in function call above
                         argList = listOrMalformed("apply", cadr(ccArguments));
-                        if (speed >= 1 && symbolp(funcOrSymbol)) {
-                            result = evalOpencode((LambdaJSymbol)funcOrSymbol, argList);
-                            if (result != NOT_HANDLED) return result;
+                        if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
+                            return result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);
                         }
                         // fall through to "actually perform..."
                     }
@@ -2207,7 +2195,6 @@ public class LambdaJ {
                         }
                         isTc = true; continue tailcall;
                     }
-
 
                     else {
                         func = eval(operator, env, stack, level, traceLvl);
@@ -2278,7 +2265,7 @@ public class LambdaJ {
 
                 /// eval - eval a list of forms
                 if (ccForms != null) {
-                    for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) {
+                    for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) { // must use listOrMalformed() to avoid CCE on e.g. (apply f '(1 . 2))
                         eval(car(ccForms), env, stack, level, traceLvl);
                     }
                     if (traced != null) traceStack = push(operator, traceStack);
@@ -2609,6 +2596,21 @@ public class LambdaJ {
         return symbol;
     }
 
+    private static Object evalSymbol(Object form, ConsCell env) {
+        final Object value;
+        if (form == null || form == sNil) value = null;
+        else if (form == sT) value = sT;
+        else {
+            final ConsCell envEntry = fastassq(form, env);
+            if (envEntry != null) {
+                value = cdr(envEntry);
+                if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
+            }
+            else throw new LambdaJError(true, "%s: '%s' is not bound", "eval", printSEx(form));
+        }
+        return value;
+    }
+
     private Object evalSetq(ConsCell pairs, ConsCell env, int stack, int level, int traceLvl) {
         Object res = null;
         while (pairs != null) {
@@ -2769,16 +2771,6 @@ public class LambdaJ {
         if (macroClosure.body != null) for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, 0, 0, 0);
         return expansion;
-    }
-
-    private Object evalOpencode(LambdaJSymbol op, ConsCell args) {
-        // bringt ein bisserl performance: 1x weniger eval und environment lookup mit assq()
-
-        if (op == null || !op.primitive()) {
-            return NOT_HANDLED;
-        }
-
-        return op.wellknownSymbol.apply(this, args);
     }
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
@@ -3109,7 +3101,7 @@ public class LambdaJ {
         }
     }
 
-    private void dbgEvalDone(String evFunc, Object exp, Object env, int stack, int level) {
+    private void dbgEvalDone(String evFunc, Object exp, ConsCell env, int stack, int level) {
         if (trace.ge(TraceLevel.TRC_ENVSTATS)) {
             final int envLen = listLength(env);
             if (maxEnvLen < envLen) maxEnvLen = envLen;
@@ -3250,10 +3242,10 @@ public class LambdaJ {
         return ret;
     }
 
-    static int listLength(Object list) {
+    static int listLength(ConsCell list) {
         if (list == null) return 0;
         int n = 0;
-        for (Object ignored: (ConsCell)list) n++;
+        for (Object ignored: list) n++;
         return n;
     }
 
@@ -3261,17 +3253,11 @@ public class LambdaJ {
      *  Note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object lst) {
         if (lst == null) return null;
-        return assq(atom, requireList("assq", lst));
-    }
+        final ConsCell ccList = requireList("assq", lst);
 
-    static ConsCell assq(Object atom, ConsCell ccList) {
-        if (ccList == null) return null;
-        //int n = 0;
         for (Object entry: ccList) {
-            //n++;
             if (entry != null) {
                 if (atom == car(entry)) {
-                    //if (n >= 20) System.out.printf("assq: %s %d%n", atom, n);
                     return (ConsCell)entry; // cast can't fail if car() succeeded
                 }
             }
@@ -8079,7 +8065,6 @@ public class LambdaJ {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
                 if (loopLabel == intp.sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
                 op = letrec ? "named letrec" : "named let*";
-                if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
             }
             else {
                 op = letrec ? "letrec" : "let*";
@@ -8090,13 +8075,15 @@ public class LambdaJ {
                 sb.append("        private final Object ").append(javasym(loopLabel, env)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
-            final int argCount = listLength(bindings);
+            if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
+            final ConsCell ccBindings = (ConsCell)bindings;
+            final int argCount = listLength(ccBindings);
             if (argCount != 0) {
                 sb.append("        if (args").append(rsfx).append("[0] == UNASSIGNED_LOCAL) {\n");
 
                 // letrec: ALL let-bindings are in the environment during binding of the initial values todo value should be undefined
                 int current = 0;
-                if (letrec) for (Object binding: (ConsCell)bindings) {
+                if (letrec) for (Object binding: ccBindings) {
                     final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(op, car(binding));
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     env = extenvIntern(sym, symName, env);
@@ -8104,7 +8091,7 @@ public class LambdaJ {
 
                 // initial assignments. let*: after the assignment add the let-symbol to the environment so that subsequent bindings will see it
                 current = 0;
-                for (Object binding: (ConsCell)bindings) {
+                for (Object binding: ccBindings) {
                     final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(op, car(binding));
                     final Object form = cadr(binding);
                     final String symName = "args" + rsfx + '[' + current++ + ']';
@@ -8251,9 +8238,9 @@ public class LambdaJ {
                 // (lambda a forms...) - style varargs
             }
             else if (dottedList(paramList)) {
-                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(listLength(paramList)).append(", args").append(rsfx).append(".length);\n");
+                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(listLength((ConsCell)paramList)).append(", args").append(rsfx).append(".length);\n");
             }
-            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(listLength(paramList)).append(", args").append(rsfx).append(".length);\n");
+            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(listLength((ConsCell)paramList)).append(", args").append(rsfx).append(".length);\n");
 
             final HashSet<Object> seen = new HashSet<>();
             int n = 0;

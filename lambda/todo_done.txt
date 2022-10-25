@@ -1941,3 +1941,6 @@ murmel-test.lisp: new Byte(String) ist deprecated (seit 9)
 
 jm --run scribbles\readfile-nio.lisp
 -> Java compilefehler
+
+auf parameter ConsCell oder Iterable umstellen
+listLength
