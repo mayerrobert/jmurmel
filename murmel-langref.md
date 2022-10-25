@@ -873,6 +873,10 @@ Using `sset` with a string literal is an error.
 
 ### (list->string list-of-characters) -> string
 
+### (code-char integer) -> character
+
+### (char-code character) -> integer
+
 
 ### bv=
 
@@ -1116,10 +1120,6 @@ The numeric comparison operators take one or more number arguments.
     (= 1 1.0)         ; ==> t
     (< 1 2 3.0 4 5.0) ; ==> t
     (< 1 2 3 3 4 5)   ; ==> nil
-
-### (code-char integer) -> character
-
-### (char-code character) -> integer
 
 
 ## Predefined Graphics Primitives 

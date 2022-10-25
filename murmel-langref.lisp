@@ -875,6 +875,10 @@ pi ; ==> 3.141592653589793
 
 ; = (list->string list-of-characters) -> string
 
+; = (code-char integer) -> character
+
+; = (char-code character) -> integer
+
 
 ; = bv=
 ;
@@ -1119,10 +1123,6 @@ pi ; ==> 3.141592653589793
 (= 1 1.0)         ; ==> t
 (< 1 2 3.0 4 5.0) ; ==> t
 (< 1 2 3 3 4 5)   ; ==> nil
-
-; = (code-char integer) -> character
-
-; = (char-code character) -> integer
 
 
 ;;; == Predefined Graphics Primitives =

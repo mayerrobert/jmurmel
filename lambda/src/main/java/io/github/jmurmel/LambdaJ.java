@@ -1741,7 +1741,10 @@ public class LambdaJ {
         sSSet("sset", Features.HAVE_STRING, 3)                  { Object apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
         sSEq("string=", Features.HAVE_STRING, 2)                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
         sStringToList("string->list", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
-        sListToString("list->string", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToStringImpl(requireList("list->string", car(args))); } },
+        sListToString("list->string", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args)); } },
+
+        sCharCode("char-code", Features.HAVE_STRING, 1)         { Object apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
+        sCodeChar("code-char", Features.HAVE_STRING, 1)         { Object apply(LambdaJ intp, ConsCell args) { return (char) toInt("code-char", car(args)); } },
 
         sBvEq("bv=", Features.HAVE_VECTOR, 2)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
 
@@ -1756,9 +1759,11 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } },
 
         // I/O
-        sWrite("write", Features.HAVE_IO, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 2)   { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)   { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
+        sWrite("write", Features.HAVE_IO, 1, 2)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)            { Object apply(LambdaJ intp, ConsCell args) { return intp.format(args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { Object apply(LambdaJ intp, ConsCell args) { return intp.formatLocale(args); } },
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)     { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
@@ -4229,8 +4234,9 @@ public class LambdaJ {
         return ret.first();
     }
 
-    static char[] listToStringImpl(ConsCell l) {
-        if (l == null) return new char[0];
+    static char[] listToString(Object lst) {
+        if (lst == null) return new char[0];
+        final ConsCell l = requireList("list->string", lst);
         final StringBuilder ret = new StringBuilder();
         for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
         return ret.toString().toCharArray();
@@ -4819,14 +4825,15 @@ public class LambdaJ {
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
                   addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(a)), requireStringOrCharOrSymbol("string=", cadr(a)))); },
                   addBuiltin("string->list",    (Primitive) a -> { oneArg("string->list", a);    return stringToList(car(a)); },
-                  addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
+                  addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToString(car(a)); },
                   env)))))))))));
 
-            if (haveUtil()) {
-                env = addBuiltin("format",        (Primitive) this::format,
-                      addBuiltin("format-locale", (Primitive) this::formatLocale,
-                      env));
-            }
+        }
+
+        if (haveUtil()) {
+            env = addBuiltin("format",          (Primitive) a -> { varargsMin("format", a, 2);        return format(a); },
+                  addBuiltin("format-locale",   (Primitive) a -> { varargsMin("format-locale", a, 3); return formatLocale(a); },
+                  env));
         }
 
         if (haveApply()) {
@@ -6470,9 +6477,6 @@ public class LambdaJ {
         public static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return toDouble(args[0]) % toDouble(args[1]); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
-        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
-
 
         // vectors, sequences
 
@@ -6546,7 +6550,10 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object listToString(Object... args) { oneArg("list->string", args.length); return LambdaJ.listToStringImpl(LambdaJ.requireList("list->string", args[0])); }
+        public final Object listToString(Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(args[0]); }
+
+        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
+        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
 
         public final Object bvEq       (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
 
@@ -6583,8 +6590,8 @@ public class LambdaJ {
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); }
 
-        public final Object format     (Object... args) { return intp.format(arraySlice(args)); }
-        public final Object formatLocale(Object... args) { return intp.formatLocale(arraySlice(args)); }
+        public final Object format     (Object... args)  { varargs2("format", args.length); return intp.format(arraySlice(args)); }
+        public final Object formatLocale(Object... args) { varargs3("format-locale", args.length); return intp.formatLocale(arraySlice(args)); }
 
 
         // misc
@@ -6931,6 +6938,7 @@ public class LambdaJ {
         private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
         /** two or more arguments */
         private static void varargs2(String expr, int argCount)   { if (argCount < 2)                 errorArgCount(expr, 2, -1, argCount); }
+        private static void varargs3(String expr, int argCount)   { if (argCount < 3)                 errorArgCount(expr, 3, -1, argCount); }
 
         private static void varargsMinMax(String expr, int argCount, int min, int max) {
             if (argCount < min || argCount > max)
@@ -7106,9 +7114,6 @@ public class LambdaJ {
             case "mod": return (CompilerPrimitive)this::_mod;
             case "rem": return (CompilerPrimitive)this::_rem;
 
-            case "char-code": return (CompilerPrimitive)this::charInt;
-            case "code-char": return (CompilerPrimitive)this::intChar;
-
             // vectors, sequences
             case "make-array": return (CompilerPrimitive)this::makeArray;
 
@@ -7131,6 +7136,9 @@ public class LambdaJ {
             case "string=": return (CompilerPrimitive)this::stringeq;
             case "string->list": return (CompilerPrimitive)this::stringToList;
             case "list->string": return (CompilerPrimitive)this::listToString;
+
+            case "char-code": return (CompilerPrimitive)this::charInt;
+            case "code-char": return (CompilerPrimitive)this::intChar;
 
             case "bv=": return (CompilerPrimitive)this::bvEq;
 
