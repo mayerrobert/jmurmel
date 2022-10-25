@@ -749,7 +749,7 @@ public class LambdaJ {
         }
 
         if (haveXtra())   {
-            symtab.intern(sDynamic);
+            sDynamic = intern("dynamic");
 
             symtab.intern(sDefine);
             internWellknown("defun");
@@ -782,6 +782,7 @@ public class LambdaJ {
             internWellknown("values");
             internWellknown("gensym");
         }
+        else sDynamic = null;
 
         if (haveString()) {
             internWellknown("characterp");
@@ -852,8 +853,8 @@ public class LambdaJ {
         }
 
         if (haveVector()) {
-            symtab.intern(sBit);
-            symtab.intern(sCharacter);
+            sBit = intern("bit");
+            sCharacter = intern("character");
 
             internWellknown("make-array");
             internWellknown("vector");
@@ -872,6 +873,7 @@ public class LambdaJ {
             internWellknown("sbvlength");
             internWellknown("sbv=");
         }
+        else sBit = sCharacter = null;
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1719,8 +1721,10 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
     static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sNil = new LambdaJSymbol("nil", true),
-                               sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true),
-                               sDynamic = new LambdaJSymbol("dynamic", false), sBit = new LambdaJSymbol("bit", false), sCharacter = new LambdaJSymbol("character", false);
+                               sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
+
+    /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
+    final LambdaJSymbol sDynamic, sBit, sCharacter;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -1810,10 +1814,12 @@ public class LambdaJ {
         // vectors, sequences
         sMakeArray("make-array", 1, 3)    { Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
         sVectorLength("vector-length", 1) { Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
+
         sSvLength("svlength", 1)          { Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
         sSvRef("svref", 2)                { Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
         sSvSet("svset", 3)                { Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
         sVector("vector", -1)             { Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+
         sSBvLength("sbvlength", 1)        { Object apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
         sSBvRef("sbvref", 2)              { Object apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
         sSBvSet("sbvset", 3)              { Object apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
@@ -7847,7 +7853,7 @@ public class LambdaJ {
                     ///     - let: (let ((sym form)...) forms...) -> object
                     ///     - named let: (let sym ((sym form)...) forms...) -> object
                     if (isOperator(op, WellknownSymbol.sLet)) {
-                        if (car(ccArguments) == sDynamic)
+                        if (car(ccArguments) == intp.sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
                         else
                             emitLet(sb, ccArguments, env, topEnv, rsfx, isLast);
@@ -7857,7 +7863,7 @@ public class LambdaJ {
                     ///     - let*: (let* ((sym form)...) forms...) -> Object
                     ///     - named let*: (let sym ((sym form)...) forms...) -> Object
                     if (isOperator(op, WellknownSymbol.sLetStar)) {
-                        if (car(ccArguments) == sDynamic)
+                        if (car(ccArguments) == intp.sDynamic)
                             emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
                         else
                             emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, false, isLast);
@@ -8238,7 +8244,7 @@ public class LambdaJ {
             final String op;
             if (named) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
-                if (loopLabel == sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
+                if (loopLabel == intp.sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
                 op = letrec ? "named letrec" : "named let*";
                 if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
             }
