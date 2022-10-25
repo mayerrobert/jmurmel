@@ -1927,3 +1927,6 @@ read sollte EOF übernehmen
 
 der compiler macht selbstrekursive aufrufe early bound, der interpreter late bound
 -> angleichen, defun soll das funktionssymbol in die closure stecken, nicht nur ins topEnv
+
+WellknownSymbol.apply() ruft methoden auf, die die argumentanzahl nochmal checken
+-> nur 1x checken. wenns in environment() keinen argcheck gibt, gibts änderungsbedarf

@@ -1651,36 +1651,36 @@ public class LambdaJ {
         sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq("eq", Features.HAVE_EQ, 2)                                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
-        sEql("eql", Features.HAVE_UTIL, 2)                               { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
+        sEq("eq", Features.HAVE_EQ, 2)                                    { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
+        sEql("eql", Features.HAVE_UTIL, 2)                                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
 
-        sConsp("consp", Features.HAVE_UTIL, 1)                           { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
-        sAtom("atom", Features.HAVE_ATOM, 1)                             { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
-        sSymbolp("symbolp", Features.HAVE_UTIL, 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
-        sNull("null", Features.HAVE_UTIL, 1)                             { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
-        sNumberp("numberp", Features.HAVE_NUMBERS, 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
-        sFloatp("floatp", Features.HAVE_NUMBERS, 1)                         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
-        sIntegerp("integerp", Features.HAVE_NUMBERS, 1)                     { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
-        sCharacterp("characterp", Features.HAVE_STRING, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
+        sConsp("consp", Features.HAVE_UTIL, 1)                            { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
+        sAtom("atom", Features.HAVE_ATOM, 1)                              { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
+        sSymbolp("symbolp", Features.HAVE_UTIL, 1)                        { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
+        sNull("null", Features.HAVE_UTIL, 1)                              { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
+        sNumberp("numberp", Features.HAVE_NUMBERS, 1)                     { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
+        sFloatp("floatp", Features.HAVE_NUMBERS, 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
+        sIntegerp("integerp", Features.HAVE_NUMBERS, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
+        sCharacterp("characterp", Features.HAVE_STRING, 1)                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
 
-        sVectorp("vectorp", Features.HAVE_VECTOR, 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
-        sSimpleVectorP("simple-vector-p", Features.HAVE_VECTOR, 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
+        sVectorp("vectorp", Features.HAVE_VECTOR, 1)                      { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
+        sSimpleVectorP("simple-vector-p", Features.HAVE_VECTOR, 1)        { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
 
-        sStringp("stringp", Features.HAVE_STRING, 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
-        sSimpleStringP("simple-string-p", Features.HAVE_STRING, 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
+        sStringp("stringp", Features.HAVE_STRING, 1)                      { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
+        sSimpleStringP("simple-string-p", Features.HAVE_STRING, 1)        { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
 
-        sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)               { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
-        sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
+        sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
+        sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
 
-        sFunctionp("functionp", Features.HAVE_UTIL, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
-        sListp("listp", Features.HAVE_UTIL, 1)                           { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
+        sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
+        sListp("listp", Features.HAVE_UTIL, 1)                            { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
         // conses and lists
         sCar("car", Features.HAVE_CONS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
         sCdr("cdr", Features.HAVE_CONS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
         sCons("cons", Features.HAVE_CONS, 2)          { Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
-        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { Object apply(LambdaJ intp, ConsCell args) { return cl_rplaca(args); } },
-        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { Object apply(LambdaJ intp, ConsCell args) { return cl_rplacd(args); } },
+        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
+        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
 
         sList("list", Features.HAVE_UTIL, -1)         { Object apply(LambdaJ intp, ConsCell args) { return args; } },
         sListStar("list*", Features.HAVE_UTIL, 1, -1) { Object apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
@@ -1694,13 +1694,15 @@ public class LambdaJ {
 
         sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
         sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
-        sLt("<",  Features.HAVE_NUMBERS, 1, -1)               { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<",  (d1, d2) -> d1 <  d2); } },
+        sLt("<",  Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<",  (d1, d2) -> d1 <  d2); } },
         sLe("<=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<=", (d1, d2) -> d1 <= d2); } },
         sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
-        sGt(">",  Features.HAVE_NUMBERS, 1, -1)               { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
+        sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
 
         sInc("1+", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
         sDec("1-", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
+
+        sSignum("signum", Features.HAVE_NUMBERS, 1)          { Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
 
         sRound("round", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
         sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
@@ -1712,32 +1714,53 @@ public class LambdaJ {
         sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
         sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
 
-        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt", car(args))); } },
+        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
+        sLog("log", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
+        sLog10("log10", Features.HAVE_NUMBERS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
+        sExp("exp", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
+        sExpt("expt", Features.HAVE_NUMBERS, 2)              { Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
+
         sMod("mod", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
         sRem("rem", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
 
         // vectors, sequences
         sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)    { Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
+        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
 
-        sSvLength("svlength", Features.HAVE_VECTOR, 1)          { Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
-        sSvRef("svref", Features.HAVE_VECTOR, 2)                { Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
-        sSvSet("svset", Features.HAVE_VECTOR, 3)                { Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
-        sVector("vector", Features.HAVE_VECTOR, -1)             { Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
+        sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
+        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
+        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
+        sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
+        sVector("vector", Features.HAVE_VECTOR, -1)                    { Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+
+        sSRef("sref", Features.HAVE_STRING, 2)                  { Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
+        sSSet("sset", Features.HAVE_STRING, 3)                  { Object apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
+        sSEq("string=", Features.HAVE_STRING, 2)                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
+        sStringToList("string->list", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
+        sListToString("list->string", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToStringImpl(requireList("list->string", car(args))); } },
+
+        sBvEq("bv=", Features.HAVE_VECTOR, 2)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
 
         sSBvLength("sbvlength", Features.HAVE_VECTOR, 1)        { Object apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
         sSBvRef("sbvref", Features.HAVE_VECTOR, 2)              { Object apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
         sSBvSet("sbvset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
         sSBvEq("sbv=", Features.HAVE_VECTOR, 2)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbvEq(car(args), cadr(args))); } },
+        sSBvToList("simple-bit-vector->list", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.simpleBitVectorToList(car(args)); } },
+        sListToSBv("list->simple-bit-vector", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToBooleanArray(car(args)); } },
+
+        sSeqRef("seqref", Features.HAVE_VECTOR, 2)              { Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } },
+        sSeqSet("seqset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } },
 
         // I/O
-        sWrite("write", Features.HAVE_IO, 1, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 2)         { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)         { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
+        sWrite("write", Features.HAVE_IO, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 2)   { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)   { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
 
         // misc
-        sValues("values", Features.HAVE_XTRA, -1)             { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
-        sGensym("gensym", Features.HAVE_XTRA, 0)              { Object apply(LambdaJ intp, ConsCell args) { return intp.gensym(args); }             },
+        sValues("values", Features.HAVE_XTRA, -1)     { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sGensym("gensym", Features.HAVE_XTRA, 0)      { Object apply(LambdaJ intp, ConsCell args) { return intp.gensym(); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -3673,8 +3696,8 @@ public class LambdaJ {
         return (boolean[])c;
     }
 
-    /** return {@code c} as a String, error if {@code c} is not a string or null (nil) */
-    static String requireStringOrCharOrSymbolOrNull(String func, Object c) {
+    /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
+    static String requireStringOrCharOrSymbol(String func, Object c) {
         if (c == null) return null;
         if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
         return requireString(func, c);
@@ -3794,7 +3817,6 @@ public class LambdaJ {
     }
 
     private Object listStar(ConsCell args) {
-        varargs1("list*", args);
         if (cdr(args) == null) return car(args);
         if (cddr(args) == null) return cons(car(args), cadr(args));
         final CountingListBuilder b = new CountingListBuilder();
@@ -3851,7 +3873,6 @@ public class LambdaJ {
 
     /** compare subsequent pairs of the given list of numbers with the given predicate */
     private Object compare(ConsCell args, String opName, DoubleBiPred pred) {
-        varargs1(opName, args);
         Object prev = car(args);
         for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
             final Object next = car(rest);
@@ -3880,7 +3901,6 @@ public class LambdaJ {
 
     /** operator for one or more args */
     private static Object subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
-        varargs1(opName, _args);
         ConsCell args = _args;
         double result = toDouble(opName, car(args));
 
@@ -4019,7 +4039,6 @@ public class LambdaJ {
     }
 
     Object makeArray(ConsCell a) {
-        varargsMinMax("make-array", a, 1, 3);
         final int size = toNonnegInt("make-array", car(a));
         final Object type = cadr(a);
         final Object cap = caddr(a);
@@ -4158,12 +4177,10 @@ public class LambdaJ {
         return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
     }
 
-    private Object vectorToList(ConsCell a) {
-        oneArg("vector->list", a);
-        final Object maybeVector = car(a);
-        if (svectorp(maybeVector)) return simpleVectorToList(a);
-        if (stringp(maybeVector)) return stringToList(a);
-        if (sbitvectorp(maybeVector)) return simpleBitVectorToList(a);
+    private Object vectorToList(Object maybeVector) {
+        if (svectorp(maybeVector)) return simpleVectorToList(maybeVector);
+        if (stringp(maybeVector)) return stringToList(maybeVector);
+        if (sbitvectorp(maybeVector)) return simpleBitVectorToList(maybeVector);
 
         if (maybeVector instanceof Bitvector) {
             final Bitvector bv = (Bitvector)maybeVector;
@@ -4183,9 +4200,7 @@ public class LambdaJ {
         throw errorNotAVector("vector->list", maybeVector);
     }
 
-    private Object simpleVectorToList(ConsCell a) {
-        oneArg("simple-vector->list", a);
-        final Object maybeVector = car(a);
+    private Object simpleVectorToList(Object maybeVector) {
         final Object[] s = requireSimpleVector("simple-vector->list", maybeVector);
         if (s.length == 0) return null;
         final CountingListBuilder ret = new CountingListBuilder();
@@ -4194,9 +4209,7 @@ public class LambdaJ {
         return ret.first();
     }
 
-    private Object simpleBitVectorToList(ConsCell a) {
-        oneArg("simple-bit-vector->list", a);
-        final Object maybeVector = car(a);
+    private Object simpleBitVectorToList(Object maybeVector) {
         final boolean[] s = requireSimpleBitVector("simple-bit-vector->list", maybeVector);
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length;
@@ -4211,9 +4224,7 @@ public class LambdaJ {
         return ret.toString().toCharArray();
     }
 
-    private Object stringToList(ConsCell a) {
-        oneArg("string->list", a);
-        final Object maybeString = car(a);
+    private Object stringToList(Object maybeString) {
         final CountingListBuilder ret = new CountingListBuilder();
         if (maybeString instanceof char[]) {
             final char[] carry = (char[])maybeString;
@@ -4474,8 +4485,7 @@ public class LambdaJ {
     }
 
     private int gensymCounter;
-    final Object gensym(ConsCell args) {
-        noArgs("gensym", args);
+    final Object gensym() {
         return new LambdaJSymbol("#:g" + ++gensymCounter);
     }
 
@@ -4794,8 +4804,8 @@ public class LambdaJ {
                   addBuiltin("sset",            (Primitive) a -> { threeArgs("sset", a);         return sset(requireChar("sset", car(a)), cadr(a), toNonnegInt("sref", caddr(a))); },
                   addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
                   addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
-                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbolOrNull("string=", car(a)), requireStringOrCharOrSymbolOrNull("string=", cadr(a)))); },
-                  addBuiltin("string->list",    (Primitive) this::stringToList,
+                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(a)), requireStringOrCharOrSymbol("string=", cadr(a)))); },
+                  addBuiltin("string->list",    (Primitive) a -> { oneArg("string->list", a);    return stringToList(car(a)); },
                   addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToStringImpl(requireList("list->string", car(a))); },
                   env))))))))));
 
@@ -4824,7 +4834,7 @@ public class LambdaJ {
                   env));
 
             env = addBuiltin("macroexpand-1", (Primitive)this::macroexpand1,
-                  addBuiltin("gensym", (Primitive)this::gensym,
+                  addBuiltin("gensym",        (Primitive) a -> { noArgs("gensym", a); return gensym(); },
                   env));
 
             env = addBuiltin("rplaca", (Primitive) LambdaJ::cl_rplaca,
@@ -4846,7 +4856,7 @@ public class LambdaJ {
         if (haveVector()) {
             env = addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE,
                   addBuiltin("adjustable-array-p",      (Primitive) a -> { oneArg ("adjustable-array-p", a); return boolResult(adjustableArrayP(car(a))); },
-                  addBuiltin("make-array",              (Primitive)this::makeArray,
+                  addBuiltin("make-array",              (Primitive) a -> { varargsMinMax("make-array", a, 1, 3); return makeArray(a); },
 
                   addBuiltin("vector-push-extend",      (Primitive) a -> { twoArgs("vector-push-extend", a); return vectorPushExtend(car(a), cadr(a)); },
                   addBuiltin("vector-copy",             (Primitive) a -> { oneArg ("vector-copy", a);        return vectorCopy(car(a)); },
@@ -4854,15 +4864,15 @@ public class LambdaJ {
 
                   addBuiltin("vectorp",                 (Primitive) a -> { oneArg ("vectorp", a);            return boolResult(vectorp  (car(a))); },
                   addBuiltin("vector-length",           (Primitive) a -> { oneArg ("vector-length", a);      return vectorLength(car(a)); },
-                  addBuiltin("vector->list",            (Primitive)this::vectorToList,
-                  addBuiltin("vector",                  (Primitive)LambdaJ::listToArray,
+                  addBuiltin("vector->list",            (Primitive) a -> { oneArg("vector->list", a);        return vectorToList(car(a)); },
 
                   addBuiltin("simple-vector-p",         (Primitive) a -> { oneArg ("simple-vector-p", a);    return boolResult(svectorp(car(a))); },
                   addBuiltin("svref",                   (Primitive) a -> { twoArgs("svref", a);              return svref(car(a), toNonnegInt("svref", cadr(a))); },
                   addBuiltin("svset",                   (Primitive) a -> { threeArgs("svset", a);            return svset(car(a), cadr(a), toNonnegInt("svref", caddr(a))); },
                   addBuiltin("svlength",                (Primitive) a -> { oneArg ("svlength", a);           return svlength(car(a)); },
-                  addBuiltin("simple-vector->list",     (Primitive)this::simpleVectorToList,
+                  addBuiltin("simple-vector->list",     (Primitive) a -> { oneArg("simple-vector->list", a); return simpleVectorToList(car(a)); },
                   addBuiltin("list->simple-vector",     (Primitive) a -> { oneArg("list->simple-vector", a); return listToArray(car(a)); },
+                  addBuiltin("vector",                  (Primitive)LambdaJ::listToArray,
 
                   addBuiltin("bit-vector-p",            (Primitive) a -> { oneArg("bit-vector-p", a);        return boolResult(bitvectorp(car(a))); },
                   addBuiltin("bv=",                     (Primitive) a -> { twoArgs("bv=", a);                return boolResult(bvEq(car(a), cadr(a))); },
@@ -4872,7 +4882,7 @@ public class LambdaJ {
                   addBuiltin("sbvset",                  (Primitive) a -> { threeArgs("sbvset", a);           return sbvset(requireIntegralNumber("sbvset", car(a), 0, 1).longValue(), cadr(a), toNonnegInt("sbvset", caddr(a))); },
                   addBuiltin("sbvlength",               (Primitive) a -> { oneArg("sbvlength", a);           return sbvlength(car(a)); },
                   addBuiltin("sbv=",                    (Primitive) a -> { twoArgs("sbv=", a);               return boolResult(sbvEq(car(a), cadr(a))); },
-                  addBuiltin("simple-bit-vector->list", (Primitive)this::simpleBitVectorToList,
+                  addBuiltin("simple-bit-vector->list", (Primitive) a -> { oneArg("simple-bit-vector->list", a); return simpleBitVectorToList(car(a)); },
                   addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
                   env)))))))))))))))))))))))));
         }
@@ -4888,7 +4898,7 @@ public class LambdaJ {
                   addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
                   addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
                   addBuiltin("list",      (Primitive) a -> a,
-                  addBuiltin("list*",     (Primitive) this::listStar,
+                  addBuiltin("list*",     (Primitive) a -> { varargs1("list*",   a);  return listStar(a); },
                   addBuiltin("append",    (Primitive) this::append,
                   addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
                   addBuiltin("seqref",    (Primitive) a -> { twoArgs("seqref",   a);  return seqref(car(a), toNonnegInt("seqref", cadr(a))); }, // todo nicht auf int begrenzen wg. list
@@ -4942,11 +4952,11 @@ public class LambdaJ {
             env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(car(args)); },
                   addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
 
-                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("sqrt", car(args))); },
-                  addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log", car(args))); },
+                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("sqrt",  car(args))); },
+                  addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log",   car(args))); },
                   addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
-                  addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp", car(args))); },
-                  addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt", car(args)), toDouble("expt", cadr(args))); },
+                  addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp",   car(args))); },
+                  addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); },
 
                   addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
                   addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
@@ -4954,17 +4964,17 @@ public class LambdaJ {
                   addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
                   env))))))))));
 
-            env = addBuiltin("=",       (Primitive) args -> compare(args, "=",  (d1, d2) -> d1 == d2),
-                  addBuiltin(">",       (Primitive) args -> compare(args, ">",  (d1, d2) -> d1 > d2),
-                  addBuiltin(">=",      (Primitive) args -> compare(args, ">=", (d1, d2) -> d1 >= d2),
-                  addBuiltin("<",       (Primitive) args -> compare(args, "<",  (d1, d2) -> d1 < d2),
-                  addBuiltin("<=",      (Primitive) args -> compare(args, "<=", (d1, d2) -> d1 <= d2),
-                  addBuiltin("/=",      (Primitive) args -> compare(args, "/=", (d1, d2) -> d1 != d2),
+            env = addBuiltin("=",       (Primitive) args -> { varargs1("=",  args); return compare(args, "=",  (d1, d2) -> d1 == d2); },
+                  addBuiltin(">",       (Primitive) args -> { varargs1(">",  args); return compare(args, ">",  (d1, d2) -> d1 >  d2); },
+                  addBuiltin(">=",      (Primitive) args -> { varargs1(">=", args); return compare(args, ">=", (d1, d2) -> d1 >= d2); },
+                  addBuiltin("<",       (Primitive) args -> { varargs1("<",  args); return compare(args, "<",  (d1, d2) -> d1 <  d2); },
+                  addBuiltin("<=",      (Primitive) args -> { varargs1("<=", args); return compare(args, "<=", (d1, d2) -> d1 <= d2); },
+                  addBuiltin("/=",      (Primitive) args -> { varargs1("/=", args); return compare(args, "/=", (d1, d2) -> d1 != d2); },
 
                   addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
-                  addBuiltin("-",       (Primitive) args -> subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs),
                   addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
-                  addBuiltin("/",       (Primitive) args -> subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs),
+                  addBuiltin("-",       (Primitive) args -> { varargs1("-", args); return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); },
+                  addBuiltin("/",       (Primitive) args -> { varargs1("/", args); return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); },
                   env))))))))));
         }
 
@@ -6504,7 +6514,7 @@ public class LambdaJ {
 
         public final Character _sref   (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final Character _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
-        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[0]), LambdaJ.requireStringOrCharOrSymbolOrNull("string=", args[1]))); }
+        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final Object maybeString = args[0];
@@ -6564,7 +6574,7 @@ public class LambdaJ {
         // misc
         Object[] values;
         public final Object _values    (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
-        public final Object _gensym    (Object... args) { return intp.gensym(arraySlice(args)); }
+        public final Object _gensym    (Object... args) { noArgs("gensym", args.length); return intp.gensym(); }
         public final Object _trace     (Object... args) { return null; }
         public final Object _untrace   (Object... args) { return null; }
         public final Object _fatal     (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
