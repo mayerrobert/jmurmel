@@ -604,10 +604,11 @@
 (defun member (item lst . test)
   (let* ((tst (car test))
          (pred (if tst tst eql)))
-    (if lst
-          (if (pred item (car lst))
-                lst
-            (member item (cdr lst) pred)))))
+    (let loop ((lst lst))
+      (if lst
+            (if (pred item (car lst))
+                  lst
+              (loop (cdr lst)))))))
 
 
 ;;; = Function: acons
