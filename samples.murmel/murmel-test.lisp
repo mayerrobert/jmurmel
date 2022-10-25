@@ -1066,15 +1066,15 @@ multiline comment
 ;;; Java FFI: tests some functions with objects Java classes that are not normally used in Murmel
 #+murmel
 (let (
-      (byte          ((jmethod "Byte"                    "new" "String") "1"))
-      (short         ((jmethod "Short"                   "new" "String") "1"))
-      (integer       ((jmethod "Integer"                 "new" "String") "1"))
-      (long          ((jmethod "Long"                    "new" "String") "1"))
-      (bigInteger    ((jmethod "java.math.BigInteger"    "new" "String") "1"))
+      (byte          ((jmethod "Byte"                    "valueOf" "String") "1"))
+      (short         ((jmethod "Short"                   "valueOf" "String") "1"))
+      (integer       ((jmethod "Integer"                 "valueOf" "String") "1"))
+      (long          ((jmethod "Long"                    "valueOf" "String") "1"))
+      (bigInteger    ((jmethod "java.math.BigInteger"    "new"     "String") "1"))
 
-      (float         ((jmethod "Float"                   "new" "String") "1"))
-      (double        ((jmethod "Double"                  "new" "String") "1"))
-      (bigDecimal    ((jmethod "java.math.BigDecimal"    "new" "String") "1"))
+      (float         ((jmethod "Float"                   "valueOf" "String") "1"))
+      (double        ((jmethod "Double"                  "valueOf" "String") "1"))
+      (bigDecimal    ((jmethod "java.math.BigDecimal"    "new"     "String") "1"))
 
       (arrayList     ((jmethod "java.util.ArrayList"     "new")))
 
