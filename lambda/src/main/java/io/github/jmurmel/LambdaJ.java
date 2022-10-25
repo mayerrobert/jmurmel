@@ -779,7 +779,7 @@ public class LambdaJ {
         }
         else sBit = sCharacter = null;
 
-        WellknownSymbol.forAllPrimitives(features, this::internWellknown);
+        WellknownSymbol.forAllPrimitives(features, w -> internWellknown(w.sym));
 
         // Lookup only once on first use. The supplier below will do a lookup on first use and then replace itself
         // by another supplier that simply returns the cached value.
@@ -1759,6 +1759,7 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } },
 
         // I/O
+        sRead("read", Features.HAVE_IO, 0, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
         sWrite("write", Features.HAVE_IO, 1, 2)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
@@ -1814,10 +1815,10 @@ public class LambdaJ {
         }
 
         /** invoke {@code proc} for all primitives that are avaliable with the given {@code features} */
-        static void forAllPrimitives(int features, Consumer<String> proc) {
+        static void forAllPrimitives(int features, Consumer<WellknownSymbol> proc) {
             for (WellknownSymbol s: values()) {
                 if (s.kind == WellknownSymbolKind.PRIM && (s.feature.bits() & features) != 0) {
-                    proc.accept(s.sym);
+                    proc.accept(s);
                 }
             }
         }
@@ -4331,7 +4332,6 @@ public class LambdaJ {
     /// I/O
 
     final Object read(ConsCell a) {
-        varargs0_1("read", a);
         if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
         if (a == null) {
             final Object eof = new Object();
@@ -4752,11 +4752,9 @@ public class LambdaJ {
      *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
     private void environment(ConsCell env) {
         if (haveIO()) {
-            env = addBuiltin("read",    (Primitive) this::read,
-                  addBuiltin("write",   (Primitive) a -> { varargs1_2("write",   a);  return write  (car(a), cdr(a) == null || cadr(a) != null); },
-                  addBuiltin("writeln", (Primitive) a -> { varargs0_2("writeln", a);  return writeln(a,      cdr(a) == null || cadr(a) != null); },
-                  addBuiltin("lnwrite", (Primitive) a -> { varargs0_2("lnwrite", a);  return lnwrite(a,      cdr(a) == null || cadr(a) != null); },
-                  env))));
+            topEnv = env;
+            WellknownSymbol.forAllPrimitives(Features.HAVE_IO.bits(), this::addBuiltin);
+            env = topEnv;
         }
 
         if (haveGui()) {
@@ -5019,6 +5017,10 @@ public class LambdaJ {
 
     private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
         return acons(sym, value, env);
+    }
+    
+    private void addBuiltin(WellknownSymbol w) {
+        topEnv = acons(intern(w.sym), (Primitive) a -> w.applyPrimitive(this, a), topEnv);
     }
 
 
@@ -6585,7 +6587,7 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read      (Object... args) { return intp.read(arraySlice(args)); }
+        public final Object _read      (Object... args) { varargs0_1("read",     args.length); return intp.read(arraySlice(args)); }
         public final Object _write     (Object... args) { varargs1_2("write",    args.length); return intp.write(args[0], args.length < 2 || args[1] != null); }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); }
