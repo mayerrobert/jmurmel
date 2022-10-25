@@ -1675,6 +1675,7 @@ public class LambdaJ {
 
         sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
         sListp("listp", Features.HAVE_UTIL, 1)                            { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
+        sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
         // conses and lists
         sCar("car", Features.HAVE_CONS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
@@ -1686,6 +1687,8 @@ public class LambdaJ {
         sList("list", Features.HAVE_UTIL, -1)         { Object apply(LambdaJ intp, ConsCell args) { return args; } },
         sListStar("list*", Features.HAVE_UTIL, 1, -1) { Object apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
         sAppend("append", Features.HAVE_UTIL, -1)     { Object apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
+        sAssq("assq", Features.HAVE_UTIL, 2)          { Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
+        sAssoc("assoc", Features.HAVE_UTIL, 2)        { Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
         // numbers, characters
         sAdd("+", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
@@ -1726,6 +1729,10 @@ public class LambdaJ {
 
         // vectors, sequences
         sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)    { Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
+        sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2){ Object apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
+        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1)     { Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args)); } },
+        sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)  { Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
+
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
         sVectorToList("vector->list", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
 
@@ -1755,8 +1762,8 @@ public class LambdaJ {
         sSBvToList("simple-bit-vector->list", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.simpleBitVectorToList(car(args)); } },
         sListToSBv("list->simple-bit-vector", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToBooleanArray(car(args)); } },
 
-        sSeqRef("seqref", Features.HAVE_VECTOR, 2)              { Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } },
-        sSeqSet("seqset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } },
+        sSeqRef("seqref", Features.HAVE_VECTOR, 2)              { Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
+        sSeqSet("seqset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
@@ -1767,8 +1774,24 @@ public class LambdaJ {
         sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { Object apply(LambdaJ intp, ConsCell args) { return intp.formatLocale(args); } },
 
         // misc
-        sValues("values", Features.HAVE_XTRA, -1)     { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
-        sGensym("gensym", Features.HAVE_XTRA, 0)      { Object apply(LambdaJ intp, ConsCell args) { return intp.gensym(); } },
+        sValues("values", Features.HAVE_XTRA, -1)               { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sGensym("gensym", Features.HAVE_XTRA, 0)                { Object apply(LambdaJ intp, ConsCell args) { return intp.gensym(); } },
+        sTrace("trace", Features.HAVE_XTRA, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
+        sUntrace("untrace", Features.HAVE_XTRA, -1)             { Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
+        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
+        sFatal("fatal", Features.HAVE_UTIL, 1)                  { Object apply(LambdaJ intp, ConsCell args) { throw new RuntimeException(String.valueOf(car(args))); } },
+
+        // time
+        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
+        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { Object apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
+        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Object apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
+        sSleep("sleep", Features.HAVE_UTIL, 1)                      { Object apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
+        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Object apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } }, // seconds since 1.1.1900
+        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { Object apply(LambdaJ intp, ConsCell args) { return intp.getDecodedTime(); } },
+
+        // Java FFI
+        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { Object apply(LambdaJ intp, ConsCell args) { return intp.makeProxy(args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -1883,7 +1906,8 @@ public class LambdaJ {
 
     private ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
         setReaderPrinter(inReader, outWriter);
-        environment(customEnv);
+        topEnv = customEnv;
+        environment();
         nCells = 0; maxEnvLen = 0;
         return inReader;
     }
@@ -3818,16 +3842,6 @@ public class LambdaJ {
 
     /// conses and lists
 
-    private static ConsCell cl_rplaca(ConsCell args) {
-        twoArgs("rplaca", args);
-        return requireCons("rplaca", car(args)).rplaca(cadr(args));
-    }
-
-    private static ConsCell cl_rplacd(ConsCell args) {
-        twoArgs("rplacd", args);
-        return requireCons("rplacd", car(args)).rplacd(cadr(args));
-    }
-
     private Object listStar(ConsCell args) {
         if (cdr(args) == null) return car(args);
         if (cddr(args) == null) return cons(car(args), cadr(args));
@@ -4417,18 +4431,15 @@ public class LambdaJ {
 
     /// misc
 
-    static long getInternalRealTime(ConsCell a) {
-        noArgs("get-internal-real-time", a);
+    static long getInternalRealTime() {
         return System.nanoTime();
     }
 
-    static long getInternalRunTime(ConsCell a) {
-        noArgs("get-internal-run-time", a);
+    static long getInternalRunTime() {
         return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
     }
 
-    static long getInternalCpuTime(ConsCell a) {
-        noArgs("get-internal-cpu-time", a);
+    static long getInternalCpuTime() {
         return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
     }
 
@@ -4441,10 +4452,10 @@ public class LambdaJ {
         return threadBean;
     }
 
-    static Object sleep(ConsCell a) {
-        oneArg("sleep", a);
+    static Object sleep(Object seconds) {
+        
         try {
-            final long millis = (long)(toDouble("sleep", car(a)) * 1e3D);
+            final long millis = (long)(toDouble("sleep", seconds) * 1e3D);
             Thread.sleep(millis);
             return null;
         } catch (InterruptedException e) {
@@ -4453,15 +4464,13 @@ public class LambdaJ {
         }
     }
 
-    static long getUniversalTime(ConsCell a) {
-        noArgs("get-universal-time", a);
+    static long getUniversalTime() {
         final ZoneId utc = ZoneId.of("UTC");
         final ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
         return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
     }
 
-    final Object getDecodedTime(ConsCell a) {
-        noArgs("get-decoded-time", a);
+    final Object getDecodedTime() {
         final Instant now = Clock.systemDefaultZone().instant();
         final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
         final ZoneRules rules = n.getZone().getRules();
@@ -4687,7 +4696,6 @@ public class LambdaJ {
     }
 
     Object makeProxy(ConsCell args) {
-        varargsMin("jproxy", args, 1);
         final String intf = requireString("jproxy", car(args));
         try {
             final Class<?> clazz = findClass(intf);
@@ -4750,11 +4758,9 @@ public class LambdaJ {
 
     /** build an environment by prepending the previous environment {@code env} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
-    private void environment(ConsCell env) {
+    private void environment() {
         if (haveIO()) {
-            topEnv = env;
             WellknownSymbol.forAllPrimitives(Features.HAVE_IO.bits(), this::addBuiltin);
-            env = topEnv;
         }
 
         if (haveGui()) {
@@ -4765,7 +4771,7 @@ public class LambdaJ {
                 current_frame = ret;
                 return ret;
             };
-            env = addBuiltin("make-frame",    makeFrame,
+            topEnv = addBuiltin("make-frame",    makeFrame,
                   addBuiltin("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    },
                   addBuiltin("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   },
                   addBuiltin("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   },
@@ -4790,15 +4796,15 @@ public class LambdaJ {
                   addBuiltin("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
                   addBuiltin("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
                   addBuiltin("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
-                  env))))))))))))))))));
+                  topEnv))))))))))))))))));
 
-            env = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  },
+            topEnv = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  },
                   addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
                   addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
                   addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
-                  env))));
+                  topEnv))));
 
-            env = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); },
+            topEnv = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); },
                   addBuiltin("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
                   addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
                   addBuiltin("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
@@ -4809,214 +4815,83 @@ public class LambdaJ {
                                                                  return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
                                                                                              toFloat("hsb-to-pixel", cadr(a)),
                                                                                              toFloat("hsb-to-pixel", caddr(a)));  },
-                  env)))));
+                  topEnv)))));
         }
 
         if (haveString()) {
-            env = addBuiltin("stringp",         (Primitive) a -> { oneArg("stringp", a);         return boolResult(stringp(car(a))); },
-                  addBuiltin("simple-string-p", (Primitive) a -> { oneArg("simple-string-p", a); return boolResult(sstringp(car(a))); },
-                  addBuiltin("characterp",      (Primitive) a -> { oneArg("characterp", a);      return boolResult(characterp(car(a))); },
-                  addBuiltin("slength",         (Primitive) a -> { oneArg("slength", a);         return slength(car(a)); },
-                  addBuiltin("sref",            (Primitive) a -> { twoArgs("sref", a);           return sref(car(a), toNonnegInt("sref", cadr(a))); },
-                  addBuiltin("sset",            (Primitive) a -> { threeArgs("sset", a);         return sset(requireChar("sset", car(a)), cadr(a), toNonnegInt("sset", caddr(a))); },
-                  addBuiltin("char-code",       (Primitive) a -> { oneArg("char-code", a);       return (long) requireChar("char-code", car(a)); },
-                  addBuiltin("code-char",       (Primitive) a -> { oneArg("code-char", a);       return (char) toInt("code-char", car(a)); },
-                  addBuiltin("string=",         (Primitive) a -> { twoArgs("string=", a);        return boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(a)), requireStringOrCharOrSymbol("string=", cadr(a)))); },
-                  addBuiltin("string->list",    (Primitive) a -> { oneArg("string->list", a);    return stringToList(car(a)); },
-                  addBuiltin("list->string",    (Primitive) a -> { oneArg("list->string", a);    return listToString(car(a)); },
-                  env)))))))))));
-
-        }
-
-        if (haveUtil()) {
-            env = addBuiltin("format",          (Primitive) a -> { varargsMin("format", a, 2);        return format(a); },
-                  addBuiltin("format-locale",   (Primitive) a -> { varargsMin("format-locale", a, 3); return formatLocale(a); },
-                  env));
+            WellknownSymbol.forAllPrimitives(Features.HAVE_STRING.bits(), this::addBuiltin);
         }
 
         if (haveApply()) {
             final LambdaJSymbol sApply = intern("apply");
             ocApply = new OpenCodedPrimitive(sApply);
-            env = addBuiltin(sApply, ocApply, env);
+            addBuiltin(sApply, ocApply);
         }
 
         if (haveXtra()) {
-            env = addBuiltin(sDynamic, sDynamic, env);
+            addBuiltin(sDynamic, sDynamic);
 
             final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval);
-            env = addBuiltin(sEval, ocEval, env);
+            addBuiltin(sEval, ocEval);
 
-            env = addBuiltin("trace", (Primitive) this::trace,
-                  addBuiltin("untrace", (Primitive) this::untrace,
-                  env));
-
-            env = addBuiltin("macroexpand-1", (Primitive)this::macroexpand1,
-                  addBuiltin("gensym",        (Primitive) a -> { noArgs("gensym", a); return gensym(); },
-                  env));
-
-            env = addBuiltin("rplaca", (Primitive) LambdaJ::cl_rplaca,
-                  addBuiltin("rplacd", (Primitive) LambdaJ::cl_rplacd,
-                  env));
-
-            env = addBuiltin("values", (Primitive) a -> { values = a; return car(a); }, env);
+            WellknownSymbol.forAllPrimitives(Features.HAVE_XTRA.bits(), this::addBuiltin);
         }
 
         if (haveT()) {
             final LambdaJSymbol sT = internWellknown("t");
-            env = addBuiltin(sT, sT, env);
+            addBuiltin(sT, sT);
         }
 
         if (haveNil()) {
-            env = addBuiltin(internWellknown("nil"), null, env);
+            addBuiltin(internWellknown("nil"), null);
         }
 
         if (haveVector()) {
-            env = addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE,
-                  addBuiltin("adjustable-array-p",      (Primitive) a -> { oneArg ("adjustable-array-p", a); return boolResult(adjustableArrayP(car(a))); },
-                  addBuiltin("make-array",              (Primitive) a -> { varargsMinMax("make-array", a, 1, 3); return makeArray(a); },
+            topEnv = addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE, topEnv);
 
-                  addBuiltin("vector-push-extend",      (Primitive) a -> { twoArgs("vector-push-extend", a); return vectorPushExtend(car(a), cadr(a)); },
-                  addBuiltin("vector-copy",             (Primitive) a -> { oneArg ("vector-copy", a);        return vectorCopy(car(a)); },
-                  addBuiltin("vector-fill",             (Primitive) a -> { varargsMinMax("vector-fill", a, 2, 4); return vectorFill(car(a), cadr(a), caddr(a), cadddr(a)); },
-
-                  addBuiltin("vectorp",                 (Primitive) a -> { oneArg ("vectorp", a);            return boolResult(vectorp  (car(a))); },
-                  addBuiltin("vector-length",           (Primitive) a -> { oneArg ("vector-length", a);      return vectorLength(car(a)); },
-                  addBuiltin("vector->list",            (Primitive) a -> { oneArg("vector->list", a);        return vectorToList(car(a)); },
-
-                  addBuiltin("simple-vector-p",         (Primitive) a -> { oneArg ("simple-vector-p", a);    return boolResult(svectorp(car(a))); },
-                  addBuiltin("svref",                   (Primitive) a -> { twoArgs("svref", a);              return svref(car(a), toNonnegInt("svref", cadr(a))); },
-                  addBuiltin("svset",                   (Primitive) a -> { threeArgs("svset", a);            return svset(car(a), cadr(a), toNonnegInt("svref", caddr(a))); },
-                  addBuiltin("svlength",                (Primitive) a -> { oneArg ("svlength", a);           return svlength(car(a)); },
-                  addBuiltin("simple-vector->list",     (Primitive) a -> { oneArg("simple-vector->list", a); return simpleVectorToList(car(a)); },
-                  addBuiltin("list->simple-vector",     (Primitive) a -> { oneArg("list->simple-vector", a); return listToArray(car(a)); },
-                  addBuiltin("vector",                  (Primitive)LambdaJ::listToArray,
-
-                  addBuiltin("bit-vector-p",            (Primitive) a -> { oneArg("bit-vector-p", a);        return boolResult(bitvectorp(car(a))); },
-                  addBuiltin("bv=",                     (Primitive) a -> { twoArgs("bv=", a);                return boolResult(bvEq(car(a), cadr(a))); },
-
-                  addBuiltin("simple-bit-vector-p",     (Primitive) a -> { oneArg("simple-bit-vector-p", a); return boolResult(sbitvectorp(car(a))); },
-                  addBuiltin("sbvref",                  (Primitive) a -> { twoArgs("sbvref", a);             return sbvref(car(a), toNonnegInt("sbvref", cadr(a))); },
-                  addBuiltin("sbvset",                  (Primitive) a -> { threeArgs("sbvset", a);           return sbvset(requireIntegralNumber("sbvset", car(a), 0, 1).longValue(), cadr(a), toNonnegInt("sbvset", caddr(a))); },
-                  addBuiltin("sbvlength",               (Primitive) a -> { oneArg("sbvlength", a);           return sbvlength(car(a)); },
-                  addBuiltin("sbv=",                    (Primitive) a -> { twoArgs("sbv=", a);               return boolResult(sbvEq(car(a), cadr(a))); },
-                  addBuiltin("simple-bit-vector->list", (Primitive) a -> { oneArg("simple-bit-vector->list", a); return simpleBitVectorToList(car(a)); },
-                  addBuiltin("list->simple-bit-vector", (Primitive) a -> { oneArg("list->simple-bit-vector", a); return listToBooleanArray(car(a)); },
-                  env)))))))))))))))))))))))));
+            WellknownSymbol.forAllPrimitives(Features.HAVE_VECTOR.bits(), this::addBuiltin);
         }
 
         if (haveUtil()) {
-            env = cons(featuresEnvEntry, env);
+            topEnv = cons(featuresEnvEntry, topEnv);
+            topEnv = addBuiltin("internal-time-units-per-second", (long)1e9, topEnv);
 
-            env = addBuiltin("consp",     (Primitive) a -> { oneArg("consp",     a);  return boolResult(consp  (car(a))); },
-                  addBuiltin("symbolp",   (Primitive) a -> { oneArg("symbolp",   a);  return boolResult(symbolp(car(a))); },
-                  addBuiltin("listp",     (Primitive) a -> { oneArg("listp",     a);  return boolResult(listp  (car(a))); },
-                  addBuiltin("functionp", (Primitive) a -> { oneArg("functionp", a);  return boolResult(functionp(car(a))); },
-                  addBuiltin("null",      (Primitive) a -> { oneArg("null",      a);  return boolResult(car(a) == null); },
-                  addBuiltin("assoc",     (Primitive) a -> { twoArgs("assoc",    a);  return assoc(car(a), cadr(a)); },
-                  addBuiltin("assq",      (Primitive) a -> { twoArgs("assq",     a);  return assq(car(a), cadr(a)); },
-                  addBuiltin("list",      (Primitive) a -> a,
-                  addBuiltin("list*",     (Primitive) a -> { varargs1("list*",   a);  return listStar(a); },
-                  addBuiltin("append",    (Primitive) this::append,
-                  addBuiltin("eql",       (Primitive) a -> { twoArgs("eql",      a);  return boolResult(eql(car(a), cadr(a))); },
-                  addBuiltin("seqref",    (Primitive) a -> { twoArgs("seqref",   a);  return seqref(car(a), toNonnegInt("seqref", cadr(a))); }, // todo nicht auf int begrenzen wg. list
-                  addBuiltin("seqset",    (Primitive) a -> { threeArgs("seqset", a);  return seqset(car(a), cadr(a), toNonnegInt("seqref", caddr(a))); }, // todo nicht auf int begrenzen wg. list
-                  env)))))))))))));
-
-            env = addBuiltin("internal-time-units-per-second", (long)1e9,
-                  addBuiltin("get-internal-real-time", (Primitive) LambdaJ::getInternalRealTime,
-                  addBuiltin("get-internal-run-time",  (Primitive) LambdaJ::getInternalRunTime, // user
-                  addBuiltin("get-internal-cpu-time",  (Primitive) LambdaJ::getInternalCpuTime, // user + system
-                  addBuiltin("sleep",                  (Primitive) LambdaJ::sleep,
-                  addBuiltin("get-universal-time",     (Primitive) LambdaJ::getUniversalTime, // seconds since 1.1.1900
-                  addBuiltin("get-decoded-time",       (Primitive) this::getDecodedTime,
-                  env)))))));
-
-            env = addBuiltin("fatal", (Primitive) a -> { oneArg("fatal", a); throw new RuntimeException(String.valueOf(car(a))); }, env);
+            WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
         }
 
         if (haveFFI()) {
-            env = addBuiltin("jmethod", (Primitive) x -> { varargsMin("jmethod", x, 2); return findMethod(requireString("jmethod", car(x)), requireString("jmethod", cadr(x)), requireList("jmethod", cddr(x))); },
-                  addBuiltin("jproxy",  (Primitive)this::makeProxy, env));
-        }
-
-        if (haveAtom()) {
-            env = addBuiltin("atom", (Primitive) a -> { oneArg("atom", a); return boolResult(atom(car(a))); },
-                  env);
+            WellknownSymbol.forAllPrimitives(Features.HAVE_FFI.bits(), this::addBuiltin);
         }
 
         if (haveNumbers()) {
-            env = addBuiltin("numberp",  (Primitive) args -> { oneArg("numberp", args);  return boolResult(numberp(car(args))); },
-                  addBuiltin("floatp",   (Primitive) args -> { oneArg("floatp", args);   return boolResult(floatp(car(args))); },
-                  addBuiltin("integerp", (Primitive) args -> { oneArg("integerp", args); return boolResult(integerp(car(args))); },
-                  env)));
-
-            env = addBuiltin("pi",      Math.PI,
+            topEnv = addBuiltin("pi",      Math.PI,
                   addBuiltin("most-positive-fixnum", MOST_POSITIVE_FIXNUM,
                   addBuiltin("most-negative-fixnum", MOST_NEGATIVE_FIXNUM,
-                  env)));
+                  topEnv)));
 
-            env = addBuiltin("fround",   (Primitive) args -> { varargs1_2("fround",   args); return Math.rint  (quot12("fround", args)); },
-                  addBuiltin("ffloor",   (Primitive) args -> { varargs1_2("ffloor",   args); return Math.floor (quot12("ffloor", args)); },
-                  addBuiltin("fceiling", (Primitive) args -> { varargs1_2("fceiling", args); return Math.ceil  (quot12("fceiling", args)); },
-                  addBuiltin("ftruncate",(Primitive) args -> { varargs1_2("ftruncate",args); return cl_truncate(quot12("ftruncate", args)); },
+            WellknownSymbol.forAllPrimitives(Features.HAVE_NUMBERS.bits(), this::addBuiltin);
+        }
 
-                  addBuiltin("round",   (Primitive) args -> { varargs1_2("round",   args); return toFixnum(Math.rint  (quot12("round", args))); },
-                  addBuiltin("floor",   (Primitive) args -> { varargs1_2("floor",   args); return toFixnum(Math.floor (quot12("floor", args))); },
-                  addBuiltin("ceiling", (Primitive) args -> { varargs1_2("ceiling", args); return toFixnum(Math.ceil  (quot12("ceiling", args))); },
-                  addBuiltin("truncate",(Primitive) args -> { varargs1_2("truncate",args); return toFixnum(cl_truncate(quot12("truncate", args))); },
-                  env))))))));
-
-            env = addBuiltin("1+",      (Primitive) args -> { oneArg("1+", args); return inc(car(args)); },
-                  addBuiltin("1-",      (Primitive) args -> { oneArg("1-", args); return dec(car(args)); },
-
-                  addBuiltin("sqrt",    (Primitive) args -> { oneArg ("sqrt",    args); return Math.sqrt (toDouble("sqrt",  car(args))); },
-                  addBuiltin("log",     (Primitive) args -> { oneArg ("log",     args); return Math.log  (toDouble("log",   car(args))); },
-                  addBuiltin("log10",   (Primitive) args -> { oneArg ("log10",   args); return Math.log10(toDouble("log10", car(args))); },
-                  addBuiltin("exp",     (Primitive) args -> { oneArg ("exp",     args); return Math.exp  (toDouble("exp",   car(args))); },
-                  addBuiltin("expt",    (Primitive) args -> { twoArgs("expt",    args); return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); },
-
-                  addBuiltin("mod",     (Primitive) args -> { twoArgs("mod",     args); return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); },
-                  addBuiltin("rem",     (Primitive) args -> { twoArgs("rem",     args); return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); },
-
-                  addBuiltin("signum",  (Primitive) args -> { oneArg("signum", args); return cl_signum(car(args)); },
-                  env))))))))));
-
-            env = addBuiltin("=",       (Primitive) args -> { varargs1("=",  args); return compare(args, "=",  (d1, d2) -> d1 == d2); },
-                  addBuiltin(">",       (Primitive) args -> { varargs1(">",  args); return compare(args, ">",  (d1, d2) -> d1 >  d2); },
-                  addBuiltin(">=",      (Primitive) args -> { varargs1(">=", args); return compare(args, ">=", (d1, d2) -> d1 >= d2); },
-                  addBuiltin("<",       (Primitive) args -> { varargs1("<",  args); return compare(args, "<",  (d1, d2) -> d1 <  d2); },
-                  addBuiltin("<=",      (Primitive) args -> { varargs1("<=", args); return compare(args, "<=", (d1, d2) -> d1 <= d2); },
-                  addBuiltin("/=",      (Primitive) args -> { varargs1("/=", args); return compare(args, "/=", (d1, d2) -> d1 != d2); },
-
-                  addBuiltin("+",       (Primitive) args -> addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs),
-                  addBuiltin("*",       (Primitive) args -> addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs),
-                  addBuiltin("-",       (Primitive) args -> { varargs1("-", args); return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); },
-                  addBuiltin("/",       (Primitive) args -> { varargs1("/", args); return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); },
-                  env))))))))));
+        if (haveAtom()) {
+            WellknownSymbol.forAllPrimitives(Features.HAVE_ATOM.bits(), this::addBuiltin);
         }
 
         if (haveEq()) {
-            env = addBuiltin("eq", (Primitive) a -> { twoArgs("eq", a);     return boolResult(car(a) == cadr(a)); },
-                  env);
+            WellknownSymbol.forAllPrimitives(Features.HAVE_EQ.bits(), this::addBuiltin);
         }
 
         if (haveCons()) {
-            env = addBuiltin("car",     (Primitive) a -> { oneArg("car", a);    return caar(a); },
-                  addBuiltin("cdr",     (Primitive) a -> { oneArg("cdr", a);    return cdar(a); },
-                  addBuiltin("cons",    (Primitive) a -> { twoArgs("cons", a);  return cons(car(a), cadr(a)); },
-                  env)));
+            WellknownSymbol.forAllPrimitives(Features.HAVE_CONS.bits(), this::addBuiltin);
         }
-
-        topEnv = env;
     }
 
     private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
         return acons(intern(sym), value, env);
     }
 
-    private ListConsCell addBuiltin(final LambdaJSymbol sym, final Object value, ConsCell env) {
-        return acons(sym, value, env);
+    private void addBuiltin(final LambdaJSymbol sym, final Object value) {
+        topEnv = acons(sym, value, topEnv);
     }
     
     private void addBuiltin(WellknownSymbol w) {
@@ -5127,7 +5002,8 @@ public class LambdaJ {
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (topEnv == null) {
             lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
-            environment(null);
+            topEnv = null;
+            environment();
         }
         final ObjectReader scriptParser = lispReader;
         scriptParser.setInput(program::read, null);
@@ -5628,7 +5504,8 @@ public class LambdaJ {
                                                echo ? echoingSupplier : nonechoingSupplier, null);
                 outWriter = makeWriter(System.out::print);
                 interpreter.lispReader = parser; interpreter.lispPrinter = outWriter;
-                interpreter.environment(null);
+                interpreter.topEnv = null;
+                interpreter.environment();
                 interpreter.clearMacros();
                 interpreter.modules.clear();
                 injectCommandlineArgs(interpreter, args);
@@ -6606,12 +6483,12 @@ public class LambdaJ {
 
 
         // time
-        public final Object getInternalRealTime(Object... args) { return LambdaJ.getInternalRealTime(arraySlice(args)); }
-        public final Object getInternalRunTime (Object... args) { return LambdaJ.getInternalRunTime(arraySlice(args)); }
-        public final Object getInternalCpuTime (Object... args) { return LambdaJ.getInternalCpuTime(arraySlice(args)); }
-        public final Object sleep              (Object... args) { return LambdaJ.sleep(arraySlice(args)); }
-        public final Object getUniversalTime   (Object... args) { return LambdaJ.getUniversalTime(arraySlice(args)); }
-        public final Object getDecodedTime     (Object... args) { return intp.getDecodedTime(arraySlice(args)); }
+        public final Object getInternalRealTime(Object... args) { noArgs("get-internal-real-time", args.length); return LambdaJ.getInternalRealTime(); }
+        public final Object getInternalRunTime (Object... args) { noArgs("get-internal-run-time", args.length); return LambdaJ.getInternalRunTime(); }
+        public final Object getInternalCpuTime (Object... args) { noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
+        public final Object sleep              (Object... args) { oneArg("sleep", args.length); return LambdaJ.sleep(args[0]); }
+        public final Object getUniversalTime   (Object... args) { noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
+        public final Object getDecodedTime     (Object... args) { noArgs("get-decoded-time", args.length); return intp.getDecodedTime(); }
 
 
         // Java FFI
@@ -6623,7 +6500,7 @@ public class LambdaJ {
             return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
         }
 
-        public final Object _jproxy    (Object... args) { return intp.makeProxy(arraySlice(args)); }
+        public final Object _jproxy    (Object... args) { varargs1("jproxy", args.length); return intp.makeProxy(arraySlice(args)); }
 
 
         // graphics
