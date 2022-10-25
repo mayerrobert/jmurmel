@@ -1930,3 +1930,5 @@ der compiler macht selbstrekursive aufrufe early bound, der interpreter late bou
 
 WellknownSymbol.apply() ruft methoden auf, die die argumentanzahl nochmal checken
 -> nur 1x checken. wenns in environment() keinen argcheck gibt, gibts änderungsbedarf
+
+--no-vector

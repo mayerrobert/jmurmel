@@ -1,4 +1,4 @@
---no-vector
+vielleicht doch slength (string-length) dazunehmen?
 
 
 

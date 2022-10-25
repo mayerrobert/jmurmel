@@ -668,13 +668,14 @@ public class LambdaJ {
         HAVE_OLDLAMBDA,      // lists whose car is 'lambda' are functions, too
 
         /** untyped lambda calculus with dynamic environments, S-expressions, that's all */
-        HAVE_LAMBDA     { @Override public int bits() { return 0; } },
+        HAVE_LAMBDA     { @Override public int bits() { return HAVE_LEXC.bits(); } },
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
         HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits(); } },
-        HAVE_ALL_DYN    { @Override public int bits() { return HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
-                                                               | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_VECTOR.bits()
-                                                               | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_GUI.bits() | HAVE_UTIL.bits(); } },
+        HAVE_ALL_DYN    { @Override public int bits() { return (HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
+                                                                | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_VECTOR.bits()
+                                                                | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_GUI.bits() | HAVE_UTIL.bits())
+                                                               & ~HAVE_LEXC.bits(); } },
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
         ;
 
@@ -5796,6 +5797,7 @@ public class LambdaJ {
         if (hasFlag("--no-ffi", args))      features &= ~Features.HAVE_FFI.bits();
         if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_NUMBERS.bits() | Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
         if (hasFlag("--no-string", args))   features &= ~Features.HAVE_STRING.bits();
+        if (hasFlag("--no-vector", args))   features &= ~Features.HAVE_VECTOR.bits();
         if (hasFlag("--no-io", args))       features &= ~Features.HAVE_IO.bits();
         if (hasFlag("--no-gui", args))      features &= ~Features.HAVE_GUI.bits();
         if (hasFlag("--no-util", args))     features &= ~Features.HAVE_UTIL.bits();
@@ -6013,6 +6015,7 @@ public class LambdaJ {
                            + "                 values, macroexpand-1\n"
                            + "--no-number ...  no number support\n"
                            + "--no-string ...  no string support\n"
+                           + "--no-vector ...  no vector support\n"
                            + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
                            + "--no-util .....  no primitive functions consp, symbolp, listp, null,\n"
                            + "                 append, assoc, assq, list, list*, format, format-locale\n"
