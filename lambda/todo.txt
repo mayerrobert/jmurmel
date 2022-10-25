@@ -1,3 +1,7 @@
+auf parameter ConsCell oder Iterable umstellen
+listLength
+
+Dockerfile: abs workdir lt. hadolint, maven 3.8.6
 
 
 

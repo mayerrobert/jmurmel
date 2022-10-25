@@ -7489,7 +7489,7 @@ public class LambdaJ {
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
                       + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                      + "        catch (LambdaJError e) { rterror(e); }\n"
+                      + "        catch (Exception e) { rterror(e); }\n"
                       + "        return intern(\"").append(symbol).append("\");\n"
                       + "    }\n\n");
             return env;

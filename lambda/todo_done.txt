@@ -1934,3 +1934,10 @@ WellknownSymbol.apply() ruft methoden auf, die die argumentanzahl nochmal checke
 --no-vector
 
 vielleicht doch slength (string-length) dazunehmen?
+
+murmel-test.lisp: new Byte(String) ist deprecated (seit 9)
+-> Byte.valueOf(String)
+   Short, Integer, Long, Float, Double auch
+
+jm --run scribbles\readfile-nio.lisp
+-> Java compilefehler
