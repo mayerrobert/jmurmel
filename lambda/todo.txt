@@ -1,4 +1,3 @@
-Dockerfile: abs workdir lt. hadolint, maven 3.8.6
 
 
 
