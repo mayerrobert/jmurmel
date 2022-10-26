@@ -1,3 +1,6 @@
+emitJmethod: inline call scheint zu gehen, "emit a lambda that contains an argcount check" ist noch nicht vollständig implementiert
+
+varargs: primitive typen?!
 
 
 

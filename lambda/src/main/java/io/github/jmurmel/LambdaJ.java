@@ -4530,7 +4530,7 @@ public class LambdaJ {
         @Override
         public Object applyCompilerPrimitive(Object... args) {
             final String name = "new " + constructor.getDeclaringClass().getName();
-            javaCallArgCheck(name, argConv, args);
+            javaCallArgCheck(name, constructor, argConv, args);
             try { return constructor.newInstance(args); }
             catch (InvocationTargetException ite) { throw new LambdaJError(true, "%s: %s", name, ite.getTargetException().toString()); }
             catch (Exception e)                   { throw new LambdaJError(true, "%s: %s", name, e.toString()); }
@@ -4561,7 +4561,8 @@ public class LambdaJ {
 
             try {
                 final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
-                switch (paramCount) {
+                if (method.isVarArgs()) invoke = mh::invokeWithArguments;
+                else switch (paramCount) {
                 case 0:  invoke = args -> mh.invoke();  break;
                 case 1:  invoke = args -> mh.invoke(args[0]);  break;
                 case 2:  invoke = args -> mh.invoke(args[0], args[1]);  break;
@@ -4586,7 +4587,8 @@ public class LambdaJ {
         @Override
         public Object applyCompilerPrimitive(Object... args) {
             final Method method = this.method;
-            javaCallArgCheck(method.getName(), argConv, args);
+            javaCallArgCheck(method.getName(), method, argConv, args);
+
             if (!Modifier.isStatic(method.getModifiers()) && !method.getDeclaringClass().isInstance(args[0]))
                 throw new LambdaJError(true, "jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
@@ -4596,13 +4598,15 @@ public class LambdaJ {
     }
 
     /** check the number of args vs. number of parameters, and then convert argument types from Murmel to Java */
-    static void javaCallArgCheck(String name, UnaryOperator<Object>[] argConv, Object[] args) {
+    static void javaCallArgCheck(String name, Executable method, UnaryOperator<Object>[] argConv, Object[] args) {
         final int paramCount = argConv.length;
         final int argCount = args == null ? 0 : args.length;
-        if (paramCount != argCount) errorArgCount(name, paramCount, paramCount, argCount, null);
+        if (method.isVarArgs()) { if (argCount < paramCount - 1) errorVarargsCount(name, paramCount-1, argCount); }
+        else                    { if (paramCount != argCount) errorArgCount(name, paramCount, paramCount, argCount, null); }
 
+        UnaryOperator<Object> conv = null;
         if (args != null) for (int i = 0; i < argCount; i++) {
-            final UnaryOperator<Object> conv = argConv[i];
+            if (!method.isVarArgs() || i < argConv.length) conv = argConv[i];
             if (conv != null) args[i] = conv.apply(args[i]);
         }
     }
@@ -4639,21 +4643,34 @@ public class LambdaJ {
         classByName.put("char",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
 
         // todo die boxed typen sollten nil/null als null durchreichen, Object/Number/String reichen null bereits durch, Boolean passt wsl auch
-        classByName.put("Object",    new Object[] { Object.class,    null,                   null });                                                           aliasJavaLang("Object");
-        classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliasJavaLang("Number");
-        classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliasJavaLang("Boolean");
-        classByName.put("Byte",      new Object[] { Byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliasJavaLang("Byte");
-        classByName.put("Short",     new Object[] { Short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });             aliasJavaLang("Short");
-        classByName.put("Integer",   new Object[] { Integer.class,   "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });               aliasJavaLang("Integer");
-        classByName.put("Long",      new Object[] { Long.class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });              aliasJavaLang("Long");
-        classByName.put("Float",     new Object[] { Float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliasJavaLang("Float");
-        classByName.put("Double",    new Object[] { Double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliasJavaLang("Double");
+        classByName.put("Object",    new Object[] { Object.class,    null,                   null });                                                           aliases("Object");
+        classByName.put("Number",    new Object[] { Number.class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliases("Number");
+        classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliases("Boolean");
+        classByName.put("Byte",      new Object[] { Byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliases("Byte");
+        classByName.put("Short",     new Object[] { Short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });             aliases("Short");
+        classByName.put("Integer",   new Object[] { Integer.class,   "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });               aliases("Integer");
+        classByName.put("Long",      new Object[] { Long.class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });              aliases("Long");
+        classByName.put("Float",     new Object[] { Float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float");
+        classByName.put("Double",    new Object[] { Double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double");
 
-        classByName.put("Character", new Object[] { Character.class, "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliasJavaLang("Character");
-        classByName.put("String",    new Object[] { String.class,    "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliasJavaLang("String");
+        classByName.put("Character", new Object[] { Character.class, "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character");
+        classByName.put("String",    new Object[] { String.class,    "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliases("String");
+
+        classByName.put("Object...",    new Object[] { Object[].class,    null,                   null });                                                           aliases("Object...");
+        classByName.put("Number...",    new Object[] { Number[].class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliases("Number...");
+        classByName.put("Boolean...",   new Object[] { Boolean[].class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliases("Boolean...");
+        classByName.put("Byte...",      new Object[] { Byte[].class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliases("Byte...");
+        classByName.put("Short...",     new Object[] { Short[].class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });             aliases("Short...");
+        classByName.put("Integer...",   new Object[] { Integer[].class,   "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });               aliases("Integer...");
+        classByName.put("Long...",      new Object[] { Long[].class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });              aliases("Long...");
+        classByName.put("Float...",     new Object[] { Float[].class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float...");
+        classByName.put("Double...",    new Object[] { Double[].class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double...");
+
+        classByName.put("Character...", new Object[] { Character[].class, "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character...");
+        classByName.put("String...",    new Object[] { String[].class,    "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliases("String...");
     }
 
-    private static void aliasJavaLang(String existing) {
+    private static void aliases(String existing) {
         classByName.put("java.lang." + existing, classByName.get(existing));
     }
 
@@ -8607,12 +8624,12 @@ public class LambdaJ {
 
             // at last check if the method/ constructor with the specified parameter types/ classes exists
             final Class<?>[] params = paramTypes.isEmpty() ? null : paramTypes.toArray(new Class[0]);
-            final Method m;
+            final Executable m;
             final int startArg;
             final boolean voidMethod;
             try {
-                if ("new".equals(strMethod)) { m = null; clazz.getDeclaredConstructor(params);  startArg = 0; voidMethod = false; }
-                else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; voidMethod = m.getReturnType() == void.class; }
+                if ("new".equals(strMethod)) { m = clazz.getDeclaredConstructor(params);  startArg = 0; voidMethod = false; }
+                else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; voidMethod = ((Method)m).getReturnType() == void.class; }
             }
             catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }
 
@@ -8620,7 +8637,8 @@ public class LambdaJ {
             if (emitCall) {
                 // emit new clazz(args...)/ clazz.method(args...)/ firstarg.method(restargs...)
                 final int argCount = listLength(ccArguments);
-                if (argCount != paramCount) errorArgCount((String) strMethod, paramCount, paramCount, argCount, null);
+                if (m.isVarArgs()) { if (argCount < paramCount-1) errorVarargsCount((String)strMethod, paramCount-1, argCount); }
+                else               { if (argCount != paramCount)  errorArgCount((String) strMethod, paramCount, paramCount, argCount, null); }
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
                 else {
@@ -8639,10 +8657,11 @@ public class LambdaJ {
                 boolean first = true;
                 if (ccArguments != null) {
                     int i = startArg;
+                    String conv = null;
                     for (Object arg : ccArguments) {
                         if (first) first = false;
                         else sb.append("\n        , ");
-                        final String conv = (String) classByName.get(paramTypeNames.get(i-startArg))[1];
+                        if (!m.isVarArgs() || i - startArg < paramTypeNames.size()) conv = (String) classByName.get(paramTypeNames.get(i-startArg))[1];
                         if (conv == null) emitForm(sb, arg, env, topEnv, rsfx, false);
                         else { sb.append(conv).append('(');  emitForm(sb, arg, env, topEnv, rsfx, false);  sb.append(')'); }
                         i++;
@@ -8651,6 +8670,8 @@ public class LambdaJ {
                 sb.append(')');
                 if (voidMethod) sb.append("; return null; })).get()");
             } else {
+                if (m.isVarArgs()) return false; // inline varargs are not yet implemented, postpone to runtime todo vargarg check + vararg argumente in ein array umkopieren
+
                 // emit a lambda that contains an argcount check
                 sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
                 sb.append("argCheck(loc, ").append(paramCount).append(", args.length);  ");
@@ -8662,10 +8683,11 @@ public class LambdaJ {
 
                 sb.append("(");
                 boolean first = true;
+                String conv = null;
                 if (params != null) for (int i = startArg; i < params.length + startArg; i++) {
                     if (first) first = false;
                     else sb.append("\n        , ");
-                    final String conv = (String) classByName.get(paramTypeNames.get(i - startArg))[1];
+                    if (!m.isVarArgs() || i - startArg < paramTypeNames.size()) conv = (String) classByName.get(paramTypeNames.get(i - startArg))[1];
                     if (conv == null) sb.append("args[").append(i).append(']');
                     else sb.append(conv).append("(args[").append(i).append("])");
                 }
