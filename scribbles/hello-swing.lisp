@@ -27,7 +27,7 @@
 
 ; (make-font name style points) -> java.awt.Font
 (define make-font
-  (jmethod "java.awt.Font" "new" "String" "int" "int"))
+  (jmethod "java.awt.Font" "new" "String?" "int" "int"))
 
 
 (define set-location-relative-to

@@ -1946,3 +1946,5 @@ auf parameter ConsCell oder Iterable umstellen
 listLength
 
 Dockerfile: abs workdir lt. hadolint, maven 3.8.6
+
+emitJmethod: inline call scheint zu gehen, "emit a lambda that contains an argcount check" ist noch nicht vollständig implementiert

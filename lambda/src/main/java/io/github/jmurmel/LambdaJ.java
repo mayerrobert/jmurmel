@@ -4511,16 +4511,9 @@ public class LambdaJ {
         private final UnaryOperator<Object>[] argConv;
 
         @SuppressWarnings("unchecked")
-        private JavaConstructor(Constructor<?> constructor, Class<?>[] params) {
+        private JavaConstructor(Constructor<?> constructor, Iterable<?> paramClassNames) {
             this.constructor = constructor;
-            final int paramCount = constructor.getParameterCount();
-
-            argConv = new UnaryOperator[paramCount];
-            if (params != null) for (int i = 0; i < paramCount; i++) {
-                final String paramClassName = params[i].getName();
-                final Object[] entry = classByName.get(paramClassName);
-                if (entry != null) argConv[i] = (UnaryOperator<Object>) entry[2];
-            }
+            this.argConv = makeArgConv(paramClassNames, constructor.getParameterCount(), 0);
         }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
@@ -4538,6 +4531,18 @@ public class LambdaJ {
         }
     }
 
+    private static UnaryOperator<Object>[] makeArgConv(Iterable<?> paramClassNames, int paramCount, int skipThis) {
+        final UnaryOperator<Object>[] argConv = new UnaryOperator[paramCount + skipThis];
+        int i = 0;
+        if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
+            final String strParamClassName = (String)paramClassName;
+            final Object[] entry = classByName.get(strParamClassName);
+            if (entry != null) argConv[i+skipThis] = (UnaryOperator<Object>) entry[2];
+            i++;
+        }
+        return argConv;
+    }
+
     private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
         @FunctionalInterface private interface Invoker { Object invoke(Object... args) throws Throwable; }
 
@@ -4546,19 +4551,13 @@ public class LambdaJ {
         private final UnaryOperator<Object>[] argConv;
 
         @SuppressWarnings("unchecked")
-        private JavaMethod(Method method, Class<?>[] params) {
+        private JavaMethod(Method method, Iterable<?> paramClassNames) {
             this.method = method;
             int paramCount = method.getParameterCount();
             final boolean isStatic = Modifier.isStatic(method.getModifiers());
             if (!isStatic) paramCount++; // this + parameters
 
-            final int skipThis = isStatic ? 0 : 1;
-            argConv = new UnaryOperator[paramCount];
-            if (params != null) for (int i = 0; i < paramCount-skipThis; i++) {
-                final String paramClassName = params[i].getName();
-                final Object[] entry = classByName.get(paramClassName);
-                if (entry != null) argConv[i+skipThis] = (UnaryOperator<Object>) entry[2];
-            }
+            this.argConv = makeArgConv(paramClassNames, method.getParameterCount(), isStatic ? 0 : 1);
 
             try {
                 final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
@@ -4625,9 +4624,10 @@ public class LambdaJ {
         try {
             final Class<?> clazz = findClass(className);
             return "new".equals(methodName)
-                   ? new JavaConstructor(clazz.getDeclaredConstructor(params), params)
-                   : new JavaMethod(clazz.getMethod(methodName, params), params);
+                   ? new JavaConstructor(clazz.getDeclaredConstructor(params), paramClassNames)
+                   : new JavaMethod(clazz.getMethod(methodName, params), paramClassNames);
         }
+        catch (LambdaJError le) { throw le; }
         catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
     }
 

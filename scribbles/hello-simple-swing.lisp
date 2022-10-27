@@ -6,3 +6,5 @@
 ((jmethod "javax.swing.JOptionPane" "showMessageDialog" "java.awt.Component" "Object") nil "Hello, World!")
 
 (writeln "Bye." nil)
+
+nil ; avoid printing the return value of writeln

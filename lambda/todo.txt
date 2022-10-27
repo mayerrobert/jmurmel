@@ -1,4 +1,5 @@
-emitJmethod: inline call scheint zu gehen, "emit a lambda that contains an argcount check" ist noch nicht vollständig implementiert
+mehr JFFI tests in CallJavaTest, v.a. auch varargs, auch kompiliert
+-> oder in murmel-test.lisp
 
 varargs: primitive typen?!
 
