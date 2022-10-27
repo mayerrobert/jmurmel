@@ -4655,7 +4655,7 @@ public class LambdaJ {
         classByName.put("Float",     new Object[] { Float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float");
         classByName.put("Double",    new Object[] { Double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double");
 
-        classByName.put("Object...",    new Object[] { Object.class,      "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });      aliases("Object...");
+        classByName.put("Object...",    new Object[] { Object[].class,    "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });      aliases("Object...");
         classByName.put("Object?...",   new Object[] { Object[].class,    null,                  null });                                                            aliases("Object?...");
         classByName.put("Number...",    new Object[] { Number[].class,    "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });       aliases("Number...");
         classByName.put("Number?...",   new Object[] { Number[].class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliases("Number?...");
@@ -4669,12 +4669,12 @@ public class LambdaJ {
 
 
         classByName.put("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character");
-        classByName.put("CharSequence",    new Object[] { CharSequence.class,   "requireCharsequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence");
+        classByName.put("CharSequence",    new Object[] { CharSequence.class,   "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence");
         classByName.put("String",          new Object[] { String.class,         "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });       aliases("String");
         classByName.put("String?",         new Object[] { String.class,         "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliases("String?");
 
         classByName.put("Character...",    new Object[] { Character[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character...");
-        classByName.put("CharSequence...", new Object[] { CharSequence[].class, "requireCharsequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence...");
+        classByName.put("CharSequence...", new Object[] { CharSequence[].class, "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence...");
         classByName.put("String...",       new Object[] { String[].class,       "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });       aliases("String...");
         classByName.put("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliases("String?...");
     }
@@ -6718,6 +6718,24 @@ public class LambdaJ {
         public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
         public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
+        public static <T> T[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, T[] resultArray) {
+            if (transform == null) {
+                int dst = 0;
+                for (int i = paramCount; i < args.length; i++) {
+                    resultArray[dst] = (T)args[i];
+                    dst++;
+                }
+            }
+            else {
+                int dst = 0;
+                for (int i = paramCount; i < args.length; i++) {
+                    resultArray[dst] = (T)transform.apply(args[i]);
+                    dst++;
+                }
+            }
+            return resultArray;
+        }
+
 
 
         /** Primitives are in the environment as (CompilerPrimitive)... . Compiled code that calls primitives will
@@ -8703,11 +8721,10 @@ public class LambdaJ {
                 sb.append(')');
                 if (voidMethod) sb.append("; return null; })).get()");
             } else {
-                if (m.isVarArgs()) return false; // inline varargs are not yet implemented, postpone to runtime todo vargarg check + vararg argumente in ein array umkopieren
-
                 // emit a lambda that contains an argcount check
                 sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
-                sb.append("argCheck(loc, ").append(paramCount).append(", args.length);  ");
+                if (m.isVarArgs()) { sb.append("argCheckVarargs(loc, ").append(paramCount-1).append(", args.length);  ");}
+                else               { sb.append("argCheck(loc, ").append(paramCount).append(", args.length);  "); }
                 if (!voidMethod) sb.append("return ");
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
@@ -8715,14 +8732,34 @@ public class LambdaJ {
                 else sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
 
                 sb.append("(");
-                boolean first = true;
-                String conv = null;
-                if (params != null) for (int i = startArg; i < params.length + startArg; i++) {
-                    if (first) first = false;
-                    else sb.append("\n        , ");
-                    if (!m.isVarArgs() || i - startArg < paramTypeNames.size()) conv = (String) classByName.get(paramTypeNames.get(i - startArg))[1];
-                    if (conv == null) sb.append("args[").append(i).append(']');
-                    else sb.append(conv).append("(args[").append(i).append("])");
+                if (params != null) {
+                    boolean first = true;
+                    if (m.isVarArgs()) {
+                        Object[] desc = null;
+                        for (int i = startArg; i < params.length + startArg - 1; i++) {
+                            if (first) first = false;
+                            else sb.append("\n        , ");
+                            desc = classByName.get(paramTypeNames.get(i - startArg));
+                            if (desc == null) sb.append("args[").append(i).append(']');
+                            else sb.append(desc[1]).append("(args[").append(i).append("])");
+                        }
+                        assert desc != null: "varargs with zero args should not happen";
+                        // handle last parameter which is vararg: pass an array of the appropriate type with the remaining args
+                        // { Short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) }
+                        final int varargPos = params.length + startArg - 1;
+                        final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ")";
+                        sb.append("\n        , toVarargs(args, " + varargPos + ", " + conv + ", new " + ((Class<?>)desc[0]).getCanonicalName() + "[args.length - " + varargPos + "])");
+                    }
+                    else {
+                        String conv = null;
+                        for (int i = startArg; i < params.length + startArg; i++) {
+                            if (first) first = false;
+                            else sb.append("\n        , ");
+                            conv = (String)classByName.get(paramTypeNames.get(i - startArg))[1];
+                            if (conv == null) sb.append("args[").append(i).append(']');
+                            else sb.append(conv).append("(args[").append(i).append("])");
+                        }
+                    }
                 }
                 sb.append("); ");
                 if (voidMethod) sb.append("return null; ");
