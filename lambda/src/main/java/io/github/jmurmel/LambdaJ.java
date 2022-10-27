@@ -7551,7 +7551,7 @@ public class LambdaJ {
                       + "        final MurmelFunction func = new MurmelFunction() {\n" 
                       + "        private final MurmelFunction " + javasym + " = this;\n"
                       + "        public Object apply(Object... args0) {\n");
-            final ConsCell extenv = params("defun", sb, params, localEnv, 0, javasym, true);
+            final ConsCell extenv = params("defun", sb, params, localEnv, 0, symbol.toString(), true);
             emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false);
             sb.append("        }};\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
