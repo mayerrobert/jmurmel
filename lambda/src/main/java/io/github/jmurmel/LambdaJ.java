@@ -4643,6 +4643,17 @@ public class LambdaJ {
 
         classByName.put("char",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
 
+        classByName.put("boolean...",   new Object[] { boolean[].class,   "toBoolean",   (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+        classByName.put("byte...",      new Object[] { byte[].class,      "toByte",      (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
+        classByName.put("short...",     new Object[] { short[].class,     "toShort",     (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+        classByName.put("int...",       new Object[] { int[].class,       "toInt",       (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+        classByName.put("long...",      new Object[] { long[].class,      "toLong",      (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+        classByName.put("float...",     new Object[] { float[].class,     "toFloat",     (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+        classByName.put("double...",    new Object[] { double[].class,    "toDouble",    (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
+
+        classByName.put("char...",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+
+
         classByName.put("Object",    new Object[] { Object.class,    "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });      aliases("Object");
         classByName.put("Object?",   new Object[] { Object.class,    null,                  null });                                                            aliases("Object?");
         classByName.put("Number",    new Object[] { Number.class,    "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });       aliases("Number");
