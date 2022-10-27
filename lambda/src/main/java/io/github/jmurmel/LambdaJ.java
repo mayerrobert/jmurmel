@@ -1678,23 +1678,23 @@ public class LambdaJ {
         sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
         // conses and lists
-        sCar("car", Features.HAVE_CONS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
-        sCdr("cdr", Features.HAVE_CONS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
-        sCons("cons", Features.HAVE_CONS, 2)          { Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
-        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
-        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
+        sCar("car", Features.HAVE_CONS, 1)            { Object   apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
+        sCdr("cdr", Features.HAVE_CONS, 1)            { Object   apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
+        sCons("cons", Features.HAVE_CONS, 2)          { ConsCell apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
+        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { ConsCell apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
+        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { ConsCell apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
 
-        sList("list", Features.HAVE_UTIL, -1)         { Object apply(LambdaJ intp, ConsCell args) { return args; } },
-        sListStar("list*", Features.HAVE_UTIL, 1, -1) { Object apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
-        sAppend("append", Features.HAVE_UTIL, -1)     { Object apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
-        sAssq("assq", Features.HAVE_UTIL, 2)          { Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
-        sAssoc("assoc", Features.HAVE_UTIL, 2)        { Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
+        sList("list", Features.HAVE_UTIL, -1)         { ConsCell apply(LambdaJ intp, ConsCell args) { return args; } },
+        sListStar("list*", Features.HAVE_UTIL, 1, -1) { Object   apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
+        sAppend("append", Features.HAVE_UTIL, -1)     { Object   apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
+        sAssq("assq", Features.HAVE_UTIL, 2)          { ConsCell apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
+        sAssoc("assoc", Features.HAVE_UTIL, 2)        { ConsCell apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
         // numbers, characters
-        sAdd("+", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
-        sMul("*", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
-        sSub("-", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
-        sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
+        sAdd("+", Features.HAVE_NUMBERS, -1)                 { Double apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
+        sMul("*", Features.HAVE_NUMBERS, -1)                 { Double apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
+        sSub("-", Features.HAVE_NUMBERS, 1, -1)              { Double apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
+        sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { Double apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
 
         sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
         sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
@@ -1703,67 +1703,67 @@ public class LambdaJ {
         sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
         sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
 
-        sInc("1+", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
-        sDec("1-", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
+        sInc("1+", Features.HAVE_NUMBERS, 1)                 { Number apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
+        sDec("1-", Features.HAVE_NUMBERS, 1)                 { Number apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
 
-        sSignum("signum", Features.HAVE_NUMBERS, 1)          { Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
+        sSignum("signum", Features.HAVE_NUMBERS, 1)          { Number apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
 
-        sRound("round", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
-        sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
-        sCeiling("ceiling", Features.HAVE_NUMBERS, 1, 2)     { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
-        sTruncate("truncate", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
+        sRound("round", Features.HAVE_NUMBERS, 1, 2)         { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
+        sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
+        sCeiling("ceiling", Features.HAVE_NUMBERS, 1, 2)     { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
+        sTruncate("truncate", Features.HAVE_NUMBERS, 1, 2)   { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
 
-        sFRound("fround", Features.HAVE_NUMBERS, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
-        sFFloor("ffloor", Features.HAVE_NUMBERS, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
-        sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
-        sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
+        sFRound("fround", Features.HAVE_NUMBERS, 1, 2)       { Double apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
+        sFFloor("ffloor", Features.HAVE_NUMBERS, 1, 2)       { Double apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
+        sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { Double apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
+        sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { Double apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
 
-        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
-        sLog("log", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
-        sLog10("log10", Features.HAVE_NUMBERS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
-        sExp("exp", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
-        sExpt("expt", Features.HAVE_NUMBERS, 2)              { Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
+        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Double apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
+        sLog("log", Features.HAVE_NUMBERS, 1)                { Double apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
+        sLog10("log10", Features.HAVE_NUMBERS, 1)            { Double apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
+        sExp("exp", Features.HAVE_NUMBERS, 1)                { Double apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
+        sExpt("expt", Features.HAVE_NUMBERS, 2)              { Double apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
 
-        sMod("mod", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
-        sRem("rem", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
+        sMod("mod", Features.HAVE_NUMBERS, 2)                { Double apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
+        sRem("rem", Features.HAVE_NUMBERS, 2)                { Double apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
 
         // vectors, sequences
-        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)    { Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
-        sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2){ Object apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
-        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1)     { Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args)); } },
-        sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)  { Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
+        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { Object    apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
+        sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2)       { Long      apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
+        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1)            { Object    apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args)); } },
+        sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
-        sVectorLength("vector-length", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
-        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
+        sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { Long      apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
+        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
 
-        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
-        sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
-        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
-        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
-        sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
-        sVector("vector", Features.HAVE_VECTOR, -1)                    { Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Long      apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
+        sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
+        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
+        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
+        sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
+        sVector("vector", Features.HAVE_VECTOR, -1)                    { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
-        sSLength("slength", Features.HAVE_STRING, 1)            { Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
-        sSRef("sref", Features.HAVE_STRING, 2)                  { Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
-        sSSet("sset", Features.HAVE_STRING, 3)                  { Object apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
-        sSEq("string=", Features.HAVE_STRING, 2)                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
-        sStringToList("string->list", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
-        sListToString("list->string", Features.HAVE_STRING, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args)); } },
+        sSLength("slength", Features.HAVE_STRING, 1)                   { Long      apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
+        sSRef("sref", Features.HAVE_STRING, 2)                         { Character apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
+        sSSet("sset", Features.HAVE_STRING, 3)                         { Character apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
+        sSEq("string=", Features.HAVE_STRING, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
+        sStringToList("string->list", Features.HAVE_STRING, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
+        sListToString("list->string", Features.HAVE_STRING, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return listToString(car(args)); } },
 
-        sCharCode("char-code", Features.HAVE_STRING, 1)         { Object apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
-        sCodeChar("code-char", Features.HAVE_STRING, 1)         { Object apply(LambdaJ intp, ConsCell args) { return (char) toInt("code-char", car(args)); } },
+        sCharCode("char-code", Features.HAVE_STRING, 1)                { Object    apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
+        sCodeChar("code-char", Features.HAVE_STRING, 1)                { Object    apply(LambdaJ intp, ConsCell args) { return (char) toInt("code-char", car(args)); } },
 
-        sBvEq("bv=", Features.HAVE_VECTOR, 2)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
+        sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
 
-        sSBvLength("sbvlength", Features.HAVE_VECTOR, 1)        { Object apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
-        sSBvRef("sbvref", Features.HAVE_VECTOR, 2)              { Object apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
-        sSBvSet("sbvset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
-        sSBvEq("sbv=", Features.HAVE_VECTOR, 2)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbvEq(car(args), cadr(args))); } },
-        sSBvToList("simple-bit-vector->list", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return intp.simpleBitVectorToList(car(args)); } },
-        sListToSBv("list->simple-bit-vector", Features.HAVE_VECTOR, 1)  { Object apply(LambdaJ intp, ConsCell args) { return listToBooleanArray(car(args)); } },
+        sSBvLength("sbvlength", Features.HAVE_VECTOR, 1)               { Long      apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
+        sSBvRef("sbvref", Features.HAVE_VECTOR, 2)                     { Long      apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
+        sSBvSet("sbvset", Features.HAVE_VECTOR, 3)                     { Long      apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
+        sSBvEq("sbv=", Features.HAVE_VECTOR, 2)                        { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbvEq(car(args), cadr(args))); } },
+        sSBvToList("simple-bit-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleBitVectorToList(car(args)); } },
+        sListToSBv("list->simple-bit-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToBooleanArray(car(args)); } },
 
-        sSeqRef("seqref", Features.HAVE_VECTOR, 2)              { Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
-        sSeqSet("seqset", Features.HAVE_VECTOR, 3)              { Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } }, // todo nicht auf int begrenzen wg. list
+        sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
+        sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
@@ -1782,12 +1782,12 @@ public class LambdaJ {
         sFatal("fatal", Features.HAVE_UTIL, 1)                  { Object apply(LambdaJ intp, ConsCell args) { throw new RuntimeException(String.valueOf(car(args))); } },
 
         // time
-        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
-        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { Object apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
-        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Object apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
-        sSleep("sleep", Features.HAVE_UTIL, 1)                      { Object apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
-        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Object apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } }, // seconds since 1.1.1900
-        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { Object apply(LambdaJ intp, ConsCell args) { return intp.getDecodedTime(); } },
+        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { Long     apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
+        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { Long     apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
+        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Long     apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
+        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Long     apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
+        sSleep("sleep", Features.HAVE_UTIL, 1)                      { Object   apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
+        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { ConsCell apply(LambdaJ intp, ConsCell args) { return intp.getDecodedTime(); } },
 
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
@@ -3896,7 +3896,7 @@ public class LambdaJ {
     }
 
     /** operator for zero or more args */
-    private static Object addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+    private static double addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
         if (car(_args) == null) return startVal;
         ConsCell args = _args;
         double result = toDouble(opName, car(args));
@@ -3913,7 +3913,7 @@ public class LambdaJ {
     }
 
     /** operator for one or more args */
-    private static Object subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+    private static double subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
         ConsCell args = _args;
         double result = toDouble(opName, car(args));
 
@@ -4457,7 +4457,7 @@ public class LambdaJ {
         return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
     }
 
-    final Object getDecodedTime() {
+    final ConsCell getDecodedTime() {
         final Instant now = Clock.systemDefaultZone().instant();
         final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
         final ZoneRules rules = n.getZone().getRules();
@@ -6257,14 +6257,14 @@ public class LambdaJ {
         public static Object cdr       (Object l)       { return LambdaJ.cdr(l); } // also used by generated code
         public static Object cdr       (ConsCell l)     { return LambdaJ.cdr(l); }
 
-        public final ConsCell _cons    (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
+        public final  ConsCell _cons   (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
         public static ConsCell cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
 
-        public final ConsCell _rplaca  (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
+        public final  ConsCell _rplaca (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
         public static ConsCell rplaca(Object l, Object newCar) { return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
         public static ConsCell rplaca(ConsCell l, Object newCar) { return l.rplaca(newCar); }
 
-        public final ConsCell _rplacd  (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
+        public final  ConsCell _rplacd (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
         public static ConsCell rplacd(Object l, Object newCdr) { return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
         public static ConsCell rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
 
@@ -6374,11 +6374,11 @@ public class LambdaJ {
         public final Object   makeArray(Object... args) { varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return intp.makeArray(arraySlice(args)); }
-        public final long      vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
+        public final long     vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
         public final Object   vectorCopy  (Object... args) { oneArg("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0]); }
         public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
                                                              return LambdaJ.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
-        public final Object   vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
+        public final long     vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
             oneArg("vector->list", args.length);
             final Object maybeVector = args[0];
@@ -6405,7 +6405,7 @@ public class LambdaJ {
             throw errorNotAVector("vector->list", maybeVector);
         }
 
-        public final Object   _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
+        public final long     _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], args[1]); }
         public static Object svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], args[1], args[2]); }
@@ -6419,13 +6419,13 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s[i]);
             return ret.first();
         }
-        public final Object   listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
-        public final Object   _vector  (Object... args) { return args; }
+        public final Object listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
+        public final Object _vector  (Object... args) { return args; }
 
-        public final long      _slength (Object... args) { oneArg("slength", args.length); return slength(args[0]); }
-        public final Character _sref    (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
-        public final Character _sset    (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
-        public final Object   stringeq  (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
+        public final long      _slength(Object... args) { oneArg("slength", args.length); return slength(args[0]); }
+        public final char      _sref   (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
+        public final char      _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
+        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final Object maybeString = args[0];
@@ -6443,17 +6443,17 @@ public class LambdaJ {
         }
         public final Object listToString(Object... args) { oneArg("list->string", args.length); return LambdaJ.listToString(args[0]); }
 
-        public final Object   charInt  (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
-        public final Object   intChar  (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
+        public final long   charInt     (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
+        public final char   intChar     (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
 
-        public final Object bvEq       (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
+        public final Object bvEq        (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
 
-        public final  long  _sbvlength (Object... args) { oneArg("sbvlength", args.length);     return sbvlength(args[0]); }
-        public final  long  _sbvref    (Object... args) { twoArgs("sbvref", args.length); return sbvref(args[0], args[1]); }
+        public final  long  _sbvlength  (Object... args) { oneArg("sbvlength", args.length);     return sbvlength(args[0]); }
+        public final  long  _sbvref     (Object... args) { twoArgs("sbvref", args.length); return sbvref(args[0], args[1]); }
         public static long  sbvref(Object v, Object idx) { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
         public static long  sbvref(Object v, long idx)   { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
-        public final  long  _sbvset    (Object... args) { threeArgs("sbvset", args.length);     return sbvset(args[0], args[1], args[2]); }
-        public static long  sbvset     (Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public final  long  _sbvset     (Object... args) { threeArgs("sbvset", args.length);     return sbvset(args[0], args[1], args[2]); }
+        public static long  sbvset(Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public static long  sbvset(long val, Object v, Object idx)   { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public static long  sbvset(long val, Object v, long idx)     { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public final Object sbvEq      (Object... args) { twoArgs("sbv=", args.length);         return bool(LambdaJ.sbvEq(args[0], args[1])); }
@@ -6466,7 +6466,7 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
             return ret.first();
         }
-        public final boolean[]   listToSimpleBitVector(Object... args) {
+        public final Object   listToSimpleBitVector(Object... args) {
             oneArg("list->simple-bit-vector", args.length);
             return LambdaJ.listToBooleanArray(LambdaJ.requireList("list->simple-bit-vector", args[0]));
         }
@@ -6495,11 +6495,11 @@ public class LambdaJ {
 
 
         // time
-        public final Object getInternalRealTime(Object... args) { noArgs("get-internal-real-time", args.length); return LambdaJ.getInternalRealTime(); }
-        public final Object getInternalRunTime (Object... args) { noArgs("get-internal-run-time", args.length); return LambdaJ.getInternalRunTime(); }
-        public final Object getInternalCpuTime (Object... args) { noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
+        public final long   getInternalRealTime(Object... args) { noArgs("get-internal-real-time", args.length); return LambdaJ.getInternalRealTime(); }
+        public final long   getInternalRunTime (Object... args) { noArgs("get-internal-run-time", args.length); return LambdaJ.getInternalRunTime(); }
+        public final long   getInternalCpuTime (Object... args) { noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
         public final Object sleep              (Object... args) { oneArg("sleep", args.length); return LambdaJ.sleep(args[0]); }
-        public final Object getUniversalTime   (Object... args) { noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
+        public final long   getUniversalTime   (Object... args) { noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
         public final Object getDecodedTime     (Object... args) { noArgs("get-decoded-time", args.length); return intp.getDecodedTime(); }
 
 
