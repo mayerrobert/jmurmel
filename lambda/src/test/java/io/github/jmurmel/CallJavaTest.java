@@ -83,6 +83,13 @@ public class CallJavaTest {
     }
 
     @Test
+    public void invokeMapToStringWrongReceiver() {
+        LambdaJTest.runErrorTest("wrong reveiver.lisp",
+                                 "(define hash-tostring (jmethod \"java.util.HashMap\" \"toString\"))"
+                                 + "(hash-tostring 1)", "jmethod: 1.0 is not an instance of class");
+    }
+
+    @Test
     public void invokeMapToStringInline() throws Exception {
         runTest("(define create-hash (jmethod \"java.util.HashMap\" \"new\"))"
                 + "(define my-hash (create-hash))"
