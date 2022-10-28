@@ -3,26 +3,12 @@
 
 
 
-gensym symbole (beginnend mit #:) sollten beim symbol-printen NICHT in || gesteckt werden
-derzeit wird irgendwie gemischt, es gibt mit und ohne ||:
-JMurmel> (pprint (macroexpand-1 '(dogenerator (x (scan-multiple (scan '(11 22 33 44)) (scan #(111 222 333)) (scan 1 1 5)) 1 2 3 'done) (writeln x))))
-(let
-   ((#:g25 (scan-multiple (scan (quote (11 22 33 44))) (scan #(111 222 333)) (scan 1 1 5))))
-   (labels
-      ((#:g26 (x #:g24) (when #:g24 (writeln x) (multiple-value-call #:g26 (#:g25)))))
-      (multiple-value-call |#:g26| (|#:g25|))
-      (let ((x nil))
-         1
-         2
-         3
-         (quote done))))
-==> t
-
--> eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
-   gensym sollte namen im sinne g123 vergeben, nicht #:g123
+eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
+-> gensym sollte namen im sinne g123 vergeben, nicht #:g123
    LabmdaJSymbol.printSEx() sollte bei "escapeAtoms=true" bei uninterned "#:" voranstellen
    es sollte ein readermacro #: geben, das das folgende als uninterned symbol einliest
-
+-> vielleicht LambdaJSymbol.wellknown missbrauchen: statt WellknownSymbol.none -> interned und notinterned
+-> gensym brauchts eigentlich nicht in Murmel, kann man mit make-symbol implementieren
 
 im else zweig kann man nil weglassen. sollte man auch weglassen weil sonst gibts umsonst den environment lookup von nil
 -> oder in expand wegoptimieren
