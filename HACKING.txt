@@ -79,6 +79,11 @@ mvn test -Ppitest -pl lambda -DwithHistory=true -DtargetClasses=io.github.jmurme
 mvn test -Ppitest -pl lambda -DwithHistory=true -DtargetClasses=io.github.jmurmel.LambdaJ$SExpressionReader -DtargetTests=io.github.jmurmel.ScannerTest
     as above but only run one test class during mutation analysis
 
+mvn test -Ppitest -pl lambda -DwithHistory=true -DtargetTests=io.github.jmurmel.CallJavaTest -DexcludedClasses=io.github.jmurmel.LambdaJ$SExpressionReader,io.github.jmurmel.LambdaJ$WellknownSymbol*,io.github.jmurmel.jsr223*
+    run mutation testing c/o https://pitest.org/
+    do not mutate the class SExpressionReader or any of the WellknownSymbol enums (there's a lot of them), do incremental processing if possible
+    only run the CallJavaTest test class during mutation analysis
+
 
 
 Other useful commandlines:

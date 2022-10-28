@@ -15,6 +15,12 @@ public class CallJavaTest {
     }
 
     @Test
+    public void staticMethodNoArgs() throws Exception {
+        runTest("(define ctm (jmethod \"java.lang.System\" \"currentTimeMillis\"))"
+                + "(> (ctm) 0)", "t");
+    }
+
+    @Test
     public void staticMethod() throws Exception {
         System.setProperty("testprop", "testvalue");
         runTest("(define get-property (jmethod \"java.lang.System\" \"getProperty\" \"java.lang.String\"))"
@@ -26,6 +32,13 @@ public class CallJavaTest {
         System.setProperty("testprop", "testvalue");
         runTest("((jmethod \"java.lang.System\" \"getProperty\" \"java.lang.String\") \"testprop\")",
                 "\"testvalue\"");
+    }
+
+    @Test
+    public void staticMethodInlineTooManyArgs() {
+        System.setProperty("testprop", "testvalue");
+        LambdaJTest.runErrorTest("toomanyargs", "((jmethod \"java.lang.System\" \"getProperty\" \"java.lang.String\") \"testprop\" 1)",
+                                 "getProperty: expected one argument but got extra arg(s)");
     }
 
     @Test
