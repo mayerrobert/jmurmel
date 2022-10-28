@@ -4606,7 +4606,7 @@ public class LambdaJ {
 
         UnaryOperator<Object> conv = null;
         if (args != null) for (int i = 0; i < argCount; i++) {
-            if (!method.isVarArgs() || i < argConv.length) conv = argConv[i];
+            if (i < argConv.length) conv = argConv[i];
             if (conv != null) args[i] = conv.apply(args[i]);
         }
     }
@@ -6731,19 +6731,53 @@ public class LambdaJ {
 
         public static <T> T[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, T[] resultArray) {
             if (transform == null) {
-                int dst = 0;
-                for (int i = paramCount; i < args.length; i++) {
-                    resultArray[dst] = (T)args[i];
-                    dst++;
-                }
+                for (int dst = 0, i = paramCount; i < args.length; ) { resultArray[dst++] = (T)args[i++]; }
             }
             else {
-                int dst = 0;
-                for (int i = paramCount; i < args.length; i++) {
-                    resultArray[dst] = (T)transform.apply(args[i]);
-                    dst++;
-                }
+                for (int dst = 0, i = paramCount; i < args.length; ) { resultArray[dst++] = (T)transform.apply(args[i++]); }
             }
+            return resultArray;
+        }
+
+        public static byte[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, byte[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (byte)transform.apply(args[i++]);
+            return resultArray;
+        }
+
+        public static short[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, short[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (short)transform.apply(args[i++]);
+            return resultArray;
+        }
+
+        public static int[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, int[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (int)transform.apply(args[i++]);
+            return resultArray;
+        }
+
+        public static long[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, long[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (long)transform.apply(args[i++]);
+            return resultArray;
+        }
+
+        public static float[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, float[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (float)transform.apply(args[i++]);
+            return resultArray;
+        }
+
+        public static double[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, double[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (double)transform.apply(args[i++]);
+            return resultArray;
+        }
+
+        public static char[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, char[] resultArray) {
+            assert transform != null;
+            for (int dst = 0, i = paramCount; i < args.length; ) resultArray[dst++] = (char)transform.apply(args[i++]);
             return resultArray;
         }
 
@@ -8754,12 +8788,12 @@ public class LambdaJ {
                             if (desc == null) sb.append("args[").append(i).append(']');
                             else sb.append(desc[1]).append("(args[").append(i).append("])");
                         }
-                        assert desc != null: "varargs with zero args should not happen";
+
                         // handle last parameter which is vararg: pass an array of the appropriate type with the remaining args
-                        // { Short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) }
+                        desc = classByName.get(paramTypeNames.get(params.length-1));
                         final int varargPos = params.length + startArg - 1;
                         final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ")";
-                        sb.append("\n        , toVarargs(args, " + varargPos + ", " + conv + ", new " + ((Class<?>)desc[0]).getCanonicalName() + "[args.length - " + varargPos + "])");
+                        sb.append("\n        , toVarargs(args, " + varargPos + ", " + conv + ", new " + ((Class<?>)desc[0]).getComponentType().getCanonicalName() + "[args.length - " + varargPos + "])");
                     }
                     else {
                         String conv = null;

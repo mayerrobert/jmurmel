@@ -1,7 +1,3 @@
-mehr JFFI tests in CallJavaTest, v.a. auch varargs, auch kompiliert
--> oder in murmel-test.lisp
-
-varargs: primitive typen?!
 
 
 

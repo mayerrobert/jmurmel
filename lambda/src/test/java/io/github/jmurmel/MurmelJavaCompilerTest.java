@@ -648,19 +648,31 @@ public class MurmelJavaCompilerTest {
         assertEquals(expectedResult, actualResult);
     }
 
+    static void compileAndRun(String source, String expectedResultSexp) throws Exception {
+        final MurmelProgram program = compile(source);
+        final Object actualResult = program.body();
+        assertEquals(expectedResultSexp, TestUtils.sexp(actualResult));
+    }
+
     private static MurmelProgram compile(String source) throws Exception {
-        MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
+        final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
 
         final Reader reader = new StringReader(source);
         final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
 
-        Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
-        StringWriter w = new StringWriter();
-        c.formsToJavaSource(w, "Test", parser);
-        String s = w.toString();
-        assertNotNull("failed to compile Murmel to class:\n\n" + s, murmelClass);
-
-        return murmelClass.getDeclaredConstructor().newInstance();
+        try {
+            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+            return murmelClass.getDeclaredConstructor().newInstance();
+        }
+        catch (LambdaJError le) {
+            final StringWriter w = new StringWriter();
+            final Reader reader2 = new StringReader(source);
+            final ObjectReader parser2 = LambdaJ.makeReader(reader2::read, c.getSymbolTable(), null);
+            c.formsToJavaSource(w, "Test", parser2);
+            final String s = w.toString();
+            fail("failed to compile Murmel to class:\n\n" + s);
+        }
+        return null; // notreached
     }
 
     private static void compileError(String source, String expected) throws Exception {
