@@ -1679,21 +1679,21 @@ public class LambdaJ {
         // conses and lists
         sCar("car", Features.HAVE_CONS, 1)            { Object   apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
         sCdr("cdr", Features.HAVE_CONS, 1)            { Object   apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
-        sCons("cons", Features.HAVE_CONS, 2)          { ConsCell apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
-        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { ConsCell apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
-        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { ConsCell apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
+        sCons("cons", Features.HAVE_CONS, 2)          { Object   apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
+        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { Object   apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
+        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { Object   apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
 
-        sList("list", Features.HAVE_UTIL, -1)         { ConsCell apply(LambdaJ intp, ConsCell args) { return args; } },
+        sList("list", Features.HAVE_UTIL, -1)         { Object   apply(LambdaJ intp, ConsCell args) { return args; } },
         sListStar("list*", Features.HAVE_UTIL, 1, -1) { Object   apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
         sAppend("append", Features.HAVE_UTIL, -1)     { Object   apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
-        sAssq("assq", Features.HAVE_UTIL, 2)          { ConsCell apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
-        sAssoc("assoc", Features.HAVE_UTIL, 2)        { ConsCell apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
+        sAssq("assq", Features.HAVE_UTIL, 2)          { Object   apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
+        sAssoc("assoc", Features.HAVE_UTIL, 2)        { Object   apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
         // numbers, characters
-        sAdd("+", Features.HAVE_NUMBERS, -1)                 { Double apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
-        sMul("*", Features.HAVE_NUMBERS, -1)                 { Double apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
-        sSub("-", Features.HAVE_NUMBERS, 1, -1)              { Double apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
-        sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { Double apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
+        sAdd("+", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
+        sMul("*", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
+        sSub("-", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
+        sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
 
         sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
         sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
@@ -1702,49 +1702,49 @@ public class LambdaJ {
         sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
         sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
 
-        sInc("1+", Features.HAVE_NUMBERS, 1)                 { Number apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
-        sDec("1-", Features.HAVE_NUMBERS, 1)                 { Number apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
+        sInc("1+", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
+        sDec("1-", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
 
-        sSignum("signum", Features.HAVE_NUMBERS, 1)          { Number apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
+        sSignum("signum", Features.HAVE_NUMBERS, 1)          { Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
 
-        sRound("round", Features.HAVE_NUMBERS, 1, 2)         { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
-        sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
-        sCeiling("ceiling", Features.HAVE_NUMBERS, 1, 2)     { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
-        sTruncate("truncate", Features.HAVE_NUMBERS, 1, 2)   { Long   apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
+        sRound("round", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
+        sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
+        sCeiling("ceiling", Features.HAVE_NUMBERS, 1, 2)     { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
+        sTruncate("truncate", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
 
-        sFRound("fround", Features.HAVE_NUMBERS, 1, 2)       { Double apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
-        sFFloor("ffloor", Features.HAVE_NUMBERS, 1, 2)       { Double apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
-        sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { Double apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
-        sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { Double apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
+        sFRound("fround", Features.HAVE_NUMBERS, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
+        sFFloor("ffloor", Features.HAVE_NUMBERS, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
+        sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
+        sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
 
-        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Double apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
-        sLog("log", Features.HAVE_NUMBERS, 1)                { Double apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
-        sLog10("log10", Features.HAVE_NUMBERS, 1)            { Double apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
-        sExp("exp", Features.HAVE_NUMBERS, 1)                { Double apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
-        sExpt("expt", Features.HAVE_NUMBERS, 2)              { Double apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
+        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
+        sLog("log", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
+        sLog10("log10", Features.HAVE_NUMBERS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
+        sExp("exp", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
+        sExpt("expt", Features.HAVE_NUMBERS, 2)              { Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
 
-        sMod("mod", Features.HAVE_NUMBERS, 2)                { Double apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
-        sRem("rem", Features.HAVE_NUMBERS, 2)                { Double apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
+        sMod("mod", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
+        sRem("rem", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
 
         // vectors, sequences
         sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { Object    apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
-        sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2)       { Long      apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
+        sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2)       { Object    apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
         sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1)            { Object    apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args)); } },
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
-        sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { Long      apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
+        sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { Object    apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
         sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
 
-        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Long      apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
+        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Object    apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
         sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
         sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
         sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
-        sSLength("slength", Features.HAVE_STRING, 1)                   { Long      apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
-        sSRef("sref", Features.HAVE_STRING, 2)                         { Character apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
-        sSSet("sset", Features.HAVE_STRING, 3)                         { Character apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
+        sSLength("slength", Features.HAVE_STRING, 1)                   { Object    apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
+        sSRef("sref", Features.HAVE_STRING, 2)                         { Object    apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
+        sSSet("sset", Features.HAVE_STRING, 3)                         { Object    apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
         sSEq("string=", Features.HAVE_STRING, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
         sStringToList("string->list", Features.HAVE_STRING, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
         sListToString("list->string", Features.HAVE_STRING, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return listToString(car(args)); } },
@@ -1754,9 +1754,9 @@ public class LambdaJ {
 
         sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
 
-        sSBvLength("sbvlength", Features.HAVE_VECTOR, 1)               { Long      apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
-        sSBvRef("sbvref", Features.HAVE_VECTOR, 2)                     { Long      apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
-        sSBvSet("sbvset", Features.HAVE_VECTOR, 3)                     { Long      apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
+        sSBvLength("sbvlength", Features.HAVE_VECTOR, 1)               { Object    apply(LambdaJ intp, ConsCell args) { return sbvlength(car(args)); } },
+        sSBvRef("sbvref", Features.HAVE_VECTOR, 2)                     { Object    apply(LambdaJ intp, ConsCell args) { return sbvref(car(args), toNonnegInt("sbvref", cadr(args))); } },
+        sSBvSet("sbvset", Features.HAVE_VECTOR, 3)                     { Object    apply(LambdaJ intp, ConsCell args) { return sbvset(requireIntegralNumber("sbvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("sbvset", caddr(args))); } },
         sSBvEq("sbv=", Features.HAVE_VECTOR, 2)                        { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbvEq(car(args), cadr(args))); } },
         sSBvToList("simple-bit-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleBitVectorToList(car(args)); } },
         sListToSBv("list->simple-bit-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToBooleanArray(car(args)); } },
@@ -1781,12 +1781,12 @@ public class LambdaJ {
         sFatal("fatal", Features.HAVE_UTIL, 1)                  { Object apply(LambdaJ intp, ConsCell args) { throw new RuntimeException(String.valueOf(car(args))); } },
 
         // time
-        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { Long     apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
-        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { Long     apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
-        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Long     apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
-        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Long     apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
+        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { Object   apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
+        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { Object   apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
+        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Object   apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
+        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Object   apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
         sSleep("sleep", Features.HAVE_UTIL, 1)                      { Object   apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
-        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { ConsCell apply(LambdaJ intp, ConsCell args) { return intp.getDecodedTime(); } },
+        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { Object   apply(LambdaJ intp, ConsCell args) { return intp.getDecodedTime(); } },
 
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
@@ -4793,51 +4793,48 @@ public class LambdaJ {
                 current_frame = ret;
                 return ret;
             };
-            topEnv = addBuiltin("make-frame",    makeFrame,
-                  addBuiltin("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    },
-                  addBuiltin("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   },
-                  addBuiltin("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   },
-                  addBuiltin("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   },
-                  addBuiltin("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); },
-                  addBuiltin("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   },
+            addBuiltin("make-frame",    makeFrame);
+            addBuiltin("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    });
+            addBuiltin("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   });
+            addBuiltin("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   });
+            addBuiltin("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   });
+            addBuiltin("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); });
+            addBuiltin("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   });
 
-                  // set new current frame, return previous frame
-                  addBuiltin("current-frame", (Primitive) a -> { varargs0_1("current-frame", a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; },
+            // set new current frame, return previous frame
+            addBuiltin("current-frame", (Primitive) a -> { varargs0_1("current-frame", a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; });
 
-                  addBuiltin("push-pos",      (Primitive) a -> { varargs0_1("push-pos", a); return requireFrame("push-pos",car(a)).pushPos(); },
-                  addBuiltin("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",  a); return requireFrame("pop-pos", car(a)).popPos();  },
+            addBuiltin("push-pos",      (Primitive) a -> { varargs0_1("push-pos", a); return requireFrame("push-pos",car(a)).pushPos(); });
+            addBuiltin("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",  a); return requireFrame("pop-pos", car(a)).popPos();  });
 
-                  addBuiltin("pen-up",        (Primitive) a -> { varargs0_1("pen-up",   a); return requireFrame("pen-up",   car(a)).penUp();   },
-                  addBuiltin("pen-down",      (Primitive) a -> { varargs0_1("pen-down", a); return requireFrame("pen-down", car(a)).penDown(); },
+            addBuiltin("pen-up",        (Primitive) a -> { varargs0_1("pen-up",   a); return requireFrame("pen-up",   car(a)).penUp();   });
+            addBuiltin("pen-down",      (Primitive) a -> { varargs0_1("pen-down", a); return requireFrame("pen-down", car(a)).penDown(); });
 
-                  addBuiltin("color",         (Primitive) a -> { varargs1_2("color",   a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); },
-                  addBuiltin("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor", a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); },
+            addBuiltin("color",         (Primitive) a -> { varargs1_2("color",   a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
+            addBuiltin("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor", a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
 
-                  addBuiltin("text",          (Primitive) a -> { varargs1_2("text",    a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); },
+            addBuiltin("text",          (Primitive) a -> { varargs1_2("text",    a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); });
 
-                  addBuiltin("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); },
-                  addBuiltin("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); },
-                  addBuiltin("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); },
-                  topEnv))))))))))))))))));
+            addBuiltin("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
+            addBuiltin("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
+            addBuiltin("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
 
-            topEnv = addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  },
-                  addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  },
-                  addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); },
-                  addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); },
-                  topEnv))));
+            addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
+            addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
+            addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
+            addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
 
-            topEnv = addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); },
-                  addBuiltin("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); },
-                  addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  },
-                  addBuiltin("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
-                                                                 return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                                    | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                                    | toInt("rgb-to-pixel", caddr(a))); },
-                  addBuiltin("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",   a);
-                                                                 return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                             toFloat("hsb-to-pixel", cadr(a)),
-                                                                                             toFloat("hsb-to-pixel", caddr(a)));  },
-                  topEnv)))));
+            addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
+            addBuiltin("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); });
+            addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
+            addBuiltin("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
+                                                           return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                              | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                              | toInt("rgb-to-pixel", caddr(a))); });
+            addBuiltin("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",   a);
+                                                           return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                       toFloat("hsb-to-pixel", cadr(a)),
+                                                                                       toFloat("hsb-to-pixel", caddr(a)));  });
         }
 
         if (haveString()) {
@@ -4861,23 +4858,22 @@ public class LambdaJ {
         }
 
         if (haveT()) {
-            final LambdaJSymbol sT = internWellknown("t");
             addBuiltin(sT, sT);
         }
 
         if (haveNil()) {
-            addBuiltin(internWellknown("nil"), null);
+            addBuiltin(sNil, null);
         }
 
         if (haveVector()) {
-            topEnv = addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE, topEnv);
+            addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_VECTOR.bits(), this::addBuiltin);
         }
 
         if (haveUtil()) {
             topEnv = cons(featuresEnvEntry, topEnv);
-            topEnv = addBuiltin("internal-time-units-per-second", (long)1e9, topEnv);
+            addBuiltin("internal-time-units-per-second", (long)1e9);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
         }
@@ -4887,10 +4883,9 @@ public class LambdaJ {
         }
 
         if (haveNumbers()) {
-            topEnv = addBuiltin("pi",      Math.PI,
-                  addBuiltin("most-positive-fixnum", MOST_POSITIVE_FIXNUM,
-                  addBuiltin("most-negative-fixnum", MOST_NEGATIVE_FIXNUM,
-                  topEnv)));
+            addBuiltin("pi", Math.PI);
+            addBuiltin("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
+            addBuiltin("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_NUMBERS.bits(), this::addBuiltin);
         }
@@ -4908,8 +4903,8 @@ public class LambdaJ {
         }
     }
 
-    private ListConsCell addBuiltin(final String sym, final Object value, ConsCell env) {
-        return acons(intern(sym), value, env);
+    private void addBuiltin(final String sym, final Object value) {
+        topEnv = acons(intern(sym), value, topEnv);
     }
 
     private void addBuiltin(final LambdaJSymbol sym, final Object value) {

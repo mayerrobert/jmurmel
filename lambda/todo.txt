@@ -24,6 +24,12 @@ im else zweig kann man nil weglassen. sollte man auch weglassen weil sonst gibts
       (if x 'notnull
         'null)
 
+
+gcd gibts in BigInteger
+static int lcm(int a, int b, int gcdValue) { return Math.abs(a * b) / gcdValue; }
+siehe auch https://stackoverflow.com/questions/4201860/how-to-find-gcd-lcm-on-a-set-of-numbers
+
+
 mangle könnte einfachere namen generieren, wenn häufige buchstaben nicht durch zahlen ersetzt werden
   -     _dash_
   %     _pc_
