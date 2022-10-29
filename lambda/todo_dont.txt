@@ -113,3 +113,18 @@ LambdaJ> (write (read)) "Hello, World!"
 define sollte das aktuelle environment erweitern, nicht das globale
 zusaetzlich define-global einfuehren (ist das dasselbe wie defconst? solange keine re-definition und kein set -> ja)
 -> oder auch nicht: Scheme define != Old Lisp define
+
+
+
+CL hat auch boolean:
+* (describe 'boolean)
+COMMON-LISP:BOOLEAN
+  [symbol]
+
+BOOLEAN names a type-specifier:
+  Lambda-list: ()
+  Expansion: (MEMBER T NIL)
+
+-> bit sollte ggf. java.lang.byte sein statt boolean, Lisp boolean könnte Java boolean sein
+   -> dann brauchen die bitoperationen kein ?: mehr, und JFFI könnte besser angebunden werden
+-> oder weglassen, CLtL hat kein boolean

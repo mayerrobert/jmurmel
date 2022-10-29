@@ -1622,7 +1622,6 @@ public class LambdaJ {
     private static final Object UNASSIGNED = "#<value is not assigned>";          // only relevant in letrec
     static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
-    private static final Object NOT_HANDLED = "cannot opencode";
 
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
@@ -1795,7 +1794,7 @@ public class LambdaJ {
         ;
 
         final WellknownSymbolKind kind;
-        private final String sym;
+        final String sym;
 
         private final int min, max;
         private final Features feature;
@@ -1818,7 +1817,7 @@ public class LambdaJ {
             this.feature = feature;
         }
 
-        Object apply(LambdaJ intp, ConsCell args) { assert false: "apply is not implemented for " + sym; return NOT_HANDLED; }
+        Object apply(LambdaJ intp, ConsCell args) { throw errorInternal("apply is not implemented for %s", sym); }
         Object applyPrimitive(LambdaJ intp, ConsCell args) { argCheck(args); return apply(intp, args); }
 
         void argCheck(ConsCell args) {
@@ -2974,7 +2973,7 @@ public class LambdaJ {
     /// ### debug support - trace and untrace
     private Map<Object, LambdaJSymbol> traced;
 
-    private Object trace(ConsCell symbols) {
+    final Object trace(ConsCell symbols) {
         if (symbols == null) return traced == null ? null : new ArraySlice(traced.values().toArray(), 0);
         if (traced == null) traced = new HashMap<>();
         for (Object sym: symbols) {
@@ -2989,7 +2988,7 @@ public class LambdaJ {
         return new ArraySlice(traced.values().toArray(), 0);
     }
 
-    private Object untrace(ConsCell symbols) {
+    final Object untrace(ConsCell symbols) {
         if (symbols == null) { traced = null; return null; }
         ConsCell ret = null;
         if (traced != null) {
@@ -3223,7 +3222,7 @@ public class LambdaJ {
         return new ArraySlice(elems, 0);
     }
 
-    private Object boolResult(boolean b) { return b ? expTrue.get() : null; }
+    final Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
     private ConsCell list(Object... a) {
         if (a == null || a.length == 0) return null;
@@ -3557,7 +3556,7 @@ public class LambdaJ {
     /// ##  Error checking functions, used by interpreter and primitives
 
     /** a must be the empty list */
-    private static void noArgs(String func, ConsCell a) {
+    static void noArgs(String func, ConsCell a) {
         if (a != null) errorArgCount(func, 0, 0, 1, a);
     }
 
@@ -3790,11 +3789,11 @@ public class LambdaJ {
     }
 
     /** convert {@code a} to an int, error if {@code a} is not a number. */
-    private static int toInt(String func, Object a) {
+    static int toInt(String func, Object a) {
         return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
     }
 
-    private static int toNonnegInt(String func, Object a) {
+    static int toNonnegInt(String func, Object a) {
         return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
     }
 
@@ -3829,7 +3828,7 @@ public class LambdaJ {
 
     /// conses and lists
 
-    private Object listStar(ConsCell args) {
+    final Object listStar(ConsCell args) {
         if (cdr(args) == null) return car(args);
         if (cddr(args) == null) return cons(car(args), cadr(args));
         final CountingListBuilder b = new CountingListBuilder();
@@ -3842,7 +3841,7 @@ public class LambdaJ {
 
     /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
      *  all args except the last must be a list */
-    private Object append(ConsCell args) {
+    final Object append(ConsCell args) {
         if (args == null) return null;
         if (cdr(args) == null) return car(args);
         if (!listp(car(args))) throw new LambdaJError(true, "append: first argument %s is not a list", car(args));
@@ -3885,7 +3884,7 @@ public class LambdaJ {
     }
 
     /** compare subsequent pairs of the given list of numbers with the given predicate */
-    private Object compare(ConsCell args, String opName, DoubleBiPred pred) {
+    final Object compare(ConsCell args, String opName, DoubleBiPred pred) {
         Object prev = car(args);
         for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
             final Object next = car(rest);
@@ -3896,7 +3895,7 @@ public class LambdaJ {
     }
 
     /** operator for zero or more args */
-    private static double addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+    static double addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
         if (car(_args) == null) return startVal;
         ConsCell args = _args;
         double result = toDouble(opName, car(args));
@@ -3913,7 +3912,7 @@ public class LambdaJ {
     }
 
     /** operator for one or more args */
-    private static double subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+    static double subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
         ConsCell args = _args;
         double result = toDouble(opName, car(args));
 
@@ -3930,7 +3929,7 @@ public class LambdaJ {
         return result;
     }
 
-    private static double quot12(String func, ConsCell args) {
+    static double quot12(String func, ConsCell args) {
         final double lhs = toDouble(func, car(args));
         return cdr(args) == null ? lhs : lhs / toDouble(func, cadr(args));
     }
@@ -4196,7 +4195,7 @@ public class LambdaJ {
         return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
     }
 
-    private Object vectorToList(Object maybeVector) {
+    final Object vectorToList(Object maybeVector) {
         if (svectorp(maybeVector)) return simpleVectorToList(maybeVector);
         if (stringp(maybeVector)) return stringToList(maybeVector);
         if (sbitvectorp(maybeVector)) return simpleBitVectorToList(maybeVector);
@@ -4219,7 +4218,7 @@ public class LambdaJ {
         throw errorNotAVector("vector->list", maybeVector);
     }
 
-    private Object simpleVectorToList(Object maybeVector) {
+    final Object simpleVectorToList(Object maybeVector) {
         final Object[] s = requireSimpleVector("simple-vector->list", maybeVector);
         if (s.length == 0) return null;
         final CountingListBuilder ret = new CountingListBuilder();
@@ -4228,7 +4227,7 @@ public class LambdaJ {
         return ret.first();
     }
 
-    private Object simpleBitVectorToList(Object maybeVector) {
+    final Object simpleBitVectorToList(Object maybeVector) {
         final boolean[] s = requireSimpleBitVector("simple-bit-vector->list", maybeVector);
         final CountingListBuilder ret = new CountingListBuilder();
         final int len = s.length;
@@ -4244,7 +4243,7 @@ public class LambdaJ {
         return ret.toString().toCharArray();
     }
 
-    private Object stringToList(Object maybeString) {
+    final Object stringToList(Object maybeString) {
         final CountingListBuilder ret = new CountingListBuilder();
         if (maybeString instanceof char[]) {
             final char[] carry = (char[])maybeString;
@@ -4531,7 +4530,7 @@ public class LambdaJ {
         }
     }
 
-    private static UnaryOperator<Object>[] makeArgConv(Iterable<?> paramClassNames, int paramCount, int skipThis) {
+    static UnaryOperator<Object>[] makeArgConv(Iterable<?> paramClassNames, int paramCount, int skipThis) {
         final UnaryOperator<Object>[] argConv = new UnaryOperator[paramCount + skipThis];
         int i = 0;
         if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
