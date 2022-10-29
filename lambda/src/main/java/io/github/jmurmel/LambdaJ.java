@@ -6548,8 +6548,8 @@ public class LambdaJ {
         public final Object penUp        (Object... args) { varargs0_1("pen-up",        args.length); return requireFrame("pen-up",         nth(0, args)).penUp();   }
         public final Object penDown      (Object... args) { varargs0_1("pen-down",      args.length); return requireFrame("pen-down",       nth(0, args)).penDown(); }
 
-        public final Object color        (Object... args) { varargs1_2("color",         args.length); return requireFrame("color",          nth(1, args)).color  (toInt(nth(0, args))); }
-        public final Object bgColor      (Object... args) { varargs1_2("bgcolor",       args.length); return requireFrame("bgcolor",        nth(1, args)).bgColor(toInt(nth(0, args))); }
+        public final Object color        (Object... args) { varargs1_2("color",         args.length); return requireFrame("color",          nth(1, args)).color  (toInt(args[0])); }
+        public final Object bgColor      (Object... args) { varargs1_2("bgcolor",       args.length); return requireFrame("bgcolor",        nth(1, args)).bgColor(toInt(args[0])); }
 
         public final Object text         (Object... args) { varargs1_2("text",          args.length); return requireFrame("text",           nth(1, args)).text   (args[0].toString()); }
 
@@ -6565,17 +6565,15 @@ public class LambdaJ {
         public final Object makeBitmap   (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return requireFrame("make-bitmap",    nth(2, args)).makeBitmap(toInt(args[0]), toInt(args[1]));  }
         public final Object discardBitmap(Object... args) { varargs0_1("discard-bitmap",   args.length);       return requireFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
 
-        public final Object setPixel     (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return requireFrame("set-pixel",      nth(3, args)).setRGB(toInt(args[0]), toInt(args[1]), toInt(args[2]));  }
-        public final Object rgbToPixel   (Object... args) { threeArgs("rgb-to-pixel", args.length);
-                                                            final int r = toInt(args[0]);
-                                                            final int g = toInt(args[1]);
-                                                            final int b = toInt(args[2]);
-                                                            return (long)(int)((r << 16) | (g << 8) | b); }
-        public final Object hsbToPixel   (Object... args) { threeArgs("hsb-to-pixel", args.length);
-                                                            final float hue = toFloat(args[0]);
-                                                            final float sat = toFloat(args[1]);
-                                                            final float bri = toFloat(args[2]);
-                                                            return (long)Color.HSBtoRGB(hue, sat, bri); }
+        public final Object setPixel     (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return setPixel(toInt(args[0]), toInt(args[1]), toInt(args[2]), nth(3, args)); }
+        public final Object setPixel     (Object x, Object y, Object rgb) { return setPixel(x, y, rgb, null);  }
+        public final Object setPixel     (Object x, Object y, Object rgb, Object frame) { return requireFrame("set-pixel", frame).setRGB(toInt(x), toInt(y), toInt(rgb));  }
+
+        public final  long rgbToPixel    (Object... args) { threeArgs("rgb-to-pixel", args.length); return rgbToPixel(args[0], args[1], args[2]); }
+        public static long rgbToPixel    (Object red, Object green, Object blue) { return (int)((toInt(red) << 16) | (toInt(green) << 8) | toInt(blue)); }
+
+        public final  long hsbToPixel    (Object... args) { threeArgs("hsb-to-pixel", args.length); return hsbToPixel(args[0], args[1], args[2]); }
+        public static long hsbToPixel    (Object h, Object s, Object b) { return Color.HSBtoRGB(toFloat(h), toFloat(s), toFloat(b)); }
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
@@ -9676,7 +9674,6 @@ final class TurtleFrame {
                     }
                     else /*if (o instanceof Line2D.Double)*/ {
                         final Line2D.Double line = (Line2D.Double)o;
-                        //System.out.println("line x1=" + trX(fac, xoff, line.getX1()) + " y1=" + (h - trY(fac, yoff, line.getY1())) + " x2=" + trX(fac, xoff, line.getX2()) + " y2=" + (h - trY(fac, yoff, line.getY2())));
 
                         g.drawLine(
                         trX(fac, xoff, line.getX1()),

@@ -1,3 +1,7 @@
+die ganzen sbv... funktionen nach bv... umwandeln
+-> simple-vector, string und bit-vector erben alle von vector
+   hätten dann alle die gleichen funktionen
+   gibt dann nicht mehr bv= und sbv= -> eine funktion weniger
 
 
 
