@@ -6103,8 +6103,8 @@ public class LambdaJ {
             public Object get() { return value; }
             public Object set(Object value) { return this.value = value; }
 
-            public void push() { dynamicStack = cons(value, dynamicStack); }
-            public void push(Object value) { dynamicStack = cons(this.value, dynamicStack); this.value = value; }
+            public void push() { dynamicStack = _cons(value, dynamicStack); }
+            public void push(Object value) { dynamicStack = _cons(this.value, dynamicStack); this.value = value; }
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
@@ -6229,7 +6229,7 @@ public class LambdaJ {
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length);        return bool(args[0] == args[1]); }
 
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length);        return bool(LambdaJ.eql(args[0], args[1])); }
-        public final Object eql(Object o1, Object o2)   { return bool(LambdaJ.eql(o1, o2)); }
+        public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.eql(o1, o2)); }
 
         public final Object _consp     (Object... args) { oneArg("consp",        args.length);        return bool(consp(args[0])); }
         public final Object _atom      (Object... args) { oneArg("atom",         args.length);        return bool(atom(args[0])); }
@@ -6255,31 +6255,31 @@ public class LambdaJ {
 
 
         // conses and lists
-        public final  Object _car      (Object... args) { oneArg("car",     args.length); return car(args[0]); }
-        public static Object car       (Object l)       { return LambdaJ.car(l); } // also used by generated code
-        public static Object car       (ConsCell l)     { return LambdaJ.car(l); }
+        public final  Object _car      (Object... args) { oneArg("car",     args.length); return _car(args[0]); }
+        public static Object _car      (Object l)       { return LambdaJ.car(l); } // also used by generated code
+        public static Object _car      (ConsCell l)     { return LambdaJ.car(l); }
 
-        public final  Object _cdr      (Object... args) { oneArg("cdr",     args.length); return cdr(args[0]); }
-        public static Object cdr       (Object l)       { return LambdaJ.cdr(l); } // also used by generated code
-        public static Object cdr       (ConsCell l)     { return LambdaJ.cdr(l); }
+        public final  Object _cdr      (Object... args) { oneArg("cdr",     args.length); return _cdr(args[0]); }
+        public static Object _cdr      (Object l)       { return LambdaJ.cdr(l); } // also used by generated code
+        public static Object _cdr      (ConsCell l)     { return LambdaJ.cdr(l); }
 
-        public final  ConsCell _cons   (Object... args) { twoArgs("cons",   args.length); return cons(args[0], args[1]); }
-        public static ConsCell cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
+        public final  ConsCell _cons   (Object... args) { twoArgs("cons",   args.length); return _cons(args[0], args[1]); }
+        public static ConsCell _cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
 
-        public final  ConsCell _rplaca (Object... args) { twoArgs("rplaca", args.length);  return rplaca(args[0], args[1]); }
-        public static ConsCell rplaca(Object l, Object newCar) { return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
-        public static ConsCell rplaca(ConsCell l, Object newCar) { return l.rplaca(newCar); }
+        public final  ConsCell _rplaca (Object... args) { twoArgs("rplaca", args.length);  return _rplaca(args[0], args[1]); }
+        public static ConsCell _rplaca(Object l, Object newCar) { return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
+        public static ConsCell _rplaca(ConsCell l, Object newCar) { return l.rplaca(newCar); }
 
-        public final  ConsCell _rplacd (Object... args) { twoArgs("rplacd", args.length);  return rplacd(args[0], args[1]); }
-        public static ConsCell rplacd(Object l, Object newCdr) { return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
-        public static ConsCell rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
+        public final  ConsCell _rplacd (Object... args) { twoArgs("rplacd", args.length);  return _rplacd(args[0], args[1]); }
+        public static ConsCell _rplacd(Object l, Object newCdr) { return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
+        public static ConsCell _rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { return ListBuilder.list(args); }
         public final Object listStar   (Object... args) {
             int nArgs;
             varargs1("list*", nArgs = args.length);
             if (nArgs == 1) return args[0];
-            if (nArgs == 2) return cons(args[0], args[1]);
+            if (nArgs == 2) return _cons(args[0], args[1]);
             final ListBuilder b = new ListBuilder();
             int i = 0;
             nArgs--;
@@ -6344,9 +6344,9 @@ public class LambdaJ {
         }
 
         public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(args[0]); }
-        public static Number  inc1     (Object arg)     { return LambdaJ.inc(arg); }
+        public static Number  inc      (Object arg)     { return LambdaJ.inc(arg); }
         public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(args[0]); }
-        public static Number  dec1     (Object arg)     { return LambdaJ.dec(arg); }
+        public static Number  dec      (Object arg)     { return LambdaJ.dec(arg); }
 
         public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (args[0]); }
 
@@ -6412,10 +6412,10 @@ public class LambdaJ {
         }
 
         public final long     _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
-        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return svref(args[0], args[1]); }
-        public static Object svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
-        public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return svset(args[0], args[1], args[2]); }
-        public static Object svset(Object val, Object v, Object idx) { return LambdaJ.svset(val, v, toArrayIndex(idx)); }
+        public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return _svref(args[0], args[1]); }
+        public static Object  _svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
+        public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return _svset(args[0], args[1], args[2]); }
+        public static Object  _svset(Object val, Object v, Object idx) { return LambdaJ.svset(val, v, toArrayIndex(idx)); }
         public final Object   simpleVectorToList (Object... args) {
             oneArg("simple-vector->list", args.length);
             final Object maybeVector = args[0];
@@ -6455,13 +6455,13 @@ public class LambdaJ {
         public final Object bvEq        (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
 
         public final  long  _sbvlength  (Object... args) { oneArg("sbvlength", args.length);     return sbvlength(args[0]); }
-        public final  long  _sbvref     (Object... args) { twoArgs("sbvref", args.length); return sbvref(args[0], args[1]); }
-        public static long  sbvref(Object v, Object idx) { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
-        public static long  sbvref(Object v, long idx)   { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
-        public final  long  _sbvset     (Object... args) { threeArgs("sbvset", args.length);     return sbvset(args[0], args[1], args[2]); }
-        public static long  sbvset(Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
-        public static long  sbvset(long val, Object v, Object idx)   { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
-        public static long  sbvset(long val, Object v, long idx)     { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public final  long  _sbvref     (Object... args) { twoArgs("sbvref", args.length); return _sbvref(args[0], args[1]); }
+        public static long  _sbvref(Object v, Object idx) { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
+        public static long  _sbvref(Object v, long idx)   { return LambdaJ.sbvref(v, toArrayIndex(idx)); }
+        public final  long  _sbvset     (Object... args) { threeArgs("sbvset", args.length);     return _sbvset(args[0], args[1], args[2]); }
+        public static long  _sbvset(Object val, Object v, Object idx) { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public static long  _sbvset(long val, Object v, Object idx)   { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
+        public static long  _sbvset(long val, Object v, long idx)     { return LambdaJ.sbvset(toBit(val), v, toArrayIndex(idx)); }
         public final Object sbvEq      (Object... args) { twoArgs("sbv=", args.length);         return bool(LambdaJ.sbvEq(args[0], args[1])); }
         public final Object simpleBitVectorToList(Object... args) {
             oneArg("simple-bit-vector->list", args.length);
@@ -6510,9 +6510,9 @@ public class LambdaJ {
 
 
         // Java FFI
-        public final Object _jmethod   (Object... args) { varargs2("jmethod", args.length); return findMethod(args[0], args[1], arraySlice(args, 2)); }
-        public static Primitive findMethod(Object className, Object methodName, ConsCell paramClasses) {
-            return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), paramClasses);
+        public final Object _jmethod   (Object... args) {
+            varargs2("jmethod", args.length);
+            return LambdaJ.findMethod(LambdaJ.requireString("jmethod", args[0]), LambdaJ.requireString("jmethod", args[1]), arraySlice(args, 2));
         }
         public static Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
             return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
@@ -6582,7 +6582,7 @@ public class LambdaJ {
 
         public static Object arrayToList(Object[] args, int start) {
             if (start >= args.length) return null;
-            if (args.length-start == 1) return cons(args[start], null);
+            if (args.length-start == 1) return _cons(args[start], null);
             final ListBuilder ret = new ListBuilder();
             for (int i = start; i < args.length; i++) ret.append(args[i]);
             return ret.first();
@@ -6799,7 +6799,7 @@ public class LambdaJ {
                 r = fn.apply(args);
                 while (r instanceof Tailcall) {
                     final Tailcall functionCall = (Tailcall) r;
-                    if (functionCall.cleanup != null) cleanups = cons(functionCall.cleanup, cleanups);
+                    if (functionCall.cleanup != null) cleanups = _cons(functionCall.cleanup, cleanups);
                     r = functionCall.fn.apply(functionCall.args);
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                 }
@@ -6829,12 +6829,12 @@ public class LambdaJ {
         }
 
         private Object interpret(Object fn, Object[] args) {
-            return intp.eval(cons(intp.intern("apply"),
-                                  cons(fn,
-                                       cons(cons(intp.intern("quote"),
-                                                 cons(arraySlice(args),
-                                                      null)),
-                                            null))),
+            return intp.eval(_cons(intp.intern("apply"),
+                                  _cons(fn,
+                                       _cons(_cons(intp.intern("quote"),
+                                                 _cons(arraySlice(args),
+                                                       null)),
+                                             null))),
                              null);
         }
 
@@ -8458,43 +8458,21 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sFCeiling)  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
             if (prim == WellknownSymbol.sFTruncate) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true;
-                                                emitFuncallVarargs(sb, "=",  "numbereq", 1, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true;
-                                                emitFuncallVarargs(sb, "/=", "ne",       1, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true;
-                                                emitFuncallVarargs(sb, "<",  "lt",       1, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true;
-                                                emitFuncallVarargs(sb, "<=", "le",       1, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true;
-                                                emitFuncallVarargs(sb, ">=", "ge",       1, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true;
-                                                emitFuncallVarargs(sb, ">",  "gt",       1, args, env, topEnv, rsfx); return true; }
-
-            if (prim == WellknownSymbol.sCar)        { emitFuncall1(sb, "car",    "car",    args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sCdr)        { emitFuncall1(sb, "cdr",    "cdr",    args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sCons)       { emitFuncall2(sb, "cons",   "cons",   args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sRplaca)     { emitFuncall2(sb, "rplaca", "rplaca", args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sRplacd)     { emitFuncall2(sb, "rplacd", "rplacd", args, env, topEnv, rsfx); return true; }
-
-            if (prim == WellknownSymbol.sSvRef)      { emitFuncall2(sb, "svref", "svref", args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sSvSet)      { emitFuncall3(sb, "svset", "svset", args, env, topEnv, rsfx); return true; }
-
-            if (prim == WellknownSymbol.sSBvRef)     { emitFuncall2(sb, "sbvref", "sbvref", args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sSBvSet)     { emitFuncall3(sb, "sbvset", "sbvset", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true; }
 
             if (prim == WellknownSymbol.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sEql)  { emitFuncall2(sb, "eql", "eql", args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sInc)  { emitFuncall1(sb, "1+", "inc1", args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sDec)  { emitFuncall1(sb, "1-", "dec1", args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sAppend) {
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
                 }
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
-                emitFuncallVarargs(sb, "append", "_append", 0, args, env, topEnv, rsfx); return true;
             }
 
             if (prim == WellknownSymbol.sList) {
@@ -8502,7 +8480,7 @@ public class LambdaJ {
                     sb.append("(Object)null");  return true;
                 }
                 if (cdr(args) == null) { // one arg
-                    sb.append("cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
+                    sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
                 sb.append("new ListBuilder()");
                 for (; args != null; args = (ConsCell)cdr(args)) {
@@ -8518,7 +8496,7 @@ public class LambdaJ {
                 varargs1("list*", args);
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
-                    sb.append("cons(");
+                    sb.append("_cons(");
                     emitForm(sb, car(args), env, topEnv, rsfx, false);
                     sb.append(", ");
                     emitForm(sb, cadr(args), env, topEnv, rsfx, false);
@@ -8616,11 +8594,6 @@ public class LambdaJ {
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
-        private void emitFuncall1(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            oneArg(murmel, args);
-            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
-        }
-
         private void emitFuncall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
@@ -8629,11 +8602,6 @@ public class LambdaJ {
         private void emitFuncall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             twoArgs(murmel, args);
             emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "toDouble");
-        }
-
-        private void emitFuncall3(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            threeArgs(murmel, args);
-            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
         }
 
         /** emit a call to the primitive {@code func} without going through the trampoline,
@@ -8874,14 +8842,14 @@ public class LambdaJ {
                 final WrappingWriter qsb = new WrappingWriter(b);
                 if (atom(cdr(form))) {
                     // fast path for dotted pairs and 1 element lists
-                    qsb.append("cons("); emitQuotedForm(qsb, car(form), false);
+                    qsb.append("_cons("); emitQuotedForm(qsb, car(form), false);
                     qsb.append(", ");    emitQuotedForm(qsb, cdr(form), false);
                     qsb.append(")");
                 }
                 else if (atom(cddr(form))) {
                     // fast path for 2 element lists or dotted 3 element lists
-                    qsb.append("cons(");   emitQuotedForm(qsb, car(form),  false);
-                    qsb.append(", cons("); emitQuotedForm(qsb, cadr(form), false);
+                    qsb.append("_cons(");   emitQuotedForm(qsb, car(form),  false);
+                    qsb.append(", _cons("); emitQuotedForm(qsb, cadr(form), false);
                     qsb.append(", ");      emitQuotedForm(qsb, cddr(form), false);
                     qsb.append("))");
                 }
