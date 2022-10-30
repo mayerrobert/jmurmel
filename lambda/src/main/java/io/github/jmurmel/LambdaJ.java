@@ -378,14 +378,15 @@ public class LambdaJ {
             return (ConsCell)new ListBuilder().appendElements(elems).first();
         }
 
-        public static Object listStar(Object first, Object... elems) {
-            if (elems == null || elems.length == 0) return first;
-            if (elems.length == 1) return new ListConsCell(first, elems[0]);
+        public static Object listStar(Object... elems) {
+            assert elems != null && elems.length != 0;
+            if (elems.length == 1) return elems[0];
+            if (elems.length == 2) return new ListConsCell(elems[0], elems[1]);
 
             final ListBuilder ret = new ListBuilder();
-            ret.append(first);
+            ret.append(elems[0]);
             final int n = elems.length - 1;
-            for (int i = 0; i < n; i++) ret.append(elems[i]);
+            for (int i = 1; i < n; i++) ret.append(elems[i]);
             return ret.appendLast(elems[n]).first();
         }
     }
@@ -6286,18 +6287,7 @@ public class LambdaJ {
         public static ConsCell _rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { return ListBuilder.list(args); }
-        public final Object listStar   (Object... args) {
-            int nArgs;
-            varargs1("list*", nArgs = args.length);
-            if (nArgs == 1) return args[0];
-            if (nArgs == 2) return _cons(args[0], args[1]);
-            final ListBuilder b = new ListBuilder();
-            int i = 0;
-            nArgs--;
-            for (; i < nArgs; i++) b.append(nth(i, args));
-            b.appendLast(nth(i, args));
-            return b.first();
-        }
+        public final Object listStar   (Object... args) { varargs1("list*", args.length); return ListBuilder.listStar(args); }
         public final Object   _append  (Object... args) {
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
