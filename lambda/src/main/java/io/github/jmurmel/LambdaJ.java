@@ -6244,25 +6244,38 @@ public class LambdaJ {
         public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.eql(o1, o2)); }
 
         public final Object _consp     (Object... args) { oneArg("consp",        args.length);        return bool(consp(args[0])); }
+        public final Object _consp     (Object    arg)  {                                             return bool(consp(arg)); }
         public final Object _atom      (Object... args) { oneArg("atom",         args.length);        return bool(atom(args[0])); }
+        public final Object _atom      (Object    arg)  {                                             return bool(atom(arg)); }
         public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length);        return bool(symbolp(args[0])); }
+        public final Object _symbolp   (Object    arg)  {                                             return bool(symbolp(arg)); }
         public final Object _null      (Object... args) { oneArg("null",         args.length);        return bool(args[0] == null); }
         public final Object _numberp   (Object... args) { oneArg("numberp",      args.length);        return bool(numberp(args[0])); }
+        public final Object _numberp   (Object    arg)  {                                             return bool(numberp(arg)); }
         public final Object _floatp    (Object... args) { oneArg("floatp",       args.length);        return bool(floatp(args[0])); }
+        public final Object _floatp    (Object    arg)  {                                             return bool(floatp(arg)); }
         public final Object _integerp  (Object... args) { oneArg("integerp",     args.length);        return bool(integerp(args[0])); }
+        public final Object _integerp  (Object    arg)  {                                             return bool(integerp(arg)); }
         public final Object _characterp(Object... args) { oneArg("characterp",   args.length);        return bool(characterp(args[0])); }
 
         public final Object _vectorp   (Object... args) { oneArg("vectorp",      args.length);        return bool(vectorp(args[0])); }
+        public final Object _vectorp   (Object    arg)  {                                             return bool(vectorp(arg)); }
         public final Object svectorp   (Object... args) { oneArg("simple-vector-p", args.length);     return bool(LambdaJ.svectorp(args[0])); }
+        public final Object svectorp   (Object    arg)  {                                             return bool(LambdaJ.svectorp(arg)); }
         public final Object _stringp   (Object... args) { oneArg("stringp",      args.length);        return bool(stringp(args[0])); }
+        public final Object _stringp   (Object    arg)  {                                             return bool(stringp(arg)); }
         public final Object sstringp   (Object... args) { oneArg("simple-string-p", args.length);     return bool(LambdaJ.sstringp(args[0])); }
+        public final Object sstringp   (Object    arg)  {                                             return bool(LambdaJ.sstringp(arg)); }
         public final Object bitvectorp (Object... args) { oneArg("bit-vector-p", args.length);        return bool(LambdaJ.bitvectorp(args[0])); }
+        public final Object bitvectorp (Object    arg)  {                                             return bool(LambdaJ.bitvectorp(arg)); }
         public final Object sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
+        public final Object sbitvectorp(Object    arg)  {                                             return bool(LambdaJ.sbitvectorp(arg)); }
 
 
         public final Object _functionp (Object... args) { oneArg("functionp",    args.length);        return bool(LambdaJ.functionp0(args[0])); }
 
         public final Object _listp     (Object... args) { oneArg("listp",        args.length);        return bool(listp(args[0])); }
+        public final Object _listp     (Object    arg)  {                                             return bool(listp(arg)); }
         public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.adjustableArrayP(args[0])); }
 
 
