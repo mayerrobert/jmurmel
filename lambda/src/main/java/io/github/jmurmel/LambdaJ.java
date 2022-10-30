@@ -377,6 +377,17 @@ public class LambdaJ {
             if (elems.length == 1) return new ListConsCell(elems[0], null);
             return (ConsCell)new ListBuilder().appendElements(elems).first();
         }
+
+        public static Object listStar(Object first, Object... elems) {
+            if (elems == null || elems.length == 0) return first;
+            if (elems.length == 1) return new ListConsCell(first, elems[0]);
+
+            final ListBuilder ret = new ListBuilder();
+            ret.append(first);
+            final int n = elems.length - 1;
+            for (int i = 0; i < n; i++) ret.append(elems[i]);
+            return ret.appendLast(elems[n]).first();
+        }
     }
 
     private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
@@ -8477,39 +8488,34 @@ public class LambdaJ {
             }
 
             if (prim == WellknownSymbol.sList) {
-                if (args == null) { // no args
-                    sb.append("(Object)null");  return true;
-                }
+                if (args == null) { sb.append("(Object)null");  return true; }
                 if (cdr(args) == null) { // one arg
                     sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
-                sb.append("new ListBuilder()");
+                sb.append("ListBuilder.list(");
+                boolean first = true;
                 for (; args != null; args = (ConsCell)cdr(args)) {
-                    sb.append(".append(");
+                    if (first) first = false;
+                    else sb.append("\n        , ");
                     emitForm(sb, car(args), env, topEnv, rsfx, false);
-                    sb.append(")\n        ");
                 }
-                sb.append(".first()");
+                sb.append(")");
                 return true;
             }
 
             if (prim == WellknownSymbol.sListStar) {
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
-                    sb.append("_cons(");
-                    emitForm(sb, car(args), env, topEnv, rsfx, false);
-                    sb.append(", ");
-                    emitForm(sb, cadr(args), env, topEnv, rsfx, false);
-                    sb.append(')');
-                    return true;
+                    sb.append("_cons("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); emitForm(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return true;
                 }
-                sb.append("new ListBuilder()");
-                for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
-                    sb.append(".append(");
+                sb.append("ListBuilder.listStar(");
+                boolean first = true;
+                for (; args != null; args = (ConsCell)cdr(args)) {
+                    if (first) first = false;
+                    else sb.append("\n        , ");
                     emitForm(sb, car(args), env, topEnv, rsfx, false);
-                    sb.append(")\n        ");
                 }
-                sb.append(".appendLast("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(").first()");
+                sb.append(")");
                 return true;
             }
 
