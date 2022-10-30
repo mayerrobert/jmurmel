@@ -8021,15 +8021,13 @@ public class LambdaJ {
         }
 
         private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            varargs1("catch", tagAndForms);
             final ConsCell body = cons(intern("lambda"), cons(null, cdr(tagAndForms)));
             final ConsCell args = cons(car(tagAndForms), cons(body, null));
-            emitFuncall2(sb, "catch", "doCatch", args, env, topEnv, rsfx);
+            emitCallPrimitive(sb, "doCatch", args, env, topEnv, rsfx);
         }
 
         private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForm, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            twoArgs("throw", tagAndResultForm);
-            emitFuncall2(sb, "throw", "doThrow", tagAndResultForm, env, topEnv, rsfx);
+            emitCallPrimitive(sb, "doThrow", tagAndResultForm, env, topEnv, rsfx);
         }
 
         private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
@@ -8414,7 +8412,6 @@ public class LambdaJ {
             final LambdaJSymbol sApply = intp.intern("apply");
 
             if (op == sApply) {
-                twoArgs("apply", args);
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
@@ -8439,9 +8436,13 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sSub) { emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
             if (prim == WellknownSymbol.sDiv) { emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
 
-            if (prim == WellknownSymbol.sMod) { emitFuncall2Numbers(sb, "mod", "cl_mod", args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sMod) {
+                sb.append("cl_mod(");
+                emitFormAsDouble(sb, "mod", car(args), env, topEnv, rsfx);  sb.append(", ");  emitFormAsDouble(sb, "mod", cadr(args), env, topEnv, rsfx);
+                sb.append(")");
+                return true;
+            }
             if (prim == WellknownSymbol.sRem) {
-                twoArgs("rem", args);
                 sb.append("(");
                 emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);  sb.append(" % ");  emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
                 sb.append(")");
@@ -8465,8 +8466,8 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true; }
             if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true; }
 
-            if (prim == WellknownSymbol.sEq)   { twoArgs("eq", args);  emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sNull) { oneArg("null", args); emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sEq)   { emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNull) { emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sAppend) {
                 if (args == null) { // no args
@@ -8493,7 +8494,6 @@ public class LambdaJ {
             }
 
             if (prim == WellknownSymbol.sListStar) {
-                varargs1("list*", args);
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
                     sb.append("_cons(");
@@ -8515,12 +8515,12 @@ public class LambdaJ {
 
             if (symbolEq(op, "jmethod")) {
                 if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
-                emitFuncallVarargs(sb, "jmethod", "findMethod", 2, args, env, topEnv, rsfx);
+                emitCallPrimitive(sb, "findMethod", args, env, topEnv, rsfx);
                 return true;
             }
 
-            for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx, null);  return true; }
-            for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx, null);  return true; }
+            for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx);  return true; }
+            for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx);  return true; }
 
             return false;
         }
@@ -8536,7 +8536,6 @@ public class LambdaJ {
          *  in both cases if {@code asLong == true} then the result is converted to a fixnum
          */
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
-            varargs1_2(murmel, args);
             checkNonNumber(murmel, car(args));
             if (asLong) sb.append("toFixnum(");
             sb.append(javaOp).append("(");
@@ -8579,7 +8578,6 @@ public class LambdaJ {
 
         /** emit double operator for one or more number args */
         private void emitSubDbl(WrappingWriter sb, String op, double start, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            varargs1(op,  args);
             sb.append('(');
             if (cdr(args) == null) { sb.append(start).append(' ').append(op).append(' '); emitFormAsDouble(sb, op, car(args), env, topEnv, rsfx); }
             else {
@@ -8589,34 +8587,15 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        private void emitFuncallVarargs(WrappingWriter sb, String murmel, String func, int minArgs, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (minArgs > 0) varargsMin(murmel,  args, minArgs);
-            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
-        }
-
-        private void emitFuncall2(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            twoArgs(murmel, args);
-            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, null);
-        }
-
-        private void emitFuncall2Numbers(WrappingWriter sb, String murmel, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            twoArgs(murmel, args);
-            emitCallPrimitive(sb, func, args, env, topEnv, rsfx, "toDouble");
-        }
-
         /** emit a call to the primitive {@code func} without going through the trampoline,
          *  if {@code wrapper} is non-null then it will be applied to each function argument  */
-        private void emitCallPrimitive(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String wrapper) {
+        private void emitCallPrimitive(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             sb.append(func).append("(");
             if (args != null) {
-                if (wrapper != null) sb.append(wrapper).append('(');
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
-                if (wrapper != null) sb.append(')');
                 if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
                     sb.append(", ");
-                    if (wrapper != null) sb.append(wrapper).append('(');
                     emitForm(sb, arg, env, topEnv, rsfx, false);
-                    if (wrapper != null) sb.append(')');
                 }
             }
             else sb.append("NOARGS");
