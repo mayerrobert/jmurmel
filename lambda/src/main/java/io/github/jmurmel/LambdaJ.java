@@ -4020,7 +4020,13 @@ public class LambdaJ {
 
     /// vectors
 
-    static final class Bitvector implements Serializable, Writeable {
+    static final class Bitvector implements Serializable, Writeable, Iterable<Long> {
+        class Iter implements Iterator<Long> {
+            private int cursor;
+            @Override public boolean hasNext() { return cursor < size; }
+            @Override public Long next() { if (cursor == size) throw new NoSuchElementException(); return get(cursor++); }
+        }
+
         private static final long serialVersionUID = 1L;
         private final BitSet bitSet;
         private int size;
@@ -4031,7 +4037,11 @@ public class LambdaJ {
         }
         
         int size() { return size; }
-        
+        @Override public Iterator<Long> iterator() { return new Iter(); }
+        long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
+        long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
+        void set(int idx, boolean val) { bitSet.set(idx, val); }
+
         void fill(boolean value) {
             if (value) bitSet.set(0, size);
             else bitSet.clear();
@@ -4048,11 +4058,6 @@ public class LambdaJ {
             }
             return ret;
         }
-
-        long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
-        void set(int idx, boolean val) { bitSet.set(idx, val); }
-
-        void add(boolean value) { if (value) bitSet.set(size); size++; }
 
         @Override
         public void printSEx(WriteConsumer sb, boolean escapeAtoms) {
@@ -4213,21 +4218,15 @@ public class LambdaJ {
         if (stringp(maybeVector)) return stringToList(maybeVector);
         if (sbitvectorp(maybeVector)) return simpleBitVectorToList(maybeVector);
 
-        if (maybeVector instanceof Bitvector) {
-            final Bitvector bv = (Bitvector)maybeVector;
-            if (bv.size() == 0) return null;
+        if (maybeVector instanceof Bitvector || maybeVector instanceof List) {
+            final Iterator<?> it = ((Iterable<?>)maybeVector).iterator();
+            if (!it.hasNext()) return null;
             final CountingListBuilder ret = new CountingListBuilder();
-            for (int i = 0; i < bv.size(); i++) ret.append(bv.get(i));
+            do { ret.append(it.next()); }
+            while (it.hasNext());
             return ret.first();
         }
 
-        if (maybeVector instanceof List) {
-            @SuppressWarnings("rawtypes") final List l = (List)maybeVector;
-            if (l.isEmpty()) return null;
-            final CountingListBuilder ret = new CountingListBuilder();
-            for (final Object o: l) ret.append(o);
-            return ret.first();
-        }
         throw errorNotAVector("vector->list", maybeVector);
     }
 
@@ -4275,7 +4274,7 @@ public class LambdaJ {
         if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
         if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
-        if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; bv.add(requireBit("vector-push-extend", newValue)); return bv.size() - 1; }
+        if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-push-extend", newValue)); }
         if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
         throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
     }
@@ -6407,21 +6406,15 @@ public class LambdaJ {
             if (stringp(maybeVector))             return stringToList(args);
             if (LambdaJ.sbitvectorp(maybeVector)) return simpleBitVectorToList(args);
 
-            if (maybeVector instanceof Bitvector) {
-                final Bitvector bv = (Bitvector)maybeVector;
-                if (bv.size() == 0) return null;
+            if (maybeVector instanceof Bitvector || maybeVector instanceof List) {
+                final Iterator<?> it = ((Iterable<?>)maybeVector).iterator();
+                if (!it.hasNext()) return null;
                 final ListBuilder ret = new ListBuilder();
-                for (int i = 0; i < bv.size(); i++) ret.append(bv.get(i));
+                do { ret.append(it.next()); }
+                while (it.hasNext());
                 return ret.first();
             }
 
-            if (maybeVector instanceof List) {
-                final List<?> l = (List<?>)maybeVector;
-                if (l.isEmpty()) return null;
-                final ListBuilder ret = new ListBuilder();
-                for (final Object o: l) ret.append(o);
-                return ret.first();
-            }
             throw errorNotAVector("vector->list", maybeVector);
         }
 
