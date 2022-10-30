@@ -3203,9 +3203,10 @@ public class LambdaJ {
         return false;
     }
 
-    final boolean functionp(Object o)   { return o instanceof Primitive || o instanceof Closure
-                                                 || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction
-                                                 || (haveOldLambda() && consp(o) && car(o) == sLambda); }
+    final  boolean functionp(Object o)   { return functionp0(o)
+                                                  || (haveOldLambda() && consp(o) && car(o) == sLambda); }
+    static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure
+                                                  || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
 
     static boolean listp(Object o)      { return o == null || consp(o); }
 
@@ -6247,7 +6248,7 @@ public class LambdaJ {
         public final Object sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
 
 
-        public final Object _functionp (Object... args) { oneArg("functionp",    args.length);        return bool(intp.functionp(args[0])); }
+        public final Object _functionp (Object... args) { oneArg("functionp",    args.length);        return bool(LambdaJ.functionp0(args[0])); }
 
         public final Object _listp     (Object... args) { oneArg("listp",        args.length);        return bool(listp(args[0])); }
         public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.adjustableArrayP(args[0])); }
