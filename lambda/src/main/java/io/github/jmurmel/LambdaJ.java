@@ -6281,12 +6281,12 @@ public class LambdaJ {
 
         // conses and lists
         public final  Object _car      (Object... args) { oneArg("car",     args.length); return _car(args[0]); }
-        public static Object _car      (Object l)       { return LambdaJ.car(l); } // also used by generated code
-        public static Object _car      (ConsCell l)     { return LambdaJ.car(l); }
+        public final Object  _car      (Object l)       { return LambdaJ.car(l); } // also used by generated code
+        public final Object  _car      (ConsCell l)     { return LambdaJ.car(l); }
 
         public final  Object _cdr      (Object... args) { oneArg("cdr",     args.length); return _cdr(args[0]); }
-        public static Object _cdr      (Object l)       { return LambdaJ.cdr(l); } // also used by generated code
-        public static Object _cdr      (ConsCell l)     { return LambdaJ.cdr(l); }
+        public final Object  _cdr      (Object l)       { return LambdaJ.cdr(l); } // also used by generated code
+        public final Object  _cdr      (ConsCell l)     { return LambdaJ.cdr(l); }
 
         public final  ConsCell _cons   (Object... args) { twoArgs("cons",   args.length); return _cons(args[0], args[1]); }
         public static ConsCell _cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
@@ -6358,9 +6358,9 @@ public class LambdaJ {
         }
 
         public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(args[0]); }
-        public static Number  inc      (Object arg)     { return LambdaJ.inc(arg); }
+        public final Number   inc      (Object arg)     { return LambdaJ.inc(arg); }
         public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(args[0]); }
-        public static Number  dec      (Object arg)     { return LambdaJ.dec(arg); }
+        public final Number   dec      (Object arg)     { return LambdaJ.dec(arg); }
 
         public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (args[0]); }
 
