@@ -216,9 +216,6 @@ public class LambdaJ {
 
         @Override public String toString() { return name; }
 
-        @Override public int hashCode() { return name.hashCode(); }
-        @Override public boolean equals(Object o) { return o == this || o instanceof LambdaJSymbol && name.equals(((LambdaJSymbol)o).name); }
-
         private static String escapeSymbol(LambdaJSymbol s) {
             final String name = s.name;
             if (name == null) return null;
@@ -1786,7 +1783,7 @@ public class LambdaJ {
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)               { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
-        sGensym("gensym", Features.HAVE_XTRA, 0)                { Object apply(LambdaJ intp, ConsCell args) { return intp.gensym(); } },
+        sGensym("gensym", Features.HAVE_XTRA, 0)                { Object apply(LambdaJ intp, ConsCell args) { return gensym(); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)             { Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
@@ -4511,9 +4508,8 @@ public class LambdaJ {
         return expansion;
     }
 
-    private int gensymCounter;
-    final Object gensym() {
-        return new LambdaJSymbol("#:g" + ++gensymCounter);
+    static Object gensym() {
+        return new LambdaJSymbol("#:gensym");
     }
 
 
@@ -6503,7 +6499,7 @@ public class LambdaJ {
         // misc
         Object[] values;
         public final Object _values    (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
-        public final Object _gensym    (Object... args) { noArgs("gensym", args.length); return intp.gensym(); }
+        public final Object _gensym    (Object... args) { noArgs("gensym", args.length); return LambdaJ.gensym(); }
         public final Object _trace     (Object... args) { return null; }
         public final Object _untrace   (Object... args) { return null; }
         public final Object _fatal     (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }

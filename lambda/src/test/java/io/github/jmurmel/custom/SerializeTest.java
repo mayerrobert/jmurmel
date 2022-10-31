@@ -12,7 +12,7 @@ public class SerializeTest {
 
     public static class SerializationParser implements LambdaJ.ObjectReader, LambdaJ.SymbolTable {
         private byte[] serialized;
-        private final HashMap<LambdaJ.LambdaJSymbol, LambdaJ.LambdaJSymbol> symbols = new HashMap<>();
+        private final HashMap<String, LambdaJ.LambdaJSymbol> symbols = new HashMap<>();
 
         public SerializationParser(byte[] serialized) {
             this.serialized = serialized;
@@ -46,7 +46,7 @@ public class SerializeTest {
 
         @Override
         public LambdaJ.LambdaJSymbol intern(LambdaJ.LambdaJSymbol symbol) {
-            LambdaJ.LambdaJSymbol prev = symbols.putIfAbsent(symbol, symbol);
+            LambdaJ.LambdaJSymbol prev = symbols.putIfAbsent(symbol.toString(), symbol);
             if (prev != null) return prev;
             return symbol;
         }

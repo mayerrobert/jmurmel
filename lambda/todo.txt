@@ -14,9 +14,9 @@ dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval 
    compilerprimitives, die LambdaJ instanz methoden aufrufen, also solche, die ihrerseits LambdaJ member brauchen. das sind:
    - IO wegen LambdaJ.lispReader/ lispWriter, GFX wegen current_frame
    - makeArray weil das benutzt sBit, sCharacter
-   - gensym weil das benutzt den gensymCounter
-     -> gensymcounter streichen, ggf optionalen string parameter für den namen, default ist "gensym" 
-     -> oder: Murmel hat nur make-symbol, gensym (mit oder ohne zähler) in mlib
+   (- gensym weil das benutzt den gensymCounter
+     -> gensymcounter streichen 
+     -> oder: Murmel hat nur make-symbol, gensym (mit oder ohne zähler) in mlib)
    (- functionp weil der interpreter würde ggf. oldLambda checken -> der compiler braucht das nicht -> static functionp OHNE haveOldLambda)
    (- getDecodedTime benutzt das zählende cons was für den compiler eh falsch ist)
    
@@ -44,6 +44,7 @@ eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
    es sollte ein readermacro #: geben, das das folgende als uninterned symbol einliest
 -> vielleicht LambdaJSymbol.wellknown missbrauchen: statt WellknownSymbol.none -> interned und notinterned
 -> gensym brauchts eigentlich nicht in Murmel, kann man mit make-symbol implementieren
+-> gensym: optionalen string parameter für den namen, default ist "gensym"
 
 
 im else zweig kann man nil weglassen. sollte man auch weglassen weil sonst gibts umsonst den environment lookup von nil

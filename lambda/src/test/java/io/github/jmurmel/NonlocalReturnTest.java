@@ -10,8 +10,8 @@ public class NonlocalReturnTest {
     public Object[][] createdata() {
         return new Object[][] {
             { "simple catch/throw", "(catch 'tag 1.0 (throw 'tag 11.0) 2.0)", 11.0 },
-            { "empty unwind-protect", "(catch 'tag (unwind-protect (throw 'tag 'outer)))", new LambdaJ.LambdaJSymbol("outer") },
-            { "unwind-protect", "(catch 'tag (unwind-protect 123 (throw 'tag 'outer)))", new LambdaJ.LambdaJSymbol("outer") },
+            { "empty unwind-protect", "(catch 'tag (unwind-protect (throw 'tag \"outer\")))", "outer" },
+            { "unwind-protect", "(catch 'tag (unwind-protect 123 (throw 'tag \"outer\")))", "outer" },
             { "nested", "(catch 'tag (unwind-protect (unwind-protect (unwind-protect 'result (throw 'tag \"inner\")) (throw 'tag \"middle\")) (throw 'tag \"outer\")))", "outer" },
         };
     }
