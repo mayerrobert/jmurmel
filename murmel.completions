@@ -125,8 +125,6 @@ list->string
 char-code
 code-char
 
-bv=
-
 bvlength
 bvref
 bvset
@@ -150,7 +148,6 @@ get-internal-cpu-time
 sleep
 get-universal-time
 get-decoded-time
-
 
 jmethod
 jproxy
