@@ -1,4 +1,3 @@
-mlib.completions hat redundanzen
 mlib: char vs schar, sbit vs. bit
 
 die ganzen sbv... funktionen nach bv... umwandeln
@@ -11,6 +10,7 @@ vector könnte einfach in mlib implementiert werden:
 -> ginge auch für bit-vector, string
 -> evtl zus optionalen parameter adjustablep für list->vector/string/bitvector
    list->simple-vector, list->simple-bitvector umbenamsen
+-> vector-copy könnte auch adjustablep bekommen
 
 
 
