@@ -1,9 +1,16 @@
+mlib.completions hat redundanzen
+mlib: char vs schar, sbit vs. bit
+
 die ganzen sbv... funktionen nach bv... umwandeln
 -> simple-vector, string und bit-vector erben alle von vector
    hätten dann alle die gleichen funktionen
    gibt dann nicht mehr bv= und sbv= -> eine funktion weniger
 
-
+vector könnte einfach in mlib implementiert werden:
+-> (defun vector l (list->simple-vector l))
+-> ginge auch für bit-vector, string
+-> evtl zus optionalen parameter adjustablep für list->vector/string/bitvector
+   list->simple-vector, list->simple-bitvector umbenamsen
 
 
 

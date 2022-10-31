@@ -127,10 +127,10 @@ code-char
 
 bv=
 
-sbvlength
-sbvref
-sbvset
-sbv=
+bvlength
+bvref
+bvset
+bv=
 simple-bit-vector->list
 list->simple-bit-vector
 

@@ -873,27 +873,23 @@ pi ; ==> 3.141592653589793
 
 ; = (string->list str) -> list-of-characters
 
-; = (list->string list-of-characters) -> string
+; = (list->string list-of-characters [adjustablep]) -> string
 
 ; = (code-char integer) -> character
 
 ; = (char-code character) -> integer
 
 
-; = bv=
-;
-; Since: 1.3
-
-; = sbvlength, sbvref, sbvset, sbv=
-;     (sbvref sbv n) -> nth-bit
-;     (sbvset new-bit sbv n) -> new-bit
+; = bvlength, bvref, bvset, bv=
+;     (bvref bitvector n) -> nth-bit
+;     (bvset new-bit bitvector n) -> new-bit
 ;
 ; Since: 1.3
 ;
-; `sbvref` returns the n-th bit of the bitvector `sbv`, `n` is 0-based.
-; Similar to CL `sbit`.
+; `bvref` returns the n-th bit of the bitvector `bitvector`, `n` is 0-based.
+; Similar to CL `bit`.
 ;
-; `sbvset` sets the n-th bit of `sbv` to `new-bit`.
+; `bvset` sets the n-th bit of `bitvector` to `new-bit`.
 
 ; = simple-bit-vector->list, list->simple-bit-vector
 ;

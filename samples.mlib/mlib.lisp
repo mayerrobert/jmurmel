@@ -874,7 +874,7 @@
             (,acc (typecase ,vec
                     (simple-vector svref)
                     (string sref)
-                    (simple-bit-vector sbvref)
+                    (bit-vector bvref)
                     (vector seqref)
                     (t (error "dovector - not a vector: %s" ,vec))))
             (,limit (vector-length ,vec)))
@@ -988,12 +988,12 @@
                  (svset ,read-var ,tmp1 ,tmp2)
                  (svref ,tmp1 ,tmp2)))
 
-              ((or (eq 'sbit op) (eq 'sbvref op))
+              ((or (eq 'sbit op) (eq 'bvref op))
                `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (sbvref ,tmp1 ,tmp2))
+                 (,(car args) ,(cadr args) (bvref ,tmp1 ,tmp2))
                  (,read-var)
-                 (sbvset ,read-var ,tmp1 ,tmp2)
-                 (sbvref ,tmp1 ,tmp2)))
+                 (bvset ,read-var ,tmp1 ,tmp2)
+                 (bvref ,tmp1 ,tmp2)))
 
               ((or (eq 'char op) (eq 'sref op))
                `((,tmp1 ,tmp2 ,read-var)
@@ -1009,7 +1009,7 @@
                  (seqset ,read-var ,tmp1 ,tmp2)
                  (seqref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, svref, sbvref, sbit, sref and char are supported for 'place'")))))))
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, svref, bvref, sbit, sref and char are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -1044,8 +1044,8 @@
                       ((eq 'svref (caar args))
                        `(svset  ,(cadr args) ,@(cdar args)))
 
-                      ((or (eq 'sbit (caar args)) (eq 'sbvref (caar args)))
-                       `(sbvset ,(cadr args) ,@(cdar args)))
+                      ((or (eq 'sbit (caar args)) (eq 'bvref (caar args)))
+                       `(bvset ,(cadr args) ,@(cdar args)))
 
                       ((or (eq 'char (caar args)) (eq 'sref (caar args)))
                        `(sset ,(cadr args) ,@(cdar args)))
@@ -1251,9 +1251,9 @@
 ;;; Since: 1.3
 ;;;
 ;;; Return the n-th bit of the simple bitvector `sbv`, `n` is 0-based.
-(define sbit sbvref)
+(define sbit bvref)
 (defmacro sbit (sbv n)
-  `(sbvref ,sbv ,n))
+  `(bvref ,sbv ,n))
 
 
 ;;; = Function: equal
@@ -1270,7 +1270,6 @@
 (defun equal (a b)
   (or (eql a b)
       (and (stringp a) (stringp b) (string= a b))
-      (and (simple-bit-vector-p a) (simple-bit-vector-p b) (sbv= a b))
       (and (bit-vector-p a) (bit-vector-p b) (bv= a b))
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
@@ -1367,8 +1366,8 @@
 
        ((vectorp arg)
         (let* ((ref (cond ((simple-vector-p arg) svref)
-                          ((simple-bit-vector-p arg) sbvref)
-                          ((stringp arg) char)
+                          ((bit-vector-p arg) bvref)
+                          ((stringp arg) sref)
                           ((vectorp arg) seqref)))
                (len (vector-length arg))
                (idx (if more-args (m%nonneg-integer-number (car more-args)) 0)))
@@ -1572,7 +1571,7 @@
       (cons              (reverse/list seq nil))
       (string            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
       (simple-vector     (reverse/vector seq (make-array (vector-length seq)) svref svset))
-      (simple-bit-vector (reverse/vector seq (make-array (vector-length seq) 'bit) sbvref sbvset))
+      (bit-vector        (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
       (vector            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
       (t                 (error "reverse - %s is not a sequence" seq)))))
 
@@ -1609,7 +1608,7 @@
       (cons              (nreverse/list seq))
       (string            (nreverse/vector seq sref sset))
       (simple-vector     (nreverse/vector seq svref svset))
-      (simple-bit-vector (nreverse/vector seq sbvref sbvset))
+      (bit-vector        (nreverse/vector seq bvref bvset))
       (vector            (nreverse/vector seq seqref seqset))
       (t (error "nreverse - %s is not a sequence" seq)))))
 
@@ -1827,9 +1826,9 @@
 
       (cond ((null seq)                (f))
             ((consp seq)               (reduce/list seq))
-            ((stringp seq)             (reduce/vector seq char))
+            ((stringp seq)             (reduce/vector seq sref))
             ((simple-vector-p seq)     (reduce/vector seq svref))
-            ((simple-bit-vector-p seq) (reduce/vector seq sbvref))
+            ((bit-vector-p seq)        (reduce/vector seq bvref))
             ((vectorp seq)             (reduce/vector seq seqref))
             (t (error "reduce - %s is not a sequence" seq))))))
 
