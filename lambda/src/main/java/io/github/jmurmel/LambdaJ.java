@@ -1798,7 +1798,7 @@ public class LambdaJ {
         sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Object   apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
         sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Object   apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
         sSleep("sleep", Features.HAVE_UTIL, 1)                      { Object   apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
-        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { Object   apply(LambdaJ intp, ConsCell args) { return intp.getDecodedTime(); } },
+        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { Object   apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
 
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
@@ -4468,16 +4468,18 @@ public class LambdaJ {
         return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
     }
 
-    final ConsCell getDecodedTime() {
+    interface Boolresult { Object apply(boolean b); }
+
+    static <T extends AbstractListBuilder<T>> ConsCell getDecodedTime(T lb, Boolresult boolResult) {
         final Instant now = Clock.systemDefaultZone().instant();
         final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
         final ZoneRules rules = n.getZone().getRules();
         final boolean daylightSavings = rules.isDaylightSavings(now);
         final double offset = -rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
         //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
-        return cons(n.getSecond(), cons(n.getMinute(), cons(n.getHour(),
-                    cons(n.getDayOfMonth(), cons(n.getMonthValue(), cons(n.getYear(), cons(n.getDayOfWeek().getValue() - 1,
-                    cons(boolResult(daylightSavings), cons(offset, null)))))))));
+        return (ConsCell)lb.appendElements(n.getSecond(), n.getMinute(), n.getHour(),
+                                           n.getDayOfMonth(), n.getMonthValue(), n.getYear(), n.getDayOfWeek().getValue() - 1,
+                                           boolResult.apply(daylightSavings), offset, null).first();
     }
 
     /** expand a single macro call */
@@ -6513,7 +6515,7 @@ public class LambdaJ {
         public final long   getInternalCpuTime (Object... args) { noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
         public final Object sleep              (Object... args) { oneArg("sleep", args.length); return LambdaJ.sleep(args[0]); }
         public final long   getUniversalTime   (Object... args) { noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
-        public final Object getDecodedTime     (Object... args) { noArgs("get-decoded-time", args.length); return intp.getDecodedTime(); }
+        public final Object getDecodedTime     (Object... args) { noArgs("get-decoded-time", args.length); return LambdaJ.getDecodedTime(new ListBuilder(), this::bool); }
 
 
         // Java FFI

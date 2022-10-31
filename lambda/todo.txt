@@ -7,14 +7,18 @@ die ganzen sbv... funktionen nach bv... umwandeln
 
 
 
+fatal sollte LambdaJError werfen (statt RuntimeException), checken ob das dann hübscher ausgegeben wird
+
 dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval benutzt wird, ist nicht schön
 -> abgesehen von eval und zum aufrufen von Closures brauchts den interpreter für:
    compilerprimitives, die LambdaJ instanz methoden aufrufen, also solche, die ihrerseits LambdaJ member brauchen. das sind:
    - IO wegen LambdaJ.lispReader/ lispWriter, GFX wegen current_frame
-   - functionp weil der interpreter würde ggf. oldLambda checken -> der compiler braucht das nicht -> static functionp OHNE haveOldLambda
    - makeArray weil das benutzt sBit, sCharacter
-   - gensym weil das benutzt den gensymCounter -> gensymcounter ersatzlos streichen -> oder: Murmel hat nur make-symbol, gensym (mit oder ohne zähler) in mlib
-   - getDecodedTime benutzt das zählende cons was für den compiler eh falsch ist
+   - gensym weil das benutzt den gensymCounter
+     -> gensymcounter streichen, ggf optionalen string parameter für den namen, default ist "gensym" 
+     -> oder: Murmel hat nur make-symbol, gensym (mit oder ohne zähler) in mlib
+   (- functionp weil der interpreter würde ggf. oldLambda checken -> der compiler braucht das nicht -> static functionp OHNE haveOldLambda)
+   (- getDecodedTime benutzt das zählende cons was für den compiler eh falsch ist)
    
    und interne funktionen
    - MurmelJavaProgram.intern() delegiert zu LambdaJ.intern() und das braucht LambdaJ.symtab
@@ -28,6 +32,8 @@ dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval 
 
 
 
+
+vielleicht doch in MurmelJavaProgram (nur intern) von t/nil auf true/false umstellen?
 
 *command-line-argument-list* ablösen durch *argc* und *argv* ?
 -> *command-line-argument-list* könnte in mlib umgesetzt werden
