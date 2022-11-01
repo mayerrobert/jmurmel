@@ -7955,7 +7955,7 @@ public class LambdaJ {
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == sNil) sb.append("false");
             else if (form == sT) sb.append("true");
-            else if (consp(form) && car(form) == intp.intern("null")) {
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("null")) {
                 // optimize "(null ..."
                 final Object arg = cadr(form);
                 if (arg == null || arg == sNil) sb.append("true");
