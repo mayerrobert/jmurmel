@@ -40,7 +40,7 @@
 
 ;;; - numbers, characters
 ;;;     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-;;;     - [char=](#function-char), [char](#function-char-1), [sbit](#function-sbit)
+;;;     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
 ;;;     - [equal](#function-equal)
 
 ;;; - sequences
@@ -988,7 +988,7 @@
                  (svset ,read-var ,tmp1 ,tmp2)
                  (svref ,tmp1 ,tmp2)))
 
-              ((or (eq 'sbit op) (eq 'bvref op))
+              ((or (eq 'bit op) (eq 'bvref op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (bvref ,tmp1 ,tmp2))
                  (,read-var)
@@ -1009,7 +1009,7 @@
                  (seqset ,read-var ,tmp1 ,tmp2)
                  (seqref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, svref, bvref, sbit, sref and char are supported for 'place'")))))))
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, svref, bvref, bit, sref and char are supported for 'place'")))))))
 
 
 ;;; = Macro: setf
@@ -1044,7 +1044,7 @@
                       ((eq 'svref (caar args))
                        `(svset  ,(cadr args) ,@(cdar args)))
 
-                      ((or (eq 'sbit (caar args)) (eq 'bvref (caar args)))
+                      ((or (eq 'bit (caar args)) (eq 'bvref (caar args)))
                        `(bvset ,(cadr args) ,@(cdar args)))
 
                       ((or (eq 'char (caar args)) (eq 'sref (caar args)))
@@ -1245,15 +1245,15 @@
   `(sref ,str ,n))
 
 
-;;; = Function: sbit
-;;;     (sbit sbv n) -> nth bit
+;;; = Function: bit
+;;;     (bit bv n) -> nth bit
 ;;;
 ;;; Since: 1.3
 ;;;
-;;; Return the n-th bit of the simple bitvector `sbv`, `n` is 0-based.
-(define sbit bvref)
-(defmacro sbit (sbv n)
-  `(bvref ,sbv ,n))
+;;; Return the n-th bit of the bitvector `bv`, `n` is 0-based.
+(define bit bvref)
+(defmacro bit (bv n)
+  `(bvref ,bv ,n))
 
 
 ;;; = Function: equal

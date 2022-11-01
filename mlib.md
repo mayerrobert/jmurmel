@@ -37,7 +37,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [push](#macro-push), [pop](#macro-pop)
 - numbers, characters
     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
-    - [char=](#function-char), [char](#function-char-1), [sbit](#function-sbit)
+    - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
     - [equal](#function-equal)
 - sequences
     - [elt](#function-elt), [copy-seq](#function-copy-seq), [length](#function-length)
@@ -572,12 +572,12 @@ Since: 1.1
 
 Return the n-th character of the string `str`, `n` is 0-based.
 
-### Function: sbit
-    (sbit sbv n) -> nth bit
+### Function: bit
+    (bit bv n) -> nth bit
 
 Since: 1.3
 
-Return the n-th bit of the simple bitvector `sbv`, `n` is 0-based.
+Return the n-th bit of the bitvector `bv`, `n` is 0-based.
 
 ### Function: equal
     (equal a b) -> boolean

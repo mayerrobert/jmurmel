@@ -25,15 +25,15 @@
   (setq *rawbits* (make-array (ceiling limit 2) #-murmel :element-type 'bit))
 
   (dotimes (i (length *rawbits*))
-    (setf (sbit *rawbits* i) 1)))
+    (setf (bit *rawbits* i) 1)))
 
 
 (defmacro get-bit (rawbits index)
-  `(sbit ,rawbits (floor ,index 2)))
+  `(bit ,rawbits (floor ,index 2)))
 
 
 (defmacro clear-bit (rawbits index)
-  `(setf (sbit ,rawbits (floor ,index 2)) 0))
+  `(setf (bit ,rawbits (floor ,index 2)) 0))
 
 
 (defun run-sieve ()
@@ -52,7 +52,6 @@
     (do* ((num (* factor 3))
           (increment (* factor 2)))
          ((>= num sieve-size))
-
         #-murmel (declare (type fixnum num increment sieve-size factor)) ; approx 2.5x speedup for sbcl
 
         (clear-bit rawbits num)
