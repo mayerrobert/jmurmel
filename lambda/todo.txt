@@ -1,6 +1,4 @@
-vector-copy könnte auch adjustablep bekommen
-
-
+Murmel könnte (vector-add v elem) bekommen, mlib: (defun vector-push-extend (elem v) (vector-add v elem)) + defmacro
 
 fatal sollte LambdaJError werfen (statt RuntimeException), checken ob das dann hübscher ausgegeben wird
 
@@ -30,7 +28,7 @@ dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval 
 
 vielleicht doch in MurmelJavaProgram (nur intern) von t/nil auf true/false umstellen?
 
-*command-line-argument-list* ablösen durch *argc* und *argv* ?
+*command-line-argument-list* ablösen durch *argv* (plus evtl *argc*)?
 -> *command-line-argument-list* könnte in mlib umgesetzt werden
 
 eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned

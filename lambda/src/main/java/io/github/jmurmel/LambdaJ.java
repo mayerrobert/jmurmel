@@ -1738,7 +1738,7 @@ public class LambdaJ {
         // vectors, sequences
         sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { Object    apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
         sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2)       { Object    apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
-        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1)            { Object    apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args)); } },
+        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { Object    apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
@@ -4026,7 +4026,12 @@ public class LambdaJ {
             bitSet = new BitSet(capacity);
             this.size = size;
         }
-        
+
+        Bitvector(boolean[] contents) {
+            this(contents.length, 0);
+            for (boolean b: contents) add(b);
+        }
+
         int size() { return size; }
         @Override public Iterator<Long> iterator() { return new Iter(); }
         long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
@@ -4097,14 +4102,24 @@ public class LambdaJ {
         throw errorNotAVector("vector-length", maybeVector);
     }
 
-    static Object vectorCopy(Object vector) {
+    static Object vectorCopy(Object vector, boolean adjustablep) {
         final int length = (int)vectorLength(vector);
-        if (vector instanceof Object[])     return Arrays.copyOf((Object[])vector, length);
-        if (vector instanceof boolean[])    return Arrays.copyOf((boolean[])vector, length);
-        if (vector instanceof Bitvector)    return ((Bitvector)vector).toBooleanArray();
-        if (vector instanceof char[])       return Arrays.copyOf((char[])vector, length);
-        if (vector instanceof CharSequence) return vector.toString().toCharArray();
-        if (vector instanceof List<?>)      return ((List<?>)vector).toArray(new Object[0]);
+        if (adjustablep) {
+            if (vector instanceof Object[]) return new ArrayList<>(Arrays.asList((Object[])vector));
+            if (vector instanceof boolean[]) return new Bitvector((boolean[])vector);
+            if (vector instanceof Bitvector) return new Bitvector(((Bitvector)vector).toBooleanArray());
+            if (vector instanceof char[]) return new StringBuilder(String.valueOf((char[])vector));
+            if (vector instanceof CharSequence) return new StringBuilder((CharSequence)vector);
+            if (vector instanceof List<?>) return new ArrayList<>((List<?>)vector);
+        }
+        else {
+            if (vector instanceof Object[]) return Arrays.copyOf((Object[])vector, length);
+            if (vector instanceof boolean[]) return Arrays.copyOf((boolean[])vector, length);
+            if (vector instanceof Bitvector) return ((Bitvector)vector).toBooleanArray();
+            if (vector instanceof char[]) return Arrays.copyOf((char[])vector, length);
+            if (vector instanceof CharSequence) return vector.toString().toCharArray();
+            if (vector instanceof List<?>) return ((List<?>)vector).toArray(new Object[0]);
+        }
         throw errorNotAVector("vector-copy", vector);
     }
 
@@ -6418,7 +6433,7 @@ public class LambdaJ {
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return intp.makeArray(arraySlice(args)); }
         public final long     vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
-        public final Object   vectorCopy  (Object... args) { oneArg("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0]); }
+        public final Object   vectorCopy  (Object... args) { varargs1_2("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0], args.length > 1 && args[1] != null); }
         public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
                                                              return LambdaJ.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
         public final long     vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
