@@ -7957,7 +7957,12 @@ public class LambdaJ {
             else if (form == sT) sb.append("true");
             else if (consp(form) && car(form) == intp.intern("null")) {
                 // optimize "(null ..."
-                sb.append("(!("); emitTruthiness(sb, cadr(form), env, topEnv, rsfx); sb.append("))");
+                final Object arg = cadr(form);
+                if (arg == null || arg == sNil) sb.append("true");
+                else if (arg == sT) sb.append("false");
+                else if (consp(arg) || symbolp(arg)) { sb.append('('); emitForm(sb, arg, env, topEnv, rsfx, false); sb.append(") == null"); }
+                else if (atom(arg)) sb.append("false");
+                else { sb.append("(!("); emitTruthiness(sb, arg, env, topEnv, rsfx); sb.append("))"); }
             }
             else if (consp(form) || symbolp(form)) {
                 sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(") != null");
