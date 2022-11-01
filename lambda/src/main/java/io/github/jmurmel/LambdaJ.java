@@ -3520,10 +3520,6 @@ public class LambdaJ {
         throw new LambdaJError(true, "%s: expected a bitvector argument but got %s", func, printSEx(n));
     }
 
-    static RuntimeException errorNotASimpleBitVector(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a simple bitvector argument but got %s", func, printSEx(n));
-    }
-
     static RuntimeException errorOverflow(String func, String targetType, Object n) {
         throw new LambdaJError(true, "%s: value cannot be represented as a %s: %s", func, targetType, String.valueOf(n));
     }
@@ -4232,7 +4228,7 @@ public class LambdaJ {
     static long bvlength(Object maybeVector) {
         if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
         if (maybeVector instanceof Bitvector)    return ((Bitvector)maybeVector).size();
-        throw errorNotASimpleBitVector("bvlength", maybeVector);
+        throw errorNotABitVector("bvlength", maybeVector);
     }
 
     static long bvref(Object bv, int idx) {
@@ -4250,6 +4246,7 @@ public class LambdaJ {
             ((boolean[])maybeVector)[idx] = b;
             return newValue;
         }
+        if (maybeVector instanceof Bitvector) { ((Bitvector)maybeVector).set(idx, requireBit("bvset", newValue)); return newValue; }
         throw errorNotABitVector("bvset", maybeVector);
     }
 
