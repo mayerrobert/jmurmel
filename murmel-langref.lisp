@@ -891,7 +891,9 @@ pi ; ==> 3.141592653589793
 ;
 ; `bvset` sets the n-th bit of `bitvector` to `new-bit`.
 
-; = simple-bit-vector->list, list->simple-bit-vector
+; = bit-vector->list, list->bit-vector
+;     (bit-vector->list bv) -> list-of-bits
+;     (list->bit-vector lst [adjustablep]) -> bitvector
 ;
 ; Since: 1.3
 

@@ -1765,8 +1765,8 @@ public class LambdaJ {
         sBvRef("bvref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvref(car(args), toNonnegInt("bvref", cadr(args))); } },
         sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvset(requireIntegralNumber("bvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("bvset", caddr(args))); } },
         sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
-        sSBvToList("simple-bit-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleBitVectorToList(car(args)); } },
-        sListToSBv("list->simple-bit-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToBooleanArray(car(args)); } },
+        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.bitVectorToList(car(args)); } },
+        sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } }, // todo nicht auf int begrenzen wg. list
@@ -3321,10 +3321,9 @@ public class LambdaJ {
         return ret.toArray();
     }
 
-    static boolean[] listToBooleanArray(Object maybeList) {
+    static boolean[] listToBooleanArray(ConsCell maybeList) {
         if (maybeList == null) return new boolean[0];
         if (maybeList instanceof ArraySlice) return ((ArraySlice)maybeList).listToBooleanArray();
-        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         boolean[] ret = new boolean[32];
         int i = 0;
         final Long zero = 0L, one = 1L;
@@ -4137,7 +4136,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unchecked")
     static long vectorPushExtend(Object newValue, Object maybeVector) {
-        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", maybeVector);
+        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", printSEx(maybeVector));
         if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-push-extend", newValue)); }
@@ -4148,7 +4147,7 @@ public class LambdaJ {
     final Object vectorToList(Object maybeVector) {
         if (svectorp(maybeVector)) return simpleVectorToList(maybeVector);
         if (stringp(maybeVector)) return stringToList(maybeVector);
-        if (sbitvectorp(maybeVector)) return simpleBitVectorToList(maybeVector);
+        if (sbitvectorp(maybeVector)) return bitVectorToList(maybeVector);
 
         if (maybeVector instanceof Bitvector || maybeVector instanceof List) {
             final Iterator<?> it = ((Iterable<?>)maybeVector).iterator();
@@ -4266,12 +4265,33 @@ public class LambdaJ {
         return true;
     }
 
-    final Object simpleBitVectorToList(Object maybeVector) {
-        final boolean[] s = requireSimpleBitVector("simple-bit-vector->list", maybeVector);
-        final CountingListBuilder ret = new CountingListBuilder();
-        final int len = s.length;
-        for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
+    final Object bitVectorToList(Object maybeVector) {
+        final CountingListBuilder ret;
+        if (maybeVector instanceof boolean[]) {
+            final boolean[] s = (boolean[])maybeVector;
+            final int len = s.length;
+            if (len == 0) return null;
+            ret = new CountingListBuilder();
+            for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
+        }
+        else if (maybeVector instanceof Bitvector) {
+            final Bitvector bv = (Bitvector)maybeVector;
+            if (bv.size() == 0) return null;
+            ret = new CountingListBuilder();
+            for (Object bit: bv) ret.append(bit);
+        }
+        else throw errorNotABitVector("bit-vector->list", maybeVector);
         return ret.first();
+    }
+
+    static Object listToBitVector(Object o, boolean adjustablep) {
+        final ConsCell lst = requireList("list->bit-vector", o);
+        if (adjustablep) {
+            final Bitvector bv = new Bitvector(10, 0);
+            if (lst != null) for (Object bit: lst) bv.add(requireBit("list->bit-vector", bit));
+            return bv;
+        }
+        return listToBooleanArray(lst);
     }
 
 
@@ -6400,7 +6420,7 @@ public class LambdaJ {
 
             if (LambdaJ.svectorp(maybeVector))    return simpleVectorToList(args);
             if (stringp(maybeVector))             return stringToList(args);
-            if (LambdaJ.sbitvectorp(maybeVector)) return simpleBitVectorToList(args);
+            if (LambdaJ.sbitvectorp(maybeVector)) return bitVectorToList(args);
 
             if (maybeVector instanceof Bitvector || maybeVector instanceof List) {
                 final Iterator<?> it = ((Iterable<?>)maybeVector).iterator();
@@ -6463,19 +6483,29 @@ public class LambdaJ {
         public static long  _bvset(Object val, Object v, Object idx) { return LambdaJ.bvset(toBit(val), v, toArrayIndex(idx)); }
         public static long  _bvset(long val, Object v, Object idx)   { return LambdaJ.bvset(toBit(val), v, toArrayIndex(idx)); }
         public static long  _bvset(long val, Object v, long idx)     { return LambdaJ.bvset(toBit(val), v, toArrayIndex(idx)); }
-        public final Object bvEq        (Object... args) { twoArgs("bv=", args.length);          return bool(LambdaJ.bvEq(args[0], args[1])); }
-        public final Object simpleBitVectorToList(Object... args) {
-            oneArg("simple-bit-vector->list", args.length);
+        public final Object bvEq        (Object... args)             { twoArgs("bv=", args.length); return bool(LambdaJ.bvEq(args[0], args[1])); }
+        public final Object bitVectorToList(Object... args) {
+            oneArg("bit-vector->list", args.length);
             final Object maybeVector = args[0];
-            final boolean[] s = LambdaJ.requireSimpleBitVector("simple-bit-vector->list", maybeVector);
-            final ListBuilder ret = new ListBuilder();
-            final int len = s.length;
-            for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
-            return ret.first();
+            if (maybeVector instanceof boolean[]) {
+                final boolean[] s = (boolean[])maybeVector;
+                final int len = s.length;
+                if (len == 0) return null;
+                final ListBuilder ret = new ListBuilder();
+                for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
+                return ret.first();
+            }
+            else if (maybeVector instanceof Bitvector) {
+                final Bitvector bv = (Bitvector)maybeVector;
+                final ListBuilder ret = new ListBuilder();
+                for (Object bit: bv) ret.append(bit);
+                return ret.first();
+            }
+            else throw errorNotABitVector("bit-vector->list", maybeVector);
         }
-        public final Object   listToSimpleBitVector(Object... args) {
-            oneArg("list->simple-bit-vector", args.length);
-            return LambdaJ.listToBooleanArray(LambdaJ.requireList("list->simple-bit-vector", args[0]));
+        public final Object listToBitVector(Object... args) {
+            varargs1_2("list->bit-vector", args.length);
+            return LambdaJ.listToBitVector(LambdaJ.requireList("list->bit-vector", args[0]), args.length > 1 && args[1] != null);
         }
 
         public final Object   _seqref  (Object... args) { twoArgs("seqref",   args.length); return LambdaJ.seqref(args[0], toArrayIndex(args[1])); }
@@ -7116,8 +7146,8 @@ public class LambdaJ {
             case "bvref": return (CompilerPrimitive)this::_bvref;
             case "bvset": return (CompilerPrimitive)this::_bvset;
             case "bv=": return (CompilerPrimitive)this::bvEq;
-            case "simple-bit-vector->list": return (CompilerPrimitive)this::simpleBitVectorToList;
-            case "list->simple-bit-vector": return (CompilerPrimitive)this::listToSimpleBitVector;
+            case "bit-vector->list": return (CompilerPrimitive)this::bitVectorToList;
+            case "list->bit-vector": return (CompilerPrimitive)this::listToBitVector;
 
             case "seqref": return (CompilerPrimitive)this::_seqref;
             case "seqset": return (CompilerPrimitive)this::_seqset;
@@ -7330,7 +7360,7 @@ public class LambdaJ {
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
         {"adjustable-array-p", "adjustableArrayP"}, {"vector-push-extend", "vectorPushExtend"},
         {"vector->list", "vectorToList"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
-        {"simple-bit-vector->list", "simpleBitVectorToList"}, {"list->simple-bit-vector", "listToSimpleBitVector"},
+        {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
         {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
         {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"make-array", "makeArray"},

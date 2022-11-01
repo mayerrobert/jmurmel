@@ -207,7 +207,7 @@ multiline comment
 (deftest read.octal  #o0101 65)
 (deftest read.hex    #xcafebabe 3405691582)
 (deftest read.bitvector #*0101
-                        #+murmel (list->simple-bit-vector '(0 1 0 1))
+                        #+murmel (list->bit-vector '(0 1 0 1))
                         #-murmel (make-array 4 :element-type 'bit :initial-contents '(0 1 0 1))
 )
 
@@ -914,7 +914,7 @@ multiline comment
   (deftest simple-bit-vector.12 sbv                                #*1101)
   (deftest simple-bit-vector.13 (bvlength sbv)                     4)
   (deftest simple-bit-vector.14 (bv= sbv #*1101)                   t)
-  (deftest simple-bit-vector.15 (simple-bit-vector->list sbv)      '(1 1 0 1))
+  (deftest simple-bit-vector.15 (bit-vector->list sbv)             '(1 1 0 1))
 )
 
 

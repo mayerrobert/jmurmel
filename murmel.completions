@@ -129,8 +129,8 @@ bvlength
 bvref
 bvset
 bv=
-simple-bit-vector->list
-list->simple-bit-vector
+bit-vector->list
+list->bit-vector
 
 seqref
 seqset
