@@ -4217,7 +4217,7 @@ public class LambdaJ {
     }
 
     static Object listToString(Object lst, boolean adjustablep) {
-        if (lst == null) return new char[0];
+        if (lst == null) return adjustablep ? new StringBuilder() : new char[0];
         final ConsCell l = requireList("list->string", lst);
         final StringBuilder ret = new StringBuilder();
         for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
