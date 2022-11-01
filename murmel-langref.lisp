@@ -834,7 +834,13 @@ pi ; ==> 3.141592653589793
 ;
 ; Only one-dimensional arrays of element-type t, 'bit or 'character are supported.
 
-; = vector-length, vector-copy, vector-fill, vector-push-extend, vector->list
+; = vector-length, vector-copy, vector-fill, vector-push-extend, vector->list, list->vector
+;     (vector-length v) -> length
+;     (vector-copy v) -> fresh-copy
+;     (vector-fill v new-elem) -> vector
+;     (vector-push-extend elem v) -> 0-position-of-added-element
+;     (vector->list v) -> list
+;     (list->vector lst [adjustablep]) -> vector
 ;
 ; Since: 1.3
 

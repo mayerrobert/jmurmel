@@ -108,6 +108,7 @@ vector-length
 vector-copy
 vector-push-extend
 vector->list
+list->vector
 
 svlength
 svref

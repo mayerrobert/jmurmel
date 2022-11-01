@@ -1743,6 +1743,7 @@ public class LambdaJ {
 
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { Object    apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
         sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
+        sListToVector("list->vector", Features.HAVE_VECTOR, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToVector(car(args), cadr(args) != null); } },
 
         sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Object    apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
         sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
@@ -4157,6 +4158,16 @@ public class LambdaJ {
         throw errorNotAVector("vector->list", maybeVector);
     }
 
+    static Object listToVector(Object lst, boolean adjustablep) {
+        if (lst == null) return adjustablep ? new ArrayList<>() : new Object[0];
+        if (adjustablep) {
+            final ConsCell l = requireList("list->vector", lst);
+            final ArrayList<Object> ret = new ArrayList<>();
+            for (Object o: l) ret.add(o);
+            return ret;
+        }
+        return listToArray(lst); 
+    }
 
     static long svlength(Object maybeVector) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
@@ -6430,6 +6441,7 @@ public class LambdaJ {
 
             throw errorNotAVector("vector->list", maybeVector);
         }
+        public final Object   listToVector(Object... args) { varargs1_2("list->vector", args.length); return LambdaJ.listToVector(args[0], args.length > 1 && args[1] != null); }
 
         public final long     _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return _svref(args[0], args[1]); }
@@ -7121,6 +7133,7 @@ public class LambdaJ {
             case "vector-fill": return (CompilerPrimitive)this::vectorFill;
             case "vector-push-extend": return (CompilerPrimitive)this::vectorPushExtend;
             case "vector->list": return (CompilerPrimitive)this::vectorToList;
+            case "list->vector": return (CompilerPrimitive)this::listToVector;
 
             case "svlength": return (CompilerPrimitive)this::_svlength;
             case "svref": return (CompilerPrimitive)this::_svref;
@@ -7356,7 +7369,7 @@ public class LambdaJ {
         {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
         {"adjustable-array-p", "adjustableArrayP"}, {"vector-push-extend", "vectorPushExtend"},
-        {"vector->list", "vectorToList"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
+        {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
         {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
