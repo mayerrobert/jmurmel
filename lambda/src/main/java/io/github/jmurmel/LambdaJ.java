@@ -5544,6 +5544,13 @@ public class LambdaJ {
         final LambdaJSymbol cmdRun    = interpreter.intern(":r");
         final LambdaJSymbol cmdJar    = interpreter.intern(":jar");
 
+        final LambdaJSymbol dollar1   = interpreter.intern("*1");
+        final LambdaJSymbol dollar2   = interpreter.intern("*2");
+        final LambdaJSymbol dollar3   = interpreter.intern("*3");
+        final LambdaJSymbol define    = interpreter.intern("define");
+        final LambdaJSymbol setq      = interpreter.intern("setq");
+        final LambdaJSymbol quote     = interpreter.intern("quote");
+
         if (!echo) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
             System.out.println();
@@ -5559,11 +5566,19 @@ public class LambdaJ {
         final Reader consoleReader = new InputStreamReader(System.in, consoleCharset);
         final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
         final ReadSupplier nonechoingSupplier = consoleReader::read;
+
+        final Runnable initReplVars = () -> {
+            interpreter.eval(interpreter.list(define, dollar1, null), null);
+            interpreter.eval(interpreter.list(define, dollar2, null), null);
+            interpreter.eval(interpreter.list(define, dollar3, null), null);
+        };
+
         if (isInit) {
             interpreter.nCells = 0; interpreter.maxEnvLen = 0;
             parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.symtab, interpreter.featuresEnvEntry,
                                            echo ? echoingSupplier : nonechoingSupplier, null);
             outWriter = interpreter.lispPrinter;
+            initReplVars.run();
         }
         for (;;) {
             if (!isInit) {
@@ -5578,6 +5593,7 @@ public class LambdaJ {
                 interpreter.modules.clear();
                 injectCommandlineArgs(interpreter, args);
                 interpreter.featuresEnvEntry.rplacd(interpreter.makeFeatureList());
+                initReplVars.run();
                 isInit = true;
             }
 
@@ -5626,6 +5642,11 @@ public class LambdaJ {
                 final Object result = interpreter.expandAndEval(exp, null);
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
+
+                interpreter.eval(interpreter.list(setq, dollar3, dollar2), null);
+                interpreter.eval(interpreter.list(setq, dollar2, dollar1), null);
+                interpreter.eval(interpreter.list(setq, dollar1, interpreter.list(quote, result)), null);
+
                 System.out.println();
                 if (interpreter.values == NO_VALUES) {
                     System.out.print("==> "); outWriter.printObj(result, true); System.out.println();
