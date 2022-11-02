@@ -317,6 +317,8 @@
                        ((eq keydesignator 'float)             `((floatp ,tmp) ,@forms))
                        ((eq keydesignator 'number)            `((numberp ,tmp) ,@forms))
 
+                       ((eq keydesignator 'function)          `((functionp ,tmp) ,@forms))
+
                        ((eq keydesignator t)                  `(t ,@forms))
 
                        (t (error "typecase - type %s is not implemented" keydesignator))))))
@@ -988,21 +990,21 @@
                  (svset ,read-var ,tmp1 ,tmp2)
                  (svref ,tmp1 ,tmp2)))
 
-              ((or (eq 'bit op) (eq 'bvref op))
+              ((or (eq 'bvref op) (eq 'bit op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (bvref ,tmp1 ,tmp2))
                  (,read-var)
                  (bvset ,read-var ,tmp1 ,tmp2)
                  (bvref ,tmp1 ,tmp2)))
 
-              ((or (eq 'char op) (eq 'sref op))
+              ((or (eq 'sref op) (eq 'char op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (sref ,tmp1 ,tmp2))
                  (,read-var)
                  (sset ,read-var ,tmp1 ,tmp2)
                  (sref ,tmp1 ,tmp2)))
 
-              ((or (eq 'elt op) (eq 'seqref op))
+              ((or (eq 'seqref op) (eq 'elt op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (seqref ,tmp1 ,tmp2))
                  (,read-var)
@@ -1044,13 +1046,13 @@
                       ((eq 'svref (caar args))
                        `(svset  ,(cadr args) ,@(cdar args)))
 
-                      ((or (eq 'bit (caar args)) (eq 'bvref (caar args)))
+                      ((or (eq 'bvref (caar args)) (eq 'bit (caar args)))
                        `(bvset ,(cadr args) ,@(cdar args)))
 
-                      ((or (eq 'char (caar args)) (eq 'sref (caar args)))
+                      ((or (eq 'sref (caar args)) (eq 'char (caar args)))
                        `(sset ,(cadr args) ,@(cdar args)))
 
-                      ((or (eq 'elt (caar args)) (eq 'seqref (caar args)))
+                      ((or (eq 'seqref (caar args)) (eq 'elt (caar args)))
                        `(seqset ,(cadr args) ,@(cdar args)))
 
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
