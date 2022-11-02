@@ -5635,7 +5635,6 @@ public class LambdaJ {
                         System.out.println(); continue;
                     }
                 }
-                history.add(exp);
 
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
@@ -5643,6 +5642,7 @@ public class LambdaJ {
                 final long tEnd = System.nanoTime();
                 interpreter.traceStats(tEnd - tStart);
 
+                history.add(exp);
                 interpreter.eval(interpreter.list(setq, dollar3, dollar2), null);
                 interpreter.eval(interpreter.list(setq, dollar2, dollar1), null);
                 interpreter.eval(interpreter.list(setq, dollar1, interpreter.list(quote, result)), null);
