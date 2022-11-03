@@ -1981,3 +1981,9 @@ vector könnte einfach in mlib implementiert werden:
    list->simple-vector, list->simple-bitvector umbenamsen
 
 vector-copy könnte auch adjustablep bekommen
+
+- -> the current evaluated form
++ ++ +++ -> the recent evaluated forms
+* ** *** -> the recent primary results
+/ // /// -> all the returned values, each as a list
+-> CL namen mit @ vornedran verwenden

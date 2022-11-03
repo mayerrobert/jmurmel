@@ -223,21 +223,24 @@ pi ; ==> 3.141592653589793
 ; These global variables contain the smallest and largest fixnum value.
 
 
-; = *1, *2, *3
-; The global variables *1, *2, *3 are maintained by the Lisp read-eval-print loop
+; = @-, @+, @++, @+++, @\*, @\*\*, @\*\*\*, @/, @//, @///
+; These variables are only defined when using the Repl.
+; They work similar to CL's Repl variables without the leading `@`.
+;
+; The global variables @\*, @\*\*, @\*\*\* are maintained by the Lisp read-eval-print loop
 ; to save the values of results that are printed each time through the loop.
 ;
-; The value of *1 is the most recent primary value that was printed,
-; the value of *2 is the previous value of *1,
-; and the value of *3 is the previous value of *2.
+; The value of @\* is the most recent primary value that was printed,
+; the value of @\*\* is the previous value of @\*,
+; and the value of @\*\*\* is the previous value of @\*\*.
 ;
-; If several values are produced, *1 contains the first value only;
-; $1 contains nil if zero values are produced.
+; If several values are produced, @\* contains the first value only;
+; @\* contains nil if zero values are produced.
 ;
-; The values of *1, *2, and *3 are updated immediately prior to printing the return value
+; The values of @\*, @\*\*, and @\*\*\* are updated immediately prior to printing the return value
 ; of a top-level form by the Lisp read-eval-print loop.
 ; If the evaluation of such a form is aborted prior to its normal return,
-; the values of *1, *2, and *3 are not updated.
+; the values of @\*, @\*\*, and @\*\*\* are not updated.
 
 
 ;;; == Basic Special Forms ============

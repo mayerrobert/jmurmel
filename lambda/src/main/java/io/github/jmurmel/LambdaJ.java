@@ -5544,12 +5544,11 @@ public class LambdaJ {
         final LambdaJSymbol cmdRun    = interpreter.intern(":r");
         final LambdaJSymbol cmdJar    = interpreter.intern(":jar");
 
-        final LambdaJSymbol dollar1   = interpreter.intern("*1");
-        final LambdaJSymbol dollar2   = interpreter.intern("*2");
-        final LambdaJSymbol dollar3   = interpreter.intern("*3");
-        final LambdaJSymbol define    = interpreter.intern("define");
-        final LambdaJSymbol setq      = interpreter.intern("setq");
-        final LambdaJSymbol quote     = interpreter.intern("quote");
+        final LambdaJSymbol define = interpreter.intern("define"), setq = interpreter.intern("setq"), quote = interpreter.intern("quote");
+        final LambdaJSymbol form0 = interpreter.intern("@-");
+        final LambdaJSymbol form1 = interpreter.intern("@+"), form2 = interpreter.intern("@++"), form3 = interpreter.intern("@+++");
+        final LambdaJSymbol result1 = interpreter.intern("@*"), result2 = interpreter.intern("@**"), result3 = interpreter.intern("@***");
+        final LambdaJSymbol values1 = interpreter.intern("@/"), values2 = interpreter.intern("@//"), values3 = interpreter.intern("@///");
 
         if (!echo) {
             System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
@@ -5568,9 +5567,9 @@ public class LambdaJ {
         final ReadSupplier nonechoingSupplier = consoleReader::read;
 
         final Runnable initReplVars = () -> {
-            interpreter.eval(interpreter.list(define, dollar1, null), null);
-            interpreter.eval(interpreter.list(define, dollar2, null), null);
-            interpreter.eval(interpreter.list(define, dollar3, null), null);
+            for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3}) {
+                interpreter.eval(interpreter.list(define, v, null), null);
+            }
         };
 
         if (isInit) {
@@ -5636,6 +5635,8 @@ public class LambdaJ {
                     }
                 }
 
+                interpreter.eval(interpreter.list(setq, form0, interpreter.list(quote, exp)), null);
+
                 interpreter.values = NO_VALUES;
                 final long tStart = System.nanoTime();
                 final Object result = interpreter.expandAndEval(exp, null);
@@ -5643,9 +5644,18 @@ public class LambdaJ {
                 interpreter.traceStats(tEnd - tStart);
 
                 history.add(exp);
-                interpreter.eval(interpreter.list(setq, dollar3, dollar2), null);
-                interpreter.eval(interpreter.list(setq, dollar2, dollar1), null);
-                interpreter.eval(interpreter.list(setq, dollar1, interpreter.list(quote, result)), null);
+
+                interpreter.eval(interpreter.list(setq, form3, form2), null);
+                interpreter.eval(interpreter.list(setq, form2, form1), null);
+                interpreter.eval(interpreter.list(setq, form1, form0), null);
+
+                interpreter.eval(interpreter.list(setq, result3, result2), null);
+                interpreter.eval(interpreter.list(setq, result2, result1), null);
+                interpreter.eval(interpreter.list(setq, result1, interpreter.list(quote, result)), null);
+
+                interpreter.eval(interpreter.list(setq, values3, values2), null);
+                interpreter.eval(interpreter.list(setq, values2, values1), null);
+                interpreter.eval(interpreter.list(setq, values1, interpreter.list(quote, interpreter.values)), null);
 
                 System.out.println();
                 if (interpreter.values == NO_VALUES) {
