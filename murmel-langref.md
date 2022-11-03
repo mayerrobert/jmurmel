@@ -882,8 +882,8 @@ Since: 1.3
 
 ### slength, sref, sset
     (slength str) -> length
-    (sref str n) -> nth-character
-    (sset new-char str n) -> new-char
+    (sref    str n) -> nth-character
+    (sset    str n new-char) -> new-char
 
 Since: 1.3
 
@@ -906,7 +906,7 @@ Using `sset` with a string literal is an error.
 
 ### bvlength, bvref, bvset, bv=
     (bvref bitvector n) -> nth-bit
-    (bvset new-bit bitvector n) -> new-bit
+    (bvset bitvector n new-bit) -> new-bit
 
 Since: 1.3
 
@@ -922,10 +922,12 @@ Similar to CL `bit`.
 Since: 1.3
 
 ### seqref, seqset
+    (seqref seq n) -> nth-element
+    (seqset seq n new-element) -> new-element
 
 Since: 1.3
 
-`seqref` is similar to CL `elt`, and `seqset` is similar to CL `(setf elt)` function.
+`seqref` is similar to CL `elt` function.
 Murmel's `seqref` and `seqset` will handle dotted lists, though.
 
     (seqref "abc" 2) ; ==> #\c
@@ -933,7 +935,7 @@ Murmel's `seqref` and `seqset` will handle dotted lists, though.
     (seqref '(0 1 2 . 3) 3) ; ==> 3
 
     (let ((l (list* 0 1 2)))
-      (seqset 22 l 2) l)
+      (seqset l 2 22) l)
       ; ==> (0 1 . 22)
 
 

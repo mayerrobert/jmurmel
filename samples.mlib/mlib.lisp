@@ -987,28 +987,28 @@
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (svref ,tmp1 ,tmp2))
                  (,read-var)
-                 (svset ,read-var ,tmp1 ,tmp2)
+                 (svset ,tmp1 ,tmp2 ,read-var)
                  (svref ,tmp1 ,tmp2)))
 
               ((or (eq 'bvref op) (eq 'bit op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (bvref ,tmp1 ,tmp2))
                  (,read-var)
-                 (bvset ,read-var ,tmp1 ,tmp2)
+                 (bvset ,tmp1 ,tmp2 ,read-var)
                  (bvref ,tmp1 ,tmp2)))
 
               ((or (eq 'sref op) (eq 'char op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (sref ,tmp1 ,tmp2))
                  (,read-var)
-                 (sset ,read-var ,tmp1 ,tmp2)
+                 (sset ,tmp1 ,tmp2 ,read-var)
                  (sref ,tmp1 ,tmp2)))
 
               ((or (eq 'seqref op) (eq 'elt op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (seqref ,tmp1 ,tmp2))
                  (,read-var)
-                 (seqset ,read-var ,tmp1 ,tmp2)
+                 (seqset ,tmp1 ,tmp2 ,read-var)
                  (seqref ,tmp1 ,tmp2)))
 
               (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, svref, bvref, bit, sref and char are supported for 'place'")))))))
@@ -1044,16 +1044,16 @@
                        `(setq   ,(car args)  ,@(cdr args)))
 
                       ((eq 'svref (caar args))
-                       `(svset  ,(cadr args) ,@(cdar args)))
+                       `(svset  ,@(cdar args) ,(cadr args)))
 
                       ((or (eq 'bvref (caar args)) (eq 'bit (caar args)))
-                       `(bvset ,(cadr args) ,@(cdar args)))
+                       `(bvset ,@(cdar args) ,(cadr args)))
 
                       ((or (eq 'sref (caar args)) (eq 'char (caar args)))
-                       `(sset ,(cadr args) ,@(cdar args)))
+                       `(sset ,@(cdar args) ,(cadr args)))
 
                       ((or (eq 'seqref (caar args)) (eq 'elt (caar args)))
-                       `(seqset ,(cadr args) ,@(cdar args)))
+                       `(seqset ,@(cdar args) ,(cadr args)))
 
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* (,@(mapcar list vars vals)
@@ -1564,7 +1564,7 @@
            (reverse/vector (from to get set)
              (let loop ((from-idx 0) (to-idx (1- (vector-length to))))
                (when (>= to-idx 0)
-                 (set (get from from-idx) to to-idx)
+                 (set to to-idx (get from from-idx))
                  (loop (1+ from-idx) (1- to-idx))))
              to))
 
@@ -1601,8 +1601,8 @@
                (if (<= right-index left-index) vector
                  (let ((left (getter vector left-index))
                        (right (getter vector right-index)))
-                   (setter right vector left-index)
-                   (setter left vector right-index)
+                   (setter vector left-index right)
+                   (setter vector right-index left)
                    (loop (1+ left-index) (1- right-index)))))))
 
     (typecase seq
@@ -1735,7 +1735,7 @@
               (setq set-result (lambda (elem) (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
               (setq has-next-result (lambda () result-cursor)))
         (vector (setq result-cursor 0)
-                (setq set-result (lambda (elem) (seqset elem result result-cursor) (setq result-cursor (1+ result-cursor))))
+                (setq set-result (lambda (elem) (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
                 (setq has-next-result (lambda () (< result-cursor result-length)))
                 (setq result-length (vector-length result)))
         (t (error "map-into: not a sequence: %s" result)))

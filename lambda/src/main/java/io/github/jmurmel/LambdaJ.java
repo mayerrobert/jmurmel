@@ -1747,14 +1747,14 @@ public class LambdaJ {
 
         sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Object    apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
         sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
-        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return svset(car(args), cadr(args), toNonnegInt("svset", caddr(args))); } },
+        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); } },
         sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
         sSLength("slength", Features.HAVE_STRING, 1)                   { Object    apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
         sSRef("sref", Features.HAVE_STRING, 2)                         { Object    apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
-        sSSet("sset", Features.HAVE_STRING, 3)                         { Object    apply(LambdaJ intp, ConsCell args) { return sset(requireChar("sset", car(args)), cadr(args), toNonnegInt("sset", caddr(args))); } },
+        sSSet("sset", Features.HAVE_STRING, 3)                         { Object    apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
         sSEq("string=", Features.HAVE_STRING, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
         sStringToList("string->list", Features.HAVE_STRING, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
         sListToString("list->string", Features.HAVE_STRING, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
@@ -1764,13 +1764,13 @@ public class LambdaJ {
 
         sBvLength("bvlength", Features.HAVE_VECTOR, 1)                 { Object    apply(LambdaJ intp, ConsCell args) { return bvlength(car(args)); } },
         sBvRef("bvref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvref(car(args), toNonnegInt("bvref", cadr(args))); } },
-        sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvset(requireIntegralNumber("bvset", car(args), 0, 1).longValue(), cadr(args), toNonnegInt("bvset", caddr(args))); } },
+        sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); } },
         sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
         sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.bitVectorToList(car(args)); } },
         sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
-        sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqset(car(args), cadr(args), toNonnegInt("seqset", caddr(args))); } }, // todo nicht auf int begrenzen wg. list
+        sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
@@ -4194,7 +4194,7 @@ public class LambdaJ {
         throw errorNotASimpleVector("svref", maybeVector);
     }
 
-    static Object svset(Object newValue, Object maybeVector, int idx) {
+    static Object svset(Object maybeVector, int idx, Object newValue) {
         if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
         throw errorNotASimpleVector("svset", maybeVector);
     }
@@ -4220,7 +4220,7 @@ public class LambdaJ {
         return requireCharsequence("sref", maybeString).charAt(idx);
     }
 
-    static char sset(char newValue, Object maybeString, int idx) {
+    static char sset(Object maybeString, int idx, char newValue) {
         if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
         if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
         if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
@@ -4263,7 +4263,7 @@ public class LambdaJ {
         throw errorNotABitVector("bvref", bv);
     }
 
-    static long bvset(long newValue, Object maybeVector, int idx) {
+    static long bvset(Object maybeVector, int idx, long newValue) {
         if (maybeVector instanceof boolean[]) {
             final boolean b;
             if (newValue == 0) b = false;
@@ -4342,7 +4342,7 @@ public class LambdaJ {
     }
 
     @SuppressWarnings("unchecked")
-    static Object seqset(Object newValue, Object maybeSeq, long idx) {
+    static Object seqset(Object maybeSeq, long idx, Object newValue) {
         if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
@@ -6493,7 +6493,7 @@ public class LambdaJ {
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return _svref(args[0], args[1]); }
         public static Object  _svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return _svset(args[0], args[1], args[2]); }
-        public static Object  _svset(Object val, Object v, Object idx) { return LambdaJ.svset(val, v, toArrayIndex(idx)); }
+        public static Object  _svset(Object v, Object idx, Object val) { return LambdaJ.svset(v, toArrayIndex(idx), val); }
         public final Object   simpleVectorToList (Object... args) {
             oneArg("simple-vector->list", args.length);
             final Object maybeVector = args[0];
@@ -6507,8 +6507,8 @@ public class LambdaJ {
         public final Object _vector  (Object... args) { return args; }
 
         public final long      _slength(Object... args) { oneArg("slength", args.length); return slength(args[0]); }
-        public final char      _sref   (Object... args) { twoArgs("sref", args.length); return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
-        public final char      _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(LambdaJ.requireChar("sset", args[0]), args[1], toArrayIndex(args[2])); }
+        public final char      _sref   (Object... args) { twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
+        public final char      _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
         public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
@@ -6535,9 +6535,9 @@ public class LambdaJ {
         public static long  _bvref(Object v, Object idx) { return LambdaJ.bvref(v, toArrayIndex(idx)); }
         public static long  _bvref(Object v, long idx)   { return LambdaJ.bvref(v, toArrayIndex(idx)); }
         public final  long  _bvset      (Object... args) { threeArgs("bvset", args.length);      return _bvset(args[0], args[1], args[2]); }
-        public static long  _bvset(Object val, Object v, Object idx) { return LambdaJ.bvset(toBit(val), v, toArrayIndex(idx)); }
-        public static long  _bvset(long val, Object v, Object idx)   { return LambdaJ.bvset(toBit(val), v, toArrayIndex(idx)); }
-        public static long  _bvset(long val, Object v, long idx)     { return LambdaJ.bvset(toBit(val), v, toArrayIndex(idx)); }
+        public static long  _bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long  _bvset(Object v, Object idx, long val)   { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public static long  _bvset(Object v, long idx, long val)     { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
         public final Object bvEq        (Object... args)             { twoArgs("bv=", args.length); return bool(LambdaJ.bvEq(args[0], args[1])); }
         public final Object bitVectorToList(Object... args) {
             oneArg("bit-vector->list", args.length);
@@ -6564,7 +6564,7 @@ public class LambdaJ {
         }
 
         public final Object   _seqref  (Object... args) { twoArgs("seqref",   args.length); return LambdaJ.seqref(args[0], toArrayIndex(args[1])); }
-        public final Object   _seqset  (Object... args) { threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], args[1], toArrayIndex(args[2])); }
+        public final Object   _seqset  (Object... args) { threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], toArrayIndex(args[1]), args[2]); }
 
 
         // I/O

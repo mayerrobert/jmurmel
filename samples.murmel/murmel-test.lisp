@@ -45,7 +45,7 @@
     
     (t (error "not a nonempty sequence"))))
 
-(defun seqset (val seq idx)
+(defun seqset (seq idx val)
   (typecase seq
     (cons
      (if (> idx 0)
@@ -867,11 +867,11 @@ multiline comment
 
   (deftest simple-vector.5 (seqref #(0 1 2 3) 2)           2)
   (deftest simple-vector.6 (seqref #(0 1 2 3) 3)           3)
-  (deftest simple-vector.7 (seqset 22 (vector 0 1 2 3) 2)  22)
-  (deftest simple-vector.8 (seqset 33 (vector 0 1 2 3) 3)  33)
+  (deftest simple-vector.7 (seqset (vector 0 1 2 3) 2 22)  22)
+  (deftest simple-vector.8 (seqset (vector 0 1 2 3) 3 33)  33)
 
   (deftest simple-vector.9  (svref sv 0)              0)
-  (deftest simple-vector.10 (svset 1 sv 0)            1)
+  (deftest simple-vector.10 (svset sv 0 1)            1)
   (deftest simple-vector.11 sv                        #(1 1 2))
   (deftest simple-vector.12 (svlength sv)             3)
   (deftest simple-vector.13 (simple-vector->list sv)  '(1 1 2))
@@ -887,7 +887,7 @@ multiline comment
   (deftest adjustable-vector.4  (vector->list av)         '(1 1 1))
 
   (deftest adjustable-vector.5  (seqref av 0)             1)
-  (deftest adjustable-vector.6  (seqset 0 av 0)           0)
+  (deftest adjustable-vector.6  (seqset av 0 0)           0)
   (deftest adjustable-vector.7  av                        #(0 1 1))
 
   (deftest adjustable-vector.8  (vector-push-extend 2 av) 3)
@@ -906,11 +906,11 @@ multiline comment
 
   (deftest simple-bit-vector.6 (seqref #*0101 2)                  0)
   (deftest simple-bit-vector.7 (seqref #*0101 3)                  1)
-  (deftest simple-bit-vector.8 (seqset 0 (vector-copy #*0101) 2)  0)
-  (deftest simple-bit-vector.9 (seqset 0 (vector-copy #*0101) 3)  0)
+  (deftest simple-bit-vector.8 (seqset (vector-copy #*0101) 2 0)  0)
+  (deftest simple-bit-vector.9 (seqset (vector-copy #*0101) 3 0)  0)
 
   (deftest simple-bit-vector.10 (bvref sbv 0)                      0)
-  (deftest simple-bit-vector.11 (bvset 1 sbv 0)                    1)
+  (deftest simple-bit-vector.11 (bvset sbv 0 1)                    1)
   (deftest simple-bit-vector.12 sbv                                #*1101)
   (deftest simple-bit-vector.13 (bvlength sbv)                     4)
   (deftest simple-bit-vector.14 (bv= sbv #*1101)                   t)
@@ -928,7 +928,7 @@ multiline comment
   (deftest adjustable-bit-vector.5  (vector->list abv)             '(1 1 1))
 
   (deftest adjustable-bit-vector.6  (seqref abv 0)                 1)
-  (deftest adjustable-bit-vector.7  (seqset 0 abv 1)               0)
+  (deftest adjustable-bit-vector.7  (seqset abv 1 0)               0)
   (deftest adjustable-bit-vector.8  abv                            #*101)
 
   (deftest adjustable-bit-vector.9  (bv= abv #*101)                t)
@@ -949,11 +949,11 @@ multiline comment
 
   (deftest simple-string.6 (seqref "0123" 3)                    #\3)
   (deftest simple-string.6 (seqref "0123" 2)                    #\2)
-  (deftest simple-string.7 (seqset #\a (vector-copy "0123") 2)  #\a)
-  (deftest simple-string.8 (seqset #\b (vector-copy "0123") 3)  #\b)
+  (deftest simple-string.7 (seqset (vector-copy "0123") 2 #\a)  #\a)
+  (deftest simple-string.8 (seqset (vector-copy "0123") 3 #\b)  #\b)
 
   (deftest simple-string.10 (sref sstring 0)          #\1)
-  (deftest simple-string.11 (sset #\a sstring 0)      #\a)
+  (deftest simple-string.11 (sset sstring 0 #\a)      #\a)
   (deftest simple-string.12 sstring                   "a23")
   (deftest simple-string.13 (slength sstring)         3)
   (deftest simple-string.14 (string= sstring "a23")   t)
@@ -971,7 +971,7 @@ multiline comment
   (deftest adjustable-string.5  (vector->list astring)            '(#\1 #\1 #\1))
 
   (deftest adjustable-string.6  (sref astring 0)                  #\1)
-  (deftest adjustable-string.7  (sset #\a astring 0)              #\a)
+  (deftest adjustable-string.7  (sset astring 0 #\a)              #\a)
   (deftest adjustable-string.8  astring                           "a11")
   (deftest adjustable-string.9  (slength astring)                 3)
   (deftest adjustable-string.10 (string= astring "a11")           t)
@@ -987,9 +987,9 @@ multiline comment
 (deftest seqref.2 (seqref '(0 1 2 3) 3)    3)
 (deftest seqref.3 (seqref '(0 1 2 . 3) 3)  3)
 
-(deftest seqset.1 (seqset 22 (list 0 1 2 3) 2)   22)
-(deftest seqset.2 (seqset 33 (list 0 1 2 3) 3)   33)
-(deftest seqset.3 (seqset 22 (list* 0 1 2 3) 2)  22)
+(deftest seqset.1 (seqset (list 0 1 2 3)  2 22)   22)
+(deftest seqset.2 (seqset (list 0 1 2 3)  3 33)   33)
+(deftest seqset.3 (seqset (list* 0 1 2 3) 2 22)   22)
 
 
 ; *******************************************************************
@@ -1188,9 +1188,9 @@ multiline comment
   (deftest ffi.seqref.4 (seqref stringBuilder 6) #\v)
 
 
-  (deftest ffi.seqset.1 (list (seqset 66 arrayList 6) (seqref arrayList 6))  '(66 66))
-  (deftest ffi.seqset.1 (list (seqset #\a stringBuffer 6) stringBuffer)  '(#\a "stringaalue"))
-  (deftest ffi.seqset.2 (list (seqset #\a stringBuilder 6) stringBuilder)  '(#\a "stringaalue"))
+  (deftest ffi.seqset.1 (list (seqset arrayList     6 66 ) (seqref arrayList 6))  '(66 66))
+  (deftest ffi.seqset.1 (list (seqset stringBuffer  6 #\a) stringBuffer)  '(#\a "stringaalue"))
+  (deftest ffi.seqset.2 (list (seqset stringBuilder 6 #\a) stringBuilder)  '(#\a "stringaalue"))
 )
 
 
