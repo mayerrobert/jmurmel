@@ -29,6 +29,7 @@ core
 /.idea/
 /jmurmel-all.iml
 /scripts/scripts.iml
+/scripts/target/
 /doc/target/
 /lambda/jmurmel.iml
 /lambda/target/

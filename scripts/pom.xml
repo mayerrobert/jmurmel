@@ -55,6 +55,54 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- use an ant task to prepend a header that turns markdown files into files that can be viewed with a web browser.
+            For the "HTML-transformer" see TeXMe https://github.com/susam/texme
+            See concat ant task https://ant.apache.org/manual/Tasks/concat.html
+            -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${maven-antrun-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>md-to-html</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target name="run">
+                                <concat destfile="../murmel-langref.html">
+                                    <header filtering="no" trimleading="yes">
+                                        <![CDATA[<!DOCTYPE html><html lang="en">
+<title>Murmel Language Reference</title><script src="https://cdn.jsdelivr.net/npm/texme@1.2.1"></script><textarea>]]>
+                                    </header>
+                                    <footer filtering="no" trimleading="yes">
+                                        <![CDATA[</textarea>]]>
+                                    </footer>
+                                    <path path="../murmel-langref.md"/>
+                                    <filterchain>
+                                        <replaceregex pattern="\.md\)" replace=".html)" flags="g"/>
+                                    </filterchain>
+                                </concat>
+                                <concat destfile="../mlib.html">
+                                    <header filtering="no" trimleading="yes">
+                                        <![CDATA[<!DOCTYPE html><html lang="en">
+<title>Murmel Default Library Reference</title><script src="https://cdn.jsdelivr.net/npm/texme@1.2.1"></script><textarea>]]>
+                                    </header>
+                                    <footer filtering="no" trimleading="yes">
+                                        <![CDATA[</textarea>]]>
+                                    </footer>
+                                    <path path="../mlib.md"/>
+                                    <filterchain>
+                                        <replaceregex pattern="\.md\)" replace=".html)" flags="g"/>
+                                    </filterchain>
+                                </concat>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

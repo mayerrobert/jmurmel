@@ -1,4 +1,5 @@
 *.md text eol=lf
+*.html text eol=lf
 *.sed text eol=lf
 *.completions text eol=lf
 Dockerfile text eol=lf
