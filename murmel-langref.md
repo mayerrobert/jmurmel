@@ -1010,9 +1010,9 @@ Since: 1.2
 
 `values` returns the objects as multiple values.
 
-### (gensym) -> uninterned symbol
+### (gensym [optional-name]) -> uninterned symbol
 
-Return a new unique symbol.
+Return a new uninterned symbol.
     (gensym)
 
 ### (macroexpand-1 quoted-form) -> expanded-form, boolean

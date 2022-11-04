@@ -1782,7 +1782,7 @@ public class LambdaJ {
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)               { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
-        sGensym("gensym", Features.HAVE_XTRA, 0)                { Object apply(LambdaJ intp, ConsCell args) { return gensym(); } },
+        sGensym("gensym", Features.HAVE_XTRA, 0, 1)             { Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)             { Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
@@ -4549,8 +4549,9 @@ public class LambdaJ {
         return expansion;
     }
 
-    static Object gensym() {
-        return new LambdaJSymbol("#:gensym");
+    static Object gensym(Object name) {
+        if (name != null) return new LambdaJSymbol("#:" + requireString("gensym", name));
+        else return new LambdaJSymbol("#:gensym");
     }
 
 
@@ -6580,7 +6581,7 @@ public class LambdaJ {
         // misc
         Object[] values;
         public final Object _values    (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
-        public final Object _gensym    (Object... args) { noArgs("gensym", args.length); return LambdaJ.gensym(); }
+        public final Object _gensym    (Object... args) { varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { return null; }
         public final Object _untrace   (Object... args) { return null; }
         public final Object _fatal     (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
