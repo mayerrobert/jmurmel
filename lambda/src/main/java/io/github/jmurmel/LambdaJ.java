@@ -1737,7 +1737,7 @@ public class LambdaJ {
 
         // vectors, sequences
         sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { Object    apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
-        sVectorPE("vector-push-extend", Features.HAVE_VECTOR, 2)       { Object    apply(LambdaJ intp, ConsCell args) { return vectorPushExtend(car(args), cadr(args)); } },
+        sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { Object    apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
         sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
@@ -4147,13 +4147,13 @@ public class LambdaJ {
     }
 
     @SuppressWarnings("unchecked")
-    static long vectorPushExtend(Object newValue, Object maybeVector) {
-        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-push-extend: not an adjustable vector: %s", printSEx(maybeVector));
-        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
-        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-push-extend", newValue)); return sb.length() - 1; }
-        if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-push-extend", newValue)); }
+    static long vectorAdd(Object maybeVector, Object newValue) {
+        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-add: not an adjustable vector: %s", printSEx(maybeVector));
+        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
+        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
+        if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
         if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
-        throw errorInternal("vector-push-extend: unknown object type %s", maybeVector);
+        throw errorInternal("vector-add: unknown object type %s", maybeVector);
     }
 
     final Object vectorToList(Object maybeVector) {
@@ -6467,7 +6467,7 @@ public class LambdaJ {
         public final Object   vectorCopy  (Object... args) { varargs1_2("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0], args.length > 1 && args[1] != null); }
         public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
                                                              return LambdaJ.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
-        public final long     vectorPushExtend(Object... args) { twoArgs("vector-push-extend", args.length); return LambdaJ.vectorPushExtend(args[0], args[1]); }
+        public final long     vectorAdd   (Object... args) { twoArgs("vector-add", args.length); return LambdaJ.vectorAdd(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
             oneArg("vector->list", args.length);
             final Object maybeVector = args[0];
@@ -7177,7 +7177,7 @@ public class LambdaJ {
             case "vector-length": return (CompilerPrimitive)this::vectorLength;
             case "vector-copy": return (CompilerPrimitive)this::vectorCopy;
             case "vector-fill": return (CompilerPrimitive)this::vectorFill;
-            case "vector-push-extend": return (CompilerPrimitive)this::vectorPushExtend;
+            case "vector-add": return (CompilerPrimitive)this::vectorAdd;
             case "vector->list": return (CompilerPrimitive)this::vectorToList;
             case "list->vector": return (CompilerPrimitive)this::listToVector;
 
@@ -7414,7 +7414,7 @@ public class LambdaJ {
         {"1+", "inc"}, {"1-", "dec"},
         {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
-        {"adjustable-array-p", "adjustableArrayP"}, {"vector-push-extend", "vectorPushExtend"},
+        {"adjustable-array-p", "adjustableArrayP"}, {"vector-add", "vectorAdd"},
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 

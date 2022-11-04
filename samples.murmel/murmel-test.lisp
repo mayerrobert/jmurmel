@@ -890,7 +890,7 @@ multiline comment
   (deftest adjustable-vector.6  (seqset av 0 0)           0)
   (deftest adjustable-vector.7  av                        #(0 1 1))
 
-  (deftest adjustable-vector.8  (vector-push-extend 2 av) 3)
+  (deftest adjustable-vector.8  (vector-add av 2)         3)
   (deftest adjustable-vector.9  av                        #(0 1 1 2))
 )
 
@@ -933,7 +933,7 @@ multiline comment
 
   (deftest adjustable-bit-vector.9  (bv= abv #*101)                t)
 
-  (deftest adjustable-bit-vector.10 (vector-push-extend 0 abv)     3)
+  (deftest adjustable-bit-vector.10 (vector-add abv 0)             3)
   (deftest adjustable-bit-vector.11 abv                            #*1010)
 )
 
@@ -977,7 +977,7 @@ multiline comment
   (deftest adjustable-string.10 (string= astring "a11")           t)
   (deftest adjustable-string.11 (string->list astring)            '(#\a #\1 #\1))
 
-  (deftest adjustable-string.12 (vector-push-extend #\b astring)  3)
+  (deftest adjustable-string.12 (vector-add astring #\b)          3)
   (deftest adjustable-string.13 astring                           "a11b")
 )
 
@@ -1174,7 +1174,7 @@ multiline comment
 
   (let loop ((i 0))
     (if (< i 10)
-      (progn (vector-push-extend i arrayList)
+      (progn (vector-add arrayList i)
              (loop (1+ i)))))
 
   (deftest ffi.adjustable.1 (adjustable-array-p arrayList)     t)

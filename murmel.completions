@@ -106,7 +106,7 @@ rem
 make-array
 vector-length
 vector-copy
-vector-push-extend
+vector-add
 vector->list
 list->vector
 

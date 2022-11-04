@@ -3,6 +3,19 @@ Murmel könnte (vector-add v elem) bekommen, mlib: (defun vector-push-extend (el
    dann hätten alle sequence funktionen die sequence als ersten parameter
    -> besser für ->
 
+
+
+
+
+mlib: defsetf (kurzform) müsste einfach gehen, z.B. mit einer alist (access-fn . update-fn), oder es werden setf-funktionen on-the-fly erzeugt
+-> brauchts spätestens mit benutzerdefinierten datentypen (defstruct, defclass)
+
+(slice n seq) -> shared-subsequence + (seqset-first seq new-elem) -> new-elem
+-> das wäre eine verallgemeinerung von nthcdr + m%rplaca
+   könnte für einfacheres/ effizienteres get-setf-expansion verwendet werden
+-> vielleicht integrieren in ein neues "defsetf mittellange form": (defsetf access-fn update-fn reffirst-fn setfirst-fn)
+
+
 fatal sollte LambdaJError werfen (statt RuntimeException), checken ob das dann hübscher ausgegeben wird
 
 dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval benutzt wird, ist nicht schön
@@ -24,9 +37,6 @@ dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval 
 
 -> vielleicht den "Runtime-state" nicht überall verstreuen und teilweise zwischen interpreter und MurmelJavaProgram duplizieren/ hintri-firi kopieren
    sondern eine neue klasse RuntimeState. diese klasse könnte auch logik enthalten, dass interpreter und MurmelJavaProgram schreiben/ lesen können. evtl. auch values?!?
-
-
-
 
 
 vielleicht doch in MurmelJavaProgram (nur intern) von t/nil auf true/false umstellen?
