@@ -7,6 +7,31 @@ import java.io.StringReader;
 
 public class ScannerTest {
 
+    @Test
+    public void testIsLong() {
+        //Assert.assertFalse(LambdaJ.isLong(""));
+        Assert.assertFalse(LambdaJ.isLong(" 1"));
+        Assert.assertFalse(LambdaJ.isLong("1."));
+        Assert.assertFalse(LambdaJ.isLong("1.0"));
+        Assert.assertFalse(LambdaJ.isLong("+"));
+
+        Assert.assertTrue(LambdaJ.isLong("1"));
+    }
+
+    @Test
+    public void testIsCLDecimalLong() {
+        //Assert.assertFalse(LambdaJ.isCLDecimalLong(""));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong("."));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong(" 1"));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong(" 1."));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong("1.0"));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong("+"));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong("+."));
+        Assert.assertFalse(LambdaJ.isCLDecimalLong("1"));
+
+        Assert.assertTrue(LambdaJ.isCLDecimalLong("1."));
+    }
+
     // behaves somewhat similar to LambdaJTest.runTest() but form is only "read" not eval'd, and line ends are Unix style (as are Murmel's internal line ends)
     private static void runTest(String name, String form, String expectedResult, Object ignored) {
         final LambdaJ.ObjectReader reader = LambdaJ.makeReader(new StringReader(form)::read);

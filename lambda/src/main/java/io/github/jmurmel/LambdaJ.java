@@ -872,16 +872,34 @@ public class LambdaJ {
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
-    private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?([0-9]|[0-9]+)");
+    /** is {@code s} an optional sign followed by one or more digits? */
     static boolean isLong(String s) {
-        if (s == null || s.isEmpty()) return false;
-        return LONG_PATTERN.matcher(s).matches(); // todo handgeschnitzer check statt regex?
+        assert s != null : "tokens should not be null";
+        assert !s.isEmpty() : "tokens should not be the empty string";
+
+        final int len = s.length();
+        return isLong(s, len);
     }
 
-    private static final Pattern CL_DECIMAL_LONG_PATTERN = Pattern.compile("[-+]?([0-9]+\\.)");
+    private static boolean isLong(String s, int len) {
+        final char first = s.charAt(0);
+        if (first == '+' || first == '-') {
+            if (len == 1) return false;
+        }
+        else if (!Character.isDigit(first)) return false;
+        for (int i = 1; i < len; i++) if (!Character.isDigit(s.charAt(i))) return false;
+        return true;
+    }
+
+    /** is {@code s} an optional sign followed by one or more digits followed by a '.'? */
     static boolean isCLDecimalLong(String s) {
-        if (s == null || s.isEmpty()) return false;
-        return CL_DECIMAL_LONG_PATTERN.matcher(s).matches(); // todo handgeschnitzer check statt regex?
+        assert s != null : "tokens should not be null";
+        assert !s.isEmpty() : "tokens should not be the empty string";
+
+        final int lenMinus1 = s.length() - 1;
+        if (s.charAt(lenMinus1) != '.') return false;
+        if (lenMinus1 < 1) return false;
+        return isLong(s, lenMinus1);
     }
 
     private static final Pattern DOUBLE_PATTERN = Pattern.compile(
@@ -893,7 +911,9 @@ public class LambdaJ {
     + "([0-9]+[eE][-+]?[0-9]+)"            //   one-or-more-digits e-or-E optional-sign one-or-more-digits
     + ")");
     static boolean isDouble(String s) {
-        if (s == null || s.isEmpty()) return false;
+        assert s != null : "tokens should not be null";
+        assert !s.isEmpty() : "tokens should not be the empty string";
+
         return DOUBLE_PATTERN.matcher(s).matches();
     }
 
