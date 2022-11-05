@@ -253,8 +253,6 @@ Since: 1.1
 Returns the length of `list-or-string` if it is a string or proper list.
 Returns `nil` if `list-or-string` is a circular list.
 
-See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-
 ### Function: last
     (last lst) -> last-cons-or-nil
 
@@ -393,7 +391,7 @@ Since: 1.1
 
 Since: 1.1
 
-Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
+Similar to CL `dotimes`.
 Murmel however supports multiple result-forms which will be eval'd in an
 implicit `progn`, similar to `do` and `do*`;
 
@@ -408,7 +406,7 @@ Sample usage:
 
 Since: 1.1
 
-Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+Similar to CL `dolist`.
 Murmel however supports multiple result-forms which will be eval'd in an
 implicit `progn`, similar to `do` and `do*`;
 
@@ -705,7 +703,7 @@ The result-type specifies the type of the resulting sequence.
 such that element j is the result of applying `function` to element j of each
 of the sequences. The result sequence is as long as the shortest of the sequences.
 
-Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
+Similar to CL `map`.
 
 ### Function: map-into
     (map-into result-list function sequence*) -> result-list
@@ -719,7 +717,7 @@ the lists or the result-list) is exhausted.
 
 If `result-list` is `nil`, `map-into` returns `nil`.
 
-Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
+Similar to CL `map-into`.
 
 ### Function: reduce
     (reduce func sequence [from-end-p]) -> result

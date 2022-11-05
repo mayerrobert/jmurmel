@@ -486,9 +486,8 @@
 ;;;
 ;;; Returns the length of `list-or-string` if it is a string or proper list.
 ;;; Returns `nil` if `list-or-string` is a circular list.
-;;;
-;;; See http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
 (defun list-length (lst)
+  ; see http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
   (let loop ((n 0)         ; Counter
              (fast lst)      ; Fast pointer: leaps by 2
              (slow lst))     ; Slow pointer: leaps by 1
@@ -809,7 +808,7 @@
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Similar to CL `dotimes`, see http://clhs.lisp.se/Body/m_dotime.htm,
+;;; Similar to CL `dotimes`.
 ;;; Murmel however supports multiple result-forms which will be eval'd in an
 ;;; implicit `progn`, similar to `do` and `do*`;
 ;;;
@@ -840,7 +839,7 @@
 ;;;
 ;;; Since: 1.1
 ;;;
-;;; Similar to CL `dolist`, see http://clhs.lisp.se/Body/m_dolist.htm
+;;; Similar to CL `dolist`.
 ;;; Murmel however supports multiple result-forms which will be eval'd in an
 ;;; implicit `progn`, similar to `do` and `do*`;
 (defmacro dolist (loop-def . body)
@@ -1690,7 +1689,7 @@
 ;;; such that element j is the result of applying `function` to element j of each
 ;;; of the sequences. The result sequence is as long as the shortest of the sequences.
 ;;;
-;;; Similar to CL `map`, see http://clhs.lisp.se/Body/f_map.htm.
+;;; Similar to CL `map`.
 (defun map (result-type func seq . more-sequences)
   (if more-sequences
         (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
@@ -1726,7 +1725,7 @@
 ;;;
 ;;; If `result-list` is `nil`, `map-into` returns `nil`.
 ;;;
-;;; Similar to CL `map-into`, see http://clhs.lisp.se/Body/f_map_in.htm.
+;;; Similar to CL `map-into`.
 (defun map-into (result func . sequences)
   (when result
     (let (result-cursor set-result has-next-result result-length seq len)

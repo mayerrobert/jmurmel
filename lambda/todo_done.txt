@@ -1993,3 +1993,10 @@ Murmel könnte (vector-add v elem) bekommen, mlib: (defun vector-push-extend (el
 -> und vielleicht den ersten parameter von svref/ sref/ bvref/ seqref von vorne an die letzte stelle schieben (und setf/ get-setf-expansion anpassen)
    dann hätten alle sequence funktionen die sequence als ersten parameter
    -> besser für ->
+
+
+langref: varargs vereinheitlichen
+optionale-form?
+0-oder-mehrere*
+1-oder-mehrere+
+[erstes-optionales-argument [zweites-optionales-argument]]

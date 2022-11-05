@@ -158,6 +158,7 @@ This is a
 multiline comment.
 |#
 
+; The pair `#!` and `!#` can also be used for multiline comments.
 
 ;;; == Predefined Symbols =============
 
@@ -223,9 +224,11 @@ pi ; ==> 3.141592653589793
 ; These global variables contain the smallest and largest fixnum value.
 
 
-; = @-, @+, @++, @+++, @\*, @\*\*, @\*\*\*, @/, @//, @///
-; These variables are only defined when using the Repl.
-; They work similar to CL's Repl variables without the leading `@`.
+; = REPL variables
+;     @-, @+, @++, @+++, @\*, @\*\*, @\*\*\*, @/, @//, @///
+;
+; These variables are only defined when using the REPL.
+; They work similar to CL's REPL variables without the leading `@`.
 ;
 ; The global variables @\*, @\*\*, @\*\*\* are maintained by the Lisp read-eval-print loop
 ; to save the values of results that are printed each time through the loop.
@@ -253,7 +256,7 @@ pi ; ==> 3.141592653589793
 (quote a-symbol) ; ==> a-symbol
 
 ; = lambda
-;     (lambda (params...) forms...) -> closure
+;     (lambda (params*) forms*) -> closure
 ;
 ; When a lambda is created by the special form `lambda`
 ; then the lexical environment is captured at the time of lambda creation.
@@ -378,7 +381,9 @@ pi ; ==> 3.141592653589793
 ;
 ;     nil, t,
 ;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
-;     setq, progn, defmacro, declaim
+;     setq, progn, catch, thwrow, unwind-protect,
+;     multiple-value-bind, multiple-value-call,
+;     defmacro, declaim, load, require, provide
 
 
 ;;; == Variables and Scope ============
@@ -395,9 +400,9 @@ pi ; ==> 3.141592653589793
 ; temporarily replaced by a local or dynamic binding, though).
 ;
 ; Murmel's local bindings are lexical, i.e. a symbol is bound to
-; a newly created variable when a let/let*/letrec/lambda form
+; a newly created variable when a let/let\*/letrec/lambda form
 ; is evaluated. The symbol's binding as well as the associated variable
-; are removed when leaving the lexical scope of the `let/let*/letrec/lambda`
+; are removed when leaving the lexical scope of the `let/let\*/letrec/lambda`
 ; form, restoring any previously existing binding (which may have
 ; been local or global).
 ; Except: `let* dynamic` will treat global symbols as "special", see below.
@@ -422,19 +427,19 @@ pi ; ==> 3.141592653589793
 (define *global-var* 42)               ; ==> *gloval-var*
 (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
 
-;;; = (defun symbol (params...) forms...) -> symbol
+;;; = (defun symbol (params\*) forms\*) -> symbol
 ;
 ; `defun` is a shorthand for defining functions:
 ;
-;     (defun symbol (params...) forms...)
+;     (defun symbol (params*) forms*)
 ;        <=>
-;     (define symbol (lambda (params...) forms...))
+;     (define symbol (lambda (params*) forms*))
 ;
 ; Arguments to `defun` are not evaluated.
 
 (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
-;;; = (defmacro name (params...) forms...) -> symbol<br/>(defmacro name) -> prev-name
+;;; = (defmacro name (params\*) forms\*) -> symbol<br/>(defmacro name) -> prev-name
 ;
 ; `defmacro` defines a macro, similar to CL's `defmacro`.
 ; Macros are somewhat similar to functions:
@@ -457,7 +462,7 @@ pi ; ==> 3.141592653589793
 (defmacro twice) ; ==> twice; macro is unbound
 (defmacro twice) ; ==> twice; no-op
 
-;;; = (setq symbol value...) -> last-value
+;;; = (setq symbol value [more-symbols more-values]\*) -> last-value
 ;
 ; `setq` updates the value(s) of the given global or local symbol(s).
 ; In interpreted Murmel undefined variables will be created on the fly,
@@ -467,20 +472,20 @@ pi ; ==> 3.141592653589793
 (let ((b nil) (c nil))
   (setq a 1 b 2 c (+ a b))) ; ==> 3.0
 
-;;; = (if condform form optionalform) -> result
+;;; = (if condform form optionalform?) -> result
 
 (if nil 'YASSS! 'OHNOOO!!!) ; ==> OHNOOO!!!
 
-;;; = (progn expr...) -> result
+;;; = (progn forms\*) -> result
 
 (if t (progn (write 'abc) (write 'def)))
 
-;;; = (cond (condform forms...)... ) -> result
+;;; = (cond (condform forms\*)\* (t forms\*)?) -> result
 
-;;; = (labels ((symbol (params...) forms...)...) forms...) -> result
+;;; = (labels ((symbol (params\*) forms\*)\*) forms\*) -> result
 ;
 
-;;; = (let optsymbol? ((symbol bindingform)...) bodyforms...) -> result
+;;; = (let optsymbol? ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; Works similar to CL's `let` with the addition
 ; of Scheme's "named let".
@@ -497,7 +502,7 @@ pi ; ==> 3.141592653589793
       (write msg)
     (progn (write (floor x)) (loop (- x 1) msg))))
 
-;;; = (let dynamic ((symbol bindingform)...) bodyforms...) -> result
+;;; = (let dynamic ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; Similar to `let` except: globals are not shadowed but temporarily
 ; bound to the given value, and the previous value is restored when
@@ -516,7 +521,7 @@ pi ; ==> 3.141592653589793
 (f)
 ; will print `(1 . 2)(11 . 1)(1 . 2)`.
 
-;;; = (let* optsymbol? ((symbol bindingform)...) bodyforms...) -> result
+;;; = (let* optsymbol? ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; Works like `let` (see above) with the addition:
 ; each `bindingform` "sees" the previous symbols. If multiple
@@ -531,7 +536,7 @@ pi ; ==> 3.141592653589793
       (write msg)
     (progn (write (floor x)) (loop 0 0 (- x 1) msg))))
 
-;;; = (let* dynamic ((symbol bindingform)...) bodyforms...) -> result
+;;; = (let* dynamic ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; Similar to `let*` except: globals are not shadowed but temporarily
 ; bound to the given value, and the previous value is restored when
@@ -543,7 +548,7 @@ pi ; ==> 3.141592653589793
 (let* dynamic ((*g* 'temp)) (fun)) ; fun will write temp
 *g* ; ==> 'global
 
-;;; = (letrec optsybol? ((symbol bindingform)...) bodyforms...) -> result
+;;; = (letrec optsybol? ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; `letrec` works like `let` and `let*` except each bindingform "sees"
 ; all other let symbols as well as it's own symbol.
@@ -554,7 +559,7 @@ pi ; ==> 3.141592653589793
 (letrec ((x 1) (y (+ x 1))) (write y))
 
 
-;;; = (catch tagform forms...) -> result
+;;; = (catch tagform forms\*) -> result
 ;
 ; Since: 1.3
 ;
@@ -568,7 +573,7 @@ pi ; ==> 3.141592653589793
 ; TODO: If there is no outstanding catch tag that matches the throw tag,
 ; no unwinding of the stack is performed, and an error of type control-error is signaled.
 
-;;; = (unwind-protect protected-form cleanupforms...) -> result
+;;; = (unwind-protect protected-form cleanupforms\*) -> result
 ;
 ; Since: 1.3
 ;
@@ -577,7 +582,7 @@ pi ; ==> 3.141592653589793
 ; by a control transfer of some kind.
 
 
-;;; = (multiple-value-call function-form values-form*) -> result
+;;; = (multiple-value-call function-form values-forms\*) -> result
 ;
 ; Since: 1.2
 ;
@@ -588,7 +593,7 @@ pi ; ==> 3.141592653589793
 
 (multiple-value-call + 0.0 (values 1 2) 3) ; ==> 6.0
 
-;;; = (multiple-value-bind (symbols...) values-form bodyforms...) -> result
+;;; = (multiple-value-bind (symbols\*) values-form bodyforms\*) -> result
 ;
 ; Since: 1.2
 ;
@@ -672,7 +677,7 @@ pi ; ==> 3.141592653589793
 ; Applies the operator returned by operatorform to
 ; the eval'd operands
 ;
-;     (operatorform operands...)
+;     (operatorform operands*)
 
 
 ;;; == Backquote ======================
@@ -795,7 +800,7 @@ pi ; ==> 3.141592653589793
 (rplaca l 11) ; ==> (11 2)
 (rplacd l 22) ; ==> (11 . 22)
 
-;;; = (list elems*) -> list<br/>(list* elems+) -> atom-or-dotted-list
+;;; = (list elems\*) -> list<br/>(list\* elems+) -> atom-or-dotted-list
 ;
 ; `list` will create a list consisting of it's arguments,
 ; `list*` will create a dotted list.
@@ -808,7 +813,7 @@ pi ; ==> 3.141592653589793
 (list* 1) ; ==> 1
 (list* 1 2 3) ; ==> (1 2 . 3)
 
-; = (append lists...) -> list
+; = (append lists\*) -> list
 ;
 ; `append` nondestructively append it's arguments. All arguments except the last
 ; are shallow copied, all arguments except the last must be lists.
@@ -829,10 +834,10 @@ pi ; ==> 3.141592653589793
 ; = (assoc key alist) -> cons or nil
 ;
 ; `assoc` takes a key and a list of key/value tupels (lists or conses).
-; The return value is the first cons whose car is equal(*) to `key`
+; The return value is the first cons whose car is equal(\*) to `key`
 ; or `nil` if no such cons was found. `nil`-elements in `alist` are ignored.
 ;
-; (*) `assoc` compares two items as if `eql` was used.
+; (\*) `assoc` compares two items as if `eql` was used.
 ;     `assoc` considers two items as "equal" if
 ;
 ; - Both are `eq` (are the same object)
@@ -1007,7 +1012,7 @@ pi ; ==> 3.141592653589793
 
 ;;; = Misc
 
-;;; = (values object*) -> multiple-values
+;;; = (values object\*) -> multiple-values
 ;
 ; Since: 1.2
 ;
@@ -1096,7 +1101,7 @@ pi ; ==> 3.141592653589793
 ;;; - `ceiling, floor, round, truncate`: result type is long, over/ underflow will be signalled as an error.
 ;;; - `signum`: result is a "signed prototype" - either `long -1/0/1` or `double -1.0/-0.0/0.0/1.0`.
 
-; = +, -, *, /, mod, rem, sqrt, log, log10, exp, expt
+; = +, -, \*, /, mod, rem, sqrt, log, log10, exp, expt
 ;
 ; The math operators accept numbers only.
 ; `log` only takes 1 argument,
@@ -1305,8 +1310,8 @@ pi ; ==> 3.141592653589793
 ; no environment is captured, and lambdas - when applied -
 ; get the dynamic environment.
 ;
-;     (lambda dynamic (params...) forms...) -> anonymous function with
-;                                              dynamic environment
+;     (lambda dynamic (params*) forms*) -> anonymous function with
+;                                          dynamic environment
 
 ; = Custom primitives
 ;
@@ -1329,13 +1334,12 @@ pi ; ==> 3.141592653589793
 
 ;;; == Additional JMurmel special forms and primitives ==========
 
-; = (trace function-name*) -> trace-result<br/> (untrace function-name*) -> untrace-result
+; = (trace function-name\*) -> trace-result<br/> (untrace function-name\*) -> untrace-result
 ;
 ; Arguments to trace/ untrace are eval'd.
-; In interpreted code these work similar to CL's trace/ untrace macros,
-; see http://clhs.lisp.se/Body/m_tracec.htm.
-; Only interpreted code will be traced (user code as well as
-; interpreter primities).
+; In interpreted code these work similar to CL's trace/ untrace macros.
+; Only interpreted code will be traced (user defined functions as well as
+; interpreter primities, primitives are only traced if speed=0).
 
 (trace 'write '+)  
 (write (+ 1 2))  
@@ -1344,11 +1348,11 @@ pi ; ==> 3.141592653589793
 
 ;;; == Java FFI
 
-; = (jmethod classname methodname paramclass...) -> primitive
+; = (jmethod classname methodname paramclasses\*) -> primitive
 ;
 ; The primitive `jmethod` will return a newly created primitive
 ; that is implemented by the method `methodname` of the Java class
-; `classname` that has the formal parameters `paramclass...`.
+; `classname` that has the formal parameters `paramclasses*`.
 ; Parameters to `jmethod` must be strings.
 
 (jmethod "java.lang.System" "currentTimeMillis")
@@ -1370,7 +1374,7 @@ pi ; ==> 3.141592653589793
 (write my-hash)
 
 
-; = (jproxy interfacename javamethodname symbol-or-lambda...) -> Java-object
+; = (jproxy interfacename [javamethodname symbol-or-lambda]\*) -> Java-object
 ;
 ; Since: 1.2
 ;
