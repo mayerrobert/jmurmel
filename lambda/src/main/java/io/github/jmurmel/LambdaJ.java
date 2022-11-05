@@ -2138,7 +2138,7 @@ public class LambdaJ {
                 case sLet:
                 case sLetStar:
                 case sLetrec: {
-                    final ConsCell[] formsAndEnv = evalLet(operator, ccArguments, env, restore, stack, level, traceLvl);
+                    final ConsCell[] formsAndEnv = evalLet(symOperator, ccArguments, env, restore, stack, level, traceLvl);
                     ccForms = formsAndEnv[0];
                     env = formsAndEnv[1];
                     restore = formsAndEnv[2];
@@ -2702,13 +2702,12 @@ public class LambdaJ {
         return extEnv;
     }
 
-    private ConsCell[] evalLet(Object operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
-        final boolean letStar  = isOperator(operator, WellknownSymbol.sLetStar);
-        final boolean letRec   = isOperator(operator, WellknownSymbol.sLetrec);
+    private ConsCell[] evalLet(LambdaJSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final Object maybeLoopSymbol = car(arguments);
-        final boolean letDynamic = maybeLoopSymbol == sDynamic;
-        final boolean namedLet = !letDynamic && maybeLoopSymbol != null && symbolp(maybeLoopSymbol); // ohne "maybeLoopSymbol != null" wuerde die leere liste in "(let () 1)" als loop-symbol nil erkannt
-        final LambdaJSymbol loopSymbol = namedLet ? (LambdaJSymbol)maybeLoopSymbol : null;
+        final boolean letDynamic, namedLet;
+        if (maybeLoopSymbol == sDynamic) { letDynamic = true; namedLet = false; }
+        else if (maybeLoopSymbol instanceof LambdaJSymbol) { letDynamic = false; namedLet = true; }
+        else { letDynamic = false; namedLet = false; }
 
         final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;
         final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
@@ -2716,8 +2715,10 @@ public class LambdaJ {
         ConsCell params = null;
         ConsCell extenv = env;
         if (ccBindings != null) {
-            final boolean useLookup = letDynamic && cdr(ccBindings) != null;
-            final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
+            final boolean letStar  = operator.wellknownSymbol == WellknownSymbol.sLetStar;
+            final boolean letRec   = operator.wellknownSymbol == WellknownSymbol.sLetrec;
+            final ArrayList<Object> seen = letDynamic && cdr(ccBindings) != null ? new ArrayList<>() : null;
+
             ConsCell newValues = null; // used for let dynamic
             ConsCell insertPos = null; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
@@ -2759,9 +2760,8 @@ public class LambdaJ {
         }
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
-            extenv = acons(loopSymbol, UNASSIGNED, extenv);
-            final Object closure = makeClosure(params, bodyForms, extenv);
-            ((ConsCell)extenv.car()).rplacd(closure);
+            extenv = acons(maybeLoopSymbol, null, extenv);
+            ((ConsCell)extenv.car()).rplacd(makeClosure(params, bodyForms, extenv));
         }
         return new ConsCell[] {bodyForms, extenv, restore};
     }
@@ -6373,7 +6373,7 @@ public class LambdaJ {
         public static ConsCell _rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { return ListBuilder.list(args); }
-        public final Object listStar   (Object... args) { varargs1("list*", args.length); return ListBuilder.listStar(args); }
+        public final Object   listStar (Object... args) { varargs1("list*", args.length); return ListBuilder.listStar(args); }
         public final Object   _append  (Object... args) {
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
