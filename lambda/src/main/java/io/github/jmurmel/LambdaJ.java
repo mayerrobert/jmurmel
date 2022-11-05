@@ -5261,7 +5261,6 @@ public class LambdaJ {
                             System.out.println();
                             System.out.println("==> " + printSEx(result));
                         }
-                        //printNotopencoded(interpreter.notOpencoded);
                         if (script) exit(result);
                         break;
                     case TO_JAVA:
@@ -5327,17 +5326,11 @@ public class LambdaJ {
         return 0;
     }
 
-    //static void printNotopencoded(Map<LambdaJSymbol, Integer> notOpencoded) {
-    //    for (Map.Entry<LambdaJSymbol, Integer> entry: notOpencoded.entrySet()) {
-    //        System.out.printf("%d\t%s%n", entry.getValue(), entry.getKey());
-    //    }
-    //}
-
     /** exit by throwing an {@link Exit} exception, doesn't return. The last form of the program will determine the exitlevel:
      *  nil will result in 0, a number will result in an exitlevel of number&127, any other non-nil value will result in an exitlevel of 1. */
     private static void exit(Object murmelResult) {
-        if (murmelResult == null) return; // todo throw new Exit(0) statt return?
-        if (numberp(murmelResult)) throw new Exit(((Number)murmelResult).intValue() & 0x7f);
+        if (murmelResult == null) throw new Exit(0);
+        if (numberp(murmelResult)) throw new Exit(((Number)murmelResult).intValue() & 0x7f); // limit to 127, 255 is reserved for EXIT_RUNTIME_ERROR
         throw EXIT_PROGRAM_ERROR;
     }
 
