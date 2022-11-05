@@ -1214,7 +1214,6 @@ public class LambdaJ {
         private void readToken() {
             final int eof = LambdaJ.EOF;
             for (;;) {
-                int index = 0;
                 skipWs();
                 tok = null;
                 if (look == eof) {
@@ -1222,6 +1221,7 @@ public class LambdaJ {
                     return;
                 }
 
+                int index = 0;
                 if (isBar(look)) {
                     look = getchar();
                     while (look != eof && !isBar(look)) {
@@ -1680,145 +1680,145 @@ public class LambdaJ {
         sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq("eq", Features.HAVE_EQ, 2)                                    { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
-        sEql("eql", Features.HAVE_UTIL, 2)                                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
+        sEq("eq", Features.HAVE_EQ, 2)                                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
+        sEql("eql", Features.HAVE_UTIL, 2)                                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
 
-        sConsp("consp", Features.HAVE_UTIL, 1)                            { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
-        sAtom("atom", Features.HAVE_ATOM, 1)                              { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
-        sSymbolp("symbolp", Features.HAVE_UTIL, 1)                        { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
-        sNull("null", Features.HAVE_UTIL, 1)                              { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
-        sNumberp("numberp", Features.HAVE_NUMBERS, 1)                     { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
-        sFloatp("floatp", Features.HAVE_NUMBERS, 1)                       { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
-        sIntegerp("integerp", Features.HAVE_NUMBERS, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
-        sCharacterp("characterp", Features.HAVE_STRING, 1)                { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
+        sConsp("consp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
+        sAtom("atom", Features.HAVE_ATOM, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
+        sSymbolp("symbolp", Features.HAVE_UTIL, 1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
+        sNull("null", Features.HAVE_UTIL, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
+        sNumberp("numberp", Features.HAVE_NUMBERS, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
+        sFloatp("floatp", Features.HAVE_NUMBERS, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
+        sIntegerp("integerp", Features.HAVE_NUMBERS, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
+        sCharacterp("characterp", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
 
-        sVectorp("vectorp", Features.HAVE_VECTOR, 1)                      { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
-        sSimpleVectorP("simple-vector-p", Features.HAVE_VECTOR, 1)        { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
+        sVectorp("vectorp", Features.HAVE_VECTOR, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
+        sSimpleVectorP("simple-vector-p", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
 
-        sStringp("stringp", Features.HAVE_STRING, 1)                      { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
-        sSimpleStringP("simple-string-p", Features.HAVE_STRING, 1)        { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
+        sStringp("stringp", Features.HAVE_STRING, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
+        sSimpleStringP("simple-string-p", Features.HAVE_STRING, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
 
-        sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
-        sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1) { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
+        sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
+        sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
 
-        sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
-        sListp("listp", Features.HAVE_UTIL, 1)                            { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
-        sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
+        sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
+        sListp("listp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
+        sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
         // conses and lists
-        sCar("car", Features.HAVE_CONS, 1)            { Object   apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
-        sCdr("cdr", Features.HAVE_CONS, 1)            { Object   apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
-        sCons("cons", Features.HAVE_CONS, 2)          { Object   apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
-        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { Object   apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
-        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { Object   apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
+        sCar("car", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
+        sCdr("cdr", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
+        sCons("cons", Features.HAVE_CONS, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
+        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
+        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
 
-        sList("list", Features.HAVE_UTIL, -1)         { Object   apply(LambdaJ intp, ConsCell args) { return args; } },
-        sListStar("list*", Features.HAVE_UTIL, 1, -1) { Object   apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
-        sAppend("append", Features.HAVE_UTIL, -1)     { Object   apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
-        sAssq("assq", Features.HAVE_UTIL, 2)          { Object   apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
-        sAssoc("assoc", Features.HAVE_UTIL, 2)        { Object   apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
+        sList("list", Features.HAVE_UTIL, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
+        sListStar("list*", Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
+        sAppend("append", Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
+        sAssq("assq", Features.HAVE_UTIL, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
+        sAssoc("assoc", Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
         // numbers, characters
-        sAdd("+", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
-        sMul("*", Features.HAVE_NUMBERS, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
-        sSub("-", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
-        sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
+        sAdd("+", Features.HAVE_NUMBERS, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
+        sMul("*", Features.HAVE_NUMBERS, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
+        sSub("-", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
+        sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
 
-        sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
-        sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
-        sLt("<",  Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<",  (d1, d2) -> d1 <  d2); } },
-        sLe("<=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<=", (d1, d2) -> d1 <= d2); } },
-        sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
-        sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
+        sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
+        sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
+        sLt("<",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<",  (d1, d2) -> d1 <  d2); } },
+        sLe("<=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<=", (d1, d2) -> d1 <= d2); } },
+        sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
+        sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
 
-        sInc("1+", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
-        sDec("1-", Features.HAVE_NUMBERS, 1)                 { Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
+        sInc("1+", Features.HAVE_NUMBERS, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
+        sDec("1-", Features.HAVE_NUMBERS, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
 
-        sSignum("signum", Features.HAVE_NUMBERS, 1)          { Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
+        sSignum("signum", Features.HAVE_NUMBERS, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
 
-        sRound("round", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
-        sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
-        sCeiling("ceiling", Features.HAVE_NUMBERS, 1, 2)     { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
-        sTruncate("truncate", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
+        sRound("round", Features.HAVE_NUMBERS, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
+        sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
+        sCeiling("ceiling", Features.HAVE_NUMBERS, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.ceil  (quot12("ceiling", args))); } },
+        sTruncate("truncate", Features.HAVE_NUMBERS, 1, 2)   { @Override Object apply(LambdaJ intp, ConsCell args) { return toFixnum(cl_truncate(quot12("truncate", args))); } },
 
-        sFRound("fround", Features.HAVE_NUMBERS, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
-        sFFloor("ffloor", Features.HAVE_NUMBERS, 1, 2)       { Object apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
-        sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
-        sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
+        sFRound("fround", Features.HAVE_NUMBERS, 1, 2)       { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.rint  (quot12("round", args)); } },
+        sFFloor("ffloor", Features.HAVE_NUMBERS, 1, 2)       { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.floor (quot12("floor", args)); } },
+        sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
+        sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
 
-        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
-        sLog("log", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
-        sLog10("log10", Features.HAVE_NUMBERS, 1)            { Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
-        sExp("exp", Features.HAVE_NUMBERS, 1)                { Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
-        sExpt("expt", Features.HAVE_NUMBERS, 2)              { Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
+        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
+        sLog("log", Features.HAVE_NUMBERS, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
+        sLog10("log10", Features.HAVE_NUMBERS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
+        sExp("exp", Features.HAVE_NUMBERS, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
+        sExpt("expt", Features.HAVE_NUMBERS, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
 
-        sMod("mod", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
-        sRem("rem", Features.HAVE_NUMBERS, 2)                { Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
+        sMod("mod", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
+        sRem("rem", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
 
         // vectors, sequences
-        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { Object    apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
-        sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { Object    apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
-        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
-        sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { Object    apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
+        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
+        sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
+        sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
+        sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
-        sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { Object    apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
-        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
-        sListToVector("list->vector", Features.HAVE_VECTOR, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToVector(car(args), cadr(args) != null); } },
+        sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
+        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
+        sListToVector("list->vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToVector(car(args), cadr(args) != null); } },
 
-        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { Object    apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
-        sSvRef("svref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
-        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); } },
-        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
-        sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
-        sVector("vector", Features.HAVE_VECTOR, -1)                    { Object    apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+        sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
+        sSvRef("svref", Features.HAVE_VECTOR, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
+        sSvSet("svset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); } },
+        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
+        sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
+        sVector("vector", Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
-        sSLength("slength", Features.HAVE_STRING, 1)                   { Object    apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
-        sSRef("sref", Features.HAVE_STRING, 2)                         { Object    apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
-        sSSet("sset", Features.HAVE_STRING, 3)                         { Object    apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
-        sSEq("string=", Features.HAVE_STRING, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
-        sStringToList("string->list", Features.HAVE_STRING, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
-        sListToString("list->string", Features.HAVE_STRING, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
+        sSLength("slength", Features.HAVE_STRING, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
+        sSRef("sref", Features.HAVE_STRING, 2)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
+        sSSet("sset", Features.HAVE_STRING, 3)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
+        sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
+        sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
+        sListToString("list->string", Features.HAVE_STRING, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
 
-        sCharCode("char-code", Features.HAVE_STRING, 1)                { Object    apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
-        sCodeChar("code-char", Features.HAVE_STRING, 1)                { Object    apply(LambdaJ intp, ConsCell args) { return (char) toInt("code-char", car(args)); } },
+        sCharCode("char-code", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
+        sCodeChar("code-char", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return (char) toInt("code-char", car(args)); } },
 
-        sBvLength("bvlength", Features.HAVE_VECTOR, 1)                 { Object    apply(LambdaJ intp, ConsCell args) { return bvlength(car(args)); } },
-        sBvRef("bvref", Features.HAVE_VECTOR, 2)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvref(car(args), toNonnegInt("bvref", cadr(args))); } },
-        sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { Object    apply(LambdaJ intp, ConsCell args) { return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); } },
-        sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { Object    apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
-        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { Object    apply(LambdaJ intp, ConsCell args) { return intp.bitVectorToList(car(args)); } },
-        sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { Object    apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
+        sBvLength("bvlength", Features.HAVE_VECTOR, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return bvlength(car(args)); } },
+        sBvRef("bvref", Features.HAVE_VECTOR, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return bvref(car(args), toNonnegInt("bvref", cadr(args))); } },
+        sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); } },
+        sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
+        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.bitVectorToList(car(args)); } },
+        sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
-        sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
-        sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { Object    apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
+        sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
+        sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
-        sRead("read", Features.HAVE_IO, 0, 1)                   { Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
-        sWrite("write", Features.HAVE_IO, 1, 2)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)            { Object apply(LambdaJ intp, ConsCell args) { return intp.format(args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { Object apply(LambdaJ intp, ConsCell args) { return intp.formatLocale(args); } },
+        sRead("read", Features.HAVE_IO, 0, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
+        sWrite("write", Features.HAVE_IO, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.format(args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.formatLocale(args); } },
 
         // misc
-        sValues("values", Features.HAVE_XTRA, -1)               { Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
-        sGensym("gensym", Features.HAVE_XTRA, 0, 1)             { Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
-        sTrace("trace", Features.HAVE_XTRA, -1)                 { Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
-        sUntrace("untrace", Features.HAVE_XTRA, -1)             { Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
-        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
-        sFatal("fatal", Features.HAVE_UTIL, 1)                  { Object apply(LambdaJ intp, ConsCell args) { throw new RuntimeException(String.valueOf(car(args))); } },
+        sValues("values", Features.HAVE_XTRA, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sGensym("gensym", Features.HAVE_XTRA, 0, 1)             { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
+        sTrace("trace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
+        sUntrace("untrace", Features.HAVE_XTRA, -1)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
+        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
+        sFatal("fatal", Features.HAVE_UTIL, 1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { throw new RuntimeException(String.valueOf(car(args))); } },
 
         // time
-        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { Object   apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
-        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { Object   apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
-        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { Object   apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
-        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { Object   apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
-        sSleep("sleep", Features.HAVE_UTIL, 1)                      { Object   apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
-        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { Object   apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
+        sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
+        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
+        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
+        sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
+        sSleep("sleep", Features.HAVE_UTIL, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
+        sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { @Override Object apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
 
         // Java FFI
-        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
-        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { Object apply(LambdaJ intp, ConsCell args) { return intp.makeProxy(args); } },
+        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.makeProxy(args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -1858,6 +1858,7 @@ public class LambdaJ {
                 case 1: oneArg(sym, args); return;
                 case 2: twoArgs(sym, args); return;
                 case 3: threeArgs(sym, args); return;
+                default: assert false: "minimum argcount " + min + " is not implemented";
                 }
             }
             if (max == -1) { varargsMin(sym, args, min); return; }
@@ -1970,13 +1971,13 @@ public class LambdaJ {
                 /// eval - atoms that are not symbols eval to themselves
                 if (atom(form)) return result = form;
 
-                /// eval - form is not an atom - must be a cons (nonempty list) containing either a special form or a function application
-                final ConsCell ccForm = (ConsCell)form;
-
                 if (Thread.interrupted()) throw new InterruptedException("got interrupted");
 
                 level++;
                 if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
+
+                /// eval - form is not an atom - must be a cons (nonempty list) containing either a special form or a function application
+                final ConsCell ccForm = (ConsCell)form;
 
                 final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
                 if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
@@ -3615,11 +3616,6 @@ public class LambdaJ {
         if (cdr(a) != null) errorArgCount(func, 0, 1, listLength(a), a);
     }
 
-    /** varargs, 0 to 2 args */
-    static void varargs0_2(String func, ConsCell a) {
-        if (cddr(a) != null) errorArgCount(func, 0, 2, listLength(a), a);
-    }
-
     /** varargs, at least one arg */
     static void varargs1(String func, ConsCell a) {
         if (a == null) errorVarargsCount(func, 1, 0);
@@ -3734,11 +3730,6 @@ public class LambdaJ {
     static Object[] requireSimpleVector(String func, Object c) {
         if (!svectorp(c)) throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(c));
         return (Object[])c;
-    }
-
-    static boolean[] requireSimpleBitVector(String func, Object c) {
-        if (!sbitvectorp(c)) throw new LambdaJError(true, "%s: expected a simple bit vector argument but got %s", func, printSEx(c));
-        return (boolean[])c;
     }
 
     /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
@@ -4581,7 +4572,6 @@ public class LambdaJ {
         private final Constructor<?> constructor;
         private final UnaryOperator<Object>[] argConv;
 
-        @SuppressWarnings("unchecked")
         private JavaConstructor(Constructor<?> constructor, Iterable<?> paramClassNames) {
             this.constructor = constructor;
             this.argConv = makeArgConv(paramClassNames, constructor.getParameterCount(), 0);
@@ -4621,7 +4611,6 @@ public class LambdaJ {
         private final Invoker invoke;
         private final UnaryOperator<Object>[] argConv;
 
-        @SuppressWarnings("unchecked")
         private JavaMethod(Method method, Iterable<?> paramClassNames) {
             this.method = method;
             int paramCount = method.getParameterCount();
@@ -4813,10 +4802,11 @@ public class LambdaJ {
 
             for (ConsCell lst = requireList("jproxy", cdr(args)); lst != null; ) {
                 if (cdr(lst) == null) throw new LambdaJError(false, "jproxy: odd number of method/functions");
-                final String name = requireString("jproxy", car(lst));
 
                 final Object form = cadr(lst);
                 if (form == null) throw new LambdaJError(true, "jproxy: not a function: nil");
+
+                final String name = requireString("jproxy", car(lst));
                 final Method method = nameToMethod.get(name);
                 if (method == null) throw new LambdaJError(true, "jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
                 methodToMurmelFunction.put(method, getFunction(null, form));
@@ -5063,7 +5053,7 @@ public class LambdaJ {
         private final ReadSupplier in;
         private final WriteConsumer out;
 
-        public CallProgram(String program, ReadSupplier in, WriteConsumer out) {
+        CallProgram(String program, ReadSupplier in, WriteConsumer out) {
             this.program = program;
             this.in = in;
             this.out = out;
@@ -8811,27 +8801,25 @@ public class LambdaJ {
                 if (params != null) {
                     boolean first = true;
                     if (m.isVarArgs()) {
-                        Object[] desc = null;
                         for (int i = startArg; i < params.length + startArg - 1; i++) {
                             if (first) first = false;
                             else sb.append("\n        , ");
-                            desc = classByName.get(paramTypeNames.get(i - startArg));
+                            final Object[] desc = classByName.get(paramTypeNames.get(i - startArg));
                             if (desc == null) sb.append("args[").append(i).append(']');
                             else sb.append(desc[1]).append("(args[").append(i).append("])");
                         }
 
                         // handle last parameter which is vararg: pass an array of the appropriate type with the remaining args
-                        desc = classByName.get(paramTypeNames.get(params.length-1));
+                        final Object[] desc = classByName.get(paramTypeNames.get(params.length-1));
                         final int varargPos = params.length + startArg - 1;
                         final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ")";
                         sb.append("\n        , toVarargs(args, " + varargPos + ", " + conv + ", new " + ((Class<?>)desc[0]).getComponentType().getCanonicalName() + "[args.length - " + varargPos + "])");
                     }
                     else {
-                        String conv = null;
                         for (int i = startArg; i < params.length + startArg; i++) {
                             if (first) first = false;
                             else sb.append("\n        , ");
-                            conv = (String)classByName.get(paramTypeNames.get(i - startArg))[1];
+                            final String conv = (String)classByName.get(paramTypeNames.get(i - startArg))[1];
                             if (conv == null) sb.append("args[").append(i).append(']');
                             else sb.append(conv).append("(args[").append(i).append("])");
                         }
@@ -8982,7 +8970,7 @@ public class LambdaJ {
 
 
     @SuppressWarnings("unused")
-    public static class JFRHelper {
+    public static final class JFRHelper {
 
         private JFRHelper() {}
 
