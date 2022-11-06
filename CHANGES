@@ -33,6 +33,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
  * added the global variables @-, @+, @++, @+++, @*, @**, @***, @/, @//, @///
    to the environment inside the REPL.
    If you remove the leading @ then these work similar to Common Lisp's REPL variables.
+ * added the readermacro "#:"
 
  * mlib: added bit
  * mlib: added map, dovector, revappend, nreconc, nreverse, typecase

@@ -174,16 +174,21 @@ public class LambdaJ {
 
         public LambdaJSymbol(String symbolName) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = WellknownSymbol.none;
+            wellknownSymbol = WellknownSymbol.notInterned;
+        }
+
+        public LambdaJSymbol(boolean intern, String symbolName) {
+            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
+            wellknownSymbol = intern ? WellknownSymbol.interned : WellknownSymbol.notInterned;
         }
 
         public LambdaJSymbol(String symbolName, boolean wellknown) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.none;
+            wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.notInterned;
             assert wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
         }
 
-        public boolean wellknown() { return wellknownSymbol != WellknownSymbol.none; }
+        public boolean wellknown() { return wellknownSymbol != WellknownSymbol.interned && wellknownSymbol != WellknownSymbol.notInterned; }
         public boolean specialForm() { return wellknownSymbol.kind == WellknownSymbolKind.SF; }
         public boolean primitive() { return wellknownSymbol.kind == WellknownSymbolKind.PRIM; }
 
@@ -191,6 +196,8 @@ public class LambdaJ {
         public void printSEx(WriteConsumer out, boolean escapeAtoms) {
             final String name = this.name;
             if (!escapeAtoms) { out.print(name); return; }
+
+            if (wellknownSymbol == WellknownSymbol.notInterned) out.print("#:");
 
             if (name.isEmpty()) { out.print("||"); return; }
             if (".".equals(name)) { out.print("|.|"); return; }
@@ -847,6 +854,7 @@ public class LambdaJ {
                     return _s;
             }
 
+            if (sym.wellknownSymbol == WellknownSymbol.notInterned) sym = new LambdaJSymbol(true, symName);
             symbols = ConsCell.cons(sym, symbols);
             return sym;
         }
@@ -859,7 +867,7 @@ public class LambdaJ {
                     return _s;
             }
 
-            final LambdaJSymbol ret = new LambdaJSymbol(symName);
+            final LambdaJSymbol ret = new LambdaJSymbol(true, symName);
             symbols = ConsCell.cons(ret, symbols);
             return ret;
         }
@@ -1072,6 +1080,8 @@ public class LambdaJ {
         /** if we get here then we have already read '#' and look contains the character after #subchar */
         private Object readerMacro(int sub_char) {
             switch (sub_char) {
+            // #:symbolname ... uninterned symbol
+            case ':': return new LambdaJSymbol(isBar(look) ? readBarSymbol() : readerMacroToken());
             // #\ ... character literal
             case '\\':
                 final String charOrCharactername = readerMacroToken();
@@ -1088,8 +1098,8 @@ public class LambdaJ {
                 }
                 throw new ParseError("unrecognized character name %s", charOrCharactername);
 
-                // #| ... multiline comment ending with |#
-                // or #! ... !# to make hashbang scripts possible
+            // #| ... multiline comment ending with |#
+            // or #! ... !# to make hashbang scripts possible
             case '|':
             case '!':
                 final int ln = lineNo, cn = charNo;
@@ -1102,7 +1112,7 @@ public class LambdaJ {
                 }
                 throw new ParseError("line %d:%d: EOF in multiline comment", ln, cn);
 
-                // #' ... function, ignore for CL compatibility
+            // #' ... function, ignore for CL compatibility
             case '\'':
                 return CONTINUE;
 
@@ -1221,18 +1231,8 @@ public class LambdaJ {
                     return;
                 }
 
-                int index = 0;
                 if (isBar(look)) {
-                    look = getchar();
-                    while (look != eof && !isBar(look)) {
-                        if (index < SYMBOL_MAX) token[index++] = (char) look;
-                        look = getchar(false);
-                    }
-                    if (look == eof)
-                        throw new ParseError("|-quoted symbol is missing closing |");
-                    look = getchar(); // consume trailing |
-                    final String s = tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
-                    tok = intern(s);
+                    tok = intern(readBarSymbol());
                 } else if (isSyntax(look)) {
                     switch (look) {
                     case '(':  tok = Token.LP; break;
@@ -1244,6 +1244,7 @@ public class LambdaJ {
                     }
                     look = getchar();
                 } else if (haveString() && isDQuote(look)) {
+                    int index = 0;
                     do {
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar(false);
@@ -1259,6 +1260,7 @@ public class LambdaJ {
                     else { subChar = look; look = getchar(false); }
                     tok = readerMacro(subChar);
                 } else {
+                    int index = 0;
                     boolean escapeSeen = false;
                     while (look != eof && !isSpace(look) && !isSyntax(look)) {
                         if (escape) escapeSeen = true;
@@ -1288,6 +1290,20 @@ public class LambdaJ {
 
                 if (tok != CONTINUE) return;
             }
+        }
+
+        private String readBarSymbol() {
+            assert isBar(look);
+            int index = 0;
+            look = getchar();
+            while (look != LambdaJ.EOF && !isBar(look)) {
+                if (index < SYMBOL_MAX) token[index++] = (char) look;
+                look = getchar(false);
+            }
+            if (look == LambdaJ.EOF)
+                throw new ParseError("|-quoted symbol is missing closing |");
+            look = getchar(); // consume trailing |
+            return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
         }
 
         private static Number parseLong(String s, int radix) {
@@ -1662,7 +1678,8 @@ public class LambdaJ {
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
-        none("", null),
+        notInterned("", null), interned("", null),
+
         // basic special forms
         sQuote("quote", WellknownSymbolKind.SF), sLambda("lambda", WellknownSymbolKind.SF),
 
@@ -1901,10 +1918,9 @@ public class LambdaJ {
         return symtab.intern(sym);
     }
 
-    final LambdaJSymbol internWellknown(String sym) {
+    final void internWellknown(String sym) {
         final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
-        assert ret.wellknownSymbol != WellknownSymbol.none : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
-        return ret;
+        assert ret.wellknownSymbol != WellknownSymbol.interned : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
     }
 
     private static class OpenCodedPrimitive implements Primitive {
@@ -4561,8 +4577,8 @@ public class LambdaJ {
     }
 
     static Object gensym(Object name) {
-        if (name != null) return new LambdaJSymbol("#:" + requireString("gensym", name));
-        else return new LambdaJSymbol("#:gensym");
+        if (name != null) return new LambdaJSymbol(requireString("gensym", name));
+        else return new LambdaJSymbol("gensym");
     }
 
 

@@ -2000,3 +2000,12 @@ optionale-form?
 0-oder-mehrere*
 1-oder-mehrere+
 [erstes-optionales-argument [zweites-optionales-argument]]
+
+
+eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
+-> gensym sollte namen im sinne g123 vergeben, nicht #:g123
+   LabmdaJSymbol.printSEx() sollte bei "escapeAtoms=true" bei uninterned "#:" voranstellen
+   es sollte ein readermacro #: geben, das das folgende als uninterned symbol einliest
+-> vielleicht LambdaJSymbol.wellknown missbrauchen: statt WellknownSymbol.none -> interned und notinterned
+-> gensym brauchts eigentlich nicht in Murmel, kann man mit make-symbol implementieren
+-> gensym: optionalen string parameter für den namen, default ist "gensym"
