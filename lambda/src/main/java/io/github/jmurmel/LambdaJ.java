@@ -5675,7 +5675,7 @@ public class LambdaJ {
 
                 interpreter.eval(interpreter.list(setq, values3, values2), null);
                 interpreter.eval(interpreter.list(setq, values2, values1), null);
-                interpreter.eval(interpreter.list(setq, values1, interpreter.list(quote, interpreter.values)), null);
+                interpreter.eval(interpreter.list(setq, values1, interpreter.list(quote, interpreter.values == NO_VALUES ? interpreter.list(result) : interpreter.values)), null);
 
                 System.out.println();
                 if (interpreter.values == NO_VALUES) {
@@ -5940,7 +5940,13 @@ public class LambdaJ {
                            + "  :java classname directory ...... compile history to Java class 'classname' and save to a file based on 'classname' in directory 'directory'\n"
                            + "\n"
                            + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
-                           + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
+                           + "                                   the generated jar needs jmurmel.jar in the same directory to run\n" 
+                           + "\n" 
+                           + "Available variables:\n" 
+                           + "  @- ............................. currently evaluated form\n" 
+                           + "  @+, @++, @+++ .................. recently evaluated forms\n" 
+                           + "  @*, @**, @*** .................. recently returned primary results\n" 
+                           + "  @/, @//, @/// .................. recently returned values\n"
                            + "\n"
                            + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
                            + "  If 'jarfilename' is nil then 'a.jar' will be used as the jar file name.\n"
