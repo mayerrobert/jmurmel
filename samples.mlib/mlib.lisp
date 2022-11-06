@@ -14,7 +14,7 @@
 ;;;
 ;;;     (require "mlib")
 
-;;; == `mlib` functions and macros
+;;; == mlib functions and macros
 ;;;
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
@@ -1026,7 +1026,8 @@
 ;;; - symbols
 ;;; - car..cdddr
 ;;; - nth
-;;; - svref
+;;; - elt seqref
+;;; - svref, bvref, bit, sref, char
 (defmacro setf args
   (if args
         (if (cdr args)
@@ -1207,7 +1208,9 @@
 ;;; Since: 1.1
 ;;;
 ;;; Is this number even?
-(defun evenp (n) (= 0.0 (mod n 2)))
+(defun evenp (n)
+  (if (integerp n) (= 0.0 (mod n 2))
+    (error "not an integer: %s" n)))
 
 
 ;;; = Function: oddp
@@ -1216,7 +1219,9 @@
 ;;; Since: 1.1
 ;;;
 ;;; Is this number odd?
-(defun oddp (n) (= 1.0 (mod n 2)))
+(defun oddp (n)
+  (if (integerp n) (= 1.0 (mod n 2))
+    (error "not an integer: %s" n)))
 
 
 ;;; = Function: char=
@@ -1265,7 +1270,7 @@
 ;;; Return `t` if any of the following is true:
 ;;;
 ;;; - `a` and `b` are `eql`
-;;; - `a` and `b` are strings, characters or symbols and have the same text value
+;;; - `a` and `b` are strings that have the same text value
 ;;; - `a` and `b` are bitvectors whose elements are eql
 ;;; - `a` and `b` are conses whose car and cdr are `equal` respectively
 (defun equal (a b)
