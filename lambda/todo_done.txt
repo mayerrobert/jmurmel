@@ -2009,3 +2009,34 @@ eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
 -> vielleicht LambdaJSymbol.wellknown missbrauchen: statt WellknownSymbol.none -> interned und notinterned
 -> gensym brauchts eigentlich nicht in Murmel, kann man mit make-symbol implementieren
 -> gensym: optionalen string parameter für den namen, default ist "gensym"
+
+
+welche readermacros soll der lispreader (stdin) haben/ auflösen? *features*?
+-> sbcl macht/ hat anscheinend alles
+
+
+dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval benutzt wird, ist nicht schön
+-> abgesehen von eval und zum aufrufen von Closures brauchts den interpreter für:
+   compilerprimitives, die LambdaJ instanz methoden aufrufen, also solche, die ihrerseits LambdaJ member brauchen. das sind:
+   - IO wegen LambdaJ.lispReader/ lispWriter, GFX wegen current_frame
+   - makeArray weil das benutzt sBit, sCharacter
+   (- gensym weil das benutzt den gensymCounter
+     -> gensymcounter streichen 
+     -> oder: Murmel hat nur make-symbol, gensym (mit oder ohne zähler) in mlib)
+   (- functionp weil der interpreter würde ggf. oldLambda checken -> der compiler braucht das nicht -> static functionp OHNE haveOldLambda)
+   (- getDecodedTime benutzt das zählende cons was für den compiler eh falsch ist)
+   
+   und interne funktionen
+   - MurmelJavaProgram.intern() delegiert zu LambdaJ.intern() und das braucht LambdaJ.symtab
+
+   *command-line-argument-list* und *features* werden beim instanzieren dupliziert
+   -> weitere änderungen gehen verschütt, bzw. (setq *features*... gibt überhaupt compile fehler
+
+-> vielleicht den "Runtime-state" nicht überall verstreuen und teilweise zwischen interpreter und MurmelJavaProgram duplizieren/ hintri-firi kopieren
+   sondern eine neue klasse RuntimeState. diese klasse könnte auch logik enthalten, dass interpreter und MurmelJavaProgram schreiben/ lesen können. evtl. auch values?!?
+
+-> oder: alle rt funktionen in LambdaJ auf static umstellen, jeweils die bisherigen memberzugriffe durch parameter ablösen
+   im interpreter geben die WellknownSymbol.apply() funktionen die LambdaJmember mit, in MurmelJavaProgram geben die jeweiligen funktionen (neue) member von MurmelJavaProgram mit
+   für eval in kompilierten programmen wird ein interpreter lazy erzeugt (mit symtab und compiledProgram), und der runtimestate (reader, printer, currentFrame, symtab, features) wird vor eval hin- und nach eval zurückkopiert
+   -> die cons-zählerei des interpreters bleibt noch offen
+      wenn auch das erledigt ist, sind alle lisplike funktionen in LambdaJ static und könnten in eine andere (utility) klasse geschoben werden

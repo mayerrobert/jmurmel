@@ -726,16 +726,16 @@ public class LambdaJ {
     }
 
     public LambdaJ(SymbolTable symtab) {
-        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, null);
+        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, null, null);
     }
 
     /** constructor */
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
-        this(features, trace, tracer, null, null);
+        this(features, trace, tracer, null, null, null);
     }
 
     /** constructor */
-    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, Path libDir) {
+    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, ConsCell featuresEnvEntry, Path libDir) {
         this.features = features;
 
         this.trace = trace;
@@ -749,7 +749,7 @@ public class LambdaJ {
         else this.libDir = murmelDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
-        this.featuresEnvEntry = cons(intern("*features*"), makeFeatureList());
+        this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
 
         if (haveT()) symtab.intern(sT);
         if (haveNil()) symtab.intern(sNil);
@@ -803,9 +803,9 @@ public class LambdaJ {
     }
 
     private static final String[] FEATURES = { "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" };
-    private ConsCell makeFeatureList() {
+    private static ConsCell makeFeatureList(SymbolTable s) {
         ConsCell l = null;
-        for (String feat: FEATURES) l = new ListConsCell(intern(feat), l);
+        for (String feat: FEATURES) l = new ListConsCell(s.intern(feat), l);
         return l;
     }
 
@@ -1773,7 +1773,7 @@ public class LambdaJ {
         sRem("rem", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
 
         // vectors, sequences
-        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.makeArray(args); } },
+        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeArray(intp.sBit, intp.sCharacter, args); } },
         sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
         sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
@@ -1810,12 +1810,12 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
-        sRead("read", Features.HAVE_IO, 0, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.read(args); } },
-        sWrite("write", Features.HAVE_IO, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.write  (car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.writeln(args,      cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.lnwrite(args,      cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.format(args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.formatLocale(args); } },
+        sRead("read", Features.HAVE_IO, 0, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.lispReader, args); } },
+        sWrite("write", Features.HAVE_IO, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.lispPrinter, car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.lispPrinter, args, cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.lispPrinter, args, cdr(args) == null || cadr(args) != null); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.lispPrinter, intp.haveIO(), args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.lispPrinter, intp.haveIO(), args); } },
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
@@ -1835,7 +1835,7 @@ public class LambdaJ {
 
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
-        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.makeProxy(args); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -4091,7 +4091,7 @@ public class LambdaJ {
         }
     }
 
-    Object makeArray(ConsCell a) {
+    static Object makeArray(LambdaJSymbol sBit, LambdaJSymbol sCharacter, ConsCell a) {
         final int size = toNonnegInt("make-array", car(a));
         final Object type = cadr(a);
         final Object cap = caddr(a);
@@ -4408,7 +4408,7 @@ public class LambdaJ {
 
     /// I/O
 
-    final Object read(ConsCell a) {
+    static Object read(ObjectReader lispReader, ConsCell a) {
         if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
         if (a == null) {
             final Object eof = new Object();
@@ -4421,13 +4421,13 @@ public class LambdaJ {
         }
     }
 
-    final Object write(final Object arg, boolean printEscape) {
+    static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
         lispPrinter.printObj(arg, printEscape);
         return arg;
     }
 
-    final Object writeln(final ConsCell arg, boolean printEscape) {
+    static Object writeln(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
         if (arg != null) {
             lispPrinter.printObj(car(arg), printEscape);
@@ -4436,7 +4436,7 @@ public class LambdaJ {
         return car(arg);
     }
 
-    final Object lnwrite(final ConsCell arg, boolean printEscape) {
+    static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
         lispPrinter.printEol();
         if (arg == null) return null;
@@ -4446,15 +4446,15 @@ public class LambdaJ {
         return o;
     }
 
-    final String format(ConsCell a) {
-        return format(false, a);
+    static String format(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
+        return format(lispPrinter, haveIO, false, a);
     }
 
-    final String formatLocale(ConsCell a) {
-        return format(true, a);
+    static String formatLocale(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
+        return format(lispPrinter, haveIO, true, a);
     }
 
-    final String format(boolean locale, ConsCell a) {
+    private static String format(ObjectWriter lispPrinter, boolean haveIO, boolean locale, ConsCell a) {
         final String func = locale ? "format-locale" : "format";
         varargsMin(func, a, locale ? 3 : 2);
         final boolean toString = car(a) == null;
@@ -4476,7 +4476,7 @@ public class LambdaJ {
         try {
             if (locString == null) {
                 if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
-                if (!haveIO()) throw new LambdaJError(true, "%s: I/O is disabled", func);
+                if (!haveIO) throw new LambdaJError(true, "%s: I/O is disabled", func);
                 if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
                 lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
                 return null;
@@ -4794,7 +4794,7 @@ public class LambdaJ {
 
     }
 
-    Object makeProxy(ConsCell args) {
+    static Object makeProxy(LambdaJ intp, ConsCell args) {
         final String intf = requireString("jproxy", car(args));
         try {
             final Class<?> clazz = findClass(intf);
@@ -4825,7 +4825,7 @@ public class LambdaJ {
                 final String name = requireString("jproxy", car(lst));
                 final Method method = nameToMethod.get(name);
                 if (method == null) throw new LambdaJError(true, "jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
-                methodToMurmelFunction.put(method, getFunction(null, form));
+                methodToMurmelFunction.put(method, getFunction(intp, null, form));
 
                 lst = (ConsCell)cddr(lst);
             }
@@ -5034,13 +5034,13 @@ public class LambdaJ {
      *  </pre>
      */
     public MurmelFunction getFunction(String funcName) {
-        return getFunction(funcName, getValue(funcName));
+        return getFunction(this, funcName, getValue(funcName));
     }
 
-    private MurmelFunction getFunction(String funcName, Object maybeFunction) {
+    private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object maybeFunction) {
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
         if (maybeFunction instanceof Primitive)                                 { return ((Primitive)maybeFunction)::applyPrimitiveVarargs; }
-        if (maybeFunction instanceof Closure)                           { return new CallLambda((Closure)maybeFunction, topEnv); }
+        if (maybeFunction instanceof Closure)                                   { return intp.new CallLambda((Closure)maybeFunction, intp.topEnv); }
         if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
         throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
@@ -5252,7 +5252,7 @@ public class LambdaJ {
 
             final Path libPath = getLibPath(libDir);
 
-            final LambdaJ interpreter = new LambdaJ(features, trace, null, null, libPath);
+            final LambdaJ interpreter = new LambdaJ(features, trace, null, null, null, libPath);
 
             final List<Object> history = repl ? new ArrayList<>() : null;
 
@@ -5611,7 +5611,7 @@ public class LambdaJ {
                 interpreter.clearMacros();
                 interpreter.modules.clear();
                 injectCommandlineArgs(interpreter, args);
-                interpreter.featuresEnvEntry.rplacd(interpreter.makeFeatureList());
+                interpreter.featuresEnvEntry.rplacd(LambdaJ.makeFeatureList(interpreter.symtab));
                 initReplVars.run();
                 isInit = true;
             }
@@ -6225,30 +6225,56 @@ public class LambdaJ {
             @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<compiler primitive>"); }
         }
 
-        private static final class Tailcall {
-            MurmelFunction fn;
-            MurmelFunction cleanup;
-            Object[] args;
-        }
+        private final SymbolTable symtab = new ListSymbolTable();
+        private final LambdaJSymbol sBit, sCharacter;
 
-        private final LambdaJ intp = new LambdaJ();
+        private final ConsCell featuresEnvEntry;
+        private ObjectReader lispReader;
+        private ObjectWriter lispPrinter;
+        private TurtleFrame current_frame;
+
+        private LambdaJ intp;
 
         protected MurmelJavaProgram() {
-            intp.init(() -> -1, System.out::print);
-            intp.setReaderPrinter(intp.makeReader(System.in::read, null), intp.getLispPrinter());
-            intp.compiledProgram = this;
-            _t = intern("t");
-            _dynamic = intern("dynamic");
-            features = (ConsCell)cdr(intp.featuresEnvEntry); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
+            // hack so that symbols don't get interned as regular symbols which would break eval at least
+            _t = symtab.intern(LambdaJ.sT);
+            symtab.intern(LambdaJ.sNil);
+            symtab.intern(LambdaJ.sLambda);
+            symtab.intern(LambdaJ.sDefine);
+            symtab.intern(LambdaJ.sProgn);
+            for (WellknownSymbol ws: WellknownSymbol.values()) {
+                symtab.intern(new LambdaJSymbol(ws.sym, true));
+            }
+            _dynamic = symtab.intern(new LambdaJSymbol("dynamic", false));
+            sBit = symtab.intern(new LambdaJSymbol("bit", false));
+            sCharacter = symtab.intern(new LambdaJSymbol("character", false));
+
             // vor/nach eval features hintri/firi kopieren, values auch
+            features = makeFeatureList(symtab); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
+            featuresEnvEntry = ConsCell.cons(intern("*features*"), features);
+
+            lispReader = new SExpressionReader(System.in::read, symtab, featuresEnvEntry, null);
+            lispPrinter = LambdaJ.makeWriter(System.out::print);
+
         }
 
-
+        private LambdaJ intpForEval() {
+            if (intp == null) {
+                intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, null);
+                intp.compiledProgram = this;
+                intp.featuresEnvEntry.rplacd(features);
+                intp.init(lispReader, lispPrinter, null);
+                intp.insertFrontTopEnv(intern("*command-line-argument-list*"), commandlineArgumentList);
+            }
+            intp.featuresEnvEntry.rplacd(features);
+            intp.setReaderPrinter(lispReader, lispPrinter);
+            return intp;
+        }
 
         /// JMurmel native embed API - Java calls compiled Murmel
-        @Override public final ObjectReader getLispReader()  { return intp.getLispReader(); }
-        @Override public final ObjectWriter getLispPrinter() { return intp.getLispPrinter(); }
-        @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { intp.setReaderPrinter(lispStdin, lispStdout); }
+        @Override public final ObjectReader getLispReader()  { return lispReader; }
+        @Override public final ObjectWriter getLispPrinter() { return lispPrinter; }
+        @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { lispReader = lispStdin; lispPrinter = lispStdout; }
 
         @Override
         public final MurmelFunction getFunction(String func) {
@@ -6327,7 +6353,7 @@ public class LambdaJ {
             if (symbolp(fn)) fn = getValue(fn.toString());
             return tailcall(fn, listToArray(args[1]));
         }
-        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null); }
+        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intpForEval().expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null); }
 
 
         // logic, predicates
@@ -6488,7 +6514,7 @@ public class LambdaJ {
 
         public final Object   makeArray(Object... args) { varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
-                                                          return intp.makeArray(arraySlice(args)); }
+                                                          return LambdaJ.makeArray(sBit, sCharacter, arraySlice(args)); }
         public final long     vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
         public final Object   vectorCopy  (Object... args) { varargs1_2("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0], args.length > 1 && args[1] != null); }
         public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
@@ -6594,13 +6620,13 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read      (Object... args) { varargs0_1("read",     args.length); return intp.read(arraySlice(args)); }
-        public final Object _write     (Object... args) { varargs1_2("write",    args.length); return intp.write(args[0], args.length < 2 || args[1] != null); }
-        public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return intp.writeln(arraySlice(args), args.length < 2 || args[1] != null); }
-        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return intp.lnwrite(arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _read      (Object... args) { varargs0_1("read",     args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
+        public final Object _write     (Object... args) { varargs1_2("write",    args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
+        public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
 
-        public final Object format     (Object... args)  { varargs2("format", args.length); return intp.format(arraySlice(args)); }
-        public final Object formatLocale(Object... args) { varargs3("format-locale", args.length); return intp.formatLocale(arraySlice(args)); }
+        public final Object format     (Object... args)  { varargs2("format", args.length); return LambdaJ.format(lispPrinter, true, arraySlice(args)); }
+        public final Object formatLocale(Object... args) { varargs3("format-locale", args.length); return LambdaJ.formatLocale(lispPrinter, true, arraySlice(args)); }
 
 
         // misc
@@ -6630,7 +6656,7 @@ public class LambdaJ {
             return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
         }
 
-        public final Object _jproxy    (Object... args) { varargs1("jproxy", args.length); return intp.makeProxy(arraySlice(args)); }
+        public final Object _jproxy    (Object... args) { varargs1("jproxy", args.length); return makeProxy(intp, arraySlice(args)); } // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
 
 
         // graphics
@@ -6638,7 +6664,7 @@ public class LambdaJ {
             varargsMinMax("make-frame", args.length, 1, 4);
             final String title = LambdaJ.requireString("make-frame", args[0]);
             final TurtleFrame ret = new TurtleFrame(title, LambdaJ.requireNumberOrNull("make-frame", nth(1, args)), LambdaJ.requireNumberOrNull("make-frame", nth(2, args)), LambdaJ.requireNumberOrNull("make-frame", nth(3, args)));
-            intp.current_frame = ret;
+            current_frame = ret;
             return ret;
         }
 
@@ -6651,8 +6677,8 @@ public class LambdaJ {
 
         // set new current frame, return previous frame
         public final Object currentFrame (Object... args) { varargs0_1("current-frame", args.length);
-                                                            final Object prev = intp.current_frame;
-                                                            if (args.length > 0 && args[0] != null) intp.current_frame = requireFrame("current-frame", args[0]);
+                                                            final Object prev = current_frame;
+                                                            if (args.length > 0 && args[0] != null) current_frame = requireFrame("current-frame", args[0]);
                                                             return prev; }
 
         public final Object pushPos      (Object... args) { varargs0_1("push-pos",      args.length); return requireFrame("push-pos",       nth(0, args)).pushPos(); }
@@ -6690,7 +6716,7 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public final LambdaJSymbol intern(String symName) { return intp.intern(symName); }
+        public final LambdaJSymbol intern(String symName) { return symtab.intern(symName); }
 
         public static Object arrayToList(Object[] args, int start) {
             if (start >= args.length) return null;
@@ -6824,7 +6850,7 @@ public class LambdaJ {
 
         private TurtleFrame requireFrame(String s, Object o) {
             final TurtleFrame ret;
-            if (o == null && (ret = intp.current_frame) != null) return ret;
+            if (o == null && (ret = current_frame) != null) return ret;
             if (o instanceof TurtleFrame) return (TurtleFrame)o;
             throw errorNotAFrame(s, o);
         }
@@ -6941,13 +6967,19 @@ public class LambdaJ {
         }
 
         private Object interpret(Object fn, Object[] args) {
-            return intp.eval(_cons(intp.intern("apply"),
-                                  _cons(fn,
-                                       _cons(_cons(intp.intern("quote"),
-                                                 _cons(arraySlice(args),
-                                                       null)),
-                                             null))),
-                             null);
+            return intpForEval().eval(_cons(intern("apply"),
+                                            _cons(fn,
+                                                  _cons(_cons(intern("quote"),
+                                                              _cons(arraySlice(args),
+                                                                    null)),
+                                                        null))),
+                                      null);
+        }
+
+        private static final class Tailcall {
+            MurmelFunction fn;
+            MurmelFunction cleanup;
+            Object[] args;
         }
 
         private final Tailcall tailcall = new Tailcall();
@@ -7100,7 +7132,6 @@ public class LambdaJ {
 
         @Override public void setCommandlineArgumentList(ConsCell args) {
             commandlineArgumentList = args;
-            intp.insertFrontTopEnv(intern("*command-line-argument-list*"), args);
         }
 
         @Override public Object getValue(String symbol) {
@@ -7312,7 +7343,7 @@ public class LambdaJ {
         final LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
-            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, libDir);
+            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, libDir);
             intp.init(() -> -1, System.out::print);
             this.intp = intp;
 

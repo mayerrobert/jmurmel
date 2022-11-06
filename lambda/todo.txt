@@ -1,3 +1,10 @@
+JMurmel> (eval '(values 1 2 3))
+ -> 1
+ -> 2
+ -> 3
+JMurmel> :r
+==> 1
+JMurmel>
 
 
 
@@ -14,25 +21,15 @@ mlib: defsetf (kurzform) müsste einfach gehen, z.B. mit einer alist (access-fn 
 
 fatal sollte LambdaJError werfen (statt RuntimeException), checken ob das dann hübscher ausgegeben wird
 
-dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval benutzt wird, ist nicht schön
--> abgesehen von eval und zum aufrufen von Closures brauchts den interpreter für:
-   compilerprimitives, die LambdaJ instanz methoden aufrufen, also solche, die ihrerseits LambdaJ member brauchen. das sind:
-   - IO wegen LambdaJ.lispReader/ lispWriter, GFX wegen current_frame
-   - makeArray weil das benutzt sBit, sCharacter
-   (- gensym weil das benutzt den gensymCounter
-     -> gensymcounter streichen 
-     -> oder: Murmel hat nur make-symbol, gensym (mit oder ohne zähler) in mlib)
-   (- functionp weil der interpreter würde ggf. oldLambda checken -> der compiler braucht das nicht -> static functionp OHNE haveOldLambda)
-   (- getDecodedTime benutzt das zählende cons was für den compiler eh falsch ist)
-   
-   und interne funktionen
-   - MurmelJavaProgram.intern() delegiert zu LambdaJ.intern() und das braucht LambdaJ.symtab
 
-   *command-line-argument-list* und *features* werden beim instanzieren dupliziert
-   -> weitere änderungen gehen verschütt, bzw. (setq *features*... gibt überhaupt compile fehler
-
--> vielleicht den "Runtime-state" nicht überall verstreuen und teilweise zwischen interpreter und MurmelJavaProgram duplizieren/ hintri-firi kopieren
-   sondern eine neue klasse RuntimeState. diese klasse könnte auch logik enthalten, dass interpreter und MurmelJavaProgram schreiben/ lesen können. evtl. auch values?!?
+so fügt man eine primitive hinzu:
+WellknownSymbol durch einen neuen enum wert erweitern
+-> damit kanns der interpreter
+Compiler ist derzeit umständlicher:
+* neue funktion
+* den switch in getValue() erweitern
+* das string array MurmelJavaCompiler.primitives bzw. MurmelJavaCompiler.aliasedPimitives erweitern
+-> damit kanns der compiler und MurmelJavaProgram
 
 
 vielleicht doch in MurmelJavaProgram (nur intern) von t/nil auf true/false umstellen?
