@@ -1,3 +1,4 @@
+MurmelJavaProgram: symboltabelle + reader + featuresEnvEntry könnten eigentlich lazy instanziert werden, brauchts nur für IO und/ oder eval
 
 
 

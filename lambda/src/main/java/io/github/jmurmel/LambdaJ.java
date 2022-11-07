@@ -6226,7 +6226,7 @@ public class LambdaJ {
         }
 
         private final SymbolTable symtab = new ListSymbolTable();
-        private final LambdaJSymbol sBit, sCharacter;
+        private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character");
 
         private final ConsCell featuresEnvEntry;
         private ObjectReader lispReader;
@@ -6237,7 +6237,7 @@ public class LambdaJ {
 
         protected MurmelJavaProgram() {
             // hack so that symbols don't get interned as regular symbols which would break eval at least
-            _t = symtab.intern(LambdaJ.sT);
+            symtab.intern(LambdaJ.sT);
             symtab.intern(LambdaJ.sNil);
             symtab.intern(LambdaJ.sLambda);
             symtab.intern(LambdaJ.sDefine);
@@ -6245,9 +6245,9 @@ public class LambdaJ {
             for (WellknownSymbol ws: WellknownSymbol.values()) {
                 symtab.intern(new LambdaJSymbol(ws.sym, true));
             }
-            _dynamic = symtab.intern(new LambdaJSymbol("dynamic", false));
-            sBit = symtab.intern(new LambdaJSymbol("bit", false));
-            sCharacter = symtab.intern(new LambdaJSymbol("character", false));
+            symtab.intern(_dynamic);
+            symtab.intern(sBit);
+            symtab.intern(sCharacter);
 
             // vor/nach eval features hintri/firi kopieren, values auch
             features = makeFeatureList(symtab); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
@@ -6255,7 +6255,6 @@ public class LambdaJ {
 
             lispReader = new SExpressionReader(System.in::read, symtab, featuresEnvEntry, null);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
-
         }
 
         private LambdaJ intpForEval() {
@@ -6266,8 +6265,10 @@ public class LambdaJ {
                 intp.init(lispReader, lispPrinter, null);
                 intp.insertFrontTopEnv(intern("*command-line-argument-list*"), commandlineArgumentList);
             }
-            intp.featuresEnvEntry.rplacd(features);
-            intp.setReaderPrinter(lispReader, lispPrinter);
+            else {
+                intp.featuresEnvEntry.rplacd(features);
+                intp.setReaderPrinter(lispReader, lispPrinter);
+            }
             return intp;
         }
 
@@ -6308,8 +6309,8 @@ public class LambdaJ {
 
 
         /// predefined global variables
-        public final Object _t;
-        public final Object _dynamic;
+        public static final LambdaJSymbol _t = LambdaJ.sT;
+        public static final LambdaJSymbol _dynamic = new LambdaJSymbol(true, "dynamic");
 
         public static final double _pi = Math.PI;
         public static final int arrayDimensionLimit = MAX_ARRAY_SIZE;
