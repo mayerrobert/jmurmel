@@ -6353,7 +6353,14 @@ public class LambdaJ {
             if (symbolp(fn)) fn = getValue(fn.toString());
             return tailcall(fn, listToArray(args[1]));
         }
-        public final Object _eval      (Object... args) { varargs1_2("eval",     args.length); return intpForEval().expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null); }
+        public final Object _eval(Object... args) {
+            varargs1_2("eval",     args.length);
+            final LambdaJ intp = intpForEval();
+            final Object ret = intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null);
+            if (intp.values == LambdaJ.NO_VALUES) values = null;
+            else values = toArray(intp.values);
+            return ret;
+        }
 
 
         // logic, predicates
@@ -6967,13 +6974,17 @@ public class LambdaJ {
         }
 
         private Object interpret(Object fn, Object[] args) {
-            return intpForEval().eval(_cons(intern("apply"),
-                                            _cons(fn,
-                                                  _cons(_cons(intern("quote"),
-                                                              _cons(arraySlice(args),
-                                                                    null)),
-                                                        null))),
-                                      null);
+            final LambdaJ intp = intpForEval();
+            final Object ret = intp.eval(_cons(intern("apply"),
+                                               _cons(fn,
+                                                     _cons(_cons(intern("quote"),
+                                                                 _cons(arraySlice(args),
+                                                                       null)),
+                                                           null))),
+                                         null);
+            if (intp.values == LambdaJ.NO_VALUES) values = null;
+            else values = toArray(intp.values);
+            return ret;
         }
 
         private static final class Tailcall {

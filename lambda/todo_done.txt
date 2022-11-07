@@ -2040,3 +2040,21 @@ dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval 
    für eval in kompilierten programmen wird ein interpreter lazy erzeugt (mit symtab und compiledProgram), und der runtimestate (reader, printer, currentFrame, symtab, features) wird vor eval hin- und nach eval zurückkopiert
    -> die cons-zählerei des interpreters bleibt noch offen
       wenn auch das erledigt ist, sind alle lisplike funktionen in LambdaJ static und könnten in eine andere (utility) klasse geschoben werden
+
+
+JMurmel> (eval '(values 1 2 3))
+ -> 1
+ -> 2
+ -> 3
+JMurmel> :r
+==> 1
+JMurmel>
+
+
+JMurmel> (define f (eval '(lambda () (values 1 2 3))))
+==> f
+JMurmel> (multiple-value-bind (a b c) (f) (list a b c))
+==> (1 2 3)
+JMurmel> :r
+==> (1 nil nil)
+JMurmel>
