@@ -6637,7 +6637,7 @@ public class LambdaJ {
 
 
         // misc
-        Object[] values;
+        protected Object[] values;
         public final Object _values    (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
         public final Object _gensym    (Object... args) { varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { return null; }
@@ -7764,13 +7764,14 @@ public class LambdaJ {
             final Iterator<Object> it;
             if (forms == null || !(it = forms.iterator()).hasNext()) {
                 // e.g. the body of an empty lambda or function
-                ret.append("        return null;\n");
+                ret.append("        return values = null;\n");
                 return;
             }
 
             boolean ign = false;
             while (it.hasNext()) {
                 final Object form = it.next();
+                ret.append("        values = null;\n");
                 if (consp(form)) { ret.append("        loc = \""); stringToJava(ret, ((ConsCell)form).lineInfo(), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        "); }
                 else ret.append("        ");
                 if (it.hasNext()) {
