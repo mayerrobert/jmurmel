@@ -6162,7 +6162,10 @@ public class LambdaJ {
 
         @Override
         public int read() throws IOException {
-            if (reader == null && paths.hasNext()) next();
+            if (reader == null) {
+                if (paths.hasNext()) next();
+                else return -1;
+            }
             try {
                 final int ret = reader.read();
                 if (ret != -1) return ret;
