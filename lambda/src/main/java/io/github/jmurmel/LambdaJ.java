@@ -5586,10 +5586,15 @@ public class LambdaJ {
         final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
         final ReadSupplier nonechoingSupplier = consoleReader::read;
 
+        final Object bye = new Object();
         final Runnable initReplVars = () -> {
             for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3}) {
                 interpreter.eval(interpreter.list(define, v, null), null);
             }
+            interpreter.eval(interpreter.list(define,
+                                              interpreter.intern("quit"),
+                                              (Primitive) a -> { throw new ReturnException(bye, 0, (Object[])null); }),
+                             null);
         };
 
         if (isInit) {
@@ -5685,7 +5690,26 @@ public class LambdaJ {
                         System.out.print(" -> "); outWriter.printObj(value, true); System.out.println();
                     }
                 }
-            } catch (LambdaJError e) {
+            }
+            catch (ReturnException ex) {
+                if (ex.tag == bye) {
+                    if (istty) System.out.println("bye.");
+                    System.out.println();
+                    throw EXIT_SUCCESS;
+                }
+                else {
+                    if (istty) {
+                        System.out.println();
+                        System.out.println("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
+                        System.out.println();
+                    } else {
+                        System.err.println();
+                        System.err.println("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
+                        throw EXIT_RUNTIME_ERROR;
+                    }
+                }
+            }
+            catch (LambdaJError e) {
                 if (istty) {
                     System.out.println();
                     System.out.println(e);
