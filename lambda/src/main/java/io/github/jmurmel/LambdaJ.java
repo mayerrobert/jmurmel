@@ -475,6 +475,8 @@ public class LambdaJ {
 
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
         @Override String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
+        
+        Path path() { return path; }
     }
 
     private static final class Closure implements Serializable, Writeable {
@@ -496,12 +498,12 @@ public class LambdaJ {
             private final int len;
             private int cursor;
 
-            private ArraySliceIterator(ArraySlice coll) { this.arry = coll.arry; this.len = arry.length; this.cursor = coll.offset; }
+            private ArraySliceIterator(Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
             @Override public boolean hasNext() { return cursor != -1; }
 
             @Override
             public Object next() {
-                if (cursor == -1 || arry == null) throw new NoSuchElementException();
+                if (cursor == -1) throw new NoSuchElementException();
                 final Object ret = arry[cursor++];
                 if (cursor == len)  cursor = -1;
                 return ret;
@@ -515,62 +517,58 @@ public class LambdaJ {
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(Object[] arry, int offset) {
-            if (arry != null && arry.length > offset) { this.arry = arry; this.offset = offset; }
-            else { this.arry = null; this.offset = -1; }
+            assert arry != null && offset < arry.length;
+            this.arry = arry;  this.offset = offset;
         }
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(ArraySlice slice) {
-            if (slice.arry != null && slice.arry.length > slice.offset) { this.arry = slice.arry; offset = slice.offset + 1; }
-            else { this.arry = null; offset = -1; }
+            assert slice.arry != null && slice.offset < slice.arry.length;
+            this.arry = slice.arry;  offset = slice.offset + 1;
         }
 
-        @Override public Object     car() { return isNil() ? null : arry[offset]; }
+        @Override public Object     car() { return arry[offset]; }
         @Override public ConsCell rplaca(Object car) { arry[offset] = car; return this; }
 
-        @Override public ArraySlice cdr() { return arry == null || arry.length <= offset+1 ? null : new ArraySlice(this); }
+        @Override public ArraySlice cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
 
-        public Object elt(long idx) {
+        Object elt(long idx) {
             if (idx < 0) throw new LambdaJError("elt: index must be >= 0");
             if (idx >= length()) throw new LambdaJError(true, "elt: index %d is too large for a list of length %d", idx, length());
             return arry[(int)idx];
         }
 
-        public Object eltset(Object newValue, long idx) {
+        Object eltset(Object newValue, long idx) {
             if (idx < 0) throw new LambdaJError("eltset: index must be >= 0");
             if (idx >= length()) throw new LambdaJError(true, "eltset: index %d is too large for a list of length %d", idx, length());
             arry[(int)idx] = newValue;
             return newValue;
         }
 
-        private int length() { return arry == null ? 0 : arry.length - offset; }
+        private int length() { return arry.length - offset; }
 
         @Override public String toString() { return printSEx(true, false); }
-        @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this); }
+        @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this.arry, this.offset); }
 
         String printSEx(boolean headOfList, boolean escapeAtoms) {
-            final Object[] arry;
-            final int alen, offset;
-            if ((arry=this.arry) == null || (alen = arry.length) <= (offset=this.offset)) return LambdaJ.printSEx(null);
-            else {
-                final StringBuilder ret = new StringBuilder();
-                final WriteConsumer append = ret::append;
-                if (headOfList) ret.append('(');
-                boolean first = true;
-                for (int i = offset; i < alen; i++) {
-                    if (first) first = false;
-                    else ret.append(' ');
+            final Object[] arry = this.arry;
+            final int alen = arry.length, offset = this.offset;
 
-                    final Object obj;
-                    if ((obj=arry[i]) == this) ret.append("#<this list>");
-                    else _printSEx(append, arry, obj, escapeAtoms);
-                }
-                ret.append(')');
-                return ret.toString();
+            final StringBuilder ret = new StringBuilder();
+            final WriteConsumer append = ret::append;
+            if (headOfList) ret.append('(');
+            boolean first = true;
+            for (int i = offset; i < alen; i++) {
+                if (first) first = false;
+                else ret.append(' ');
+
+                final Object obj;
+                if ((obj=arry[i]) == this) ret.append("#<this list>");
+                else _printSEx(append, arry, obj, escapeAtoms);
             }
+            ret.append(')');
+            return ret.toString();
         }
-
-        private boolean isNil() { return arry == null || arry.length <= offset; }
 
         Object[] listToArray() {
             if (offset == 0) return arry;
@@ -803,7 +801,7 @@ public class LambdaJ {
     }
 
     private static final String[] FEATURES = { "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" };
-    private static ConsCell makeFeatureList(SymbolTable s) {
+    static ConsCell makeFeatureList(SymbolTable s) {
         ConsCell l = null;
         for (String feat: FEATURES) l = new ListConsCell(s.intern(feat), l);
         return l;
@@ -1810,12 +1808,12 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
-        sRead("read", Features.HAVE_IO, 0, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.lispReader, args); } },
-        sWrite("write", Features.HAVE_IO, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.lispPrinter, car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.lispPrinter, args, cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.lispPrinter, args, cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.lispPrinter, intp.haveIO(), args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.lispPrinter, intp.haveIO(), args); } },
+        sRead("read", Features.HAVE_IO, 0, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
+        sWrite("write", Features.HAVE_IO, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(), intp.haveIO(), args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(), intp.haveIO(), args); } },
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
@@ -1948,7 +1946,7 @@ public class LambdaJ {
         return init(parser, outWriter, null);
     }
 
-    private ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
+    ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
         setReaderPrinter(inReader, outWriter);
         topEnv = customEnv;
         environment();
@@ -4041,8 +4039,8 @@ public class LambdaJ {
     static final class Bitvector implements Serializable, Writeable, Iterable<Long> {
         class Iter implements Iterator<Long> {
             private int cursor;
-            @Override public boolean hasNext() { return cursor < size; }
-            @Override public Long next() { if (cursor == size) throw new NoSuchElementException(); return get(cursor++); }
+            @Override public boolean hasNext() { return cursor < size(); }
+            @Override public Long next() { if (cursor == size()) throw new NoSuchElementException(); return get(cursor++); }
         }
 
         private static final long serialVersionUID = 1L;
@@ -7686,7 +7684,7 @@ public class LambdaJ {
                 else if (isOperator(op, WellknownSymbol.sLoad)) {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(ccForm));
                     oneArg("load", ccArgs);
-                    if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path; } // todo unschoener hack 
+                    if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack 
                     globalEnv = loadFile("load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
                 }
 
@@ -7698,7 +7696,7 @@ public class LambdaJ {
                     if (!intp.modules.contains(modName)) {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
-                        if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path; } // todo unschoener hack 
+                        if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack 
                         globalEnv = loadFile("require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
                         if (!intp.modules.contains(modName)) errorMalformedFmt("require", "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }

@@ -1,7 +1,9 @@
-MurmelJavaProgram: symboltabelle + reader + featuresEnvEntry könnten eigentlich lazy instanziert werden, brauchts nur für IO und/ oder eval
 
 
-
+MurmelJavaProgram: symboltabelle + reader + featuresEnvEntry könnten evtl. lazy instanziert werden
+- brauchts für IO und/ oder eval
+- und make-array
+- und symbole, z.b. returnvalue von defun (was meist ignoriert wird)
 
 
 mlib: defsetf (kurzform) müsste einfach gehen, z.B. mit einer alist (access-fn . update-fn), oder es werden setf-funktionen on-the-fly erzeugt
