@@ -1,3 +1,24 @@
+JFFI: vararg parameter gibts: int...
+-> arrays? int[]
+JMurmel> (define al ((jmethod "java.util.ArrayList" "new")))
+
+==> al
+JMurmel> (define to-array (jmethod "java.util.List" "toArray" "Object..."))
+==> to-array
+JMurmel> (to-array al #())
+==> #()
+JMurmel> :r
+/MurmelProgram.java:30: error: no suitable method found for toArray(Object)
+        try { final Object value = ((MurmelFunction)(args -> { argCheck(loc, 2, args.length);  return ((java.util.List)args[0]).toArray(requireNotNull(args[1])); }));
+       ^
+    method Collection.toArray(Object[]) is not applicable
+      (argument mismatch; Object cannot be converted to Object[])
+    method List.toArray(Object[]) is not applicable
+      (argument mismatch; Object cannot be converted to Object[])
+
+-> sollte abgefangen werden, Object... für eine nicht-varargs Javamethode sollte ein fehler sein
+-> classByName erweitern um "Object[]" usw., jeweils mit argconvertern, die ein passendes array liefern
+
 
 
 MurmelJavaProgram: symboltabelle + reader + featuresEnvEntry könnten evtl. lazy instanziert werden

@@ -4752,6 +4752,8 @@ public class LambdaJ {
         classByName.put("Float...",     new Object[] { Float[].class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float...");
         classByName.put("Double...",    new Object[] { Double[].class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double...");
 
+        classByName.put("Object?[]",    new Object[] { Object[].class,    "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });        aliases("Object[]");
+
 
         classByName.put("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character");
         classByName.put("CharSequence",    new Object[] { CharSequence.class,   "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence");
@@ -6837,6 +6839,13 @@ public class LambdaJ {
             return obj;
         }
 
+        public static Object[] requireArray(Object obj) {
+            if (obj == null) { throw new LambdaJError(true, "object is nil"); }
+            if (obj instanceof Object[]) return (Object[])obj;
+            if (obj instanceof List) return ((List<?>)obj).toArray(new Object[0]);
+            throw new LambdaJError(true, "not a character: %s", printSEx(obj));
+        }
+
         /** used by generated Java code */
         public static ConsCell requireList(Object lst) {
             if (lst == null) return null;
@@ -6859,6 +6868,7 @@ public class LambdaJ {
 
         /** used by JFFI and generated inline JFFI */
         public static String requireString(Object o) {
+            if (o instanceof char[]) return String.valueOf((char[])o);
             if (!stringp(o)) errorNotAString(o);
             return o.toString();
         }
@@ -6866,6 +6876,7 @@ public class LambdaJ {
         /** used by JFFI and generated inline JFFI */
         public static String requireStringOrNull(Object o) {
             if (o == null) return null;
+            if (o instanceof char[]) return String.valueOf((char[])o);
             if (!stringp(o)) errorNotAString(o);
             return o.toString();
         }
@@ -7571,7 +7582,8 @@ public class LambdaJ {
             }
             ret.append("import java.util.function.Function;\n"
                        + "import java.util.function.Supplier;\n"
-                       + "import io.github.jmurmel.LambdaJ.*;\n\n"
+                       + "import io.github.jmurmel.LambdaJ.*;\n\n" 
+                       + "@SuppressWarnings(\"unchecked\")\n"
                        + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                        + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                                                                   + "    public static void main(String[] args) {\n"
