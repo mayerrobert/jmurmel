@@ -5,8 +5,8 @@ REM Usage: runall | tee benchresults.txt
 
 REM config
 set SBCL=c:\apps\sbcl\2.2.0\bin\sbcl.exe
-set JMURMEL=C:\Apps\Java\X64\jdk8u252-b09\bin\java -Dfile.encoding=UTF8 -jar ..\..\lambda\target\jmurmel.jar --libdir ..
-set ABCL=C:\Apps\Java\X64\jdk8u252-b09\bin\java -XX:+AggressiveOpts -XX:CompileThreshold=1000 -jar C:\Apps\abcl-bin-1.8.0\abcl.jar --noinform --batch
+set JMURMEL=C:\Apps\Java\X64\jdk8u322-b06\bin\java -Dfile.encoding=UTF8 -jar ..\..\lambda\target\jmurmel.jar --libdir ..
+set ABCL=C:\Apps\Java\X64\jdk8u322-b06\bin\java -XX:+AggressiveOpts -XX:CompileThreshold=1000 -jar C:\Apps\abcl-bin-1.8.0\abcl.jar --noinform --batch
 REM end config
 
 

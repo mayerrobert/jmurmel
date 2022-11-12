@@ -4,7 +4,7 @@ REM run all benchmarks with jmurmel
 REM Usage: runmurmel | tee murmelresults.txt
 
 REM config
-set JMURMEL=java -Dfile.encoding=UTF8 -jar ..\..\lambda\target\jmurmel.jar --libdir ..
+set JMURMEL=C:\Apps\Java\X64\jdk8u322-b06\bin\java -Dfile.encoding=UTF8 -jar ..\..\lambda\target\jmurmel.jar --libdir ..
 REM end config
 
 
