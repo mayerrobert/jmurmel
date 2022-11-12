@@ -5,11 +5,11 @@
         <groupId>io.github.jmurmel</groupId>
         <artifactId>jmurmel-all</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>1.3-SNAPSHOT</version>
+        <version>1.3</version>
     </parent>
 
     <artifactId>scripts</artifactId>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.3</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -80,9 +80,9 @@
                                     <footer filtering="no" trimleading="yes">
                                         <![CDATA[</textarea>]]>
                                     </footer>
-                                    <path path="../murmel-langref.md"/>
+                                    <path path="../murmel-langref.md" />
                                     <filterchain>
-                                        <replaceregex pattern="\.md\)" replace=".html)" flags="g"/>
+                                        <replaceregex pattern="\.md\)" replace=".html)" flags="g" />
                                     </filterchain>
                                 </concat>
                                 <concat destfile="../mlib.html">
@@ -93,9 +93,9 @@
                                     <footer filtering="no" trimleading="yes">
                                         <![CDATA[</textarea>]]>
                                     </footer>
-                                    <path path="../mlib.md"/>
+                                    <path path="../mlib.md" />
                                     <filterchain>
-                                        <replaceregex pattern="\.md\)" replace=".html)" flags="g"/>
+                                        <replaceregex pattern="\.md\)" replace=".html)" flags="g" />
                                     </filterchain>
                                 </concat>
                             </target>
