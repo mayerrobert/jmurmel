@@ -4619,6 +4619,7 @@ public class LambdaJ {
         }
     }
 
+    @SuppressWarnings("unchecked")
     static UnaryOperator<Object>[] makeArgConv(Iterable<?> paramClassNames, int paramCount, int skipThis) {
         final UnaryOperator<Object>[] argConv = new UnaryOperator[paramCount + skipThis];
         int i = 0;
@@ -6917,6 +6918,7 @@ public class LambdaJ {
         public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
         public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
+        @SuppressWarnings("unchecked")
         public static <T> T[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, T[] resultArray) {
             if (transform == null) {
                 for (int dst = 0, i = paramCount; i < args.length; ) { resultArray[dst++] = (T)args[i++]; }
