@@ -233,10 +233,15 @@
 ;;; A clause with a key that is a single `t` is used as the default clause
 ;;; if no key matches.
 (defmacro case (keyform . clauses)
-  (labels ((do-keylist (tmp keylist)
+  (labels ((do-key (tmp key)
+             (if (symbolp key)
+                   `(eq ,tmp ',key)
+               `(eql ,tmp ',key)))
+
+           (do-keylist (tmp keylist)
              (if (cdr keylist)
-                   `(or ,@(mapcar (lambda (k) `(eql ',k ,tmp)) keylist))
-               `(eql ,tmp ',(car keylist))))
+                   `(or ,@(mapcar (lambda (k) (do-key tmp k)) keylist))
+               (do-key tmp (car keylist))))
 
            (do-clause (tmp clause)
              (let ((keydesignator (car clause))
@@ -246,7 +251,7 @@
                            (list* (do-keylist tmp keydesignator) forms)
                        (if (eq 't keydesignator)
                              `(t ,@forms)
-                         `((eql ,tmp ',keydesignator) ,@forms))))))
+                         `(,(do-key tmp keydesignator) ,@forms))))))
 
            (do-clauses (key)
              (let* ((result (cons nil nil))
