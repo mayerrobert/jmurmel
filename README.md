@@ -59,7 +59,7 @@ For a copy, see [LICENSE](LICENSE).
 **Quickstart for Java 11+ users**
 
 Instead of cloning the repo and building the jarfile
-Java 11+ users can download [LambdaJ.java](lambda/src/main/java/io/github/jmurmel/LambdaJ.java)
+Java 11+ users can download [LambdaJ.java](https://raw.githubusercontent.com/mayerrobert/jmurmel/master/lambda/src/main/java/io/github/jmurmel/LambdaJ.java)
 and run
 
     C:\> java Lambdaj.java

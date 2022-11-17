@@ -3,8 +3,9 @@ geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist sch
 -> oder statt (ignore-errors form*) => result*: (try function . errorobj-or-handler)
    -> errorobj-or-handler könnte optional eine funktion sein:
       ists eine funktion dann wird die im fehlerfall mit der exception aufgerufen
-      ists ein anderes objekt dann ist der returnwert von try im feherfall (values errorobj exception)
+      ists ein anderes objekt dann ist der returnwert von try im fehlerfall (values errorobj exception)
       -> fürs erste nur errorobj, unterstützung von handler kann später nachkommen
+      -> irgendwann wird handler auch aktive restarts (und der debugger das environment) brauchen
 
 handler-bind ({(typespec handler)}*) {form}*
   typespec muss eine vordefinierte oder benutzerdefinierte condition sein
