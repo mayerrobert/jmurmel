@@ -1,3 +1,69 @@
+errorhandling in CL ist eigentlich conditionhandling https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node338.html
+geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist schiach, eher weglassen)
+-> oder statt (ignore-errors form*) => result*: (try function . errorobj-or-handler)
+   -> errorobj-or-handler könnte optional eine funktion sein:
+      ists eine funktion dann wird die im fehlerfall mit der exception aufgerufen
+      ists ein anderes objekt dann ist der returnwert von try im feherfall (values errorobj exception)
+      -> fürs erste nur errorobj, unterstützung von handler kann später nachkommen
+
+handler-bind ({(typespec handler)}*) {form}*
+  typespec muss eine vordefinierte oder benutzerdefinierte condition sein
+  handler muss eine funktion mit einem parameter sein, und zwar die aufgetretene condition
+
+handler-case expression {(typespec ([var]) {form}*)}*
+  z.B.:
+  (handler-case (/ 1 zero)
+                (division-by-zero (dz) (princ "caught /0: ") (write dz))
+                (error (c) (princ "caught error: ") (write c)))
+handler-case ist eigentlich gleich wie try/catch von Java, ausser dass handler-case den handler vor dem stackabbau laufen lässt,
+was aber eigentlich nur eine rolle spielt, wenn kein handler gesetzt ist und der debugger aufgerufen wird
+-> nein, bei restarts spielts auch eine rolle: restarts könnten weg sein, wenn der stack bis zum condition handler zurückgerollt wird
+
+handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
+  z.B.:
+  * (handler-case (values 1 2 3)
+                  (division-by-zero (dz) (princ "caught /0: ") (write dz))
+                  (error (c) (princ "caught error: ") (write c))
+                  (:no-error (a b c) (princ "no error: ") (write a) (write b) (write c)))
+  no error: 123
+  3
+-> die anzahl parameter in der lambdalist der no-error-clause muss exakt mit der anzahl values uebereinstimmen, sonst gibts fehler
+
+-> der compiler sollte wsl try/catch ausspucken
+-> error sollte auch von mlib nach Murmel wandern:
+   erster parameter ist string oder symbol, weitere parameter sind entweder argumente für den format string, oder argumente für die condition
+   ist der erste parameter ein string: es gibt eine condition vom typ simple-error, msg ist formatstring+argumente
+   ist der erste parameter ein symbol: das symbol muss eine condition sein
+-> condition hierarchie, siehe auch CLtL2 "29.5. Predefined Condition Types"
+   wsl. nur den subtree "error" umsetzen
+    condition                               java.lang.Throwable
+        error                               java.lang.Exception
+            simple-error
+            arithmetic-error                java.lang.ArithmeticException
+                (overflow, underflow)
+            cell-error 
+                unbound-variable 
+                undefined-function 
+            control-error
+            file-error
+            program-error 
+            stream-error
+                end-of-file 
+                ...
+            type-error 
+                simple-type-error 
+
+funktionen zum werfen von conditions: signal, break, cerror, error
+
+siehe auch CLtL2 "29. Conditions" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node312.html
+
+
+
+SRFI 158 https://srfi.schemers.org/srfi-158/srfi-158.html hat auch generator als funktion ohne parameter
+-> das hab ich nacherfunden. SRFI-158 hat weitere tricks
+
+
+
 JFFI: vararg parameter gibts: int...
 -> arrays? int[]
 JMurmel> (define al ((jmethod "java.util.ArrayList" "new")))
