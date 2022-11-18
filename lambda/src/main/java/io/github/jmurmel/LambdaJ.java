@@ -28,11 +28,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -1719,6 +1715,9 @@ public class LambdaJ {
 
         sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
         sListp("listp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
+
+        sTypep("typep", Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(typep(intp.getSymbolTable(), intp, car(args), cadr(args))); } },
+
         sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
         // conses and lists
@@ -3257,18 +3256,59 @@ public class LambdaJ {
     static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; }
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
-    static boolean adjustableArrayP(Object o) {
-        if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
-        //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
-        return false;
-    }
-
     final  boolean functionp(Object o)   { return functionp0(o)
                                                   || (haveOldLambda() && consp(o) && car(o) == sLambda); }
     static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure
                                                   || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
 
     static boolean listp(Object o)      { return o == null || consp(o); }
+
+    static boolean typep(SymbolTable st, LambdaJ intp, Object o, Object typespec) {
+        if (typespec == st.intern("cons")) return consp(o);
+        if (typespec == st.intern("atom")) return atom(o);
+        if (typespec == st.intern("symbol")) return symbolp(o);
+
+        if (typespec == st.intern("number")) return numberp(o);
+        if (typespec == st.intern("float")) return floatp(o);
+        if (typespec == st.intern("integer")) return integerp(o);
+        if (typespec == st.intern("bit")) {
+            if (!integerp(o)) return false;
+            if (o instanceof BigInteger) return false;
+            final long l = ((Number)o).longValue();
+            return l == 0 || l == 1;
+        }
+
+        if (typespec == st.intern("character")) return characterp(o);
+
+        if (typespec == st.intern("vector")) return vectorp(o);
+        if (typespec == st.intern("simple-vector")) return svectorp(o);
+        if (typespec == st.intern("string")) return stringp(o);
+        if (typespec == st.intern("simple-string")) return sstringp(o);
+        if (typespec == st.intern("bit-vector")) return bitvectorp(o);
+        if (typespec == st.intern("simple-bit-vector")) return sbitvectorp(o);
+
+        if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
+
+        if (typespec == st.intern("list")) return listp(o);
+        if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
+
+        // conditions
+        if (typespec == st.intern("stream-error")) return o instanceof IOException;
+        if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
+        if (typespec == st.intern("error")) return o instanceof Exception;
+        if (typespec == st.intern("condition")) return o instanceof Throwable;
+
+        if (typespec == st.intern("t")) return true;
+
+        throw new LambdaJError(true, "typep: unknown type specifier %s", printSEx(o));
+    }
+
+
+    static boolean adjustableArrayP(Object o) {
+        if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
+        //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
+        return false;
+    }
 
 
     // these *should* have no usages as these checks would be superfluous.

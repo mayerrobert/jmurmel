@@ -1,7 +1,7 @@
 
 Changes in JMurmel-1.3.1 relative to JMurmel-1.3
 
- * added special form "try"
+ * added special form "try" and function "typep"
 
 
 Changes in JMurmel-1.3 relative to JMurmel-1.2.2
