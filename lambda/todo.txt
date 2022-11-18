@@ -6,6 +6,10 @@ geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist sch
       ists ein anderes objekt dann ist der returnwert von try im fehlerfall (values errorobj exception)
       -> fürs erste nur errorobj, unterstützung von handler kann später nachkommen
       -> irgendwann wird handler auch aktive restarts (und der debugger das environment) brauchen
+-> zumindest typep sollte es geben, dann kann man zumindest checken, um welche exception es sich handelt
+   oder type-of in Murmel?
+   -> type-of ist nicht sooo nützlich, weil das berücksichtigt die subtype beziehungen nicht
+   -> typep kann eigentlich die ganzen bisherigen typprädikate ersetzen wie null, atom, usw
 
 handler-bind ({(typespec handler)}*) {form}*
   typespec muss eine vordefinierte oder benutzerdefinierte condition sein

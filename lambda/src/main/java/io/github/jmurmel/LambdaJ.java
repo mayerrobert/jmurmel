@@ -104,7 +104,7 @@ public class LambdaJ {
 
     /// ## Public Java constants, interfaces and an exception class to use the interpreter from Java
 
-    public static final String LANGUAGE_VERSION = "1.3";
+    public static final String LANGUAGE_VERSION = "1.3.1";
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String ENGINE_VERSION;
 
@@ -774,6 +774,7 @@ public class LambdaJ {
             internWellknown("unwind-protect");
             internWellknown("catch");
             internWellknown("throw");
+            internWellknown("try");
 
             internWellknown("setq");
 
@@ -1687,7 +1688,7 @@ public class LambdaJ {
         sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF),
         sDefine("define", WellknownSymbolKind.SF), sDefun("defun", WellknownSymbolKind.SF), sDefmacro("defmacro", WellknownSymbolKind.SF),
         sMultipleValueBind("multiple-value-bind", WellknownSymbolKind.SF), sMultipleValueCall("multiple-value-call", WellknownSymbolKind.SF),
-        sUnwindProtect("unwind-protect", WellknownSymbolKind.SF), sCatch("catch", WellknownSymbolKind.SF), sThrow("throw", WellknownSymbolKind.SF),
+        sUnwindProtect("unwind-protect", WellknownSymbolKind.SF), sCatch("catch", WellknownSymbolKind.SF), sThrow("throw", WellknownSymbolKind.SF), sTry("try", WellknownSymbolKind.SF),
         sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
         sDeclaim("declaim", WellknownSymbolKind.SF),
 
@@ -2111,6 +2112,17 @@ public class LambdaJ {
                     ccForms = cons(car(ccArguments), null);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
+                }
+
+                case sTry: { // todo das sollte eigentlich TCO werden, damit wuerde ein kuenftiger handler auch VOR dem stackabbau laufen
+                    try {
+                        return result = eval(car(ccArguments), env, stack, level, traceLvl);
+                    }
+                    catch (Exception e) {
+                        final Object errorObjOrHandler = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                        values = list(errorObjOrHandler, e);
+                        return result = errorObjOrHandler;
+                    }
                 }
 
                 /// eval - (cond (condform forms...)... ) -> object
@@ -2559,6 +2571,11 @@ public class LambdaJ {
                     varargs1("unwind-protect", ccArgs);
                     if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
                     expandForms("unwind-protect", ccArgs);
+                    return ccForm;
+
+                case sTry:
+                    varargs1_2("try", ccArgs);
+                    expandForms("throw", ccArgs);
                     return ccForm;
 
                 case sSetQ:

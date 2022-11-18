@@ -381,7 +381,7 @@ pi ; ==> 3.141592653589793
 ;
 ;     nil, t,
 ;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
-;     setq, progn, catch, thwrow, unwind-protect,
+;     setq, progn, catch, thwrow, unwind-protect, try,
 ;     multiple-value-bind, multiple-value-call,
 ;     defmacro, declaim, load, require, provide
 
@@ -565,6 +565,7 @@ pi ; ==> 3.141592653589793
 ;
 ; `catch` is used as the destination of a non-local control transfer by `throw`.
 
+
 ;;; = (throw tagform resultform) -> |
 ;
 ; Since: 1.3
@@ -573,6 +574,7 @@ pi ; ==> 3.141592653589793
 ; TODO: If there is no outstanding catch tag that matches the throw tag,
 ; no unwinding of the stack is performed, and an error of type control-error is signaled.
 
+
 ;;; = (unwind-protect protected-form cleanupforms\*) -> result
 ;
 ; Since: 1.3
@@ -580,6 +582,24 @@ pi ; ==> 3.141592653589793
 ; `unwind-protect` evaluates `protected-form` and guarantees that `cleanup-forms`
 ; are executed before unwind-protect exits, whether it terminates normally or is aborted
 ; by a control transfer of some kind.
+
+
+;;; = (try protected-form . error-obj) -> result
+;
+; Since 1.3.1
+;
+; `try` evaluates `protected-form`. If no error occurred during evaluation then
+; the values from `protected-form` are the final result.
+; If an error occurs then `try` returns the `error-obj` if given or null as the primary result,
+; the secondary result is the condition.
+;
+; Example:
+;
+;     (multiple-value-bind (result condition) (try (1+ most-positive-fixnum) 'error)
+;       (if (eq result 'error)
+;             (progn (write "an error occurred" nil) (write condition) 'bummer)
+;          result))
+;     ; ==> bummer
 
 
 ;;; = (multiple-value-call function-form values-forms\*) -> result
