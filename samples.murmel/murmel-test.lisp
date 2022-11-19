@@ -1214,4 +1214,4 @@ multiline comment
       (format t "Success.")
   (format t "Failure."))
 
-#+murmel (if (> *failed* 0) (fatal (format nil "%n%d/%d errors" *failed* *count*)))
+#+murmel (if (> *failed* 0) (error "%n%d/%d errors" *failed* *count*))

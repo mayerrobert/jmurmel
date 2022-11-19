@@ -52,7 +52,6 @@ mlib provides the following Common Lisp-like functions and macros:
     - [write-char](#function-write-char)
     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
 - misc
-    - [error](#function-error)
     - [time](#macro-time)
 
 functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
@@ -182,13 +181,6 @@ the forms in that clause are evaluated as an implicit progn,
 and the values it returns are returned as the value of the typecase.
 
 If there is no otherwise-clause, typecase returns nil.
-
-### Function: error
-    (error formatstring args*) -> no return value
-
-Since: 1.3
-
-`error` aborts the current program.
 
 ### Function: caar..cdddr
     (c..r lst) -> result

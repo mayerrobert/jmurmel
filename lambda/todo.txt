@@ -43,16 +43,16 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
    wsl. nur den subtree "error" umsetzen
     condition                               java.lang.Throwable
         error                               java.lang.Exception
-            simple-error
+            simple-error                    LambdaJError
             arithmetic-error                java.lang.ArithmeticException
                 (overflow, underflow)
             cell-error 
                 unbound-variable 
-                undefined-function 
+                (undefined-function) 
             control-error
-            file-error
+            file-error                      java.nio.file.InvalidPathException
             program-error 
-            stream-error
+            stream-error                    java.io.IOException
                 end-of-file 
                 ...
             type-error 

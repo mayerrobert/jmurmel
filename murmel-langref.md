@@ -1059,6 +1059,12 @@ will be `t`, e.g.:
     (macroexpand-1 '(add2 3))      ; --> (+ 3 2)
                                    ; --> t
 
+### (error datum . arguments) -> |
+
+Since 1.3.1
+
+Similar to CL's `error`.
+
 
 ## Time
 

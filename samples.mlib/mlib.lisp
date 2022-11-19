@@ -58,7 +58,6 @@
 ;;;     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
 
 ;;; - misc
-;;;     - [error](#function-error)
 ;;;     - [time](#macro-time)
 ;;;
 ;;; functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev):
@@ -344,16 +343,6 @@
       (let ((tmp (gensym)))
         `(let ((,tmp ,keyform))
            (cond ,@(do-clauses tmp)))))))
-
-
-;;; = Function: error
-;;;     (error formatstring args*) -> no return value
-;;;
-;;; Since: 1.3
-;;;
-;;; `error` aborts the current program.
-(defun error (msg . args)
-  (fatal (format nil "%n%nError: %s%n" (apply format (list* nil msg args)))))
 
 
 ; conses and lists ****************************************************

@@ -1821,7 +1821,7 @@ public class LambdaJ {
         sTrace("trace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
-        sFatal("fatal", Features.HAVE_UTIL, 1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { throw new RuntimeException(String.valueOf(car(args))); } },
+        sError("error", Features.HAVE_UTIL, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
 
         // time
         sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
@@ -4636,6 +4636,25 @@ public class LambdaJ {
         else return new LambdaJSymbol("gensym");
     }
 
+    static void error(SymbolTable st, Object datum, Object... args) {
+        if (stringp(datum)) {
+            final String formatString = requireString("error", datum);
+            final String msg = EolUtil.anyToUnixEol(String.format(formatString, args));
+            throw new LambdaJError(msg);
+        }
+        if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException());
+        if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)");
+
+        throwAsRuntimeException(new Exception());
+    }
+    
+    private static void throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void throwAsRuntimeException(Throwable t, Class<T> xclass) throws T {
+        throw (T)t;
+    }
+
 
 
     /// Murmel runtime support for Java FFI - Murmel calls Java
@@ -6728,7 +6747,7 @@ public class LambdaJ {
         public final Object _gensym    (Object... args) { varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { return null; }
         public final Object _untrace   (Object... args) { return null; }
-        public final Object _fatal     (Object... args) { oneArg("fatal", args.length); throw new RuntimeException(String.valueOf(args[0])); }
+        public final Object _error     (Object... args) { varargs1("error", args.length); LambdaJ.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
 
 
         // time
@@ -7386,7 +7405,7 @@ public class LambdaJ {
             case "gensym": return (CompilerPrimitive)this::_gensym;
             case "trace": return (CompilerPrimitive)this::_trace;
             case "untrace": return (CompilerPrimitive)this::_untrace;
-            case "fatal": return (CompilerPrimitive)this::_fatal;
+            case "error": return (CompilerPrimitive)this::_error;
 
             // time
             case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
@@ -7570,7 +7589,7 @@ public class LambdaJ {
         "fround", "ffloor", "fceiling", "ftruncate",
         "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
         "gensym", "trace", "untrace",
-        "fatal", "jmethod", "jproxy",
+        "error", "jmethod", "jproxy",
         };
         private static final String[][] aliasedPrimitives = {
         {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},

@@ -32,7 +32,6 @@ unless
 with-accumulator
 with-gensyms
 
-error
 plist-values
 plist-keys
 rcurry
