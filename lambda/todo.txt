@@ -47,19 +47,26 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
     condition                               java.lang.Throwable
         error                               java.lang.Exception
             simple-error                    SimpleError extends LambdaJError extends RuntimeException extends Exception
+
             arithmetic-error                java.lang.ArithmeticException extends RuntimeException extends Exception
                 (overflow, underflow)
+
             cell-error                      abstract CellError extends RuntimeException extends Exception
                 unbound-variable            UnboundVariable extends CellError extends RuntimeException extends Exception
                 (undefined-function)        n/a
-            control-error
+
+            control-error                   todo
+
             file-error                      java.nio.file.InvalidPathException extends IllegalArgumentException extends RuntimeException extends Exception
+
             program-error                   ProgramError extends LambdaJError
+
             stream-error                    java.io.IOException extends Exception
-                end-of-file                 EofError extends IOException extends Exception
-                ...
-            type-error                      abstract TypeError extends IllegalArgumentException
-                simple-type-error           SimpleType
+                end-of-file                 java.io.EOFException extends Exception
+                reader-error                ReaderError extends IOException extends Exception
+
+            type-error                      SimpleTypeError extends IllegalArgumentException
+                simple-type-error           SimpleTypeError
 
 funktionen zum werfen von conditions: signal, break, cerror, error
 

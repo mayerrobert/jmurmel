@@ -202,7 +202,8 @@ public class LambdaJTest {
                     runTest(fileName.toString(), contents, expectedResult, expectedOutput);
                     if (expectedError != null) fail(fileName + ": expected error \"" + expectedError + "\" but no error occurred");
                 }
-                catch (LambdaJ.LambdaJError e) {
+                catch (Exception e) {
+                    assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof LambdaJ.LambdaJError || e instanceof LambdaJ.ReaderError);
                     if (expectedError != null) {
                         if (e.getMessage().contains(expectedError)) {
                             // thats fine
@@ -249,7 +250,8 @@ public class LambdaJTest {
             runTest(fileName, prog, "ignored", "ignored");
             fail("was expecting error: " + expectedExceptionMsgPfx);
         }
-        catch (LambdaJ.LambdaJError e) {
+        catch (Exception e) {
+            assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof LambdaJ.LambdaJError || e instanceof LambdaJ.ReaderError);
             String msg = EolUtil.anyToUnixEol(e.getMessage());
             String expected = EolUtil.anyToUnixEol(expectedExceptionMsgPfx);
             assertTrue("got wrong exception message: " + e.getMessage(), msg.startsWith(expected));
@@ -279,18 +281,12 @@ public class LambdaJTest {
         System.out.println("-------------------------------------------------------");
 
         final String actualResult;
-        try {
-            if (fileName.endsWith(".lisp")) {
-                actualResult = sexp(intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
-            } else {
-                actualResult = sexp(intp.interpretExpression(new StringReader(prog)::read, out::append));
-            }
+        if (fileName.endsWith(".lisp")) {
+            actualResult = sexp(intp.interpretExpressions(new StringReader(prog)::read, () -> -1, out::append));
+        } else {
+            actualResult = sexp(intp.interpretExpression(new StringReader(prog)::read, out::append));
         }
-        catch (StackOverflowError se) {
-            System.out.println("stackoverflow in " + fileName);
-            se.printStackTrace(System.out);
-            throw se;
-        }
+
         System.out.println("***** done program, result: " + actualResult);
         System.out.println();
 

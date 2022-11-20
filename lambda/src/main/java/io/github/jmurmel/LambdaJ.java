@@ -282,10 +282,10 @@ public class LambdaJ {
     public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1L;
 
-        public LambdaJError(String msg)                                    { super(msg, null, false, false); }
-        public LambdaJError(boolean format, String msg, Object... params)  { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
+        public LambdaJError(String msg)                                       { super(msg, null, false, false); }
+        public LambdaJError(boolean format, String msg, Object... params)     { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
         public LambdaJError(LambdaJError cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause.getCause()); }
-        public LambdaJError(Throwable cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause); }
+        public LambdaJError(Throwable cause, String msg, Object... params)    { super(String.format(msg, params) + getErrorExp(params), cause); }
 
         @Override public String toString() { return "Error: " + getMessage(); }
 
@@ -297,23 +297,15 @@ public class LambdaJ {
         }
     }
 
-    public static class SimpleError extends LambdaJError {
-        public SimpleError(String msg, Object... params) {
-            super(true, msg, params);
-        }
-    }
+    public static class UnboundVariable extends LambdaJError { public UnboundVariable(String msg, Object... params) { super(true, msg, params); }
+                                                               public UnboundVariable(String msg) { super(msg); } }
+    public static class SimpleError extends LambdaJError { public SimpleError(String msg, Object... params) { super(true, msg, params); }
+                                                           public SimpleError(String msg) { super(msg); } }
+    public static class ProgramError extends LambdaJError { public ProgramError(String msg, Object... params) { super(true, msg, params); }
+                                                            public ProgramError(String msg) { super(msg); } }
 
-    public static class UnboundVariable extends LambdaJError { public UnboundVariable(String msg, Object... params) { super(true, msg, params); } }
-
-    public static class EofError extends IOException { public EofError(String message) { super(message); } }
-
-    public static class ProgramError extends LambdaJError {
-        public ProgramError(boolean format, String msg, Object... params) {
-            super(format, msg, params);
-        }
-    } 
-
-    public static class TypeError extends IllegalArgumentException { public TypeError(String s) { super(s); } }
+    public static class ReaderError extends IOException { public ReaderError(String message) { super(message); } }
+    public static class SimpleTypeError extends IllegalArgumentException { public SimpleTypeError(String msg, Object... params) { super(String.format(msg, params)); } }
 
 
     /// ## Data types used by interpreter program as well as interpreted programs
@@ -1570,7 +1562,7 @@ public class LambdaJ {
                 return cadr(xCons);
 
             if (op == sUnquote_splice)
-                throw new LambdaJError("can't splice here");
+                errorReaderError("can't splice here");
 
             if (op == sQuasiquote)
                 return qq_expand(qq_expand(cadr(xCons)));
@@ -2697,7 +2689,7 @@ public class LambdaJ {
             final ConsCell envEntry = fastassq(form, env);
             if (envEntry != null) {
                 value = cdr(envEntry);
-                if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
+                if (value == UNASSIGNED) throw new UnboundVariable("%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
             }
             else throw new UnboundVariable("%s: '%s' is not bound", "eval", printSEx(form));
         }
@@ -2728,7 +2720,7 @@ public class LambdaJ {
             Object modFilePath = cadr(arguments);
             if (modFilePath == null) modFilePath = modName;
             final Object ret = loadFile("require", modFilePath);
-            if (!modules.contains(modName)) throw new LambdaJError(true, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+            if (!modules.contains(modName)) throw new ProgramError("require'd file '%s' does not provide '%s'", modFilePath, modName);
             return ret;
         }
         return null;
@@ -2749,7 +2741,7 @@ public class LambdaJ {
             final Object speedCons = assq(intern("speed"), rest);
             if (speedCons != null) {
                 final Object speed = cadr(speedCons);
-                if (!numberp(speed)) throw new LambdaJError(true, "declaim: argument to optimize must be a number, found %s", speed);
+                if (!numberp(speed)) throw new ProgramError("declaim: argument to optimize must be a number, found %s", speed);
                 this.speed = ((Number)speed).intValue();
             }
         }
@@ -2994,7 +2986,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.applyPrimitive(args); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(e, "#<primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e, e.getMessage()); }
     }
 
     /** in case compiled code calls "(eval)" */
@@ -3002,7 +2994,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
         try { return primfn.applyCompilerPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(e, "#<compiler primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e, e.getMessage()); }
     }
 
     MurmelJavaProgram compiledProgram = null;
@@ -3020,7 +3012,7 @@ public class LambdaJ {
             return ret;
         }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(e, "#<compiled function> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e, e.getMessage()); }
     }
 
 
@@ -3345,18 +3337,19 @@ public class LambdaJ {
 
         if (typespec == st.intern("program-error")) return o instanceof ProgramError;
 
-        if (typespec == st.intern("end-of-file")) return o instanceof EofError;
+        if (typespec == st.intern("end-of-file")) return o instanceof EOFException;
+        if (typespec == st.intern("reader-error")) return o instanceof ReaderError;
         if (typespec == st.intern("stream-error")) return o instanceof IOException;
 
-        if (typespec == st.intern("simple-type-error")) return o instanceof TypeError;
-        if (typespec == st.intern("type-error")) return o instanceof TypeError;
+        if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
+        if (typespec == st.intern("type-error")) return o instanceof SimpleTypeError;
 
         if (typespec == st.intern("error")) return o instanceof Exception;
         if (typespec == st.intern("condition")) return o instanceof Throwable;
 
         if (typespec == st.intern("t")) return true;
 
-        throw new ProgramError(true, "typep: unknown type specifier %s", printSEx(o));
+        throw new SimpleError("typep: unknown type specifier %s", printSEx(o));
     }
 
 
@@ -3611,7 +3604,7 @@ public class LambdaJ {
     /// ##  Error "handlers"
 
     static RuntimeException errorReaderError(String msg) {
-        throw new LambdaJError(msg);
+        return throwAsRuntimeException(new ReaderError(msg));
     }
 
     static RuntimeException errorNotImplemented(String msg, Object... args) {
@@ -3627,7 +3620,7 @@ public class LambdaJ {
     }
 
     static RuntimeException errorMalformed(String func, String msg) {
-        throw new LambdaJError(true, "%s: malformed %s: %s", func, func, msg);
+        throw new ProgramError("%s: malformed %s: %s", func, func, msg);
     }
 
     static RuntimeException errorMalformedFmt(String func, String msg, Object... params) {
@@ -3635,7 +3628,7 @@ public class LambdaJ {
     }
 
     static RuntimeException errorMalformed(String func, String expected, Object actual) {
-        throw new LambdaJError(true, "%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
+        throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
     }
 
     static void errorReserved(final String op, final Object sym) {
@@ -3643,35 +3636,35 @@ public class LambdaJ {
     }
 
     static RuntimeException errorNotANumber(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a number argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected a number argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotAnIntegralNumber(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected an integral number argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected an integral number argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotABit(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a bit argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected a bit argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotAVector(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a vector argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected a vector argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotASimpleVector(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotAString(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorNotABitVector(String func, Object n) {
-        throw new LambdaJError(true, "%s: expected a bitvector argument but got %s", func, printSEx(n));
+        throw new SimpleTypeError("%s: expected a bitvector argument but got %s", func, printSEx(n));
     }
 
     static RuntimeException errorOverflow(String func, String targetType, Object n) {
-        throw new LambdaJError(true, "%s: value cannot be represented as a %s: %s", func, targetType, String.valueOf(n));
+        throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n));
     }
 
     static RuntimeException errorIndexTooLarge(long idx, long actualLength) {
@@ -3684,16 +3677,16 @@ public class LambdaJ {
                                  : expectedMin + " to " + expectedMax + " arguments";
 
         if (actual < expectedMin) {
-            throw new LambdaJError(true, "%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
+            throw new ProgramError("%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
         }
         if (actual > expectedMax) {
-            throw new LambdaJError(true, "%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
+            throw new ProgramError("%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
         }
         assert false: "errorArgCount was called, but there is no error";
     }
 
     static void errorVarargsCount(String func, int min, int actual) {
-        throw new LambdaJError(true, "%s: expected %s or more but %s", func, expectedArgPhrase(min), actualArgPhrase(actual));
+        throw new ProgramError("%s: expected %s or more but %s", func, expectedArgPhrase(min), actualArgPhrase(actual));
     }
 
     private static String expectedArgPhrase(int expected) {
@@ -4105,21 +4098,22 @@ public class LambdaJ {
         if (n instanceof Double) return ((Double)n) + 1;
         if (n instanceof Long) {
             final long l;
-            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
+            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
             return l + 1;
         }
         if (n instanceof Byte) return ((Byte)n).longValue() + 1;
         if (n instanceof Short) return ((Short)n).longValue() + 1;
         if (n instanceof Integer) return ((Integer)n).longValue() + 1;
         if (n instanceof BigInteger) {
+            final long l;
             try {
-                final long l;
-                if ((l = ((BigInteger)n).longValueExact()) == MOST_POSITIVE_FIXNUM) throw new LambdaJError("1+: overflow, integer result does not fit in a fixnum");
-                return l + 1;
+                l = ((BigInteger)n).longValueExact();
             }
             catch (ArithmeticException e) {
-                throw new LambdaJError("1+: overflow, BigInteger argument does not fit in a fixnum");
+                throw new ArithmeticException("1+: overflow, BigInteger argument does not fit in a fixnum");
             }
+            if (l == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+            return l + 1;
         }
         return toDouble("1+", n) + 1;
     }
@@ -4128,21 +4122,22 @@ public class LambdaJ {
         if (n instanceof Double) return ((Double)n) - 1;
         if (n instanceof Long) {
             final long l;
-            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
+            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
             return l - 1;
         }
         if (n instanceof Byte) return ((Byte)n).longValue() - 1;
         if (n instanceof Short) return ((Short)n).longValue() - 1;
         if (n instanceof Integer) return ((Integer)n).longValue() - 1;
         if (n instanceof BigInteger) {
+            final long l;
             try {
-                final long l;
-                if ((l = ((BigInteger)n).longValueExact()) == MOST_NEGATIVE_FIXNUM) throw new LambdaJError("1-: underflow, integer result does not fit in a fixnum");
-                return l - 1;
+                l = ((BigInteger)n).longValueExact();
             }
             catch (ArithmeticException e) {
-                throw new LambdaJError("1-: underflow, BigInteger argument does not fit in a fixnum");
+                throw new ArithmeticException("1-: underflow, BigInteger argument does not fit in a fixnum");
             }
+            if (l == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+            return l - 1;
         }
         return toDouble("1-", n) - 1;
     }
@@ -4525,7 +4520,7 @@ public class LambdaJ {
         if (a == null) {
             final Object eof = new Object();
             final Object ret = lispReader.readObj(eof);
-            if (ret == eof) throwAsRuntimeException(new EofError("read: EOF"));
+            if (ret == eof) throwAsRuntimeException(new EOFException("read: EOF"));
             return ret;
         }
         else {
@@ -4695,17 +4690,26 @@ public class LambdaJ {
     static void error(SymbolTable st, Object datum, Object... args) {
         if (stringp(datum)) {
             final String formatString = requireString("error", datum);
-            final String msg = EolUtil.anyToUnixEol(String.format(formatString, args));
-            throw new SimpleError(msg);
+            throw new SimpleError(formatString, args);
         }
 
-        if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException());
-        if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)");
+        if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)"); // todo args
+
+        final String msg;
+        switch (args.length) {
+        case 0:  msg = null;  break;
+        case 1:  msg = String.format(requireString("error", args[0]));  break;
+        default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
+        }
+
+        if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException(msg));
+        if (datum == st.intern("end-of-file")) throwAsRuntimeException(new EOFException(msg));
+        if (datum == st.intern("reader-error")) throwAsRuntimeException(new ReaderError(msg));
 
         throwAsRuntimeException(new Exception());
     }
 
-    private static void throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); }
+    private static RuntimeException throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); return null; }
 
     @SuppressWarnings({"unchecked", "unused"})
     private static <T extends Throwable> void throwAsRuntimeException(Throwable t, Class<T> xclass) throws T {

@@ -216,7 +216,8 @@ public class BackquoteTest {
             expand(s);
             fail("expected error " + expectedError);
         }
-        catch (LambdaJ.LambdaJError e) {
+        catch (Exception e) {
+            assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof LambdaJ.ReaderError);
             assertTrue("expected <" + expectedError + "> but got <" + e.getMessage() + '>', e.getMessage().startsWith(expectedError));
         }
     }
