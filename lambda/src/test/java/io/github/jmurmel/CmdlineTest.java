@@ -74,7 +74,7 @@ public class CmdlineTest {
         final ByteArrayOutputStream captureStderr = new ByteArrayOutputStream();
         System.setErr(new PrintStream(captureStderr));
 
-        final int rc = LambdaJ.mainInternal(args);
+        final int rc = LambdaJ.Cli.mainInternal(args);
 
         final String actualStderr = EolUtil.anyToUnixEol(captureStderr.toString());
         Assert.assertTrue(expectStderr.isEmpty() && actualStderr.isEmpty() || actualStderr.matches(expectStderr),

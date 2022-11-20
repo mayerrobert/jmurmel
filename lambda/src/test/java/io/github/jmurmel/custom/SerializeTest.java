@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import io.github.jmurmel.LambdaJ;
 import org.junit.Test;
@@ -49,6 +50,11 @@ public class SerializeTest {
             LambdaJ.LambdaJSymbol prev = symbols.putIfAbsent(symbol.toString(), symbol);
             if (prev != null) return prev;
             return symbol;
+        }
+
+        @Override
+        public Iterator<LambdaJ.LambdaJSymbol> iterator() {
+            return symbols.values().iterator();
         }
     }
 
