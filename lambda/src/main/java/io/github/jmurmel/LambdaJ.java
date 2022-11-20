@@ -6564,6 +6564,9 @@ public class LambdaJ {
 
         public final Object _listp     (Object... args) { oneArg("listp",        args.length);        return bool(listp(args[0])); }
         public final Object _listp     (Object    arg)  {                                             return bool(listp(arg)); }
+        public final Object _typep     (Object... args) { twoArgs("typep",       args.length);        return bool(typep(symtab, null, args[0], args[1])); }
+        public final Object _typep     (Object o, Object t) {                                         return bool(typep(symtab, null, o, t)); }
+
         public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.adjustableArrayP(args[0])); }
 
 
@@ -7215,6 +7218,15 @@ public class LambdaJ {
             throw new ReturnException(tag, primaryResult, values);
         }
 
+        public final Object doTry(MurmelFunction protectedForm, Object errorObj) {
+            try {
+                return protectedForm.apply(NOARGS);
+            }
+            catch (Exception e) {
+                values = new Object[] { errorObj, e };
+                return errorObj;
+            }
+        }
 
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
@@ -7358,6 +7370,7 @@ public class LambdaJ {
             case "functionp": return (CompilerPrimitive)this::_functionp;
 
             case "listp": return (CompilerPrimitive)this::_listp;
+            case "typep": return (CompilerPrimitive)this::_typep;
             case "adjustable-array-p": return (CompilerPrimitive)this::adjustableArrayP;
 
             // conses and lists
@@ -7637,7 +7650,7 @@ public class LambdaJ {
         private static final String[] primitives = {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
-        "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp",
+        "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp", "typep",
         "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
@@ -8019,6 +8032,12 @@ public class LambdaJ {
                         return;
                     }
 
+                    /// try - (try protected-form . errorobj) -> result
+                    if (isOperator(op, WellknownSymbol.sTry)) {
+                        emitTry(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
                     ///     - lambda
                     if (isOperator(op, WellknownSymbol.sLambda)) {
                         emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
@@ -8345,6 +8364,17 @@ public class LambdaJ {
             emitCallPrimitive(sb, "doThrow", tagAndResultForm, env, topEnv, rsfx);
         }
 
+        private void emitTry(WrappingWriter sb, ConsCell formAndErrorobj, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+            final Object protectedForm = car(formAndErrorobj);
+            final Object errorObj = cadr(formAndErrorobj);
+
+            sb.append("doTry((MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
+            emitForm(sb, protectedForm, env, topEnv, rsfx, false);
+            sb.append("; },\n        ");
+            emitForm(sb, errorObj, env, topEnv, rsfx, false);
+            sb.append(")");
+        }
+
         private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             if (!listp(forms)) errorMalformed("unwind-protect", "a list of forms", forms);
             final ConsCell ccForms = (ConsCell)forms;
@@ -8352,7 +8382,7 @@ public class LambdaJ {
             final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
             if (isLast) {
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
-                emitForm(sb, cons(sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false);
+                emitForm(sb, cons(sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false); // todo brauchts das wrappen in progn?
                 sb.append("; },\n");
                 sb.append("        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
                 emitForms(sb, cleanupForms, env, topEnv, rsfx, false);

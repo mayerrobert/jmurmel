@@ -1,3 +1,6 @@
+checken ob in kompiliertem code values früh genug genullt wird
+
+
 errorhandling in CL ist eigentlich conditionhandling https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node338.html
 geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist schiach, eher weglassen)
 -> oder statt (ignore-errors form*) => result*: (try function . errorobj-or-handler)
@@ -61,6 +64,11 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
 funktionen zum werfen von conditions: signal, break, cerror, error
 
 siehe auch CLtL2 "29. Conditions" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node312.html
+
+
+
+#n= und #n# syntax ist unter "CLtL2 22.1.4. Standard Dispatching Macro Character Syntax" beschrieben,
+siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html#SECTION002614000000000000000
 
 
 

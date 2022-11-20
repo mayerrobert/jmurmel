@@ -440,8 +440,6 @@ multiline comment
                                (throw nil 2)))  2)
 
 
-#+(or)  ; compiler doesn't know "try" yet
-(progn
 (defun fail #+murmel datum #-murmel (&rest datum) (apply #'error datum))
 (defun fail1 () (fail "test"))
 
@@ -451,7 +449,6 @@ multiline comment
 (deftest try.4 (multiple-value-bind (ret ex) (try (fail 'file-error #-murmel :pathname "xyxxy") 'err)
                  (list ret (typep ex 'file-error)))
                '(err t))
-)
 
 
 ;;; values
