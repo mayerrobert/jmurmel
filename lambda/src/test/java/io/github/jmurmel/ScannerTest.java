@@ -136,8 +136,9 @@ public class ScannerTest {
 
         LambdaJTest.runErrorTest("open string", "\"blabla", "string literal is missing closing");
         // check if different line ends mess up linenumbers in error messages
-        LambdaJTest.runErrorTest("cr-lf", "\r\r \r\n\r\n \n\n(list 'one\r'two\n'three\r\nfour)", "eval: 'four' is not bound\n" +
-                                                                               "error occurred in line 7:1..10:5: (list (quote one) (quote two) (quote three) four)");
+        LambdaJTest.runErrorTest("cr-lf", "\r\r \r\n\r\n \n\n(list 'one\r'two\n'three\r\nfour)",
+                                 "eval: 'four' is not bound\n" +
+                                 "error occurred in line 7:1..10:5: (list (quote one) (quote two) (quote three) four)");
     }
 
 

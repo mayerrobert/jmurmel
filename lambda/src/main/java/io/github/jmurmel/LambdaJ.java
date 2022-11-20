@@ -282,7 +282,8 @@ public class LambdaJ {
         public static final long serialVersionUID = 1L;
 
         public LambdaJError(String msg)                                    { super(msg, null, false, false); }
-        public LambdaJError(boolean format,  String msg, Object... params) { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
+        public LambdaJError(boolean format, String msg, Object... params)  { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
+        public LambdaJError(LambdaJError cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause.getCause()); }
         public LambdaJError(Throwable cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause); }
 
         @Override public String toString() { return "Error: " + getMessage(); }
@@ -294,6 +295,24 @@ public class LambdaJ {
             return "";
         }
     }
+
+    public static class SimpleError extends LambdaJError {
+        public SimpleError(String msg, Object... params) {
+            super(true, msg, params);
+        }
+    }
+
+    public static class UnboundVariable extends LambdaJError { public UnboundVariable(String msg, Object... params) { super(true, msg, params); } }
+
+    public static class EofError extends IOException { public EofError(String message) { super(message); } }
+
+    public static class ProgramError extends LambdaJError {
+        public ProgramError(boolean format, String msg, Object... params) {
+            super(format, msg, params);
+        }
+    } 
+
+    public static class TypeError extends IllegalArgumentException { public TypeError(String s) { super(s); } }
 
 
     /// ## Data types used by interpreter program as well as interpreted programs
@@ -2336,8 +2355,11 @@ public class LambdaJ {
             }
             throw re;
         }
-        catch (LambdaJError | InterruptedException e) {
-            throw new LambdaJError(false, e.getMessage(), form); // todo bei InterruptedException Thread.interrupt()?
+        catch (LambdaJError le) {
+            throw new LambdaJError(le, le.getMessage(), form);
+        }
+        catch (InterruptedException e) {
+            throw new LambdaJError(e, e.getMessage(), form); // todo bei InterruptedException Thread.interrupt()?
         }
         catch (Exception e) {
             //e.printStackTrace();
@@ -2664,7 +2686,7 @@ public class LambdaJ {
                 value = cdr(envEntry);
                 if (value == UNASSIGNED) throw new LambdaJError(true, "%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
             }
-            else throw new LambdaJError(true, "%s: '%s' is not bound", "eval", printSEx(form));
+            else throw new UnboundVariable("%s: '%s' is not bound", "eval", printSEx(form));
         }
         return value;
     }
@@ -2959,7 +2981,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.applyPrimitive(args); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(true, "#<primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e, "#<primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
     }
 
     /** in case compiled code calls "(eval)" */
@@ -2967,7 +2989,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
         try { return primfn.applyCompilerPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(true, "#<compiler primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e, "#<compiler primitive> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
     }
 
     MurmelJavaProgram compiledProgram = null;
@@ -2985,7 +3007,7 @@ public class LambdaJ {
             return ret;
         }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(true, "#<compiled function> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e, "#<compiled function> throws %s: %s", e.getClass().getSimpleName(), e.getMessage()); }
     }
 
 
@@ -3293,14 +3315,31 @@ public class LambdaJ {
         if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
 
         // conditions
-        if (typespec == st.intern("stream-error")) return o instanceof IOException;
+        if (o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
+
+        if (typespec == st.intern("simple-error")) return o instanceof SimpleError;
+
+        if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
+
+        if (typespec == st.intern("unbound-variable")) return o instanceof UnboundVariable;
+        if (typespec == st.intern("cell-error")) return o instanceof UnboundVariable;
+
         if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
+
+        if (typespec == st.intern("program-error")) return o instanceof ProgramError;
+
+        if (typespec == st.intern("end-of-file")) return o instanceof EofError;
+        if (typespec == st.intern("stream-error")) return o instanceof IOException;
+
+        if (typespec == st.intern("simple-type-error")) return o instanceof TypeError;
+        if (typespec == st.intern("type-error")) return o instanceof TypeError;
+
         if (typespec == st.intern("error")) return o instanceof Exception;
         if (typespec == st.intern("condition")) return o instanceof Throwable;
 
         if (typespec == st.intern("t")) return true;
 
-        throw new LambdaJError(true, "typep: unknown type specifier %s", printSEx(o));
+        throw new ProgramError(true, "typep: unknown type specifier %s", printSEx(o));
     }
 
 
@@ -4468,7 +4507,7 @@ public class LambdaJ {
         if (a == null) {
             final Object eof = new Object();
             final Object ret = lispReader.readObj(eof);
-            if (ret == eof) throw new LambdaJError("read: EOF");
+            if (ret == eof) throwAsRuntimeException(new EofError("read: EOF"));
             return ret;
         }
         else {
@@ -4640,17 +4679,18 @@ public class LambdaJ {
         if (stringp(datum)) {
             final String formatString = requireString("error", datum);
             final String msg = EolUtil.anyToUnixEol(String.format(formatString, args));
-            throw new LambdaJError(msg);
+            throw new SimpleError(msg);
         }
+
         if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException());
         if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)");
 
         throwAsRuntimeException(new Exception());
     }
-    
+
     private static void throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     private static <T extends Throwable> void throwAsRuntimeException(Throwable t, Class<T> xclass) throws T {
         throw (T)t;
     }

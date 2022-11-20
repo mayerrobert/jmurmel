@@ -43,20 +43,20 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
    wsl. nur den subtree "error" umsetzen
     condition                               java.lang.Throwable
         error                               java.lang.Exception
-            simple-error                    LambdaJError
-            arithmetic-error                java.lang.ArithmeticException
+            simple-error                    SimpleError extends LambdaJError extends RuntimeException extends Exception
+            arithmetic-error                java.lang.ArithmeticException extends RuntimeException extends Exception
                 (overflow, underflow)
-            cell-error 
-                unbound-variable 
-                (undefined-function) 
+            cell-error                      abstract CellError extends RuntimeException extends Exception
+                unbound-variable            UnboundVariable extends CellError extends RuntimeException extends Exception
+                (undefined-function)        n/a
             control-error
-            file-error                      java.nio.file.InvalidPathException
-            program-error 
-            stream-error                    java.io.IOException
-                end-of-file 
+            file-error                      java.nio.file.InvalidPathException extends IllegalArgumentException extends RuntimeException extends Exception
+            program-error                   ProgramError extends LambdaJError
+            stream-error                    java.io.IOException extends Exception
+                end-of-file                 EofError extends IOException extends Exception
                 ...
-            type-error 
-                simple-type-error 
+            type-error                      abstract TypeError extends IllegalArgumentException
+                simple-type-error           SimpleType
 
 funktionen zum werfen von conditions: signal, break, cerror, error
 

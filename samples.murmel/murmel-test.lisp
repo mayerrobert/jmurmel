@@ -69,6 +69,11 @@
   (if end (fill vec item :start start :end end)
     (if start (fill vec item :start start)
       (fill vec item))))
+
+(defmacro try (form &optional errorobj)
+  (let ((ex (gensym)))
+    `(handler-case ,form
+                   (error (,ex) (values ,errorobj ,ex)))))
 )
 
 
@@ -433,6 +438,20 @@ multiline comment
 (deftest unwind-protect.5  (catch nil 
                              (unwind-protect (throw nil 1)
                                (throw nil 2)))  2)
+
+
+#+(or)  ; compiler doesn't know "try" yet
+(progn
+(defun fail #+murmel datum #-murmel (&rest datum) (apply #'error datum))
+(defun fail1 () (fail "test"))
+
+(deftest try.1 (try (values 1 2 3)) 1)
+(deftest try.2 (try (fail1)) nil)
+(deftest try.3 (try (fail1) 'err) 'err)
+(deftest try.4 (multiple-value-bind (ret ex) (try (fail 'file-error #-murmel :pathname "xyxxy") 'err)
+                 (list ret (typep ex 'file-error)))
+               '(err t))
+)
 
 
 ;;; values
