@@ -64,9 +64,18 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
             stream-error                    java.io.IOException extends Exception
                 end-of-file                 java.io.EOFException extends Exception
                 reader-error                ReaderError extends IOException extends Exception
+                                            NOTE: CL's reader-error has two superclasses: stream-error and parse-error
+
+            parse-error
 
             type-error                      SimpleTypeError extends IllegalArgumentException
                 simple-type-error           SimpleTypeError
+
+sbcl hat parse-error extends error, Murmel hat SExpressionReader.ParseError extends LambdaJError was eigentlich äquivalent ist
+-> CL reader-error erbt blöderweise von stream-error UND parse-error, Murmel reader-error nur von stream-error
+-> ParseError nicht mehr automatisch in ReaderError wrappen
+   überlegen/ checken ob/ wo der reader ParseError oder ReaderError werfen soll
+-> ParseError in typep und error einbauen
 
 funktionen zum werfen von conditions: signal, break, cerror, error
 
@@ -75,7 +84,7 @@ siehe auch CLtL2 "29. Conditions" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm
 
 
 #n= und #n# syntax ist unter "CLtL2 22.1.4. Standard Dispatching Macro Character Syntax" beschrieben,
-siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html#SECTION002614000000000000000
+siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html
 
 
 

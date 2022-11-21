@@ -1174,7 +1174,7 @@ public class LambdaJ {
                     switch (c) {
                     case '0': break;
                     case '1': ret[i] = true; break;
-                    default: throw new LambdaJError(true, "not a valid value for bitvector: %c", c);
+                    default: throwAsRuntimeException(new ReaderError("not a valid value for bitvector: %c", c));
                     }
                     i++;
                 }
@@ -1524,7 +1524,7 @@ public class LambdaJ {
          *  Returns a dotted list unless rest is a proper list. This works like a two arg nconc. */
         private static ConsCell nconc2(ConsCell first, Object rest) {
             for (ConsCell last = first; ; last = (ConsCell) cdr(last)) {
-                if (cdr(last) == first) throw new LambdaJError(true, "%s: first argument is a circular list", "appendToList");
+                if (cdr(last) == first) throwAsRuntimeException(new ReaderError("%s: first argument is a circular list", "appendToList"));
                 if (cdr(last) == null) {
                     last.rplacd(rest);
                     return first;
@@ -3353,6 +3353,8 @@ public class LambdaJ {
 
         if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
         if (typespec == st.intern("type-error")) return o instanceof SimpleTypeError;
+
+        if (typespec == st.intern("parse-error")) return o instanceof SExpressionReader.ParseError;
 
         if (typespec == st.intern("error")) return o instanceof Exception;
         if (typespec == st.intern("condition")) return o instanceof Throwable;
@@ -5522,7 +5524,8 @@ public class LambdaJ {
                     }
                 }
                 return result;
-            } catch (LambdaJError e) {
+            }
+            catch (Exception e) {
                 System.err.println();
                 System.err.println(e);
                 throw EXIT_RUNTIME_ERROR;
@@ -5855,7 +5858,8 @@ public class LambdaJ {
                         }
                     }
                 }
-                catch (LambdaJError e) {
+                catch (Exit exit) { throw exit; }
+                catch (Exception e) {
                     if (istty) {
                         System.out.println();
                         System.out.println(e);
@@ -7269,21 +7273,21 @@ public class LambdaJ {
         }
 
         private static void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
-            if (actual < expectedMin) throw new LambdaJError(true, "%s: not enough arguments", expr);
-            if (expectedMax != -1 && actual > expectedMax) throw new LambdaJError(true, "%s: too many arguments", expr);
+            if (actual < expectedMin) throw new ProgramError("%s: not enough arguments", expr);
+            if (expectedMax != -1 && actual > expectedMax) throw new ProgramError("%s: too many arguments", expr);
         }
 
-        private static RuntimeException errorNotANumber(Object n) { throw new LambdaJError(true, "not a number: %s", printSEx(n)); }
-        private static RuntimeException errorNotABit(Object n) { throw new LambdaJError(true, "not a bit: %s", printSEx(n)); }
+        private static RuntimeException errorNotANumber(Object n) { throw new SimpleTypeError("not a number: %s", printSEx(n)); }
+        private static RuntimeException errorNotABit(Object n) { throw new SimpleTypeError("not a bit: %s", printSEx(n)); }
         private static RuntimeException errorNotAnArrayIndex(Object n) { throw new LambdaJError(true, "invalid array index/ size: %s", printSEx(n)); }
-        private static void errorNotAList(Object s)   { throw new LambdaJError(true, "not a cons/list: %s", printSEx(s)); }
-        private static void errorNotACharacter(Object s) { throw new LambdaJError(true, "not a character: %s", printSEx(s)); }
-        private static void errorNotAString(Object s) { throw new LambdaJError(true, "not a string: %s", printSEx(s)); }
+        private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a cons/list: %s", printSEx(s)); }
+        private static void errorNotACharacter(Object s) { throw new SimpleTypeError("not a character: %s", printSEx(s)); }
+        private static void errorNotAString(Object s) { throw new SimpleTypeError("not a string: %s", printSEx(s)); }
         private static RuntimeException errorNotAFrame(String s, Object o) {
-            if (o != null) throw new LambdaJError(true, "%s: not a frame: %s", s, printSEx(o));
-            throw new LambdaJError(true, "%s: no frame argument and no current frame", s);
+            if (o != null) throw new SimpleTypeError("%s: not a frame: %s", s, printSEx(o));
+            throw new SimpleTypeError("%s: no frame argument and no current frame", s);
         }
-        private static RuntimeException errorNotAFunction(Object fn) { throw new LambdaJError(true, "not a function: %s", fn); }
+        private static RuntimeException errorNotAFunction(Object fn) { throw new UndefinedFunction("not a function: %s", fn); }
 
 
 
@@ -7536,7 +7540,7 @@ public class LambdaJ {
             case "rgb-to-pixel": return (CompilerPrimitive)this::rgbToPixel;
             case "hsb-to-pixel": return (CompilerPrimitive)this::hsbToPixel;
 
-            default: throw new LambdaJError(true, "%s: '%s' not bound", "getValue", symbol);
+            default: throw new UnboundVariable("%s: '%s' not bound", "getValue", symbol);
             }
         }
     }
