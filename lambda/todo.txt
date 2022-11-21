@@ -42,7 +42,7 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
    erster parameter ist string oder symbol, weitere parameter sind entweder argumente für den format string, oder argumente für die condition
    ist der erste parameter ein string: es gibt eine condition vom typ simple-error, msg ist formatstring+argumente
    ist der erste parameter ein symbol: das symbol muss eine condition sein
--> condition hierarchie, siehe auch CLtL2 "29.5. Predefined Condition Types"
+-> condition hierarchie, siehe auch CLtL2 "29.5. Predefined Condition Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node346.html
    wsl. nur den subtree "error" umsetzen
     condition                               java.lang.Throwable
         error                               java.lang.Exception
@@ -53,7 +53,7 @@ handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
 
             cell-error                      abstract CellError extends RuntimeException extends Exception
                 unbound-variable            UnboundVariable extends CellError extends RuntimeException extends Exception
-                (undefined-function)        n/a
+                undefined-function          UndefinedFunction extends CellError extends RuntimeException extends Exception
 
             control-error                   todo
 

@@ -286,6 +286,8 @@ public class LambdaJ {
         public LambdaJError(boolean format, String msg, Object... params)     { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
         public LambdaJError(LambdaJError cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause.getCause()); }
         public LambdaJError(Throwable cause, String msg, Object... params)    { super(String.format(msg, params) + getErrorExp(params), cause); }
+        public LambdaJError(Throwable cause)                                  { super(cause.getMessage(), cause); }
+        public LambdaJError(Throwable cause, Object errorForm)                { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), cause); }
 
         @Override public String toString() { return "Error: " + getMessage(); }
 
@@ -297,14 +299,17 @@ public class LambdaJ {
         }
     }
 
-    public static class UnboundVariable extends LambdaJError { public UnboundVariable(String msg, Object... params) { super(true, msg, params); }
-                                                               public UnboundVariable(String msg) { super(msg); } }
-    public static class SimpleError extends LambdaJError { public SimpleError(String msg, Object... params) { super(true, msg, params); }
-                                                           public SimpleError(String msg) { super(msg); } }
-    public static class ProgramError extends LambdaJError { public ProgramError(String msg, Object... params) { super(true, msg, params); }
-                                                            public ProgramError(String msg) { super(msg); } }
+    public static class SimpleError extends LambdaJError       { public SimpleError(String msg, Object... params) { super(true, msg, params); }
+                                                                 public SimpleError(String msg) { super(msg); } }
+    public static class UnboundVariable extends LambdaJError   { public UnboundVariable(String msg, Object... params) { super(true, msg, params); }
+                                                                 public UnboundVariable(String msg) { super(msg); } }
+    public static class UndefinedFunction extends LambdaJError { public UndefinedFunction(String msg, Object... params) { super(true, msg, params); }
+                                                                 public UndefinedFunction(String msg) { super(msg); } }
+    public static class ProgramError extends LambdaJError      { public ProgramError(String msg, Object... params) { super(true, msg, params); }
+                                                                 public ProgramError(String msg) { super(msg); } }
 
-    public static class ReaderError extends IOException { public ReaderError(String message) { super(message); } }
+    public static class ReaderError extends IOException { public ReaderError(String message) { super(message); }
+                                                          public ReaderError(String msg, Object... params) { super(String.format(msg, params)); } }
     public static class SimpleTypeError extends IllegalArgumentException { public SimpleTypeError(String msg, Object... params) { super(String.format(msg, params)); } }
 
 
@@ -347,7 +352,7 @@ public class LambdaJ {
                 ((ConsCell) last).rplacd(newCell);
                 last = newCell;
             }
-            else throw new LambdaJ.LambdaJError("can't append another element to dotted list");
+            else throw new LambdaJ.SimpleTypeError("can't append another element to dotted list");
             return (T)this;
         }
 
@@ -370,7 +375,7 @@ public class LambdaJ {
                 ((ConsCell) last).rplacd(lastElem);
                 last = lastElem;
             }
-            else throw new LambdaJ.LambdaJError("can't append another last element to dotted list");
+            else throw new LambdaJ.SimpleTypeError("can't append another last element to dotted list");
             return (T)this;
         }
 
@@ -541,14 +546,14 @@ public class LambdaJ {
         @Override public ArraySlice cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
 
         Object elt(long idx) {
-            if (idx < 0) throw new LambdaJError("elt: index must be >= 0");
-            if (idx >= length()) throw new LambdaJError(true, "elt: index %d is too large for a list of length %d", idx, length());
+            if (idx < 0) throw new SimpleTypeError("elt: index must be >= 0");
+            if (idx >= length()) throw new SimpleTypeError("elt: index %d is too large for a list of length %d", idx, length());
             return arry[(int)idx];
         }
 
         Object eltset(Object newValue, long idx) {
-            if (idx < 0) throw new LambdaJError("eltset: index must be >= 0");
-            if (idx >= length()) throw new LambdaJError(true, "eltset: index %d is too large for a list of length %d", idx, length());
+            if (idx < 0) throw new SimpleTypeError("eltset: index must be >= 0");
+            if (idx >= length()) throw new SimpleTypeError("eltset: index %d is too large for a list of length %d", idx, length());
             arry[(int)idx] = newValue;
             return newValue;
         }
@@ -593,7 +598,7 @@ public class LambdaJ {
                 final Object o = arry[j];
                 if (zero.equals(o)) ret[i] = false;
                 else if (one.equals(o)) ret[i] = true;
-                else throw new LambdaJError(true, "not a valid value for bitvector: %s", o);
+                else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
             }
             return ret;
         }
@@ -1931,7 +1936,7 @@ public class LambdaJ {
     private Object makeExpTrue() {
         if (haveT()) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
         else if (haveQuote()) return cons(intern("quote"), cons(sT, null));
-        else throw new LambdaJError("truthiness needs support for 't' or 'quote'");
+        else throw new UnboundVariable("truthiness needs support for 't' or 'quote'");
     }
 
     final LambdaJSymbol intern(String sym) {
@@ -2018,7 +2023,7 @@ public class LambdaJ {
                 final ConsCell ccForm = (ConsCell)form;
 
                 final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                if (operator == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
+                if (operator == null) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
 
                 final ConsCell ccArguments = (ConsCell)cdr(ccForm);   // list with remaining atoms/ expressions
 
@@ -2233,7 +2238,7 @@ public class LambdaJ {
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                     // macros can be unexpanded if the macro was defined after the defun
-                    if (symOperator.macro != null) throw new LambdaJError(true, "function application: not a primitive or lambda: %s is a macro not a function", symOperator, form);
+                    if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or lambda: %s is a macro not a function", symOperator, form);
 
                     if (doOpencode && symOperator.primitive()) {
                         return result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));
@@ -2336,7 +2341,7 @@ public class LambdaJ {
                     }
 
                     else {
-                        throw new LambdaJError(true, "function application: not a primitive or lambda: %s", printSEx(func));
+                        throw new UndefinedFunction("function application: not a primitive or lambda: %s", printSEx(func));
                     }
                 }
 
@@ -2426,7 +2431,7 @@ public class LambdaJ {
             if (atom(form)) return form;
             final ConsCell ccForm = ((ConsCell)form).copy();
             final Object op = car(ccForm);
-            if (op == null) throw new LambdaJError(true, "function application: not a primitive or lambda: nil");
+            if (op == null) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
             final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
 
             if (symbolp(op)) {
@@ -2475,7 +2480,7 @@ public class LambdaJ {
                         final ConsCell localFunc = carShallowCopyList("labels", i);
                         varargsMin("labels", localFunc, 2);
                         final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
-                        if (funcSymbol.macro != null) throw new LambdaJError(true, "local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
+                        if (funcSymbol.macro != null) throw new ProgramError("local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
                         checkLambdaList(printSEx(funcSymbol), cadr(localFunc));
                         if (cddr(localFunc) != null) {
                             final ConsCell body = cddrShallowCopyList("labels", localFunc);
@@ -2643,7 +2648,7 @@ public class LambdaJ {
             return ccForm;
         }
         catch (LambdaJError e) {
-            throw new LambdaJError(false, e.getMessage(), form);
+            throw new LambdaJError(e, form);
         }
     }
 
@@ -2887,7 +2892,7 @@ public class LambdaJ {
         for (Object params = paramList; params != null; ) {
             // regular param/arg: add to env
             if (consp(params)) {
-                if (match && args == null) throw new LambdaJError(true, "%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
+                if (match && args == null) throw new ProgramError("%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
                 env = acons(car(params), car(args), env);
             }
 
@@ -2903,7 +2908,7 @@ public class LambdaJ {
             args = (ConsCell) cdr(args);
             if (args == null) {
                 if (consp(params)) {
-                    if (match) throw new LambdaJError(true, "%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
+                    if (match) throw new ProgramError("%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
                     else env = acons(params, null, env);
                 }
                 else if (params != null) {
@@ -2913,7 +2918,7 @@ public class LambdaJ {
                 }
             }
         }
-        if (match && args != null) throw new LambdaJError(true, "%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
+        if (match && args != null) throw new ProgramError("%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 
@@ -2986,7 +2991,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<primitive> " + printSEx(args));
         try { return primfn.applyPrimitive(args); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(e, e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e); }
     }
 
     /** in case compiled code calls "(eval)" */
@@ -2994,7 +2999,7 @@ public class LambdaJ {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
         try { return primfn.applyCompilerPrimitive(listToArray(args)); }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(e, e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e); }
     }
 
     MurmelJavaProgram compiledProgram = null;
@@ -3012,7 +3017,7 @@ public class LambdaJ {
             return ret;
         }
         catch (LambdaJError e) { throw e; }
-        catch (Exception e) { throw new LambdaJError(e, e.getMessage()); }
+        catch (Exception e) { throw new LambdaJError(e); }
     }
 
 
@@ -3031,8 +3036,12 @@ public class LambdaJ {
                 result = expandAndEval(form, null);
             }
             return result;
-        } catch (IOException e) {
-            throw new LambdaJError(true, "load: error reading file '%s': ", e.getMessage());
+        }
+        catch (ReaderError re) {
+            throw throwAsRuntimeException(re);
+        }
+        catch (IOException e) {
+            throw throwAsRuntimeException(new ReaderError("load: error reading file '%s': ", e.getMessage()));
         }
         finally {
             currentSource = prev;
@@ -3063,12 +3072,12 @@ public class LambdaJ {
         if (symbols == null) return traced == null ? null : new ArraySlice(traced.values().toArray(), 0);
         if (traced == null) traced = new HashMap<>();
         for (Object sym: symbols) {
-            if (!symbolp(sym)) throw new LambdaJError(true, "trace: can't trace %s: not a symbol", printSEx(sym));
+            if (!symbolp(sym)) throw new ProgramError("trace: can't trace %s: not a symbol", printSEx(sym)); // todo sbcl gibt keinen fehler, nur eine warning
             if (((LambdaJSymbol)sym).specialForm()) {
-                throw new LambdaJError(true, "trace: can't trace %s: it is a special form", printSEx(sym));
+                throw new ProgramError("trace: can't trace %s: it is a special form", printSEx(sym));
             }
             final ConsCell envEntry = fastassq(sym, topEnv);
-            if (envEntry == null) throw new LambdaJError(true, "trace: can't trace %s: not bound", printSEx(sym));
+            if (envEntry == null) throw new UndefinedFunction("trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
         return new ArraySlice(traced.values().toArray(), 0);
@@ -3224,7 +3233,7 @@ public class LambdaJ {
 
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
-    private static Object carCdrError(String func, Object o) { throw new LambdaJError(true, "%s: expected one list or string argument but got %s", func, printSEx(o)); }
+    private static Object carCdrError(String func, Object o) { throw new SimpleTypeError("%s: expected one list or string argument but got %s", func, printSEx(o)); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
@@ -3331,7 +3340,8 @@ public class LambdaJ {
         if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
 
         if (typespec == st.intern("unbound-variable")) return o instanceof UnboundVariable;
-        if (typespec == st.intern("cell-error")) return o instanceof UnboundVariable;
+        if (typespec == st.intern("undefined-function")) return o instanceof UndefinedFunction;
+        if (typespec == st.intern("cell-error")) return o instanceof UnboundVariable || o instanceof UndefinedFunction;
 
         if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
 
@@ -3457,7 +3467,7 @@ public class LambdaJ {
     static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return EMPTY_ARRAY;
         if (maybeList instanceof ArraySlice) return ((ArraySlice)maybeList).listToArray();
-        if (!consp(maybeList)) throw new LambdaJError(true, "%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
+        if (!consp(maybeList)) throw new SimpleTypeError("%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         //for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
@@ -3475,7 +3485,7 @@ public class LambdaJ {
             final Object o = car(rest);
             if (zero.equals(o)) ret[i] = false;
             else if (one.equals(o)) ret[i] = true;
-            else throw new LambdaJError(true, "not a valid value for bitvector: %s", o);
+            else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
             i++;
         }
         return Arrays.copyOf(ret, i);
@@ -3668,7 +3678,7 @@ public class LambdaJ {
     }
 
     static RuntimeException errorIndexTooLarge(long idx, long actualLength) {
-        throw new LambdaJError(true, "index %d is too large for a sequence of length %d", idx, actualLength);
+        throw new SimpleTypeError("index %d is too large for a sequence of length %d", idx, actualLength); // todo sollte wsl eine eigene exception sein, ArrayIndexOutOfBoundsException iwie dranpicken
     }
 
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
@@ -3783,7 +3793,7 @@ public class LambdaJ {
     /** at least one arg, the first arg must be a non-nil string */
     private static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
-            throw new LambdaJError(true, "%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
+            throw new SimpleTypeError("%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
     }
 
     /** Return {@code a} as a TurtleFrame or current_frame if null, error if {@code a} is not of type frame. */
@@ -3793,10 +3803,10 @@ public class LambdaJ {
             ret = current_frame;
         }
         else {
-            if (!(a instanceof TurtleFrame)) throw new LambdaJError(true, "%s: expected a frame argument but got %s", func, printSEx(a));
+            if (!(a instanceof TurtleFrame)) throw new SimpleTypeError("%s: expected a frame argument but got %s", func, printSEx(a));
             ret = (TurtleFrame) a;
         }
-        if (ret == null) throw new LambdaJError(true, "%s: no frame argument and no current frame", func);
+        if (ret == null) throw new UnboundVariable("%s: no frame argument and no current frame", func);
         return ret;
     }
 
@@ -3840,7 +3850,7 @@ public class LambdaJ {
 
     /** Return {@code c} as a Character, error if {@code c} is not a Character. */
     static Character requireChar(String func, Object c) {
-        if (!(c instanceof Character)) throw new LambdaJError(true, "%s: expected a character argument but got %s", func, printSEx(c));
+        if (!(c instanceof Character)) throw new SimpleTypeError("%s: expected a character argument but got %s", func, printSEx(c));
         return (Character)c;
     }
 
@@ -3849,7 +3859,7 @@ public class LambdaJ {
     }
 
     static Object[] requireSimpleVector(String func, Object c) {
-        if (!svectorp(c)) throw new LambdaJError(true, "%s: expected a simple vector argument but got %s", func, printSEx(c));
+        if (!svectorp(c)) throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(c));
         return (Object[])c;
     }
 
@@ -3861,27 +3871,27 @@ public class LambdaJ {
     }
 
     static String requireString(String func, Object c) {
-        if (!stringp(c)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
+        if (!stringp(c)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
         if (c instanceof char[]) return String.valueOf((char[])c);
         return c.toString();
     }
 
     static CharSequence requireCharsequence(String func, Object c) {
         if (c instanceof char[]) return String.valueOf((char[])c);
-        if (!(c instanceof CharSequence)) throw new LambdaJError(true, "%s: expected a string argument but got %s", func, printSEx(c));
+        if (!(c instanceof CharSequence)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
         return (CharSequence)c;
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     static ConsCell requireCons(String func, Object a) {
-        if (!consp(a)) throw new LambdaJError(true, "%s: expected a cons argument but got %s", func, printSEx(a));
+        if (!consp(a)) throw new SimpleTypeError("%s: expected a cons argument but got %s", func, printSEx(a));
         return (ConsCell)a;
     }
 
     /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
-        if (!consp(a)) throw new LambdaJError(true, "%s: expected a list argument but got %s", func, printSEx(a));
+        if (!consp(a)) throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
     }
 
@@ -3891,10 +3901,10 @@ public class LambdaJ {
 
     /** return the argument w/o decimal places as a long, exception if conversion is not possible */
     static long toFixnum(double d) {
-        if (Double.isInfinite(d)) throw new LambdaJError("value is Infinite");
-        if (Double.isNaN(d)) throw new LambdaJError("value is NaN");
-        if (d < MOST_NEGATIVE_FIXNUM) throw new LambdaJError("underflow");
-        if (d > MOST_POSITIVE_FIXNUM) throw new LambdaJError("overflow");
+        if (Double.isInfinite(d)) throw new ArithmeticException("value is Infinite");
+        if (Double.isNaN(d)) throw new ArithmeticException("value is NaN");
+        if (d < MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("underflow");
+        if (d > MOST_POSITIVE_FIXNUM) throw new ArithmeticException("overflow");
         return (long)d;
     }
 
@@ -3980,7 +3990,7 @@ public class LambdaJ {
     final Object append(ConsCell args) {
         if (args == null) return null;
         if (cdr(args) == null) return car(args);
-        if (!listp(car(args))) throw new LambdaJError(true, "append: first argument %s is not a list", car(args));
+        if (!listp(car(args))) throw new SimpleTypeError("append: first argument %s is not a list", car(args));
 
         while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
 
@@ -3989,7 +3999,7 @@ public class LambdaJ {
         for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
             final Object o = car(current);
             if (o == null) continue;
-            if (!consp(o)) throw new LambdaJError(true, "append: argument is not a list: %s", printSEx(o));
+            if (!consp(o)) throw new SimpleTypeError("append: argument is not a list: %s", printSEx(o));
             if (lb == null) lb = new CountingListBuilder();
             for (Object obj: (ConsCell)o) lb.append(obj);
         }
@@ -4039,7 +4049,7 @@ public class LambdaJ {
         for (;;) {
             final Object next = cdr(args);
             if (!listp(next) || next == _args) // todo nested loop check
-                throw new LambdaJError(true, "%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
+                throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
             args = (ConsCell) next;
             if (args == null) break;
             result = op.applyAsDouble(result, toDouble(opName, car(args)));
@@ -4057,7 +4067,7 @@ public class LambdaJ {
         for (;;) {
             final Object next = cdr(args);
             if (!listp(next) || next == args) // todo nested loop check
-                throw new LambdaJError(true, "%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
+                throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
             args = (ConsCell) next;
             if (args == null) break;
             result = op.applyAsDouble(result, toDouble(opName, car(args)));
@@ -4222,7 +4232,7 @@ public class LambdaJ {
             return new char[size];
         }
 
-        throw new LambdaJError(true, "make-array: unsupported or invalid type specification %s", printSEx(type));
+        throw new SimpleTypeError("make-array: unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
     }
 
 
@@ -4282,7 +4292,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unchecked")
     static long vectorAdd(Object maybeVector, Object newValue) {
-        if (!adjustableArrayP(maybeVector)) throw new LambdaJError(true, "vector-add: not an adjustable vector: %s", printSEx(maybeVector));
+        if (!adjustableArrayP(maybeVector)) throw new SimpleTypeError("vector-add: not an adjustable vector: %s", printSEx(maybeVector));
         if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
@@ -4358,8 +4368,8 @@ public class LambdaJ {
         if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
         if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
         if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
-        if (maybeString instanceof String) { throw new LambdaJError(true, "%s: cannot modify readonly string", "sset"); }
-        throw new LambdaJError(true, "%s: expected a string argument but got %s", "sset", printSEx(maybeString));
+        if (maybeString instanceof String) { throw new SimpleTypeError("%s: cannot modify readonly string", "sset"); }
+        throw new SimpleTypeError("%s: expected a string argument but got %s", "sset", printSEx(maybeString));
     }
 
     final Object stringToList(Object maybeString) {
@@ -4455,7 +4465,7 @@ public class LambdaJ {
     /// sequences
 
     static Object seqref(Object maybeSeq, long idx) {
-        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
+        if (idx < 0) throw new SimpleTypeError("seqref: index must be >= 0"); // todo indexfehler gesondert behandeln
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
         if (maybeSeq instanceof ConsCell) {
@@ -4477,7 +4487,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unchecked")
     static Object seqset(Object maybeSeq, long idx, Object newValue) {
-        if (idx < 0) throw new LambdaJError("seqref: index must be >= 0");
+        if (idx < 0) throw new SimpleTypeError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
         if (maybeSeq instanceof ConsCell) {
@@ -4594,7 +4604,8 @@ public class LambdaJ {
             lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
             return null;
         } catch (IllegalFormatException e) {
-            throw new LambdaJError(true, "%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+            // todo sbcl wirft SB-FORMAT:FORMAT-ERROR extends ERROR
+            throw new SimpleTypeError("%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
         }
     }
 
@@ -4802,7 +4813,7 @@ public class LambdaJ {
             javaCallArgCheck(method.getName(), method, argConv, args);
 
             if (!Modifier.isStatic(method.getModifiers()) && !method.getDeclaringClass().isInstance(args[0]))
-                throw new LambdaJError(true, "jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
+                throw new SimpleTypeError("jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
             try { return invoke.invoke(args); }
             catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); }
@@ -4925,7 +4936,7 @@ public class LambdaJ {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             final MurmelFunction func = methods.get(method);
-            if (func == null) throw new LambdaJError(true, "no function for method %s", method.getName());
+            if (func == null) throw new UndefinedFunction("no function for method %s", method.getName());
             if (args == null) return func.apply();
             else return func.apply(args);
         }
@@ -4939,7 +4950,7 @@ public class LambdaJ {
             final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
             final Map<String, Method> nameToMethod = new HashMap<>();
 
-            final MurmelFunction notImplemented = a -> { throw new LambdaJError(false, "method is not implemented"); };
+            final MurmelFunction notImplemented = a -> { throw new UndefinedFunction("method is not implemented"); };
             for (Method m: Object.class.getMethods()) {
                 methodToMurmelFunction.put(m, notImplemented);
                 nameToMethod.put(m.getName(), m);
@@ -4955,14 +4966,14 @@ public class LambdaJ {
                                        a -> { final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null; });
 
             for (ConsCell lst = requireList("jproxy", cdr(args)); lst != null; ) {
-                if (cdr(lst) == null) throw new LambdaJError(false, "jproxy: odd number of method/functions");
+                if (cdr(lst) == null) throw new ProgramError("jproxy: odd number of method/functions");
 
                 final Object form = cadr(lst);
-                if (form == null) throw new LambdaJError(true, "jproxy: not a function: nil");
+                if (form == null) throw new UndefinedFunction("jproxy: not a function: nil");
 
                 final String name = requireString("jproxy", car(lst));
                 final Method method = nameToMethod.get(name);
-                if (method == null) throw new LambdaJError(true, "jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
+                if (method == null) throw new UndefinedFunction("jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
                 methodToMurmelFunction.put(method, getFunction(intp, null, form));
 
                 lst = (ConsCell)cddr(lst);
@@ -5147,7 +5158,7 @@ public class LambdaJ {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
         final ConsCell envEntry = fastassq(intern(globalSymbol), topEnv);
         if (envEntry != null) return cdr(envEntry);
-        throw new LambdaJError(true, "%s: '%s' is not bound", "getValue", globalSymbol);
+        throw new UnboundVariable("%s: '%s' is not bound", "getValue", globalSymbol);
     }
 
     private class CallLambda implements MurmelFunction {
@@ -5181,7 +5192,7 @@ public class LambdaJ {
         if (maybeFunction instanceof Closure)                                   { return intp.new CallLambda((Closure)maybeFunction, intp.topEnv); }
         if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
-        throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
+        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
     }
 
     public interface MurmelProgram {
@@ -6449,7 +6460,7 @@ public class LambdaJ {
             if (maybeFunction instanceof CompilerPrimitive) {
                 return args -> funcall((CompilerPrimitive)maybeFunction, args);
             }
-            throw new LambdaJError(true, "getFunction: not a primitive or lambda: %s", func);
+            throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", func);
         }
 
         protected abstract Object runbody() throws Exception;
@@ -6600,7 +6611,7 @@ public class LambdaJ {
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
             if (nArgs == 1) return args[0];
-            if (!listp(args[0])) throw new LambdaJError(true, "append: first argument %s is not a list", args[0]);
+            if (!listp(args[0])) throw new SimpleTypeError("append: first argument %s is not a list", args[0]);
 
             nArgs--;
             int first = 0;
@@ -6610,7 +6621,7 @@ public class LambdaJ {
             for (int i = first; i < nArgs; i++) {
                 final Object o = args[i];
                 if (o == null) continue;
-                if (!consp(o)) throw new LambdaJError(true, "append: argument %d is not a list: %s", i+1, printSEx(o));
+                if (!consp(o)) throw new SimpleTypeError("append: argument %d is not a list: %s", i+1, printSEx(o));
                 if (lb == null) lb = new ListBuilder();
                 for (Object obj: (ConsCell)o) lb.append(obj);
             }
@@ -8737,7 +8748,7 @@ public class LambdaJ {
                 }
                 return topEnv;
             } catch (IOException e) {
-                throw new LambdaJError(true, "load: error reading file '%s': ", e.getMessage());
+                throw throwAsRuntimeException(new ReaderError("load: error reading file '%s': ", e.getMessage()));
             }
             finally {
                 intp.currentSource = prev;
