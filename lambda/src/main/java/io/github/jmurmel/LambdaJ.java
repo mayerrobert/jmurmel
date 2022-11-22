@@ -299,18 +299,33 @@ public class LambdaJ {
         }
     }
 
-    public static class SimpleError extends LambdaJError       { public SimpleError(String msg, Object... params) { super(true, msg, params); }
-                                                                 public SimpleError(String msg) { super(msg); } }
-    public static class UnboundVariable extends LambdaJError   { public UnboundVariable(String msg, Object... params) { super(true, msg, params); }
-                                                                 public UnboundVariable(String msg) { super(msg); } }
-    public static class UndefinedFunction extends LambdaJError { public UndefinedFunction(String msg, Object... params) { super(true, msg, params); }
-                                                                 public UndefinedFunction(String msg) { super(msg); } }
-    public static class ProgramError extends LambdaJError      { public ProgramError(String msg, Object... params) { super(true, msg, params); }
-                                                                 public ProgramError(String msg) { super(msg); } }
+    public static class SimpleError extends LambdaJError    { public SimpleError(String msg, Object... params) { super(true, msg, params); }
+                                                              public SimpleError(String msg) { super(msg); } }
 
-    public static class ReaderError extends IOException { public ReaderError(String message) { super(message); }
-                                                          public ReaderError(String msg, Object... params) { super(String.format(msg, params)); } }
-    public static class SimpleTypeError extends IllegalArgumentException { public SimpleTypeError(String msg, Object... params) { super(String.format(msg, params)); } }
+    public static class CellError extends LambdaJError      { public CellError(String msg, Object... params) { super(true, msg, params); }
+                                                              public CellError(String msg) { super(msg); } }
+    public static class UnboundVariable extends CellError   { public UnboundVariable(String msg, Object... params) { super(msg, params); }
+                                                              public UnboundVariable(String msg) { super(msg); } }
+    public static class UndefinedFunction extends CellError { public UndefinedFunction(String msg, Object... params) { super(msg, params); }
+                                                              public UndefinedFunction(String msg) { super(msg); } }
+
+    public static class ControlError extends LambdaJError   { public ControlError(String msg, Object... params) { super(true, msg, params); }
+                                                              public ControlError(String msg) { super(msg); } }
+
+    public static class ProgramError extends LambdaJError   { public ProgramError(String msg, Object... params) { super(true, msg, params); }
+                                                              public ProgramError(String msg) { super(msg); } }
+
+    public static class ParseError extends LambdaJError     { public ParseError(String msg, Object... args) { super(true, msg, args); } }
+
+    // artithmetic-error... java.lang.ArithmeticException
+    // type-error...        java.lang.ClassCastException
+    public static class SimpleTypeError extends ClassCastException { public SimpleTypeError(String msg, Object... params) { super(String.format(msg, params)); } }
+    // file-error...        java.nio.file.InvalidPathException
+
+    // stream-error...      java.io.IOException
+    //     end-of-file...   java.io.EOFException
+    public static class ReaderError extends IOException     { public ReaderError(String message) { super(message); }
+                                                              public ReaderError(String msg, Object... params) { super(String.format(msg, params)); } }
 
 
     /// ## Data types used by interpreter program as well as interpreted programs
@@ -950,11 +965,6 @@ public class LambdaJ {
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     static class SExpressionReader implements ObjectReader {
-        private static class ParseError extends LambdaJError {
-            private static final long serialVersionUID = 1L;
-            private ParseError(String msg, Object... args) { super(true, msg, args); }
-        }
-
         private final int features;
         private final TraceLevel trace;
         private final TraceConsumer tracer;
@@ -3304,6 +3314,9 @@ public class LambdaJ {
     static boolean listp(Object o)      { return o == null || consp(o); }
 
     static boolean typep(SymbolTable st, LambdaJ intp, Object o, Object typespec) {
+        if (typespec == LambdaJ.sT) return true;
+        if (typespec == st.intern("null")) return null == o;
+
         if (typespec == st.intern("cons")) return consp(o);
         if (typespec == st.intern("atom")) return atom(o);
         if (typespec == st.intern("symbol")) return symbolp(o);
@@ -3332,42 +3345,50 @@ public class LambdaJ {
         if (typespec == st.intern("list")) return listp(o);
         if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
 
+        if (o == null) return false; // the object nil aka () is of type null or list or sequence or t which we have already checked
+
         // conditions
         if (o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
 
         if (typespec == st.intern("simple-error")) return o instanceof SimpleError;
 
-        if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
-
         if (typespec == st.intern("unbound-variable")) return o instanceof UnboundVariable;
         if (typespec == st.intern("undefined-function")) return o instanceof UndefinedFunction;
-        if (typespec == st.intern("cell-error")) return o instanceof UnboundVariable || o instanceof UndefinedFunction;
+        if (typespec == st.intern("cell-error")) return o instanceof CellError;
 
-        if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
+        if (typespec == st.intern("control-error")) return o instanceof ControlError;
 
         if (typespec == st.intern("program-error")) return o instanceof ProgramError;
 
+        if (typespec == st.intern("parse-error")) return o instanceof ParseError;
+
+
+        // extends RuntimeException
+        if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
+
+        if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
+        if (typespec == st.intern("type-error")) return o instanceof ClassCastException;
+
+        if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
+
+
+        // extends IOException
         if (typespec == st.intern("end-of-file")) return o instanceof EOFException;
         if (typespec == st.intern("reader-error")) return o instanceof ReaderError;
         if (typespec == st.intern("stream-error")) return o instanceof IOException;
 
-        if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
-        if (typespec == st.intern("type-error")) return o instanceof SimpleTypeError;
 
-        if (typespec == st.intern("parse-error")) return o instanceof SExpressionReader.ParseError;
-
+        // extends Throwable
         if (typespec == st.intern("error")) return o instanceof Exception;
         if (typespec == st.intern("condition")) return o instanceof Throwable;
 
-        if (typespec == st.intern("t")) return true;
-
-        throw new SimpleError("typep: unknown type specifier %s", printSEx(o));
+        throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
     }
 
 
     static boolean adjustableArrayP(Object o) {
         if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
-        //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);
+        //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);  // CL throws this error
         return false;
     }
 
@@ -4716,7 +4737,7 @@ public class LambdaJ {
         }
 
         if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException(msg));
-        if (datum == st.intern("end-of-file")) throwAsRuntimeException(new EOFException(msg));
+        if (datum == st.intern("end-of-file"))  throwAsRuntimeException(new EOFException(msg));
         if (datum == st.intern("reader-error")) throwAsRuntimeException(new ReaderError(msg));
 
         throwAsRuntimeException(new Exception());
