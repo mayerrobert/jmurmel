@@ -1,5 +1,5 @@
 
-Changes in JMurmel-1.3.1 relative to JMurmel-1.3
+Changes in JMurmel-1.4 relative to JMurmel-1.3
 
  * added the special form "try" and function "typep"
  * removed the undocumented function "fatal" from Murmel,

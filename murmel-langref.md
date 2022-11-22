@@ -586,7 +586,7 @@ by a control transfer of some kind.
 
 ### (try protected-form . error-obj) -> result
 
-Since 1.3.1
+Since 1.4
 
 `try` evaluates `protected-form`. If no error occurred during evaluation then
 the values from `protected-form` are the final result.
@@ -787,7 +787,7 @@ Since: 1.3
 
 ### (typep obj typespec) -> boolean
 
-Since: 1.3.1
+Since: 1.4
 
 `typep` returns `t` if `obj` is of type `typespec` or of a subtype.
 
@@ -1061,7 +1061,7 @@ will be `t`, e.g.:
 
 ### (error datum . arguments) -> |
 
-Since 1.3.1
+Since 1.4
 
 Similar to CL's `error`.
 
