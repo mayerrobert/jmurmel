@@ -1850,12 +1850,13 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // I/O
-        sRead("read", Features.HAVE_IO, 0, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
-        sWrite("write", Features.HAVE_IO, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(), intp.haveIO(), args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(), intp.haveIO(), args); } },
+        sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
+        sReadFromString("read-from-string", Features.HAVE_IO, 1, 3)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.list(ret); return ret[0]; } },
+        sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(), intp.haveIO(), args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(), intp.haveIO(), args); } },
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
@@ -2381,14 +2382,16 @@ public class LambdaJ {
             throw re;
         }
         catch (LambdaJError le) {
+            // don't rethrow but wrap so that the Murmel stack is gathered in the Exception message
             throw new LambdaJError(le, le.getMessage(), form);
         }
         catch (InterruptedException e) {
-            throw new LambdaJError(e, e.getMessage(), form); // todo bei InterruptedException Thread.interrupt()?
+            Thread.currentThread().interrupt();
+            throw new LambdaJError(e, e.getMessage(), form);
         }
         catch (Exception e) {
             //e.printStackTrace();
-            throw errorInternal(e, "eval: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
+            throw new LambdaJError(e, e.getMessage(), form);
         }
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
@@ -4553,6 +4556,7 @@ public class LambdaJ {
 
     /// I/O
 
+    /** (read eof-obj?) -> result */
     static Object read(ObjectReader lispReader, ConsCell a) {
         if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
         if (a == null) {
@@ -4564,6 +4568,32 @@ public class LambdaJ {
         else {
             return lispReader.readObj(car(a));
         }
+    }
+
+    /** (read-from-string str [skip [error-obj]]) -> result */
+    static Object[] readFromString(ConsCell a) {
+        final String s = requireString("read-from-string", car(a));
+        final StringReader sr = new StringReader(s);
+        a = (ConsCell)cdr(a);
+        final long[] count = new long[1];
+        if (a != null) {
+            final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+            if (skip > s.length()) throw new SimpleTypeError("skip must be <= string length");
+            try { sr.skip(skip); } catch (IOException e) { throwAsRuntimeException(e); }
+            count[0] = skip;
+            a = (ConsCell)cdr(a);
+        }
+        final ObjectReader reader = makeReader(() -> { final int c = sr.read(); if (c != -1) count[0]++; return c; });
+        final Object ret;
+        if (a == null) {
+            final Object eof = new Object();
+            ret = reader.readObj(eof);
+            if (ret == eof) throwAsRuntimeException(new EOFException("read-from-string: EOF"));
+        }
+        else {
+            ret = reader.readObj(car(a));
+        }
+        return new Object[] { ret, count[0] };
     }
 
     static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
@@ -6850,10 +6880,11 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read      (Object... args) { varargs0_1("read",     args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
-        public final Object _write     (Object... args) { varargs1_2("write",    args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
-        public final Object _writeln   (Object... args) { varargs0_2("writeln",  args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
-        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",  args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _read      (Object... args) { varargs0_1("read",             args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
+        public final Object readFromStr(Object... args) { varargsMinMax("read-from-string", args.length, 1, 3); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
+        public final Object _write     (Object... args) { varargs1_2("write",            args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
+        public final Object _writeln   (Object... args) { varargs0_2("writeln",          args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",          args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
 
         public final Object format     (Object... args)  { varargs2("format", args.length); return LambdaJ.format(lispPrinter, true, arraySlice(args)); }
         public final Object formatLocale(Object... args) { varargs3("format-locale", args.length); return LambdaJ.formatLocale(lispPrinter, true, arraySlice(args)); }
@@ -7521,6 +7552,7 @@ public class LambdaJ {
 
             // I/O
             case "read": return (CompilerPrimitive)this::_read;
+            case "read-from-string": return (CompilerPrimitive)this::readFromStr;
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
@@ -7723,7 +7755,7 @@ public class LambdaJ {
         {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
         {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
         {"1+", "inc"}, {"1-", "dec"},
-        {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
+        {"read-from-string", "readFromStr"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
         {"adjustable-array-p", "adjustableArrayP"}, {"vector-add", "vectorAdd"},
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},

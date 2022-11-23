@@ -977,7 +977,7 @@ Murmel's `seqref` and `seqset` will handle dotted lists, though.
 
 ### read, write, writeln, lnwrite
 
-    (read) -> obj
+    (read eof-obj?) -> obj
     (write   obj  print-escape-p?) -> t
     (writeln obj? print-escape-p?) -> t
     (lnwrite obj? print-escape-p?) -> t
@@ -1011,6 +1011,18 @@ followed by a ' ', i.e. writeln is C-style, lnwrite is Lisp-style.
 the optioal parameter `print-escape-p` can be used to turn off escaping:
 
     (writeln "Hello, World!" nil)
+
+### (read-from-string str [skip [eof-obj]]) -> object, position
+
+Since: 1.4
+
+Similar to CL's `read-from-string` which has more parameters
+in a different order.
+
+    (read-from-string "123 456" 4) ; ==> 456, 7
+    (read-from-string "123 456" 7 'eof) ; ==> eof, 7
+    (read-from-string "123 456   " 7 'eof) ; ==> eof, 10
+
 
 ### format, format-locale
 

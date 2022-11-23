@@ -1088,6 +1088,11 @@ multiline comment
                                   file-error
                                   stream-error end-of-file reader-error))
 
+(defun fling (cnd)
+  (labels ((do-fling ()
+             (error cnd)))
+    (do-fling)))
+
 (defmacro get-condition (form)
   ; invoke "form" and return the condition it throws
   (let ((ret (gensym))
@@ -1098,7 +1103,8 @@ multiline comment
            (if cnd-types
                  (let ((cnd-type (car cnd-types)))
                    ;(format t "condition %s%n" cnd-type)
-                   (deftest cnd.X (typep (get-condition (error cnd-type)) cnd-type) t)
+                   (deftest cnd.X.1 (typep (get-condition (error cnd-type)) cnd-type) t)
+                   (deftest cnd.X.2 (typep (get-condition (fling cnd-type)) cnd-type) t)
                    (looop (cdr cnd-types))))))
   (looop *all-murmel-conditions*))
 
