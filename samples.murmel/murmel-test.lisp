@@ -73,7 +73,7 @@
 (defmacro try (form &optional errorobj)
   (let ((ex (gensym)))
     `(handler-case ,form
-                   (error (,ex) (values ,errorobj ,ex)))))
+                   (condition (,ex) (values ,errorobj ,ex)))))
 )
 
 
@@ -1077,6 +1077,30 @@ multiline comment
 (deftest time.5 (consp (get-decoded-time))  t)
 
 (deftest time.6 (sleep 0.1) nil)
+
+
+;;; test conditions, error and typep
+(define *all-murmel-conditions* '(condition
+                                  error simple-error
+                                  cell-error unbound-variable undefined-function
+                                  control-error program-error parse-error
+                                  arithmetic-error type-error simple-type-error
+                                  file-error
+                                  stream-error end-of-file reader-error))
+
+(defmacro get-condition (form)
+  ; invoke "form" and return the condition it throws
+  (let ((ret (gensym))
+        (cnd (gensym)))
+  `(multiple-value-bind (,ret ,cnd) (try ,form) ,cnd)))
+
+(labels ((looop (cnd-types) ; can't use "loop" because of CL's "Lock on package COMMON-LISP"
+           (if cnd-types
+                 (let ((cnd-type (car cnd-types)))
+                   ;(format t "condition %s%n" cnd-type)
+                   (deftest cnd.X (typep (get-condition (error cnd-type)) cnd-type) t)
+                   (looop (cdr cnd-types))))))
+  (looop *all-murmel-conditions*))
 
 
 ;;; Java FFI: tests some functions with objects Java classes that are not normally used in Murmel

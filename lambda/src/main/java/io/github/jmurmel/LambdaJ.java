@@ -283,9 +283,9 @@ public class LambdaJ {
         public static final long serialVersionUID = 1L;
 
         public LambdaJError(String msg)                                       { super(msg, null, false, false); }
-        public LambdaJError(boolean format, String msg, Object... params)     { super((format ? String.format(msg, params) : msg) + getErrorExp(params), null, false, false); }
-        public LambdaJError(LambdaJError cause, String msg, Object... params) { super(String.format(msg, params) + getErrorExp(params), cause.getCause()); }
-        public LambdaJError(Throwable cause, String msg, Object... params)    { super(String.format(msg, params) + getErrorExp(params), cause); }
+        public LambdaJError(boolean format, String msg, Object... params)     { super((format ? fmt(msg, params) : msg) + getErrorExp(params), null, false, false); }
+        public LambdaJError(LambdaJError cause, String msg, Object... params) { super(fmt(msg, params) + getErrorExp(params), cause.getCause() == null ? cause : cause.getCause()); }
+        public LambdaJError(Throwable cause, String msg, Object... params)    { super(fmt(msg, params) + getErrorExp(params), cause); }
         public LambdaJError(Throwable cause)                                  { super(cause.getMessage(), cause); }
         public LambdaJError(Throwable cause, Object errorForm)                { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), cause); }
 
@@ -319,13 +319,18 @@ public class LambdaJ {
 
     // artithmetic-error... java.lang.ArithmeticException
     // type-error...        java.lang.ClassCastException
-    public static class SimpleTypeError extends ClassCastException { public SimpleTypeError(String msg, Object... params) { super(String.format(msg, params)); } }
+    public static class SimpleTypeError extends ClassCastException { public SimpleTypeError(String msg, Object... params) { super(fmt(msg, params)); } }
     // file-error...        java.nio.file.InvalidPathException
 
     // stream-error...      java.io.IOException
     //     end-of-file...   java.io.EOFException
     public static class ReaderError extends IOException     { public ReaderError(String message) { super(message); }
-                                                              public ReaderError(String msg, Object... params) { super(String.format(msg, params)); } }
+                                                              public ReaderError(String msg, Object... params) { super(fmt(msg, params)); } }
+
+    static String fmt(String msg, Object... params) {
+        if (msg == null) return null;
+        return String.format(msg, params);
+    }
 
 
     /// ## Data types used by interpreter program as well as interpreted programs
@@ -2156,7 +2161,7 @@ public class LambdaJ {
                     try {
                         return result = eval(car(ccArguments), env, stack, level, traceLvl);
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         final Object errorObjOrHandler = eval(cadr(ccArguments), env, stack, level, traceLvl);
                         values = list(errorObjOrHandler, e);
                         return result = errorObjOrHandler;
@@ -4722,10 +4727,7 @@ public class LambdaJ {
     }
 
     static void error(SymbolTable st, Object datum, Object... args) {
-        if (stringp(datum)) {
-            final String formatString = requireString("error", datum);
-            throw new SimpleError(formatString, args);
-        }
+        if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
 
         if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)"); // todo args
 
@@ -4736,11 +4738,29 @@ public class LambdaJ {
         default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
         }
 
+        if (datum == st.intern("condition")) throwAsRuntimeException(new Throwable(msg));
+        if (datum == st.intern("error")) throwAsRuntimeException(new Exception(msg));
+
+        if (datum == st.intern("simple-error")) throw new SimpleError(msg);
+
+        if (datum == st.intern("cell-error")) throw new CellError(msg);
+        if (datum == st.intern("unbound-variable")) throw new UnboundVariable(msg);
+        if (datum == st.intern("undefined-function")) throw new UndefinedFunction(msg);
+
+        if (datum == st.intern("control-error")) throw new ControlError(msg);
+        if (datum == st.intern("program-error")) throw new ProgramError(msg);
+        if (datum == st.intern("parse-error")) throw new ParseError(msg);
+
+        if (datum == st.intern("arithmetic-error")) throw new ArithmeticException(msg);
+
+        if (datum == st.intern("type-error")) throw new ClassCastException(msg);
+        if (datum == st.intern("simple-type-error")) throw new SimpleTypeError(msg);
+
         if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException(msg));
         if (datum == st.intern("end-of-file"))  throwAsRuntimeException(new EOFException(msg));
         if (datum == st.intern("reader-error")) throwAsRuntimeException(new ReaderError(msg));
 
-        throwAsRuntimeException(new Exception());
+        throw new LambdaJError("error: unknown condition type " + printSEx(datum) + ": " + msg);
     }
 
     private static RuntimeException throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); return null; }
@@ -7262,7 +7282,7 @@ public class LambdaJ {
             try {
                 return protectedForm.apply(NOARGS);
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 values = new Object[] { errorObj, e };
                 return errorObj;
             }
