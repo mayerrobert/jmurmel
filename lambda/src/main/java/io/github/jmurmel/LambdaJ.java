@@ -287,6 +287,7 @@ public class LambdaJ {
         public LambdaJError(LambdaJError cause, String msg, Object... params) { super(fmt(msg, params) + getErrorExp(params), cause.getCause() == null ? cause : cause.getCause()); }
         public LambdaJError(Throwable cause, String msg, Object... params)    { super(fmt(msg, params) + getErrorExp(params), cause); }
         public LambdaJError(Throwable cause)                                  { super(cause.getMessage(), cause); }
+        public LambdaJError(Throwable cause, String msg)                      { super(msg, cause); }
         public LambdaJError(Throwable cause, Object errorForm)                { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), cause); }
 
         @Override public String toString() { return "Error: " + getMessage(); }
@@ -1115,7 +1116,7 @@ public class LambdaJ {
         private static final Object CONTINUE = new Object();
 
         /** if we get here then we have already read '#' and look contains the character after #subchar */
-        private Object readerMacro(int sub_char) {
+        private Object readerMacro(int sub_char) throws IOException {
             switch (sub_char) {
             // #:symbolname ... uninterned symbol
             case ':': return new LambdaJSymbol(isBar(look) ? readBarSymbol() : readerMacroToken());
@@ -1147,7 +1148,7 @@ public class LambdaJ {
                         return CONTINUE;
                     }
                 }
-                throw new ParseError("line %d:%d: EOF in multiline comment", ln, cn);
+                throw new EOFException(fmt("line %d:%d: EOF in multiline comment", ln, cn));
 
             // #' ... function, ignore for CL compatibility
             case '\'':
@@ -1258,7 +1259,7 @@ public class LambdaJ {
          *     <li>an interned symbol
          *     <li>{@code null} to indicate EOF
          * </ul> */
-        private void readToken() {
+        private void readToken() throws IOException {
             final int eof = LambdaJ.EOF;
             for (;;) {
                 skipWs();
@@ -1394,22 +1395,15 @@ public class LambdaJ {
                 //return expand_backquote(readObject(startLine, startChar));
                 return readObject(startLine, startChar, eof);
             }
-            catch (ParseError pe) {
-                throw errorReaderError(pe.getMessage() + posInfo());
+            catch (Exception pe) {
+                throw new LambdaJError(pe, pe.getMessage() + posInfo());
             }
         }
 
-        private final Object sQuote;
-        private final Object sQuasiquote;
-        private final Object sUnquote;
-        private final Object sUnquote_splice;
-        private final Object sAppend;
-        private final Object sList;
-        private final Object sListStar;
-        private final Object sCons;
-        private final Object sNil;
+        private final Object sQuote, sQuasiquote, sUnquote, sUnquote_splice;
+        private final Object sAppend, sList, sListStar, sCons, sNil;
 
-        private Object readObject(int startLine, int startChar, Object eof) {
+        private Object readObject(int startLine, int startChar, Object eof) throws IOException {
             if (tok == null) {
                 if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
                 return eof;
@@ -1498,7 +1492,7 @@ public class LambdaJ {
             return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
         }
 
-        private Object readList(int listStartLine, int listStartChar, Object eof) {
+        private Object readList(int listStartLine, int listStartChar, Object eof) throws IOException {
             AbstractConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();

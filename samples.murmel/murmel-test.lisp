@@ -1109,6 +1109,10 @@ multiline comment
   (looop *all-murmel-conditions*))
 
 
+(deftest read-error.1 (typep (get-condition (read-from-string "#|")) 'end-of-file) t)    ; EOF in comment
+(deftest read-error.2 (typep (get-condition (read-from-string "#b123")) 'parse-error) t) ; invalid base2
+
+
 ;;; Java FFI: tests some functions with objects Java classes that are not normally used in Murmel
 #+murmel
 (let (

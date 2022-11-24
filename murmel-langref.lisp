@@ -324,6 +324,47 @@ pi ; ==> 3.141592653589793
 ;           (list ::= cons | null)
 ;           (sequence ::= list | vector)
 ;
+;
+;     ;; Murmel's condition type hierarchy is a subset of CL's condition type hierarchy,
+;     ;; `error` and subtypes are pretty much the same. Murmel doesn't have multiple
+;     ;; inheritance, though, and `reader-error` only extends `stream-error`.
+;     ;; JMurmel maps conditions to Java exceptions as best as possible.
+;
+;           condition                           java.lang.Throwable
+;               error                           java.lang.Exception
+;
+;                 (murmel-error                 LambdaJError extends RuntimeException extends Exception)
+;
+;                                               ;;; extends LambdaJError
+;                   simple-error                SimpleError extends LambdaJError
+;
+;                   cell-error                  CellError extends LambdaJError
+;                       unbound-variable        UnboundVariable extends CellError extends LambdaJError
+;                       undefined-function      UndefinedFunction extends CellError extends LambdaJError
+;
+;                   control-error               ControlError extends LambdaJError
+;
+;                   program-error               ProgramError extends LambdaJError
+;
+;                   parse-error                 SExpressionReader.ParseError extends LambdaJError
+;
+;
+;                                               ;;; extends java.lang.RuntimeException
+;                   arithmetic-error            java.lang.ArithmeticException extends RuntimeException
+;                       (overflow, underflow)
+;       
+;                   type-error                  java.lang.ClassCastException extends RuntimeException
+;                       simple-type-error       SimpleTypeError extends ClassCastException
+;       
+;                   file-error                  java.nio.file.InvalidPathException extends IllegalArgumentException extends RuntimeException
+;
+;
+;                                               ;;; extends java.io.IOException
+;                   stream-error                java.io.IOException
+;                       end-of-file             java.io.EOFException extends IOException
+;                       reader-error            ReaderError extends IOException
+;                                               NOTE: CL's reader-error has two superclasses: stream-error and parse-error
+
 ; The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
 
 ; Murmel treats symbols case-insensitive.
