@@ -1105,9 +1105,9 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                throw throwAsRuntimeException(new ReaderError("characterset conversion error in SExpressionReader: %s", e.toString()));
+                throw errorReaderError("characterset conversion error in SExpressionReader: %s", e.toString());
             } catch (Exception e) {
-                throw throwAsRuntimeException(new ReaderError("I/O error in SExpressionReader: %s", e.toString()));
+                throw errorReaderError("I/O error in SExpressionReader: %s", e.toString());
             }
         }
 
@@ -1134,7 +1134,7 @@ public class LambdaJ {
                 for (int i = 0; i < CTRL.length; i++) {
                     if (CTRL[i].equals(charOrCharactername)) return (char)i;
                 }
-                throw new ReaderError("unrecognized character name %s", charOrCharactername);
+                throw errorReaderError("unrecognized character name %s", charOrCharactername);
 
             // #| ... multiline comment ending with |#
             // or #! ... !# to make hashbang scripts possible
@@ -1190,7 +1190,7 @@ public class LambdaJ {
                     switch (c) {
                     case '0': break;
                     case '1': ret[i] = true; break;
-                    default: throwAsRuntimeException(new ReaderError("not a valid value for bitvector: %c", c));
+                    default: errorReaderError("not a valid value for bitvector: %c", c);
                     }
                     i++;
                 }
@@ -1198,7 +1198,7 @@ public class LambdaJ {
 
             default:
                 look = getchar();
-                throw throwAsRuntimeException(new ReaderError("no dispatch function defined for %s", printChar(sub_char)));
+                throw errorReaderError("no dispatch function defined for %s", printChar(sub_char));
             }
         }
 
@@ -1348,7 +1348,7 @@ public class LambdaJ {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
-                throw throwAsRuntimeException(new ReaderError("'%s' is not a valid number", s));
+                throw errorReaderError("'%s' is not a valid number", s);
             }
         }
 
@@ -1356,7 +1356,7 @@ public class LambdaJ {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
-                throw throwAsRuntimeException(new ReaderError("'%s' is not a valid number", s));
+                throw errorReaderError("'%s' is not a valid number", s);
             }
         }
 
@@ -1533,7 +1533,7 @@ public class LambdaJ {
          *  Returns a dotted list unless rest is a proper list. This works like a two arg nconc. */
         private static ConsCell nconc2(ConsCell first, Object rest) {
             for (ConsCell last = first; ; last = (ConsCell) cdr(last)) {
-                if (cdr(last) == first) throwAsRuntimeException(new ReaderError("%s: first argument is a circular list", "appendToList"));
+                if (cdr(last) == first) errorReaderError("%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.rplacd(rest);
                     return first;
@@ -3053,7 +3053,7 @@ public class LambdaJ {
             throw throwAsRuntimeException(re);
         }
         catch (IOException e) {
-            throw throwAsRuntimeException(new ReaderError("load: error reading file '%s': ", e.getMessage()));
+            throw errorReaderError("load: error reading file '%s': ", e.getMessage());
         }
         finally {
             currentSource = prev;
@@ -3640,6 +3640,10 @@ public class LambdaJ {
 
     static RuntimeException errorReaderError(String msg) {
         return throwAsRuntimeException(new ReaderError(msg));
+    }
+
+    static RuntimeException errorReaderError(String msg, Object... args) {
+        return throwAsRuntimeException(new ReaderError(msg, args));
     }
 
     static RuntimeException errorNotImplemented(String msg, Object... args) {
