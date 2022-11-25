@@ -4788,7 +4788,7 @@ public class LambdaJ {
         if (datum == st.intern("end-of-file"))  throwAsRuntimeException(new EOFException(msg));
         if (datum == st.intern("reader-error")) throwAsRuntimeException(new ReaderError(msg));
 
-        throw new LambdaJError("error: unknown condition type " + printSEx(datum) + ": " + msg);
+        throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
     }
 
     private static RuntimeException throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); return null; }
@@ -6550,7 +6550,7 @@ public class LambdaJ {
         }
 
         public final Object rterror(Exception e) {
-            throw new LambdaJError(e.getMessage() + "\nError occured in " + loc);
+            throw new LambdaJError(e, e.getMessage() + "\nError occured in " + loc);
         }
 
 
@@ -7059,7 +7059,7 @@ public class LambdaJ {
 
         /** used by generated Java code */
         public static Object requireNotNull(Object obj) {
-            if (obj == null) { throw new LambdaJError(true, "object is nil"); }
+            if (obj == null) { throw new SimpleTypeError("object is nil"); }
             return obj;
         }
 
@@ -7067,7 +7067,7 @@ public class LambdaJ {
             if (obj == null) { throw new LambdaJError(true, "object is nil"); }
             if (obj instanceof Object[]) return (Object[])obj;
             if (obj instanceof List) return ((List<?>)obj).toArray(new Object[0]);
-            throw new LambdaJError(true, "not a character: %s", printSEx(obj));
+            throw new SimpleTypeError("not a character: %s", printSEx(obj));
         }
 
         /** used by generated Java code */
@@ -7349,7 +7349,7 @@ public class LambdaJ {
 
         private static RuntimeException errorNotANumber(Object n) { throw new SimpleTypeError("not a number: %s", printSEx(n)); }
         private static RuntimeException errorNotABit(Object n) { throw new SimpleTypeError("not a bit: %s", printSEx(n)); }
-        private static RuntimeException errorNotAnArrayIndex(Object n) { throw new LambdaJError(true, "invalid array index/ size: %s", printSEx(n)); }
+        private static RuntimeException errorNotAnArrayIndex(Object n) { throw new SimpleTypeError("invalid array index/ size: %s", printSEx(n)); }
         private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new SimpleTypeError("not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new SimpleTypeError("not a string: %s", printSEx(s)); }
