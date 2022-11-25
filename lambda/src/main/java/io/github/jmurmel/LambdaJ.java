@@ -284,11 +284,11 @@ public class LambdaJ {
 
         public LambdaJError(String msg)                                       { super(msg, null, false, false); }
         public LambdaJError(boolean format, String msg, Object... params)     { super((format ? fmt(msg, params) : msg) + getErrorExp(params), null, false, false); }
-        public LambdaJError(LambdaJError cause, String msg, Object... params) { super(fmt(msg, params) + getErrorExp(params), cause.getCause() == null ? cause : cause.getCause()); }
-        public LambdaJError(Throwable cause, String msg, Object... params)    { super(fmt(msg, params) + getErrorExp(params), cause); }
-        public LambdaJError(Throwable cause)                                  { super(cause.getMessage(), cause); }
-        public LambdaJError(Throwable cause, String msg)                      { super(msg, cause); }
-        public LambdaJError(Throwable cause, Object errorForm)                { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), cause); }
+        public LambdaJError(LambdaJError cause, String msg, Object... params) { super(fmt(msg, params) + getErrorExp(params), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, String msg, Object... params)    { super(fmt(msg, params) + getErrorExp(params), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause)                                  { super(cause.getMessage(), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, String msg)                      { super(msg, getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, Object errorForm)                { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
 
         @Override public String toString() { return "Error: " + getMessage(); }
 
@@ -297,6 +297,11 @@ public class LambdaJ {
             if (params != null && params.length > 0 && (exp = params[params.length-1]) instanceof ConsCell)
                 return System.lineSeparator() + "error occurred in " + ((ConsCell) exp).lineInfo() + printSEx(exp);
             return "";
+        }
+
+        private static Throwable getMurmelCause(Throwable t) {
+            if (t instanceof LambdaJError && t.getCause() != null) return t.getCause();
+            return t;
         }
     }
 
@@ -1339,7 +1344,7 @@ public class LambdaJ {
                 look = getchar(false);
             }
             if (look == LambdaJ.EOF)
-                throw throwAsRuntimeException(new EOFException("|-quoted symbol is missing closing |"));
+                throw wrap(new EOFException("|-quoted symbol is missing closing |"));
             look = getchar(); // consume trailing |
             return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
         }
@@ -1434,7 +1439,7 @@ public class LambdaJ {
                         if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
                         return list;
                     }
-                    catch (ParseError | IOException e) {
+                    catch (LambdaJError | IOException e) {
                         errorReaderError(e.getMessage() + posInfo(startLine, startChar));
                     }
                 }
@@ -3050,7 +3055,7 @@ public class LambdaJ {
             return result;
         }
         catch (ReaderError re) {
-            throw throwAsRuntimeException(re);
+            throw wrap(re);
         }
         catch (IOException e) {
             throw errorReaderError("load: error reading file '%s': ", e.getMessage());
@@ -3639,11 +3644,11 @@ public class LambdaJ {
     /// ##  Error "handlers"
 
     static RuntimeException errorReaderError(String msg) {
-        return throwAsRuntimeException(new ReaderError(msg));
+        return wrap(new ReaderError(msg));
     }
 
     static RuntimeException errorReaderError(String msg, Object... args) {
-        return throwAsRuntimeException(new ReaderError(msg, args));
+        return wrap(new ReaderError(msg, args));
     }
 
     static RuntimeException errorNotImplemented(String msg, Object... args) {
@@ -4560,7 +4565,7 @@ public class LambdaJ {
         if (a == null) {
             final Object eof = new Object();
             final Object ret = lispReader.readObj(eof);
-            if (ret == eof) throwAsRuntimeException(new EOFException("read: EOF"));
+            if (ret == eof) wrap(new EOFException("read: EOF"));
             return ret;
         }
         else {
@@ -4577,7 +4582,7 @@ public class LambdaJ {
         if (a != null) {
             final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
             if (skip > s.length()) throw new SimpleTypeError("skip must be <= string length");
-            try { sr.skip(skip); } catch (IOException e) { throwAsRuntimeException(e); }
+            try { sr.skip(skip); } catch (IOException e) { wrap(e); }
             count[0] = skip;
             a = (ConsCell)cdr(a);
         }
@@ -4586,7 +4591,7 @@ public class LambdaJ {
         if (a == null) {
             final Object eof = new Object();
             ret = reader.readObj(eof);
-            if (ret == eof) throwAsRuntimeException(new EOFException("read-from-string: EOF"));
+            if (ret == eof) wrap(new EOFException("read-from-string: EOF"));
         }
         else {
             ret = reader.readObj(car(a));
@@ -4766,8 +4771,8 @@ public class LambdaJ {
         default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
         }
 
-        if (datum == st.intern("condition")) throwAsRuntimeException(new Throwable(msg));
-        if (datum == st.intern("error")) throwAsRuntimeException(new Exception(msg));
+        if (datum == st.intern("condition")) wrap(new Throwable(msg));
+        if (datum == st.intern("error")) wrap(new Exception(msg));
 
         if (datum == st.intern("simple-error")) throw new SimpleError(msg);
 
@@ -4784,18 +4789,16 @@ public class LambdaJ {
         if (datum == st.intern("type-error")) throw new ClassCastException(msg);
         if (datum == st.intern("simple-type-error")) throw new SimpleTypeError(msg);
 
-        if (datum == st.intern("stream-error")) throwAsRuntimeException(new IOException(msg));
-        if (datum == st.intern("end-of-file"))  throwAsRuntimeException(new EOFException(msg));
-        if (datum == st.intern("reader-error")) throwAsRuntimeException(new ReaderError(msg));
+        if (datum == st.intern("stream-error")) wrap(new IOException(msg));
+        if (datum == st.intern("end-of-file"))  wrap(new EOFException(msg));
+        if (datum == st.intern("reader-error")) wrap(new ReaderError(msg));
 
         throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
     }
 
-    private static RuntimeException throwAsRuntimeException(Throwable t) { throwAsRuntimeException(t, RuntimeException.class); return null; }
-
-    @SuppressWarnings({"unchecked", "unused"})
-    private static <T extends Throwable> void throwAsRuntimeException(Throwable t, Class<T> xclass) throws T {
-        throw (T)t;
+    static RuntimeException wrap(Throwable t) {
+        if (t instanceof RuntimeException) throw (RuntimeException)t;
+        throw new LambdaJError(t, t.getMessage());
     }
 
 
@@ -8823,7 +8826,7 @@ public class LambdaJ {
                 }
                 return topEnv;
             } catch (IOException e) {
-                throw throwAsRuntimeException(new ReaderError("load: error reading file '%s': ", e.getMessage()));
+                throw wrap(new ReaderError("load: error reading file '%s': ", e.getMessage()));
             }
             finally {
                 intp.currentSource = prev;
