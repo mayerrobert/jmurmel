@@ -1109,15 +1109,24 @@ multiline comment
   (looop *all-murmel-conditions*))
 
 
-(deftest read-error.1 (typep (get-condition (read-from-string "#|")) 'end-of-file) t)    ; EOF in comment
-(deftest read-error.2 (typep (get-condition (read-from-string "#\\Bla")) 'reader-error) t) ; invalid character name
-(deftest read-error.3 (typep (get-condition (read-from-string "#b123")) 'reader-error) t) ; invalid base2
-(deftest read-error.4 (typep (get-condition (read-from-string "#o123a")) 'reader-error) t) ; invalid base2
-(deftest read-error.5 (typep (get-condition (read-from-string "#*012")) 'reader-error) t) ; invalid bit
-(deftest read-error.6 (typep (get-condition (read-from-string "#@")) 'reader-error) t) ; no dispatch function
-(deftest read-error.7 (typep (get-condition (read-from-string "#+(not 1 2 3)")) 'simple-error) t) ; too many subexpressions
-(deftest read-error.7 (typep (get-condition (read-from-string "#+(xyxxy 1 2 3)")) 'simple-error) t) ; unknown featureexpression
-(deftest read-error.8 (typep (get-condition (read-from-string "|xyxxy")) 'end-of-file) t) ; | not closed
+(deftest read-error.1  (typep (get-condition (read-from-string "#|"))              'end-of-file) t)   ; EOF in comment
+(deftest read-error.2  (typep (get-condition (read-from-string "|xyxxy"))          'end-of-file) t)   ; | not closed
+(deftest read-error.3  (typep (get-condition (read-from-string "\"xyxxy"))         'end-of-file) t)   ; " not closed
+
+(deftest read-error.4  (typep (get-condition (read-from-string "#\\Bla"))          'reader-error) t)  ; invalid character name
+(deftest read-error.5  (typep (get-condition (read-from-string "#b123"))           'reader-error) t)  ; invalid base2
+(deftest read-error.6  (typep (get-condition (read-from-string "#o123a"))          'reader-error) t)  ; invalid base2
+(deftest read-error.7  (typep (get-condition (read-from-string "#*012"))           'reader-error) t)  ; invalid bit
+(deftest read-error.8  (typep (get-condition (read-from-string "#@"))              'reader-error) t)  ; no dispatch function
+
+(deftest read-error.9  (typep (get-condition (read-from-string "#+(not 1 2 3)"))   'simple-error) t)  ; too many subexpressions
+(deftest read-error.10 (typep (get-condition (read-from-string "#+(xyxxy 1 2 3)")) 'simple-error) t)  ; unknown featureexpression
+
+(deftest read-error.11 (typep (get-condition (read-from-string "(xyxxy . )"))      'reader-error) t)  ; nothing after . in list
+(deftest read-error.12 (typep (get-condition (read-from-string "(xyxxy . 1 2)"))   'reader-error) t)  ; more than one object after . in list
+(deftest read-error.13 (typep (get-condition (read-from-string ")"))               'reader-error) t)  ; unmatched )
+(deftest read-error.14 (typep (get-condition (read-from-string ","))               'reader-error) t)  ; , not inside a backquote
+(deftest read-error.15 (typep (get-condition (read-from-string "`,@aaa"))          'reader-error) t)  ; , not inside a backquote
 
 
 ;;; Java FFI: tests some functions with objects Java classes that are not normally used in Murmel

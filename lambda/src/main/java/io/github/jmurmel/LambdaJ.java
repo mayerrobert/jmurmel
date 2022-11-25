@@ -1288,7 +1288,7 @@ public class LambdaJ {
                         look = getchar(false);
                     } while (look != eof && !isDQuote(look));
                     if (look == eof)
-                        throw new ParseError("string literal is missing closing \"");
+                        throw new EOFException("string literal is missing closing \"");
                     look = getchar(); // consume trailing "
                     tok = tokenToString(token, 1, index).intern();
                 } else if (isHash(look)) {
@@ -1418,7 +1418,7 @@ public class LambdaJ {
                 return tok;
             }
             if (!tokEscape) {
-                if (tok == Token.RP) throw new ParseError("unexpected ')'");
+                if (tok == Token.RP) errorReaderError("unexpected ')'");
                 if (tok == Token.LP) {
                     try {
                         final Object list = readList(startLine, startChar, eof);
@@ -1434,7 +1434,7 @@ public class LambdaJ {
                         if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
                         return list;
                     }
-                    catch (ParseError e) {
+                    catch (ParseError | IOException e) {
                         errorReaderError(e.getMessage() + posInfo(startLine, startChar));
                     }
                 }
@@ -1498,7 +1498,7 @@ public class LambdaJ {
                 skipWs();
                 final int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
-                if (tok == null) throw new ParseError("cannot read list. missing ')'?");
+                if (tok == null) throw new EOFException("cannot read list. missing ')'?");
                 if (!tokEscape && (tok == Token.RP || tok == Token.DOT)) {
                     if (first != null) first.adjustEnd(prevLineNo, prevCharNo);
                     return first;
