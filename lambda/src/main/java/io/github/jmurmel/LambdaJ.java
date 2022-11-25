@@ -2374,22 +2374,23 @@ public class LambdaJ {
         }
 
         catch (ReturnException re) {
-            final Object thrownTag = re.tag;
-            if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
-                if (car(i) == thrownTag) { values = re.valuesAsList(); return result = re.result; }
-            }
-            throw re;
+            return result = nonlocalReturn(re, localCatchTags);
         }
-        catch (LambdaJError le) {
+        catch (LambdaJError e) {
+            try { handleCondition(e, env); }
+            catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
             // don't rethrow but wrap so that the Murmel stack is gathered in the Exception message
-            throw new LambdaJError(le, le.getMessage(), form);
+            throw new LambdaJError(e, e.getMessage(), form);
         }
         catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            try { handleCondition(e, env); }
+            catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
+            Thread.currentThread().interrupt(); // todo wenn der conditionhandler ein nonlocal return macht, geht das verschütt
             throw new LambdaJError(e, e.getMessage(), form);
         }
         catch (Exception e) {
-            //e.printStackTrace();
+            try { handleCondition(e, env); }
+            catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
             throw new LambdaJError(e, e.getMessage(), form);
         }
         finally {
@@ -2410,14 +2411,26 @@ public class LambdaJ {
             }
             if (e != null) {
                 if (e instanceof ReturnException) {
-                    final ReturnException re = (ReturnException)e;
-                    final Object thrownTag = re.tag;
-                    if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
-                        if (car(i) == thrownTag) { values = re.valuesAsList(); return re.result; }
-                    }
+                    return nonlocalReturn((ReturnException)e, localCatchTags);
                 }
                 throw e;
             }
+        }
+    }
+
+    private Object nonlocalReturn(ReturnException re, ConsCell localCatchTags) {
+        final Object thrownTag = re.tag;
+        if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
+            if (car(i) == thrownTag) { values = re.valuesAsList(); return re.result; }
+        }
+        throw re;
+    }
+
+    private void handleCondition(Exception e, ConsCell env) {
+        final ConsCell errorHandlerCell = assoc(symtab.intern("*condition-handler*"), env);
+        if (errorHandlerCell != null) {
+            final ConsCell call = list(cdr(errorHandlerCell), e);
+            eval(call, env);
         }
     }
 
