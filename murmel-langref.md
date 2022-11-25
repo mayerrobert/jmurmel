@@ -364,6 +364,8 @@ Murmel's type system (and the corresponding host types) look like so:
                       end-of-file             java.io.EOFException extends IOException
                       reader-error            ReaderError extends IOException
                                               NOTE: CL's reader-error has two superclasses: stream-error and parse-error
+                                                    if c was a reader-error then both
+                                                    (typep c 'stream-error) and (typep c 'parse-error) are true
 
 The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
 

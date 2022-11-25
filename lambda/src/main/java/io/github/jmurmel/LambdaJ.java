@@ -1105,9 +1105,9 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                throw new ParseError("characterset conversion error in SExpressionReader: %s", e.toString());
+                throw throwAsRuntimeException(new ReaderError("characterset conversion error in SExpressionReader: %s", e.toString()));
             } catch (Exception e) {
-                throw new ParseError("I/O error in SExpressionReader: %s", e.toString());
+                throw throwAsRuntimeException(new ReaderError("I/O error in SExpressionReader: %s", e.toString()));
             }
         }
 
@@ -1134,7 +1134,7 @@ public class LambdaJ {
                 for (int i = 0; i < CTRL.length; i++) {
                     if (CTRL[i].equals(charOrCharactername)) return (char)i;
                 }
-                throw new ParseError("unrecognized character name %s", charOrCharactername);
+                throw new ReaderError("unrecognized character name %s", charOrCharactername);
 
             // #| ... multiline comment ending with |#
             // or #! ... !# to make hashbang scripts possible
@@ -1198,7 +1198,7 @@ public class LambdaJ {
 
             default:
                 look = getchar();
-                throw new ParseError("no dispatch function defined for %s", printChar(sub_char));
+                throw throwAsRuntimeException(new ReaderError("no dispatch function defined for %s", printChar(sub_char)));
             }
         }
 
@@ -1221,12 +1221,12 @@ public class LambdaJ {
                 if (car(next) == sAnd) return every(this::featurep, cdr(next));
                 if (car(next) == sOr) return some(this::featurep, cdr(next));
                 if (car(next) == sNot) {
-                    if (cdr(next) == null) throw new ParseError("feature expression not: not enough subexpressions, got %s", printSEx(next));
-                    if (cddr(next) != null) throw new ParseError("feature expression not: too many subexpressions, got %s", printSEx(next));
+                    if (cdr(next) == null) throw new SimpleError("feature expression not: not enough subexpressions, got %s", printSEx(next));
+                    if (cddr(next) != null) throw new SimpleError("feature expression not: too many subexpressions, got %s", printSEx(next));
                     return !featurep(cadr(next));
                 }
             }
-            throw new ParseError("unsupported feature expressions, got %s", printSEx(next));
+            throw new SimpleError("unsupported feature expressions, got %s", printSEx(next));
         }
 
         private static boolean every(Function<Object, Boolean> pred, Object maybeList) {
@@ -1278,7 +1278,7 @@ public class LambdaJ {
                     case '\'': tok = Token.SQ; break;
                     case '`':  tok = Token.BQ; break;
                     case ',':  tok = Token.COMMA; break;
-                    default: throw new ParseError("internal error - unexpected syntax char %c", (char)look);
+                    default: throw new ParseError("internal error - unexpected syntax character %c", (char)look);
                     }
                     look = getchar();
                 } else if (haveString() && isDQuote(look)) {
@@ -1339,7 +1339,7 @@ public class LambdaJ {
                 look = getchar(false);
             }
             if (look == LambdaJ.EOF)
-                throw new ParseError("|-quoted symbol is missing closing |");
+                throw throwAsRuntimeException(new EOFException("|-quoted symbol is missing closing |"));
             look = getchar(); // consume trailing |
             return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
         }
@@ -1348,7 +1348,7 @@ public class LambdaJ {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
-                throw new ParseError("'%s' is not a valid number", s);
+                throw throwAsRuntimeException(new ReaderError("'%s' is not a valid number", s));
             }
         }
 
@@ -1356,7 +1356,7 @@ public class LambdaJ {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
-                throw new ParseError("'%s' is not a valid number", s);
+                throw throwAsRuntimeException(new ReaderError("'%s' is not a valid number", s));
             }
         }
 
@@ -3362,7 +3362,7 @@ public class LambdaJ {
 
         if (typespec == st.intern("program-error")) return o instanceof ProgramError;
 
-        if (typespec == st.intern("parse-error")) return o instanceof ParseError;
+        if (typespec == st.intern("parse-error")) return o instanceof ParseError || o instanceof ReaderError;
 
 
         // extends RuntimeException

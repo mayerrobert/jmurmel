@@ -1,6 +1,32 @@
 checken ob in kompiliertem code values früh genug genullt wird
 
 
+statt try -> eine dynamische globale variable *error-handler*, initialwert ist ein debugger, neue handler werden gepusht, am ende des scope gepoppt
+-> oder parameter für eval(), ein neuer handler wird in ein lambda dazugebastelt
+-> muss das mit den handlern für unwind-protect/ let dynamic verbunden werden, damit die reihenfolge stimmt?
+
+
+environmentreferenzen inline cachen?
+-> symbol on-demand durch cacheobjekt ersetzen, das cacheobjekt hat eine weak reference auf die ConsCell im environment
+   (weak reference wär nicht nötig für globals, aber für parameter, und für globals falls/ sobald es makunbound gibt)
+
+
+(read-from-string str     [skip-to-position [error-obj]]) -> result, position
+
+(read-all-lines filename  [skip-to-position [error-obj [charset]]]) -> result-string-vector, position
+(read-all-bytes filename  [skip-to-position [error-obj]])           -> result-integer-vector, position
+
+(write-lines filename string-vector  [appendp [error-obj [charset]]]) -> byte-count
+(write-bytes filename integer-vector [appendp [error-obj]])           -> byte-count
+
+
+macrolet/ macroexpand mit lex environment:
+kamma den teil des macros, der das lex environment benutzt, wie eine inline funktion behandeln,
+und nur die subtrees die kein environment nutzen zur macroexpansion time expandieren?
+-> das wär dann in etwa: das macro wird in kleinere macros zerteilt, erst zur laufzeit wird bestimmt was greift
+-> macroexpand-1 tests aus clhs nochmal ansehen
+
+
 errorhandling in CL ist eigentlich conditionhandling https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node338.html
 geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist schiach, eher weglassen)
 -> oder statt (ignore-errors form*) => result*: (try function . errorobj-or-handler)
