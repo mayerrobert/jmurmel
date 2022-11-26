@@ -636,7 +636,7 @@ public class LambdaJ {
     static final int EOF = -1;
     static final Object[] EMPTY_ARRAY = new Object[0];
 
-    final ConsCell featuresEnvEntry;
+    final ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
 
     static final String[] CTRL = {
     "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
@@ -763,16 +763,16 @@ public class LambdaJ {
     }
 
     public LambdaJ(SymbolTable symtab) {
-        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, null, null);
+        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, null, null, null);
     }
 
     /** constructor */
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
-        this(features, trace, tracer, null, null, null);
+        this(features, trace, tracer, null, null, null, null);
     }
 
     /** constructor */
-    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, ConsCell featuresEnvEntry, Path libDir) {
+    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, Path libDir) {
         this.features = features;
 
         this.trace = trace;
@@ -787,6 +787,7 @@ public class LambdaJ {
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
         this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
+        this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(intern("*condition-handler*"), null);
 
         if (haveT()) symtab.intern(sT);
         if (haveNil()) symtab.intern(sNil);
@@ -1994,6 +1995,8 @@ public class LambdaJ {
         modules.clear();
         setReaderPrinter(inReader, outWriter);
         topEnv = customEnv;
+        featuresEnvEntry.rplacd(makeFeatureList(symtab));
+        conditionHandlerEnvEntry.rplacd(null);
         environment();
         return inReader;
     }
@@ -2427,11 +2430,8 @@ public class LambdaJ {
     }
 
     private void handleCondition(Exception e, ConsCell env) {
-        final ConsCell errorHandlerCell = assoc(symtab.intern("*condition-handler*"), env);
-        if (errorHandlerCell != null) {
-            final ConsCell call = list(cdr(errorHandlerCell), e);
-            eval(call, env);
-        }
+        final Object handler = cdr(conditionHandlerEnvEntry);
+        if (functionp(handler)) eval(list(handler, e), env);
     }
 
     final Object eval(Object form, ConsCell env) {
@@ -5187,6 +5187,7 @@ public class LambdaJ {
 
         if (haveUtil()) {
             topEnv = cons(featuresEnvEntry, topEnv);
+            topEnv = cons(conditionHandlerEnvEntry, topEnv);
             addBuiltin("internal-time-units-per-second", (long)1e9);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
@@ -5484,7 +5485,7 @@ public class LambdaJ {
 
                 final Path libPath = getLibPath(libDir);
 
-                final LambdaJ interpreter = new LambdaJ(features, trace, null, null, null, libPath);
+                final LambdaJ interpreter = new LambdaJ(features, trace, null, null, null, null, libPath);
 
                 final List<Object> history = repl ? new ArrayList<>() : null;
 
@@ -5852,7 +5853,6 @@ public class LambdaJ {
                     outWriter = makeWriter(System.out::print);
                     interpreter.init(parser, outWriter, null);
                     injectCommandlineArgs(interpreter, args);
-                    interpreter.featuresEnvEntry.rplacd(LambdaJ.makeFeatureList(interpreter.getSymbolTable()));
                     initReplVars.run();
                     isInit = true;
                 }
@@ -6491,7 +6491,7 @@ public class LambdaJ {
         private final SymbolTable symtab = new ListSymbolTable();
         private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character");
 
-        private final ConsCell featuresEnvEntry;
+        private final ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
         private ObjectReader lispReader;
         private ObjectWriter lispPrinter;
         private TurtleFrame current_frame;
@@ -6513,8 +6513,9 @@ public class LambdaJ {
             symtab.intern(sCharacter);
 
             // vor/nach eval features hintri/firi kopieren, values auch
-            features = makeFeatureList(symtab); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
-            featuresEnvEntry = ConsCell.cons(intern("*features*"), features);
+            __42_features_42_.set(makeFeatureList(symtab)); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
+            featuresEnvEntry = ConsCell.cons(intern("*features*"), __42_features_42_.get());
+            conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_);
 
             lispReader = new SExpressionReader(System.in::read, symtab, featuresEnvEntry, null);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
@@ -6522,16 +6523,16 @@ public class LambdaJ {
 
         private LambdaJ intpForEval() {
             if (intp == null) {
-                intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, null);
+                intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
                 intp.compiledProgram = this;
-                intp.featuresEnvEntry.rplacd(features);
                 intp.init(lispReader, lispPrinter, null);
                 intp.insertFrontTopEnv(intern("*command-line-argument-list*"), commandlineArgumentList);
             }
             else {
-                intp.featuresEnvEntry.rplacd(features);
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
+            intp.featuresEnvEntry.rplacd(__42_features_42_.get());
+            intp.conditionHandlerEnvEntry.rplacd(__42_condition_45_handler_42_.get());
             return intp;
         }
 
@@ -6586,7 +6587,8 @@ public class LambdaJ {
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
 
-        public ConsCell features;
+        public CompilerGlobal __42_features_42_ = new CompilerGlobal(null);
+        public CompilerGlobal __42_condition_45_handler_42_ = new CompilerGlobal(null);
 
         /// predefined primitives
 
@@ -7446,7 +7448,8 @@ public class LambdaJ {
             case "internal-time-units-per-second": return itups;
 
             case "*command-line-argument-list*": return commandlineArgumentList; // this will be assigned by genereted code at runtime
-            case "*features*": return features;
+            case "*features*": return __42_features_42_.get();
+            case "*condition-handler*": return __42_condition_45_handler_42_.get();
 
             // basic primitives
             case "apply": return (CompilerPrimitive)this::_apply;
@@ -7643,7 +7646,7 @@ public class LambdaJ {
         final LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
-            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, libDir);
+            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, libDir);
             intp.init(() -> -1, System.out::print);
             this.intp = intp;
 
@@ -7751,7 +7754,7 @@ public class LambdaJ {
         { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
         { "internal-time-units-per-second", "itups" },
         { "*command-line-argument-list*", "commandlineArgumentList" },
-        { "*features*", "features" },
+        { "*features*", "__42_features_42_.get()" }, { "*condition-handler*", "__42_condition_45_handler_42_.get()" },
         };
         private static final String[] primitives = {
         "car", "cdr", "cons", "rplaca", "rplacd",

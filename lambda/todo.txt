@@ -368,8 +368,6 @@ siehe CLtL "5.3.3. Control of Time of Evaluation" https://www.cs.cmu.edu/Groups/
    (): wegnehmen kamma nix mehr, dazugeben wird ignoriert
 
 
-zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
-
 packed-list könnte ein ArraySlice liefern. wie list, aber weniger allokationen, nth und nthcdr wäre schnell wenns in JMurmel drin wäre, cdr würde allokieren, rplacd geht nicht
 
 

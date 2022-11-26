@@ -2072,3 +2072,6 @@ JMurmel> :r
  -> 2
  -> 3
 JMurmel>
+
+
+zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
