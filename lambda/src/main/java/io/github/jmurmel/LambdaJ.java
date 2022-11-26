@@ -634,6 +634,9 @@ public class LambdaJ {
 
     /// ## Infrastructure
     static final int EOF = -1;
+    static final ReadSupplier NULL_READCHARS = () -> EOF;
+    static final WriteConsumer NULL_WRITECHARS = c -> {};
+
     static final Object[] EMPTY_ARRAY = new Object[0];
 
     final ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
@@ -1066,7 +1069,7 @@ public class LambdaJ {
             } catch (IOException e) { }
         }*/
 
-        private int prev = -1;
+        private int prev = EOF;
         private int readchar() throws IOException {
             final int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
@@ -1389,7 +1392,7 @@ public class LambdaJ {
         @Override
         public Object readObj(Object eof) {
             if (!init) {
-                prev = -1;
+                prev = EOF;
                 lineNo = 1; charNo = 0;
                 look = getchar();
                 init = true;
@@ -1851,7 +1854,7 @@ public class LambdaJ {
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
-        sReadFromString("read-from-string", Features.HAVE_IO, 1, 3)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.list(ret); return ret[0]; } },
+        sReadFromString("read-from-string", Features.HAVE_IO, 1, 3)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret, null); return ret[0]; } },
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
@@ -4607,7 +4610,7 @@ public class LambdaJ {
             count[0] = skip;
             a = (ConsCell)cdr(a);
         }
-        final ObjectReader reader = makeReader(() -> { final int c = sr.read(); if (c != -1) count[0]++; return c; });
+        final ObjectReader reader = makeReader(() -> { final int c = sr.read(); if (c != EOF) count[0]++; return c; });
         final Object ret;
         if (a == null) {
             final Object eof = new Object();
@@ -5503,7 +5506,7 @@ public class LambdaJ {
                     if (!files.isEmpty()) {
                         switch (action) {
                         case INTERPRET:
-                            interpreter.init(() -> -1, s -> {});
+                            interpreter.init(NULL_READCHARS, NULL_WRITECHARS);
                             injectCommandlineArgs(interpreter, args);
                             Object result = null;
                             for (String fileName : files) {
@@ -5549,7 +5552,7 @@ public class LambdaJ {
                     final Charset consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
                     if (action == Action.INTERPRET) {
-                        interpreter.init(() -> -1, s -> {});
+                        interpreter.init(NULL_READCHARS, NULL_WRITECHARS);
                         injectCommandlineArgs(interpreter, args);
                         final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
                         if (finalResult && !printResult && result != null) {
@@ -5832,7 +5835,7 @@ public class LambdaJ {
             SExpressionReader parser = null;
             ObjectWriter outWriter = null;
             final Reader consoleReader = new InputStreamReader(System.in, consoleCharset);
-            final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
+            final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != EOF) System.out.print((char)c); return c; };
             final ReadSupplier nonechoingSupplier = consoleReader::read;
 
             final Object bye = new Object();
@@ -6431,13 +6434,13 @@ public class LambdaJ {
             public int read() throws IOException {
                 if (reader == null) {
                     if (paths.hasNext()) next();
-                    else return -1;
+                    else return EOF;
                 }
                 try {
                     final int ret = reader.read();
-                    if (ret != -1) return ret;
+                    if (ret != EOF) return ret;
                     if (paths.hasNext()) next();
-                    else return -1;
+                    else return EOF;
                 }
                 catch (IOException e) {
                     final Reader old = reader;
@@ -6456,7 +6459,7 @@ public class LambdaJ {
                 if ("--".equals(fileName)) break;
                 paths.add(Paths.get(fileName));
             }
-            final ObjectReader reader = interpreter.makeReader(() -> -1, null);
+            final ObjectReader reader = interpreter.makeReader(NULL_READCHARS, null);
             reader.setInput(new MultiFileReadSupplier(paths, interpreter, reader, verbose), paths.get(0));
             interpreter.currentSource = paths.get(0);
             return reader;
@@ -7658,7 +7661,7 @@ public class LambdaJ {
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, libDir);
-            intp.init(() -> -1, System.out::print);
+            intp.init(NULL_READCHARS, System.out::print);
             this.intp = intp;
 
             this.javaCompiler = new JavaCompilerHelper(outPath);
