@@ -2161,6 +2161,8 @@ public class LambdaJ {
                 }
 
                 case sTry: { // todo das sollte eigentlich TCO werden, damit wuerde ein kuenftiger handler auch VOR dem stackabbau laufen
+                    final Object oldHandler = cdr(conditionHandlerEnvEntry);
+                    conditionHandlerEnvEntry.rplacd(null);
                     try {
                         return result = eval(car(ccArguments), env, stack, level, traceLvl);
                     }
@@ -2169,6 +2171,7 @@ public class LambdaJ {
                         values = list(errorObjOrHandler, e);
                         return result = errorObjOrHandler;
                     }
+                    finally { conditionHandlerEnvEntry.rplacd(oldHandler); }
                 }
 
                 /// eval - (cond (condform forms...)... ) -> object
@@ -5077,7 +5080,7 @@ public class LambdaJ {
         }
     }
 
-    ConsCell values;
+    ConsCell values = NO_VALUES;
 
     TurtleFrame current_frame;
 
@@ -6520,7 +6523,7 @@ public class LambdaJ {
             // vor/nach eval features hintri/firi kopieren, values auch
             __42_features_42_.set(makeFeatureList(symtab)); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
             featuresEnvEntry = ConsCell.cons(intern("*features*"), __42_features_42_.get());
-            conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_);
+            conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_.get());
 
             lispReader = new SExpressionReader(System.in::read, symtab, featuresEnvEntry, null);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
@@ -7331,6 +7334,8 @@ public class LambdaJ {
         }
 
         public final Object doTry(MurmelFunction protectedForm, Object errorObj) {
+            final Object oldHandler = cdr(conditionHandlerEnvEntry);
+            conditionHandlerEnvEntry.rplacd(null);
             try {
                 return protectedForm.apply(NOARGS);
             }
@@ -7338,6 +7343,7 @@ public class LambdaJ {
                 values = new Object[] { errorObj, e };
                 return errorObj;
             }
+            finally { conditionHandlerEnvEntry.rplacd(oldHandler); }
         }
 
 

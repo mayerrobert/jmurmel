@@ -58,6 +58,9 @@ public class CmdlineTest {
             
             { "cmdline args", new String[] {          "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> \"arg1\"\n", "" },
             { "cmdline args", new String[] { "--run", "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> \"arg1\"\n", "" },
+
+            { "interpret eval", new String[] { "--tty" }, "(eval ''hello)\n:q", 0, re("Enter a Murmel form", "==> hello\n", "bye.\n\n"), "" },
+            { "compiled eval",  new String[] { "--tty" }, "(eval ''hello)\n:r\n:q", 0, re("Enter a Murmel form", "==> hello\n", "==> hello\n", "bye.\n\n"), "" },
         };
     }
 

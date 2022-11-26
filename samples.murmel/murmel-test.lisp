@@ -440,6 +440,7 @@ multiline comment
                                (throw nil 2)))  2)
 
 
+;;; try
 (defun fail #+murmel datum #-murmel (&rest datum) (apply #'error datum))
 (defun fail1 () (fail "test"))
 
@@ -449,6 +450,14 @@ multiline comment
 (deftest try.4 (multiple-value-bind (ret ex) (try (fail 'file-error #-murmel :pathname "xyxxy") 'err)
                  (list ret (typep ex 'file-error)))
                '(err t))
+
+
+;;; *condition-handler*
+#+(or) ; compiler can't do this yet
+(progn
+(setq *condition-handler* (lambda (e) (throw 'target "oops")))
+(deftest condition-handler.1 (catch 'target (error "test")) "oops")
+)
 
 
 ;;; values
@@ -507,6 +516,8 @@ multiline comment
 #+murmel
 (deftest eval.6
   (eval '(multiple-value-bind (a b) (f) (list a b)) (cons (cons 'f eval-helper) nil)) '(1 2))
+
+(deftest eval.7 (eval ''hello) 'hello)
 
 
 ;;; test apply
