@@ -282,13 +282,12 @@ public class LambdaJ {
     public static class LambdaJError extends RuntimeException {
         public static final long serialVersionUID = 1L;
 
-        public LambdaJError(String msg)                                       { super(msg, null, false, false); }
-        public LambdaJError(boolean format, String msg, Object... params)     { super((format ? fmt(msg, params) : msg) + getErrorExp(params), null, false, false); }
-        public LambdaJError(LambdaJError cause, String msg, Object... params) { super(fmt(msg, params) + getErrorExp(params), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, String msg, Object... params)    { super(fmt(msg, params) + getErrorExp(params), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause)                                  { super(cause.getMessage(), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, String msg)                      { super(msg, getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, Object errorForm)                { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
+        public LambdaJError(String msg)                                                    { super(msg, null, false, false); }
+        public LambdaJError(boolean format, String msg, Object... params)                  { super((format ? fmt(msg, params) : msg) + getErrorExp(params), null, false, false); }
+        public LambdaJError(Throwable cause, boolean format, String msg, Object... params) { super((format ? fmt(msg, params) : msg) + getErrorExp(params), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause)                                               { super(cause.getMessage(), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, String msg)                                   { super(msg, getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, Object errorForm)                             { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
 
         @Override public String toString() { return "Error: " + getMessage(); }
 
@@ -2385,22 +2384,11 @@ public class LambdaJ {
         catch (ReturnException re) {
             return result = nonlocalReturn(re, localCatchTags);
         }
-        catch (LambdaJError e) {
-            try { handleCondition(e, env); }
-            catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
-            // don't rethrow but wrap so that the Murmel stack is gathered in the Exception message
-            throw new LambdaJError(e, e.getMessage(), form);
-        }
-        catch (InterruptedException e) {
-            try { handleCondition(e, env); }
-            catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
-            Thread.currentThread().interrupt(); // todo wenn der conditionhandler ein nonlocal return macht, geht das verschütt
-            throw new LambdaJError(e, e.getMessage(), form);
-        }
         catch (Exception e) {
             try { handleCondition(e, env); }
             catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
-            throw new LambdaJError(e, e.getMessage(), form);
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt(); // todo wenn der conditionhandler ein nonlocal return macht, geht das verschütt
+            throw new LambdaJError(e, false, e.getMessage(), form);
         }
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
@@ -3684,7 +3672,7 @@ public class LambdaJ {
     }
 
     static RuntimeException errorInternal(Throwable t, String msg, Object... args) {
-        throw new LambdaJError(t, "internal error - " + msg, args);
+        throw new LambdaJError(t, true, "internal error - " + msg, args);
     }
 
     static RuntimeException errorMalformed(String func, String msg) {
@@ -4896,7 +4884,7 @@ public class LambdaJ {
                 }
             }
             catch (IllegalAccessException iae) {
-                throw new LambdaJError(iae, "can not access ", method.getDeclaringClass().getSimpleName(), method.getName());
+                throw new LambdaJError(iae, false, "can not access " + method.getDeclaringClass().getSimpleName(), method.getName());
             }
         }
 
