@@ -347,42 +347,32 @@
 
 ; conses and lists ****************************************************
 
+(defmacro m%def-macro-fun (name params . body)
+  `(progn
+     (defmacro ,name ,params ,@body)
+     (defun ,name ,params (,name ,@params))))
+
+
 ;;; = Function: caar..cdddr
 ;;;     (c..r lst) -> result
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; `c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
-(defun  caar (lst) (car (car lst)))
-(defun  cadr (lst) (car (cdr lst)))
-(defun  cdar (lst) (cdr (car lst)))
-(defun  cddr (lst) (cdr (cdr lst)))
+(m%def-macro-fun caar (lst)  `(car (car ,lst)))
+(m%def-macro-fun cadr (lst)  `(car (cdr ,lst)))
+(m%def-macro-fun cdar (lst)  `(cdr (car ,lst)))
+(m%def-macro-fun cddr (lst)  `(cdr (cdr ,lst)))
 
-(defun caaar (lst) (car (caar lst)))
-(defun caadr (lst) (car (cadr lst)))
-(defun cadar (lst) (car (cdar lst)))
-(defun caddr (lst) (car (cddr lst)))
+(m%def-macro-fun caaar (lst) `(car (caar ,lst)))
+(m%def-macro-fun caadr (lst) `(car (cadr ,lst)))
+(m%def-macro-fun cadar (lst) `(car (cdar ,lst)))
+(m%def-macro-fun caddr (lst) `(car (cddr ,lst)))
 
-(defun cdaar (lst) (cdr (caar lst)))
-(defun cdadr (lst) (cdr (cadr lst)))
-(defun cddar (lst) (cdr (cdar lst)))
-(defun cdddr (lst) (cdr (cddr lst)))
-
-
-(defmacro caar (lst)  `(car (car ,lst)))
-(defmacro cadr (lst)  `(car (cdr ,lst)))
-(defmacro cdar (lst)  `(cdr (car ,lst)))
-(defmacro cddr (lst)  `(cdr (cdr ,lst)))
-
-(defmacro caaar (lst) `(car (car (car ,lst))))
-(defmacro caadr (lst) `(car (car (cdr ,lst))))
-(defmacro cadar (lst) `(car (cdr (car ,lst))))
-(defmacro caddr (lst) `(car (cdr (cdr ,lst))))
-
-(defmacro cdaar (lst) `(cdr (car (car ,lst))))
-(defmacro cdadr (lst) `(cdr (car (cdr ,lst))))
-(defmacro cddar (lst) `(cdr (cdr (car ,lst))))
-(defmacro cdddr (lst) `(cdr (cdr (cdr ,lst))))
+(m%def-macro-fun cdaar (lst) `(cdr (caar ,lst)))
+(m%def-macro-fun cdadr (lst) `(cdr (cadr ,lst)))
+(m%def-macro-fun cddar (lst) `(cdr (cdar ,lst)))
+(m%def-macro-fun cdddr (lst) `(cdr (cddr ,lst)))
 
 
 (defun m%nonneg-integer-number (n)
@@ -411,9 +401,7 @@
     (if (<= n 0) lst
       (loop (1- n) (cdr lst)))))
 
-(defun nth (n lst)
-  (car (nthcdr n lst)))
-(defmacro nth (n lst)
+(m%def-macro-fun nth (n lst)
   `(car (nthcdr ,n ,lst)))
 
 
@@ -1192,8 +1180,7 @@
 ;;; Since: 1.1
 ;;;
 ;;; Is this number zero?
-(defun zerop (n) (= n 0))
-(defmacro zerop (n) `(= 0 ,n))
+(m%def-macro-fun zerop (n) `(= ,n 0))
 
 
 ;;; = Function: evenp
@@ -1956,17 +1943,13 @@
 ;;; = Function: terpri, prin1, princ, print
 ;;;
 ;;; Since: 1.1
-(defun terpri () (writeln))
-(defmacro terpri () '(writeln))
+(m%def-macro-fun terpri () `(writeln))
 
-(defun prin1 (obj) (write obj))
-(defmacro prin1 (obj) `(write ,obj))
+(m%def-macro-fun prin1 (obj) `(write ,obj))
 
-(defun princ (obj) (write obj nil))
-(defmacro princ (obj) `(write ,obj nil))
+(m%def-macro-fun princ (obj) `(write ,obj nil))
 
-(defun print (obj) (lnwrite obj))
-(defmacro print (obj) `(lnwrite ,obj))
+(m%def-macro-fun print (obj) `(lnwrite ,obj))
 
 
 ;;; = Function: pprint
@@ -2143,6 +2126,10 @@
 ;;; Returns a function that applies `args` and the arguments it is called with to `func`.
 (defun curry (func . args)
   (lambda callargs (apply func (append args callargs))))
+
+; can't use a macro as that would have different semantics: args would be "late bound"
+;(defmacro curry (func . args)
+;  `(lambda callargs (apply ,func (list* ,@args callargs))))
 
 
 ;;; = Function: rcurry
@@ -2397,4 +2384,5 @@
       (collect v))))
 
 
+(defmacro m%def-macro-fun)
 (provide "mlib")
