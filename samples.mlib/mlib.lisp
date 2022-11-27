@@ -253,13 +253,13 @@
                          `(,(do-key tmp keydesignator) ,@forms))))))
 
            (do-clauses (key)
-             (let* ((result (cons nil nil))
+             (let* ((result (cons () ()))
                     (append-to result)
                     clause)
                (let loop ((clauses clauses))
                  (when clauses
                    (setq clause (do-clause key (car clauses)))
-                   (if clause (setq append-to (cdr (rplacd append-to (cons clause nil)))))
+                   (if clause (setq append-to (cdr (rplacd append-to (cons clause ())))))
                    (loop (cdr clauses))))
              (cdr result))))
 
@@ -328,13 +328,13 @@
                        (t (error "typecase - type %s is not implemented" keydesignator))))))
 
            (do-clauses (key)
-             (let* ((result (cons nil nil))
+             (let* ((result (cons () ()))
                     (append-to result)
                     clause)
                (let loop ((clauses clauses))
                  (when clauses
                    (setq clause (do-clause key (car clauses)))
-                   (if clause (setq append-to (cdr (rplacd append-to (cons clause nil)))))
+                   (if clause (setq append-to (cdr (rplacd append-to (cons clause ())))))
                    (loop (cdr clauses))))
              (cdr result))))
 
@@ -431,10 +431,10 @@
 ;;; as the corresponding elements of the given list.
 (defun copy-list (lst)
   (let* loop ((lst lst)
-              (result (cons nil nil))
+              (result (cons () ()))
               (append-to result))
     (if (consp lst)
-          (loop (cdr lst) result (cdr (rplacd append-to (cons (car lst) nil))))
+          (loop (cdr lst) result (cdr (rplacd append-to (cons (car lst) ()))))
       (progn
         (if lst (rplacd append-to lst))
         (cdr result)))))
@@ -530,7 +530,7 @@
                (if inner-lists
                  (typecase ele
                    (cons (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
-                   (null (rplacd (last splice) nil)  (inner (cdr inner-lists) (cadr inner-lists)))
+                   (null (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
                    (atom (if (cdr inner-lists)
                                (error "nconc - not a list: %s" ele)
                            (rplacd (last splice) ele)))))))
@@ -641,22 +641,22 @@
 
 (defmacro m%mapx-cons (name acc accn)
   `(defun ,name (func lst . more-lists)
-     (let* ((result (cons nil nil)) (append-to result))
+     (let* ((result (cons () ())) (append-to result))
        (if more-lists
              (let loop ((args (cons lst more-lists)))
                (when (m%notany-null args)
-                 (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) nil))))
+                 (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) ()))))
                  (loop (unzip-tails args))))
          (let loop ((lst lst))
            (when lst
-             (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) nil))))
+             (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) ()))))
              (loop (cdr lst)))))
 
        (cdr result))))
 
 (defmacro m%mapx-nconc (name acc accn)
   `(defun ,name (func lst . more-lists)
-     (let* ((result (cons nil nil)) (append-to result) tmp)
+     (let* ((result (cons () ())) (append-to result) tmp)
        (if more-lists
                (let loop ((args (cons lst more-lists)))
                  (when (m%notany-null args)
@@ -1431,14 +1431,14 @@
         (let ((generators (cons generator more-generators)) (more-accum t))
           (lambda ()
             (if more-accum
-                  (let* ((list-accum (cons nil nil)) (append-to list-accum))
+                  (let* ((list-accum (cons () ())) (append-to list-accum))
                     (let loop ((x generators))
                       (if x
                         (if more-accum
                           (multiple-value-bind (result more) ((car x))
                             (if more
-                                  (progn (setq append-to (cdr (rplacd append-to (cons result nil)))) (loop (cdr x)))
-                              (setq more-accum nil))))))
+                                  (progn (setq append-to (cdr (rplacd append-to (cons result ())))) (loop (cdr x)))
+                              (setq more-accum ()))))))
                     (values (cdr list-accum) more-accum))
               (values nil nil))))
 
@@ -1568,7 +1568,7 @@
 
     (typecase seq
       (null)
-      (cons              (reverse/list seq nil))
+      (cons              (reverse/list seq ()))
       (string            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
       (simple-vector     (reverse/vector seq (make-array (vector-length seq)) svref svset))
       (bit-vector        (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
@@ -1587,7 +1587,7 @@
   (labels ((nreverse/list (list)
              (let loop ((1st (cdr list))
                         (2nd list)
-                        (3rd nil))
+                        (3rd ()))
                  (if (atom 2nd) 3rd
                    (progn
                      (rplacd 2nd 3rd)
@@ -1622,23 +1622,23 @@
 ;;; evaluates to non-nil.
 (defun remove-if (pred seq)
   (labels ((remove-if/list (l)
-             (let* ((result (cons nil nil))
+             (let* ((result (cons () ()))
                     (append-to result))
                (let loop ((l l))
                  (when l
                    (unless (pred (car l))
-                     (setq append-to (cdr (rplacd append-to (cons (car l) nil)))))
+                     (setq append-to (cdr (rplacd append-to (cons (car l) ())))))
                    (loop (cdr l))))
                (cdr result)))
 
            (remove-if/vector (vec)
              (let* ((len (vector-length vec))
-                    (result (cons nil nil))
+                    (result (cons () ()))
                     (append-to result)
                     tmp)
                (dotimes (i len (cdr result))
                  (unless (pred (setq tmp (seqref vec i)))
-                   (setq append-to (cdr (rplacd append-to (cons tmp nil)))))))))
+                   (setq append-to (cdr (rplacd append-to (cons tmp ())))))))))
 
     (typecase seq
           (null)
@@ -1697,11 +1697,11 @@
     (setq seq (m%scan seq)))
 
   (if result-type
-        (let* ((result (cons nil nil))
+        (let* ((result (cons () ()))
                (append-to result))
           (labels ((collect (val more)
                      (when more
-                       (setq append-to (cdr (rplacd append-to (cons (func val) nil))))
+                       (setq append-to (cdr (rplacd append-to (cons (func val) ()))))
                        (multiple-value-call collect (seq)))))
             (multiple-value-call collect (seq))
             (m%list->sequence (cdr result) result-type)))
@@ -2044,11 +2044,11 @@
 ;;; Creates a circular list of elements.
 (defun circular-list elems
   (if elems
-    (let* loop ((result (cons (car elems) nil))
+    (let* loop ((result (cons (car elems) ()))
                 (elems (cdr elems))
                 (append-to result))
       (if elems
-            (loop result (cdr elems) (setq append-to (cdr (rplacd append-to (cons (car elems) nil)))))
+            (loop result (cdr elems) (setq append-to (cdr (rplacd append-to (cons (car elems) ())))))
         (cdr (rplacd append-to result))))))
 
 
@@ -2338,7 +2338,7 @@
 ;;;     (reverse-collecting (dotimes (i 10) (collect i)))
 ;;;     ; ==> (9 8 7 6 5 4 3 2 1 0)
 (defmacro reverse-collecting body
-  `(with-accumulator collect (lambda (l r) (cons r l)) nil ,@body))
+  `(with-accumulator collect (lambda (l r) (cons r l)) () ,@body))
 
 
 ;;; = Macro: collecting
@@ -2357,10 +2357,10 @@
   (let ((result (gensym))
         (append-to (gensym))
         (delta (gensym)))
-    `(let* ((,result (cons nil nil))
+    `(let* ((,result (cons () ()))
             (,append-to ,result)
             (collect (lambda (,delta)
-                       (setq ,append-to (cdr (rplacd ,append-to (cons ,delta nil)))))))
+                       (setq ,append-to (cdr (rplacd ,append-to (cons ,delta ())))))))
         ,@body
         (cdr ,result))))
 

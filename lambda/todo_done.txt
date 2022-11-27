@@ -2075,3 +2075,6 @@ JMurmel>
 
 
 zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
+
+mlib: (cons nil nil) -> (cons () ())
+-> dann liefert der reader gleich null, kein symbol lookup
