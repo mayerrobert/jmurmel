@@ -453,7 +453,7 @@ multiline comment
 
 
 ;;; *condition-handler*
-#+(or) ; compiler can't do this yet
+#+murmel
 (progn
 (setq *condition-handler* (lambda (e) (throw 'target "oops")))
 (deftest condition-handler.1 (catch 'target (error "test")) "oops")
