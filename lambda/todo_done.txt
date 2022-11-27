@@ -2078,3 +2078,11 @@ zusammenspiel compiler/interpreter bzgl. values reparieren, und *features*
 
 mlib: (cons nil nil) -> (cons () ())
 -> dann liefert der reader gleich null, kein symbol lookup
+
+
+mlib: man kann erst die macros definieren und dann die funktionen mittels der macros:
+JMurmel> (defmacro caar (lst)  `(car (car ,lst)))
+==> caar
+JMurmel> (defun caar (lst) (caar lst))
+==> caar
+JMurmel> caar

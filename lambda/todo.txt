@@ -1,7 +1,7 @@
 interpreter: lokales und globales environment müssen nicht eine einzige liste sein
 -> das lokale (lexikalische) environment bleibt eine liste, das globale wird eine hashmap,
    symbollookup sucht erst in der liste, dann ggf. fallback in die hashmap.
--> oder das globale environment ist überhaupt eine arraylist, symbole bekommen beim internen einen von 0 austeigenden index.
+-> oder das globale environment ist überhaupt ein array/ eine arraylist, symbole bekommen beim internen einen von 0 aufsteigenden index.
    symbole für special forms bekommen keinen index, symbole für wellknown primitives oder wellknown symbols bekommen hardcodierte indizes,
    ggf. könnte so ein array auch in MurmelJavaProgram verwendet werden, statt vieler einzelner CompilerGlobal members
 
@@ -11,15 +11,7 @@ und das wird eval mitgegeben.
 evtl. diese alist auch in Murmel anbinden?
 evtl. auch macros berücksichtigen?
 -> kompiliertes macroexpand-1 könnte dann auch besser werden
-
-
-mlib: man kann erst die macros definieren und dann die funktionen mittels der macros:
-JMurmel> (defmacro caar (lst)  `(car (car ,lst)))
-==> caar
-JMurmel> (defun caar (lst) (caar lst))
-==> caar
-JMurmel> caar
-
+> oder array/ arraylist wie oben
 
 
 checken ob in kompiliertem code values früh genug genullt wird
