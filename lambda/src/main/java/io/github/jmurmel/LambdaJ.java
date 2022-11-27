@@ -1688,7 +1688,7 @@ public class LambdaJ {
     /// ## Murmel interpreter
     ///
 
-    /// Murmel has a list of reserved words may not be used as a symbol: t, nil and special forms
+    /// Murmel has a list of reserved words that may not be used as a symbol: t, nil and special forms
 
     /** Throw error if sym is a reserved symbol */
     static void notReserved(final String op, final LambdaJSymbol sym) {
@@ -2723,18 +2723,18 @@ public class LambdaJ {
     }
 
     private static Object evalSymbol(Object form, ConsCell env) {
-        final Object value;
-        if (form == null || form == sNil) value = null;
-        else if (form == sT) value = sT;
+        if (form == null || form == sNil) return null;
+        else if (form == sT) return sT;
         else {
+            final Object value;
             final ConsCell envEntry = fastassq(form, env);
             if (envEntry != null) {
                 value = cdr(envEntry);
                 if (value == UNASSIGNED) throw new UnboundVariable("%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
+                return value;
             }
             else throw new UnboundVariable("%s: '%s' is not bound", "eval", printSEx(form));
         }
-        return value;
     }
 
     private Object evalSetq(ConsCell pairs, ConsCell env, int stack, int level, int traceLvl) {
