@@ -368,6 +368,9 @@ multiline comment
             (list *a* *b* *c*))
     '(456 456 3 1 2 3))
 
+(deftest let*dynamic.4
+  (let* dynamic ((a 1) (b a)) b) 1)
+
 
 ;;; test if
 (deftest if-number.1
@@ -455,8 +458,15 @@ multiline comment
 ;;; *condition-handler*
 #+murmel
 (progn
-(setq *condition-handler* (lambda (e) (throw 'target "oops")))
-(deftest condition-handler.1 (catch 'target (error "test")) "oops")
+  (setq *condition-handler* (lambda (e) (throw 'target "oops")))
+
+  (deftest condition-handler.1 (catch 'target (error "test")) "oops")
+  (deftest condition-handler.2 (catch 'target (fail1)) "oops")
+  
+  (let* dynamic (inner-result
+                 (*condition-handler* (lambda (e)
+                                        (setq inner-result 'hi-from-inner) (throw 'target "inner"))))
+    (deftest condition-handler.3 (progn (catch 'target (fail "test3")) inner-result) 'hi-from-inner))
 )
 
 

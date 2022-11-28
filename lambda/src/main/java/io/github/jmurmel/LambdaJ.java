@@ -7084,10 +7084,10 @@ public class LambdaJ {
         }
 
         public static Object[] requireArray(Object obj) {
-            if (obj == null) { throw new LambdaJError(true, "object is nil"); }
+            if (obj == null) { throw new SimpleTypeError("object is nil"); }
             if (obj instanceof Object[]) return (Object[])obj;
             if (obj instanceof List) return ((List<?>)obj).toArray(new Object[0]);
-            throw new SimpleTypeError("not a character: %s", printSEx(obj));
+            throw new SimpleTypeError("not an array: %s", printSEx(obj));
         }
 
         /** used by generated Java code */
@@ -8690,7 +8690,7 @@ public class LambdaJ {
             final String op = letStar ? "let* dynamic" : "let dynamic";
             sb.append(isLast ? "tailcallWithCleanup(" : "funcall(");
 
-            sb.append("(MurmelFunction)(args").append(rsfx+1).append(" -> {\n");
+            sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
 
             final ArrayList<String> globals = new ArrayList<>();
 
@@ -8706,7 +8706,7 @@ public class LambdaJ {
                         final boolean seen = !seenSymbols.add(sym);
                         final String javaName;
                         if (seen) javaName = javasym(sym, _env);
-                        else javaName = "args" + (rsfx + 1) + "[" + n++ + "]";
+                        else javaName = "args" + rsfx + "[" + n++ + "]";
 
                         final String globalName;
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
@@ -8722,15 +8722,15 @@ public class LambdaJ {
 
                         final Object binding = bi.next();
                         sb.append("        ").append(javaName).append(" = ");
-                        emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
+                        emitForm(sb, cadr(binding), _env, topEnv, rsfx, false);
                         sb.append(";\n");
-                        if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, env);
+                        if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, _env);
 
                         if (maybeGlobal != null) sb.append("        ").append(globalName).append(".set(").append(javasym(sym, _env)).append(");\n");
                     }
                 }
                 else {
-                    _env = params("let dynamic", sb, params, env, rsfx + 1, null, false);
+                    _env = params("let dynamic", sb, params, _env, rsfx, null, false);
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
@@ -8744,13 +8744,13 @@ public class LambdaJ {
             }
 
             if (isLast) {
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx + 1, false);
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, false);
                 sb.append("        })\n");
                 if (globals.isEmpty()) {
                     sb.append("        , null");
                 }
                 else {
-                    sb.append("        , (MurmelFunction)(args").append(rsfx+1).append(" -> {\n");
+                    sb.append("        , (MurmelFunction)(args").append(rsfx).append(" -> {\n");
                     for (String globalName : globals) sb.append("        ").append(globalName).append(".pop();\n");
                     sb.append("        return null;\n        })");
                 }
@@ -8759,7 +8759,7 @@ public class LambdaJ {
                 if (!globals.isEmpty()) sb.append("        try {\n");
 
                 // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx + 1, params != null);
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, params != null);
 
                 if (!globals.isEmpty()) {
                     sb.append("        }\n        finally {\n");
