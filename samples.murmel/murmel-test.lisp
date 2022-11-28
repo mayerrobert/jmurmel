@@ -363,6 +363,9 @@ multiline comment
             (list *a* *b* *c*))
     '(456 456 3 1 2 3))
 
+(deftest let*dynamic.4
+  (let* dynamic ((a 1) (b a)) b) 1)
+
 
 ;;; test if
 (deftest if-number.1
