@@ -462,7 +462,7 @@ multiline comment
 
   (deftest condition-handler.1 (catch 'target (error "test")) "oops")
   (deftest condition-handler.2 (catch 'target (fail1)) "oops")
-  
+
   (let* dynamic (inner-result
                  (*condition-handler* (lambda (e)
                                         (setq inner-result 'hi-from-inner) (throw 'target "inner"))))

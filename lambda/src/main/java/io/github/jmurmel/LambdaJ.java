@@ -7210,11 +7210,14 @@ public class LambdaJ {
         /** invoke *condition-handler* if any or rethrow, similar to Java's throw fling() doesn't return */
         private void fling(Exception e) {
             final Object handler = __42_condition_45_handler_42_.get();
+            //__42_condition_45_handler_42_.pop(); // disable current handler, make previous handler active
+            __42_condition_45_handler_42_.set(null);
             try {
                 if (LambdaJ.functionp0(handler)) funcall(handler, e);
                 throw wrap(e);
             }
             finally {
+                //__42_condition_45_handler_42_.push(handler); // restore current handler
                 __42_condition_45_handler_42_.set(handler);
             }
         }
