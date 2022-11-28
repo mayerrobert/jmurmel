@@ -224,6 +224,15 @@ Largest acceptable vector index.
 These global variables contain the smallest and largest fixnum value.
 
 
+### *condition-handler*
+
+Since: 1.4
+
+This variable can be set to a function of one parameter.
+If `*condition-handler*` is non-nil then it will be invoked in case of an error,
+the argument will be the condition describing the error.
+
+
 ### REPL variables
     @-, @+, @++, @+++, @\*, @\*\*, @\*\*\*, @/, @//, @///
 

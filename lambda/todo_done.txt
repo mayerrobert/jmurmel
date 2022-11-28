@@ -2086,3 +2086,64 @@ JMurmel> (defmacro caar (lst)  `(car (car ,lst)))
 JMurmel> (defun caar (lst) (caar lst))
 ==> caar
 JMurmel> caar
+
+
+statt try -> eine dynamische globale variable *error-handler*, initialwert ist ein debugger, neue handler werden gepusht, am ende des scope gepoppt
+-> oder parameter für eval(), ein neuer handler wird in ein lambda dazugebastelt
+-> muss das mit den handlern für unwind-protect/ let dynamic verbunden werden, damit die reihenfolge stimmt?
+
+
+errorhandling in CL ist eigentlich conditionhandling https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node338.html
+geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist schiach, eher weglassen)
+-> oder statt (ignore-errors form*) => result*: (try function . errorobj-or-handler)
+   -> errorobj-or-handler könnte optional eine funktion sein:
+      ists eine funktion dann wird die im fehlerfall mit der exception aufgerufen
+      ists ein anderes objekt dann ist der returnwert von try im fehlerfall (values errorobj exception)
+      -> fürs erste nur errorobj, unterstützung von handler kann später nachkommen
+      -> irgendwann wird handler auch aktive restarts (und der debugger das environment) brauchen
+-> zumindest typep sollte es geben, dann kann man zumindest checken, um welche exception es sich handelt
+   oder type-of in Murmel?
+   -> type-of ist nicht sooo nützlich, weil das berücksichtigt die subtype beziehungen nicht
+   -> typep kann eigentlich die ganzen bisherigen typprädikate ersetzen wie null, atom, usw
+
+handler-bind ({(typespec handler)}*) {form}*
+  typespec muss eine vordefinierte oder benutzerdefinierte condition sein
+  handler muss eine funktion mit einem parameter sein, und zwar die aufgetretene condition
+
+handler-case expression {(typespec ([var]) {form}*)}*
+  z.B.:
+  (handler-case (/ 1 zero)
+                (division-by-zero (dz) (princ "caught /0: ") (write dz))
+                (error (c) (princ "caught error: ") (write c)))
+handler-case ist eigentlich gleich wie try/catch von Java, ausser dass handler-case den handler vor dem stackabbau laufen lässt,
+was aber eigentlich nur eine rolle spielt, wenn kein handler gesetzt ist und der debugger aufgerufen wird
+-> nein, bei restarts spielts auch eine rolle: restarts könnten weg sein, wenn der stack bis zum condition handler zurückgerollt wird
+
+handler-case hat auch eine no-error clause, scheint aber nicht sehr sinnvoll
+  z.B.:
+  * (handler-case (values 1 2 3)
+                  (division-by-zero (dz) (princ "caught /0: ") (write dz))
+                  (error (c) (princ "caught error: ") (write c))
+                  (:no-error (a b c) (princ "no error: ") (write a) (write b) (write c)))
+  no error: 123
+  3
+-> die anzahl parameter in der lambdalist der no-error-clause muss exakt mit der anzahl values uebereinstimmen, sonst gibts fehler
+
+-> der compiler sollte wsl try/catch ausspucken
+-> error sollte auch von mlib nach Murmel wandern:
+   erster parameter ist string oder symbol, weitere parameter sind entweder argumente für den format string, oder argumente für die condition
+   ist der erste parameter ein string: es gibt eine condition vom typ simple-error, msg ist formatstring+argumente
+   ist der erste parameter ein symbol: das symbol muss eine condition sein
+-> condition hierarchie, siehe auch CLtL2 "29.5. Predefined Condition Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node346.html
+   wsl. nur den subtree "error" umsetzen
+
+
+sbcl hat parse-error extends error, Murmel hat SExpressionReader.ParseError extends LambdaJError was eigentlich äquivalent ist
+-> CL reader-error erbt blöderweise von stream-error UND parse-error, Murmel reader-error nur von stream-error
+-> ParseError nicht mehr automatisch in ReaderError wrappen
+   überlegen/ checken ob/ wo der reader ParseError oder ReaderError werfen soll
+-> ParseError in typep und error einbauen
+
+funktionen zum werfen von conditions: signal, break, cerror, error
+
+siehe auch CLtL2 "29. Conditions" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node312.html

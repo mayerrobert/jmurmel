@@ -2385,11 +2385,15 @@ public class LambdaJ {
             return result = nonlocalReturn(re, localCatchTags);
         }
         catch (Exception e) {
+            final Object handler = cdr(conditionHandlerEnvEntry);
+            conditionHandlerEnvEntry.rplacd(null);
             try {
-                final Object handler = cdr(conditionHandlerEnvEntry);
                 if (functionp(handler)) eval(list(handler, e), env);
             }
             catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
+            finally {
+                conditionHandlerEnvEntry.rplacd(handler);
+            }
             if (e instanceof InterruptedException) Thread.currentThread().interrupt(); // todo wenn der conditionhandler ein nonlocal return macht, geht das verschütt
             throw new LambdaJError(e, false, e.getMessage(), form);
         }
@@ -5275,7 +5279,7 @@ public class LambdaJ {
         if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
         if (maybeFunction instanceof Primitive)                                 { return ((Primitive)maybeFunction)::applyPrimitiveVarargs; }
         if (maybeFunction instanceof Closure)                                   { return intp.new CallLambda((Closure)maybeFunction, intp.topEnv); }
-        if (maybeFunction instanceof MurmelFunction)                            { return args -> MurmelJavaProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
+        if (maybeFunction instanceof MurmelFunction)                            { return args -> intp.compiledProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
 
         throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
     }
@@ -6910,12 +6914,7 @@ public class LambdaJ {
         public final Object _gensym    (Object... args) { varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { return null; }
         public final Object _untrace   (Object... args) { return null; }
-        public final Object _error     (Object... args) {
-            varargs1("error", args.length);
-            try { LambdaJ.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); }
-            catch (Exception e) { fling(e); }
-            return null;
-        }
+        public final Object _error     (Object... args) { varargs1("error", args.length); LambdaJ.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
 
 
         // time
@@ -7146,8 +7145,8 @@ public class LambdaJ {
 
         public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; Arrays.fill(ret, UNASSIGNED_LOCAL); return ret; }
 
-        public final void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
-        public final void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
+        public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
+        public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
         @SuppressWarnings("unchecked")
         public static <T> T[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, T[] resultArray) {
@@ -7211,8 +7210,13 @@ public class LambdaJ {
         /** invoke *condition-handler* if any or rethrow, similar to Java's throw fling() doesn't return */
         private void fling(Exception e) {
             final Object handler = __42_condition_45_handler_42_.get();
-            if (LambdaJ.functionp0(handler)) funcall(handler, e);
-            throw wrap(e);
+            try {
+                if (LambdaJ.functionp0(handler)) funcall(handler, e);
+                throw wrap(e);
+            }
+            finally {
+                __42_condition_45_handler_42_.set(handler);
+            }
         }
 
         public static Object tailcall(CompilerPrimitive fn, Object... args) { return funcall(fn, args); }
@@ -7226,9 +7230,8 @@ public class LambdaJ {
 
 
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
-        public static Object funcall(MurmelFunction fn, Object... args) {
+        public final Object funcall(MurmelFunction fn, Object... args) {
             ConsCell cleanups = null;
-            LambdaJError ex = null;
             Object r = null;
             try {
                 r = fn.apply(args);
@@ -7239,9 +7242,10 @@ public class LambdaJ {
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                 }
             }
-            catch (LambdaJError e) { ex = e; }
-            catch (Exception e) { ex = new LambdaJError(e, e.getMessage()); }
+            catch (ReturnException re) { throw re; }
+            catch (Exception e) { fling(e); throw new LambdaJError(e, e.getMessage()); }
             finally {
+                LambdaJError ex = null;
                 if (cleanups != null) for (Object cl: cleanups) {
                     try { ((MurmelFunction)cl).apply((Object[])null); }
                     //catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
@@ -7351,31 +7355,31 @@ public class LambdaJ {
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
 
-        private void noArgs(String expr, int argCount)      { if (0 != argCount)               errorArgCount(expr, 0, 0, argCount); }
-        private void oneArg(String expr, int argCount)      { if (1 != argCount)               errorArgCount(expr, 1, 1, argCount); }
-        private void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
-        private void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
+        private static void noArgs(String expr, int argCount)      { if (0 != argCount)               errorArgCount(expr, 0, 0, argCount); }
+        private static void oneArg(String expr, int argCount)      { if (1 != argCount)               errorArgCount(expr, 1, 1, argCount); }
+        private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
+        private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
 
         /** 0..1 args */
-        private void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
+        private static void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
         /** 0..2 args */
-        private void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
+        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
         /** 1..2 args */
-        private void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) errorArgCount(expr, 1, 2, argCount); }
+        private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) errorArgCount(expr, 1, 2, argCount); }
         /** one or more arguments */
-        private void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
+        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
         /** two or more arguments */
-        private void varargs2(String expr, int argCount)   { if (argCount < 2)                 errorArgCount(expr, 2, -1, argCount); }
-        private void varargs3(String expr, int argCount)   { if (argCount < 3)                 errorArgCount(expr, 3, -1, argCount); }
+        private static void varargs2(String expr, int argCount)   { if (argCount < 2)                 errorArgCount(expr, 2, -1, argCount); }
+        private static void varargs3(String expr, int argCount)   { if (argCount < 3)                 errorArgCount(expr, 3, -1, argCount); }
 
-        private void varargsMinMax(String expr, int argCount, int min, int max) {
+        private static void varargsMinMax(String expr, int argCount, int min, int max) {
             if (argCount < min || argCount > max)
                 errorArgCount(expr, min, max, argCount);
         }
 
-        private void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
-            if (actual < expectedMin) fling(new ProgramError("%s: not enough arguments", expr));
-            if (expectedMax != -1 && actual > expectedMax) fling(new ProgramError("%s: too many arguments", expr));
+        private static void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
+            if (actual < expectedMin) throw new ProgramError("%s: not enough arguments", expr);
+            if (expectedMax != -1 && actual > expectedMax) throw new ProgramError("%s: too many arguments", expr);
         }
 
         private static RuntimeException errorNotANumber(Object n) { throw new SimpleTypeError("not a number: %s", printSEx(n)); }
@@ -7384,11 +7388,10 @@ public class LambdaJ {
         private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new SimpleTypeError("not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new SimpleTypeError("not a string: %s", printSEx(s)); }
-        private RuntimeException errorNotAFunction(Object fn) { fling(new UndefinedFunction("not a function: %s", fn)); return null; }
-        private RuntimeException errorNotAFrame(String s, Object o) {
-            if (o != null) fling(new SimpleTypeError("%s: not a frame: %s", s, printSEx(o)));
-            fling(new SimpleTypeError("%s: no frame argument and no current frame", s));
-            return null;
+        private static RuntimeException errorNotAFunction(Object fn) { throw new UndefinedFunction("not a function: %s", fn); }
+        private static RuntimeException errorNotAFrame(String s, Object o) {
+            if (o != null) throw new SimpleTypeError("%s: not a frame: %s", s, printSEx(o));
+            throw new SimpleTypeError("%s: no frame argument and no current frame", s);
         }
 
 
