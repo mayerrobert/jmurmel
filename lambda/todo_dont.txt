@@ -128,6 +128,3 @@ BOOLEAN names a type-specifier:
 -> bit sollte ggf. java.lang.byte sein statt boolean, Lisp boolean könnte Java boolean sein
    -> dann brauchen die bitoperationen kein ?: mehr, und JFFI könnte besser angebunden werden
 -> oder weglassen, CLtL hat kein boolean
-
-condition-handler sollte nicht genullt sondern auf den vorigen wert gesetzt werden (let dynamic)
--> is aber zu kompliziert

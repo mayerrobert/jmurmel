@@ -231,6 +231,9 @@ pi ; ==> 3.141592653589793
 ; This variable can be set to a function of one parameter.
 ; If `*condition-handler*` is non-nil then it will be invoked in case of an error,
 ; the argument will be the condition describing the error.
+; During invocation of the condition handler it will be disabled:
+; if the current handler dynamically replaced a previous handler
+; then the previous handler will be temporarily restored.
 
 
 ; = REPL variables

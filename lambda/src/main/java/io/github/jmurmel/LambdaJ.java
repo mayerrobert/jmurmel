@@ -817,6 +817,7 @@ public class LambdaJ {
             internWellknown("catch");
             internWellknown("throw");
             internWellknown("try");
+            sConditionHandler = intern("*condition-handler*");
 
             internWellknown("setq");
 
@@ -828,7 +829,7 @@ public class LambdaJ {
 
             internWellknown("declaim");
         }
-        else sDynamic = null;
+        else sDynamic = sConditionHandler = null;
 
         if (haveVector()) {
             sBit = intern("bit");
@@ -1713,7 +1714,7 @@ public class LambdaJ {
                                sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
 
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
-    final LambdaJSymbol sDynamic, sBit, sCharacter;
+    final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler;
 
     enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -2386,7 +2387,7 @@ public class LambdaJ {
         }
         catch (Exception e) {
             final Object handler = cdr(conditionHandlerEnvEntry);
-            conditionHandlerEnvEntry.rplacd(null);
+            conditionHandlerEnvEntry.rplacd(prev());
             try {
                 if (functionp(handler)) eval(list(handler, e), env);
             }
@@ -2790,6 +2791,28 @@ public class LambdaJ {
         return extEnv;
     }
 
+    private ArrayList<Object> handlers;
+    private class RestoreHandler extends RestoreDynamic {
+        private final boolean doPop;
+
+        RestoreHandler(ConsCell entry, Object oldValue) {
+            super(entry, oldValue);
+            if (oldValue != null) {
+                if (handlers == null) handlers = new ArrayList<>();
+                handlers.add(oldValue);
+                doPop = true;
+            }
+            else doPop = false;
+        }
+
+        @Override void restore() {
+            if (doPop) handlers.remove(handlers.size()-1);
+            super.restore();
+        }
+    }
+
+    Object prev() { if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
+
     private ConsCell[] evalLet(LambdaJSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final Object maybeLoopSymbol = car(arguments);
         final boolean letDynamic, namedLet;
@@ -2824,7 +2847,10 @@ public class LambdaJ {
                     if (seen != null) { isNewSymbol = !seen.contains(sym); if (isNewSymbol) seen.add(sym); }
                     else isNewSymbol = true; // ignored/ not needed for "let*", true for a single binding
 
-                    if (isNewSymbol) restore = cons(new RestoreDynamic(newBinding, cdr(newBinding)), restore);
+                    if (isNewSymbol) {
+                        if (sym == sConditionHandler) restore = cons(new RestoreHandler(newBinding, cdr(newBinding)), restore);
+                        else restore = cons(new RestoreDynamic(newBinding, cdr(newBinding)), restore);
+                    }
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
                 }
@@ -7210,15 +7236,15 @@ public class LambdaJ {
         /** invoke *condition-handler* if any or rethrow, similar to Java's throw fling() doesn't return */
         private void fling(Exception e) {
             final Object handler = __42_condition_45_handler_42_.get();
-            //__42_condition_45_handler_42_.pop(); // disable current handler, make previous handler active
-            __42_condition_45_handler_42_.set(null);
+            __42_condition_45_handler_42_.pop(); // disable current handler, make previous handler active
+            //__42_condition_45_handler_42_.set(null);
             try {
                 if (LambdaJ.functionp0(handler)) funcall(handler, e);
                 throw wrap(e);
             }
             finally {
-                //__42_condition_45_handler_42_.push(handler); // restore current handler
-                __42_condition_45_handler_42_.set(handler);
+                __42_condition_45_handler_42_.push(handler); // restore current handler
+                //__42_condition_45_handler_42_.set(handler);
             }
         }
 

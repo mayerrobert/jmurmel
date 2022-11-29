@@ -2147,3 +2147,5 @@ sbcl hat parse-error extends error, Murmel hat SExpressionReader.ParseError exte
 funktionen zum werfen von conditions: signal, break, cerror, error
 
 siehe auch CLtL2 "29. Conditions" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node312.html
+
+condition-handler sollte nicht genullt sondern auf den vorigen wert gesetzt werden (let dynamic)

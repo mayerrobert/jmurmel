@@ -1,7 +1,7 @@
 interpreter: lokales und globales environment müssen nicht eine einzige liste sein
 -> das lokale (lexikalische) environment bleibt eine liste, das globale wird eine hashmap,
    symbollookup sucht erst in der liste, dann ggf. fallback in die hashmap.
--> oder das globale environment ist überhaupt ein array/ eine arraylist, symbole bekommen beim internen einen von 0 aufsteigenden index.
+-> oder das globale environment ist überhaupt ein array/ eine arraylist, symbole bekommen beim internen (oder besser von define/ defun?) einen von 0 aufsteigenden index.
    symbole für special forms bekommen keinen index, symbole für wellknown primitives oder wellknown symbols bekommen hardcodierte indizes,
    ggf. könnte so ein array auch in MurmelJavaProgram verwendet werden, statt vieler einzelner CompilerGlobal members
 
@@ -22,13 +22,13 @@ environmentreferenzen inline cachen?
    (weak reference wär nicht nötig für globals, aber für parameter, und für globals falls/ sobald es makunbound gibt)
 
 
-(read-from-string str     [skip-to-position [error-obj]]) -> result, position
+(read-from-string str     [error-obj [skip-to-position]]) -> result, position
 
-(read-all-lines filename  [skip-to-position [error-obj [charset]]]) -> result-string-vector, position
-(read-all-bytes filename  [skip-to-position [error-obj]])           -> result-integer-vector, position
+(read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector
+(read-all-bytes filenamestr  [error-obj])           -> result-integer-vector (am besten signed bytes?)
 
-(write-lines filename string-vector  [appendp [error-obj [charset]]]) -> byte-count
-(write-bytes filename integer-vector [appendp [error-obj]])           -> byte-count
+(write-lines filenamestr string-vector  [appendp [error-obj [charset]]]) -> byte-count
+(write-bytes filenamestr integer-vector [appendp [error-obj]])           -> byte-count
 
 
 macrolet/ macroexpand mit lex environment:

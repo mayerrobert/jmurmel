@@ -369,7 +369,7 @@ multiline comment
     '(456 456 3 1 2 3))
 
 (deftest let*dynamic.4
-  (let* dynamic ((a 1) (b a)) b) 1)
+  (let* #+murmel dynamic ((a 1) (b a)) b) 1)
 
 
 ;;; test if
@@ -463,10 +463,20 @@ multiline comment
   (deftest condition-handler.1 (catch 'target (error "test")) "oops")
   (deftest condition-handler.2 (catch 'target (fail1)) "oops")
 
+  ; dynamically replace the error handler, error will be handled by replacement.
   (let* dynamic (inner-result
                  (*condition-handler* (lambda (e)
                                         (setq inner-result 'hi-from-inner) (throw 'target "inner"))))
     (deftest condition-handler.3 (progn (catch 'target (fail "test3")) inner-result) 'hi-from-inner))
+
+  ; dynamically replace the handler, replacement simulates an error during error handling.
+  ; Inner error will be handled by the outer handler.
+  (let* dynamic (inner-result
+                  (*condition-handler* (lambda (e)
+                                         ;(write "innerer handler: ") (writeln e)
+                                         (setq inner-result 'inner-was-here)
+                                         (error "hi-from-inner"))))
+    (deftest condition-handler.4 (list (catch 'target (fail "test3")) inner-result) '("oops" inner-was-here)))
 )
 
 
