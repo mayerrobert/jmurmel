@@ -2149,3 +2149,8 @@ funktionen zum werfen von conditions: signal, break, cerror, error
 siehe auch CLtL2 "29. Conditions" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node312.html
 
 condition-handler sollte nicht genullt sondern auf den vorigen wert gesetzt werden (let dynamic)
+
+
+(read-from-string str        [error-obj [start [end]]]) -> result, position
+(read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector
+(write-lines filenamestr string-vector  [appendp [error-obj [charset]]]) -> nil

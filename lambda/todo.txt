@@ -22,12 +22,7 @@ environmentreferenzen inline cachen?
    (weak reference wär nicht nötig für globals, aber für parameter, und für globals falls/ sobald es makunbound gibt)
 
 
-(read-from-string str        [error-obj [start [end]]]) -> result, position
-
-(read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector
 (read-all-bytes filenamestr  [error-obj])           -> result-integer-vector (am besten signed bytes?)
-
-(write-lines filenamestr string-vector  [appendp [error-obj [charset]]]) -> byte-count
 (write-bytes filenamestr integer-vector [appendp [error-obj]])           -> byte-count
 
 

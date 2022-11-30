@@ -1092,6 +1092,15 @@ pi ; ==> 3.141592653589793
 ; as a `simple-vector` containing one `simple-string` for each line.
 
 
+; = (write-lines filenamestr string-sequence  [appendp [error-obj [charset]]]) -> nil
+;
+; Since: 1.4
+;
+; Write all elements (which must be of type `string`)
+; of `string-sequence` to the file `filenamestr`.
+; Each element (line) will be terminated with the OS-default line-end character(-sequence).
+
+
 ; = format, format-locale
 ;
 ; `format t` writes a formatted string to stdout and returns `nil`.
