@@ -1854,7 +1854,7 @@ public class LambdaJ {
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
-        sReadFromString("read-from-string", Features.HAVE_IO, 1, 3)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret, null); return ret[0]; } },
+        sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
@@ -4613,28 +4613,44 @@ public class LambdaJ {
         }
     }
 
-    /** (read-from-string str [skip [error-obj]]) -> result */
+    /** (read-from-string str [error-obj [start [end]]]) -> result */
     static Object[] readFromString(ConsCell a) {
-        final String s = requireString("read-from-string", car(a));
-        final StringReader sr = new StringReader(s);
+        final String str = requireString("read-from-string", car(a));
+        final StringReader strReader = new StringReader(str);
         a = (ConsCell)cdr(a);
+
         final long[] count = new long[1];
+        final Object eof;
+        final long end;
         if (a != null) {
-            final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
-            if (skip > s.length()) throw new SimpleTypeError("skip must be <= string length");
-            try { sr.skip(skip); } catch (IOException e) { wrap(e); }
-            count[0] = skip;
+            eof = car(a);
             a = (ConsCell)cdr(a);
+
+            if (a != null) {
+                final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                if (skip > str.length()) throw new SimpleTypeError("skip must be <= string length");
+                try { strReader.skip(skip); } catch (IOException e) { wrap(e); }
+                count[0] = skip;
+                a = (ConsCell)cdr(a);
+                
+                if (a != null) {
+                    end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                }
+                else end = -1;
+            }
+            else end = -1;
         }
-        final ObjectReader reader = makeReader(() -> { final int c = sr.read(); if (c != EOF) count[0]++; return c; });
+        else { eof = null; end = -1; }
+
+        final ObjectReader reader = makeReader(() -> { if (end != -1 && count[0] == end) return EOF; final int c = strReader.read(); if (c != EOF) count[0]++; return c; });
         final Object ret;
-        if (a == null) {
-            final Object eof = new Object();
-            ret = reader.readObj(eof);
+        if (eof == null) {
+            final Object myeof = new Object();
+            ret = reader.readObj(myeof);
             if (ret == eof) wrap(new EOFException("read-from-string: EOF"));
         }
         else {
-            ret = reader.readObj(car(a));
+            ret = reader.readObj(eof);
         }
         return new Object[] { ret, count[0] };
     }
@@ -6925,7 +6941,7 @@ public class LambdaJ {
 
         // I/O
         public final Object _read      (Object... args) { varargs0_1("read",             args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
-        public final Object readFromStr(Object... args) { varargsMinMax("read-from-string", args.length, 1, 3); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
+        public final Object readFromStr(Object... args) { varargsMinMax("read-from-string", args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
         public final Object _write     (Object... args) { varargs1_2("write",            args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
         public final Object _writeln   (Object... args) { varargs0_2("writeln",          args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
         public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",          args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }

@@ -1067,16 +1067,19 @@ the optioal parameter `print-escape-p` can be used to turn off escaping:
 
     (writeln "Hello, World!" nil)
 
-### (read-from-string str [skip [eof-obj]]) -> object, position
+### (read-from-string str [eof-obj [start [end]]]) -> object, position
 
 Since: 1.4
 
-Similar to CL's `read-from-string` which has more parameters
-in a different order.
+Similar to CL's `read-from-string` which has more parameters.
+If `eof-obj` is not given or `nil` then end-of-file during reading
+will be signalled as an `end-of-file` condition.
 
-    (read-from-string "123 456" 4) ; ==> 456, 7
-    (read-from-string "123 456" 7 'eof) ; ==> eof, 7
-    (read-from-string "123 456   " 7 'eof) ; ==> eof, 10
+    (read-from-string "123 456" nil 4)     ; ==> 456, 7
+    (read-from-string "123 456" 'eof 7)    ; ==> eof, 7
+    (read-from-string "123 456   " 'eof 7) ; ==> eof, 10
+    (read-from-string "123 456" nil 1 4)   ; ==> 23, 4
+    (read-from-string "          " 'eof 5) ; ==> eof, 10
 
 
 ### format, format-locale
