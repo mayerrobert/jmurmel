@@ -1855,6 +1855,7 @@ public class LambdaJ {
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
         sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
+        sReadallLines("read-all-lines", Features.HAVE_IO, 1, 3)        { @Override Object apply(LambdaJ intp, ConsCell args) { return readAllLines(args); } },
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
@@ -4655,6 +4656,24 @@ public class LambdaJ {
         return new Object[] { ret, count[0] };
     }
 
+    /** (read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector */
+    static Object readAllLines(ConsCell args) {
+        final String fileName = requireString("read-all-lines", car(args));
+        final Object errorObj = cadr(args);
+        try {
+            final List<String> ret;
+            if (cddr(args) == null) ret = Files.readAllLines(Paths.get(fileName));
+            else ret = Files.readAllLines(Paths.get(fileName), Charset.forName(requireString("read-all-lines", caddr(args))));
+            return ret.toArray();
+        }
+        catch (Exception e) {
+            if (errorObj != null) return errorObj;
+            throw wrap(e);
+        }
+    }
+
+    /** (write-lines filenamestr string-vector  [appendp [error-obj [charset]]]) -> byte-count */
+    
     static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
         if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
         lispPrinter.printObj(arg, printEscape);
@@ -6940,11 +6959,12 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read      (Object... args) { varargs0_1("read",             args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
-        public final Object readFromStr(Object... args) { varargsMinMax("read-from-string", args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
-        public final Object _write     (Object... args) { varargs1_2("write",            args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
-        public final Object _writeln   (Object... args) { varargs0_2("writeln",          args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
-        public final Object _lnwrite   (Object... args) { varargs0_2("lnwrite",          args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _read       (Object... args) { varargs0_1("read",                args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
+        public final Object readFromStr (Object... args) { varargsMinMax("read-from-string", args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
+        public final Object readAllLines(Object... args) { varargsMinMax("read-all-lines",   args.length, 1, 3); return LambdaJ.readAllLines(arraySlice(args)); }
+        public final Object _write      (Object... args) { varargs1_2("write",               args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
+        public final Object _writeln    (Object... args) { varargs0_2("writeln",             args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _lnwrite    (Object... args) { varargs0_2("lnwrite",             args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
 
         public final Object format     (Object... args)  { varargs2("format", args.length); return LambdaJ.format(lispPrinter, true, arraySlice(args)); }
         public final Object formatLocale(Object... args) { varargs3("format-locale", args.length); return LambdaJ.formatLocale(lispPrinter, true, arraySlice(args)); }
@@ -7632,6 +7652,7 @@ public class LambdaJ {
             // I/O
             case "read": return (CompilerPrimitive)this::_read;
             case "read-from-string": return (CompilerPrimitive)this::readFromStr;
+            case "read-all-lines": return (CompilerPrimitive)this::readAllLines;
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
@@ -7834,7 +7855,7 @@ public class LambdaJ {
         {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
         {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
         {"1+", "inc"}, {"1-", "dec"},
-        {"read-from-string", "readFromStr"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
+        {"read-from-string", "readFromStr"}, {"read-all-lines", "readAllLines"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
         {"adjustable-array-p", "adjustableArrayP"}, {"vector-add", "vectorAdd"},
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},

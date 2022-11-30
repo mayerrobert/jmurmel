@@ -1084,6 +1084,14 @@ pi ; ==> 3.141592653589793
 (read-from-string "          " 'eof 5) ; ==> eof, 10
 
 
+; = (read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector
+;
+; Since: 1.4
+;
+; Read the file with the given filename and return it's contents
+; as a `simple-vector` containing one `simple-string` for each line.
+
+
 ; = format, format-locale
 ;
 ; `format t` writes a formatted string to stdout and returns `nil`.
