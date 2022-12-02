@@ -1,3 +1,6 @@
+ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?
+
+
 interpreter: lokales und globales environment müssen nicht eine einzige liste sein
 -> das lokale (lexikalische) environment bleibt eine liste, das globale wird eine hashmap,
    symbollookup sucht erst in der liste, dann ggf. fallback in die hashmap.

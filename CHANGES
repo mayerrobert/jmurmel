@@ -8,6 +8,8 @@ Changes in JMurmel-1.4 relative to JMurmel-1.3
  * added the special form "try" and the function "typep"
  * added condition types, the global variable *condition-handler* and some condition handling
 
+ * fixed cmdline parameter -XX-dyn and various other feature-flags
+
 
 Changes in JMurmel-1.3 relative to JMurmel-1.2.2
 released: 2022-11-12
