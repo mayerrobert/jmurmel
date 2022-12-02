@@ -1855,7 +1855,7 @@ public class LambdaJ {
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
         sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
-        sReadallLines("read-all-lines", Features.HAVE_IO, 1, 3)        { @Override Object apply(LambdaJ intp, ConsCell args) { return readAllLines(args); } },
+        sReadallLines("read-all-lines", Features.HAVE_IO, 1, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return readAllLines(args); } },
         sWriteLines("write-lines", Features.HAVE_IO, 2, 5)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeLines(args); } },
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
@@ -4619,7 +4619,7 @@ public class LambdaJ {
         }
     }
 
-    /** (read-from-string str [error-obj [start [end]]]) -> result */
+    /** (read-from-string str [eof-obj [start [end]]]) -> result */
     static Object[] readFromString(ConsCell a) {
         final String str = requireString("read-from-string", car(a));
         final StringReader strReader = new StringReader(str);
@@ -4661,18 +4661,16 @@ public class LambdaJ {
         return new Object[] { ret, count[0] };
     }
 
-    /** (read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector */
+    /** (read-all-lines filenamestr [charset]) -> result-string-vector */
     static Object readAllLines(ConsCell args) {
         final String fileName = requireString("read-all-lines", car(args));
-        final Object errorObj = cadr(args);
         try {
             final List<String> ret;
-            if (cddr(args) == null) ret = Files.readAllLines(Paths.get(fileName));
-            else ret = Files.readAllLines(Paths.get(fileName), Charset.forName(requireString("read-all-lines", caddr(args))));
+            if (cdr(args) == null) ret = Files.readAllLines(Paths.get(fileName));
+            else ret = Files.readAllLines(Paths.get(fileName), Charset.forName(requireString("read-all-lines", cadr(args))));
             return ret.toArray();
         }
         catch (Exception e) {
-            if (errorObj != null) return errorObj;
             throw wrap(e);
         }
     }
@@ -7011,7 +7009,7 @@ public class LambdaJ {
         // I/O
         public final Object _read       (Object... args) { varargs0_1("read",                args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
         public final Object readFromStr (Object... args) { varargsMinMax("read-from-string", args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
-        public final Object readAllLines(Object... args) { varargsMinMax("read-all-lines",   args.length, 1, 3); return LambdaJ.readAllLines(arraySlice(args)); }
+        public final Object readAllLines(Object... args) { varargs1_2("read-all-lines",      args.length); return LambdaJ.readAllLines(arraySlice(args)); }
         public final Object writeLines  (Object... args) { varargsMinMax("write-lines",      args.length, 2, 5); return LambdaJ.writeLines(arraySlice(args)); }
         public final Object _write      (Object... args) { varargs1_2("write",               args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
         public final Object _writeln    (Object... args) { varargs0_2("writeln",             args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }

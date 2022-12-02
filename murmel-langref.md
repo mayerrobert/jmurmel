@@ -1081,7 +1081,7 @@ will be signalled as an `end-of-file` condition.
     (read-from-string "          " 'eof 5) ; ==> eof, 10
 
 
-### (read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector
+### (read-all-lines filenamestr [charset]) -> result-string-vector
 
 Since: 1.4
 
