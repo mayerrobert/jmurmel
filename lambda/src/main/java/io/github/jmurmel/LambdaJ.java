@@ -1856,6 +1856,7 @@ public class LambdaJ {
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
         sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sReadallLines("read-all-lines", Features.HAVE_IO, 1, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return readAllLines(args); } },
+        sReadString("read-string", Features.HAVE_IO, 1, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return readString(args); } },
         sWriteLines("write-lines", Features.HAVE_IO, 2, 4)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeLines(args); } },
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
@@ -4675,6 +4676,28 @@ public class LambdaJ {
         }
     }
 
+    /** (read-string filenamestr [charset]) -> result-string */
+    static Object readString(ConsCell args) {
+        final String fileName = requireString("read-string", car(args));
+        args = (ConsCell)cdr(args);
+        try (BufferedReader reader
+             = args == null
+               ? Files.newBufferedReader(Paths.get(fileName))
+               : Files.newBufferedReader(Paths.get(fileName), Charset.forName(requireString("read-string", car(args))))){
+            final StringBuilder ret = new StringBuilder();
+            for (;;) {
+                final String line = reader.readLine();
+                if (line == null)
+                    break;
+                ret.append(line).append(System.lineSeparator());
+            }
+            return ret;
+        }
+        catch (Exception e) {
+            throw wrap(e);
+        }
+    }
+
     /** (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil */
     static Object writeLines(ConsCell args) {
         final String fileName = requireString("write-lines", car(args));
@@ -7004,6 +7027,7 @@ public class LambdaJ {
         public final Object _read       (Object... args) { varargs0_1("read",                args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
         public final Object readFromStr (Object... args) { varargsMinMax("read-from-string", args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
         public final Object readAllLines(Object... args) { varargs1_2("read-all-lines",      args.length); return LambdaJ.readAllLines(arraySlice(args)); }
+        public final Object readString  (Object... args) { varargs1_2("read-string",         args.length); return LambdaJ.readString(arraySlice(args)); }
         public final Object writeLines  (Object... args) { varargsMinMax("write-lines",      args.length, 2, 4); return LambdaJ.writeLines(arraySlice(args)); }
         public final Object _write      (Object... args) { varargs1_2("write",               args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
         public final Object _writeln    (Object... args) { varargs0_2("writeln",             args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
@@ -7696,6 +7720,7 @@ public class LambdaJ {
             case "read": return (CompilerPrimitive)this::_read;
             case "read-from-string": return (CompilerPrimitive)this::readFromStr;
             case "read-all-lines": return (CompilerPrimitive)this::readAllLines;
+            case "read-string": return (CompilerPrimitive)this::readString;
             case "write-lines": return (CompilerPrimitive)this::writeLines;
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
@@ -7899,7 +7924,8 @@ public class LambdaJ {
         {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
         {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
         {"1+", "inc"}, {"1-", "dec"},
-        {"read-from-string", "readFromStr"}, {"read-all-lines", "readAllLines"}, {"write-lines", "writeLines"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
+        {"read-from-string", "readFromStr"}, {"read-all-lines", "readAllLines"}, {"read-string", "readString"},
+        {"write-lines", "writeLines"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
         {"adjustable-array-p", "adjustableArrayP"}, {"vector-add", "vectorAdd"},
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
