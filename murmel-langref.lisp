@@ -1092,7 +1092,7 @@ pi ; ==> 3.141592653589793
 ; as a `simple-vector` containing one `simple-string` for each line.
 
 
-; = (write-lines filenamestr string-sequence  [appendp [error-obj [charset]]]) -> nil
+; = (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil
 ;
 ; Since: 1.4
 ;

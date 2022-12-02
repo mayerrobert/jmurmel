@@ -1856,7 +1856,7 @@ public class LambdaJ {
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
         sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sReadallLines("read-all-lines", Features.HAVE_IO, 1, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return readAllLines(args); } },
-        sWriteLines("write-lines", Features.HAVE_IO, 2, 5)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeLines(args); } },
+        sWriteLines("write-lines", Features.HAVE_IO, 2, 4)             { @Override Object apply(LambdaJ intp, ConsCell args) { return writeLines(args); } },
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
@@ -4675,7 +4675,7 @@ public class LambdaJ {
         }
     }
 
-    /** (write-lines filenamestr string-sequence  [appendp [error-obj [charset]]]) -> nil */
+    /** (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil */
     static Object writeLines(ConsCell args) {
         final String fileName = requireString("write-lines", car(args));
         args = (ConsCell)cdr(args);
@@ -4685,16 +4685,11 @@ public class LambdaJ {
         args = (ConsCell)cdr(args);
 
         boolean appendp = false;
-        Object errorObj = null;
         String cs = null;
         if (args != null) {
             if (car(args) != null) appendp = true;
             args = (ConsCell)cdr(args);
-            if (args != null) {
-                errorObj = car(args);
-                args = (ConsCell)cdr(args);
-                if (args != null) cs = requireString("write-lines", car(args));
-            }
+            if (args != null) cs = requireString("write-lines", car(args));
         }
         final Iterator<Object> it;
         if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
@@ -4711,12 +4706,11 @@ public class LambdaJ {
                 w.write(line);
                 w.write(eol);
             }
+            return null;
         }
         catch (Exception e) {
-            if (errorObj != null) return errorObj;
             throw wrap(e);
         }
-        return null;
     }
     
     static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
@@ -7010,7 +7004,7 @@ public class LambdaJ {
         public final Object _read       (Object... args) { varargs0_1("read",                args.length); return LambdaJ.read(lispReader, arraySlice(args)); }
         public final Object readFromStr (Object... args) { varargsMinMax("read-from-string", args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
         public final Object readAllLines(Object... args) { varargs1_2("read-all-lines",      args.length); return LambdaJ.readAllLines(arraySlice(args)); }
-        public final Object writeLines  (Object... args) { varargsMinMax("write-lines",      args.length, 2, 5); return LambdaJ.writeLines(arraySlice(args)); }
+        public final Object writeLines  (Object... args) { varargsMinMax("write-lines",      args.length, 2, 4); return LambdaJ.writeLines(arraySlice(args)); }
         public final Object _write      (Object... args) { varargs1_2("write",               args.length); return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
         public final Object _writeln    (Object... args) { varargs0_2("writeln",             args.length); return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
         public final Object _lnwrite    (Object... args) { varargs0_2("lnwrite",             args.length); return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
