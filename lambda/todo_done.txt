@@ -2154,3 +2154,6 @@ condition-handler sollte nicht genullt sondern auf den vorigen wert gesetzt werd
 (read-from-string str        [error-obj [start [end]]]) -> result, position
 (read-all-lines filenamestr  [error-obj [charset]]) -> result-string-vector
 (write-lines filenamestr string-vector  [appendp [error-obj [charset]]]) -> nil
+
+(read-string  filenamestr [charset])                   -> result-string
+(write-string filenamestr string  [appendp [charset]]) -> nil

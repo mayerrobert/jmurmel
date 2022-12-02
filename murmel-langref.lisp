@@ -1110,6 +1110,15 @@ pi ; ==> 3.141592653589793
 ; Write all elements (which must be of type `string`)
 ; of `string-sequence` to the file `filenamestr`.
 ; Each element (line) will be terminated with the OS-default line-end character(-sequence).
+; (Note: with the JVM this can be set using -Dline.separator.)
+
+
+; = (write-string filenamestr string  [appendp [charset]]) -> nil
+;
+; Since: 1.4
+;
+; Write `string` to the file `filenamestr`.
+; Each #\Newline character will be written as the OS-default line-end character(-sequence).
 
 
 ; = format, format-locale

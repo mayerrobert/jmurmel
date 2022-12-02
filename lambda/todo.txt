@@ -28,9 +28,6 @@ environmentreferenzen inline cachen?
    (weak reference wär nicht nötig für globals, aber für parameter, und für globals falls/ sobald es makunbound gibt)
 
 
-(read-string  filenamestr [charset])                   -> result-string
-(write-string filenamestr string  [appendp [charset]]) -> nil
-
 (read-all-bytes filenamestr)                           -> result-integer-vector (am besten signed bytes?)
 (write-bytes    filenamestr integer-vector [appendp])  -> nil
 
