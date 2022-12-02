@@ -28,11 +28,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -5606,6 +5602,7 @@ public class LambdaJ {
             final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != -1) System.out.print((char)c); return c; };
             final ReadSupplier nonechoingSupplier = consoleReader::read;
 
+            final boolean replVars = (interpreter.features & Features.HAVE_XTRA.bits()) != 0;
             final Object bye = new Object();
             final Runnable initReplVars = () -> {
                 for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3}) {
@@ -5622,7 +5619,7 @@ public class LambdaJ {
                 parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
                                                echo ? echoingSupplier : nonechoingSupplier, null);
                 outWriter = interpreter.getLispPrinter();
-                initReplVars.run();
+                if (replVars) initReplVars.run();
             }
             for (;;) {
                 if (!isInit) {
@@ -5632,8 +5629,7 @@ public class LambdaJ {
                     outWriter = makeWriter(System.out::print);
                     interpreter.init(parser, outWriter, null);
                     injectCommandlineArgs(interpreter, args);
-                    interpreter.featuresEnvEntry.rplacd(LambdaJ.makeFeatureList(interpreter.getSymbolTable()));
-                    initReplVars.run();
+                    if (replVars) initReplVars.run();
                     isInit = true;
                 }
 
@@ -5675,7 +5671,7 @@ public class LambdaJ {
                         }
                     }
 
-                    interpreter.eval(ListBuilder.list(setq, form0, ListBuilder.list(quote, exp)), null);
+                    if (replVars) interpreter.eval(ListBuilder.list(setq, form0, ListBuilder.list(quote, exp)), null);
 
                     interpreter.values = NO_VALUES;
                     final long tStart = System.nanoTime();
@@ -5684,17 +5680,19 @@ public class LambdaJ {
 
                     history.add(exp);
 
-                    interpreter.eval(ListBuilder.list(setq, form3, form2), null);
-                    interpreter.eval(ListBuilder.list(setq, form2, form1), null);
-                    interpreter.eval(ListBuilder.list(setq, form1, form0), null);
+                    if (replVars) {
+                        interpreter.eval(ListBuilder.list(setq, form3, form2), null);
+                        interpreter.eval(ListBuilder.list(setq, form2, form1), null);
+                        interpreter.eval(ListBuilder.list(setq, form1, form0), null);
 
-                    interpreter.eval(ListBuilder.list(setq, result3, result2), null);
-                    interpreter.eval(ListBuilder.list(setq, result2, result1), null);
-                    interpreter.eval(ListBuilder.list(setq, result1, ListBuilder.list(quote, result)), null);
+                        interpreter.eval(ListBuilder.list(setq, result3, result2), null);
+                        interpreter.eval(ListBuilder.list(setq, result2, result1), null);
+                        interpreter.eval(ListBuilder.list(setq, result1, ListBuilder.list(quote, result)), null);
 
-                    interpreter.eval(ListBuilder.list(setq, values3, values2), null);
-                    interpreter.eval(ListBuilder.list(setq, values2, values1), null);
-                    interpreter.eval(ListBuilder.list(setq, values1, ListBuilder.list(quote, interpreter.values == NO_VALUES ? ListBuilder.list(result) : interpreter.values)), null);
+                        interpreter.eval(ListBuilder.list(setq, values3, values2), null);
+                        interpreter.eval(ListBuilder.list(setq, values2, values1), null);
+                        interpreter.eval(ListBuilder.list(setq, values1, ListBuilder.list(quote, interpreter.values == NO_VALUES ? ListBuilder.list(result) : interpreter.values)), null);
+                    }
 
                     System.out.println();
                     if (interpreter.values == NO_VALUES) {
@@ -5866,7 +5864,7 @@ public class LambdaJ {
             if (hasFlag("--no-eq", args))       features &= ~Features.HAVE_EQ.bits();
             if (hasFlag("--no-quote", args))    features &= ~Features.HAVE_QUOTE.bits();
 
-            if (hasFlag("--XX-dyn", args))       features &= ~Features.HAVE_ALL_DYN.bits();
+            if (hasFlag("--XX-dyn", args))       features &= ~Features.HAVE_LEXC.bits();
             if (hasFlag("--XX-oldlambda", args)) features |= Features.HAVE_OLDLAMBDA.bits();
 
             return features;

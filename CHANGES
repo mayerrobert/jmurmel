@@ -1,5 +1,11 @@
 
+Changes in JMurmel-1.3.1 relative to JMurmel-1.3
+
+ * fixed cmdline parameter -XX-dyn and various other feature-flags
+
+
 Changes in JMurmel-1.3 relative to JMurmel-1.2.2
+released: 2022-11-12
 
  * changed car and cdr so that they are no longer defined for symbols, i.e. (car 'aaa)
    now is an error.
@@ -53,6 +59,7 @@ Changes in JMurmel-1.3 relative to JMurmel-1.2.2
 
 
 Changes in JMurmel-1.2.2 relative to JMurmel-1.2.1
+released: 2022-05-20
 
  * macroexpansion is no longer done on-the-fly but in a seperate macroexpansion phase.
    This fixes issues with macros being expanded that are actually defined later,
@@ -60,6 +67,7 @@ Changes in JMurmel-1.2.2 relative to JMurmel-1.2.1
 
 
 Changes in JMurmel-1.2.1 relative to JMurmel-1.2
+released: 2022-05-07
 
  * changed the interpreter to expand macros only once
  * changed the compiler so that the restriction "The list containing optional arguments cannot be used
@@ -72,6 +80,7 @@ Changes in JMurmel-1.2.1 relative to JMurmel-1.2
 
 
 Changes in JMurmel-1.2 relative to JMurmel-1.1
+released: 2022-04-20
 
  * changed/ fixed the behaviour around large numbers, no more silently cutting off decimal places
    when an integral number is needed
@@ -122,6 +131,7 @@ Changes in JMurmel-1.2 relative to JMurmel-1.1
 
 
 Changes in JMurmel-1.1 relative to JMurmel-1.0
+released: 2022-01-03
 
  * added feature expressions #+, #-, and, or, not
  * added reader macros #b #o #f for binary, oct and hex, #\ for characters,
@@ -130,3 +140,7 @@ Changes in JMurmel-1.1 relative to JMurmel-1.0
  * added default library "mlib"
  * added documentation in markdown (murmel-langref.md, mlib.md)
  * fixed numerous bugs
+ 
+
+Jmurmel-1.0
+released: 2021-05-23
