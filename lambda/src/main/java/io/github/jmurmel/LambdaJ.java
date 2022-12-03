@@ -4637,8 +4637,7 @@ public class LambdaJ {
             if (a != null) {
                 final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
                 if (skip > str.length()) throw new SimpleTypeError("skip must be <= string length");
-                try { strReader.skip(skip); } catch (IOException e) { wrap(e); }
-                count[0] = skip;
+                try { count[0] = strReader.skip(skip); } catch (IOException e) { wrap(e); }
                 a = (ConsCell)cdr(a);
                 
                 if (a != null) {
@@ -4655,7 +4654,7 @@ public class LambdaJ {
         if (eof == null) {
             final Object myeof = new Object();
             ret = reader.readObj(myeof);
-            if (ret == eof) wrap(new EOFException("read-from-string: EOF"));
+            if (ret == myeof) wrap(new EOFException("read-from-string: EOF"));
         }
         else {
             ret = reader.readObj(eof);

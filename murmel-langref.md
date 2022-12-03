@@ -1115,7 +1115,7 @@ Each element (line) will be terminated with the OS-default line-end character(-s
 Since: 1.4
 
 Write `string` to the file `filenamestr`.
-Each line will be terminated with the OS-default line-end character(-sequence).
+Each #\Newline character will be written as the OS-default line-end character(-sequence).
 
 
 ### format, format-locale
