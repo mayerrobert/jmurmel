@@ -2173,6 +2173,7 @@ public class LambdaJ {
                     try {
                         return result = eval(car(ccArguments), env, stack, level, traceLvl);
                     }
+                    catch (ReturnException e) { throw e; }
                     catch (Throwable e) {
                         final Object errorObjOrHandler = eval(cadr(ccArguments), env, stack, level, traceLvl);
                         values = list(errorObjOrHandler, e);
@@ -7513,6 +7514,7 @@ public class LambdaJ {
             try {
                 return protectedForm.apply(NOARGS);
             }
+            catch (ReturnException e) { throw e; }
             catch (Throwable e) {
                 values = new Object[] { errorObj, e };
                 return errorObj;

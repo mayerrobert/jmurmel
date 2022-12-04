@@ -453,6 +453,7 @@ multiline comment
 (deftest try.4 (multiple-value-bind (ret ex) (try (fail 'file-error #-murmel :pathname "xyxxy") 'err)
                  (list ret (typep ex 'file-error)))
                '(err t))
+(deftest try.5 (catch 'target (try (throw 'target "test"))) "test")
 
 
 ;;; *condition-handler*
