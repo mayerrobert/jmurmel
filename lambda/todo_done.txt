@@ -2092,6 +2092,9 @@ statt try -> eine dynamische globale variable *error-handler*, initialwert ist e
 -> oder parameter für eval(), ein neuer handler wird in ein lambda dazugebastelt
 -> muss das mit den handlern für unwind-protect/ let dynamic verbunden werden, damit die reihenfolge stimmt?
 
+funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write arg nil) und dann (fatal)
+-> eher was für mlib
+
 
 errorhandling in CL ist eigentlich conditionhandling https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node338.html
 geht mit handler-bind und/ oder handler-case (und ignore-errors aber das ist schiach, eher weglassen)

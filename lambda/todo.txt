@@ -1193,8 +1193,6 @@ zeilentabellen lisp->java mitfuehren und ins java verpacken? dann koennte ein ca
 -> javaassist kann linenumbertable fuer methoden neu setzen, die enthalten sourcefile und sourcezeile
 -> apache bcel wsl auch, bcel ist in java mitgepackt: com.sun.org.apache.bcel
 
-wenns namespaces gibt, sollte :: wahrscheinlich i-wie mit import verheiratet werden
-
 vielleicht doch nil=null und t=Boolean.TRUE? Interpreter ggf. angleichen
 
 refactor: alles was zum interpreter gehoert in eine neue Klasse LambdaJ.MurmelInterpreter heben
@@ -1232,8 +1230,6 @@ anstatt letXX, cond im compiler auszuprogrammieren, kann man auch desugar progra
 
 die generierten programme koennten ein cmd arg "--repl" unterstuetzen: mit dem arg gibts nach body() kein exit() sondern repl()
 
-filevariablen statt der gefaehrlichen cmdline args
-
 JSR223 vielleicht in ein zweites jar verpacken?
 
 
@@ -1260,13 +1256,6 @@ current-cc ist eigentlich immer cdr(form)
         -> und wie uebersetzt man das nach java?
    damit koennt ma continuations umsetzen, und eval waer ueberhaupt nicht mehr rekursiv, statt return-> form=current_cc; continue;
    -> das waer dann "compile with continuations", continuations kann man muss aber nicht in der sprache anbinden
-
-
-
-vielleicht eval irgendwie umbauen, dass ein symbol nicht den wert sondern den enventry liefert? das waer dann ein lvalue,
-und wuerde ein allfaelliges setf ermoeglichen. (get-record recordsymbol propertysymbol) wuerde dann auch ein (symbol . value)
-tupel liefern, und dann wuerd (setf (get-record my-record propertysymbol) value) gehen
-eigentlich muesste das nur in eval->symbol und zip eingebaut werden
 
 
 

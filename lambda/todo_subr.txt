@@ -10,19 +10,10 @@ scan-iterator dazu für JFFI?
 
 last-n: last mit optionalem parameter N siehe http://clhs.lisp.se/Issues/iss209_w.htm
 
-funktion (error . args) ähnlich wie scheme: schreibt alle argumente mit (write arg nil) und dann (fatal)
--> eher was für mlib
-
-funktion "describe" wär nicht so schwer
-
 evenp, oddp mit x & 0x1 machen.
 
 https://github.com/cl21/cl21 ist Common Lisp 2021
 -> neuerfindungen in Murmel sollten dagegen gecheckt werden, z.B. hash literals (defvar *hash* #H())
-
-Hashmaps
--> make-hash-table
-   get-hash key -> value
 
 Lambdaj hat assoceq, Emacs Lisp hat assq, ggf umbenamsen, evtl. als primitive anbieten
 assoc, delete, member, rassoc, remove use eql in Common Lisp
@@ -35,9 +26,20 @@ The main implementation of this interface (FileChannel) can hold the current pos
 as well as the position in the file that you are writing to.
 This means you can have multiple threads reading from and/or writing to the same channel at different positions, making for faster file I/O.
 
+
+mit com.sun.net.httpserver.HttpServer und com.sun.net.httpserver.HttpsServer kann man mit JavaSE ohne weitere dependencies einen HTTP(S) Server bauen.
+die wirkliche implementierung wird über SPI gesucht, eine einfache defaultimplementierung ist im JDK enthalten.
+anscheinend kann man einfach jetty.jar dazukopieren, dann wird jetty verwendet.
+wenn man keinen executor setzt (HttpServer#setExecutor (Executor executor)), dann ist alles singlethreaded,
+benutzt nur den aufruferthread.
+siehe auch https://stackoverflow.com/questions/3732109/simple-http-server-in-java-using-only-java-se-api
+
+oder: Apache spark https://github.com/perwendel/spark
+
 Helidon ist eine Art Application Server als Jar
 https://blogs.oracle.com/javamagazine/post/you-dont-always-need-an-application-server-to-run-jakarta-ee-applications?=2-
 HelidonSE hat ein eigenes API basierend auf Lambdas, HelidonMP kopiert man zu einer JEE app dazu
+
 
 http://t3x.org/s9fes/pretty-print.scm.html ist ein public domain pretty printer
 
@@ -60,8 +62,6 @@ lisp eol von cmdline parameter auf lisp global umstellen
    (write "Hallo" (cons ('(max-length 20) *print-environment*))) ; write benutzt argument
 
 
-funktion fatal dokumentieren, ggf. umbenamsen
-
 https://people.eecs.berkeley.edu/~bh/ssch27/appendix-cl.html
 beschreibt unterschiede zw. scheme und CL und ist damit ein guter ueberblick ueber CL, auch file open/ close
 
@@ -76,18 +76,9 @@ CDI und EJB aehnlich :: integrieren?
    -> DeltaSpike so verpacken, dass i-wie ein CustomEnvironmentSupplier uebrigbleibt
    -> kann man das aufrufen eines CustomEnvironmentSupplier in eine Murmel Funktion verpacken?
 
-:: macht im prinzip dasselbe wie CL create-method
--> ggf parameterreihenfolge anpassen
-   hinweis in murmel-langref.lisp
 
 zus Primitives: https://learnxinyminutes.com/docs/common-lisp/
-(expt x y) -> x hoch y, wurzelziehen? oder ist das (x hoch 1/y)?
 (intern string) -> symbol
--> intern ist case preserving (intern "aaa") -> |aaa|, anscheinend macht der reader uppercase, und symbol lookup ist case sensitive
-AND, OR, XOR, NOT
--> brauchts eigentlich nicht, ist sugar ueber if
-null? brauchts eigentlich nur in scheme, (null? x) -> (not x)
--> umbenamsen
 
 
 Datei IO
@@ -105,9 +96,6 @@ bringt aber nur was, wenns auch stringmanipulationsfunktionen gibt
 (int-char I:integer): character expr ; Converts integer to character.
 
 
-(load 'utf-8 "lispfile.lisp")
--> erster optionale parameter ist ein symbol fuer den Zeichensatz
-
 Stringfunktionen: format kann auch strings zusammensetzen
 strings sind eine LISP sequence, fuer sequence gibts
 -> subseq sequence start &optional end => subsequence
@@ -119,9 +107,6 @@ strings sind eine LISP sequence, fuer sequence gibts
 
 CL hat stringp string= string<=, ...
 
-read koennte einen optionalen ersten string parameter als filename interpretieren und dieses file lesen
-statt lispStdin, write sinngemaess, ggf. format und format-locale
-
 primitives fuer Environmentvariables und -D Java Systemproperties. wenns nicht existiert, gibts nil, wenns nicht als
 double lesbar ist, gibts NaN
 primitives fuer isNan, oder konstanten NaN, Infinity und (eq d NaN)
@@ -132,30 +117,3 @@ funktion nativequery bekommt eine datasource, einen SQL string und eine Liste mi
 
 nativeinsert koennte fuer batchinserts eine Liste von listen mit (parameternameatom . wertexpression) tupeln bekommen und eine liste 
 mit ints liefern (ein int für jede insert-tupel-liste)
-
-
-http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
-list-length could be implemented as follows:
-
-(defun list-length (x) 
-  (do ((n 0 (+ n 2))            ;Counter 
-       (fast x (cddr fast))     ;Fast pointer: leaps by 2 
-       (slow x (cdr slow)))     ;Slow pointer: leaps by 1 
-      (nil) 
-    ;; If fast pointer hits the end, return the count. 
-    (when (endp fast) (return n)) 
-    (when (endp (cdr fast)) (return (+ n 1))) 
-    ;; If fast pointer eventually equals slow pointer, 
-    ;;  then we must be stuck in a circular list. 
-    ;; (A deeper property is the converse: if we are 
-    ;;  stuck in a circular list, then eventually the 
-    ;;  fast pointer will equal the slow pointer. 
-    ;;  That fact justifies this implementation.) 
-    (when (and (eq fast slow) (> n 0)) (return nil))))
-
-
-
-isNaN, isInfinite, isFinite
--> ggf. parameter "Error bei NaN, Infinity etc."
-div, remain, trunc, round, abs
-weitere operatoren aus java.lang.Math (oder StrictMath?)
