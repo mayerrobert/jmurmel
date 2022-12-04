@@ -1,3 +1,6 @@
+uiop:read-file-string <-> read-string
+uiop:read-file-lines <-> read-all-lines, (vector->list (read-all-lines "Dockerfile"))
+
 LambdaJError sollte NICHT "Error: " voranstellen, repl sollte bei Exceptions "Error: " und auch die klasse ausgeben
 -> oder besser: getMessage() ohne Murmelstack, getErrormessage() mit
 
