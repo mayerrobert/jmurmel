@@ -12,6 +12,7 @@ Changes in JMurmel-1.4 relative to JMurmel-1.3
  * mlib: added the functions parse, parse-integer
 
 Changes in JMurmel-1.3.1 relative to JMurmel-1.3
+released: 2022-12-04
 
  * fixed cmdline parameter -XX-dyn and various other feature-flags
 
