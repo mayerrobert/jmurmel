@@ -340,6 +340,15 @@ String literals are 2000 chars max length.
 Most of these features can be disabled using commandline arguments.
 You can disable pretty much everything except S-expressions, symbols, cons cells and lambda.
 If you want to experiment with a bare-bones-Lisp use `--help-features` for details.
+E.g. use
+
+    java -jar jmurmel.jar --XX-dyn --XX-oldlambda --min+
+
+to get a REPL with a Lisp that is pretty much the same as John McCarthy's original LISP
+as described in paper [Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I](https://www-formal.stanford.edu/jmc/recursive.html),
+except: McCarthy's paper describes code in M-expressions
+while Murmel read S-expressions instead of M-expressions,
+as did the first implementation of LISP by Steve Russell on an IBM 704 computer using punched cards.
 
 ## Customization
 
