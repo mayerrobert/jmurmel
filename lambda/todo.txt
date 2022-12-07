@@ -1,5 +1,3 @@
-jmethod sollte auch den ersten parameter "this" konvertieren
-
 cl-ppcre http://edicl.github.io/cl-ppcre/
 -> perl compatible regex, http://edicl.github.io/cl-ppcre/ hat u.a.
    split regex target-string &key start end limit with-registers-p omit-unmatched-p sharedp => list

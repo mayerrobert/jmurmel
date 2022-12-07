@@ -2160,3 +2160,5 @@ condition-handler sollte nicht genullt sondern auf den vorigen wert gesetzt werd
 
 (read-string  filenamestr [charset])                   -> result-string
 (write-string filenamestr string  [appendp [charset]]) -> nil
+
+jmethod sollte auch den ersten parameter "this" konvertieren
