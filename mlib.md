@@ -36,7 +36,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
     - [push](#macro-push), [pop](#macro-pop)
 - numbers, characters
-    - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
+    - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
     - [equal](#function-equal)
     - [parse](#function-parse), [parse-integer](#function-parse-integer)
@@ -528,6 +528,20 @@ and finally yields the car of the originally retrieved list.
 Since: 1.1
 
 Return the absoute value of a number.
+
+### Function: min
+    (min number+) -> result
+
+Since: 1.4
+
+Return the smallest number of the given arguments.
+
+### Function: max
+    (max number+) -> result
+
+Since: 1.4
+
+Return the largest number of the given arguments.
 
 ### Function: zerop
     (zerop number) -> boolean

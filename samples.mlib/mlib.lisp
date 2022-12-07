@@ -39,7 +39,7 @@
 ;;;     - [push](#macro-push), [pop](#macro-pop)
 
 ;;; - numbers, characters
-;;;     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
+;;;     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
 ;;;     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
 ;;;     - [equal](#function-equal)
 ;;;     - [parse](#function-parse), [parse-integer](#function-parse-integer)
@@ -1173,6 +1173,30 @@
 ;;; Return the absoute value of a number.
 (defun abs (n)
   (if (< n 0) (- n) (+ n)))
+
+
+;;; = Function: min
+;;;     (min number+) -> result
+;;;
+;;; Since: 1.4
+;;;
+;;; Return the smallest number of the given arguments.
+(defun min (num . more-numbers)
+  (dolist (n more-numbers)
+    (if (< n num) (setq num n)))
+  num)
+
+
+;;; = Function: max
+;;;     (max number+) -> result
+;;;
+;;; Since: 1.4
+;;;
+;;; Return the largest number of the given arguments.
+(defun max (num . more-numbers)
+  (dolist (n more-numbers)
+    (if (> n num) (setq num n)))
+  num)
 
 
 ;;; = Function: zerop
