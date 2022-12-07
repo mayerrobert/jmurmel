@@ -5021,6 +5021,7 @@ public class LambdaJ {
         private final Invoker invoke;
         private final UnaryOperator<Object>[] argConv;
 
+        @SuppressWarnings("unchecked")
         private JavaMethod(Method method, Iterable<?> paramClassNames) {
             this.method = method;
             int paramCount = method.getParameterCount();
@@ -5028,6 +5029,11 @@ public class LambdaJ {
             if (!isStatic) paramCount++; // this + parameters
 
             this.argConv = makeArgConv(paramClassNames, method.getParameterCount(), isStatic ? 0 : 1);
+            if (!isStatic) {
+                final String className = method.getDeclaringClass().getName();
+                final Object[] entry = classByName.get(className);
+                if (entry != null) argConv[0] = (UnaryOperator<Object>) entry[2];
+            }
 
             try {
                 final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
