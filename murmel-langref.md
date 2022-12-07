@@ -379,7 +379,11 @@ Murmel's type system (and the corresponding host types) look like so:
                                                     if c was a reader-error then both
                                                     (typep c 'stream-error) and (typep c 'parse-error) are true
 
-The above is a subset of CLtL2, see "2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
+The above is a subset of CLtL2's predefined data types,
+see "CLtL2 2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html,
+the condition hierarchy is a subset of CLtL2 predefined condition types,
+see "CLtL2 29.5. Predefined Condition Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node346.html
+and "CLHS 9.1.1 Condition Types" http://clhs.lisp.se/Body/09_aa.htm
 
 Murmel treats symbols case-insensitive.
 Symbol names are of arbitrary length, however only the

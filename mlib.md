@@ -39,6 +39,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
     - [equal](#function-equal)
+    - [parse](#function-parse), [parse-integer](#function-parse-integer)
 - sequences
     - [elt](#function-elt), [copy-seq](#function-copy-seq), [length](#function-length)
     - [reverse](#function-reverse), [nreverse](#function-nreverse)
@@ -581,6 +582,22 @@ Return `t` if any of the following is true:
 - `a` and `b` are strings that have the same text value
 - `a` and `b` are bitvectors whose elements are eql
 - `a` and `b` are conses whose car and cdr are `equal` respectively
+
+### Function: parse
+    (parse result-type str [eof-obj [start [end]]]) -> result
+
+Since: 1.4
+
+Reads the token in `str` starting at `start` (which defaults to `0`),
+`parse-error` if the token is not of type `result-type`.
+
+### Function: parse-integer
+    (parse-integer str [start [end]]) -> result
+
+Since: 1.4
+
+Reads the token in `str` starting at `start` (which defaults to `0`),
+`parse-error` if the token is not of type `integer`.
 
 ### Function: scan
     (scan start [step [endincl]])                 -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)

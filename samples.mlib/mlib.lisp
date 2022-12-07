@@ -42,6 +42,7 @@
 ;;;     - [abs](#function-abs), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
 ;;;     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
 ;;;     - [equal](#function-equal)
+;;;     - [parse](#function-parse), [parse-integer](#function-parse-integer)
 
 ;;; - sequences
 ;;;     - [elt](#function-elt), [copy-seq](#function-copy-seq), [length](#function-length)
@@ -1259,6 +1260,31 @@
       (and (stringp a) (stringp b) (string= a b))
       (and (bit-vector-p a) (bit-vector-p b) (bv= a b))
       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
+
+
+;;; = Function: parse
+;;;     (parse result-type str [eof-obj [start [end]]]) -> result
+;;;
+;;; Since: 1.4
+;;;
+;;; Reads the token in `str` starting at `start` (which defaults to `0`),
+;;; `parse-error` if the token is not of type `result-type`.
+(defun parse args
+  (multiple-value-bind (obj pos) (apply read-from-string (cdr args))
+    (if (typep obj (car args)) ()
+      (error 'parse-error "expected an object of type %s, got %s" (car args) obj))
+    (values obj pos)))
+
+
+;;; = Function: parse-integer
+;;;     (parse-integer str [start [end]]) -> result
+;;;
+;;; Since: 1.4
+;;;
+;;; Reads the token in `str` starting at `start` (which defaults to `0`),
+;;; `parse-error` if the token is not of type `integer`.
+(defun parse-integer args
+  (apply parse (list* 'integer (car args) nil (cdr args))))
 
 
 ; generators **********************************************************
