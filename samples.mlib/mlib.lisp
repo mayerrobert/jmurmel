@@ -294,48 +294,17 @@
 ;;; If there is no otherwise-clause, typecase returns nil.
 (defmacro typecase (keyform . clauses)
   (labels ((do-clause (tmp clause)
-             (let ((keydesignator (car clause))
-                   (forms (cdr clause)))
-               (if keydesignator
-                 (cond ((eq keydesignator 'null)              `((null ,tmp) ,@forms))
-                       ((eq keydesignator 'atom)              `((atom ,tmp) ,@forms))
-                       ((eq keydesignator 'symbol)            `((symbolp ,tmp) ,@forms))
-                       ((eq keydesignator 'function)          `((functionp ,tmp) ,@forms))
-
-                       ((eq keydesignator 'list)              `((listp ,tmp) ,@forms))
-                       ((eq keydesignator 'cons)              `((consp ,tmp) ,@forms))
-
-                       ((eq keydesignator 'vector)            `((vectorp ,tmp) ,@forms))
-                       ((eq keydesignator 'simple-vector)     `((simple-vector-p ,tmp) ,@forms))
-                       ((eq keydesignator 'bit-vector)        `((bit-vector-p ,tmp) ,@forms))
-                       ((eq keydesignator 'simple-bit-vector) `((simple-bit-vector-p ,tmp) ,@forms))
-                       ((eq keydesignator 'string)            `((stringp ,tmp) ,@forms))
-                       ((eq keydesignator 'simple-string)     `((simple-string-p ,tmp) ,@forms))
-
-                       ((eq keydesignator 'sequence)          `((if (listp ,tmp) t (if (vectorp ,tmp) t)) ,@forms))
-
-                       ((eq keydesignator 'character)         `((characterp ,tmp) ,@forms))
-
-                       ((eq keydesignator 'bit)               `((if (eql ,tmp 0) t (if (eql ,tmp 1) t)) ,@forms))
-                       ((eq keydesignator 'fixnum)            `((and (integerp ,tmp) (<= most-negative-fixnum ,tmp most-positive-fixnum)) ,@forms))
-                       ((eq keydesignator 'integer)           `((integerp ,tmp) ,@forms))
-                       ((eq keydesignator 'float)             `((floatp ,tmp) ,@forms))
-                       ((eq keydesignator 'number)            `((numberp ,tmp) ,@forms))
-
-                       ((eq keydesignator 'function)          `((functionp ,tmp) ,@forms))
-
-                       ((eq keydesignator t)                  `(t ,@forms))
-
-                       (t (error "typecase - type %s is not implemented" keydesignator))))))
+             (let ((keydesignator (car clause)))
+               (if (and keydesignator (symbolp keydesignator))
+                     `((typep ,tmp ',keydesignator) ,@(cdr clause))
+                 (error 'simple-error "bad clause in typecase: %s" clause))))
 
            (do-clauses (key)
              (let* ((result (cons () ()))
-                    (append-to result)
-                    clause)
+                    (append-to result))
                (let loop ((clauses clauses))
                  (when clauses
-                   (setq clause (do-clause key (car clauses)))
-                   (if clause (setq append-to (cdr (rplacd append-to (cons clause ())))))
+                   (setq append-to (cdr (rplacd append-to (cons (do-clause key (car clauses)) ()))))
                    (loop (cdr clauses))))
              (cdr result))))
 

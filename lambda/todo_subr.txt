@@ -1,3 +1,16 @@
+cl-ppcre http://edicl.github.io/cl-ppcre/
+-> perl compatible regex, http://edicl.github.io/cl-ppcre/ hat u.a.
+   split regex target-string &key start end limit with-registers-p omit-unmatched-p sharedp => list
+
+uiop hat ein anderes split-string https://asdf.common-lisp.dev/uiop.html
+split-string string &key max separator
+Split string into a list of components separated by any of the characters in the sequence separator.
+
+
+uiop:read-file-string <-> read-string
+uiop:read-file-lines <-> read-all-lines, (vector->list (read-all-lines "Dockerfile"))
+
+
 (scan alist) liefert automatisch das erwünschte (values '(key . value) more)
 scan-plist dazu?
 scan-iterator dazu für JFFI?
