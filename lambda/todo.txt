@@ -1,7 +1,4 @@
 
-LambdaJError sollte NICHT "Error: " voranstellen, repl sollte bei Exceptions "Error: " und auch die klasse ausgeben
--> oder besser: getMessage() ohne Murmelstack, getErrormessage() mit
-
 ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?
 
 

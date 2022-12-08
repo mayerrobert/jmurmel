@@ -2162,3 +2162,6 @@ condition-handler sollte nicht genullt sondern auf den vorigen wert gesetzt werd
 (write-string filenamestr string  [appendp [charset]]) -> nil
 
 jmethod sollte auch den ersten parameter "this" konvertieren
+
+LambdaJError sollte NICHT "Error: " voranstellen, repl sollte bei Exceptions "Error: " und auch die klasse ausgeben
+-> oder besser: getMessage() ohne Murmelstack, getErrormessage() mit

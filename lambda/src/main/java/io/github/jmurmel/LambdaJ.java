@@ -289,7 +289,9 @@ public class LambdaJ {
         public LambdaJError(Throwable cause, String msg)                                   { super(msg, getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, Object errorForm)                             { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
 
-        @Override public String toString() { return "Error: " + getMessage(); }
+        public String typeName() { return conditionTypeName(this); }
+
+        @Override public String toString() { return typeName() + " - " + getMessage(); }
 
         private static String getErrorExp(Object[] params) {
             final Object exp;
@@ -305,22 +307,28 @@ public class LambdaJ {
     }
 
     public static class SimpleError extends LambdaJError    { public SimpleError(String msg, Object... params) { super(true, msg, params); }
-                                                              public SimpleError(String msg) { super(msg); } }
+                                                              public SimpleError(String msg) { super(msg); }
+                                                              @Override public String typeName() { return "simple-error"; } }
 
     public static class CellError extends LambdaJError      { public CellError(String msg, Object... params) { super(true, msg, params); }
-                                                              public CellError(String msg) { super(msg); } }
+                                                              public CellError(String msg) { super(msg); }
+                                                              @Override public String typeName() { return "cell-error"; } }
     public static class UnboundVariable extends CellError   { public UnboundVariable(String msg, Object... params) { super(msg, params); }
-                                                              public UnboundVariable(String msg) { super(msg); } }
+                                                              public UnboundVariable(String msg) { super(msg); }
+                                                              @Override public String typeName() { return "unbound-variable"; } }
     public static class UndefinedFunction extends CellError { public UndefinedFunction(String msg, Object... params) { super(msg, params); }
-                                                              public UndefinedFunction(String msg) { super(msg); } }
+                                                              public UndefinedFunction(String msg) { super(msg); }
+                                                              @Override public String typeName() { return "undefined-function"; } }
 
     public static class ControlError extends LambdaJError   { public ControlError(String msg, Object... params) { super(true, msg, params); }
                                                               public ControlError(String msg) { super(msg); } }
 
     public static class ProgramError extends LambdaJError   { public ProgramError(String msg, Object... params) { super(true, msg, params); }
-                                                              public ProgramError(String msg) { super(msg); } }
+                                                              public ProgramError(String msg) { super(msg); }
+                                                              @Override public String typeName() { return "program-error"; } }
 
-    public static class ParseError extends LambdaJError     { public ParseError(String msg, Object... args) { super(true, msg, args); } }
+    public static class ParseError extends LambdaJError     { public ParseError(String msg, Object... args) { super(true, msg, args); }
+                                                              @Override public String typeName() { return "parse-error"; } }
 
     // artithmetic-error... java.lang.ArithmeticException
     // type-error...        java.lang.ClassCastException
@@ -3437,6 +3445,23 @@ public class LambdaJ {
         throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
     }
 
+    private static String conditionTypeName(Throwable t) {
+        if (t instanceof LambdaJError && t.getCause() instanceof LambdaJError) return ((LambdaJError)t.getCause()).typeName();
+
+        if (t instanceof LambdaJError && t.getCause() != null) t = t.getCause();
+
+        if (t instanceof ArithmeticException) return "arithmetic-error";
+        if (t instanceof SimpleTypeError) return "simple-type-error";
+        if (t instanceof ClassCastException) return "type-error";
+        if (t instanceof InvalidPathException) return "file-error";
+        if (t instanceof EOFException) return "end-of-file";
+        if (t instanceof ReaderError) return "reader-error";
+        if (t instanceof IOException) return "stream-error";
+        if (t instanceof LambdaJError) return "(murmel-error)";
+        if (t instanceof Exception) return "error";
+        return "condition";
+    }
+
 
     static boolean adjustableArrayP(Object o) {
         if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
@@ -5714,7 +5739,8 @@ public class LambdaJ {
                             System.out.println();
                             System.out.println("==> " + printSEx(result));
                         }
-                    } else {
+                    }
+                    else {
                         final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(System.in, consoleCharset)::read, null);
 
                         switch (action) {
@@ -5778,9 +5804,7 @@ public class LambdaJ {
                 return result;
             }
             catch (Exception e) {
-                System.err.println();
-                System.err.println(e);
-                throw EXIT_RUNTIME_ERROR;
+                return errorExit(e);
             }
         }
 
@@ -6114,17 +6138,22 @@ public class LambdaJ {
                 }
                 catch (Exit exit) { throw exit; }
                 catch (Exception e) {
-                    if (istty) {
-                        System.out.println();
-                        System.out.println(e);
-                        System.out.println();
-                    } else {
-                        System.err.println();
-                        System.err.println(e);
-                        throw EXIT_RUNTIME_ERROR;
-                    }
+                    if (istty) errorContinue(e);
+                    else errorExit(e);
                 }
             }
+        }
+
+        private static void errorContinue(Exception e) {
+            System.out.println();
+            System.out.println("Error: " + e);
+            System.out.println();
+        }
+
+        private static Object errorExit(Exception e) {
+            System.err.println();
+            System.err.println("Error: " + e);
+            throw EXIT_RUNTIME_ERROR;
         }
 
         private static void listHistory(List<Object> history) {
