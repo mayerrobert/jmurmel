@@ -92,6 +92,8 @@ as well as the following additional functions and macros:
     - [*f, /f, +f, -f](#macro-f-f)
 - generators
     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
+- strings
+    - [string-split](#function-string-split), [string-join](#function-string-join)
 
 ## Description of functions and macros
 
@@ -989,6 +991,25 @@ Short circuiting thread-last
 
 Same as `->>` but if one function returns nil then the remaining
 functions are not called and the overall result is `nil`.
+
+### Function: string-split
+    (string-split str regex) -> vector
+
+Since: 1.4
+
+Split `str` into a vector of simple strings.
+Within `regex` special character sequences such as `\t` and `\n` are recognized.
+
+Example usage:
+
+    (string-split "a b     c
+    d" "[ \\t\\n]")
+    ; ==> #("a" "b" "c" "d") 
+
+### Function: string-join
+    (string-join delim first-str . more-strings) -> string
+
+Since: 1.4
 
 ### Macro: with-accumulator
     (with-accumulator accumulator-name accumulator start-value-form forms*) -> result

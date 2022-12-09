@@ -98,6 +98,8 @@
 ;;;     - [*f, /f, +f, -f](#macro-f-f)
 ;;; - generators
 ;;;     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
+;;; - strings
+;;;     - [string-split](#function-string-split), [string-join](#function-string-join)
 
 
 ;;; == Description of functions and macros
@@ -2284,6 +2286,35 @@
           `(let ((,temp ,init))
              (and ,@forms)))
     (car terms)))
+
+
+; strings *************************************************************
+
+;;; = Function: string-split
+;;;     (string-split str regex) -> vector
+;;;
+;;; Since: 1.4
+;;;
+;;; Split `str` into a vector of simple strings.
+;;; Within `regex` special character sequences such as `\t` and `\n` are recognized.
+;;;
+;;; Example usage:
+;;;
+;;;     (string-split "a b     c
+;;;     d" "[ \\t\\n]")
+;;;     ; ==> #("a" "b" "c" "d") 
+(defmacro string-split (str regex)
+  `((jmethod "String" "split" "String") ,str ,regex))
+(defun string-split (str regex)
+  (string-split str regex))
+
+
+;;; = Function: string-join
+;;;     (string-join delim first-str . more-strings) -> string
+;;;
+;;; Since: 1.4
+(defun string-join (delim first-str . more-strings)
+  (apply (jmethod "String" "join" "CharSequence" "CharSequence...") (list* delim first-str more-strings)))
 
 
 ; Serapeum: ***********************************************************
