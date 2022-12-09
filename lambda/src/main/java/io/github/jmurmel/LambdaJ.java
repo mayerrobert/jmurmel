@@ -9318,6 +9318,7 @@ public class LambdaJ {
 
             // check if the class exists in the current (the compiler's) VM. If it can't be loaded then don't opencode,
             // let jmethod handle things at runtime, the class may be available then.
+            // todo brauchts diesen check ueberhaupt wenn eh nur receiver/ parameter klassen aus classByName erlaubt sind?
             final Class<?> clazz;
             try {
                 clazz = findClass(((String) strClazz).replace('$', '.'));
@@ -9326,6 +9327,8 @@ public class LambdaJ {
                 // todo warn re: performance
                 return false;
             }
+
+            if (!classByName.containsKey(strClazz)) return false; // todo warn re: performance
 
             // all parameter classes (if any) must be one of the classes that we know how to do Murmel->Java conversion else "return false"
             final ArrayList<Class<?>> paramTypes = new ArrayList<>();
@@ -9364,7 +9367,13 @@ public class LambdaJ {
                     if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                     else {
                         // instance method, first arg is the object
-                        sb.append("(Object)((").append(strClazz).append(')');
+                        final Object[] conv = classByName.get(strClazz);
+                        assert conv != null : "unknown receiver class";
+                        final String convReceiver = (String)conv[1];
+                        if (convReceiver == null)
+                            sb.append("(Object)((").append(strClazz).append(')');
+                        else
+                            sb.append("(Object)").append(convReceiver).append('(');
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         sb.append(").").append(strMethod);
                         ccArguments = listOrMalformed((String)strMethod, cdr(ccArguments));

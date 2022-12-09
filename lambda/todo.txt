@@ -1,5 +1,6 @@
 
 ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?
+-> weil da ist Murmel anders als CL: CL macht ein dynamic rebind
 
 
 interpreter: lokales und globales environment müssen nicht eine einzige liste sein

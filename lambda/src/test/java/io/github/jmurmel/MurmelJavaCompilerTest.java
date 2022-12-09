@@ -530,6 +530,15 @@ public class MurmelJavaCompilerTest {
         assertEquals("string-split produced wrong result", "(\"1\" \"2\" \"3\")", TestUtils.sexp(program.body()));
     }
 
+    @Test
+    public void testString2() throws Exception {
+        final MurmelProgram program = compile("(defun string-split (str sep) ((jmethod \"java.lang.String\" \"split\" \"String\") str sep))\n"
+                                              + "(define s (make-array 1 (quote character) t))\n"
+                                              + "(string-split s \" \")");
+        assertNotNull("failed to compile string-split2 to class", program);
+        assertEquals("string-split2 produced wrong result", "#(\"\0\")", TestUtils.sexp(program.body()));
+    }
+
 
     @Test
     public void testMacroexpand() throws Exception {
