@@ -367,6 +367,7 @@ pi ; ==> 3.141592653589793
 ;       
 ;                   type-error                  java.lang.ClassCastException extends RuntimeException
 ;                       simple-type-error       SimpleTypeError extends ClassCastException
+;                       invalid-index-error     InvalidIndexError extends IndexOutOfBoundsException
 ;       
 ;                   file-error                  java.nio.file.InvalidPathException extends IllegalArgumentException extends RuntimeException
 ;

@@ -1,6 +1,5 @@
-IndexOutOfBoundsException sollte ins Murmel typsystem integriert werden, ggf. bestehende primitives umbauen?
-sbcl: (SCHAR "123" 4)
--> SB-INT:INVALID-ARRAY-INDEX-ERROR, TYPE-ERROR, ERROR, SERIOUS-CONDITION, CONDITION,
+
+read-from-string: bounds checks hübscher machen
 
 sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ symbol akzeptieren?
 

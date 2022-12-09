@@ -333,6 +333,7 @@ public class LambdaJ {
     // artithmetic-error... java.lang.ArithmeticException
     // type-error...        java.lang.ClassCastException
     public static class SimpleTypeError extends ClassCastException { public SimpleTypeError(String msg, Object... params) { super(fmt(msg, params)); } }
+    public static class InvalidIndexError extends IndexOutOfBoundsException { public InvalidIndexError(String msg, Object... params) { super(fmt(msg, params)); } }
     // file-error...        java.nio.file.InvalidPathException
 
     // stream-error...      java.io.IOException
@@ -579,14 +580,14 @@ public class LambdaJ {
         @Override public ArraySlice cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
 
         Object elt(long idx) {
-            if (idx < 0) throw new SimpleTypeError("elt: index must be >= 0");
-            if (idx >= length()) throw new SimpleTypeError("elt: index %d is too large for a list of length %d", idx, length());
+            if (idx < 0) throw new InvalidIndexError("elt: index must be >= 0");
+            if (idx >= length()) throw new InvalidIndexError("elt: index %d is too large for a list of length %d", idx, length());
             return arry[(int)idx];
         }
 
         Object eltset(Object newValue, long idx) {
-            if (idx < 0) throw new SimpleTypeError("eltset: index must be >= 0");
-            if (idx >= length()) throw new SimpleTypeError("eltset: index %d is too large for a list of length %d", idx, length());
+            if (idx < 0) throw new InvalidIndexError("eltset: index must be >= 0");
+            if (idx >= length()) throw new InvalidIndexError("eltset: index %d is too large for a list of length %d", idx, length());
             arry[(int)idx] = newValue;
             return newValue;
         }
@@ -3430,7 +3431,8 @@ public class LambdaJ {
         if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
 
         if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
-        if (typespec == st.intern("type-error")) return o instanceof ClassCastException;
+        if (typespec == st.intern("type-error")) return o instanceof ClassCastException || o instanceof IndexOutOfBoundsException;
+        if (typespec == st.intern("invalid-index-error")) return o instanceof IndexOutOfBoundsException;
 
         if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
 
@@ -3455,6 +3457,7 @@ public class LambdaJ {
 
         if (t instanceof ArithmeticException) return "arithmetic-error";
         if (t instanceof SimpleTypeError) return "simple-type-error";
+        if (t instanceof IndexOutOfBoundsException) return "invalid-index-error";
         if (t instanceof ClassCastException) return "type-error";
         if (t instanceof InvalidPathException) return "file-error";
         if (t instanceof EOFException) return "end-of-file";
@@ -3789,7 +3792,7 @@ public class LambdaJ {
     }
 
     static RuntimeException errorIndexTooLarge(long idx, long actualLength) {
-        throw new SimpleTypeError("index %d is too large for a sequence of length %d", idx, actualLength); // todo sollte wsl eine eigene exception sein, ArrayIndexOutOfBoundsException iwie dranpicken
+        throw new InvalidIndexError("index %d is too large for a sequence of length %d", idx, actualLength);
     }
 
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
@@ -4403,7 +4406,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unchecked")
     static long vectorAdd(Object maybeVector, Object newValue) {
-        if (!adjustableArrayP(maybeVector)) throw new SimpleTypeError("vector-add: not an adjustable vector: %s", printSEx(maybeVector));
+        if (!adjustableArrayP(maybeVector)) throw new InvalidIndexError("vector-add: not an adjustable vector: %s", printSEx(maybeVector));
         if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
         if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
@@ -4576,7 +4579,7 @@ public class LambdaJ {
     /// sequences
 
     static Object seqref(Object maybeSeq, long idx) {
-        if (idx < 0) throw new SimpleTypeError("seqref: index must be >= 0"); // todo indexfehler gesondert behandeln
+        if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
         if (maybeSeq instanceof ConsCell) {
@@ -4598,7 +4601,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unchecked")
     static Object seqset(Object maybeSeq, long idx, Object newValue) {
-        if (idx < 0) throw new SimpleTypeError("seqref: index must be >= 0");
+        if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
         if (maybeSeq instanceof ConsCell) {
@@ -4665,12 +4668,12 @@ public class LambdaJ {
 
             if (a != null) {
                 final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
-                if (skip > str.length()) throw new SimpleTypeError("skip must be <= string length");
+                if (skip > str.length()) throw new InvalidIndexError("start must be <= string length");
                 try { count[0] = strReader.skip(skip); } catch (IOException e) { wrap(e); }
                 a = (ConsCell)cdr(a);
                 
                 if (a != null) {
-                    end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                    end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue(); // todo min=start, max=length
                 }
                 else end = -1;
             }
@@ -4867,7 +4870,7 @@ public class LambdaJ {
             return null;
         } catch (IllegalFormatException e) {
             // todo sbcl wirft SB-FORMAT:FORMAT-ERROR extends ERROR
-            throw new SimpleTypeError("%s: illegal format string and/ or arguments: %s" + System.lineSeparator() + "error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+            throw new SimpleError("%s: illegal format string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
         }
     }
 
