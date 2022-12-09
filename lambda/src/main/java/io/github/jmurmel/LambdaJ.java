@@ -2082,7 +2082,9 @@ public class LambdaJ {
                 }
 
                 case sSetQ: {
-                    return result = evalSetq(ccArguments, env, stack, level, traceLvl);
+                    result = evalSetq(ccArguments, env, stack, level, traceLvl);
+                    values = NO_VALUES;
+                    return result;
                 }
 
                 case sDeclaim: {
@@ -2096,6 +2098,7 @@ public class LambdaJ {
                 case sDefine: {
                     final Object symbol = car(ccArguments);
                     final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    values = NO_VALUES;
 
                     final ConsCell prevEnvEntry = fastassq(symbol, topEnv);
                     if (prevEnvEntry == null) insertFrontTopEnv(symbol, value);
@@ -6091,6 +6094,7 @@ public class LambdaJ {
                     interpreter.values = NO_VALUES;
                     final long tStart = System.nanoTime();
                     final Object result = interpreter.expandAndEval(exp, null);
+                    final ConsCell resultMv = interpreter.values;
                     interpreter.traceStats(tStart);
 
                     history.add(exp);
@@ -6106,14 +6110,14 @@ public class LambdaJ {
 
                         interpreter.eval(ListBuilder.list(setq, values3, values2), null);
                         interpreter.eval(ListBuilder.list(setq, values2, values1), null);
-                        interpreter.eval(ListBuilder.list(setq, values1, ListBuilder.list(quote, interpreter.values == NO_VALUES ? ListBuilder.list(result) : interpreter.values)), null);
+                        interpreter.eval(ListBuilder.list(setq, values1, ListBuilder.list(quote, resultMv == NO_VALUES ? ListBuilder.list(result) : resultMv)), null);
                     }
 
                     System.out.println();
-                    if (interpreter.values == NO_VALUES) {
+                    if (resultMv == NO_VALUES) {
                         System.out.print("==> "); outWriter.printObj(result, true); System.out.println();
                     } else {
-                        if (interpreter.values != null) for (Object value: interpreter.values) {
+                        if (resultMv != null) for (Object value: resultMv) {
                             System.out.print(" -> "); outWriter.printObj(value, true); System.out.println();
                         }
                     }
@@ -6662,21 +6666,22 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as embed API support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
-        public static class CompilerGlobal {
+        public class CompilerGlobal {
             private Object value;
             private ConsCell dynamicStack;
 
             public CompilerGlobal(Object value) { this.value = value; }
 
             public Object get() { return value; }
-            public Object set(Object value) { return this.value = value; }
+            public Object set(Object value) { values = null; return this.value = value; }
+            public Object setForTry(Object value) { return this.value = value; }
 
             public void push() { dynamicStack = _cons(value, dynamicStack); }
             public void push(Object value) { dynamicStack = _cons(this.value, dynamicStack); this.value = value; }
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
-        public static final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { @Override public Object get() { throw new LambdaJError(false, "unassigned value"); } };
+        public final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { @Override public Object get() { throw new LambdaJError(false, "unassigned value"); } };
         public static final Object UNASSIGNED_LOCAL = "#<value is not assigned>";
 
         public static final Object[] NOARGS = new Object[0];
@@ -7554,7 +7559,7 @@ public class LambdaJ {
                 values = new Object[] { errorObj, e };
                 return errorObj;
             }
-            finally { __42_condition_45_handler_42_.set(oldHandler); }
+            finally { __42_condition_45_handler_42_.setForTry(oldHandler); }
         }
 
 
@@ -8239,7 +8244,8 @@ public class LambdaJ {
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
                       + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                      + "        catch (Exception e) { rterror(e); }\n"
+                      + "        catch (Exception e) { rterror(e); }\n" 
+                      + "        finally { values = null; }\n"
                       + "        return intern(\"").append(symbol).append("\");\n"
                       + "    }\n\n");
             return env;
