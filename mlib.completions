@@ -108,3 +108,9 @@ scan-concat
 elt
 copy-seq
 nreverse
+parse
+parse-integer
+min
+max
+string-split
+string-join

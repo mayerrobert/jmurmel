@@ -23,6 +23,10 @@ defmacro
 let
 let*
 letrec
+catch
+throw
+unwind-protect
+try
 multiple-value-bind
 multiple-value-call
 setq
@@ -47,6 +51,7 @@ internal-time-units-per-second
 
 *command-line-argument-list*
 *features*
+*condition-handler*
 
 apply
 eval
@@ -151,6 +156,12 @@ get-internal-cpu-time
 sleep
 get-universal-time
 get-decoded-time
+
+read-from-string
+read-all-lines
+read-string
+write-lines
+write-string
 
 jmethod
 jproxy
