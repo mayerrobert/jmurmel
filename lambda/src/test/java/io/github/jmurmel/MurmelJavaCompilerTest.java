@@ -522,6 +522,16 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testString() throws Exception {
+        final MurmelProgram program = compile("(defun string-split (str sep)\n"
+                                              + "  (vector->list ((jmethod \"java.lang.String\" \"split\" \"String\") str sep)))" 
+                                              + "(string-split \"1 2 3\" \" \")");
+        assertNotNull("failed to compile string-split to class", program);
+        assertEquals("string-split produced wrong result", "(\"1\" \"2\" \"3\")", TestUtils.sexp(program.body()));
+    }
+
+
+    @Test
     public void testMacroexpand() throws Exception {
         final MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
                                               + "(macroexpand-1 '(add2 3))");

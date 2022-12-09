@@ -9358,7 +9358,7 @@ public class LambdaJ {
                     if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                     else {
                         // instance method, first arg is the object
-                        sb.append("((").append(strClazz).append(')');
+                        sb.append("(Object)((").append(strClazz).append(')');
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         sb.append(").").append(strMethod);
                         ccArguments = listOrMalformed((String)strMethod, cdr(ccArguments));
