@@ -13,8 +13,8 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testSimpleClass() throws Exception {
-        JavaCompilerHelper c = new JavaCompilerHelper(TestUtils.getTmpDir());
-        Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
+        final JavaCompilerHelper c = new JavaCompilerHelper(TestUtils.getTmpDir());
+        final Class<?> clazz = c.javaToClass("Test", "class Test { int i; }");
         assertNotNull("failed to compile Java to class", clazz);
         c.cleanup();
     }
@@ -25,9 +25,9 @@ public class MurmelJavaCompilerTest {
         final Reader reader = new StringReader("(define a 2)");
         final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
 
-        StringWriter w = new StringWriter();
+        final StringWriter w = new StringWriter();
         c.formsToJavaSource(w, "Test", parser);
-        String java = w.toString();
+        final String java = w.toString();
         assertNotNull("failed to compile Murmel to Java", java);
     }
 
@@ -35,20 +35,20 @@ public class MurmelJavaCompilerTest {
     public void testNativeHelloWorld() throws Exception {
         final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
 
-        String source = "(define f (lambda (a b) (write a) (write b)))"
-                      + "(f \"Hello, \" \"World!\")";
+        final String source = "(define f (lambda (a b) (write a) (write b)))"
+                              + "(f \"Hello, \" \"World!\")";
 
         final Reader reader = new StringReader(source);
         final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
 
-        Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
+        final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
-        MurmelProgram instance = murmelClass.getDeclaredConstructor().newInstance();
+        final MurmelProgram instance = murmelClass.getDeclaredConstructor().newInstance();
         Object result = instance.body();
         assertEquals("wrong result", "\"World!\"", TestUtils.sexp(result));
 
-        MurmelFunction f = instance.getFunction("f");
+        final MurmelFunction f = instance.getFunction("f");
         result = f.apply("The answer is: ", 42);
         assertEquals("wrong result", "42", TestUtils.sexp(result));
     }
@@ -67,7 +67,7 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testDefun() throws Exception {
-        MurmelProgram program = compile("(define f1 (lambda (a) a)) (defun f2 (a) a)");
+        final MurmelProgram program = compile("(define f1 (lambda (a) a)) (defun f2 (a) a)");
         assertNotNull("failed to compile defun to class", program);
         assertEquals("defun produced wrong result", "f2", TestUtils.sexp(program.body()));
     }
@@ -86,7 +86,7 @@ public class MurmelJavaCompilerTest {
     // function uses a variable that is defined later
     @Test
     public void testForwardVariable() throws Exception {
-        MurmelProgram program = compile("(defun f () x) (define x 1) (f)");
+        final MurmelProgram program = compile("(defun f () x) (define x 1) (f)");
         assertEquals(1L, program.body());
     }
 
@@ -99,7 +99,7 @@ public class MurmelJavaCompilerTest {
     // function uses a function that is defined later
     @Test
     public void testForwardFunction() throws Exception {
-        MurmelProgram program = compile("(defun f () (x)) (defun x() 1) (f)");
+        final MurmelProgram program = compile("(defun f () (x)) (defun x() 1) (f)");
         assertEquals(1L, program.body());
     }
 
@@ -113,56 +113,56 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testArith() throws Exception {
-        MurmelProgram program = compile("(+ 1 2 3 (* 4 5 6))");
+        final MurmelProgram program = compile("(+ 1 2 3 (* 4 5 6))");
         assertNotNull("failed to compile arith to class", program);
         assertEquals("arith produced wrong result", 126.0, program.body());
     }
 
     @Test
     public void testSub() throws Exception {
-        MurmelProgram program = compile("((lambda (n) (- n 1)) 1)");
+        final MurmelProgram program = compile("((lambda (n) (- n 1)) 1)");
         assertNotNull("failed to compile sub to class", program);
         assertEquals("sub produced wrong result", 0.0, program.body());
     }
 
     @Test
     public void testCompare() throws Exception {
-        MurmelProgram program = compile("((lambda (n) (<= n 1)) 2)");
+        final MurmelProgram program = compile("((lambda (n) (<= n 1)) 2)");
         assertNotNull("failed to compile compare to class", program);
-        assertEquals("compare produced wrong result", null, program.body());
+        assertNull("compare produced wrong result", program.body());
     }
 
     @Test
     public void testCons() throws Exception {
-        MurmelProgram program = compile("(car (cons 1 2))");
+        final MurmelProgram program = compile("(car (cons 1 2))");
         assertNotNull("failed to compile cons to class", program);
         assertEquals("cons produced wrong result", 1L, program.body());
     }
 
     @Test
     public void testCons2() throws Exception {
-        MurmelProgram program = compile("'((1 2) 3 4 5)");
+        final MurmelProgram program = compile("'((1 2) 3 4 5)");
         assertNotNull("failed to compile cons2 to class", program);
         assertEquals("cons2 produced wrong result", "((1 2) 3 4 5)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCons3() throws Exception {
-        MurmelProgram program = compile("'(1 . 2)");
+        final MurmelProgram program = compile("'(1 . 2)");
         assertNotNull("failed to compile cons3 to class", program);
         assertEquals("cons3 produced wrong result", "(1 . 2)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCons4() throws Exception {
-        MurmelProgram program = compile("'a");
+        final MurmelProgram program = compile("'a");
         assertNotNull("failed to compile cons4 to class", program);
         assertEquals("cons4 produced wrong result", "a", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCons5() throws Exception {
-        MurmelProgram program = compile("'((1 . 2) 3 4 . 5)");
+        final MurmelProgram program = compile("'((1 . 2) 3 4 . 5)");
         assertNotNull("failed to compile cons5 to class", program);
         assertEquals("cons5 produced wrong result", "((1 . 2) 3 4 . 5)", TestUtils.sexp(program.body()));
     }
@@ -170,21 +170,21 @@ public class MurmelJavaCompilerTest {
     // a will be an ArrayList, test rplaca
     @Test
     public void testRplaca() throws Exception {
-        MurmelProgram program = compile("(defun f a (rplaca (cdr a) 1) a) (f 11 22 33)");
+        final MurmelProgram program = compile("(defun f a (rplaca (cdr a) 1) a) (f 11 22 33)");
         assertNotNull("failed to compile rplacd to class", program);
         assertEquals("rplaca produced wrong result", "(11 1 33)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testRplacd() throws Exception {
-        MurmelProgram program = compile("(define l '(0 . 0)) (rplacd l 1)");
+        final MurmelProgram program = compile("(define l '(0 . 0)) (rplacd l 1)");
         assertNotNull("failed to compile rplacd to class", program);
         assertEquals("rplacd produced wrong result", "(0 . 1)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testRplacd2() throws Exception {
-        MurmelProgram program = compile("(define l '(0 . 0)) (rplacd l 1) l");
+        final MurmelProgram program = compile("(define l '(0 . 0)) (rplacd l 1) l");
         assertNotNull("failed to compile rplacd2 to class", program);
         assertEquals("rplacd2 produced wrong result", "(0 . 1)", TestUtils.sexp(program.body()));
     }
@@ -193,77 +193,77 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testEq() throws Exception {
-        MurmelProgram program = compile("(eq 1 1)");
+        final MurmelProgram program = compile("(eq 1 1)");
         assertNotNull("failed to compile eq to class", program);
         assertEquals("eq produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testNumberEq() throws Exception {
-        MurmelProgram program = compile("(= 1 1)");
+        final MurmelProgram program = compile("(= 1 1)");
         assertNotNull("failed to compile numberEq to class", program);
         assertEquals("numberEq produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testLe() throws Exception {
-        MurmelProgram program = compile("((lambda (n) (<= n 1)) 2)");
+        final MurmelProgram program = compile("((lambda (n) (<= n 1)) 2)");
         assertNotNull("failed to compile le to class", program);
-        assertEquals("le produced wrong result", null, program.body());
+        assertNull("le produced wrong result", program.body());
     }
 
     @Test
     public void testNumberEq2() throws Exception {
-        MurmelProgram program = compile("((lambda (n) (= n 1)) 1)");
+        final MurmelProgram program = compile("((lambda (n) (= n 1)) 1)");
         assertNotNull("failed to compile compare to class", program);
         assertEquals("compare produced wrong result", "t", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteSymbol() throws Exception {
-        MurmelProgram program = compile("'a");
+        final MurmelProgram program = compile("'a");
         assertNotNull("failed to compile quoteSymbol to class", program);
         assertEquals("quoteSymbol produced wrong result", "a", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteAtom() throws Exception {
-        MurmelProgram program = compile("'1");
+        final MurmelProgram program = compile("'1");
         assertNotNull("failed to compile quoteSymbol to class", program);
         assertEquals("quoteSymbol produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteList() throws Exception {
-        MurmelProgram program = compile("'(1 2 3)");
+        final MurmelProgram program = compile("'(1 2 3)");
         assertNotNull("failed to compile quoteList to class", program);
         assertEquals("quoteList produced wrong result", "(1 2 3)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testQuoteNil() throws Exception {
-        MurmelProgram program = compile("'()");
+        final MurmelProgram program = compile("'()");
         assertNotNull("failed to compile quoteSymbol to class", program);
         assertEquals("quoteSymbol produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testApply() throws Exception {
-        MurmelProgram program = compile("(apply + '(1 2 3))");
+        final MurmelProgram program = compile("(apply + '(1 2 3))");
         assertNotNull("failed to compile apply to class", program);
         assertEquals("apply produced wrong result", 6.0, program.body());
     }
 
     @Test
     public void testEval() throws Exception {
-        MurmelProgram program = compile("(eval (list 'cdr (car '((quote (a . b)) c))))");
+        final MurmelProgram program = compile("(eval (list 'cdr (car '((quote (a . b)) c))))");
         assertNotNull("failed to compile eval to class", program);
         assertEquals("eval produced wrong result", "b", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testEval2() throws Exception {
-        MurmelProgram program = compile("(apply eval (list (quote (+ 1 2))))");
+        final MurmelProgram program = compile("(apply eval (list (quote (+ 1 2))))");
         assertNotNull("failed to compile eval2 to class", program);
         assertEquals("eval2 produced wrong result", 3.0, program.body());
     }
@@ -271,35 +271,35 @@ public class MurmelJavaCompilerTest {
     // interpreter runs compiled code
     @Test
     public void testEval3() throws Exception {
-        MurmelProgram program = compile("(eval '(f v) (list (cons 'f write) (cons 'v 1)))");
+        final MurmelProgram program = compile("(eval '(f v) (list (cons 'f write) (cons 'v 1)))");
         assertNotNull("failed to compile eval3 to class", program);
         assertEquals("eval3 produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testEval4() throws Exception {
-        MurmelProgram program = compile("(apply (eval 'write) '(1))");
+        final MurmelProgram program = compile("(apply (eval 'write) '(1))");
         assertNotNull("failed to compile eval4 to class", program);
         assertEquals("eval4 produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testCond() throws Exception {
-        MurmelProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");
+        final MurmelProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");
         assertNotNull("failed to compile cond to class", program);
         assertEquals("cond produced wrong result", "s3", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testProgn1() throws Exception {
-        MurmelProgram program = compile("(progn)");
+        final MurmelProgram program = compile("(progn)");
         assertNotNull("failed to compile progn1 to class", program);
         assertEquals("progn produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testProgn2() throws Exception {
-        MurmelProgram program = compile("(progn 1 2 3)");
+        final MurmelProgram program = compile("(progn 1 2 3)");
         assertNotNull("failed to compile progn2 to class", program);
         assertEquals("progn2 produced wrong result", "3", TestUtils.sexp(program.body()));
     }
@@ -307,14 +307,14 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testVarargs() throws Exception {
-        MurmelProgram program = compile("((lambda a (apply + a)) 2 3)");
+        final MurmelProgram program = compile("((lambda a (apply + a)) 2 3)");
         assertNotNull("failed to compile varargs to class", program);
         assertEquals("varargs produced wrong result", 5.0, program.body());
     }
 
     @Test
     public void testVarargs0() throws Exception {
-        MurmelProgram program = compile("((lambda (a . b) b))");
+        final MurmelProgram program = compile("((lambda (a . b) b))");
         assertNotNull("failed to compile varargs0 to class", program);
         try {
             program.body();
@@ -327,42 +327,42 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testVarargs1() throws Exception {
-        MurmelProgram program = compile("((lambda (a . b) b) 1)");
+        final MurmelProgram program = compile("((lambda (a . b) b) 1)");
         assertNotNull("failed to compile varargs1 to class", program);
-        assertEquals("varargs1 produced wrong result", null, program.body());
+        assertNull("varargs1 produced wrong result", program.body());
     }
 
     @Test
     public void testVarargs2() throws Exception {
-        MurmelProgram program = compile("((lambda (a . b) b) 1 2)");
+        final MurmelProgram program = compile("((lambda (a . b) b) 1 2)");
         assertNotNull("failed to compile varargs2 to class", program);
         assertEquals("varargs2 produced wrong result", "(2)", program.body().toString());
     }
 
     @Test
     public void testVarargs3() throws Exception {
-        MurmelProgram program = compile("((lambda (a . b) b) 1 2 3)");
+        final MurmelProgram program = compile("((lambda (a . b) b) 1 2 3)");
         assertNotNull("failed to compile varargs3 to class", program);
         assertEquals("varargs3 produced wrong result", "(2 3)", program.body().toString());
     }
 
     @Test
     public void testVarargsCar() throws Exception {
-        MurmelProgram program = compile("((lambda args (car args)) 'a 'b 'c)");
+        final MurmelProgram program = compile("((lambda args (car args)) 'a 'b 'c)");
         assertNotNull("failed to compile varargscar to class", program);
         assertEquals("varargscar produced wrong result", "a", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testVarargsCdr() throws Exception {
-        MurmelProgram program = compile("((lambda args (cdr args)) 'a 'b 'c)");
+        final MurmelProgram program = compile("((lambda args (cdr args)) 'a 'b 'c)");
         assertNotNull("failed to compile varargscdr to class", program);
         assertEquals("varargscdr produced wrong result", "(b c)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testVarargsCdddr() throws Exception {
-        MurmelProgram program = compile("((lambda args (cdr (cdr (cdr args)))) 'a 'b 'c)");
+        final MurmelProgram program = compile("((lambda args (cdr (cdr (cdr args)))) 'a 'b 'c)");
         assertNotNull("failed to compile varargscdddr to class", program);
         assertEquals("varargscdddr produced wrong result", "nil", TestUtils.sexp(program.body()));
     }
@@ -370,35 +370,35 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testFormat() throws Exception {
-        MurmelProgram program = compile("(format-locale nil \"de-DE\" \"Hello, World!\")");
+        final MurmelProgram program = compile("(format-locale nil \"de-DE\" \"Hello, World!\")");
         assertNotNull("failed to compile format to class", program);
         assertEquals("format produced wrong result", "\"Hello, World!\"", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testLet() throws Exception {
-        MurmelProgram program = compile("(let ((a 1) (b 2) (c 3)) c)");
+        final MurmelProgram program = compile("(let ((a 1) (b 2) (c 3)) c)");
         assertNotNull("failed to compile let to class", program);
         assertEquals("let produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testNamedLet() throws Exception {
-        MurmelProgram program = compile("(let loop ((n 0) (max 3)) (if (< n max) (loop (+ n 1) max) n))");
+        final MurmelProgram program = compile("(let loop ((n 0) (max 3)) (if (< n max) (loop (+ n 1) max) n))");
         assertNotNull("failed to compile named let to class", program);
         assertEquals("named let produced wrong result", 3.0, program.body());
     }
 
     @Test
     public void testLetStar() throws Exception {
-        MurmelProgram program = compile("(let* ((a 1) (b a)) b)");
+        final MurmelProgram program = compile("(let* ((a 1) (b a)) b)");
         assertNotNull("failed to compile let* to class", program);
         assertEquals("let* produced wrong result", 1L, program.body());
     }
 
     @Test
     public void testLetStarSetq() throws Exception {
-        MurmelProgram program = compile("(let* (a) (progn (setq a 1) a))");
+        final MurmelProgram program = compile("(let* (a) (progn (setq a 1) a))");
         assertNotNull("failed to compile let* to class", program);
         assertEquals("let* produced wrong result", 1L, program.body());
     }
@@ -410,38 +410,38 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testNamedLetStar() throws Exception {
-        MurmelProgram program = compile("(let* loop ((a 1) (b a)) (if (> b a) (loop b a)) b)");
+        final MurmelProgram program = compile("(let* loop ((a 1) (b a)) (if (> b a) (loop b a)) b)");
         assertNotNull("failed to compile namd let* to class", program);
         assertEquals("named let* produced wrong result", 1L, program.body());
     }
 
     @Test
     public void testNamedLetStar2() throws Exception {
-        MurmelProgram program = compile("(let* loop ((a 1) (b a) (b 2)) (if (< b a) (loop b a)) b)");
+        final MurmelProgram program = compile("(let* loop ((a 1) (b a) (b 2)) (if (< b a) (loop b a)) b)");
         assertNotNull("failed to compile namd let*2 to class", program);
         assertEquals("named let*2 produced wrong result", 2L, program.body());
     }
 
     @Test
     public void testLetrec() throws Exception {
-        MurmelProgram program = compile("(letrec ((a 1) (b 2)) (+ a b))");
+        final MurmelProgram program = compile("(letrec ((a 1) (b 2)) (+ a b))");
         assertNotNull("failed to compile letrec to class", program);
         assertEquals("letrec produced wrong result", 3.0, program.body());
     }
 
     @Test
     public void testLetrec2() throws Exception {
-        MurmelProgram program = compile("(letrec ((a (lambda () b)) (b 1)) (a))");
+        final MurmelProgram program = compile("(letrec ((a (lambda () b)) (b 1)) (a))");
         assertNotNull("failed to compile letrec2 to class", program);
         assertEquals("letrec2 produced wrong result", 1L, program.body());
     }
 
     @Test
     public void testLetDynamic() throws Exception {
-        MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write (cons a b))) (f) (let dynamic ((a 11) (b a)) (f)) (f)");
+        final MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write (cons a b))) (f) (let dynamic ((a 11) (b a)) (f)) (f)");
         assertNotNull("failed to compile let dynamic to class", program);
 
-        StringBuilder out = new StringBuilder();
+        final StringBuilder out = new StringBuilder();
         program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
         assertEquals("let dynamic produced wrong output", "(1 . 2)(11 . 1)(1 . 2)", out.toString());
@@ -449,10 +449,10 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testLetStarDynamic() throws Exception {
-        MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write a) (write b)) (let* dynamic ((a 33) (b a)) (f)) (f)");
+        final MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write a) (write b)) (let* dynamic ((a 33) (b a)) (f)) (f)");
         assertNotNull("failed to compile let* dynamic to class", program);
         
-        StringBuilder out = new StringBuilder();
+        final StringBuilder out = new StringBuilder();
         program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
         assertEquals("let* dynamic produced wrong output", "333312", out.toString());
@@ -461,10 +461,10 @@ public class MurmelJavaCompilerTest {
     // let* dynamic, 1 global, 1 local
     @Test
     public void testLetStarDynamic2() throws Exception {
-        MurmelProgram program = compile("(define a nil) (defun f (x) (write (+ a x))) (let* dynamic ((a 11) (b 22)) (f b))");
+        final MurmelProgram program = compile("(define a nil) (defun f (x) (write (+ a x))) (let* dynamic ((a 11) (b 22)) (f b))");
         assertNotNull("failed to compile let* dynamic to class", program);
 
-        StringBuilder out = new StringBuilder();
+        final StringBuilder out = new StringBuilder();
         program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
         assertEquals("let* dynamic produced wrong output", "33.0", out.toString());
@@ -473,10 +473,10 @@ public class MurmelJavaCompilerTest {
     // body calls one local function
     @Test
     public void testLabels() throws Exception {
-        MurmelProgram program = compile("(labels ((a (p1 p2 p3) (+ p1 p2 p3))"
-                                      + "         (b (p1 p2 p3) (* p1 p2 p3))"
-                                      + "         (c (p1 p2 p3) (- p1 p2 p3)))"
-                                      + "  (b 2 3 4))");
+        final MurmelProgram program = compile("(labels ((a (p1 p2 p3) (+ p1 p2 p3))"
+                                              + "         (b (p1 p2 p3) (* p1 p2 p3))"
+                                              + "         (c (p1 p2 p3) (- p1 p2 p3)))"
+                                              + "  (b 2 3 4))");
         assertNotNull("failed to compile labels to class", program);
         assertEquals("labels produced wrong result", 24.0, program.body());
     }
@@ -484,12 +484,12 @@ public class MurmelJavaCompilerTest {
     // body calls one local recursive function
     @Test
     public void testLabelsRec() throws Exception {
-        MurmelProgram program = compile("(labels\n"
-                + "  ((loop (n max)\n"
-                + "     (if (< n max)\n"
-                + "           (loop (+ n 1) max)\n"
-                + "       n)))\n"
-                + "  (loop 0 3))");
+        final MurmelProgram program = compile("(labels\n"
+                                              + "  ((loop (n max)\n"
+                                              + "     (if (< n max)\n"
+                                              + "           (loop (+ n 1) max)\n"
+                                              + "       n)))\n"
+                                              + "  (loop 0 3))");
         assertNotNull("failed to compile labelsrec to class", program);
         assertEquals("labelsrec produced wrong result", 3.0, program.body());
     }
@@ -497,9 +497,9 @@ public class MurmelJavaCompilerTest {
     // body calls a local function which calls another local function
     @Test
     public void testLabelsMutual() throws Exception {
-        MurmelProgram program = compile("(labels ((f1 (n) (f2 n))\n"
-                                      + "         (f2 (n) n))\n"
-                                      + "  (f1 5))");
+        final MurmelProgram program = compile("(labels ((f1 (n) (f2 n))\n"
+                                              + "         (f2 (n) n))\n"
+                                              + "  (f1 5))");
         assertNotNull("failed to compile labelsmutual to class", program);
         assertEquals("labelsmutual produced wrong result", 5L, program.body());
     }
@@ -508,14 +508,14 @@ public class MurmelJavaCompilerTest {
     
     @Test
     public void testJavaStatic() throws Exception {
-        MurmelProgram program = compile("((jmethod \"java.lang.System\" \"currentTimeMillis\"))");
+        final MurmelProgram program = compile("((jmethod \"java.lang.System\" \"currentTimeMillis\"))");
         assertNotNull("failed to compile javastatic to class", program);
         assertEquals("javastatic produced wrong result", Long.class, program.body().getClass());
     }
 
     @Test
     public void testJavaInstance() throws Exception {
-        MurmelProgram program = compile("(define my-hash ((jmethod \"java.util.HashMap\" \"new\")))"
+        final MurmelProgram program = compile("(define my-hash ((jmethod \"java.util.HashMap\" \"new\")))"
                                       + "(write ((jmethod \"java.util.HashMap\" \"toString\") my-hash))");
         assertNotNull("failed to compile javainstance to class", program);
         assertEquals("javainstance produced wrong result", "\"{}\"", TestUtils.sexp(program.body()));
@@ -523,44 +523,44 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testMacroexpand() throws Exception {
-        MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
-                                      + "(macroexpand-1 '(add2 3))");
+        final MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
+                                              + "(macroexpand-1 '(add2 3))");
         assertNotNull("failed to compile macroexpand to class", program);
         assertEquals("macroexpand produced wrong result", "(+ 3 2)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testMacro() throws Exception {
-        MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
-                                      + "(add2 3)");
+        final MurmelProgram program = compile("(defmacro add2 (a) `(+ ,a 2))"
+                                              + "(add2 3)");
         assertNotNull("failed to compile macro to class", program);
         assertEquals("macro produced wrong result", "5.0", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testMacro2() throws Exception {
-        MurmelProgram program = compile("(define *g* 3)"
-                                      + "(defmacro addg (a) `(+ ,a *g*))"
-                                      + "(addg 3)");
+        final MurmelProgram program = compile("(define *g* 3)"
+                                              + "(defmacro addg (a) `(+ ,a *g*))"
+                                              + "(addg 3)");
         assertNotNull("failed to compile macro2 to class", program);
         assertEquals("macro2 produced wrong result", "6.0", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testMacroInDefine() throws Exception {
-        MurmelProgram program = compile("(defmacro m () 3)"
-                + "(define *g* (m))"
-                + "*g*");
+        final MurmelProgram program = compile("(defmacro m () 3)"
+                                              + "(define *g* (m))"
+                                              + "*g*");
         assertNotNull("failed to compile macroInDefine to class", program);
         assertEquals("macroInDefine produced wrong result", "3", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testMacroInDefun() throws Exception {
-        MurmelProgram program = compile("(define *g* 3)"
-                + "(defmacro addg (a) `(+ ,a *g*))"
-                + "(defun f () (addg 3))"
-                + "(f)");
+        final MurmelProgram program = compile("(define *g* 3)"
+                                              + "(defmacro addg (a) `(+ ,a *g*))"
+                                              + "(defun f () (addg 3))"
+                                              + "(f)");
         assertNotNull("failed to compile macroInDefun to class", program);
         assertEquals("macroInDefun produced wrong result", "6.0", TestUtils.sexp(program.body()));
     }
@@ -568,62 +568,62 @@ public class MurmelJavaCompilerTest {
     // macro defines a function
     @Test
     public void testMacroDefun() throws Exception {
-        MurmelProgram program = compile("(defmacro m () `(defun f () 1)) (m) (f)");
+        final MurmelProgram program = compile("(defmacro m () `(defun f () 1)) (m) (f)");
         assertNotNull("failed to compile macroDefun to class", program);
         assertEquals("macroDefun produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testReverse() throws Exception {
-        String source = "((lambda (reverse)\n"
-                + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\n"
-                + "\n"
-                + " (lambda (list)\n"
-                + "   ((lambda (rev)\n"
-                + "      (rev rev nil list))\n"
-                + "    (lambda (rev^ a l)\n"
-                + "      (if\n"
-                + "        (null l) a\n"
-                + "        (rev^ rev^ (cons (car l) a) (cdr l )))))))";
-        MurmelProgram program = compile(source);
+        final String source = "((lambda (reverse)\n"
+                              + "    (reverse (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 (cons 9 nil)))))))))))\n"
+                              + "\n"
+                              + " (lambda (list)\n"
+                              + "   ((lambda (rev)\n"
+                              + "      (rev rev nil list))\n"
+                              + "    (lambda (rev^ a l)\n"
+                              + "      (if\n"
+                              + "        (null l) a\n"
+                              + "        (rev^ rev^ (cons (car l) a) (cdr l )))))))";
+        final MurmelProgram program = compile(source);
         assertNotNull("failed to compile reverse to class:", program);
         assertEquals("reverse produced wrong result", "(9 8 7 6 5 4 3 2 1)", TestUtils.sexp(program.body()));
     }
 
     @Test
     public void testFibonacci() throws Exception {
-        String source = "(define iterative-fib-tr (lambda (n i previous current)\n"
-                + "       (if (>= i n)\n"
-                + "           current\n"
-                + "           (iterative-fib-tr n (+ i 1) current (+ previous current)))))\n"
-                + "\n"
-                + "(define iterative-fib (lambda (n) (iterative-fib-tr n 1 1 1)))\n"
-                + "\n"
-                + "(iterative-fib 30)";
-        MurmelProgram program = compile(source);
+        final String source = "(define iterative-fib-tr (lambda (n i previous current)\n"
+                              + "       (if (>= i n)\n"
+                              + "           current\n"
+                              + "           (iterative-fib-tr n (+ i 1) current (+ previous current)))))\n"
+                              + "\n"
+                              + "(define iterative-fib (lambda (n) (iterative-fib-tr n 1 1 1)))\n"
+                              + "\n"
+                              + "(iterative-fib 30)";
+        final MurmelProgram program = compile(source);
         assertNotNull("failed to compile fibonacci to class:", program);
         assertEquals("fibonacci produced wrong result", 1346269.0, program.body());
     }
 
     @Test
     public void testAckermannZ() throws Exception {
-        String source = "(define Z^\n"
-                + "  (lambda (f)\n"
-                + "    ((lambda (g)\n"
-                + "       (f (lambda args (apply (g g) args))))\n"
-                + "     (lambda (g)\n"
-                + "       (f (lambda args (apply (g g) args)))))))\n"
-                + "\n"
-                + "((Z^ (lambda (ackermann)\n"
-                + "       (lambda (m n)\n"
-                + "         (if (= m 0)\n"
-                + "               (+ n 1)\n"
-                + "           (if (= n 0)\n"
-                + "                 (ackermann (- m 1) 1)\n"
-                + "             (ackermann (- m 1) (ackermann m (- n 1))))))))\n"
-                + " 3\n"
-                + " 6) ; ==> 509";
-        MurmelProgram program = compile(source);
+        final String source = "(define Z^\n"
+                              + "  (lambda (f)\n"
+                              + "    ((lambda (g)\n"
+                              + "       (f (lambda args (apply (g g) args))))\n"
+                              + "     (lambda (g)\n"
+                              + "       (f (lambda args (apply (g g) args)))))))\n"
+                              + "\n"
+                              + "((Z^ (lambda (ackermann)\n"
+                              + "       (lambda (m n)\n"
+                              + "         (if (= m 0)\n"
+                              + "               (+ n 1)\n"
+                              + "           (if (= n 0)\n"
+                              + "                 (ackermann (- m 1) 1)\n"
+                              + "             (ackermann (- m 1) (ackermann m (- n 1))))))))\n"
+                              + " 3\n"
+                              + " 6) ; ==> 509";
+        final MurmelProgram program = compile(source);
         assertNotNull("failed to compile ackermann to class:", program);
         assertEquals("ackermann produced wrong result", 509.0, program.body());
     }
@@ -632,10 +632,10 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testGensym() throws Exception {
-        String source = "(defmacro m (x1 x2) (let ((y1 (gensym)) (y2 (gensym))) `(let ((,y1 ,x1) (,y2 ,x2)) (+ ,y1 ,y2)))) "
-                + "(macroexpand-1 '(m 2 3)) "
-                + "(m 2 3)";
-        MurmelProgram program = compile(source);
+        final String source = "(defmacro m (x1 x2) (let ((y1 (gensym)) (y2 (gensym))) `(let ((,y1 ,x1) (,y2 ,x2)) (+ ,y1 ,y2)))) "
+                              + "(macroexpand-1 '(m 2 3)) "
+                              + "(m 2 3)";
+        final MurmelProgram program = compile(source);
         assertNotNull("failed to compile gensym to class:", program);
         assertEquals("gensym produced wrong result", 5.0, program.body());
     }
@@ -672,7 +672,7 @@ public class MurmelJavaCompilerTest {
             final String s = w.toString();
             fail("failed to compile Murmel to class:\n\n" + s);
         }
-        return null; // notreached
+        throw new Exception("cannot happen"); // notreached
     }
 
     private static void compileError(String source, String expected) throws Exception {
