@@ -16,7 +16,8 @@ The file `murmel-langref.lisp` can be read as-is or run with:
 
 or transformed to Markdown:
 
-    $ sed -nf scripts/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
+    $ sed -nf scripts/langref-to-md.sed murmel-langref.lisp \
+    > murmel-langref.md
 
 Murmel is WIP, please note the section
 [Known issues](#known-issues) at the end of this file.
@@ -225,7 +226,7 @@ Largest acceptable vector index.
 These global variables contain the smallest and largest fixnum value.
 
 
-### *condition-handler*
+### \*condition-handler\*
 
 Since: 1.4
 
@@ -1100,10 +1101,10 @@ as a `simple-vector` containing one `simple-string` for each line.
 Since: 1.4
 
 Read the file with the given filename and return it's contents
-as a `string`. Lineend character sequences will be normalized to #\Newline.
+as a `string`. Lineend character sequences will be normalized to `#\Newline`.
 If a non-empty file ends with a line without a lineend character sequence
 then one will be supplied. `result-string` will either be empty
-or end with #\Newline.
+or end with `#\Newline`.
 
 
 ### (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil
@@ -1127,7 +1128,8 @@ Each #\Newline character will be written as the OS-default line-end character(-s
 ### format, format-locale
 
 `format t` writes a formatted string to stdout and returns `nil`.
-format's parameters work as java.lang.String.format().
+`format`'s parameters work as with `java.lang.String.format()`
+which is similar to C's `printf()`.
 
     (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 

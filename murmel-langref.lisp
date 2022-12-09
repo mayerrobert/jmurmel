@@ -15,7 +15,8 @@
 ;;;
 ;;; or transformed to Markdown:
 ;;;
-;;;     $ sed -nf scripts/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
+;;;     $ sed -nf scripts/langref-to-md.sed murmel-langref.lisp \
+;;;     > murmel-langref.md
 ;;;
 ;;; Murmel is WIP, please note the section
 ;;; [Known issues](#known-issues) at the end of this file.
@@ -224,7 +225,7 @@ pi ; ==> 3.141592653589793
 ; These global variables contain the smallest and largest fixnum value.
 
 
-; = *condition-handler*
+; = \*condition-handler\*
 ;
 ; Since: 1.4
 ;
@@ -1102,10 +1103,10 @@ pi ; ==> 3.141592653589793
 ; Since: 1.4
 ;
 ; Read the file with the given filename and return it's contents
-; as a `string`. Lineend character sequences will be normalized to #\Newline.
+; as a `string`. Lineend character sequences will be normalized to `#\Newline`.
 ; If a non-empty file ends with a line without a lineend character sequence
 ; then one will be supplied. `result-string` will either be empty
-; or end with #\Newline.
+; or end with `#\Newline`.
 
 
 ; = (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil
@@ -1129,7 +1130,8 @@ pi ; ==> 3.141592653589793
 ; = format, format-locale
 ;
 ; `format t` writes a formatted string to stdout and returns `nil`.
-; format's parameters work as java.lang.String.format().
+; `format`'s parameters work as with `java.lang.String.format()`
+; which is similar to C's `printf()`.
 
 (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
