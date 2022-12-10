@@ -1,7 +1,33 @@
 
 read-from-string: bounds checks hübscher machen
 
+
 sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ symbol akzeptieren?
+-> in CL gibts string: 
+   Coerces X into a string. If X is a string, X is returned. If X is a
+   symbol, its name is returned. If X is a character then a one element
+   string containing that character is returned. If X cannot be coerced
+   into a string, an error occurs.
+-> string in Murmel einbauen
+
+
+(vector-sort vec [comparator [from [to]]]) -> sorted-vector
+(list-sort lst [comparator [from [to]]])   -> sorted-list
+oder seqsort?
+
+(string-compare s1 s2) -> <0 or 0 or >0
+(number-compare n1 n2) -> <0 or 0 or >0
+(char-compare   c1 c2) -> <0 or 0 or >0
+(comparator predicate) -> comparator
+(defun comparator (predicate)
+  (case predicate
+        ((string<) string-compare)
+        ((string>) (lambda (l r) (string-compare r l)))
+        ...
+        (t (lambda (l r)
+             (cond ((predicate l r) -1)
+                   ((predicate r l) 1)
+                   (t 0))))))
 
 
 ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?
