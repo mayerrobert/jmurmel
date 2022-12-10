@@ -26,8 +26,8 @@ jobs:
           java --version
           javac -d build lambda/src/main/java/io/github/jmurmel/LambdaJ.java
           jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
-          native-image -jar jmurmel.jar
-          ./jmurmel --version
+          native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -jar jmurmel.jar
+          ./jmurmel --help
       
       - name: Upload binary
         uses: actions/upload-artifact@v2
