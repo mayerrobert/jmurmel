@@ -14,12 +14,16 @@ sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ 
 (vector-sort vec [comparator [from [to]]]) -> sorted-vector
 (list-sort lst [comparator [from [to]]])   -> sorted-list
 oder seqsort?
+-> (seqsort result-type seq [comparator [from [to]]])
+   ist result-type != nil wird seq NICHT mutiert und es gibt eine kopie
+   ist result-type == nil wird seq in-place mutiert und seq ist der return wert
+
 
 (string-compare s1 s2) -> <0 or 0 or >0
 (number-compare n1 n2) -> <0 or 0 or >0
 (char-compare   c1 c2) -> <0 or 0 or >0
-(comparator predicate) -> comparator
-(defun comparator (predicate)
+(predicate->comparator predicate) -> comparator
+(defun predicate->comparator (predicate)
   (case predicate
         ((string<) string-compare)
         ((string>) (lambda (l r) (string-compare r l)))
@@ -28,6 +32,12 @@ oder seqsort?
              (cond ((predicate l r) -1)
                    ((predicate r l) 1)
                    (t 0))))))
+XXX-compare in Murmel könnten <, >, <=, string= usw. ersetzen, < könnte in mlib implementiert werden
+
+jproxy optimieren: für ein interface mit einer einzigen methode könnte der compiler ein lambda ausspucken:
+-> (jproxy "Comparator" "compare" comp)
+   -> (Comparator)((a, b) -> comp.apply(a, b))
+evtl. auch mehrere methoden als anonyme klasse abgeleitet von der proxyklasse?
 
 
 ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?

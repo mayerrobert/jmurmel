@@ -5100,7 +5100,7 @@ public class LambdaJ {
                 throw new SimpleTypeError("jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
             try { return invoke.invoke(args); }
-            catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); }
+            catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); } // todo t sollte nicht verschluckt werden, damit z.b. eine CCE zu type-error wird
         }
     }
 
@@ -5185,7 +5185,7 @@ public class LambdaJ {
         classByName.put("Float...",     new Object[] { Float[].class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float...");
         classByName.put("Double...",    new Object[] { Double[].class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double...");
 
-        classByName.put("Object?[]",    new Object[] { Object[].class,    "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });        aliases("Object[]");
+        classByName.put("Object?[]",    new Object[] { Object[].class,    "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });        aliases("Object?[]");
 
 
         classByName.put("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character");
@@ -5258,7 +5258,7 @@ public class LambdaJ {
                 final String name = requireString("jproxy", car(lst));
                 final Method method = nameToMethod.get(name);
                 if (method == null) throw new UndefinedFunction("jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
-                methodToMurmelFunction.put(method, getFunction(intp, null, form));
+                methodToMurmelFunction.put(method, getFunction(intp, null, form, method.getReturnType()));
 
                 lst = (ConsCell)cddr(lst);
             }
@@ -5471,13 +5471,37 @@ public class LambdaJ {
         return getFunction(this, funcName, getValue(funcName));
     }
 
-    private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object maybeFunction) {
-        if (maybeFunction instanceof MurmelJavaProgram.CompilerPrimitive)       { return ((MurmelJavaProgram.CompilerPrimitive)maybeFunction)::applyCompilerPrimitive; }
-        if (maybeFunction instanceof Primitive)                                 { return ((Primitive)maybeFunction)::applyPrimitiveVarargs; }
-        if (maybeFunction instanceof Closure)                                   { return intp.new CallLambda((Closure)maybeFunction, intp.topEnv); }
-        if (maybeFunction instanceof MurmelFunction)                            { return args -> intp.compiledProgram.funcall((MurmelFunction)maybeFunction, args); /* must use the TCO trampoline */ }
+    private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object function) {
+        if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return ((MurmelJavaProgram.CompilerPrimitive)function)::applyCompilerPrimitive; }
+        if (function instanceof Primitive)                            { return ((Primitive)function)::applyPrimitiveVarargs; }
+        if (function instanceof Closure)                              { return intp.new CallLambda((Closure)function, intp.topEnv); }
+        if (function instanceof MurmelFunction)                       { return args -> intp.compiledProgram.funcall((MurmelFunction)function, args); /* must use the TCO trampoline */ }
 
-        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(maybeFunction));
+        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
+    }
+
+    private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object function, Class<?> returnType) {
+        if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
+        if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
+        if (function instanceof Closure)                              { return args -> convertReturnType(funcName, intp.new CallLambda((Closure)function, intp.topEnv).apply(args), returnType); }
+        if (function instanceof MurmelFunction)                       { return args -> convertReturnType(funcName, intp.compiledProgram.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
+
+        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
+    }
+
+    private static Object convertReturnType(String func, Object value, Class<?> returnType) {
+        if (Boolean.class.equals(returnType) || boolean.class.equals(returnType)) return value != null;
+        if (Byte.class.equals(returnType)    || byte.class.equals(returnType))    return requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
+        if (Short.class.equals(returnType)   || short.class.equals(returnType))   return requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
+        if (Integer.class.equals(returnType) || int.class.equals(returnType))     return requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
+        if (Long.class.equals(returnType)    || long.class.equals(returnType))    return requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
+        if (Double.class.equals(returnType)  || double.class.equals(returnType))  return requireNumber(func, value).doubleValue();
+
+        if (Number.class.equals(returnType))  return requireNumber(func, value);
+        if (Void.class.equals(returnType))    return null;
+
+        // todo weitere typen und/ oder error oder converter aus der HashMap auslesen?
+        return value;
     }
 
     public interface MurmelProgram {
