@@ -5,8 +5,20 @@ name: Java8/17/19/20-ea CI
 
 on:
   push:
+    paths-ignore:
+      - "**.md"
+      - "**.txt"
+      - "**.html"
+      - "**.completions"
+      - "scribbles/**"
     branches: [ master ]
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "**.txt"
+      - "**.html"
+      - "**.completions"
+      - "scribbles/**"
     branches: [ master ]
 
 jobs:
