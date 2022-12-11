@@ -5490,15 +5490,18 @@ public class LambdaJ {
     }
 
     private static Object convertReturnType(String func, Object value, Class<?> returnType) {
-        if (Boolean.class.equals(returnType) || boolean.class.equals(returnType)) return value != null;
-        if (Byte.class.equals(returnType)    || byte.class.equals(returnType))    return requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
-        if (Short.class.equals(returnType)   || short.class.equals(returnType))   return requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
-        if (Integer.class.equals(returnType) || int.class.equals(returnType))     return requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
-        if (Long.class.equals(returnType)    || long.class.equals(returnType))    return requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
-        if (Double.class.equals(returnType)  || double.class.equals(returnType))  return requireNumber(func, value).doubleValue();
+        if (Boolean.class.equals(returnType)   || boolean.class.equals(returnType)) return value != null;
+        if (Byte.class.equals(returnType)      || byte.class.equals(returnType))    return requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
+        if (Short.class.equals(returnType)     || short.class.equals(returnType))   return requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
+        if (Integer.class.equals(returnType)   || int.class.equals(returnType))     return requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
+        if (Long.class.equals(returnType)      || long.class.equals(returnType))    return requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
+        if (Double.class.equals(returnType)    || double.class.equals(returnType))  return requireNumber(func, value).doubleValue();
+        if (Character.class.equals(returnType) || char.class.equals(returnType))    return requireChar(func, value);
 
-        if (Number.class.equals(returnType))  return requireNumber(func, value);
-        if (Void.class.equals(returnType))    return null;
+        if (Number.class.equals(returnType))       return requireNumber(func, value);
+        if (String.class.equals(returnType))       return requireString(func, value);
+        if (CharSequence.class.equals(returnType)) return requireCharsequence(func, value);
+        if (Void.class.equals(returnType))         return null;
 
         // todo weitere typen und/ oder error oder converter aus der HashMap auslesen?
         return value;
