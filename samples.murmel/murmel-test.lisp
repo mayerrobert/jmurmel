@@ -478,6 +478,8 @@ multiline comment
                                          (setq inner-result 'inner-was-here)
                                          (error "hi-from-inner"))))
     (deftest condition-handler.4 (list (catch 'target (fail "test3")) inner-result) '("oops" inner-was-here)))
+
+  (setq *condition-handler* nil)
 )
 
 
@@ -1047,6 +1049,18 @@ multiline comment
 ; *******************************************************************
 ;;; - I/O
 
+;;; test read-from-string
+(deftest read-from-string.1 (read-from-string "1") 1)
+
+#+murmel (progn
+(defun expect (expect-error-obj expect-cnd-type actual-error-obj actual-condition)
+  (list (eq expect-error-obj actual-error-obj)
+        (if (null expect-cnd-type) t (typep actual-condition expect-cnd-type))))
+
+(deftest read-from-string.2 (multiple-value-call expect 'err1 'simple-type-error (try (read-from-string "1" 'err -1) 'err1)) '(t t))
+(deftest read-from-string.3 (multiple-value-call expect 'err  nil                (try (read-from-string "1" 'err 1)  'err1))  '(t t))
+)
+
 
 ; *******************************************************************
 ;;; - misc
@@ -1312,4 +1326,4 @@ multiline comment
       (format t "Success.")
   (format t "Failure."))
 
-#+murmel (if (> *failed* 0) (error "%n%d/%d errors" *failed* *count*))
+#+murmel (if (> *failed* 0) (error "%d/%d errors" *failed* *count*))

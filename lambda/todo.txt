@@ -1,7 +1,4 @@
 
-read-from-string: bounds checks hübscher machen
-
-
 vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im macro "yielding" eine CPS machen?
 -> yielding liefert einen generator, d.h. funktion ohne parameter, primary + secondary value
 -> "let dynamic" ist verboten

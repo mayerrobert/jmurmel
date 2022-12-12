@@ -4667,13 +4667,15 @@ public class LambdaJ {
             a = (ConsCell)cdr(a);
 
             if (a != null) {
-                final long skip = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
-                if (skip > str.length()) throw new InvalidIndexError("start must be <= string length");
-                try { count[0] = strReader.skip(skip); } catch (IOException e) { wrap(e); }
+                final long start = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                if (start > str.length()) throw new InvalidIndexError("start must be <= string length");
+                try { count[0] = strReader.skip(start); } catch (IOException e) { wrap(e); }
                 a = (ConsCell)cdr(a);
                 
                 if (a != null) {
-                    end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue(); // todo min=start, max=length
+                    end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                    if (end < start) throw new InvalidIndexError("end must be >= start");
+                    if (end > str.length()) throw new InvalidIndexError("end must be <= string length");
                 }
                 else end = -1;
             }
