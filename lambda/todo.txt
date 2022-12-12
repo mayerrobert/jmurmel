@@ -2,6 +2,12 @@
 read-from-string: bounds checks hübscher machen
 
 
+vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im macro "yielding" eine CPS machen?
+-> yielding liefert einen generator, d.h. funktion ohne parameter, primary + secondary value
+-> "let dynamic" ist verboten
+-> eine allfällige exception wird gespeichert und rethrow, weitere aufrufe des generator werfen wieder die gespeicherte exception
+
+
 sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ symbol akzeptieren?
 -> in CL gibts string: 
    Coerces X into a string. If X is a string, X is returned. If X is a
