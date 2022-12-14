@@ -1892,7 +1892,7 @@ public class LambdaJ {
 
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
-        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, args); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, intp.compiledProgram, args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -5229,7 +5229,7 @@ public class LambdaJ {
 
     }
 
-    static Object makeProxy(LambdaJ intp, ConsCell args) {
+    static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
         final String intf = requireString("jproxy", car(args));
         try {
             final Class<?> clazz = findClass(intf);
@@ -5260,7 +5260,7 @@ public class LambdaJ {
                 final String name = requireString("jproxy", car(lst));
                 final Method method = nameToMethod.get(name);
                 if (method == null) throw new UndefinedFunction("jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
-                methodToMurmelFunction.put(method, getFunction(intp, null, form, method.getReturnType()));
+                methodToMurmelFunction.put(method, getFunction(intp, program, form, method.getReturnType()));
 
                 lst = (ConsCell)cddr(lst);
             }
@@ -5482,13 +5482,14 @@ public class LambdaJ {
         throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
     }
 
-    private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object function, Class<?> returnType) {
+    private static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
+        final String funcName = printSEx(function);
         if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
         if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
-        if (function instanceof Closure)                              { return args -> convertReturnType(funcName, intp.new CallLambda((Closure)function, intp.topEnv).apply(args), returnType); }
-        if (function instanceof MurmelFunction)                       { return args -> convertReturnType(funcName, intp.compiledProgram.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
+        if (function instanceof Closure && intp != null)              { return args -> convertReturnType(funcName, intp.new CallLambda((Closure)function, intp.topEnv).apply(args), returnType); }
+        if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType(funcName, program.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
 
-        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
+        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
     }
 
     private static Object convertReturnType(String func, Object value, Class<?> returnType) {
@@ -7173,7 +7174,8 @@ public class LambdaJ {
             return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
         }
 
-        public final Object _jproxy    (Object... args) { varargs1("jproxy", args.length); return makeProxy(intp, arraySlice(args)); } // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
+        // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
+        public final Object _jproxy    (Object... args) { varargs1("jproxy", args.length); return makeProxy(intp, this, arraySlice(args)); }
 
 
         // graphics
@@ -9437,7 +9439,11 @@ public class LambdaJ {
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
                 else if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
-                else sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
+                else {
+                    final Object[] desc = classByName.get(strClazz);
+                    if (desc != null && desc[1] != null) sb.append(desc[1]).append("(args[0]").append(").").append(strMethod);
+                    else sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
+                }
 
                 sb.append("(");
                 if (params != null) {
