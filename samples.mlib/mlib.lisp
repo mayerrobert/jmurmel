@@ -2290,6 +2290,22 @@
 
 ; strings *************************************************************
 
+;;; = Function: string-replace
+;;;     (string-replace str srch replacement) -> result
+;;;
+;;; Since: 1.4
+;;;
+;;; Within `str` replace each occurrence of `srch` by `replacement`.
+;;; Special character sequences such as `\t` and `\n` are NOT recognized
+;;; and don't get special treatment.
+;;;
+;;; Example usage:
+;;;
+;;;     (string-replace "aaa aaa aaa" "aa" "b") ; ==> "ba ba ba"
+(define string-replace
+  (jmethod "String" "replace" "CharSequence" "CharSequence"))
+
+
 ;;; = Function: string-split
 ;;;     (string-split str regex) -> vector
 ;;;

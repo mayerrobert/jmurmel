@@ -12,6 +12,7 @@ sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ 
    string containing that character is returned. If X cannot be coerced
    into a string, an error occurs.
 -> string in Murmel einbauen
+-> intern und concatenate wär auch schön
 
 
 (vector-sort vec [comparator [from [to]]]) -> sorted-vector
@@ -20,6 +21,9 @@ oder seqsort?
 -> (seqsort result-type seq [comparator [from [to]]])
    ist result-type != nil wird seq NICHT mutiert und es gibt eine kopie
    ist result-type == nil wird seq in-place mutiert und seq ist der return wert
+-> CL hat
+   sort sequence predicate &key key => sorted-sequence
+   stable-sort sequence predicate &key key => sorted-sequence
 
 
 (string-compare s1 s2) -> <0 or 0 or >0

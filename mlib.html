@@ -992,6 +992,19 @@ Short circuiting thread-last
 Same as `->>` but if one function returns nil then the remaining
 functions are not called and the overall result is `nil`.
 
+### Function: string-replace
+    (string-replace str srch replacement) -> result
+
+Since: 1.4
+
+Within `str` replace each occurrence of `srch` by `replacement`.
+Special character sequences such as `\t` and `\n` are NOT recognized
+and don't get special treatment.
+
+Example usage:
+
+    (string-replace "aaa aaa aaa" "aa" "b") ; ==> "ba ba ba"
+
 ### Function: string-split
     (string-split str regex) -> vector
 
