@@ -1,5 +1,5 @@
 ;;;; Advent of code day 4
-;;;; Murmel solution based on https://github.com/ryukinix/adventofcode/blob/master/2022/day04/main.lisp
+;;;; CL/ Murmel solution based on https://github.com/ryukinix/adventofcode/blob/master/2022/day04/main.lisp
 
 ;; Run with
 ;;   sbcl --script day04.lisp
@@ -59,6 +59,7 @@ In how many assignment pairs does one range fully contain the other?
 
 (defun read-lines (fname)
   (uiop:read-file-lines fname))
+
 )
 
 
@@ -67,12 +68,13 @@ In how many assignment pairs does one range fully contain the other?
 
 (require "mlib")
 
-;; (string-split str regex) -> list
+;; (string-split-list str regex) -> list
 (defun string-split-list (str sep)
   (vector->list ((jmethod "java.lang.String" "split" "String") str sep)))
 
 (defun read-lines (fname)
   (vector->list (read-all-lines fname)))
+
 )
 
 
