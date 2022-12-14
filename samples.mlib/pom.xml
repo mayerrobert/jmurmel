@@ -211,6 +211,57 @@
                         </configuration>
                     </execution>
                     -->
+
+                    <execution>
+                        <id>run-aoc2022</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>./aoc2022</workingDirectory>
+                            <arguments>
+                                <argument>-ea</argument>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>..</argument>
+                                <argument>day01.lisp</argument>
+                                <argument>day04.lisp</argument>
+                                <argument>day10.lisp</argument>
+                                <argument>day13.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-compiled-aoc2022</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>./aoc2022</workingDirectory>
+                            <arguments>
+                                <argument>-ea</argument>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--run</argument>
+                                <argument>--libdir</argument>
+                                <argument>..</argument>
+                                <argument>day01.lisp</argument>
+                                <argument>day04.lisp</argument>
+                                <argument>day10.lisp</argument>
+                                <argument>day13.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
