@@ -1041,9 +1041,9 @@ pi ; ==> 3.141592653589793
 ; = read, write, writeln, lnwrite
 ;
 ;     (read eof-obj?) -> obj
-;     (write   obj  print-escape-p?) -> t
-;     (writeln obj? print-escape-p?) -> t
-;     (lnwrite obj? print-escape-p?) -> t
+;     (write   obj  print-escape-p?) -> obj
+;     (writeln obj? print-escape-p?) -> obj
+;     (lnwrite obj? print-escape-p?) -> obj
 ;
 ; `read` w/o an argument will throw an error when encountering EOF.
 ; If an optional argument was given then EOF does not throw an error
@@ -1074,6 +1074,14 @@ pi ; ==> 3.141592653589793
 ; the optioal parameter `print-escape-p` can be used to turn off escaping:
 
 (writeln "Hello, World!" nil)
+
+
+; = (write-to-string obj print-escape-p?) -> result-string
+;
+; Since: 1.4
+;
+; Convert `obj` to it's string representation.
+
 
 ; = (read-from-string str [eof-obj [start [end]]]) -> object, position
 ;

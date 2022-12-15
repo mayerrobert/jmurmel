@@ -5,15 +5,8 @@ vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im m
 -> eine allfällige exception wird gespeichert und rethrow, weitere aufrufe des generator werfen wieder die gespeicherte exception
 
 
-sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ symbol akzeptieren?
--> in CL gibts string: 
-   Coerces X into a string. If X is a string, X is returned. If X is a
-   symbol, its name is returned. If X is a character then a one element
-   string containing that character is returned. If X cannot be coerced
-   into a string, an error occurs.
--> string in Murmel einbauen
+CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön
-
 
 (vector-sort vec [comparator [from [to]]]) -> sorted-vector
 (list-sort lst [comparator [from [to]]])   -> sorted-list
@@ -24,6 +17,7 @@ oder seqsort?
 -> CL hat
    sort sequence predicate &key key => sorted-sequence
    stable-sort sequence predicate &key key => sorted-sequence
+-> oder sort und sorted - sort mutiert, sorted kopiert
 
 
 (string-compare s1 s2) -> <0 or 0 or >0

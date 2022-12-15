@@ -162,6 +162,7 @@ read-all-lines
 read-string
 write-lines
 write-string
+write-to-string
 
 jmethod
 jproxy
