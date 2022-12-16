@@ -7,6 +7,13 @@ vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im m
 
 CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön
+einige CL funktionen akzeptieren "string-designator", das ist string oder symbol oder character
+-> in CL gibts string: 
+   Coerces X into a string. If X is a string, X is returned. If X is a
+   symbol, its name is returned. If X is a character then a one element
+   string containing that character is returned. If X cannot be coerced
+   into a string, an error occurs.
+-> string zusätzlich zu write-to-string einbauen?
 
 (vector-sort vec [comparator [from [to]]]) -> sorted-vector
 (list-sort lst [comparator [from [to]]])   -> sorted-list

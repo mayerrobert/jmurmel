@@ -1844,7 +1844,7 @@ public class LambdaJ {
         sSLength("slength", Features.HAVE_STRING, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
         sSRef("sref", Features.HAVE_STRING, 2)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
         sSSet("sset", Features.HAVE_STRING, 3)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
-        sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringOrCharOrSymbol("string=", car(args)), requireStringOrCharOrSymbol("string=", cadr(args)))); } },
+        sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringDesignator("string=", car(args)), requireStringDesignator("string=", cadr(args)))); } },
         sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
         sListToString("list->string", Features.HAVE_STRING, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
 
@@ -3979,8 +3979,8 @@ public class LambdaJ {
     }
 
     /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
-    static String requireStringOrCharOrSymbol(String func, Object c) {
-        if (c == null) return null;
+    static String requireStringDesignator(String func, Object c) {
+        if (c == null) return "nil";
         if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
         return requireString(func, c);
     }
@@ -7079,7 +7079,7 @@ public class LambdaJ {
         public final long      _slength(Object... args) { oneArg("slength", args.length); return slength(args[0]); }
         public final char      _sref   (Object... args) { twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final char      _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
-        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringOrCharOrSymbol("string=", args[0]), LambdaJ.requireStringOrCharOrSymbol("string=", args[1]))); }
+        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringDesignator("string=", args[0]), LambdaJ.requireStringDesignator("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
             oneArg("string->list", args.length);
             final Object maybeString = args[0];
