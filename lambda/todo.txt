@@ -1,10 +1,4 @@
 
-vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im macro "yielding" eine CPS machen?
--> yielding liefert einen generator, d.h. funktion ohne parameter, primary + secondary value
--> "let dynamic" ist verboten
--> eine allfällige exception wird gespeichert und rethrow, weitere aufrufe des generator werfen wieder die gespeicherte exception
-
-
 CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön
 einige CL funktionen akzeptieren "string-designator", das ist string oder symbol oder character

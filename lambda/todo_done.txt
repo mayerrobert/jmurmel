@@ -2176,3 +2176,8 @@ read-from-string: bounds checks hübscher machen
 sollten requireString/ requireStringOrNull/ requireCharSequence auch character/ symbol akzeptieren?
 -> was ist mit anderen typen "toString"?
 -> write-to-string in Murmel einbauen
+
+vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im macro "yielding" eine CPS machen?
+-> yielding liefert einen generator, d.h. funktion ohne parameter, primary + secondary value
+-> "let dynamic" ist verboten
+-> eine allfällige exception wird gespeichert und rethrow, weitere aufrufe des generator werfen wieder die gespeicherte exception
