@@ -5701,7 +5701,9 @@ public class LambdaJ {
                 final TraceLevel trace = trace(args);
                 final int features = features(args);
 
-                final boolean istty = hasFlag("--tty", args) || null != System.console();
+                final boolean istty = hasFlag("--tty", args) || null != System.console(); // starting with Java20ea-27 the behaviour of System.console() has changed: will return != null even with redirected stdin
+                                                                                          // old behaviour can be restored with -Djdk.console=jdk.jshell
+                                                                                          // see https://bugs.openjdk.org/browse/JDK-8297226 and https://github.com/openjdk/jdk/pull/11421
                 final boolean repl = hasFlag("--repl", args);
                 final boolean echo = hasFlag("--echo", args);    // used only in repl
                 final boolean printResult = hasFlag("--result", args);  // print individual results of toplevel forms, used only when interpreting files given on the commandline or interpreting piped input
