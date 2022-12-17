@@ -1234,7 +1234,8 @@ public class LambdaJ {
         private final Object sOr;
 
         private boolean featurep(Object next) {
-            if (next != null && symbolp(next)) return some(x -> x == next, cdr(featuresEnvEntry));
+            if (next == null) return false; // #+nil
+            if (symbolp(next)) return some(x -> x == next, cdr(featuresEnvEntry));
             else if (consp(next)) {
                 if (car(next) == sAnd) return every(this::featurep, cdr(next));
                 if (car(next) == sOr) return some(this::featurep, cdr(next));
