@@ -1,9 +1,9 @@
 [
- { "interfaces": [ "java.lang.Iterable",            "io.github.jmurmel.LambdaJ.Writeable" ] },
- { "interfaces": [ "java.lang.Runnable",            "io.github.jmurmel.LambdaJ.Writeable" ] },
+ { "interfaces": [ "java.lang.Iterable",            "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.lang.Runnable",            "io.github.jmurmel.LambdaJ$Writeable" ] },
 
- { "interfaces": [ "java.util.Comparator",          "io.github.jmurmel.LambdaJ.Writeable" ] },
- { "interfaces": [ "java.util.List",                "io.github.jmurmel.LambdaJ.Writeable" ] },
- { "interfaces": [ "java.util.Iterator",            "io.github.jmurmel.LambdaJ.Writeable" ] },
- { "interfaces": [ "java.util.concurrent.Callable", "io.github.jmurmel.LambdaJ.Writeable" ] }
+ { "interfaces": [ "java.util.Comparator",          "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.List",                "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.Iterator",            "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.concurrent.Callable", "io.github.jmurmel.LambdaJ$Writeable" ] }
 ]
