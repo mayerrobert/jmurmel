@@ -26,7 +26,7 @@ jobs:
           java --version
           javac -d build lambda/src/main/java/io/github/jmurmel/LambdaJ.java
           jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
-          native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationResources=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
+          native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
           ./jmurmel --help
       
       - name: Upload binary
