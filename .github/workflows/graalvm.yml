@@ -29,7 +29,7 @@ jobs:
           echo "Engine-Version: ${{ github.ref_name }} ${{ github.sha }}" | out-file -encoding ascii build/META-INF/jmurmelversioninfo.properties
           cat build/META-INF/jmurmelversioninfo.properties
           jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
-          native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
+          native-image -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
           ./jmurmel --help
 
       - name: Upload binaries
@@ -41,9 +41,9 @@ jobs:
             murmel-langref.html
             mlib.html
             LICENSE
+            jmurmel.jar
 #            *.dll
 #            *.so
-#            !jmurmel.jar
 
       - name: Upload mlib
         uses: actions/upload-artifact@v3
