@@ -25,6 +25,9 @@ jobs:
         run: |
           java --version
           javac -d build lambda/src/main/java/io/github/jmurmel/LambdaJ.java
+          mkdir build\META-INF
+          echo Engine-Version: \> build/META-INF/jmurmelversioninfo.properties
+          git describe >> build/META-INF/jmurmelversioninfo.properties
           jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
           native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
           ./jmurmel --help
@@ -33,4 +36,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: jmurmel-${{ matrix.os }}
-          path: jmurmel*
+          path: jmurmel.exe *.dll

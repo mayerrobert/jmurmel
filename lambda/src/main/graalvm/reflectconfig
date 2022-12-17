@@ -10,15 +10,11 @@
   },
   {
     "name" : "java.lang.String",
-    "fields" : [
-      { "name" : "value" },
-      { "name" : "hash" }
-    ],
-    "methods" : [
-      { "name" : "<init>", "parameterTypes" : [] },
-      { "name" : "<init>", "parameterTypes" : ["char[]"] },
-      { "name" : "charAt" },
-      { "name" : "format", "parameterTypes" : ["java.lang.String", "java.lang.Object[]"] }
-    ]
+    "queryAllDeclaredConstructors" : true,
+    "queryAllPublicConstructors" : true,
+    "queryAllDeclaredMethods" : true,
+    "queryAllPublicMethods" : true,
+    "allDeclaredClasses" : true,
+    "allPublicClasses" : true
   }
 ]
