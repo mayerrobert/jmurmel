@@ -1,0 +1,5 @@
+[
+ { "interfaces": [ "java.lang.AutoCloseable", "java.util.Comparator" ] },
+ { "interfaces": [ "java.util.Comparator" ] },
+ { "interfaces": [ "java.util.List" ] }
+]

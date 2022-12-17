@@ -1,0 +1,36 @@
+name: JMurmel Native Image builds
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: JMurmel Native on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+#        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [windows-latest]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.3.0'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+      - name: Build and run JMurmel
+        run: |
+          java --version
+          javac -d build lambda/src/main/java/io/github/jmurmel/LambdaJ.java
+          jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
+          native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationResources=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
+          ./jmurmel --help
+      
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: jmurmel-${{ matrix.os }}
+          path: jmurmel*
