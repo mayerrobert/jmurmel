@@ -27,10 +27,11 @@ jobs:
           javac -d build lambda/src/main/java/io/github/jmurmel/LambdaJ.java
           mkdir build/META-INF
           echo "Engine-Version: ${{ github.ref_name }} ${{ github.sha }}" > build/META-INF/jmurmelversioninfo.properties
+          cat build/META-INF/jmurmelversioninfo.properties
           jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
           native-image -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
           ./jmurmel --help
-      
+
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
@@ -44,7 +45,6 @@ jobs:
 #            *.so
 #            !jmurmel.jar
 
-      
       - name: Upload mlib
         uses: actions/upload-artifact@v3
         with:
