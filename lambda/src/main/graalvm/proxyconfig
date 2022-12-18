@@ -1,9 +1,18 @@
 [
- { "interfaces": [ "java.lang.Iterable",            "io.github.jmurmel.LambdaJ$Writeable" ] },
- { "interfaces": [ "java.lang.Runnable",            "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.lang.Runnable",             "io.github.jmurmel.LambdaJ$Writeable" ] },
 
- { "interfaces": [ "java.util.Comparator",          "io.github.jmurmel.LambdaJ$Writeable" ] },
- { "interfaces": [ "java.util.List",                "io.github.jmurmel.LambdaJ$Writeable" ] },
- { "interfaces": [ "java.util.Iterator",            "io.github.jmurmel.LambdaJ$Writeable" ] },
- { "interfaces": [ "java.util.concurrent.Callable", "io.github.jmurmel.LambdaJ$Writeable" ] }
+ { "interfaces": [ "java.util.Comparator",           "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.List",                 "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.Map",                  "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.Set",                  "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.Iterator",             "io.github.jmurmel.LambdaJ$Writeable" ] },
+
+ { "interfaces": [ "java.util.concurrent.Callable",  "io.github.jmurmel.LambdaJ$Writeable" ] },
+
+ { "interfaces": [ "java.util.function.Function",    "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.function.BiFunction",  "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.function.Predicate",   "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.function.BiPredicate", "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.function.Consumer",    "io.github.jmurmel.LambdaJ$Writeable" ] },
+ { "interfaces": [ "java.util.function.Supplier",    "io.github.jmurmel.LambdaJ$Writeable" ] }
 ]
