@@ -1,3 +1,10 @@
+Primitive, CompilerPrimitive und MurmelFunction könnten alle auch
+  Runnable, Comparator, Callable, Function, BiFunction, Predicate, BiPredicate, Supplier, Consumer
+und ggf. weitere "Standard FunctionalInterfaces" unterstützen
+-> die methode des jeweiligen interface würde als default methode implementiert, und wenn die arity der tatsächlichen methode anders ist dann krachts zur laufzeit so wie bei jproxy
+-> würde die meisten jproxy aufrufe ersetzen
+-> jproxy sollte wsl erkennen ob ein interface imlementiert werden soll das bereits implementiert ist und dann das argument unverändert zurückgeben,
+   bzw. der compiler braucht keinen code zu erzeugen
 
 CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön

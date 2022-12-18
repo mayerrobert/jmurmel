@@ -5237,6 +5237,24 @@ public class LambdaJ {
 
     static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
         final String intf = requireString("jproxy", car(args));
+        final String method = requireString("jproxy", cadr(args));
+        if ("java.util.Comparator".equals(intf) && "compare".equals(method)) {
+            return new Comparator<Object>() { final MurmelFunction f = getFunction(intp, program, caddr(args), int.class);
+                                              @Override public String toString() { return "#<Java proxy: java.util.Comparator>"; }
+                                              @Override public int compare(Object o1, Object o2) { try { return (int)f.apply(o1, o2); }
+                                                                                                   catch (Exception e) { throw wrap(e); } } };
+        }
+        else if ("java.lang.Runnable".equals(intf) && "run".equals(method)) {
+            return new Runnable() { final MurmelFunction f = getFunction(intp, program, caddr(args), void.class);
+                                    @Override public String toString() { return "#<Java proxy: java.lang.Runnable>"; }
+                                    @Override public void run() { try { f.apply(); }
+                                                                  catch (Exception e) { throw wrap(e); } } };
+        }
+        else return makeDynamicProxy(intp, program, args);
+    }
+
+    static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
+        final String intf = requireString("jproxy", car(args));
         try {
             final Class<?> clazz = findClass(intf);
             final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
@@ -5492,7 +5510,8 @@ public class LambdaJ {
         final String funcName = printSEx(function);
         if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
         if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
-        if (function instanceof Closure && intp != null)              { return args -> convertReturnType(funcName, intp.new CallLambda((Closure)function, intp.topEnv).apply(args), returnType); }
+        if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function, intp.topEnv);
+                                                                        return args -> convertReturnType(funcName, callLambda.apply(args), returnType); }
         if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType(funcName, program.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
 
         throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
