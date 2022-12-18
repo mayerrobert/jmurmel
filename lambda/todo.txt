@@ -5,6 +5,9 @@ und ggf. weitere "Standard FunctionalInterfaces" unterstützen
 -> würde die meisten jproxy aufrufe ersetzen
 -> jproxy sollte wsl erkennen ob ein interface imlementiert werden soll das bereits implementiert ist und dann das argument unverändert zurückgeben,
    bzw. der compiler braucht keinen code zu erzeugen
+-> oder bleiben lassen, weil wenn ein verbessertes makeProxy() bekannte interfaces ohne reflection/ dynamic proxy implementiert, macht vielleicht HotSpot-inlining den rest
+
+schreibemethoden vergleichen, ggf. parameter angleichen, ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anfang
 
 CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön
