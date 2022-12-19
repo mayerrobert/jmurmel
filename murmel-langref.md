@@ -787,12 +787,15 @@ except: comma-dot is not supported.
     `((,a b) ,c ,@d)      ; ==> ((a-val b) c-val d-val1 d-val2)
 
     (define y 'b) (define l '(a b))
-    (eval ``(,a ,,@l ,,y) '((a . a) (b . b) (y . y))) ; ==> (a-val a-val b-val b-val)
+    (eval ``(,a ,,@l ,,y) '((a . a) (b . b) (y . y)))
+    ; ==> (a-val a-val b-val b-val)
 
     (define x '(1 2 3))
-    `(normal= ,x splicing= ,@x see?) ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
+    `(normal= ,x splicing= ,@x see?)
+    ; ==> (normal= (1 2 3) splicing= 1 2 3 see?)
 
-    `(normal= ,x fakesplicing= . ,x) ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
+    `(normal= ,x fakesplicing= . ,x)
+    ; ==> (normal= (1 2 3) fakesplicing= 1 2 3)
 
 
 ## Basic Primitives 
