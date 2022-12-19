@@ -1,3 +1,5 @@
+;;;; Python style generators: "yield" may occur in stmt lists
+
 (require "mlib")  
 
 
@@ -42,7 +44,10 @@
                                  (t
                                   (let ((form (car forms)))
                                     (cond ((and (consp form) (eq 'yield (car form)))
-                                           (collect `'(,(cadr form) ,continuation)))
+                                           (collect `(list ,(cadr form) ,continuation)))
+
+                                          ((and (consp form) (eq 'progn (car form)))
+                                           (loop (append (cdr form) (cdr forms))))
 
                                           (t
                                            (if continuation
@@ -72,7 +77,8 @@
 
 
 
-(defmacro test (name printconvert-p printexpand-p . forms)
+;; test stuff
+(defmacro run (name printconvert-p printexpand-p . forms)
   `(progn (writeln)
           (writeln ,name nil)
           (write "forms:     " nil) (writeln ',forms)
@@ -86,12 +92,58 @@
             (write "dogenerator: " nil)
             (writeln x))))
 
+(define *errors* 0)
+(defmacro compare (forms expected)
+  `(let ((actual (convert-forms ,forms nil)))
+    (unless (equal ,expected actual)
+      (incf *errors*)
+      (writeln "for the input forms" nil)
+      (writeln ,forms)
+      (writeln "Error - expected conversion:" nil)
+      (writeln ,expected)
+      (writeln "actual conversion:" nil)
+      (writeln actual))))
 
 
-(test "Test 1" nil nil (writeln 1) (writeln 2) (yield (writeln 10)) (writeln 3) (writeln 4) (yield 20))
 
-(test "Test 2" nil nil (writeln 1) (writeln 2) (yield 10) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+;; end with yield
+(run "Test 1" nil nil (writeln 1) (writeln 2) (yield (writeln 10)) (writeln 3) (writeln 4) (yield (writeln 20)))
+(compare            '((writeln 1) (writeln 2) (yield (writeln 10)) (writeln 3) (writeln 4) (yield (writeln 20)))
+                     '(lambda nil (writeln 1) (writeln 2) (list (writeln 10) (lambda nil (writeln 3) (writeln 4) (list (writeln 20) nil)))))
 
-(test "Test 3" nil nil (writeln 1) (progn (writeln 2) (yield 10) (writeln 3)) (writeln 4) (yield 20))
 
-(test "Test 4" nil nil (writeln 1) (progn (writeln 2) (yield (writeln 10))) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+;; end with normal form
+(run "Test 2" nil nil (writeln 1) (writeln 2) (yield 10) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+(compare            '((writeln 1) (writeln 2) (yield 10) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+                     '(lambda nil (writeln 1) (writeln 2) (list 10 (lambda nil (writeln 3) (writeln 4) (list 20 (lambda nil (list (writeln 5) nil)))))))
+
+
+;; progn that contains yield
+(run "Test 3" nil nil (writeln 1) (progn (writeln 2) (yield 10) (writeln 3)) (writeln 4) (yield 20))
+(compare            '((writeln 1) (progn (writeln 2) (yield 10) (writeln 3)) (writeln 4) (yield 20))
+                     '(lambda nil (writeln 1) (writeln 2) (list 10 (lambda nil (writeln 3) (writeln 4) (list 20 nil)))))
+
+
+;; progn that ends with yield
+(run "Test 4" nil nil (writeln 1) (progn (writeln 2) (yield (writeln 10))) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+(compare            '((writeln 1) (progn (writeln 2) (yield (writeln 10))) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+                     '(lambda nil (writeln 1) (writeln 2) (list (writeln 10) (lambda nil (writeln 3) (writeln 4) (list 20 (lambda nil (list (writeln 5) nil)))))))
+
+
+;; end with progn that ends with yield
+(run "Test 5" nil nil (writeln 1) (progn (writeln 2) (yield (writeln 10))) (writeln 3) (writeln 4) (yield 20) (progn (yield (writeln 5))))
+(compare            '((writeln 1) (progn (writeln 2) (yield (writeln 10))) (writeln 3) (writeln 4) (yield 20) (progn (yield (writeln 5))))
+                     '(lambda nil (writeln 1) (writeln 2) (list (writeln 10) (lambda nil (writeln 3) (writeln 4) (list 20 (lambda nil (list (writeln 5) nil)))))))
+
+
+;; if clause whose consequent is a single yield
+;(run "Test 6" t nil (writeln 1) (progn (writeln 2) (if t (yield (writeln 10)))) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+;(compare          '((writeln 1) (progn (writeln 2) (if t (yield (writeln 10)))) (writeln 3) (writeln 4) (yield 20) (writeln 5))
+;                   '())
+
+(unless (zerop *errors*)
+  (writeln)
+  (write *errors*)
+  (writeln " errors" nil))
+
+nil
