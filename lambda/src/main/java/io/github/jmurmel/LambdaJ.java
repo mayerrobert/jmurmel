@@ -5235,6 +5235,7 @@ public class LambdaJ {
 
     }
 
+    // todo ConsCell args umstellen auf Object... args?
     static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
         final String intf = requireString("jproxy", car(args));
         final String method = requireString("jproxy", cadr(args));
@@ -8556,10 +8557,19 @@ public class LambdaJ {
                     ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
                     if (isOperator(op, WellknownSymbol.sMultipleValueBind)) {
                         varargsMin("multiple-value-bind", ccArguments, 2);
-                        final ConsCell vars = listOrMalformed("multiple-value-bind", car(ccArguments));
-                        final boolean varargs = dottedList(vars);
-                        int length = listLength(vars);
-                        if (varargs) length--;
+                        final Object vars = car(ccArguments);
+                        int length;
+                        final boolean varargs;
+                        if (consp(vars)) {
+                            varargs = dottedList(vars);
+                            length = listLength((ConsCell)vars);
+                            if (varargs) length--;
+                        }
+                        else if (symbolp(vars)) {
+                            varargs = true;
+                            length = 0;
+                        }
+                        else throw errorMalformedFmt("multiple-value-bind", "expected a list or a symbol but got %s", printSEx(vars));
                         sb.append(isLast ? "tailcall(" : "funcall(");
                         emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
                         if (cadr(ccArguments) != null) {

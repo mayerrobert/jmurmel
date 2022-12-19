@@ -656,10 +656,12 @@ pi ; ==> 3.141592653589793
 ;
 ; Example:
 ;
-;     (multiple-value-bind (result condition) (try (1+ most-positive-fixnum) 'error)
+;     (multiple-value-bind (result condition)
+;       (try (1+ most-positive-fixnum) 'error)
 ;       (if (eq result 'error)
-;             (progn (write "an error occurred" nil) (write condition) 'bummer)
-;          result))
+;             (progn (write "an error occurred" nil)
+;                    (write condition) 'bummer)
+;         result))
 ;     ; ==> bummer
 
 
@@ -686,8 +688,21 @@ pi ; ==> 3.141592653589793
 ; The symbols are bound to the values over the execution of the `bodyforms`,
 ; which make up an implicit progn.
 
-(multiple-value-bind (a b) (values 'Hello\, '\ World!) (format nil "%s%s" a b))
- ; ==> "Hello, World!"
+(multiple-value-bind (a b) (values 'Hello\, '\ World!)
+  (format nil "%s%s" a b))
+;     ==> "Hello, World!"
+
+(multiple-value-bind (a b . c) (values 1 2 3 4 5)
+  (writeln a) (writeln b) (writeln c))
+;     ; 1
+;     ; 2
+;     ; (3 4 5)
+;     ; ==> (3 4 5)
+
+(multiple-value-bind a (values 1 2 3 4 5)
+  (write a))
+;     ; (1 2 3 4 5)
+;     ; ==> (1 2 3 4 5)
 
 
 ;;; = (load filespec) -> result
