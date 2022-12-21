@@ -470,6 +470,28 @@ public class MurmelJavaCompilerTest {
         assertEquals("let* dynamic produced wrong output", "33.0", out.toString());
     }
 
+    // todo @Test
+    public void testLetDynamicLambda() throws Exception {
+        final MurmelProgram program = compile("(define *g* 1)\n"
+                                              + "(define *g-getter* (let dynamic ((*g* 2))\n"
+                                              + "                     (lambda () *g*)))\n"
+                                              + "(*g-getter*)");
+        assertNotNull("failed to compile let dynamic to class", program);
+        assertEquals("let dynamic produced wrong output", 1L, program.body());
+    }
+
+    @Test
+    public void testLetStarDynamicLambda() throws Exception {
+        final MurmelProgram program = compile("(define *g* 1)\n"
+                                              + "(define *g-getter* (let* dynamic ((*g* 2))\n"
+                                              + "                     (lambda () *g*)))\n"
+                                              + "(*g-getter*)");
+        assertNotNull("failed to compile let dynamic to class", program);
+        assertEquals("let dynamic produced wrong output", 1L, program.body());
+    }
+
+
+
     // body calls one local function
     @Test
     public void testLabels() throws Exception {

@@ -8976,46 +8976,42 @@ public class LambdaJ {
         private void emitLetLetStarDynamic(WrappingWriter sb, final ConsCell bindingsAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean letStar, boolean isLast) {
             if (car(bindingsAndForms) == null && cdr(bindingsAndForms) == null) { sb.append("(Object)null"); return; }
 
-            final String op = letStar ? "let* dynamic" : "let dynamic";
-            sb.append(isLast ? "tailcallWithCleanup(" : "funcall(");
-
-            sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
+            sb.append(isLast ? "tailcallWithCleanup(" : "funcall(")
+              .append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
 
             final ArrayList<String> globals = new ArrayList<>();
 
             final Object bindings = car(bindingsAndForms);
-            final ConsCell params = paramList(op, bindings, false);
             ConsCell _env = env;
-            if (params != null) {
+            if (bindings != null) {
+                final ConsCell params = paramList(letStar ? "let* dynamic" : "let dynamic", bindings, false);
                 if (letStar) {
                     int n = 0;
                     final HashSet<Object> seenSymbols = new HashSet<>();
                     final Iterator<Object> bi = ((ConsCell)bindings).iterator();
                     for (final Object sym: params) {
                         final boolean seen = !seenSymbols.add(sym);
-                        final String javaName;
-                        if (seen) javaName = javasym(sym, _env);
-                        else javaName = "args" + rsfx + "[" + n++ + "]";
-
-                        final String globalName;
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
                             notAPrimitive("let* dynamic", sym, cdr(maybeGlobal).toString());
-                            globalName = mangle(sym.toString(), 0);
+                            final String globalName = mangle(sym.toString(), 0);
                             if (!seen) {
                                 globals.add(globalName);
                                 sb.append("        ").append(globalName).append(".push();\n");
                             }
+                            sb.append("        ").append(globalName).append(".set(");
+                            emitForm(sb, cadr(bi.next()), _env, topEnv, rsfx, false);
+                            sb.append(");\n");
                         }
-                        else globalName = null; // letXX dynamic can bind both global as well as new local variables
-
-                        final Object binding = bi.next();
-                        sb.append("        ").append(javaName).append(" = ");
-                        emitForm(sb, cadr(binding), _env, topEnv, rsfx, false);
-                        sb.append(";\n");
-                        if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, _env);
-
-                        if (maybeGlobal != null) sb.append("        ").append(globalName).append(".set(").append(javasym(sym, _env)).append(");\n");
+                        else { // letXX dynamic can bind both global as well as new local variables
+                            final String javaName;
+                            if (seen) javaName = javasym(sym, _env);
+                            else javaName = "args" + rsfx + "[" + n++ + "]";
+                            sb.append("        ").append(javaName).append(" = ");
+                            emitForm(sb, cadr(bi.next()), _env, topEnv, rsfx, false);
+                            sb.append(";\n");
+                            if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, _env);
+                        }
                     }
                 }
                 else {
@@ -9048,7 +9044,7 @@ public class LambdaJ {
                 if (!globals.isEmpty()) sb.append("        try {\n");
 
                 // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, params != null);
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, bindings != null);
 
                 if (!globals.isEmpty()) {
                     sb.append("        }\n        finally {\n");
