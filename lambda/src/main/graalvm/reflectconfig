@@ -13,8 +13,14 @@
 
   { "name" : "java.lang.Comparable",     "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
 
+  { "name" : "java.lang.Math",           "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
+  { "name" : "java.lang.StrictMath",     "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
+
   { "name" : "java.lang.StringBuilder",  "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
   { "name" : "java.lang.CharSequence",   "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
+
+  { "name" : "java.math.BigInteger",     "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
+  { "name" : "java.math.BigDecimal",     "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
 
   { "name" : "java.util.Iterator",       "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
   { "name" : "java.util.Collection",     "allDeclaredConstructors" : true,    "allPublicConstructors" : true,    "allDeclaredMethods" : true,    "allPublicMethods" : true,    "allDeclaredClasses" : true,    "allPublicClasses" : true  },
