@@ -1,14 +1,3 @@
-checken ob let dynamic interpretiert und kompiliert gleich ist:
-
-(define *g* 1)
-(define *g-getter* (let dynamic ((*g* 2))
-                     (lambda () *g*)))
-(*g-getter*) ; ==> interpreter: 1 - ok, compiler: 2 - nicht ok. sollte eigentlich test geben?!?
--> compiler sollte wsl globals bei let dynamic NICHT ins extenv stecken?!?
-
-
-
-
 Primitive, CompilerPrimitive und MurmelFunction könnten alle auch
   Runnable, Comparator, Callable, Function, BiFunction, Predicate, BiPredicate, Supplier, Consumer
 und ggf. weitere "Standard FunctionalInterfaces" unterstützen

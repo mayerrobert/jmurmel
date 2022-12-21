@@ -351,6 +351,27 @@ multiline comment
   (let #+murmel dynamic ((*a* 11) (*b* 22) (*c* 33) (b 2)) (append (globals-as-list) b))
   '(11 22 33 . 2))
 
+(define *result* nil)
+(deftest letdynamic.5
+  (let ((a-getter (let #+murmel dynamic ((*a* 2))
+                    (setq *result* (cons *a* nil))
+                    (lambda () *a*))))
+    (setq *result* (cons (#-murmel funcall a-getter) *result*))
+    *result*)
+  '(1 2))
+
+(define *a-getter* nil)
+(deftest letdynamic.6
+  (progn (setq *a-getter* (let #+murmel dynamic ((*a* 2))
+                            (lambda () *a*)))
+         (#-murmel funcall *a-getter*))
+  1)
+
+(setq *a-getter* (let #+murmel dynamic ((*a* 2))
+                   (lambda () *a*)))
+(deftest letdynamic.7
+  (#-murmel funcall *a-getter*)  1)
+
 
 ;;; test let* dynamic
 (deftest let*dynamic.1
@@ -371,7 +392,6 @@ multiline comment
 (deftest let*dynamic.4
   (let* #+murmel dynamic ((a 1) (b a)) b) 1)
 
-(define *result* nil)
 (deftest let*dynamic.5
   (let ((a-getter (let* #+murmel dynamic ((*a* 2))
                     (setq *result* (cons *a* nil))
@@ -380,7 +400,6 @@ multiline comment
     *result*)
   '(1 2))
 
-(define *a-getter* nil)
 (deftest let*dynamic.6
   (progn (setq *a-getter* (let* #+murmel dynamic ((*a* 2))
                             (lambda () *a*)))

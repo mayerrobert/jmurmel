@@ -9006,24 +9006,30 @@ public class LambdaJ {
                         else { // letXX dynamic can bind both global as well as new local variables
                             final String javaName;
                             if (seen) javaName = javasym(sym, _env);
-                            else javaName = "args" + rsfx + "[" + n++ + "]";
+                            else javaName = "args" + rsfx + "[" + n + "]";
                             sb.append("        ").append(javaName).append(" = ");
                             emitForm(sb, cadr(bi.next()), _env, topEnv, rsfx, false);
                             sb.append(";\n");
                             if (!seen) _env = extenvIntern((LambdaJSymbol)sym, javaName, _env);
                         }
+                        n++;
                     }
                 }
                 else {
-                    _env = params("let dynamic", sb, params, _env, rsfx, null, false);
+                    final ConsCell __env = params("let dynamic", sb, params, _env, rsfx, null, false);
+                    int n = 0;
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
                             notAPrimitive("let dynamic", sym, cdr(maybeGlobal).toString());
                             final String globalName = mangle(sym.toString(), 0);
                             globals.add(globalName);
-                            sb.append("        ").append(globalName).append(".push(").append(javasym(sym, _env)).append(");\n");
+                            sb.append("        ").append(globalName).append(".push(").append(javasym(sym, __env)).append(");\n");
                         }
+                        else {
+                            _env = extenvIntern((LambdaJSymbol)sym, "args" + rsfx + "[" + n + "]", _env);
+                        }
+                        n++;
                     }
                 }
             }

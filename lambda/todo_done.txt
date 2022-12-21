@@ -2181,3 +2181,12 @@ vielleicht doch ein macro "yielding"? basierend auf generator.lisp (?) oder im m
 -> yielding liefert einen generator, d.h. funktion ohne parameter, primary + secondary value
 -> "let dynamic" ist verboten
 -> eine allfällige exception wird gespeichert und rethrow, weitere aufrufe des generator werfen wieder die gespeicherte exception
+
+
+checken ob let dynamic interpretiert und kompiliert gleich ist:
+
+(define *g* 1)
+(define *g-getter* (let dynamic ((*g* 2))
+                     (lambda () *g*)))
+(*g-getter*) ; ==> interpreter: 1 - ok, compiler: 2 - nicht ok. sollte eigentlich test geben?!?
+-> compiler sollte wsl globals bei let dynamic NICHT ins extenv stecken?!?
