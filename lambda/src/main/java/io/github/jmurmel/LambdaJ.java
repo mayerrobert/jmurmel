@@ -1894,7 +1894,7 @@ public class LambdaJ {
 
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
-        sJproxy("jproxy",   Features.HAVE_FFI, 1, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, intp.compiledProgram, args); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, intp.compiledProgram, args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -4584,7 +4584,7 @@ public class LambdaJ {
         if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
         if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
-        if (maybeSeq instanceof ConsCell) {
+        if (maybeSeq instanceof ConsCell) { // todo vielleicht in eine neue Methode ConsCell.nth() schieben, siehe auch ArraySlice.elt()
             long _idx = 0;
             for (Object o: (ConsCell)maybeSeq) {
                 if (_idx == idx) return o;
@@ -5254,7 +5254,7 @@ public class LambdaJ {
         else return makeDynamicProxy(intp, program, args);
     }
 
-    static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
+    private static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
         final String intf = requireString("jproxy", car(args));
         try {
             final Class<?> clazz = findClass(intf);
@@ -7204,7 +7204,7 @@ public class LambdaJ {
         }
 
         // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
-        public final Object _jproxy    (Object... args) { varargs1("jproxy", args.length); return makeProxy(intp, this, arraySlice(args)); }
+        public final Object _jproxy    (Object... args) { varargs3("jproxy", args.length); return makeProxy(intp, this, arraySlice(args)); }
 
 
         // graphics
