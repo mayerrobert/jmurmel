@@ -1,6 +1,13 @@
 name: JMurmel Native Image builds
 
-on: [push]
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "**.txt"
+      - "**.html"
+      - "**.completions"
+      - "scribbles/**"
 
 jobs:
   build:
