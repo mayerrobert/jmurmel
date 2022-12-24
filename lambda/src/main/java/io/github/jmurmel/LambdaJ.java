@@ -4655,7 +4655,7 @@ public class LambdaJ {
         }
     }
 
-    /** (read-from-string str [eof-obj [start [end]]]) -> result */
+    /** (read-from-string str [eof-obj [start [end]]]) -> result, position */
     static Object[] readFromString(ConsCell a) {
         final String str = requireString("read-from-string", car(a));
         final StringReader strReader = new StringReader(str);

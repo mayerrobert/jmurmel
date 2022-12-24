@@ -7,7 +7,33 @@ und ggf. weitere "Standard FunctionalInterfaces" unterstützen
    bzw. der compiler braucht keinen code zu erzeugen
 -> oder bleiben lassen, weil wenn ein verbessertes makeProxy() bekannte interfaces ohne reflection/ dynamic proxy implementiert, macht vielleicht HotSpot-inlining den rest
 
+makeProxy/ jproxy optimieren: für ein interface mit einer einzigen methode könnte der compiler ein lambda ausspucken:
+-> (jproxy "Comparator" "compare" comp)
+   -> (Comparator)((a, b) -> comp.apply(a, b))
+evtl. auch mehrere methoden als anonyme klasse abgeleitet von der proxyklasse?
+
+
 schreibemethoden vergleichen, ggf. parameter angleichen, ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anfang
+
+read-from-string   (read-from-string str [eof-obj [start [end]]]) -> object, position
+-> CL              (read-from-string str &optional eof-error-p eof-value &key start end preserve-whitespace) -> object, position
+
+write-to-string    (write-to-string obj print-escape-p?) -> result-string
+-> CL              (write-to-string object &key array base case circle escape gensym length level lines miser-width pprint-dispatch pretty radix readably right-margin) -> string
+                   (prin1-to-string object) => string
+                   (princ-to-string object) => string
+
+read-all-lines     (read-all-lines filenamestr [charset]) -> result-string-vector
+-> CL              (uiop:read-file-lines fname) -> result-string-list
+
+write-lines        (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil
+
+read-string        (read-string filenamestr [charset]) -> result-string
+-> CL              (uiop:read-file-string fname) -> result-string
+
+write-string       (write-string filenamestr string [appendp [charset]]) -> nil
+-> CL              (write-string string &optional output-stream &key start end) => string
+
 
 CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön
@@ -45,11 +71,6 @@ oder seqsort?
                    ((predicate r l) 1)
                    (t 0))))))
 XXX-compare in Murmel könnten <, >, <=, string= usw. ersetzen, < könnte in mlib implementiert werden
-
-jproxy optimieren: für ein interface mit einer einzigen methode könnte der compiler ein lambda ausspucken:
--> (jproxy "Comparator" "compare" comp)
-   -> (Comparator)((a, b) -> comp.apply(a, b))
-evtl. auch mehrere methoden als anonyme klasse abgeleitet von der proxyklasse?
 
 
 ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?
