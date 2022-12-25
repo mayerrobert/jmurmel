@@ -1,3 +1,6 @@
+static initializer koennen langsam sein, siehe https://pangin.pro/posts/computation-in-static-initializer
+-> startup profilern, ggf. helperklassen statt static{} sections
+
 Primitive, CompilerPrimitive und MurmelFunction könnten alle auch
   Runnable, Comparator, Callable, Function, BiFunction, Predicate, BiPredicate, Supplier, Consumer
 und ggf. weitere "Standard FunctionalInterfaces" unterstützen
@@ -13,7 +16,9 @@ makeProxy/ jproxy optimieren: für ein interface mit einer einzigen methode kön
 evtl. auch mehrere methoden als anonyme klasse abgeleitet von der proxyklasse?
 
 
-schreibemethoden vergleichen, ggf. parameter angleichen, ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anfang
+schreibemethoden vergleichen, ggf. parameter angleichen
+-> ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anfang
+-> ggf. write-string -> write-textfile, read-string -> read-textfile (weil write-string gibts in CL, hat andere parameter reihenfolge)
 
 read-from-string   (read-from-string str [eof-obj [start [end]]]) -> object, position
 -> CL              (read-from-string str &optional eof-error-p eof-value &key start end preserve-whitespace) -> object, position
@@ -78,7 +83,7 @@ ggf. eine warning ausgeben, wenn lambdalist oder letXX ein global shadowed?
 
 
 interpreter: lokales und globales environment müssen nicht eine einzige liste sein
--> das lokale (lexikalische) environment bleibt eine liste, das globale wird eine hashmap,
+-> das lokale (lexikalische) environment bleibt eine liste, das globale wird eine hashmap, besser: IdentityHashMap
    symbollookup sucht erst in der liste, dann ggf. fallback in die hashmap.
 -> oder das globale environment ist überhaupt ein array/ eine arraylist, symbole bekommen beim internen (oder besser von define/ defun?) einen von 0 aufsteigenden index.
    symbole für special forms bekommen keinen index, symbole für wellknown primitives oder wellknown symbols bekommen hardcodierte indizes,
@@ -182,6 +187,7 @@ Compiler ist derzeit umständlicher:
 * den switch in getValue() erweitern
 * das string array MurmelJavaCompiler.primitives bzw. MurmelJavaCompiler.aliasedPimitives erweitern
 -> damit kanns der compiler und MurmelJavaProgram
+-> plus doku: murmel-langref, murmel.completions
 
 
 vielleicht doch in MurmelJavaProgram (nur intern) von t/nil auf true/false umstellen?
@@ -614,6 +620,14 @@ strings sind ein array, vector, aber kein simple-vector
 -> und make-hash-table, hash-table-p, hash-table-count, clrhash, gethash, remhash, maphash, (puthash, , #H(...)), mlib: (setf (gethash...
    erweiterungen nach alexandria: (hash-table-plist hash) -> plist, (plist-hash-table plist) -> hash
    oder                           (hash-table->plist hash) -> plist, (plist->hash-table plist) -> hash
+-> (hash-table-p obj) ... instanceof Map
+   (make-hash-table eq [size])     ... new IdentityHashMap()
+   (make-hash-table t [size])      ... new HashMap()
+
+   (make-hash-table eql [size])    ... new EqlMap()    -> put is ueberschrieben und wrapped bei Murmeltypen den Key
+   (make-hash-table equal [size])  ... new EqualMap()  -> put is ueberschrieben und wrapped bei Murmeltypen den Key
+   (make-hash-table equalp [size]) ... new EqualpMap() -> put is ueberschrieben und wrapped bei Murmeltypen den Key
+
 http://clhs.lisp.se/Body/f_mk_has.htm
     make-hash-table &key test size rehash-size rehash-threshold => hash-table
 Creates and returns a new hash table.
