@@ -4712,7 +4712,7 @@ public class LambdaJ {
         if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
         if (test == null || test == st.intern("eql")) return new EqlMap(size);
         if (test == st.intern("eq")) return new IdentityHashMap<>(size);
-        throw errorInternal("only t, eq and eql are implemented as 'test', got " + printSEx(test));
+        throw errorInternal("only t, eq and eql are implemented as 'test', got " + printSEx(test)); // todo type-error?
     }
 
     static Object[] hashref(Object hash, Object key, Object def) {
@@ -7659,7 +7659,10 @@ public class LambdaJ {
         public final Object funcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
-            if (fn instanceof Primitive)         return ((Primitive)fn).applyPrimitive(arraySlice(args));
+            if (fn instanceof Primitive)         { final Object ret = ((Primitive)fn).applyPrimitive(arraySlice(args));
+                                                   if (intp.values == LambdaJ.NO_VALUES) values = null;
+                                                   else values = toArray(intp.values);
+                                                   return ret; }
             if (fn instanceof Closure)           return interpret(fn, args);
 
             throw errorNotAFunction(fn);
