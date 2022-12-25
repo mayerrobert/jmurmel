@@ -23,7 +23,7 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           version: '22.3.0'
-          java-version: '19'
+          java-version: '17'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
@@ -31,12 +31,9 @@ jobs:
       - name: Build and run JMurmel
         run: |
           java --version
-          javac -d build lambda/src/main/java/io/github/jmurmel/LambdaJ.java
-          mkdir build/META-INF
-          echo "Engine-Version: ${{ github.ref_name }} ${{ github.sha }}" | out-file -encoding ascii build/META-INF/jmurmelversioninfo.properties
-          jar --create --file jmurmel.jar --main-class io.github.jmurmel.LambdaJ -C build .
-          native-image -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar jmurmel.jar
-          ./jmurmel --help
+          mvn package -pl lambda -DskipTests
+          native-image -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar lambda/target/jmurmel.jar
+          ./jmurmel --version
 
       - name: Upload binaries
         uses: actions/upload-artifact@v3
@@ -47,9 +44,6 @@ jobs:
             murmel-langref.html
             mlib.html
             LICENSE
-#            jmurmel.jar
-#            *.dll
-#            *.so
 
       - name: Upload mlib
         uses: actions/upload-artifact@v3
