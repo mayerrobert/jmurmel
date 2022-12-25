@@ -40,11 +40,7 @@ jobs:
         run: |
           java --version
           mvn -B clean package -pl lambda -DskipTests -Djavac.target=17
-          native-image --report-unsupported-elements-at-runtime \
-            -H:IncludeResources="META-INF/.*" \
-            -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig \
-            -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig \
-            -jar lambda/target/jmurmel.jar
+          native-image --report-unsupported-elements-at-runtime -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar lambda/target/jmurmel.jar
           ./jmurmel --version
 
       - name: Upload binaries
