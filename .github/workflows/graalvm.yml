@@ -39,12 +39,11 @@ jobs:
       - name: Build and run JMurmel
         run: |
           java --version
-          mvn -B clean package -pl lambda -DskipTests
-          native-image \
+          mvn -B clean package -pl lambda -DskipTests -Djavac.target=17
+          native-image --report-unsupported-elements-at-runtime \
             -H:IncludeResources="META-INF/.*" \
             -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig \
             -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig \
-            --report-unsupported-elements-at-runtime \
             -jar lambda/target/jmurmel.jar
           ./jmurmel --version
 
