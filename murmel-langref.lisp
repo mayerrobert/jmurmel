@@ -1068,16 +1068,16 @@ pi ; ==> 3.141592653589793
 
 ;;; == Hash-tables
 
-; = hash-table-p, hash, make-hash-table, hashref, hashset,<br/>hash-table-count, clrhash, hash-remove
+; = hash-table-p, hash-table, make-hash-table, hashref, hashset,<br/>hash-table-count, clrhash, hash-table-remove
 ;
 ;     (hash-table-p hash) -> boolean
-;     (hash [test [key1 value1 key2 value2...]]) -> hash-table
+;     (hash-table [test [key1 value1 key2 value2...]]) -> hash-table
 ;     (make-hash-table [key [size]]) -> hash-table
 ;     (hashref hash key [default]) -> value, present-p
 ;     (hashset hash key value) -> value
 ;     (hash-table-count hash) -> number-of-entries
 ;     (clrhash hash) -> hash-table
-;     (hash-remove hash key) -> was-present-p 
+;     (hash-table-remove hash key) -> was-present-p 
 ;
 ; Since: 1.4
 ;
@@ -1085,6 +1085,15 @@ pi ; ==> 3.141592653589793
 ;
 ; `hash-table-p, make-hash-table, hash-table-count, clrhash`
 ; are similar to CL's functions with the same name.
+
+; = scan-hash-table
+;
+;     (scan-hash-table hash) -> key-value-generator
+;
+; Since: 1.4
+;
+; `scan-hash-table` returns a function of no arguments that will
+; on subsequent invocations return `(key . value), valid?`.
 
 
 ;;; == I/O

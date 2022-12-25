@@ -144,13 +144,14 @@ list->bit-vector
 seqref
 seqset
 
-hash
+hash-table
 make-hash-table
 hashref
 hashset
 hash-table-count
 clrhash
-hash-remove
+hash-table-remove
+scan-hash-table
 
 values
 gensym

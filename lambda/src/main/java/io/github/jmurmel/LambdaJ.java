@@ -1871,13 +1871,14 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // Hash tables
-        sHash("hash", Features.HAVE_HASH, 0, -1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
+        sHash("hash-table", Features.HAVE_HASH, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
         sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
         sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sHashSet("hashset", Features.HAVE_HASH, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(car(args), cadr(args), caddr(args)); } },
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
         sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
-        sHashRemove("hash-remove", Features.HAVE_HASH, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(car(args), cadr(args))); } },
+        sHashRemove("hash-table-remove", Features.HAVE_HASH, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(car(args), cadr(args))); } },
+        sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.scanHash(car(args)); } },
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
@@ -4696,19 +4697,19 @@ public class LambdaJ {
     static Object hash(SymbolTable symtab, ConsCell testAndTuples) {
         if (testAndTuples == null) return new EqlMap(DEFAULT_HASH_SIZE);
         final Map<Object,Object> ret = makeHashTable(symtab, car(testAndTuples), DEFAULT_HASH_SIZE);
-        final ConsCell tuples = requireList("hash", testAndTuples.cdr());
+        final ConsCell tuples = requireList("hash-table", testAndTuples.cdr());
         if (tuples == null) return ret;
         final Iterator<?> i = tuples.iterator();
         while (i.hasNext()) {
             final Object key = i.next();
-            if (!i.hasNext()) errorMalformedFmt("hash", "last key/value tuple is missing 'value'");
+            if (!i.hasNext()) errorMalformedFmt("hash-table", "last key/value tuple is missing 'value'");
             ret.put(key, i.next());
         }
         return ret;
     }
 
     static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
-        if (test == sT) return new HashMap<>(size);
+        if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
         if (test == null || test == st.intern("eql")) return new EqlMap(size);
         if (test == st.intern("eq")) return new IdentityHashMap<>(size);
         throw errorInternal("only t, eq and eql are implemented as 'test', got " + printSEx(test));
@@ -4724,6 +4725,7 @@ public class LambdaJ {
         else return new Object[] { def, null };
     }
 
+    // todo (hashset generator value) soll auch gehen
     static Object hashset(Object hash, Object key, Object value) {
         final Map<Object,Object> map = requireHash("hashset", hash);
         map.put(key, value);
@@ -4739,14 +4741,26 @@ public class LambdaJ {
         return hash;
     }
 
+    // todo (hash-table-remove generator) soll auch gehen
     static boolean hashRemove(Object hash, Object key) {
-        final Map<?,Object> map = requireHash("hashref", hash);
+        final Map<?,Object> map = requireHash("hash-table-remove", hash);
         final boolean ret = map.containsKey(key);
         map.remove(key);
         return ret;
     }
 
-    // todo remhash, maphash
+    final Object scanHash(Object hash) {
+        final Iterator<Map.Entry<Object,Object>> it = requireHash("scan-hash-table", hash).entrySet().iterator();
+        if (it.hasNext()) return new Primitive() {
+            @Override public Object applyPrimitive(ConsCell args) {
+                if (it.hasNext()) { final Map.Entry<Object,Object> entry = it.next(); final ConsCell tuple = cons(entry.getKey(), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
+                else { values = cons(null, cons(null, null));  return null; }
+            }
+            @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
+        };
+        else return new Primitive() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
+                                      @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
+    }
 
 
     /// I/O
