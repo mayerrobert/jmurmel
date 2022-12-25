@@ -71,7 +71,7 @@ public class CallJavaTest {
     public void mapConstructor() throws Exception {
         runTest("(define create-hash (jmethod \"java.util.HashMap\" \"new\"))"
                 + "(define my-hash (create-hash))" 
-                + "my-hash", "{}");
+                + "my-hash", "#H(t)");
     }
 
     @Test

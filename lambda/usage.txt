@@ -78,6 +78,7 @@ Feature flags:
 --no-number ...  no number support
 --no-string ...  no string support
 --no-vector ...  no vector support
+--no-hash .....  no hash-table support
 --no-io .......  no primitive functions read, write, writeln, lnwrite,
 --no-util .....  no primitive functions consp, symbolp, listp, null,
                  append, assoc, assq, list, list*, format, format-locale,

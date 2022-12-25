@@ -37,6 +37,7 @@ Murmel is WIP, please note the section
 - [Logic, Predicates](#logic-predicates)
 - [Conses and lists](#conses-and-lists)
 - [Vectors, Sequences](#vectors-sequences)
+- [Hashtables](#hash-tables)
 - [I/O](#io)
 - [Misc](#misc)
 - [Time](#time)
@@ -331,6 +332,13 @@ Murmel's type system (and the corresponding host types) look like so:
              bit-vector           ; (make-array NN 'bit t)         -> BitVector
                 simple-bit-vector ; (make-array NN 'bit nil)       -> boolean[]
                                   : #*0101                         -> boolean[]
+
+          hash-table              ; (make-hash-table [test [size]])
+                                  ; #H(eql one 1 two 2 three 3)    -> EqlMap
+                                  ; (make-hash-table ['eql [size]) -> EqlMap
+                                  ; (make-hash-table 'eq [size])   -> java.util.IdentityHashMap
+                                  ; (make-hash-table 't [size])    -> java.util.HashMap
+                                  ; java.util.Map is acceptable for hashref, hashset, clrhash...
 
           function                ; (lambda (param) param)         -> Closure or MurmelFunction
 
@@ -850,6 +858,10 @@ Examples:
 
 ### characterp
 
+### hash-table-p
+
+Since: 1.4
+
 ### functionp
 
 Since: 1.3
@@ -1049,6 +1061,27 @@ Murmel's `seqref` and `seqset` will handle dotted lists, though.
     (let ((l (list* 0 1 2)))
       (seqset l 2 22) l)
       ; ==> (0 1 . 22)
+
+
+## Hash-tables
+
+### hash-table-p, hash, make-hash-table, hashref, hashset,<br/>hash-table-count, clrhash, hash-remove
+
+    (hash-table-p hash) -> boolean
+    (hash [test [key1 value1 key2 value2...]]) -> hash-table
+    (make-hash-table [key [size]]) -> hash-table
+    (hashref hash key [default]) -> value, present-p
+    (hashset hash key value) -> value
+    (hash-table-count hash) -> number-of-entries
+    (clrhash hash) -> hash-table
+    (hash-remove hash key) -> was-present-p 
+
+Since: 1.4
+
+`test` defaults to `eql` and is currently limited to `nil, t, eq, eql`.
+
+`hash-table-p, make-hash-table, hash-table-count, clrhash`
+are similar to CL's functions with the same name.
 
 
 ## I/O

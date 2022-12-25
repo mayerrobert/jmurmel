@@ -706,6 +706,8 @@ public class LambdaJ {
 
         HAVE_VECTOR,         // vector, svref
 
+        HAVE_HASH,           // make-hash-table, ...
+
         HAVE_COND,
 
         HAVE_APPLY,          // McCarthy didn't list apply, he probably implied eval, tough
@@ -737,7 +739,7 @@ public class LambdaJ {
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
         HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits(); } },
         HAVE_ALL_DYN    { @Override public int bits() { return (HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
-                                                                | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_VECTOR.bits()
+                                                                | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_VECTOR.bits() | HAVE_HASH.bits()
                                                                 | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_GUI.bits() | HAVE_UTIL.bits())
                                                                & ~HAVE_LEXC.bits(); } },
         HAVE_ALL_LEXC   { @Override public int bits() { return HAVE_ALL_DYN.bits() | HAVE_LEXC.bits(); } }
@@ -1196,8 +1198,7 @@ public class LambdaJ {
                 return parseLong(readerMacroToken(), 16);
 
             case '(':
-                final Object eof = new Object();
-                return listToArray(readList(lineNo, charNo, eof));
+                return listToArray(readList(lineNo, charNo, new Object()));
 
             case '*':
                 final String bv = readerMacroToken();
@@ -1213,6 +1214,11 @@ public class LambdaJ {
                     i++;
                 }
                 return Arrays.copyOf(ret, i);
+
+            case 'H':
+                if (look != '(') errorReaderError("expected '(' after '#H'");
+                look = getchar();
+                return hash(st, readList(lineNo, charNo, new Object()));
 
             default:
                 look = getchar();
@@ -1511,7 +1517,8 @@ public class LambdaJ {
             return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
         }
 
-        private Object readList(int listStartLine, int listStartChar, Object eof) throws IOException {
+        // todo wozu brauchts den parameter eof?
+        private ConsCell readList(int listStartLine, int listStartChar, Object eof) throws IOException {
             AbstractConsCell first = null, appendTo = null;
             for (;;) {
                 skipWs();
@@ -1768,6 +1775,7 @@ public class LambdaJ {
         sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
         sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
 
+        sHashtableP("hash-table-p", Features.HAVE_HASH, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashtableP(car(args))); } },
         sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
         sListp("listp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
@@ -1861,6 +1869,15 @@ public class LambdaJ {
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
+
+        // Hash tables
+        sHash("hash", Features.HAVE_HASH, 0, -1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
+        sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
+        sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
+        sHashSet("hashset", Features.HAVE_HASH, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(car(args), cadr(args), caddr(args)); } },
+        sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
+        sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
+        sHashRemove("hash-remove", Features.HAVE_HASH, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(car(args), cadr(args))); } },
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
@@ -3372,6 +3389,8 @@ public class LambdaJ {
     static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; }
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
+    static boolean hashtableP(Object o) { return o instanceof Map; }
+
     final  boolean functionp(Object o)   { return functionp0(o)
                                                   || (haveOldLambda() && consp(o) && car(o) == sLambda); }
     static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure
@@ -3405,6 +3424,8 @@ public class LambdaJ {
         if (typespec == st.intern("simple-string")) return sstringp(o);
         if (typespec == st.intern("bit-vector")) return bitvectorp(o);
         if (typespec == st.intern("simple-bit-vector")) return sbitvectorp(o);
+
+        if (typespec == st.intern("hash-table")) return hashtableP(o);
 
         if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
 
@@ -3648,6 +3669,7 @@ public class LambdaJ {
         if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
         else if (vectorp(atom))                   { printVector(sb, atom, escapeAtoms); }
+        else if (hashtableP(atom))                { printHash(sb, (Map<?, ?>)atom, escapeAtoms); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -3715,6 +3737,17 @@ public class LambdaJ {
         }
         else throw errorNotImplemented("printing vectors of class %s is not implemented", vector.getClass().getSimpleName());
         sb.print(")");
+    }
+
+    static void printHash(WriteConsumer out, Map<?,?> map, boolean escapeAtoms) {
+        if (map instanceof EqlMap) out.print("#H(eql");
+        else if (map instanceof IdentityHashMap) out.print("#H(eq");
+        else out.print("#H(t");
+        for (Map.Entry<?,?> entry: map.entrySet()) {
+            out.print(" ");  LambdaJ.printSEx(out, entry.getKey(), escapeAtoms);
+            out.print(" ");  LambdaJ.printSEx(out, entry.getValue(), escapeAtoms);
+        }
+        out.print(")");
     }
 
 
@@ -4009,6 +4042,12 @@ public class LambdaJ {
         if (a == null) return null;
         if (!consp(a)) throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(a));
         return (ConsCell)a;
+    }
+
+    @SuppressWarnings("unchecked")
+    static Map<Object,Object> requireHash(String func, Object a) {
+        if (!hashtableP(a)) throw new SimpleTypeError("%s: expected a hashtable argument but got %s", func, printSEx(a));
+        return (Map<Object,Object>)a;
     }
 
 
@@ -4637,6 +4676,77 @@ public class LambdaJ {
                                                 return newValue; }
         throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
+
+
+    /// Hash tables
+    static final int DEFAULT_HASH_SIZE = 24; // will give capacity==32
+    static final Object NO_DEFAULT_VALUE = new Object();
+
+    static class EqlMap extends HashMap<Object, Object> {
+        EqlMap(int expectedMaxSize) { super((int)(expectedMaxSize/0.75f), 0.75f); }
+        @Override public Object put(Object key, Object value) { return super.put(eqlKey(key), value); }
+        private static Object eqlKey(Object key) {
+            if (key instanceof Number || key instanceof Character) return key;
+            return new Object() { @Override public boolean equals(Object other) { return key == other; }
+                                  @Override public int hashCode() { return key.hashCode(); }
+                                  @Override public String toString() { return key.toString(); } };
+        }
+    }
+
+    static Object hash(SymbolTable symtab, ConsCell testAndTuples) {
+        if (testAndTuples == null) return new EqlMap(DEFAULT_HASH_SIZE);
+        final Map<Object,Object> ret = makeHashTable(symtab, car(testAndTuples), DEFAULT_HASH_SIZE);
+        final ConsCell tuples = requireList("hash", testAndTuples.cdr());
+        if (tuples == null) return ret;
+        final Iterator<?> i = tuples.iterator();
+        while (i.hasNext()) {
+            final Object key = i.next();
+            if (!i.hasNext()) errorMalformedFmt("hash", "last key/value tuple is missing 'value'");
+            ret.put(key, i.next());
+        }
+        return ret;
+    }
+
+    static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
+        if (test == sT) return new HashMap<>(size);
+        if (test == null || test == st.intern("eql")) return new EqlMap(size);
+        if (test == st.intern("eq")) return new IdentityHashMap<>(size);
+        throw errorInternal("only t, eq and eql are implemented as 'test', got " + printSEx(test));
+    }
+
+    static Object[] hashref(Object hash, Object key, Object def) {
+        final Map<?,Object> map = requireHash("hashref", hash);
+        if (map.containsKey(key)) {
+            final Object val = map.get(key);
+            return new Object[] { val, sT };
+        }
+        else if (def == NO_DEFAULT_VALUE) return new Object[] { null, null };
+        else return new Object[] { def, null };
+    }
+
+    static Object hashset(Object hash, Object key, Object value) {
+        final Map<Object,Object> map = requireHash("hashset", hash);
+        map.put(key, value);
+        return value;
+    }
+
+    static Object hashTableCount(Object hash) {
+        return requireHash("hash-table-count", hash).size();
+    }
+
+    static Object clrhash(Object hash) {
+        requireHash("clrhash", hash).clear();
+        return hash;
+    }
+
+    static boolean hashRemove(Object hash, Object key) {
+        final Map<?,Object> map = requireHash("hashref", hash);
+        final boolean ret = map.containsKey(key);
+        map.remove(key);
+        return ret;
+    }
+
+    // todo remhash, maphash
 
 
     /// I/O
@@ -6337,6 +6447,7 @@ public class LambdaJ {
             if (hasFlag("--no-number", args))   features &= ~(Features.HAVE_NUMBERS.bits() | Features.HAVE_DOUBLE.bits() | Features.HAVE_LONG.bits());
             if (hasFlag("--no-string", args))   features &= ~Features.HAVE_STRING.bits();
             if (hasFlag("--no-vector", args))   features &= ~Features.HAVE_VECTOR.bits();
+            if (hasFlag("--no-hash", args))     features &= ~Features.HAVE_HASH.bits();
             if (hasFlag("--no-io", args))       features &= ~Features.HAVE_IO.bits();
             if (hasFlag("--no-gui", args))      features &= ~Features.HAVE_GUI.bits();
             if (hasFlag("--no-util", args))     features &= ~Features.HAVE_UTIL.bits();
@@ -6561,6 +6672,7 @@ public class LambdaJ {
                                + "--no-number ...  no number support\n"
                                + "--no-string ...  no string support\n"
                                + "--no-vector ...  no vector support\n"
+                               + "--no-hash .....  no hash-table support\n"
                                + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
                                + "--no-util .....  no primitive functions consp, symbolp, listp, null,\n"
                                + "                 append, assoc, assq, list, list*, format, format-locale\n"

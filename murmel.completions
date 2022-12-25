@@ -73,6 +73,7 @@ stringp
 bit-vector-p
 simple-bit-vector-p
 
+hash-table-p
 functionp
 
 listp
@@ -142,6 +143,14 @@ list->bit-vector
 
 seqref
 seqset
+
+hash
+make-hash-table
+hashref
+hashset
+hash-table-count
+clrhash
+hash-remove
 
 values
 gensym
