@@ -4881,6 +4881,7 @@ public class LambdaJ {
     }
 
     /** (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil */
+    @SuppressWarnings("unchecked")
     static Object writeTextfileLines(ConsCell args) {
         final String fileName = requireString("write-textfile-lines", car(args));
         args = (ConsCell)cdr(args);
@@ -4898,8 +4899,8 @@ public class LambdaJ {
         }
         final Iterator<Object> it;
         if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
-        else if (consp(seq)) it = ((ConsCell)seq).iterator();
-        else it = Collections.emptyIterator();
+        else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
+        else throw new SimpleTypeError("expected a sequence of strings bit got %s", printSEx(seq));
         final Path p = Paths.get(fileName);
         try (final Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
                                                       appendp
