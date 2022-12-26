@@ -39,7 +39,7 @@ print(part1, _2*_6)
                (- (length l) (length r)))))))
 
 (defun read-packets ()
-  (-> (read-string "day13.txt")
+  (-> (read-textfile "day13.txt")
       (string-replace "[" "#(")  (string-replace "]" ")")  (string-replace "," " ")
       ((rcurry string-split "\\n\\n"))
       ((lambda (vec) (map 'vector (lambda (s) (map 'vector read-from-string (string-split s "\\n"))) vec)))))

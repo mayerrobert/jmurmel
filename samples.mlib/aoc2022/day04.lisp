@@ -73,7 +73,7 @@ In how many assignment pairs does one range fully contain the other?
   (vector->list ((jmethod "java.lang.String" "split" "String") str sep)))
 
 (defun read-lines (fname)
-  (vector->list (read-all-lines fname)))
+  (vector->list (read-textfile-lines fname)))
 
 )
 

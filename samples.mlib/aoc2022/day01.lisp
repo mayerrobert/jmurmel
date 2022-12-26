@@ -9,7 +9,7 @@
 
 
 (princ "AOC 2022 day1 part1: total calories of the Elf carrying the most: ")
-(->> (read-string "day01.txt")
+(->> (read-textfile "day01.txt")
      ((rcurry string-split "\\n\\n"))
      (map 'vector (rcurry string-split "\\n"))
      (map 'vector (lambda (v) (map 'vector parse-integer v)))
@@ -25,7 +25,7 @@
         (t 1)))
 
 (princ "AOC 2022 day1 part2: calories of top 3 Elfs:")
-(->> (read-string "day01.txt")
+(->> (read-textfile "day01.txt")
      ((rcurry string-split "\\n\\n"))
      (map 'vector (rcurry string-split "\\n"))
      (map 'vector (lambda (v) (map 'vector parse-integer v)))

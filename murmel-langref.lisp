@@ -319,7 +319,7 @@ pi ; ==> 3.141592653589793
 ;           character               ; #\A                            -> java.lang.Character
 ;
 ;           vector                  ; (make-array NN t t)            -> java.util.ArrayList
-;                                   ; (make-array NN t CC)            -> java.util.ArrayList
+;                                   ; (make-array NN t CC)           -> java.util.ArrayList
 ;                                   ; makes an ArrayList w/ size NN and initial capacity CC
 ;                                   ; java.util.List is acceptable for seqref and seqset
 ;              simple-vector        ; (make-array NN t nil)          -> Object[]
@@ -334,10 +334,10 @@ pi ; ==> 3.141592653589793
 ;                                   : #*0101                         -> boolean[]
 ;
 ;           hash-table              ; (make-hash-table [test [size]])
-;                                   ; #H(eql one 1 two 2 three 3)    -> EqlMap
-;                                   ; (make-hash-table ['eql [size]) -> EqlMap
-;                                   ; (make-hash-table 'eq [size])   -> java.util.IdentityHashMap
-;                                   ; (make-hash-table 't [size])    -> java.util.HashMap
+;                                   ; #H(eql one 1 two 2 three 3)     -> EqlMap
+;                                   ; (make-hash-table ['eql [size]]) -> EqlMap
+;                                   ; (make-hash-table 'eq [size])    -> java.util.IdentityHashMap
+;                                   ; (make-hash-table 't [size])     -> java.util.HashMap
 ;                                   ; java.util.Map is acceptable for hashref, hashset, clrhash...
 ;
 ;           function                ; (lambda (param) param)         -> Closure or MurmelFunction
@@ -1160,7 +1160,7 @@ pi ; ==> 3.141592653589793
 (read-from-string "          " 'eof 5) ; ==> eof, 10
 
 
-; = (read-all-lines filenamestr [charset]) -> result-string-vector
+; = (read-textfile-lines filenamestr [charset]) -> result-string-vector
 ;
 ; Since: 1.4
 ;
@@ -1168,7 +1168,7 @@ pi ; ==> 3.141592653589793
 ; as a `simple-vector` containing one `simple-string` for each line.
 
 
-; = (read-string filenamestr [charset]) -> result-string
+; = (read-textfile filenamestr [charset]) -> result-string
 ;
 ; Since: 1.4
 ;
@@ -1179,7 +1179,7 @@ pi ; ==> 3.141592653589793
 ; or end with `#\Newline`.
 
 
-; = (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil
+; = (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil
 ;
 ; Since: 1.4
 ;
@@ -1189,7 +1189,7 @@ pi ; ==> 3.141592653589793
 ; (Note: with the JVM this can be set using -Dline.separator.)
 
 
-; = (write-string filenamestr string  [appendp [charset]]) -> nil
+; = (write-textfile filenamestr string  [appendp [charset]]) -> nil
 ;
 ; Since: 1.4
 ;

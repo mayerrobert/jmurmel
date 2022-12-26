@@ -2190,3 +2190,30 @@ checken ob let dynamic interpretiert und kompiliert gleich ist:
                      (lambda () *g*)))
 (*g-getter*) ; ==> interpreter: 1 - ok, compiler: 2 - nicht ok. sollte eigentlich test geben?!?
 -> compiler sollte wsl globals bei let dynamic NICHT ins extenv stecken?!?
+
+
+schreibemethoden vergleichen, ggf. parameter angleichen
+-> ggf. write-string   -> write-textfile
+        read-string    -> read-textfile
+        write-lines    -> write-textfile-lines
+        read-all-lines -> read-textfile-lines
+   (weil write-string gibts in CL, hat andere parameter reihenfolge)
+
+read-from-string   (read-from-string str [eof-obj [start [end]]]) -> object, position
+-> CL              (read-from-string str &optional eof-error-p eof-value &key start end preserve-whitespace) -> object, position
+
+write-to-string    (write-to-string obj print-escape-p?) -> result-string
+-> CL              (write-to-string object &key array base case circle escape gensym length level lines miser-width pprint-dispatch pretty radix readably right-margin) -> string
+                   (prin1-to-string object) => string
+                   (princ-to-string object) => string
+
+read-all-lines     (read-all-lines filenamestr [charset]) -> result-string-vector
+-> CL              (uiop:read-file-lines fname) -> result-string-list
+
+write-lines        (write-lines filenamestr string-sequence  [appendp [charset]]) -> nil
+
+read-string        (read-string filenamestr [charset]) -> result-string
+-> CL              (uiop:read-file-string fname) -> result-string
+
+write-string       (write-string filenamestr string [appendp [charset]]) -> nil
+-> CL              (write-string string &optional output-stream &key start end) => string

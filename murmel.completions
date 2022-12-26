@@ -168,10 +168,10 @@ get-universal-time
 get-decoded-time
 
 read-from-string
-read-all-lines
-read-string
-write-lines
-write-string
+read-textfile-lines
+read-textfile
+write-textfile-lines
+write-textfile
 write-to-string
 
 jmethod

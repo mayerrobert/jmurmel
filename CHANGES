@@ -4,8 +4,8 @@ Changes in JMurmel-1.4 relative to JMurmel-1.3.1
  * removed the undocumented function "fatal" from Murmel,
    moved the function "error" from mlib to Murmel and now it is similar to CL's "error"
 
- * added the functions "read-from-string", "read-all-lines", "read-string"
- * added the functions "write-to-string", "write-lines", "write-string"
+ * added the functions "read-from-string", "write-to-string"
+ * added the functions "read-textfile-lines", "read-textfile", "write-textfile-lines", "write-textfile"
  * added the special form "try" and the function "typep"
  * added condition types, the global variable *condition-handler* and some condition handling
  * added hash-tables

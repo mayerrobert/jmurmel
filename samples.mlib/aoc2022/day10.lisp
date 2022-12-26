@@ -20,7 +20,7 @@ print(part1, part2)
 (require "mlib")
 
 (let ((xs (->> "day10.txt"
-                read-string
+                read-textfile
                 ((rcurry string-split "[\\n ]"))
                 (map 'vector read-from-string)
                 (map 'vector (lambda (x) (if (numberp x) x 0)))))
