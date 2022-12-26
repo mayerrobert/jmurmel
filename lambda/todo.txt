@@ -18,7 +18,11 @@ evtl. auch mehrere methoden als anonyme klasse abgeleitet von der proxyklasse?
 
 schreibemethoden vergleichen, ggf. parameter angleichen
 -> ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anfang
--> ggf. write-string -> write-textfile, read-string -> read-textfile (weil write-string gibts in CL, hat andere parameter reihenfolge)
+-> ggf. write-string   -> write-textfile
+        read-string    -> read-textfile
+        write-lines    -> write-textfile-lines
+        read-all-lines -> read-textfile-lines
+   (weil write-string gibts in CL, hat andere parameter reihenfolge)
 
 read-from-string   (read-from-string str [eof-obj [start [end]]]) -> object, position
 -> CL              (read-from-string str &optional eof-error-p eof-value &key start end preserve-whitespace) -> object, position

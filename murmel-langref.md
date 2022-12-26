@@ -1072,9 +1072,11 @@ Murmel's `seqref` and `seqset` will handle dotted lists, though.
     (make-hash-table [key [size]]) -> hash-table
     (hashref hash key [default]) -> value, present-p
     (hashset hash key value) -> value
+    (hashset generator value) -> value
     (hash-table-count hash) -> number-of-entries
     (clrhash hash) -> hash-table
     (hash-table-remove hash key) -> was-present-p 
+    (hash-table-remove generator) -> was-present-p 
 
 Since: 1.4
 

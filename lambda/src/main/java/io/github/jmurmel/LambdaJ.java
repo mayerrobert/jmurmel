@@ -1874,10 +1874,10 @@ public class LambdaJ {
         sHash("hash-table", Features.HAVE_HASH, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
         sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
         sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
-        sHashSet("hashset", Features.HAVE_HASH, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(car(args), cadr(args), caddr(args)); } },
+        sHashSet("hashset", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(args); } },
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
         sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
-        sHashRemove("hash-table-remove", Features.HAVE_HASH, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(car(args), cadr(args))); } },
+        sHashRemove("hash-table-remove", Features.HAVE_HASH, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.hashRemove(args); } },
         sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.scanHash(car(args)); } },
 
         // I/O
@@ -4725,7 +4725,13 @@ public class LambdaJ {
         else return new Object[] { def, null };
     }
 
-    // todo (hashset generator value) soll auch gehen
+    static Object hashset(ConsCell args) {
+        final Object hashOrGen = car(args);
+        if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).set(cadr(args));
+        if (cddr(args) == null) throw new ProgramError("hashset: when the first argument is a hash-table 3 arguments are required");
+        return hashset(hashOrGen, cadr(args), caddr(args));
+    }
+
     static Object hashset(Object hash, Object key, Object value) {
         final Map<Object,Object> map = requireHash("hashset", hash);
         map.put(key, value);
@@ -4741,7 +4747,13 @@ public class LambdaJ {
         return hash;
     }
 
-    // todo (hash-table-remove generator) soll auch gehen
+    final Object hashRemove(ConsCell args) {
+        final Object hashOrGen = car(args);
+        if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).remove();
+        if (cdr(args) == null) throw new ProgramError("hash-table-remove: when the first argument is a hash-table 2 arguments are required");
+        return boolResult(hashRemove(hashOrGen, cadr(args)));
+    }
+
     static boolean hashRemove(Object hash, Object key) {
         final Map<?,Object> map = requireHash("hash-table-remove", hash);
         final boolean ret = map.containsKey(key);
@@ -4749,17 +4761,27 @@ public class LambdaJ {
         return ret;
     }
 
+    interface IteratorGenerator extends Primitive {
+        Object set(Object value);
+        Object remove();
+    }
+
     final Object scanHash(Object hash) {
         final Iterator<Map.Entry<Object,Object>> it = requireHash("scan-hash-table", hash).entrySet().iterator();
-        if (it.hasNext()) return new Primitive() {
+        if (it.hasNext()) return new IteratorGenerator() {
+            private Map.Entry<Object,Object> entry;
             @Override public Object applyPrimitive(ConsCell args) {
-                if (it.hasNext()) { final Map.Entry<Object,Object> entry = it.next(); final ConsCell tuple = cons(entry.getKey(), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
-                else { values = cons(null, cons(null, null));  return null; }
+                if (it.hasNext()) { entry = it.next(); final ConsCell tuple = cons(entry.getKey(), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
+                else { entry = null;  values = cons(null, cons(null, null));  return null; }
             }
+            @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
+            @Override public Object remove() { it.remove(); return boolResult(true); }
             @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
         };
-        else return new Primitive() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
-                                      @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
+        else return new IteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
+                                              @Override public Object set(Object value) { throw new SimpleError("no such element - hash-table is empty"); }
+                                              @Override public Object remove() { return null; }
+                                              @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
     }
 
 
