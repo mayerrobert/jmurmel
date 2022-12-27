@@ -7317,7 +7317,9 @@ public class LambdaJ {
 
         // Hashtables
         public final Object _hash          (Object... args)      {                                              return LambdaJ.hash(symtab, arraySlice(args)); }
-        public final Object makeHash      (Object... args)      { varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); }
+        public final Object makeHash      (Object... args)      { varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab,
+                                                                                                                                     args.length >= 1 ? args[0] : null,
+                                                                                                                                     args.length >= 2 ? toNonnegInt("make-hash-table", cadr(args)) : DEFAULT_HASH_SIZE); }
         public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
         public final Object _hashset      (Object... args)      { varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
         public final Object hashTableCount(Object... args)      { oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }

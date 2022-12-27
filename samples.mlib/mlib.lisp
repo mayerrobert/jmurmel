@@ -1043,19 +1043,19 @@
                       ((or (eq 'seqref (caar args)) (eq 'elt (caar args)))
                        `(seqset ,@(cdar args) ,(cadr args)))
 
-                      ;; with default value: setf (hashref h k def) - eval and ignore default value form
+                      ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
                       ((and (eq 'hashref (caar args)) (cdr (cddar args)))
                        `(prog1 (hashset ,(cadar args) ,(car (cddar args)) ,(cadr args)) ,(cadr (cddar args))))
 
-                      ;; w/o default value: setf (hashref h k)
+                      ;; hashref w/o default value: setf (hashref h k)
                       ((eq 'hashref (caar args))
                        `(hashset ,@(cdar args) ,(cadr args)))
 
-                      ;; with default value: setf (gethash key hash def) - eval and ignore default value form
+                      ;; gethash with default value: setf (gethash key hash def) - eval and ignore default value form
                       ((and (eq 'gethash (caar args)) (cdr (cddar args)))
                        `(prog1 (hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)) ,(cadr (cddar args))))
 
-                      ;; w/o default value: setf (gethash key hash)
+                      ;; gethash w/o default value: setf (gethash key hash)
                       ((eq 'gethash (caar args))
                        `(hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)))
 

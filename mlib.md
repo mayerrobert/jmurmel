@@ -45,6 +45,8 @@ mlib provides the following Common Lisp-like functions and macros:
     - [reverse](#function-reverse), [nreverse](#function-nreverse)
     - [remove-if](#function-remove-if), [remove](#function-remove)
     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
+- hash tables
+    - [gethash](#function-gethash), [remhash](#function-remhash)
 - higher order
     - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
     - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
@@ -766,6 +768,16 @@ Otherwise if `from-end-p` is given and non-nil then
 of the `sequence` and subsequently with the previous result
 and the previous element, and `reduce` will return the last
 result from `func`.
+
+### Function: gethash
+    (gethash key hash [default]) -> object, was-present-p
+
+Since: 1.4
+
+### Function: remhash
+    (remhash key hash) -> was-present-p
+
+Since: 1.4
 
 ### Function: identity
     (identity object) -> object
