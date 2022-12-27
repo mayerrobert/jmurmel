@@ -1,3 +1,8 @@
+mlib: get-setf-expansion sollte eigentlich multiple-value liefern, nicht list
+
+mlib: ggf. nth und nthcdr vermehrt einsetzen statt cdddr usw.,
+      cXr (und ggf. print, ... weitere?) vielleicht in ein eigenes CL compatibility file auslagern?!
+
 checken ob in kompiliertem code values früh genug genullt wird
 JMurmel> (write (hashref h 1))
 1
