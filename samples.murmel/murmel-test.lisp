@@ -1083,6 +1083,40 @@ multiline comment
 
 
 ; *******************************************************************
+;;; - hash-tables
+#-murmel (progn
+(defun hash (test &rest pairs)
+  (let ((h (make-hash-table :test test)))
+    (labels ((luup (lst)
+               (when lst
+                 (unless (cdr lst) (error "last tuple is missing a value"))
+                 (setf (gethash (car lst) h) (cadr lst))
+                 (luup (cddr lst)))))
+      (luup pairs))
+    h))
+
+(defun hashref (hash key)
+  (gethash key hash))
+
+(defun hashset (hash key value)
+  (setf (gethash key hash) value))
+
+(defun hash-table-remove (hash key)
+  (remhash key hash))
+)
+
+(deftest hash.1 (hashref (hash 'eql 1 11 2 22 3 32) 2) 22)
+(deftest hash.2
+  (let ((h (hash 'eql 1 11 2 22)))
+    (list (hash-table-remove h 2)
+          (hash-table-remove h 5)
+          (hash-table-count (clrhash h))))
+  '(t nil 0))
+
+; todo hashset, make-hash-table, scan-hash-table, remove generator, hashset generator
+
+
+; *******************************************************************
 ;;; - higher order: n/a
 
 

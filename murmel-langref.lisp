@@ -1068,10 +1068,10 @@ pi ; ==> 3.141592653589793
 
 ;;; == Hash-tables
 
-; = hash-table-p, hash-table, make-hash-table, hashref, hashset,<br/>hash-table-count, clrhash, hash-table-remove
+; = hash-table-p, hash, make-hash-table, hashref, hashset,<br/>hash-table-count, clrhash, hash-table-remove
 ;
 ;     (hash-table-p hash) -> boolean
-;     (hash-table [test [key1 value1 key2 value2...]]) -> hash-table
+;     (hash [test [key1 value1 key2 value2...]]) -> hash-table
 ;     (make-hash-table [key [size]]) -> hash-table
 ;     (hashref hash key [default]) -> value, present-p
 ;     (hashset hash key value) -> value

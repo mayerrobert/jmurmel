@@ -763,6 +763,7 @@ public class LambdaJ {
     private boolean haveApply()     { return (features & Features.HAVE_APPLY.bits())     != 0; }
     private boolean haveCons()      { return (features & Features.HAVE_CONS.bits())      != 0; }
     private boolean haveVector()    { return (features & Features.HAVE_VECTOR.bits())    != 0; }
+    private boolean haveHash()      { return (features & Features.HAVE_HASH.bits())      != 0; }
     private boolean haveCond()      { return (features & Features.HAVE_COND.bits())      != 0; }
     private boolean haveAtom()      { return (features & Features.HAVE_ATOM.bits())      != 0; }
     private boolean haveEq()        { return (features & Features.HAVE_EQ.bits())        != 0; }
@@ -1871,13 +1872,13 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // Hash tables
-        sHash("hash-table", Features.HAVE_HASH, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
+        sHash("hash", Features.HAVE_HASH, -1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
         sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
         sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sHashSet("hashset", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(args); } },
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
         sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
-        sHashRemove("hash-table-remove", Features.HAVE_HASH, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.hashRemove(args); } },
+        sHashRemove("hash-table-remove", Features.HAVE_HASH, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(args)); } },
         sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.scanHash(car(args)); } },
 
         // I/O
@@ -4694,15 +4695,15 @@ public class LambdaJ {
         }
     }
 
-    static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndTuples) {
-        if (testAndTuples == null) return new EqlMap(DEFAULT_HASH_SIZE);
-        final Map<Object,Object> ret = makeHashTable(symtab, car(testAndTuples), DEFAULT_HASH_SIZE);
-        final ConsCell tuples = requireList("hash-table", testAndTuples.cdr());
-        if (tuples == null) return ret;
-        final Iterator<?> i = tuples.iterator();
+    static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndPairs) {
+        if (testAndPairs == null) return new EqlMap(DEFAULT_HASH_SIZE);
+        final Map<Object,Object> ret = makeHashTable(symtab, car(testAndPairs), DEFAULT_HASH_SIZE);
+        final ConsCell pairs = requireList("hash", testAndPairs.cdr());
+        if (pairs == null) return ret;
+        final Iterator<?> i = pairs.iterator();
         while (i.hasNext()) {
             final Object key = i.next();
-            if (!i.hasNext()) errorMalformedFmt("hash-table", "last key/value tuple is missing 'value'");
+            if (!i.hasNext()) errorMalformedFmt("hash", "last key/value pair is missing 'value'");
             ret.put(key, i.next());
         }
         return ret;
@@ -4747,11 +4748,11 @@ public class LambdaJ {
         return hash;
     }
 
-    final Object hashRemove(ConsCell args) {
+    static boolean hashRemove(ConsCell args) {
         final Object hashOrGen = car(args);
         if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).remove();
         if (cdr(args) == null) throw new ProgramError("hash-table-remove: when the first argument is a hash-table 2 arguments are required");
-        return boolResult(hashRemove(hashOrGen, cadr(args)));
+        return hashRemove(hashOrGen, cadr(args));
     }
 
     static boolean hashRemove(Object hash, Object key) {
@@ -4763,7 +4764,7 @@ public class LambdaJ {
 
     interface IteratorGenerator extends Primitive {
         Object set(Object value);
-        Object remove();
+        boolean remove();
     }
 
     final Object scanHash(Object hash) {
@@ -4775,12 +4776,12 @@ public class LambdaJ {
                 else { entry = null;  values = cons(null, cons(null, null));  return null; }
             }
             @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
-            @Override public Object remove() { it.remove(); return boolResult(true); }
+            @Override public boolean remove() { it.remove(); return true; }
             @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
         };
         else return new IteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
                                               @Override public Object set(Object value) { throw new SimpleError("no such element - hash-table is empty"); }
-                                              @Override public Object remove() { return null; }
+                                              @Override public boolean remove() { return false; }
                                               @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
     }
 
@@ -5554,6 +5555,10 @@ public class LambdaJ {
             addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_VECTOR.bits(), this::addBuiltin);
+        }
+
+        if (haveHash()) {
+            WellknownSymbol.forAllPrimitives(Features.HAVE_HASH.bits(), this::addBuiltin);
         }
 
         if (haveUtil()) {
@@ -7311,13 +7316,13 @@ public class LambdaJ {
 
 
         // Hashtables
-        public final Object hashTable     (Object... args)      {                                               return LambdaJ.hash(symtab, arraySlice(args)); }
+        public final Object _hash          (Object... args)      {                                              return LambdaJ.hash(symtab, arraySlice(args)); }
         public final Object makeHash      (Object... args)      { varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); }
         public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
         public final Object _hashset      (Object... args)      { varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
-        public final Object hashTableCount(Object... args)      { oneArg("hash-table-count", args.length);      return hashTableCount(args[0]); }
-        public final Object clrHash       (Object... args)      { oneArg("clrhash", args.length);               return clrhash(args[0]); }
-        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length); return intp.hashRemove(arraySlice(args)); } // todo static
+        public final Object hashTableCount(Object... args)      { oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }
+        public final Object _clrhash      (Object... args)      { oneArg("clrhash", args.length);               return LambdaJ.clrhash(args[0]); }
+        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length); return bool(LambdaJ.hashRemove(arraySlice(args))); }
         public final Object scanHash      (Object... args)      { oneArg("scan-hash-table", args.length);       return intp.scanHash(args[0]); } // todo static oder scanHash fuer compiler
 
         // I/O
@@ -8024,12 +8029,12 @@ public class LambdaJ {
             case "seqset": return (CompilerPrimitive)this::_seqset;
 
             // Hash tables
-            case "hash-table": return (CompilerPrimitive)this::hashTable;
+            case "hash": return (CompilerPrimitive)this::_hash;
             case "make-hash-table": return (CompilerPrimitive)this::makeHash;
             case "hashref": return (CompilerPrimitive)this::_hashref;
             case "hashset": return (CompilerPrimitive)this::_hashset;
             case "hash-table-count": return (CompilerPrimitive)this::hashTableCount;
-            case "clrhash": return (CompilerPrimitive)this::clrHash;
+            case "clrhash": return (CompilerPrimitive)this::_clrhash;
             case "hash-table-remove": return (CompilerPrimitive)this::hashRemove;
             case "scan-hash-table": return (CompilerPrimitive)this::scanHash;
 
@@ -8252,8 +8257,8 @@ public class LambdaJ {
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
         {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
         {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
-        {"hash-table", "hashTable"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
-        {"hash-table-count", "hashTableCount"}, {"clrhash", "clrHash"}, {"hash-table-remove", "hashRemove"}, {"scan-hash-table", "scanHash"},
+        {"hash", "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
+        {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"scan-hash-table", "scanHash"},
 
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
