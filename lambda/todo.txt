@@ -1,3 +1,11 @@
+checken ob in kompiliertem code values früh genug genullt wird
+JMurmel> (write (hashref h 1))
+1
+ -> 1
+ -> t
+-> ist im interpreter UND compiler falsch
+
+
 equal von mlib nach murmel schieben, damit man hashmaps mit strings machen kann #H(equal "eins" 1 "zwei" 2)
 
 static initializer koennen langsam sein, siehe https://pangin.pro/posts/computation-in-static-initializer
@@ -70,25 +78,21 @@ interpreter: lokales und globales environment müssen nicht eine einzige liste s
    symbole für special forms bekommen keinen index, symbole für wellknown primitives oder wellknown symbols bekommen hardcodierte indizes,
    ggf. könnte so ein array auch in MurmelJavaProgram verwendet werden, statt vieler einzelner CompilerGlobal members
 
-
 kompiliertes eval sieht nur das predef topenv. abhilfe wäre, ins generierte programm eine alist mit allen defines/defuns zu generieren,
 und das wird eval mitgegeben.
 evtl. diese alist auch in Murmel anbinden?
 evtl. auch macros berücksichtigen?
 -> kompiliertes macroexpand-1 könnte dann auch besser werden
-> oder array/ arraylist wie oben
-
-
-checken ob in kompiliertem code values früh genug genullt wird
-
+-> oder array/ arraylist wie oben
 
 environmentreferenzen inline cachen?
 -> symbol on-demand durch cacheobjekt ersetzen, das cacheobjekt hat eine weak reference auf die ConsCell im environment
    (weak reference wär nicht nötig für globals, aber für parameter, und für globals falls/ sobald es makunbound gibt)
+-> wenn globals ein hash oder array sind, bleiben nur mehr parameter/ locals uebrig
 
 
-(read-all-bytes filenamestr)                           -> result-integer-vector (am besten signed bytes?)
-(write-bytes    filenamestr integer-vector [appendp])  -> nil
+(read-bytefile  filenamestr)                           -> result-integer-vector (am besten signed bytes?)
+(write-bytefile filenamestr integer-vector [appendp])  -> nil
 
 
 macrolet/ macroexpand mit lex environment:

@@ -1775,7 +1775,7 @@ public class LambdaJ {
         sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
         sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
 
-        sHashtableP("hash-table-p", Features.HAVE_HASH, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashtableP(car(args))); } },
+        sHashtableP("hash-table-p", Features.HAVE_HASH, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashtablep(car(args))); } },
         sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
         sListp("listp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
@@ -3390,7 +3390,7 @@ public class LambdaJ {
     static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; }
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
-    static boolean hashtableP(Object o) { return o instanceof Map; }
+    static boolean hashtablep(Object o) { return o instanceof Map; }
 
     final  boolean functionp(Object o)   { return functionp0(o)
                                                   || (haveOldLambda() && consp(o) && car(o) == sLambda); }
@@ -3426,7 +3426,7 @@ public class LambdaJ {
         if (typespec == st.intern("bit-vector")) return bitvectorp(o);
         if (typespec == st.intern("simple-bit-vector")) return sbitvectorp(o);
 
-        if (typespec == st.intern("hash-table")) return hashtableP(o);
+        if (typespec == st.intern("hash-table")) return hashtablep(o);
 
         if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
 
@@ -3670,7 +3670,7 @@ public class LambdaJ {
         if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
         else if (vectorp(atom))                   { printVector(sb, atom, escapeAtoms); }
-        else if (hashtableP(atom))                { printHash(sb, (Map<?, ?>)atom, escapeAtoms); }
+        else if (hashtablep(atom))                { printHash(sb, (Map<?, ?>)atom, escapeAtoms); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -4047,7 +4047,7 @@ public class LambdaJ {
 
     @SuppressWarnings("unchecked")
     static Map<Object,Object> requireHash(String func, Object a) {
-        if (!hashtableP(a)) throw new SimpleTypeError("%s: expected a hashtable argument but got %s", func, printSEx(a));
+        if (!hashtablep(a)) throw new SimpleTypeError("%s: expected a hashtable argument but got %s", func, printSEx(a));
         return (Map<Object,Object>)a;
     }
 
@@ -4694,7 +4694,7 @@ public class LambdaJ {
         }
     }
 
-    static Object hash(SymbolTable symtab, ConsCell testAndTuples) {
+    static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndTuples) {
         if (testAndTuples == null) return new EqlMap(DEFAULT_HASH_SIZE);
         final Map<Object,Object> ret = makeHashTable(symtab, car(testAndTuples), DEFAULT_HASH_SIZE);
         final ConsCell tuples = requireList("hash-table", testAndTuples.cdr());
@@ -7078,7 +7078,8 @@ public class LambdaJ {
         public final Object bitvectorp (Object    arg)  {                                             return bool(LambdaJ.bitvectorp(arg)); }
         public final Object sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
         public final Object sbitvectorp(Object    arg)  {                                             return bool(LambdaJ.sbitvectorp(arg)); }
-
+        public final Object hashtablep (Object... args) { oneArg("hash-table-p", args.length);        return bool(LambdaJ.hashtablep(args[0])); }
+        public final Object hashtablep (Object    arg)  {                                             return bool(LambdaJ.hashtablep(arg)); }
 
         public final Object _functionp (Object... args) { oneArg("functionp",    args.length);        return bool(LambdaJ.functionp0(args[0])); }
 
@@ -7309,6 +7310,16 @@ public class LambdaJ {
         public final Object   _seqset  (Object... args) { threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], toArrayIndex(args[1]), args[2]); }
 
 
+        // Hashtables
+        public final Object hashTable     (Object... args)      {                                               return LambdaJ.hash(symtab, arraySlice(args)); }
+        public final Object makeHash      (Object... args)      { varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); }
+        public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
+        public final Object _hashset      (Object... args)      { varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
+        public final Object hashTableCount(Object... args)      { oneArg("hash-table-count", args.length);      return hashTableCount(args[0]); }
+        public final Object clrHash       (Object... args)      { oneArg("clrhash", args.length);               return clrhash(args[0]); }
+        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length); return intp.hashRemove(arraySlice(args)); } // todo static
+        public final Object scanHash      (Object... args)      { oneArg("scan-hash-table", args.length);       return intp.scanHash(args[0]); } // todo static oder scanHash fuer compiler
+
         // I/O
         public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       return LambdaJ.read(lispReader, arraySlice(args)); }
         public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
@@ -7422,6 +7433,8 @@ public class LambdaJ {
             for (int i = start; i < args.length; i++) ret.append(args[i]);
             return ret.first();
         }
+
+        public final Map<Object,Object> hash(ConsCell args) { return LambdaJ.hash(symtab, args); } 
 
         public static ConsCell arraySlice(Object[] o, int offset) { return LambdaJ.arraySlice(o, offset); }
         public static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
@@ -7916,6 +7929,7 @@ public class LambdaJ {
             case "simple-string-p": return (CompilerPrimitive)this::sstringp;
             case "bit-vector-p": return (CompilerPrimitive)this::bitvectorp;
             case "simple-bit-vector-p": return (CompilerPrimitive)this::sbitvectorp;
+            case "hash-table-p": return (CompilerPrimitive)this::hashtablep;
 
             case "functionp": return (CompilerPrimitive)this::_functionp;
 
@@ -8008,6 +8022,16 @@ public class LambdaJ {
 
             case "seqref": return (CompilerPrimitive)this::_seqref;
             case "seqset": return (CompilerPrimitive)this::_seqset;
+
+            // Hash tables
+            case "hash-table": return (CompilerPrimitive)this::hashTable;
+            case "make-hash-table": return (CompilerPrimitive)this::makeHash;
+            case "hashref": return (CompilerPrimitive)this::_hashref;
+            case "hashset": return (CompilerPrimitive)this::_hashset;
+            case "hash-table-count": return (CompilerPrimitive)this::hashTableCount;
+            case "clrhash": return (CompilerPrimitive)this::clrHash;
+            case "hash-table-remove": return (CompilerPrimitive)this::hashRemove;
+            case "scan-hash-table": return (CompilerPrimitive)this::scanHash;
 
             // I/O
             case "read": return (CompilerPrimitive)this::_read;
@@ -8227,7 +8251,10 @@ public class LambdaJ {
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
         {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
-        {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"make-array", "makeArray"},
+        {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
+        {"hash-table", "hashTable"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
+        {"hash-table-count", "hashTableCount"}, {"clrhash", "clrHash"}, {"hash-table-remove", "hashRemove"}, {"scan-hash-table", "scanHash"},
+
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
         {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
@@ -8847,6 +8874,7 @@ public class LambdaJ {
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (vectorp(form)) emitVectorLiteral(sb, form);
+            else if (hashtablep(form)) emitHashLiteral(sb, form);
             else errorInternal("emitAtom: atom %s is not implemented", form.toString());
         }
 
@@ -9714,6 +9742,24 @@ public class LambdaJ {
             emitReference(sb, b.toString());
         }
 
+        private void emitHashLiteral(WrappingWriter sb, Object form) {
+            final StringWriter b = new StringWriter();
+            final WrappingWriter qsb = new WrappingWriter(b);
+
+            qsb.append("hash((ConsCell)new ListBuilder()\n        .append(");
+            if (form instanceof EqlMap)               qsb.append("intern(\"eql\")");
+            else if (form instanceof IdentityHashMap) qsb.append("intern(\"eq\")");
+            else if (form instanceof HashMap)         qsb.append("_t");
+            else errorInternal("emitHashLiteral: hash-table type %s is not implemented", form.toString());
+            qsb.append(')');
+            for (Map.Entry<?,?> entry: ((Map<?,?>)form).entrySet()) {
+                qsb.append("\n        .append(");  emitQuotedForm(qsb, entry.getKey(), true);  qsb.append(')');
+                qsb.append("\n        .append(");  emitQuotedForm(qsb, entry.getValue(), true);  qsb.append(')');
+            }
+            qsb.append(".first())");
+            emitReference(sb, b.toString());
+        }
+
         /** <p>emit a quoted form.
          *
          *  <p>Nil, t and atoms that are not symbols are emitted as is.
@@ -9753,7 +9799,6 @@ public class LambdaJ {
                     qsb.append("))");
                 }
                 else {
-                    // todo vielleicht statt .append() kette .appendElements() verwenden?
                     qsb.append("new ListBuilder()");
                     for (Object o = form; ; o = cdr(o)) {
                         qsb.append("\n        .append(");
