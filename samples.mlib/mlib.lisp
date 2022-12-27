@@ -911,10 +911,10 @@
 ;;;
 ;;; Since: 1.1
 (defun get-setf-expansion (place)
-  (let ((read-var (gensym "read"))
-        (tmp1 (gensym "place1"))
-        (tmp2 (gensym "place2"))
-        (store-var (gensym "new")))
+  (let ((read-var (gensym "read-var"))
+        (tmp1 (gensym "tmp1"))
+        (tmp2 (gensym "tmp2"))
+        (store-var (gensym "store-var")))
     (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
       (let ((op (car place))
             (args (cdr place)))
@@ -940,31 +940,46 @@
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (svref ,tmp1 ,tmp2))
                  (,store-var)
-                 (svset ,tmp1 ,tmp2 ,read-var)
+                 (svset ,tmp1 ,tmp2 ,store-var)
                  (,read-var)))
 
               ((or (eq 'bvref op) (eq 'bit op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (bvref ,tmp1 ,tmp2))
                  (,store-var)
-                 (bvset ,tmp1 ,tmp2 ,read-var)
+                 (bvset ,tmp1 ,tmp2 ,store-var)
                  (,read-var)))
 
               ((or (eq 'sref op) (eq 'char op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (sref ,tmp1 ,tmp2))
                  (,store-var)
-                 (sset ,tmp1 ,tmp2 ,read-var)
+                 (sset ,tmp1 ,tmp2 ,store-var)
                  (,read-var)))
 
               ((or (eq 'seqref op) (eq 'elt op))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) (seqref ,tmp1 ,tmp2))
                  (,store-var)
-                 (seqset ,tmp1 ,tmp2 ,read-var)
+                 (seqset ,tmp1 ,tmp2 ,store-var)
                  (,read-var)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, svref, bvref, bit, sref and char are supported for 'place'")))))))
+              ;; with default value: setf (hashref h k def) - eval and ignore default value form
+              ((and (eq 'hashref op) (cddr place))
+               `((,tmp1 ,tmp2 ,read-var)
+                 (,(car args) ,(cadr args) ,(caddr args))
+                 (,store-var)
+                 (hashset ,tmp1 ,tmp2 ,store-var)
+                 (hashref ,tmp1 ,tmp2)))
+
+              ((eq 'hashref op)
+               `((,tmp1 ,tmp2)
+                 (,(car args) ,(cadr args))
+                 (,store-var)
+                 (hashset ,tmp1 ,tmp2 ,store-var)
+                 (hashref ,tmp1 ,tmp2)))
+
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, svref, bvref, bit, sref and char are supported for 'place', got %s" place)))))))
 
 
 ;;; = Macro: setf
@@ -1008,6 +1023,14 @@
 
                       ((or (eq 'seqref (caar args)) (eq 'elt (caar args)))
                        `(seqset ,@(cdar args) ,(cadr args)))
+
+                      ;; with default value: setf (hashref h k def) - eval and ignore default value form
+                      ((and (eq 'hashref (caar args)) (cdr (cddar args)))
+                       `(prog1 (hashset ,(cadar args) ,(car (cddar args)) ,(cadr args)) ,(cadr (cddar args))))
+
+                      ;; w/o default value: setf (hashref h k)
+                      ((eq 'hashref (caar args))
+                       `(hashset ,@(cdar args) ,(cadr args)))
 
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* (,@(mapcar list vars vals)
