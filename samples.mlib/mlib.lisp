@@ -50,6 +50,9 @@
 ;;;     - [remove-if](#function-remove-if), [remove](#function-remove)
 ;;;     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
 
+;;; - hash tables
+;;;     - [gethash](#function-gethash), [remhash](#function-remhash)
+
 ;;; - higher order
 ;;;     - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
 ;;;     - [every](#function-every), [some](#function-some), [notevery](#function-notevery), [notany](#function-notany)
@@ -938,40 +941,41 @@
 
               ((eq 'svref op)
                `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (svref ,tmp1 ,tmp2))
+                 (,(car args) ,(cadr args))
                  (,store-var)
                  (svset ,tmp1 ,tmp2 ,store-var)
-                 (,read-var)))
+                 (svref ,tmp1 ,tmp2)))
 
               ((or (eq 'bvref op) (eq 'bit op))
-               `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (bvref ,tmp1 ,tmp2))
+               `((,tmp1 ,tmp2)
+                 (,(car args) ,(cadr args))
                  (,store-var)
                  (bvset ,tmp1 ,tmp2 ,store-var)
-                 (,read-var)))
+                 (bvref ,tmp1 ,tmp2)))
 
               ((or (eq 'sref op) (eq 'char op))
-               `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (sref ,tmp1 ,tmp2))
+               `((,tmp1 ,tmp2)
+                 (,(car args) ,(cadr args))
                  (,store-var)
                  (sset ,tmp1 ,tmp2 ,store-var)
-                 (,read-var)))
+                 (sref ,tmp1 ,tmp2)))
 
               ((or (eq 'seqref op) (eq 'elt op))
-               `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args) (seqref ,tmp1 ,tmp2))
+               `((,tmp1 ,tmp2)
+                 (,(car args) ,(cadr args))
                  (,store-var)
                  (seqset ,tmp1 ,tmp2 ,store-var)
-                 (,read-var)))
+                 (seqref ,tmp1 ,tmp2)))
 
-              ;; with default value: setf (hashref h k def) - eval and ignore default value form
-              ((and (eq 'hashref op) (cddr place))
+              ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
+              ((and (eq 'hashref op) (cddr args))
                `((,tmp1 ,tmp2 ,read-var)
                  (,(car args) ,(cadr args) ,(caddr args))
                  (,store-var)
                  (hashset ,tmp1 ,tmp2 ,store-var)
                  (hashref ,tmp1 ,tmp2)))
 
+              ;; hashref w/o default value
               ((eq 'hashref op)
                `((,tmp1 ,tmp2)
                  (,(car args) ,(cadr args))
@@ -979,7 +983,22 @@
                  (hashset ,tmp1 ,tmp2 ,store-var)
                  (hashref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, svref, bvref, bit, sref and char are supported for 'place', got %s" place)))))))
+              ;; gethash with default value: setf (gethash k hash def) - eval and ignore default value form
+              ((and (eq 'gethash op) (cddr args))
+               `((,tmp1 ,tmp2 ,read-var)
+                 (,(cadr args) ,(car args) ,(caddr args))
+                 (,store-var)
+                 (hashset ,tmp1 ,tmp2 ,store-var)
+                 (hashref ,tmp1 ,tmp2)))
+
+              ((eq 'gethash op)
+               `((,tmp1 ,tmp2)
+                 (,(cadr args) ,(car args))
+                 (,store-var)
+                 (hashset ,tmp1 ,tmp2 ,store-var)
+                 (hashref ,tmp1 ,tmp2)))
+
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref and char are supported for 'place', got %s" place)))))))
 
 
 ;;; = Macro: setf
@@ -1031,6 +1050,14 @@
                       ;; w/o default value: setf (hashref h k)
                       ((eq 'hashref (caar args))
                        `(hashset ,@(cdar args) ,(cadr args)))
+
+                      ;; with default value: setf (gethash key hash def) - eval and ignore default value form
+                      ((and (eq 'gethash (caar args)) (cdr (cddar args)))
+                       `(prog1 (hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)) ,(cadr (cddar args))))
+
+                      ;; w/o default value: setf (gethash key hash)
+                      ((eq 'gethash (caar args))
+                       `(hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)))
 
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* (,@(mapcar list vars vals)
@@ -1862,6 +1889,34 @@
             ((bit-vector-p seq)        (reduce/vector seq bvref))
             ((vectorp seq)             (reduce/vector seq seqref))
             (t (error "reduce - %s is not a sequence" seq))))))
+
+
+; hash tables *********************************************************
+
+;;; = Function: gethash
+;;;     (gethash key hash [default]) -> object, was-present-p
+;;;
+;;; Since: 1.4
+(defmacro gethash (key hash . default)
+  (if default
+        `(hashref ,hash ,key ,(car default))
+    `(hashref ,hash ,key)))
+
+(defun gethash (key hash . default)
+  (if default
+        (hashref hash key (car default))
+    (hashref hash key)))
+
+
+;;; = Function: remhash
+;;;     (remhash key hash) -> was-present-p
+;;;
+;;; Since: 1.4
+(defmacro remhash (key hash)
+  `(hash-table-remove ,hash ,key))
+
+(defun remhash (key hash)
+  (remhash key hash))
 
 
 ; higher order ********************************************************

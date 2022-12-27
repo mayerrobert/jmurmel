@@ -842,6 +842,22 @@
 
 
 
+;;; - hash tables
+(tests setf.hash
+  (let ((h (make-hash-table)))
+    (setf (gethash 1 h) 11)
+    (gethash 1 h)) => 11
+
+  (let ((h (make-hash-table)))
+    (setf (gethash 1 h) 11)
+    (list (hash-table-count h)
+          (remhash 1 h)
+          (remhash 1 h)
+          (hash-table-count h))) => (1 t nil 0) 
+
+)
+
+
 ;;; - higher order
 
 ;; test identity
