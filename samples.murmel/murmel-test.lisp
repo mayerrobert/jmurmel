@@ -1095,8 +1095,9 @@ multiline comment
       (luup pairs))
     h))
 
-(defun hashref (hash key)
-  (gethash key hash))
+(defun hashref (hash key &optional (default nil default-supplied-p))
+  (if default-supplied-p (gethash key hash default)
+    (gethash key hash)))
 
 (defun hashset (hash key value)
   (setf (gethash key hash) value))
@@ -1105,8 +1106,16 @@ multiline comment
   (remhash key hash))
 )
 
-(deftest hash.1 (hashref (hash 'eql 1 11 2 22 3 32) 2) 22)
-(deftest hash.2
+;;; test hashref w/ value present
+(deftest hash.1 (multiple-value-call #'list (hashref (hash 'eql 1 11 2 22 3 32) 2))    '(22 t))
+
+;;; test hashref w/ value not present but default value is given
+(deftest hash.2 (multiple-value-call #'list (hashref (hash 'eql 1 11 2 22 3 32) 5 55)) '(55 nil))
+
+;;; test hashref w/ value not present and no default value is given
+(deftest hash.3 (multiple-value-call #'list (hashref (hash 'eql 1 11 2 22 3 32) 5)) '(nil nil))
+
+(deftest hash.4
   (let ((h (hash 'eql 1 11 2 22)))
     (list (hash-table-remove h 2)
           (hash-table-remove h 5)
