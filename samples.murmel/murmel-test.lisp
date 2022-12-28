@@ -1144,6 +1144,8 @@ multiline comment
 (deftest read-from-string.3 (multiple-value-call expect 'err  nil                (try (read-from-string "1" 'err 1)  'err1))  '(t t))
 )
 
+(deftest read-from-string.4 (multiple-value-call #'list (read-from-string "  1  2  3  "))  '(1 4))
+
 
 ; *******************************************************************
 ;;; - misc
